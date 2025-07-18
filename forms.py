@@ -406,8 +406,14 @@ class WorkScheduleForm(FlaskForm):
     """Form per gestire gli orari di lavoro"""
     sede = SelectField('Sede', coerce=int, validators=[DataRequired()])
     name = StringField('Nome Orario', validators=[DataRequired(), Length(max=100)])
-    start_time = TimeField('Orario Inizio', validators=[DataRequired()])
-    end_time = TimeField('Orario Fine', validators=[DataRequired()])
+    
+    # Range orari di entrata
+    start_time_min = TimeField('Entrata Min', validators=[DataRequired()])
+    start_time_max = TimeField('Entrata Max', validators=[DataRequired()])
+    
+    # Range orari di uscita  
+    end_time_min = TimeField('Uscita Min', validators=[DataRequired()])
+    end_time_max = TimeField('Uscita Max', validators=[DataRequired()])
     
     # Preset e selezione giorni della settimana
     days_preset = SelectField('Preset Giorni', choices=[
@@ -456,14 +462,25 @@ class WorkScheduleForm(FlaskForm):
         }
         return presets.get(preset, [0, 1, 2, 3, 4])
     
-    def validate_end_time(self, end_time):
-        """Valida che l'orario di fine sia successivo a quello di inizio"""
-        if self.start_time.data and end_time.data:
-            # Permetti orari che attraversano la mezzanotte
-            if end_time.data <= self.start_time.data:
-                # Solo se l'orario di fine è minore dell'inizio assumiamo attraversi la mezzanotte
-                if end_time.data.hour > self.start_time.data.hour:
-                    raise ValidationError('L\'orario di fine deve essere successivo a quello di inizio.')
+    def validate_start_time_max(self, start_time_max):
+        """Valida che l'orario massimo di entrata sia >= al minimo"""
+        if self.start_time_min.data and start_time_max.data:
+            if start_time_max.data < self.start_time_min.data:
+                raise ValidationError('L\'orario massimo di entrata deve essere maggiore o uguale al minimo.')
+    
+    def validate_end_time_max(self, end_time_max):
+        """Valida che l'orario massimo di uscita sia >= al minimo"""
+        if self.end_time_min.data and end_time_max.data:
+            if end_time_max.data < self.end_time_min.data:
+                raise ValidationError('L\'orario massimo di uscita deve essere maggiore o uguale al minimo.')
+    
+    def validate_end_time_min(self, end_time_min):
+        """Valida che l'orario minimo di uscita sia successivo all'entrata"""
+        if self.start_time_max.data and end_time_min.data:
+            if end_time_min.data <= self.start_time_max.data:
+                # Solo alza warning se non attraversa mezzanotte
+                if not (end_time_min.data.hour < 12 and self.start_time_max.data.hour > 12):
+                    raise ValidationError('L\'orario di uscita deve essere successivo all\'entrata.')
     
     def validate_name(self, name):
         """Valida che il nome dell'orario sia unico per la sede"""

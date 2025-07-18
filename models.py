@@ -919,8 +919,19 @@ class WorkSchedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    start_time = db.Column(db.Time, nullable=False)
-    end_time = db.Column(db.Time, nullable=False)
+    
+    # Range orario di inizio (entrata)
+    start_time_min = db.Column(db.Time, nullable=False)  # Orario minimo di entrata
+    start_time_max = db.Column(db.Time, nullable=False)  # Orario massimo di entrata
+    
+    # Range orario di fine (uscita)
+    end_time_min = db.Column(db.Time, nullable=False)    # Orario minimo di uscita
+    end_time_max = db.Column(db.Time, nullable=False)    # Orario massimo di uscita
+    
+    # Campi legacy per compatibilità (deprecati)
+    start_time = db.Column(db.Time, nullable=True)  # Mantenuto per compatibilità
+    end_time = db.Column(db.Time, nullable=True)    # Mantenuto per compatibilità
+    
     days_of_week = db.Column(db.JSON, nullable=False, default=list)  # Lista dei giorni della settimana [0,1,2,3,4] per Lun-Ven
     description = db.Column(db.Text, nullable=True)
     active = db.Column(db.Boolean, default=True, nullable=False)
@@ -933,16 +944,31 @@ class WorkSchedule(db.Model):
         return f'<WorkSchedule {self.name} at {self.sede_obj.name if self.sede_obj else "Unknown Sede"}>'
     
     def get_duration_hours(self):
-        """Calcola la durata in ore dell'orario di lavoro"""
-        start_minutes = self.start_time.hour * 60 + self.start_time.minute
-        end_minutes = self.end_time.hour * 60 + self.end_time.minute
+        """Calcola la durata media in ore dell'orario di lavoro basandosi sui range"""
+        # Usa il punto medio dei range per calcolare la durata media
+        avg_start_minutes = ((self.start_time_min.hour * 60 + self.start_time_min.minute) + 
+                            (self.start_time_max.hour * 60 + self.start_time_max.minute)) / 2
+        avg_end_minutes = ((self.end_time_min.hour * 60 + self.end_time_min.minute) + 
+                          (self.end_time_max.hour * 60 + self.end_time_max.minute)) / 2
         
         # Gestisci il caso di orario che attraversa la mezzanotte
-        if end_minutes < start_minutes:
-            end_minutes += 24 * 60
+        if avg_end_minutes < avg_start_minutes:
+            avg_end_minutes += 24 * 60
         
-        duration_minutes = end_minutes - start_minutes
+        duration_minutes = avg_end_minutes - avg_start_minutes
         return duration_minutes / 60.0
+    
+    def get_start_range_display(self):
+        """Restituisce il range di orario di inizio formattato"""
+        if self.start_time_min == self.start_time_max:
+            return self.start_time_min.strftime('%H:%M')
+        return f"{self.start_time_min.strftime('%H:%M')} - {self.start_time_max.strftime('%H:%M')}"
+    
+    def get_end_range_display(self):
+        """Restituisce il range di orario di fine formattato"""
+        if self.end_time_min == self.end_time_max:
+            return self.end_time_min.strftime('%H:%M')
+        return f"{self.end_time_min.strftime('%H:%M')} - {self.end_time_max.strftime('%H:%M')}"
     
     @property
     def duration_display(self):

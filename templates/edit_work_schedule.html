@@ -41,26 +41,34 @@
                         
                         <div class="row mt-3">
                             <div class="col-md-6">
-                                {{ form.start_time.label(class="form-label") }}
-                                {{ form.start_time(class="form-control") }}
-                                {% if form.start_time.errors %}
+                                <label class="form-label">Range Entrata</label>
+                                <div class="input-group mb-2">
+                                    {{ form.start_time_min(class="form-control", placeholder="Min") }}
+                                    <span class="input-group-text">-</span>
+                                    {{ form.start_time_max(class="form-control", placeholder="Max") }}
+                                </div>
+                                {% if form.start_time_min.errors or form.start_time_max.errors %}
                                     <div class="invalid-feedback d-block">
-                                        {% for error in form.start_time.errors %}
-                                            {{ error }}
-                                        {% endfor %}
+                                        {% for error in form.start_time_min.errors %}{{ error }} {% endfor %}
+                                        {% for error in form.start_time_max.errors %}{{ error }} {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="text-muted">Orario minimo e massimo di entrata</small>
                             </div>
                             <div class="col-md-6">
-                                {{ form.end_time.label(class="form-label") }}
-                                {{ form.end_time(class="form-control") }}
-                                {% if form.end_time.errors %}
+                                <label class="form-label">Range Uscita</label>
+                                <div class="input-group mb-2">
+                                    {{ form.end_time_min(class="form-control", placeholder="Min") }}
+                                    <span class="input-group-text">-</span>
+                                    {{ form.end_time_max(class="form-control", placeholder="Max") }}
+                                </div>
+                                {% if form.end_time_min.errors or form.end_time_max.errors %}
                                     <div class="invalid-feedback d-block">
-                                        {% for error in form.end_time.errors %}
-                                            {{ error }}
-                                        {% endfor %}
+                                        {% for error in form.end_time_min.errors %}{{ error }} {% endfor %}
+                                        {% for error in form.end_time_max.errors %}{{ error }} {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="text-muted">Orario minimo e massimo di uscita</small>
                             </div>
                         </div>
                         
@@ -111,9 +119,10 @@
                         <div class="mt-3">
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Durata Calcolata:</strong> 
-                                {{ "%.1f"|format(schedule.get_duration_hours()) }} ore
-                                ({{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }})
+                                <strong>Informazioni Orario:</strong><br>
+                                <strong>Entrata:</strong> {{ schedule.get_start_range_display() }}<br>
+                                <strong>Uscita:</strong> {{ schedule.get_end_range_display() }}<br>
+                                <strong>Durata Media:</strong> {{ "%.1f"|format(schedule.get_duration_hours()) }} ore
                             </div>
                         </div>
                         
@@ -181,6 +190,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             daysPreset.value = matchingPreset;
+        });
+    }
+    
+    // Helper functions for time range management
+    const startTimeMin = document.querySelector('input[name="start_time_min"]');
+    const startTimeMax = document.querySelector('input[name="start_time_max"]');
+    const endTimeMin = document.querySelector('input[name="end_time_min"]');
+    const endTimeMax = document.querySelector('input[name="end_time_max"]');
+    
+    // Sync min/max when one changes
+    if (startTimeMin && startTimeMax && endTimeMin && endTimeMax) {
+        startTimeMin.addEventListener('change', function() {
+            if (startTimeMax.value && startTimeMax.value < this.value) {
+                startTimeMax.value = this.value;
+            }
+        });
+        
+        endTimeMin.addEventListener('change', function() {
+            if (endTimeMax.value && endTimeMax.value < this.value) {
+                endTimeMax.value = this.value;
+            }
         });
     }
 });

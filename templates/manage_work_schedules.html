@@ -34,12 +34,22 @@
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-3">
-                                {{ form.start_time.label(class="form-label") }}
-                                {{ form.start_time(class="form-control") }}
+                                <label class="form-label">Range Entrata</label>
+                                <div class="input-group">
+                                    {{ form.start_time_min(class="form-control", placeholder="Min") }}
+                                    <span class="input-group-text">-</span>
+                                    {{ form.start_time_max(class="form-control", placeholder="Max") }}
+                                </div>
+                                <small class="text-muted">Orario minimo e massimo di entrata</small>
                             </div>
                             <div class="col-md-3">
-                                {{ form.end_time.label(class="form-label") }}
-                                {{ form.end_time(class="form-control") }}
+                                <label class="form-label">Range Uscita</label>
+                                <div class="input-group">
+                                    {{ form.end_time_min(class="form-control", placeholder="Min") }}
+                                    <span class="input-group-text">-</span>
+                                    {{ form.end_time_max(class="form-control", placeholder="Max") }}
+                                </div>
+                                <small class="text-muted">Orario minimo e massimo di uscita</small>
                             </div>
                             <div class="col-md-3">
                                 {{ form.days_preset.label(class="form-label") }}
@@ -47,7 +57,7 @@
                             </div>
                             <div class="col-md-3">
                                 {{ form.days_of_week.label(class="form-label") }}
-                                {{ form.days_of_week(class="form-select", multiple=true, id="days_of_week", style="height: 120px;") }}
+                                {{ form.days_of_week(class="form-select", multiple=true, id="days_of_week", style="height: 100px;") }}
                             </div>
                         </div>
                         <div class="row mt-3">
@@ -110,10 +120,10 @@
                                         <small class="text-info">{{ schedule.get_days_display() }}</small>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">{{ schedule.start_time.strftime('%H:%M') }}</span>
+                                        <span class="badge bg-success">{{ schedule.get_start_range_display() }}</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-danger">{{ schedule.end_time.strftime('%H:%M') }}</span>
+                                        <span class="badge bg-danger">{{ schedule.get_end_range_display() }}</span>
                                     </td>
                                     <td>
                                         <span class="badge bg-primary">{{ "%.1f"|format(schedule.get_duration_hours()) }}h</span>
@@ -218,6 +228,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             }
         }
+    }
+    
+    // Helper functions for time range management
+    const startTimeMin = document.querySelector('input[name="start_time_min"]');
+    const startTimeMax = document.querySelector('input[name="start_time_max"]');
+    const endTimeMin = document.querySelector('input[name="end_time_min"]');
+    const endTimeMax = document.querySelector('input[name="end_time_max"]');
+    
+    // Auto-fill suggestions for common schedules
+    if (startTimeMin && startTimeMax && endTimeMin && endTimeMax) {
+        // Set default values if empty
+        if (!startTimeMin.value) startTimeMin.value = '08:00';
+        if (!startTimeMax.value) startTimeMax.value = '09:00';
+        if (!endTimeMin.value) endTimeMin.value = '17:00';
+        if (!endTimeMax.value) endTimeMax.value = '18:00';
+        
+        // Sync min/max when one changes
+        startTimeMin.addEventListener('change', function() {
+            if (startTimeMax.value && startTimeMax.value < this.value) {
+                startTimeMax.value = this.value;
+            }
+        });
+        
+        endTimeMin.addEventListener('change', function() {
+            if (endTimeMax.value && endTimeMax.value < this.value) {
+                endTimeMax.value = this.value;
+            }
+        });
     }
 });
 </script>

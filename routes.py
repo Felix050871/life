@@ -4088,8 +4088,10 @@ def create_work_schedule():
         schedule = WorkSchedule(
             sede_id=form.sede.data,
             name=form.name.data,
-            start_time=form.start_time.data,
-            end_time=form.end_time.data,
+            start_time_min=form.start_time_min.data,
+            start_time_max=form.start_time_max.data,
+            end_time_min=form.end_time_min.data,
+            end_time_max=form.end_time_max.data,
             days_of_week=days_of_week,
             description=form.description.data,
             active=form.is_active.data
@@ -4115,8 +4117,15 @@ def edit_work_schedule(schedule_id):
     schedule = WorkSchedule.query.get_or_404(schedule_id)
     form = WorkScheduleForm(obj=schedule)
     
-    # Precompila i campi days_of_week e days_preset basandosi sui dati esistenti
+    # Precompila i campi basandosi sui dati esistenti
     if request.method == 'GET':
+        # Precompila range orari
+        form.start_time_min.data = schedule.start_time_min
+        form.start_time_max.data = schedule.start_time_max
+        form.end_time_min.data = schedule.end_time_min
+        form.end_time_max.data = schedule.end_time_max
+        
+        # Precompila giorni della settimana
         form.days_of_week.data = schedule.days_of_week or [0, 1, 2, 3, 4]
         # Determina il preset basandosi sui giorni salvati
         if schedule.days_of_week == [0, 1, 2, 3, 4]:
@@ -4137,8 +4146,10 @@ def edit_work_schedule(schedule_id):
         
         schedule.sede_id = form.sede.data
         schedule.name = form.name.data
-        schedule.start_time = form.start_time.data
-        schedule.end_time = form.end_time.data
+        schedule.start_time_min = form.start_time_min.data
+        schedule.start_time_max = form.start_time_max.data
+        schedule.end_time_min = form.end_time_min.data
+        schedule.end_time_max = form.end_time_max.data
         schedule.days_of_week = days_of_week
         schedule.description = form.description.data
         schedule.active = form.is_active.data
