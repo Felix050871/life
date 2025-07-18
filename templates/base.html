@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Workly - Workforce Management{% endblock %}</title>
-    
-    <!-- Bootstrap CSS -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}Workly - Workforce Management Platform{% endblock %}</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-    
     {% block head %}{% endblock %}
 </head>
 <body>
     <!-- Navigation -->
     {% if current_user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!-- Titolo principale -->
+    <nav class="navbar navbar-dark bg-dark py-2">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-                <i class="fas fa-building me-2"></i>Workly
+            <a class="navbar-brand mx-auto" href="{% if current_user.role == 'Ente' %}{{ url_for('ente_home') }}{% elif current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('shifts') }}{% endif %}">
+                <i class="fas fa-clock me-2"></i>Workly - Workforce Management Platform
             </a>
-            
+        </div>
+    </nav>
+    
+    <!-- Menu navigazione -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
+        <div class="container">
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -32,33 +32,114 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
-                            <i class="fas fa-home me-1"></i>Dashboard
+                        <a class="nav-link" href="{% if current_user.role == 'Ente' %}{{ url_for('ente_home') }}{% elif current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('shifts') }}{% endif %}">
+                            <i class="fas fa-home me-1"></i>Home
                         </a>
                     </li>
+
+                    {% if current_user.can_access_attendance() %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('attendance') }}">
                             <i class="fas fa-clock me-1"></i>Presenze
                         </a>
                     </li>
+                    {% elif current_user.role == 'Ente' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('attendance', view='team') }}">
+                            <i class="fas fa-clock me-1"></i>Presenze
+                        </a>
+                    </li>
+                    {% endif %}
+                    <!-- Menu Presidio -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-shield-alt me-1"></i>Presidio
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if current_user.can_manage_shifts() %}
+                            <li><a class="dropdown-item" href="{{ url_for('presidio_coverage') }}">
+                                <i class="fas fa-shield-alt me-1"></i>Copertura Presidio
+                            </a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('shifts') }}">
+                                <i class="fas fa-calendar-alt me-1"></i>Turnazioni
+                            </a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Menu Reperibilità -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-phone-alt me-1"></i>Reperibilità
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if current_user.can_manage_shifts() %}
+                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_coverage') }}">
+                                <i class="fas fa-phone-volume me-1"></i>Copertura Reperibilità
+                            </a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_shifts') }}">
+                                <i class="fas fa-phone-alt me-1"></i>Reperibilità
+                            </a></li>
+                        </ul>
+                    </li>
+                    <!-- Gestione Team (solo PM) -->
+                    {% if current_user.role in ['Project Manager'] %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('team_shifts') }}">
+                            <i class="fas fa-users-cog me-1"></i>Gestione Team
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.can_request_leave() or current_user.can_approve_leave() %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('leave_requests') }}">
+                            <i class="fas fa-umbrella-beach me-1"></i>Ferie/Permessi
+                        </a>
+                    </li>
+                    {% endif %}
+                    <!-- Interventi (tutti tranne Admin) -->
+                    {% if current_user.role != 'Admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('my_interventions') }}">
+                            <i class="fas fa-tools me-1"></i>Interventi
+                        </a>
+                    </li>
+                    {% endif %}
                     {% if current_user.can_manage_users() %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('users') }}">
+                        <a class="nav-link" href="{{ url_for('user_management') }}">
                             <i class="fas fa-users me-1"></i>Utenti
                         </a>
                     </li>
-                    {% endif %}
-                    {% if current_user.role in ['admin', 'responsabile'] %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('locations') }}">
-                            <i class="fas fa-map-marker-alt me-1"></i>Sedi
+                        <a class="nav-link" href="{{ url_for('manage_sedi') }}">
+                            <i class="fas fa-building me-1"></i>Sedi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('manage_work_schedules') }}">
+                            <i class="fas fa-clock me-1"></i>Orari
                         </a>
                     </li>
                     {% endif %}
-                    {% if current_user.can_view_all_attendances() %}
+                    <!-- Statistiche Team (sotto) -->
+                    {% if current_user.can_view_reports() %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('statistics') }}">
-                            <i class="fas fa-chart-bar me-1"></i>Statistiche
+                        <a class="nav-link" href="{{ url_for('reports') }}">
+                            <i class="fas fa-chart-bar me-1"></i>Statistiche Team
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.can_manage_users() %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_generate_qr_codes') }}">
+                            <i class="fas fa-qrcode me-1"></i>Gestione QR Codes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('holidays') }}">
+                            <i class="fas fa-calendar-day me-1"></i>Festività
                         </a>
                     </li>
                     {% endif %}
@@ -67,27 +148,17 @@
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i>{{ current_user.full_name }}
+                            <i class="fas fa-user me-1"></i>{{ current_user.get_full_name() }}
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><h6 class="dropdown-header">{{ current_user.role|title }}</h6></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><span class="dropdown-item-text">{{ current_user.role }}</span></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('qr_entrata') }}" target="_blank">
-                                    <i class="fas fa-qrcode me-1"></i>QR Entrata
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('qr_uscita') }}" target="_blank">
-                                    <i class="fas fa-qrcode me-1"></i>QR Uscita
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('logout') }}">
-                                    <i class="fas fa-sign-out-alt me-1"></i>Logout
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('change_password') }}">
+                                <i class="fas fa-lock me-1"></i>Cambia Password
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-1"></i>Logout
+                            </a></li>
                         </ul>
                     </li>
                 </ul>
@@ -99,46 +170,33 @@
     <!-- Flash Messages -->
     <div class="container mt-3">
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
         {% endwith %}
     </div>
 
     <!-- Main Content -->
-    <main>
+    <main class="container mt-4">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
     <footer class="bg-dark text-light mt-5 py-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Workly</h5>
-                    <p class="mb-0">Piattaforma completa per la gestione delle presenze aziendali.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-0">&copy; 2025 Workly. Tutti i diritti riservati.</p>
-                </div>
-            </div>
+        <div class="container text-center">
+            <p>&copy; 2025 Sistema di Gestione Presenze. Tutti i diritti riservati.</p>
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
     {% block scripts %}{% endblock %}
 </body>
 </html>

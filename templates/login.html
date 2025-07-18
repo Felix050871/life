@@ -1,78 +1,81 @@
 {% extends "base.html" %}
 
-{% block title %}Login - Workly{% endblock %}
+{% block title %}Login - Gestione Presenze{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-4">
-            <div class="card mt-5">
-                <div class="card-body">
-                    <div class="text-center mb-4">
-                        <i class="fas fa-building fa-3x text-primary"></i>
-                        <h2 class="mt-3">Workly</h2>
-                        <p class="text-muted">Gestione Presenze Aziendali</p>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header text-center">
+                <div class="mb-3">
+                    <i class="fas fa-briefcase text-primary" style="font-size: 3rem;"></i>
+                    <h3 class="mt-2 text-primary">Workly</h3>
+                </div>
+                <h4><i class="fas fa-lock me-2"></i>Accesso</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
+                        <div class="text-danger">
+                            {% for error in form.username.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     
-                    <form method="POST">
-                        {{ form.hidden_tag() }}
-                        
-                        <div class="mb-3">
-                            {{ form.username.label(class="form-label") }}
-                            {{ form.username(class="form-control") }}
-                            {% if form.username.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.username.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            {{ form.password.label(class="form-label") }}
-                            {{ form.password(class="form-control") }}
-                            {% if form.password.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.password.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-sign-in-alt me-1"></i>Accedi
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.password(class="form-control", id="password-field") }}
+                            <button class="btn btn-outline-secondary" type="button" id="toggle-password" aria-label="Mostra/Nascondi Password">
+                                <i class="fas fa-eye" id="toggle-icon"></i>
                             </button>
                         </div>
-                    </form>
+                        {% if form.password.errors %}
+                        <div class="text-danger">
+                            {% for error in form.password.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
                     
-                    <hr class="my-4">
+                    <div class="mb-3 form-check">
+                        {{ form.remember_me(class="form-check-input") }}
+                        {{ form.remember_me.label(class="form-check-label") }}
+                    </div>
                     
-                    <div class="text-center">
-                        <h6 class="text-muted">Account Demo</h6>
-                        <div class="row">
-                            <div class="col-6">
-                                <small class="text-muted">
-                                    <strong>Admin:</strong><br>
-                                    admin / admin123<br><br>
-                                    <strong>Responsabile:</strong><br>
-                                    responsabile / resp123<br><br>
-                                    <strong>Sviluppatore:</strong><br>
-                                    sviluppatore / dev123
-                                </small>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted">
-                                    <strong>Operatore:</strong><br>
-                                    operatore / op123<br><br>
-                                    <strong>Redattore:</strong><br>
-                                    redattore / red123<br><br>
-                                    <strong>Management:</strong><br>
-                                    management / mgmt123
-                                </small>
-                            </div>
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('forgot_password') }}" class="text-decoration-none">
+                            <small><i class="fas fa-key me-1"></i>Password dimenticata?</small>
+                        </a>
+                    </div>
+                </form>
+                
+                <!-- QR Code Access -->
+                <div class="mt-4">
+                    <hr>
+                    <h6 class="text-center mb-3"><i class="fas fa-qrcode me-2"></i>Accesso Rapido QR</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <a href="{{ url_for('qr_page', action='entrata') }}" class="btn btn-success w-100 btn-sm">
+                                <i class="fas fa-sign-in-alt me-1"></i>QR Entrata
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('qr_page', action='uscita') }}" class="btn btn-danger w-100 btn-sm">
+                                <i class="fas fa-sign-out-alt me-1"></i>QR Uscita
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -80,4 +83,35 @@
         </div>
     </div>
 </div>
+
+<!-- Footer -->
+<footer class="fixed-bottom bg-dark text-center py-2">
+    <div class="container">
+        <small class="text-muted">© 2025 Sistema di Gestione Presenze realizzato da <strong class="text-light">NS12 S.p.A.</strong></small>
+    </div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggle-password');
+    const passwordField = document.getElementById('password-field');
+    const toggleIcon = document.getElementById('toggle-icon');
+    
+    if (toggleButton && passwordField && toggleIcon) {
+        toggleButton.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            
+            // Cambia l'icona
+            if (type === 'text') {
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

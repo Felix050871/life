@@ -1,155 +1,158 @@
 {% extends "base.html" %}
 
-{% block title %}Presenze - Workly{% endblock %}
+{% block title %}Presenze - Gestione Presenze{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>
-            <i class="fas fa-clock me-2"></i>Gestione Presenze
-        </h1>
-        {% if current_user.can_manage_users() %}
-        <a href="{{ url_for('new_attendance') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i>Nuova Presenza
-        </a>
-        {% endif %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-clock me-2"></i>Gestione Presenze</h2>
+        <p class="text-muted">Registra le tue ore di lavoro</p>
     </div>
-    
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Da Data</label>
-                    <input type="date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">A Data</label>
-                    <input type="date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}">
-                </div>
-                {% if current_user.can_view_all_attendances() %}
-                <div class="col-md-3">
-                    <label class="form-label">Utente</label>
-                    <select name="user_id" class="form-select">
-                        <option value="">Tutti gli utenti</option>
-                        <!-- Add user options here -->
-                    </select>
-                </div>
-                {% endif %}
-                <div class="col-md-3">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-outline-primary">
-                            <i class="fas fa-search me-1"></i>Filtra
-                        </button>
+</div>
+
+
+
+<!-- Attendance History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-history me-2"></i>Storico Presenze {% if show_team_data %}- Team{% else %}- Personali{% endif %}</h5>
+                <div class="d-flex gap-2">
+                    {% if current_user.role == 'Project Manager' %}
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('attendance', view='personal', start_date=start_date, end_date=end_date) }}" 
+                           class="btn btn-sm {% if view_mode == 'personal' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i>Le Mie
+                        </a>
+                        <a href="{{ url_for('attendance', view='team', start_date=start_date, end_date=end_date) }}" 
+                           class="btn btn-sm {% if view_mode == 'team' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-users me-1"></i>Team
+                        </a>
                     </div>
+                    {% endif %}
+                    <button type="button" class="btn btn-success btn-sm" onclick="exportToCSV()">
+                        <i class="fas fa-file-csv me-1"></i>Esporta CSV
+                    </button>
                 </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Attendances Table -->
-    <div class="card">
-        <div class="card-body">
-            {% if attendances.items %}
+            </div>
+            <div class="card-body">
+                <!-- Date Filter Form -->
+                <form method="GET" action="{{ url_for('attendance') }}" class="row g-3 mb-4">
+                    {% if current_user.role == 'Project Manager' %}
+                    <input type="hidden" name="view" value="{{ view_mode }}">
+                    {% endif %}
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Data Inizio</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" 
+                               value="{{ request.args.get('start_date', start_date) }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">Data Fine</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" 
+                               value="{{ request.args.get('end_date', end_date) }}">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-filter me-1"></i>Filtra
+                        </button>
+                        <a href="{{ url_for('attendance', view=view_mode) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-1"></i>Reset
+                        </a>
+                    </div>
+                </form>
+                {% if records %}
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table table-striped">
                         <thead>
                             <tr>
-                                {% if current_user.can_view_all_attendances() %}
-                                <th>Utente</th>
-                                {% endif %}
                                 <th>Data</th>
+                                {% if show_team_data %}<th>Utente</th>{% endif %}
                                 <th>Entrata</th>
-                                <th>Uscita</th>
                                 <th>Pausa</th>
-                                <th>Ore Totali</th>
-                                <th>Sede</th>
-                                <th>Status</th>
-                                <th>Azioni</th>
+                                <th>Uscita</th>
+                                <th>Ore Lavorate</th>
+                                <th>Note</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for attendance in attendances.items %}
-                            <tr>
-                                {% if current_user.can_view_all_attendances() %}
+                            {% for record in records %}
+                            <tr {% if record.shift_status == 'assente' %}class="table-danger bg-danger bg-opacity-25"{% endif %}>
                                 <td>
-                                    <strong>{{ attendance.user.full_name }}</strong><br>
-                                    <small class="text-muted">{{ attendance.user.role|title }}</small>
+                                    {{ record.date.strftime('%d/%m/%Y') }}
+                                    {% if record.shift_status == 'assente' %}
+                                    <i class="fas fa-exclamation-circle text-danger ms-2" title="Assenza con turno programmato"></i>
+                                    {% endif %}
+                                </td>
+                                {% if show_team_data %}
+                                <td>
+                                    {% if record.user %}
+                                    <span class="text-primary">{{ record.user.get_full_name() }}</span>
+                                    <small class="text-muted d-block">{{ record.user.role }}</small>
+                                    {% else %}
+                                    <span class="text-muted">--</span>
+                                    {% endif %}
                                 </td>
                                 {% endif %}
-                                <td>{{ attendance.date.strftime('%d/%m/%Y') }}</td>
                                 <td>
-                                    {% if attendance.entry_time %}
-                                        <span class="badge bg-success">{{ attendance.entry_time.strftime('%H:%M') }}</span>
-                                        {% if attendance.is_late %}
-                                            <i class="fas fa-clock text-warning ms-1" title="In ritardo"></i>
+                                    {% if record.shift_status == 'assente' %}
+                                    <span class="text-danger fw-bold">Assente</span>
+                                    {% elif record.clock_in %}
+                                    <span class="{% if record.shift_status == 'ritardo' %}text-warning{% elif record.shift_status == 'anticipo' %}text-info{% else %}text-success{% endif %}">
+                                        {{ record.clock_in|format_time_italian }}
+                                        {% if record.shift_status == 'ritardo' %}
+                                        <i class="fas fa-exclamation-triangle text-danger ms-1" title="Entrata in ritardo"></i>
+                                        {% elif record.shift_status == 'anticipo' %}
+                                        <i class="fas fa-thumbs-up text-info ms-1" title="Entrata in anticipo"></i>
                                         {% endif %}
+                                    </span>
                                     {% else %}
-                                        <span class="text-muted">-</span>
+                                    <span class="text-muted">--:--</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if attendance.exit_time %}
-                                        <span class="badge bg-danger">{{ attendance.exit_time.strftime('%H:%M') }}</span>
-                                        {% if attendance.is_early %}
-                                            <i class="fas fa-clock text-info ms-1" title="Uscita anticipata"></i>
+                                    {% if record.shift_status == 'assente' %}
+                                    <span class="text-danger fw-bold">--</span>
+                                    {% elif record.break_start and record.break_end %}
+                                    <span class="text-warning">{{ record.break_start|format_time_italian }}</span> - 
+                                    <span class="text-info">{{ record.break_end|format_time_italian }}</span>
+                                    {% elif record.break_start %}
+                                    <span class="text-warning">{{ record.break_start|format_time_italian }}</span> - 
+                                    <span class="text-muted">--:--</span>
+                                    {% else %}
+                                    <span class="text-muted">--:--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if record.shift_status == 'assente' %}
+                                    <span class="text-danger fw-bold">Assente</span>
+                                    {% elif record.clock_out %}
+                                    <span class="{% if record.exit_status == 'anticipo' %}text-warning{% elif record.exit_status == 'straordinario' %}text-info{% else %}text-success{% endif %}">
+                                        {{ record.clock_out|format_time_italian }}
+                                        {% if record.exit_status == 'anticipo' %}
+                                        <i class="fas fa-exclamation-triangle text-warning ms-1" title="Uscita anticipata"></i>
+                                        {% elif record.exit_status == 'straordinario' %}
+                                        <i class="fas fa-thumbs-up text-info ms-1" title="Straordinario"></i>
                                         {% endif %}
-                                    {% elif attendance.entry_time %}
-                                        <span class="badge bg-warning">In corso</span>
+                                    </span>
                                     {% else %}
-                                        <span class="text-muted">-</span>
+                                    <span class="text-muted">--:--</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if attendance.break_start and attendance.break_end %}
-                                        {% set break_duration = (attendance.break_end - attendance.break_start).total_seconds() / 60 %}
-                                        <span class="badge bg-info">{{ "%.0f"|format(break_duration) }}min</span>
-                                    {% elif attendance.break_start %}
-                                        <span class="badge bg-warning">In pausa</span>
+                                    {% if record.shift_status == 'assente' %}
+                                    <span class="badge bg-danger">Assente</span>
+                                    {% elif record.clock_in and record.clock_out %}
+                                    <span class="badge bg-primary">{{ format_hours(record.get_work_hours()) }}</span>
                                     {% else %}
-                                        <span class="text-muted">-</span>
+                                    <span class="text-muted">--</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if attendance.total_hours > 0 %}
-                                        <strong>{{ "%.2f"|format(attendance.total_hours) }}h</strong>
+                                    {% if record.notes %}
+                                    <small>{{ record.notes[:50] }}{% if record.notes|length > 50 %}...{% endif %}</small>
                                     {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if attendance.location %}
-                                        {{ attendance.location.name }}
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if attendance.entry_time and attendance.exit_time %}
-                                        <span class="badge bg-success">Completa</span>
-                                    {% elif attendance.entry_time %}
-                                        <span class="badge bg-warning">In corso</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Non iniziata</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if current_user.can_manage_users() %}
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ attendance.id }}">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete({{ attendance.id }})">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    {% else %}
-                                        {% if attendance.notes %}
-                                            <button class="btn btn-outline-info btn-sm" data-bs-toggle="tooltip" title="{{ attendance.notes }}">
-                                                <i class="fas fa-sticky-note"></i>
-                                            </button>
-                                        {% endif %}
+                                    <span class="text-muted">--</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -158,67 +161,254 @@
                     </table>
                 </div>
                 
-                <!-- Pagination -->
-                {% if attendances.pages > 1 %}
-                <nav aria-label="Pagination">
-                    <ul class="pagination justify-content-center">
-                        {% if attendances.has_prev %}
-                            <li class="page-item">
-                                <a class="page-link" href="{{ url_for('attendance', page=attendances.prev_num) }}">Precedente</a>
-                            </li>
-                        {% endif %}
-                        
-                        {% for page_num in attendances.iter_pages() %}
-                            {% if page_num %}
-                                {% if page_num != attendances.page %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('attendance', page=page_num) }}">{{ page_num }}</a>
-                                    </li>
-                                {% else %}
-                                    <li class="page-item active">
-                                        <span class="page-link">{{ page_num }}</span>
-                                    </li>
-                                {% endif %}
-                            {% else %}
-                                <li class="page-item disabled">
-                                    <span class="page-link">...</span>
-                                </li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if attendances.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="{{ url_for('attendance', page=attendances.next_num) }}">Successivo</a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">Nessuna presenza trovata</h5>
-                    <p class="text-muted">Non ci sono presenze registrate per i criteri selezionati.</p>
+                <!-- Legenda indicatori -->
+                {% if records %}
+                <div class="mt-3 p-3 bg-dark border rounded">
+                    <h6 class="mb-2 text-light">Legenda Indicatori:</h6>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <small class="text-light">
+                                <i class="fas fa-exclamation-triangle text-danger me-1"></i>
+                                <strong>Ritardo:</strong> Entrata oltre 15 minuti dopo l'inizio del turno
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-light">
+                                <i class="fas fa-thumbs-up text-info me-1"></i>
+                                <strong>Anticipo:</strong> Entrata oltre 30 minuti prima del turno
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-light">
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                                <strong>Uscita Anticipata:</strong> Uscita oltre 5 minuti prima della fine turno
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-light">
+                                <i class="fas fa-thumbs-up text-info me-1"></i>
+                                <strong>Straordinario:</strong> Uscita oltre 10 minuti dopo la fine turno
+                            </small>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-light">
+                                <i class="fas fa-exclamation-circle text-danger me-1"></i>
+                                <strong>Assenza:</strong> Turno programmato per oggi ma nessuna presenza registrata
+                            </small>
+                        </div>
+                    </div>
                 </div>
-            {% endif %}
+                {% endif %}
+                
+                {% else %}
+                <p class="text-muted text-center">Nessuna registrazione trovata</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal di Conferma Personalizzato -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Avvertenza</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                <!-- Il messaggio verrà inserito qui dinamicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" id="confirmModalOk">Continua</button>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-function confirmDelete(attendanceId) {
-    if (confirm('Sei sicuro di voler eliminare questa presenza?')) {
-        // Add delete logic here
-        window.location.href = '/attendance/delete/' + attendanceId;
+function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    const timeDisplay = document.getElementById('time-display');
+    if (timeDisplay) {
+        timeDisplay.textContent = timeString;
     }
 }
 
-// Initialize tooltips
-var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl);
-});
+function exportToCSV() {
+    // Costruisce URL con parametri correnti
+    const params = new URLSearchParams(window.location.search);
+    params.set('format', 'csv');
+    
+    // Reindirizza al server per scaricare CSV
+    const csvUrl = '/export_attendance_csv?' + params.toString();
+    window.open(csvUrl, '_blank');
+}
+
+// Update time every second
+setInterval(updateTime, 1000);
+updateTime(); // Initial call
+
+// Handle clock-in with shift verification
+async function handleClockIn() {
+    try {
+        const response = await fetch('{{ url_for("check_shift_before_clock_in") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert(data.message);
+            return;
+        }
+        
+        if (data.needs_confirmation) {
+            showConfirmModal('Avvertenza', data.message, function() {
+                submitClockIn();
+            });
+        } else {
+            submitClockIn();
+        }
+    } catch (error) {
+        console.error('Error checking shift:', error);
+        showConfirmModal('Errore', 'Errore nella verifica del turno. Vuoi procedere comunque con la registrazione?', function() {
+            submitClockIn();
+        });
+    }
+}
+
+// Handle clock-out with shift verification
+async function handleClockOut() {
+    try {
+        const response = await fetch('{{ url_for("check_shift_before_clock_out") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert(data.message);
+            return;
+        }
+        
+        if (data.needs_confirmation) {
+            showConfirmModal('Avvertenza', data.message, function() {
+                submitClockOut();
+            });
+        } else {
+            submitClockOut();
+        }
+    } catch (error) {
+        console.error('Error checking shift:', error);
+        showConfirmModal('Errore', 'Errore nella verifica del turno. Vuoi procedere comunque con la registrazione?', function() {
+            submitClockOut();
+        });
+    }
+}
+
+// Submit clock-in form
+function submitClockIn() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("clock_in") }}';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrf_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    
+    form.appendChild(csrfToken);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Submit clock-out form
+function submitClockOut() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("clock_out") }}';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrf_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    
+    form.appendChild(csrfToken);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Funzione per mostrare modal di conferma personalizzato
+function showConfirmModal(title, message, onConfirm) {
+    document.getElementById('confirmModalLabel').textContent = title;
+    document.getElementById('confirmModalBody').textContent = message;
+    
+    // Rimuovi eventi precedenti
+    const okButton = document.getElementById('confirmModalOk');
+    const newOkButton = okButton.cloneNode(true);
+    okButton.parentNode.replaceChild(newOkButton, okButton);
+    
+    // Aggiungi nuovo evento
+    newOkButton.addEventListener('click', function() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+        modal.hide();
+        onConfirm();
+    });
+    
+    // Mostra il modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+}
+
+// Funzione per mostrare modal informativo
+function showInfoModal(title, message) {
+    // Usa lo stesso modal ma senza il bottone annulla
+    document.getElementById('confirmModalLabel').textContent = title;
+    document.getElementById('confirmModalBody').textContent = message;
+    
+    // Nasconde il bottone annulla e cambia il testo del bottone OK
+    const modal = document.getElementById('confirmModal');
+    const cancelBtn = modal.querySelector('.btn-secondary');
+    const okBtn = modal.querySelector('.btn-primary');
+    
+    cancelBtn.style.display = 'none';
+    okBtn.textContent = 'OK';
+    
+    // Rimuovi eventi precedenti
+    const newOkButton = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkButton, okBtn);
+    
+    // Aggiungi evento per chiudere
+    newOkButton.addEventListener('click', function() {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        modalInstance.hide();
+        
+        // Ripristina lo stato originale del modal
+        cancelBtn.style.display = 'inline-block';
+        newOkButton.textContent = 'Continua';
+    });
+    
+    // Mostra il modal
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+}
 </script>
 {% endblock %}

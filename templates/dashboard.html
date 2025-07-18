@@ -1,252 +1,1441 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Workly{% endblock %}
+{% block title %}Dashboard - Gestione Presenze{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8">
-            <h1 class="mb-4">
-                <i class="fas fa-home me-2"></i>Benvenuto, {{ current_user.first_name }}!
-            </h1>
-            
-            <!-- Quick Actions -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-clock me-2"></i>Registrazione Presenze
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if today_attendance %}
-                        <div class="row g-3">
-                            {% if not today_attendance.entry_time %}
-                                <div class="col-md-3">
-                                    <form method="POST" action="{{ url_for('checkin') }}">
-                                        <button type="submit" class="btn btn-success w-100">
-                                            <i class="fas fa-sign-in-alt me-1"></i>Entrata
-                                        </button>
-                                    </form>
-                                </div>
-                            {% else %}
-                                <div class="col-md-3">
-                                    <button class="btn btn-outline-success w-100" disabled>
-                                        <i class="fas fa-check me-1"></i>Entrata: {{ today_attendance.entry_time.strftime('%H:%M') }}
-                                    </button>
-                                </div>
-                            {% endif %}
-                            
-                            {% if today_attendance.entry_time and not today_attendance.exit_time %}
-                                {% if not today_attendance.break_start %}
-                                    <div class="col-md-3">
-                                        <form method="POST" action="{{ url_for('break_start') }}">
-                                            <button type="submit" class="btn btn-warning w-100">
-                                                <i class="fas fa-pause me-1"></i>Inizio Pausa
-                                            </button>
-                                        </form>
-                                    </div>
-                                {% elif not today_attendance.break_end %}
-                                    <div class="col-md-3">
-                                        <form method="POST" action="{{ url_for('break_end') }}">
-                                            <button type="submit" class="btn btn-info w-100">
-                                                <i class="fas fa-play me-1"></i>Fine Pausa
-                                            </button>
-                                        </form>
-                                    </div>
-                                {% else %}
-                                    <div class="col-md-3">
-                                        <button class="btn btn-outline-info w-100" disabled>
-                                            <i class="fas fa-check me-1"></i>Pausa Completata
-                                        </button>
-                                    </div>
-                                {% endif %}
-                                
-                                <div class="col-md-3">
-                                    <form method="POST" action="{{ url_for('checkout') }}">
-                                        <button type="submit" class="btn btn-danger w-100">
-                                            <i class="fas fa-sign-out-alt me-1"></i>Uscita
-                                        </button>
-                                    </form>
-                                </div>
-                            {% elif today_attendance.exit_time %}
-                                <div class="col-md-3">
-                                    <button class="btn btn-outline-danger w-100" disabled>
-                                        <i class="fas fa-check me-1"></i>Uscita: {{ today_attendance.exit_time.strftime('%H:%M') }}
-                                    </button>
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        {% if today_attendance.entry_time %}
-                            <div class="mt-3">
-                                <small class="text-muted">
-                                    <strong>Oggi:</strong>
-                                    {% if today_attendance.total_hours > 0 %}
-                                        {{ "%.2f"|format(today_attendance.total_hours) }} ore lavorate
-                                    {% else %}
-                                        In corso...
-                                    {% endif %}
-                                    {% if current_user.location %}
-                                        | Sede: {{ current_user.location.name }}
-                                    {% endif %}
-                                </small>
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="row">
-                            <div class="col-md-3">
-                                <form method="POST" action="{{ url_for('checkin') }}">
-                                    <button type="submit" class="btn btn-success w-100">
-                                        <i class="fas fa-sign-in-alt me-1"></i>Entrata
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+        <p class="text-muted">Benvenuto, {{ current_user.get_full_name() }} ({{ current_user.role }})</p>
+    </div>
+</div>
+
+<!-- Daily Status Section for regular users (not Ente/Admin) -->
+{% if current_user.role not in ['Ente', 'Admin'] %}
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4><i class="fas fa-calendar-day me-2"></i>Oggi - {{ today_date.strftime('%d/%m/%Y') if today_date else '' }}</h4>
             </div>
-            
-            <!-- Recent Attendances -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-history me-2"></i>Presenze Recenti
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if recent_attendances %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Entrata</th>
-                                        <th>Uscita</th>
-                                        <th>Ore Totali</th>
-                                        <th>Sede</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for attendance in recent_attendances %}
-                                    <tr>
-                                        <td>{{ attendance.date.strftime('%d/%m/%Y') }}</td>
-                                        <td>
-                                            {% if attendance.entry_time %}
-                                                {{ attendance.entry_time.strftime('%H:%M') }}
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if attendance.exit_time %}
-                                                {{ attendance.exit_time.strftime('%H:%M') }}
-                                            {% else %}
-                                                <span class="text-warning">In corso</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if attendance.total_hours > 0 %}
-                                                {{ "%.2f"|format(attendance.total_hours) }}h
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if attendance.location %}
-                                                {{ attendance.location.name }}
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+            <div class="card-body">
+                <!-- Today's Status -->
+                <div class="alert alert-info mb-4">
+                    <h6><i class="fas fa-calendar-day me-1"></i>Stato di Oggi - {{ today_date.strftime('%d/%m/%Y') if today_date else '' }}</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Stato Attuale:</strong> 
+                            {% if user_status == 'out' %}
+                                <span class="badge bg-secondary">Non presente</span>
+                            {% elif user_status == 'in' %}
+                                <span class="badge bg-success">Presente</span>
+                            {% elif user_status == 'break' %}
+                                <span class="badge bg-warning">In Pausa</span>
+                            {% endif %}
                         </div>
-                        
-                        <div class="text-center mt-3">
-                            <a href="{{ url_for('attendance') }}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-eye me-1"></i>Vedi Tutte le Presenze
-                            </a>
+                        <div class="col-6">
+                            <strong>Ore Lavorate:</strong> {{ format_hours(today_work_hours) if today_work_hours else '0h 00\'' }}
                         </div>
+                    </div>
+                    
+                    {% if today_events %}
+                    <div class="mt-3">
+                        <strong>Eventi di Oggi:</strong>
+                        <div class="row mt-2">
+                            {% for event in today_events %}
+                            <div class="col-6 col-md-3 mb-1">
+                                <span class="badge w-100
+                                    {% if event.event_type == 'clock_in' %}bg-success
+                                    {% elif event.event_type == 'clock_out' %}bg-danger
+                                    {% elif event.event_type == 'break_start' %}bg-warning text-dark
+                                    {% elif event.event_type == 'break_end' %}bg-info
+                                    {% endif %}">
+                                    {% if event.event_type == 'clock_in' %}Entrata
+                                    {% elif event.event_type == 'clock_out' %}Uscita
+                                    {% elif event.event_type == 'break_start' %}Pausa
+                                    {% elif event.event_type == 'break_end' %}Ripresa
+                                    {% endif %}
+                                    {{ event.timestamp|format_time_italian }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                     {% else %}
-                        <p class="text-muted mb-0">Nessuna presenza registrata.</p>
+                    <div class="mt-2">
+                        <p class="mb-0 text-dark">Nessuna registrazione per oggi. Clicca "Entrata" per iniziare.</p>
+                    </div>
                     {% endif %}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="text-center">
+                    <div class="row mb-3">
+                        <div class="col-6 col-md-3 mb-2">
+                            {% if user_status == 'out' %}
+                            <button type="button" class="btn btn-success w-100" onclick="handleClockIn()">
+                                <i class="fas fa-play me-1"></i>Entrata
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-outline-success w-100" disabled>
+                                <i class="fas fa-play me-1"></i>Entrata
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            {% if user_status == 'in' %}
+                            <button type="button" class="btn btn-danger w-100" onclick="handleClockOut()">
+                                <i class="fas fa-stop me-1"></i>Uscita
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-outline-danger w-100" disabled>
+                                <i class="fas fa-stop me-1"></i>Uscita
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            {% if user_status == 'in' %}
+                            <button type="button" class="btn btn-warning w-100" onclick="handleBreakStart()">
+                                <i class="fas fa-pause me-1"></i>Pausa
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-outline-warning w-100" disabled>
+                                <i class="fas fa-pause me-1"></i>Pausa
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            {% if user_status == 'break' %}
+                            <button type="button" class="btn btn-info w-100" onclick="handleBreakEnd()">
+                                <i class="fas fa-play me-1"></i>Ripresa
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-outline-info w-100" disabled>
+                                <i class="fas fa-play me-1"></i>Ripresa
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- General Intervention Buttons -->
+                    <div class="row mb-3">
+                        <div class="col-6 mb-2">
+                            {% if user_status == 'in' and not active_general_intervention %}
+                            <button type="button" class="btn btn-secondary w-100" onclick="showInterventionModal()">
+                                <i class="fas fa-tools me-1"></i>Inizia Intervento
+                            </button>
+                            {% elif active_general_intervention %}
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="showEndGeneralInterventionModal()">
+                                <i class="fas fa-stop me-1"></i>Termina Intervento
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-outline-secondary w-100" disabled title="Devi essere presente per iniziare un intervento">
+                                <i class="fas fa-tools me-1"></i>Inizia Intervento
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="col-6 mb-2">
+                            {% if active_general_intervention %}
+                            <div class="alert alert-info py-2 px-3 mb-0">
+                                <i class="fas fa-play me-1"></i>
+                                <strong>Intervento in corso</strong><br>
+                                <small>Iniziato: {{ active_general_intervention.start_datetime.strftime('%H:%M') }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Current Time Display -->
+                    <div class="alert alert-secondary p-2">
+                        <i class="fas fa-clock me-1"></i>
+                        <span id="current-time"></span>
+                    </div>
+                    
+                    <!-- Notes Section -->
+                    <form method="POST" action="{{ url_for('attendance') }}" class="mt-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Note</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Note aggiuntive (opzionali)"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Salva Note
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-4">
-            <!-- Monthly Statistics -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-chart-bar me-2"></i>Statistiche Mensili
-                    </h5>
+    </div>
+</div>
+{% endif %}
+
+<!-- Weekly Attendance Calendar - Hidden for Admin -->
+{% if current_user.role != 'Admin' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-week me-2"></i>Calendario Turni - Settimana Corrente</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center">
+                        <thead>
+                            <tr>
+                                {% for day_info in weekly_calendar %}
+                                <th class="{% if day_info.is_today %}table-warning{% endif %}">
+                                    <strong class="{% if day_info.is_today %}text-dark fw-bold{% endif %}">{{ day_info.weekday }}</strong><br>
+                                    <small class="{% if day_info.is_today %}text-dark{% endif %}">{{ day_info.date.strftime('%d/%m') }}</small>
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                {% for day_info in weekly_calendar %}
+                                <td class="p-2 {% if day_info.is_today %}table-warning{% endif %}">
+                                    <!-- Turni programmati -->
+                                    {% if day_info.shifts %}
+                                        <div>
+                                            {% for shift in day_info.shifts %}
+                                                <div class="badge bg-info text-dark mb-1">
+                                                    <i class="fas fa-clock me-1"></i>{{ shift.start_time.strftime('%H:%M') }}-{{ shift.end_time.strftime('%H:%M') }}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted"><i class="fas fa-minus"></i></span>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-12 mb-3">
-                            <h3 class="text-primary mb-1">{{ "%.1f"|format(stats.total_hours_month) }}</h3>
-                            <small class="text-muted">Ore Totali</small>
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock text-info me-1"></i>Turno Programmato
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Stats - Hidden for Admin -->
+{% if current_user.role != 'Admin' %}
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h5>{{ format_hours(stats.total_hours_worked) }}</h5>
+                <small>Ore Lavorate (30gg)</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                <h5>{{ stats.days_worked }}</h5>
+                <small>Giorni Lavorati</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                <h5>{{ stats.shifts_assigned }}</h5>
+                <small>Turni Assegnati</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning">
+            <div class="card-body text-center">
+                <i class="fas fa-umbrella-beach fa-2x mb-2"></i>
+                <h5>{{ stats.pending_leaves }}</h5>
+                <small>Richieste Pendenti</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Team Stats (for managers) -->
+{% if team_stats %}
+<div class="row mb-4">
+    <div class="col">
+        <h4><i class="fas fa-users me-2"></i>Statistiche Team</h4>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h5>{{ team_stats.active_users }}</h5>
+                <small>Utenti Attivi</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x text-success mb-2"></i>
+                <h5>{{ format_hours(team_stats.total_hours) }}</h5>
+                <small>Ore Totali (30gg)</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-week fa-2x text-info mb-2"></i>
+                <h5>{{ team_stats.weekly_shifts }}</h5>
+                <small>Turni Settimana</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-hourglass-half fa-2x text-warning mb-2"></i>
+                <h5>{{ team_stats.pending_leaves }}</h5>
+                <small>Ferie da Approvare</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Personal Attendance Section for PM -->
+<!-- DEBUG: current_user.role = {{ current_user.role }} -->
+{% if current_user.role == 'Project Manager' %}
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4><i class="fas fa-calendar-day me-2"></i>Le Mie Presenze - {{ today.strftime('%d/%m/%Y') if today else date.today().strftime('%d/%m/%Y') }}</h4>
+            </div>
+            <div class="card-body">
+                <!-- Today's Status -->
+                <div class="alert alert-info mb-4">
+                    <h6><i class="fas fa-calendar-day me-1"></i>Stato di Oggi - {{ today_date.strftime('%d/%m/%Y') if today_date else '' }}</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Stato Attuale:</strong> 
+                            {% if user_status == 'out' %}
+                                <span class="badge bg-secondary">Non presente</span>
+                            {% elif user_status == 'in' %}
+                                <span class="badge bg-success">Presente</span>
+                            {% elif user_status == 'break' %}
+                                <span class="badge bg-warning">In Pausa</span>
+                            {% endif %}
                         </div>
                         <div class="col-6">
-                            <h4 class="text-success mb-1">{{ stats.days_worked }}</h4>
-                            <small class="text-muted">Giorni Lavorati</small>
-                        </div>
-                        <div class="col-6">
-                            <h4 class="text-info mb-1">{{ "%.1f"|format(stats.avg_hours_day) }}</h4>
-                            <small class="text-muted">Media Ore/Giorno</small>
+                            <strong>Ore Lavorate:</strong> {{ format_hours(today_work_hours) if today_work_hours else '0h 00\'' }}
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Pending Interventions -->
-            {% if pending_interventions %}
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-tasks me-2"></i>Interventi in Sospeso
-                    </h5>
+                
+                <!-- Action Buttons -->
+                <div class="row mb-3">
+                    <div class="col-6 col-md-3 mb-2">
+                        {% if user_status in ['out', 'break'] %}
+                        <button type="button" class="btn btn-success w-100" onclick="handleClockIn()">
+                            <i class="fas fa-sign-in-alt me-1"></i>Entrata
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-outline-success w-100" disabled>
+                            <i class="fas fa-sign-in-alt me-1"></i>Entrata
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        {% if user_status == 'in' %}
+                        <button type="button" class="btn btn-danger w-100" onclick="handleClockOut()">
+                            <i class="fas fa-sign-out-alt me-1"></i>Uscita
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-outline-danger w-100" disabled>
+                            <i class="fas fa-sign-out-alt me-1"></i>Uscita
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        {% if user_status == 'in' %}
+                        <button type="button" class="btn btn-warning w-100" onclick="handleBreakStart()">
+                            <i class="fas fa-pause me-1"></i>Pausa
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-outline-warning w-100" disabled>
+                            <i class="fas fa-pause me-1"></i>Pausa
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        {% if user_status == 'break' %}
+                        <button type="button" class="btn btn-info w-100" onclick="handleBreakEnd()">
+                            <i class="fas fa-play me-1"></i>Ripresa
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-outline-info w-100" disabled>
+                            <i class="fas fa-play me-1"></i>Ripresa
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="card-body">
-                    {% for intervention in pending_interventions %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <strong>{{ intervention.title }}</strong><br>
-                                <small class="text-muted">{{ intervention.intervention_type|title }}</small>
+                
+                <!-- Current Time Display -->
+                <div class="alert alert-secondary p-2">
+                    <i class="fas fa-clock me-1"></i>
+                    <span id="current-time-pm"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Team Shifts and Attendance View for PM (same as Ente) -->
+{% if shifts_by_day %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-week me-2"></i>Turni e Presenze Team - Settimana Corrente</h5>
+            </div>
+            <div class="card-body">
+                {% if shifts_by_day %}
+                    <div class="row">
+                        {% for day_info in week_dates %}
+                        <div class="col-lg-6 col-xl-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header {% if day_info.is_today %}bg-warning{% else %}bg-primary{% endif %} text-white text-center py-2">
+                                    <h6 class="mb-0">{{ day_info.weekday }}</h6>
+                                    <small>{{ day_info.date.strftime('%d/%m/%Y') }}</small>
+                                </div>
+                                <div class="card-body p-2">
+                                    {% if shifts_by_day[day_info.date] %}
+                                        {% for shift in shifts_by_day[day_info.date] %}
+                                        {% set attendance = attendance_by_date[day_info.date][shift.user_id] if day_info.date in attendance_by_date and shift.user_id in attendance_by_date[day_info.date] else none %}
+                                        
+                                        <div class="mb-2 p-2 border rounded shadow-sm position-relative">
+                                            <!-- Indicatore presenza -->
+                                            <div class="position-absolute top-0 start-0 mt-1 ms-1">
+                                                {% if attendance and attendance.clock_in %}
+                                                    {% if attendance.clock_out %}
+                                                        {% if attendance.shift_status == 'ritardo' %}
+                                                        <span class="badge bg-warning" title="Presente - Entrata in ritardo">
+                                                            <i class="fas fa-check"></i> <i class="fas fa-clock text-danger"></i>
+                                                        </span>
+                                                        {% elif attendance.shift_status == 'anticipo' %}
+                                                        <span class="badge bg-info" title="Presente - Entrata in anticipo">
+                                                            <i class="fas fa-check"></i> <i class="fas fa-clock text-info"></i>
+                                                        </span>
+                                                        {% else %}
+                                                        <span class="badge bg-success" title="Presente - Completato">
+                                                            <i class="fas fa-check"></i>
+                                                        </span>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        {% if attendance.shift_status == 'ritardo' %}
+                                                        <span class="badge bg-warning" title="Presente - Entrata in ritardo">
+                                                            <i class="fas fa-clock"></i> <i class="fas fa-exclamation-triangle text-danger"></i>
+                                                        </span>
+                                                        {% elif attendance.shift_status == 'anticipo' %}
+                                                        <span class="badge bg-info" title="Presente - Entrata in anticipo">
+                                                            <i class="fas fa-clock"></i> <i class="fas fa-thumbs-up text-info"></i>
+                                                        </span>
+                                                        {% else %}
+                                                        <span class="badge bg-warning" title="Presente - In corso">
+                                                            <i class="fas fa-clock"></i>
+                                                        </span>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-danger" title="Assente">
+                                                        <i class="fas fa-times"></i>
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Informazioni utente e turno -->
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <div class="ms-5">
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <strong class="text-primary">{{ shift.user.get_full_name() }}</strong>
+                                                                <span class="badge bg-secondary ms-1">{{ shift.user.role }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Informazioni orari a larghezza piena -->
+                                            <div class="row g-2">
+                                                <!-- Orari programmati -->
+                                                <div class="col-12">
+                                                    <div class="p-2 bg-primary bg-opacity-10 rounded">
+                                                        <div class="text-white">
+                                                            <i class="fas fa-calendar me-1"></i>
+                                                            <strong>Turno:</strong> {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                                                        </div>
+                                                        <small class="text-white">{{ "%.1f"|format(shift.get_duration_hours()) }}h programmate</small>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Orari effettivi se presenti -->
+                                                {% if attendance and attendance.clock_in %}
+                                                <div class="col-12">
+                                                    <div class="p-2 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
+                                                        <div class="{% if attendance.shift_status == 'ritardo' %}text-warning{% elif attendance.shift_status == 'anticipo' %}text-info{% else %}text-success{% endif %}">
+                                                            <i class="fas fa-sign-in-alt me-1"></i>
+                                                            <strong>Entrata:</strong> {{ attendance.clock_in|format_time_italian }}
+                                                            {% if attendance.shift_status == 'ritardo' %}
+                                                            <span class="text-danger ms-1">(Ritardo)</span>
+                                                            {% elif attendance.shift_status == 'anticipo' %}
+                                                            <span class="text-info ms-1">(Anticipo)</span>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% if attendance.clock_out %}
+                                                        <div class="{% if attendance.exit_status == 'anticipo' %}text-warning{% elif attendance.exit_status == 'ritardo' %}text-info{% else %}text-success{% endif %}">
+                                                            <i class="fas fa-sign-out-alt me-1"></i>
+                                                            <strong>Uscita:</strong> {{ attendance.clock_out.strftime('%H:%M') }}
+                                                            {% if attendance.exit_status == 'anticipo' %}
+                                                            <span class="text-warning ms-1" title="Uscita anticipata">⚠️</span>
+                                                            {% elif attendance.exit_status == 'ritardo' %}
+                                                            <span class="text-info ms-1" title="Straordinari">👍</span>
+                                                            {% else %}
+                                                            <span class="text-success ms-1" title="Uscita normale">✓</span>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% else %}
+                                                        <div class="text-warning">
+                                                            <i class="fas fa-clock me-1"></i>
+                                                            <strong>Stato:</strong> In corso
+                                                        </div>
+                                                        {% endif %}
+                                                        {% if attendance.work_hours > 0 %}
+                                                        <small class="text-info d-block">
+                                                            <i class="fas fa-stopwatch me-1"></i>
+                                                            <strong>Lavorate:</strong> <span id="work-hours-{{ shift.user_id }}-{{ day_info.date.strftime('%Y-%m-%d') }}">{{ format_hours(attendance.work_hours) }}</span>
+                                                        </small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-calendar-times text-muted"></i>
+                                            <small class="text-muted d-block">Nessun turno programmato</small>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                            <span class="badge bg-warning">{{ intervention.status|title }}</span>
                         </div>
-                        {% if not loop.last %}<hr>{% endif %}
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun turno programmato</h5>
+                    <p class="text-muted">Non ci sono turni programmati per questa settimana.</p>
                 </div>
+                {% endif %}
             </div>
-            {% endif %}
-            
-            <!-- Quick Links -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-external-link-alt me-2"></i>Link Rapidi
-                    </h5>
-                </div>
+        </div>
+    </div>
+    
+    <!-- Legenda indicatori presenza -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('qr_entrata') }}" target="_blank" class="btn btn-outline-success btn-sm">
-                            <i class="fas fa-qrcode me-1"></i>QR Code Entrata
-                        </a>
-                        <a href="{{ url_for('qr_uscita') }}" target="_blank" class="btn btn-outline-danger btn-sm">
-                            <i class="fas fa-qrcode me-1"></i>QR Code Uscita
-                        </a>
-                        <a href="{{ url_for('attendance') }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-clock me-1"></i>Storico Presenze
-                        </a>
+                    <h6 class="card-title">Legenda Indicatori Presenza</h6>
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-success me-2"><i class="fas fa-check"></i></span>
+                            <small>Completato</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-warning me-2"><i class="fas fa-clock"></i></span>
+                            <small>In corso</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-danger me-2"><i class="fas fa-times"></i></span>
+                            <small>Assente</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-warning me-2"><i class="fas fa-exclamation-triangle text-danger"></i></span>
+                            <small>Ritardo</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-info me-2"><i class="fas fa-thumbs-up text-info"></i></span>
+                            <small>Anticipo</small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
+
+<!-- Team Management Section (for PM and Ente) -->
+{% if current_user.role in ['Project Manager', 'Ente'] %}
+<div class="row mb-4">
+    <div class="col">
+        <h4><i class="fas fa-users-cog me-2"></i>Gestione Team</h4>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>Presenze Team</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Visualizza e monitora le presenze di tutti i membri del team</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('team_shifts') }}" class="btn btn-primary">
+                        <i class="fas fa-users me-1"></i>Vedi Presenze Team
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-alt me-2"></i>Turni Team</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Gestisci e visualizza i turni assegnati a tutto il team</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('team_shifts') }}" class="btn btn-info">
+                        <i class="fas fa-calendar-week me-1"></i>Gestisci Turni Team
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Personal sections hidden for Admin -->
+{% if current_user.role != 'Admin' %}
+<div class="row">
+    <!-- Today's Attendance -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-day me-2"></i>Presenza Oggi</h5>
+            </div>
+            <div class="card-body">
+                {% if today_events %}
+                <div class="row text-center">
+                    <div class="col-6">
+                        <strong>Entrata:</strong><br>
+                        {% set first_clock_in = today_events | selectattr('event_type', 'equalto', 'clock_in') | first %}
+                        {% if first_clock_in %}
+                        <span class="text-success">{{ first_clock_in.timestamp|format_time_italian }}</span>
+                        {% else %}
+                        <span class="text-muted">Non registrata</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-6">
+                        <strong>Uscita:</strong><br>
+                        {% set last_clock_out = today_events | selectattr('event_type', 'equalto', 'clock_out') | list | last %}
+                        {% if last_clock_out %}
+                        <span class="text-success">{{ last_clock_out.timestamp|format_time_italian }}</span>
+                        {% else %}
+                        <span class="text-muted">Non registrata</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if today_work_hours > 0 %}
+                <div class="text-center mt-3">
+                    <strong>Ore Lavorate: </strong>
+                    <span class="badge bg-primary">{{ format_hours(today_work_hours) }}</span>
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-white">Nessuna registrazione per oggi</p>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('attendance') }}" class="btn btn-primary">
+                        <i class="fas fa-clock me-1"></i>Gestisci Presenze
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Shifts -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-alt me-2"></i>Prossimi Turni</h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_shifts %}
+                <div class="list-group list-group-flush">
+                    {% for shift in upcoming_shifts %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ shift.date.strftime('%d/%m/%Y') }}</strong><br>
+                            <small class="text-muted">
+                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                                ({{ shift.shift_type }})
+                            </small>
+                        </div>
+                        <span class="badge bg-info">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">Nessun turno programmato</p>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('shifts') }}" class="btn btn-info">
+                        <i class="fas fa-calendar-alt me-1"></i>Vedi Tutti i Turni
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reperibilità Section for authorized users -->
+{% if current_user.role in ['Project Manager', 'Operatore', 'Redattore', 'Sviluppatore'] %}
+<div class="row">
+    <!-- Reperibilità Shifts -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-phone me-2"></i>Prossimi Turni Reperibilità</h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_reperibilita_shifts %}
+                <div class="list-group list-group-flush">
+                    {% for shift in upcoming_reperibilita_shifts %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ shift.date.strftime('%d/%m/%Y') }}</strong><br>
+                            <small class="text-muted">
+                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                                {% if shift.description %}
+                                    <br>{{ shift.description }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <span class="badge bg-warning text-dark">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">Nessun turno di reperibilità programmato</p>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('reperibilita_shifts') }}" class="btn btn-warning">
+                        <i class="fas fa-phone me-1"></i>Gestisci Reperibilità
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Intervention Management -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tools me-2"></i>Interventi Reperibilità</h5>
+            </div>
+            <div class="card-body">
+                {% if active_intervention %}
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Intervento In Corso</h6>
+                    <p><strong>Iniziato:</strong> {{ active_intervention.start_datetime.strftime('%d/%m/%Y alle %H:%M') }}</p>
+                    <p><strong>Tipo:</strong> 
+                        <span class="badge {% if active_intervention.is_remote %}bg-info{% else %}bg-secondary{% endif %}">
+                            {% if active_intervention.is_remote %}
+                            <i class="fas fa-laptop"></i> Da remoto
+                            {% else %}
+                            <i class="fas fa-building"></i> In presenza
+                            {% endif %}
+                        </span>
+                        <span class="badge {% if active_intervention.priority == 'Alta' %}bg-danger{% elif active_intervention.priority == 'Media' %}bg-warning text-dark{% else %}bg-success{% endif %} ms-1">
+                            {% if active_intervention.priority == 'Alta' %}
+                            <i class="fas fa-exclamation-triangle"></i> Alta
+                            {% elif active_intervention.priority == 'Media' %}
+                            <i class="fas fa-minus"></i> Media
+                            {% else %}
+                            <i class="fas fa-check-circle"></i> Bassa
+                            {% endif %}
+                        </span>
+                    </p>
+                    {% if active_intervention.description %}
+                    <p><strong>Descrizione:</strong> {{ active_intervention.description }}</p>
+                    {% endif %}
+                    {% if active_intervention.shift %}
+                    <p><strong>Turno:</strong> {{ active_intervention.shift.date.strftime('%d/%m/%Y') }} {{ active_intervention.shift.start_time.strftime('%H:%M') }}-{{ active_intervention.shift.end_time.strftime('%H:%M') }}</p>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-danger" onclick="showEndInterventionModal()">
+                        <i class="fas fa-stop me-1"></i>Termina Intervento
+                    </button>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <p>Nessun intervento di reperibilità in corso.</p>
+                    <p>Vai alla <a href="{{ url_for('reperibilita_shifts') }}">sezione reperibilità</a> per registrare un intervento su un turno specifico.</p>
+                </div>
+                {% endif %}
+                
+                <!-- Timeline Interventi Recenti -->
+                {% if recent_interventions %}
+                <div class="mt-4">
+                    <h6><i class="fas fa-history me-2"></i>Interventi Recenti (ultimi 7 giorni)</h6>
+                    <div class="timeline">
+                        {% for intervention in recent_interventions %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if intervention.end_datetime %}bg-success{% else %}bg-warning{% endif %}">
+                                <i class="fas {% if intervention.end_datetime %}fa-check{% else %}fa-clock{% endif %}"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <strong>{{ intervention.start_datetime.strftime('%d/%m/%Y alle %H:%M') }}</strong>
+                                    {% if intervention.end_datetime %}
+                                    - {{ intervention.end_datetime.strftime('%H:%M') }}
+                                    <span class="badge bg-success ms-2">Completato</span>
+                                    {% else %}
+                                    <span class="badge bg-warning ms-2">In Corso</span>
+                                    {% endif %}
+                                    <span class="badge {% if intervention.is_remote %}bg-info{% else %}bg-secondary{% endif %} ms-1">
+                                        {% if intervention.is_remote %}
+                                        <i class="fas fa-laptop"></i> Remoto
+                                        {% else %}
+                                        <i class="fas fa-building"></i> Presenza
+                                        {% endif %}
+                                    </span>
+                                    <span class="badge {% if intervention.priority == 'Alta' %}bg-danger{% elif intervention.priority == 'Media' %}bg-warning text-dark{% else %}bg-success{% endif %} ms-1">
+                                        {% if intervention.priority == 'Alta' %}
+                                        <i class="fas fa-exclamation-triangle"></i> Alta
+                                        {% elif intervention.priority == 'Media' %}
+                                        <i class="fas fa-minus"></i> Media
+                                        {% else %}
+                                        <i class="fas fa-check-circle"></i> Bassa
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if intervention.description %}
+                                <div class="timeline-description">
+                                    {{ intervention.description }}
+                                </div>
+                                {% endif %}
+                                {% if intervention.end_datetime %}
+                                <div class="timeline-duration">
+                                    <small class="text-muted">
+                                        Durata: {{ ((intervention.end_datetime - intervention.start_datetime).total_seconds() / 3600) | round(1) }}h
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Recent Leave Requests -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-umbrella-beach me-2"></i>Richieste Ferie/Permessi Recenti</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_leaves %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Periodo</th>
+                                <th>Tipo</th>
+                                <th>Stato</th>
+                                <th>Data Richiesta</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leave in recent_leaves %}
+                            <tr>
+                                <td>{{ leave.start_date.strftime('%d/%m/%Y') }} - {{ leave.end_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ leave.leave_type }}</td>
+                                <td>
+                                    {% if leave.status == 'Approved' %}
+                                    <span class="badge bg-success">Approvata</span>
+                                    {% elif leave.status == 'Rejected' %}
+                                    <span class="badge bg-danger">Rifiutata</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">In Attesa</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ leave.created_at.strftime('%d/%m/%Y') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Nessuna richiesta recente</p>
+                {% endif %}
+                
+                {% if current_user.can_request_leave() or current_user.can_approve_leave() %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('leave_requests') }}" class="btn btn-warning">
+                        <i class="fas fa-umbrella-beach me-1"></i>Gestisci Ferie/Permessi
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal per iniziare intervento -->
+<div class="modal fade" id="startInterventionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Inizia Intervento Reperibilità</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('start_intervention') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="form-group mb-3">
+                        <label for="intervention_type_dash">Tipo di intervento:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="is_remote" id="remote_dash" value="true" checked>
+                            <label class="form-check-label" for="remote_dash">
+                                <i class="fas fa-laptop me-1"></i>Da remoto
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="is_remote" id="presence_dash" value="false">
+                            <label class="form-check-label" for="presence_dash">
+                                <i class="fas fa-building me-1"></i>In presenza
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="priority_dash">Priorità intervento:</label>
+                        <select name="priority" id="priority_dash" class="form-select">
+                            <option value="Bassa">
+                                <i class="fas fa-check-circle"></i> Bassa - Problema non urgente
+                            </option>
+                            <option value="Media" selected>
+                                <i class="fas fa-minus"></i> Media - Problema normale
+                            </option>
+                            <option value="Alta">
+                                <i class="fas fa-exclamation-triangle"></i> Alta - Problema critico
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="start_description_dash">Descrizione dell'intervento:</label>
+                        <textarea name="description" id="start_description_dash" class="form-control" rows="3" placeholder="Descrivi il tipo di intervento o problema da risolvere..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-play me-1"></i>Inizia Intervento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per terminare intervento -->
+<div class="modal fade" id="endInterventionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Termina Intervento Reperibilità</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('end_intervention') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    {% if active_intervention %}
+                    <div class="alert alert-info">
+                        <p><strong>Intervento iniziato:</strong> {{ active_intervention.start_datetime.strftime('%d/%m/%Y alle %H:%M') }}</p>
+                        {% if active_intervention.description %}
+                        <p><strong>Descrizione iniziale:</strong> {{ active_intervention.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="form-group mb-3">
+                        <label for="end_description_dash">Descrizione finale (facoltativa):</label>
+                        <textarea name="description" id="end_description_dash" class="form-control" rows="3" placeholder="Descrivi come è stato risolto il problema...">{% if active_intervention %}{{ active_intervention.description }}{% endif %}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-stop me-1"></i>Termina Intervento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per iniziare intervento generico -->
+<div class="modal fade" id="generalInterventionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Inizia Intervento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('start_general_intervention') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <!-- Sempre in presenza dato che l'utente deve essere presente -->
+                    <input type="hidden" name="is_remote" value="false"/>
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Intervento in presenza:</strong> Gli interventi possono essere registrati solo quando sei presente in sede.
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="priority_general">Priorità intervento:</label>
+                        <select name="priority" id="priority_general" class="form-select">
+                            <option value="Bassa">Bassa - Problema non urgente</option>
+                            <option value="Media" selected>Media - Problema normale</option>
+                            <option value="Alta">Alta - Problema critico</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="start_description_general">Descrizione dell'intervento:</label>
+                        <textarea name="description" id="start_description_general" class="form-control" rows="3" placeholder="Descrivi il tipo di intervento o problema da risolvere..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fas fa-tools me-1"></i>Inizia Intervento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per terminare intervento generico -->
+<div class="modal fade" id="endGeneralInterventionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Termina Intervento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('end_general_intervention') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    {% if active_general_intervention %}
+                    <div class="alert alert-info">
+                        <p><strong>Intervento iniziato:</strong> {{ active_general_intervention.start_datetime.strftime('%d/%m/%Y alle %H:%M') }}</p>
+                        <p><strong>Priorità:</strong> 
+                            {% if active_general_intervention.priority == 'Alta' %}
+                                <span class="badge bg-danger">{{ active_general_intervention.priority }}</span>
+                            {% elif active_general_intervention.priority == 'Media' %}
+                                <span class="badge bg-warning">{{ active_general_intervention.priority }}</span>
+                            {% else %}
+                                <span class="badge bg-success">{{ active_general_intervention.priority }}</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Tipologia:</strong> In presenza</p>
+                        {% if active_general_intervention.description %}
+                        <p><strong>Descrizione:</strong> {{ active_general_intervention.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="form-group mb-3">
+                        <label for="end_description_general">Descrizione finale intervento (facoltativa):</label>
+                        <textarea name="end_description" id="end_description_general" class="form-control" rows="3" placeholder="Aggiungi dettagli su come è stato risolto il problema o cosa è stato fatto durante l'intervento..."></textarea>
+                        <small class="form-text text-muted">Questa descrizione sarà aggiunta a quella iniziale per completare il report dell'intervento</small>
+                    </div>
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-1"></i>
+                        <strong>Conferma terminazione intervento</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-stop me-1"></i>Termina Intervento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showStartInterventionModal() {
+    const modal = new bootstrap.Modal(document.getElementById('startInterventionModal'));
+    modal.show();
+}
+
+function showEndInterventionModal() {
+    const modal = new bootstrap.Modal(document.getElementById('endInterventionModal'));
+    modal.show();
+}
+
+function showInterventionModal() {
+    const modal = new bootstrap.Modal(document.getElementById('generalInterventionModal'));
+    modal.show();
+}
+
+function showEndGeneralInterventionModal() {
+    const modal = new bootstrap.Modal(document.getElementById('endGeneralInterventionModal'));
+    modal.show();
+}
+</script>
+
+<style>
+/* Timeline styles for interventions */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--bs-border-color);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -18px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    border: 2px solid var(--bs-body-bg);
+}
+
+.timeline-content {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 5px;
+    padding: 12px;
+}
+
+.timeline-header {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.timeline-description {
+    margin-bottom: 5px;
+    font-style: italic;
+}
+
+.timeline-duration {
+    margin-bottom: 0;
+}
+</style>
+
+<script>
+// Aggiorna automaticamente le ore lavorate ogni 30 secondi
+function updateWorkHours() {
+    // Trova tutti gli elementi delle ore lavorate
+    const workHourElements = document.querySelectorAll('[id^="work-hours-"]');
+    
+    workHourElements.forEach(element => {
+        const idParts = element.id.split('-');
+        if (idParts.length >= 4) {
+            const userId = idParts[2];
+            const dateStr = idParts.slice(3).join('-');
+            
+            // Effettua chiamata API per aggiornare le ore
+            fetch(`/api/work_hours/${userId}/${dateStr}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.work_hours !== undefined) {
+                        // Converti ore decimali in formato ore:minuti
+                        const hours = Math.floor(data.work_hours);
+                        const minutes = Math.floor((data.work_hours - hours) * 60);
+                        element.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}'`;
+                    }
+                })
+                .catch(error => {
+                    // Gestione silenziosa degli errori per evitare spam in console
+                    // Solo per debug: console.log('Errore aggiornamento ore:', error);
+                });
+        }
+    });
+}
+
+// Avvia aggiornamento automatico
+setInterval(updateWorkHours, 30000); // Ogni 30 secondi
+
+// Aggiorna al caricamento della pagina
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updateWorkHours, 2000); // Dopo 2 secondi dal caricamento
+    
+    // Aggiorna l'ora corrente ogni secondo
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
+});
+
+// Update current time display
+function updateCurrentTime() {
+    // Check if we have any time elements first
+    const timeElement = document.getElementById('current-time');
+    const timeElementPM = document.getElementById('current-time-pm');
+    
+    if (!timeElement && !timeElementPM) {
+        return; // No time elements found, skip update
+    }
+    
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    
+    if (timeElement) {
+        timeElement.textContent = timeString;
+    }
+    
+    if (timeElementPM) {
+        timeElementPM.textContent = timeString;
+    }
+}
+
+// Handle clock-in with shift verification
+async function handleClockIn() {
+    try {
+        const response = await fetch('{{ url_for("check_shift_before_clock_in") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert(data.message);
+            return;
+        }
+        
+        if (data.needs_confirmation) {
+            showConfirmModal('Avvertenza', data.message, function() {
+                submitClockIn();
+            });
+        } else {
+            submitClockIn();
+        }
+    } catch (error) {
+        console.error('Error checking shift:', error);
+        showConfirmModal('Errore', 'Errore nella verifica del turno. Vuoi procedere comunque con la registrazione?', function() {
+            submitClockIn();
+        });
+    }
+}
+
+// Handle clock-out with shift verification
+async function handleClockOut() {
+    try {
+        const response = await fetch('{{ url_for("check_shift_before_clock_out") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert(data.message);
+            return;
+        }
+        
+        if (data.needs_confirmation) {
+            showConfirmModal('Avvertenza', data.message, function() {
+                submitClockOut();
+            });
+        } else {
+            submitClockOut();
+        }
+    } catch (error) {
+        console.error('Error checking shift:', error);
+        showConfirmModal('Errore', 'Errore nella verifica del turno. Vuoi procedere comunque con la registrazione?', function() {
+            submitClockOut();
+        });
+    }
+}
+
+// Handle break start
+function handleBreakStart() {
+    showConfirmModal('Conferma', 'Vuoi iniziare la pausa?', function() {
+        submitBreakStart();
+    });
+}
+
+// Handle break end
+function handleBreakEnd() {
+    showConfirmModal('Conferma', 'Vuoi terminare la pausa?', function() {
+        submitBreakEnd();
+    });
+}
+
+// Submit clock-in form
+function submitClockIn() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("clock_in") }}';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrf_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    
+    form.appendChild(csrfToken);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Submit clock-out form
+function submitClockOut() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("clock_out") }}';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrf_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    
+    form.appendChild(csrfToken);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Submit break start form
+function submitBreakStart() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("break_start") }}';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrf_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    
+    form.appendChild(csrfToken);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Submit break end form
+function submitBreakEnd() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("break_end") }}';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrf_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    
+    form.appendChild(csrfToken);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Funzione per mostrare modal di conferma personalizzato
+function showConfirmModal(title, message, onConfirm) {
+    document.getElementById('confirmModalLabel').textContent = title;
+    document.getElementById('confirmModalBody').textContent = message;
+    
+    // Rimuovi eventi precedenti
+    const okButton = document.getElementById('confirmModalOk');
+    const newOkButton = okButton.cloneNode(true);
+    okButton.parentNode.replaceChild(newOkButton, okButton);
+    
+    // Aggiungi nuovo evento
+    newOkButton.addEventListener('click', function() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+        modal.hide();
+        onConfirm();
+    });
+    
+    // Mostra il modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+}
+</script>
+
+<!-- Modal di Conferma Personalizzato -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Conferma</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                <!-- Il messaggio verrà inserito qui dinamicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" id="confirmModalOk">Continua</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
