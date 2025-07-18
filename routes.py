@@ -1007,26 +1007,26 @@ def break_end():
 @app.route('/attendance', methods=['GET', 'POST'])
 @login_required
 def attendance():
-    # Utente Ente può solo visualizzare dati team, non gestire presenze personali
-    if not current_user.can_access_attendance() and current_user.role != 'Ente':
+    # Controllo permessi: Ente e Staff possono solo visualizzare dati team, non gestire presenze personali
+    if not current_user.can_access_attendance() and current_user.role not in ['Ente', 'Staff']:
         flash('Non hai i permessi per accedere alla gestione presenze.', 'danger')
         return redirect(url_for('shifts'))
     
     form = AttendanceForm()
     
-    # Ottieni stato attuale dell'utente e eventi di oggi (solo se non è Ente)
-    if current_user.role != 'Ente':
+    # Ottieni stato attuale dell'utente e eventi di oggi (solo se non è Ente o Staff)
+    if current_user.role not in ['Ente', 'Staff']:
         user_status, last_event = AttendanceEvent.get_user_status(current_user.id)
         today_events = AttendanceEvent.get_daily_events(current_user.id)
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id)
     else:
-        # Ente non ha dati personali
+        # Ente e Staff non hanno dati personali di presenza
         user_status, last_event = 'out', None
         today_events = []
         today_work_hours = 0
     
-    # Blocca POST per utente Ente (solo visualizzazione)
-    if request.method == 'POST' and form.validate_on_submit() and current_user.role != 'Ente':
+    # Blocca POST per utenti Ente e Staff (solo visualizzazione)
+    if request.method == 'POST' and form.validate_on_submit() and current_user.role not in ['Ente', 'Staff']:
         # Salva note nell'ultimo evento di oggi o crea un nuovo evento note
         if form.notes.data:
             if today_events and last_event:
@@ -1052,17 +1052,17 @@ def attendance():
                 flash('Note salvate', 'success')
         return redirect(url_for('attendance'))
     
-    # Handle team/personal view toggle for PM, Management, Responsabili and Ente
+    # Handle team/personal view toggle for PM, Management, Responsabili, Ente and Staff
     view_mode = request.args.get('view', 'personal')
-    if current_user.role in ['Management', 'Staff', 'Responsabili']:
-        # PM, Management e Responsabili can toggle between personal and team view
+    if current_user.role in ['Management'] and current_user.can_view_all_attendance():
+        # Management può scegliere vista personale o team
         show_team_data = (view_mode == 'team')
-    elif current_user.role == 'Ente':
-        # Ente vede sempre e solo dati team
+    elif current_user.role in ['Ente', 'Staff']:
+        # Ente e Staff vedono sempre e solo dati team
         show_team_data = True
         view_mode = 'team'
     else:
-        # Non-PM/Management/Responsabili/Ente users see only personal data
+        # Altri utenti vedono solo dati personali
         show_team_data = False
         view_mode = 'personal'
     

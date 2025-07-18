@@ -123,7 +123,7 @@
                     <!-- Menu Staff specifici -->
                     {% if current_user.role == 'Staff' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('attendance', view='team') }}">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">
                             <i class="fas fa-users me-1"></i>Supervisione Presenze
                         </a>
                     </li>
