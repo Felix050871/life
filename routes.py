@@ -1730,7 +1730,7 @@ def edit_user(user_id):
     
     if request.method == 'GET':
         # Popola il campo sedi con le sedi attualmente associate all'utente
-        current_sedi_ids = [sede.id for sede in user.get_sedi_list()]
+        current_sedi_ids = [sede.id for sede in user.sedi]
         form.sedi.data = current_sedi_ids
     
     if form.validate_on_submit():
