@@ -37,7 +37,7 @@
                         </a>
                     </li>
 
-                    {% if current_user.can_access_attendance() %}
+                    {% if current_user.can_access_attendance() and current_user.role != 'Admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('attendance') }}">
                             <i class="fas fa-clock me-1"></i>Presenze
@@ -53,7 +53,8 @@
                     
 
                     
-                    <!-- Menu Reperibilità -->
+                    <!-- Menu Reperibilità (escluso Admin) -->
+                    {% if current_user.role != 'Admin' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-phone-alt me-1"></i>Reperibilità
@@ -69,6 +70,7 @@
                             </a></li>
                         </ul>
                     </li>
+                    {% endif %}
                     <!-- Gestione Team (solo PM) -->
                     {% if current_user.role in ['Project Manager'] %}
                     <li class="nav-item">
@@ -77,7 +79,7 @@
                         </a>
                     </li>
                     {% endif %}
-                    {% if current_user.can_request_leave() or current_user.can_approve_leave() %}
+                    {% if (current_user.can_request_leave() or current_user.can_approve_leave()) and current_user.role != 'Admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('leave_requests') }}">
                             <i class="fas fa-umbrella-beach me-1"></i>Ferie/Permessi
