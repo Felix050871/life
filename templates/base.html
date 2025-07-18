@@ -37,7 +37,7 @@
                         </a>
                     </li>
 
-                    {% if current_user.can_access_attendance() and current_user.role not in ['Admin', 'Management'] %}
+                    {% if current_user.can_access_attendance() and current_user.role not in ['Admin', 'Staff'] %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('attendance') }}">
                             <i class="fas fa-clock me-1"></i>Presenze
@@ -53,8 +53,8 @@
                     
 
                     
-                    <!-- Menu Reperibilità (escluso Admin e Management) -->
-                    {% if current_user.role not in ['Admin', 'Management'] %}
+                    <!-- Menu Reperibilità (escluso Admin e Staff) -->
+                    {% if current_user.role not in ['Admin', 'Staff'] %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-phone-alt me-1"></i>Reperibilità
@@ -72,15 +72,15 @@
                     </li>
                     {% endif %}
                     <!-- Gestione Team rimossa - non più necessaria -->
-                    {% if (current_user.can_request_leave() or current_user.can_approve_leave()) and current_user.role not in ['Admin', 'Management'] %}
+                    {% if (current_user.can_request_leave() or current_user.can_approve_leave()) and current_user.role not in ['Admin', 'Staff'] %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('leave_requests') }}">
                             <i class="fas fa-umbrella-beach me-1"></i>Ferie/Permessi
                         </a>
                     </li>
                     {% endif %}
-                    <!-- Interventi (tutti tranne Admin e Management) -->
-                    {% if current_user.role not in ['Admin', 'Management'] %}
+                    <!-- Interventi (tutti tranne Admin e Staff) -->
+                    {% if current_user.role not in ['Admin', 'Staff'] %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('my_interventions') }}">
                             <i class="fas fa-tools me-1"></i>Interventi
