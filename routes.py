@@ -1918,20 +1918,26 @@ def add_holiday():
     form = HolidayForm()
     
     if form.validate_on_submit():
-        # Controlla se esiste già una festività nello stesso giorno
+        # Gestisci il campo sede_id correttamente
+        sede_id = form.sede_id.data if form.sede_id.data != '' else None
+        
+        # Controlla se esiste già una festività nello stesso giorno e stesso ambito
         existing = Holiday.query.filter_by(
             month=form.month.data,
             day=form.day.data,
+            sede_id=sede_id,
             is_active=True
         ).first()
         
         if existing:
-            flash(f'Esiste già una festività attiva il {form.day.data}/{form.month.data}: {existing.name}', 'warning')
+            scope = existing.scope_display
+            flash(f'Esiste già una festività attiva il {form.day.data}/{form.month.data} per {scope}: {existing.name}', 'warning')
         else:
             holiday = Holiday(
                 name=form.name.data,
                 month=form.month.data,
                 day=form.day.data,
+                sede_id=sede_id,
                 description=form.description.data,
                 is_active=form.is_active.data,
                 created_by=current_user.id
@@ -1940,7 +1946,8 @@ def add_holiday():
             db.session.add(holiday)
             db.session.commit()
             
-            flash(f'Festività "{holiday.name}" aggiunta con successo', 'success')
+            scope = holiday.scope_display
+            flash(f'Festività "{holiday.name}" aggiunta con successo per {scope}', 'success')
             return redirect(url_for('holidays'))
     
     return render_template('add_holiday.html', form=form)
@@ -1959,27 +1966,38 @@ def edit_holiday(holiday_id):
     holiday = Holiday.query.get_or_404(holiday_id)
     form = HolidayForm(obj=holiday)
     
+    # Precompila il campo sede_id correttamente
+    if request.method == 'GET':
+        form.sede_id.data = holiday.sede_id
+    
     if form.validate_on_submit():
-        # Controlla se esiste già un'altra festività nello stesso giorno
+        # Gestisci il campo sede_id correttamente
+        sede_id = form.sede_id.data if form.sede_id.data != '' else None
+        
+        # Controlla se esiste già un'altra festività nello stesso giorno e stesso ambito
         existing = Holiday.query.filter(
             Holiday.month == form.month.data,
             Holiday.day == form.day.data,
+            Holiday.sede_id == sede_id,
             Holiday.is_active == True,
             Holiday.id != holiday_id
         ).first()
         
         if existing:
-            flash(f'Esiste già una festività attiva il {form.day.data}/{form.month.data}: {existing.name}', 'warning')
+            scope = existing.scope_display
+            flash(f'Esiste già una festività attiva il {form.day.data}/{form.month.data} per {scope}: {existing.name}', 'warning')
         else:
             holiday.name = form.name.data
             holiday.month = form.month.data
             holiday.day = form.day.data
+            holiday.sede_id = sede_id
             holiday.description = form.description.data
             holiday.is_active = form.is_active.data
             
             db.session.commit()
             
-            flash(f'Festività "{holiday.name}" modificata con successo', 'success')
+            scope = holiday.scope_display
+            flash(f'Festività "{holiday.name}" modificata con successo per {scope}', 'success')
             return redirect(url_for('holidays'))
     
     return render_template('edit_holiday.html', form=form, holiday=holiday)

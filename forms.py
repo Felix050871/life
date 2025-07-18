@@ -332,7 +332,7 @@ class HolidayForm(FlaskForm):
         (5, 'Maggio'), (6, 'Giugno'), (7, 'Luglio'), (8, 'Agosto'),
         (9, 'Settembre'), (10, 'Ottobre'), (11, 'Novembre'), (12, 'Dicembre')
     ], coerce=int, validators=[DataRequired()])
-    sede_id = SelectField('Ambito', coerce=lambda x: int(x) if x else None, 
+    sede_id = SelectField('Ambito', coerce=lambda x: int(x) if x and x != '' else None, 
                          validators=[Optional()])
     description = StringField('Descrizione', validators=[Length(max=200)])
     is_active = BooleanField('Attiva', default=True)
