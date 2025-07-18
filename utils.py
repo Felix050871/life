@@ -570,24 +570,11 @@ def get_user_statistics(user_id, start_date=None, end_date=None):
             # Continue with 0 hours for this day
         current_date += timedelta(days=1)
     
-    # Shift statistics - include both past and future shifts for better overview
-    shifts_past = Shift.query.filter(
-        Shift.user_id == user_id,
-        Shift.date >= start_date,
-        Shift.date <= end_date
-    ).all()
-    
-    # Also count future shifts for dashboard display
-    shifts_future = Shift.query.filter(
-        Shift.user_id == user_id,
-        Shift.date > end_date
-    ).all()
-    
-    # For dashboard stats, show total assigned shifts (past + future)
-    shifts_assigned = len(shifts_past) + len(shifts_future)
-    
-    # But only count hours from the period requested (for reports)
-    shift_hours = sum(shift.get_duration_hours() for shift in shifts_past)
+    # Removed shift statistics - no longer tracking shifts
+    shifts_assigned = 0
+    shifts_past = 0
+    shifts_future = 0
+    shift_hours = 0
     
     # Leave statistics
     leave_requests = LeaveRequest.query.filter(
@@ -687,11 +674,7 @@ def get_team_statistics(start_date=None, end_date=None):
             LeaveRequest.status == 'Pending'
         ).count()
         
-        # Shifts this period
-        period_shifts = Shift.query.filter(
-            Shift.date >= start_date,
-            Shift.date <= end_date
-        ).count()
+        # Removed shifts functionality
         
         # Detailed intervention stats
         from models import ReperibilitaIntervention
@@ -737,7 +720,6 @@ def get_team_statistics(start_date=None, end_date=None):
             'active_users': active_users,
             'total_hours': round(estimated_hours, 2),
             'pending_leaves': pending_leaves,
-            'shifts_this_period': period_shifts,
             'avg_hours_per_user': round(estimated_hours / active_users if active_users > 0 else 0, 2),
             # Statistiche reperibilità team dettagliate
             'total_team_interventions': total_team_interventions,
@@ -755,7 +737,6 @@ def get_team_statistics(start_date=None, end_date=None):
             'active_users': 0,
             'total_hours': 0,
             'pending_leaves': 0,
-            'shifts_this_period': 0,
             'avg_hours_per_user': 0,
             'total_team_interventions': 0,
             'completed_team_interventions': 0,
