@@ -111,11 +111,20 @@
                         </a>
                     </li>
                     {% endif %}
-                    <!-- Statistiche Team (sotto) -->
+                    <!-- Statistiche Team (per tutti i ruoli con permesso report) -->
                     {% if current_user.can_view_reports() %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('reports') }}">
                             <i class="fas fa-chart-bar me-1"></i>Statistiche Team
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Menu Staff specifici -->
+                    {% if current_user.role == 'Staff' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('attendance', view='team') }}">
+                            <i class="fas fa-users me-1"></i>Supervisione Presenze
                         </a>
                     </li>
                     {% endif %}
