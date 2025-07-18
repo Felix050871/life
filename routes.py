@@ -1691,13 +1691,13 @@ def new_user():
         if form.role.data == 'Management':
             all_sedi = Sede.query.filter_by(active=True).all()
             for sede in all_sedi:
-                user.add_sede(sede)
+                user.sedi.append(sede)
         else:
             # Associa le sedi selezionate
             for sede_id in selected_sedi_ids:
                 sede = Sede.query.get(sede_id)
                 if sede:
-                    user.add_sede(sede)
+                    user.sedi.append(sede)
         
         db.session.commit()
         flash('Utente creato con successo', 'success')
@@ -1749,9 +1749,7 @@ def edit_user(user_id):
         
         # Aggiorna associazioni sedi
         # Prima rimuovi tutte le associazioni esistenti
-        current_sedi = user.get_sedi_list()
-        for sede in current_sedi:
-            user.remove_sede(sede)
+        user.sedi.clear()
         
         # Aggiungi le nuove associazioni
         selected_sedi_ids = form.sedi.data
@@ -1760,13 +1758,13 @@ def edit_user(user_id):
         if form.role.data == 'Management':
             all_sedi = Sede.query.filter_by(active=True).all()
             for sede in all_sedi:
-                user.add_sede(sede)
+                user.sedi.append(sede)
         else:
             # Associa le sedi selezionate
             for sede_id in selected_sedi_ids:
                 sede = Sede.query.get(sede_id)
                 if sede:
-                    user.add_sede(sede)
+                    user.sedi.append(sede)
         
         db.session.commit()
         flash(f'Utente {user.username} modificato con successo', 'success')
