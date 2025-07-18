@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, SelectMultipleField, FloatField, DateField, TimeField, TextAreaField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Email, Length, NumberRange, ValidationError, EqualTo
+from wtforms.validators import DataRequired, Email, Length, NumberRange, ValidationError, EqualTo, Optional
 from models import User, Sede, UserRole
 
 class LoginForm(FlaskForm):
@@ -332,9 +332,19 @@ class HolidayForm(FlaskForm):
         (5, 'Maggio'), (6, 'Giugno'), (7, 'Luglio'), (8, 'Agosto'),
         (9, 'Settembre'), (10, 'Ottobre'), (11, 'Novembre'), (12, 'Dicembre')
     ], coerce=int, validators=[DataRequired()])
+    sede_id = SelectField('Ambito', coerce=lambda x: int(x) if x else None, 
+                         validators=[Optional()])
     description = StringField('Descrizione', validators=[Length(max=200)])
     is_active = BooleanField('Attiva', default=True)
     submit = SubmitField('Salva Festività')
+    
+    def __init__(self, *args, **kwargs):
+        super(HolidayForm, self).__init__(*args, **kwargs)
+        
+        # Popola le sedi disponibili
+        from models import Sede
+        sedi = Sede.query.filter_by(active=True).order_by(Sede.name).all()
+        self.sede_id.choices = [('', 'Nazionale (tutte le sedi)')] + [(s.id, s.name) for s in sedi]
     
     def validate_day(self, day):
         """Valida che il giorno sia valido per il mese selezionato"""

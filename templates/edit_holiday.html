@@ -50,6 +50,21 @@
                                 {% endif %}
                             </div>
                         </div>
+                        
+                        <div class="mb-3">
+                            {{ form.sede_id.label(class="form-label") }}
+                            {{ form.sede_id(class="form-select") }}
+                            {% if form.sede_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.sede_id.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Seleziona "Nazionale" per applicare la festività a tutte le sedi o una sede specifica
+                            </small>
+                        </div>
 
                         <div class="mb-3">
                             {{ form.description.label(class="form-label") }}

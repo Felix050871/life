@@ -25,6 +25,7 @@
                                 <tr>
                                     <th>Nome</th>
                                     <th>Data</th>
+                                    <th>Ambito</th>
                                     <th>Descrizione</th>
                                     <th>Stato</th>
                                     <th>Creata da</th>
@@ -42,6 +43,11 @@
                                     </td>
                                     <td>
                                         <span class="badge bg-primary">{{ holiday.date_display }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'info' if holiday.sede else 'success' }}">
+                                            {{ holiday.scope_display }}
+                                        </span>
                                     </td>
                                     <td>
                                         {% if holiday.description %}

@@ -837,11 +837,12 @@ class ReperibilitaTemplate(db.Model):
 
 
 class Holiday(db.Model):
-    """Festività italiane gestibili dagli amministratori"""
+    """Festività gestibili dagli amministratori - nazionali e per sede"""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     month = db.Column(db.Integer, nullable=False)  # 1-12
     day = db.Column(db.Integer, nullable=False)    # 1-31
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # NULL = nazionale
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     description = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=italian_now)
@@ -849,20 +850,48 @@ class Holiday(db.Model):
     
     # Relationships
     creator = db.relationship('User', backref='created_holidays')
+    sede = db.relationship('Sede', backref='holidays')
     
     def __repr__(self):
-        return f'<Holiday {self.name}: {self.day}/{self.month}>'
+        scope = f" ({self.sede.name})" if self.sede else " (Nazionale)"
+        return f'<Holiday {self.name}: {self.day}/{self.month}{scope}>'
     
     @property
     def date_display(self):
         """Formato visualizzazione data"""
         return f"{self.day:02d}/{self.month:02d}"
     
+    @property
+    def scope_display(self):
+        """Visualizza l'ambito della festività"""
+        return self.sede.name if self.sede else "Nazionale"
+    
     def is_holiday_on_date(self, check_date):
         """Verifica se questa festività cade nella data specificata"""
         return (check_date.month == self.month and 
                 check_date.day == self.day and 
                 self.is_active)
+    
+    @classmethod
+    def get_holidays_for_date(cls, check_date, sede_id=None):
+        """Ottiene tutte le festività per una data specifica e sede"""
+        query = cls.query.filter(
+            cls.month == check_date.month,
+            cls.day == check_date.day,
+            cls.is_active == True
+        )
+        
+        if sede_id:
+            # Festività nazionali OR festività specifiche per questa sede
+            query = query.filter(db.or_(
+                cls.sede_id.is_(None),
+                cls.sede_id == sede_id
+            ))
+        else:
+            # Solo festività nazionali
+            query = query.filter(cls.sede_id.is_(None))
+        
+        return query.all()
 
 
 class PasswordResetToken(db.Model):
