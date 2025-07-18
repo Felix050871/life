@@ -20,12 +20,44 @@ def convert_to_italian_time(timestamp):
     # Converti all'orario italiano
     return timestamp.astimezone(ZoneInfo('Europe/Rome'))
 
+class UserRole(db.Model):
+    """Modello per la gestione dinamica dei ruoli utente"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    display_name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    permissions = db.Column(db.JSON, default=dict)  # Permessi in formato JSON
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    def __repr__(self):
+        return f'<UserRole {self.display_name}>'
+    
+    def has_permission(self, permission):
+        """Verifica se il ruolo ha un determinato permesso"""
+        return self.permissions.get(permission, False)
+    
+    @classmethod
+    def get_available_permissions(cls):
+        """Restituisce la lista dei permessi disponibili"""
+        return {
+            'can_manage_users': 'Gestire Utenti',
+            'can_manage_shifts': 'Gestire Turni',
+            'can_approve_leave': 'Approvare Ferie/Permessi',
+            'can_request_leave': 'Richiedere Ferie/Permessi',
+            'can_access_attendance': 'Accedere alle Presenze',
+            'can_access_dashboard': 'Accedere alla Dashboard',
+            'can_view_reports': 'Visualizzare Report',
+            'can_manage_sedi': 'Gestire Sedi',
+            'can_manage_roles': 'Gestire Ruoli'
+        }
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(50), nullable=False)  # Admin, Responsabili, Redattore, Sviluppatore, Operatore, Management
+    role = db.Column(db.String(50), nullable=False)  # Ora referenzia UserRole.name
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede di appartenenza
@@ -39,28 +71,52 @@ class User(UserMixin, db.Model):
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
     
+    def get_role_obj(self):
+        """Ottieni l'oggetto UserRole associato"""
+        return UserRole.query.filter_by(name=self.role).first()
+    
+    def has_permission(self, permission):
+        """Verifica se l'utente ha un determinato permesso tramite il suo ruolo"""
+        role_obj = self.get_role_obj()
+        if role_obj:
+            return role_obj.has_permission(permission)
+        # Fallback per compatibilità con ruoli legacy
+        return self._legacy_permissions(permission)
+    
+    def _legacy_permissions(self, permission):
+        """Permessi legacy per retrocompatibilità"""
+        legacy_map = {
+            'can_manage_users': self.role == 'Admin',
+            'can_manage_shifts': self.role in ['Admin', 'Project Manager'],
+            'can_approve_leave': self.role == 'Project Manager',
+            'can_request_leave': self.role in ['Redattore', 'Sviluppatore', 'Operatore'],
+            'can_access_attendance': self.role not in ['Ente'],
+            'can_access_dashboard': self.role not in ['Ente'],
+            'can_view_reports': self.role in ['Admin', 'Project Manager']
+        }
+        return legacy_map.get(permission, False)
+    
+    # Metodi di compatibilità
     def can_manage_users(self):
-        return self.role == 'Admin'
+        return self.has_permission('can_manage_users')
     
     def can_manage_shifts(self):
-        return self.role in ['Admin', 'Responsabili']
+        return self.has_permission('can_manage_shifts')
     
     def can_approve_leave(self):
-        return self.role == 'Responsabili'
+        return self.has_permission('can_approve_leave')
     
     def can_request_leave(self):
-        return self.role in ['Redattore', 'Sviluppatore', 'Operatore']
+        return self.has_permission('can_request_leave')
     
     def can_access_attendance(self):
-        """L'utente Management non può accedere alla gestione presenze"""
-        return self.role not in ['Management']
+        return self.has_permission('can_access_attendance')
     
     def can_access_dashboard(self):
-        """L'utente Management non può accedere alla dashboard"""
-        return self.role not in ['Management']
+        return self.has_permission('can_access_dashboard')
     
     def can_view_reports(self):
-        return self.role in ['Admin', 'Responsabili', 'Management']
+        return self.has_permission('can_view_reports')
 
 
 class AttendanceEvent(db.Model):

@@ -8,8 +8,8 @@ import base64
 from defusedcsv import csv
 from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
-from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, italian_now
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm
+from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, italian_now
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, check_user_shift_schedule, format_hours
 
 # Define require_login decorator
@@ -4113,3 +4113,138 @@ def toggle_work_schedule(schedule_id):
     status = 'attivato' if schedule.active else 'disattivato'
     flash(f'Orario "{schedule.name}" {status} con successo', 'success')
     return redirect(url_for('manage_work_schedules'))
+
+
+# GESTIONE RUOLI DINAMICI
+
+@app.route('/admin/roles')
+@login_required
+def manage_roles():
+    """Gestisce i ruoli dinamici del sistema (solo Admin)"""
+    if not current_user.has_permission('can_manage_roles'):
+        flash('Non hai i permessi per gestire i ruoli', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    roles = UserRole.query.order_by(UserRole.name).all()
+    return render_template('manage_roles.html', roles=roles)
+
+
+@app.route('/admin/roles/create', methods=['GET', 'POST'])
+@login_required
+def create_role():
+    """Crea un nuovo ruolo dinamico"""
+    if not current_user.has_permission('can_manage_roles'):
+        flash('Non hai i permessi per creare ruoli', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = RoleForm()
+    if form.validate_on_submit():
+        new_role = UserRole(
+            name=form.name.data,
+            display_name=form.display_name.data,
+            description=form.description.data,
+            permissions=form.get_permissions_dict(),
+            active=form.is_active.data
+        )
+        
+        db.session.add(new_role)
+        db.session.commit()
+        
+        flash(f'Ruolo "{form.display_name.data}" creato con successo', 'success')
+        return redirect(url_for('manage_roles'))
+    
+    return render_template('create_role.html', form=form)
+
+
+@app.route('/admin/roles/edit/<int:role_id>', methods=['GET', 'POST'])
+@login_required
+def edit_role(role_id):
+    """Modifica un ruolo esistente"""
+    if not current_user.has_permission('can_manage_roles'):
+        flash('Non hai i permessi per modificare ruoli', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    role = UserRole.query.get_or_404(role_id)
+    
+    # Verifica che non sia un ruolo di sistema protetto
+    protected_roles = ['Admin', 'Project Manager', 'Management']
+    if role.name in protected_roles:
+        flash(f'Il ruolo "{role.display_name}" è protetto e non può essere modificato', 'danger')
+        return redirect(url_for('manage_roles'))
+    
+    form = RoleForm(original_name=role.name)
+    
+    if form.validate_on_submit():
+        role.name = form.name.data
+        role.display_name = form.display_name.data
+        role.description = form.description.data
+        role.permissions = form.get_permissions_dict()
+        role.active = form.is_active.data
+        
+        db.session.commit()
+        
+        flash(f'Ruolo "{form.display_name.data}" modificato con successo', 'success')
+        return redirect(url_for('manage_roles'))
+    
+    # Popola il form con i dati esistenti
+    form.name.data = role.name
+    form.display_name.data = role.display_name
+    form.description.data = role.description
+    form.is_active.data = role.active
+    form.populate_permissions(role.permissions)
+    
+    return render_template('edit_role.html', form=form, role=role)
+
+
+@app.route('/admin/roles/toggle/<int:role_id>')
+@login_required
+def toggle_role(role_id):
+    """Attiva/disattiva un ruolo"""
+    if not current_user.has_permission('can_manage_roles'):
+        flash('Non hai i permessi per modificare ruoli', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    role = UserRole.query.get_or_404(role_id)
+    
+    # Verifica che non sia un ruolo di sistema protetto
+    protected_roles = ['Admin', 'Project Manager', 'Management']
+    if role.name in protected_roles:
+        flash(f'Non è possibile disattivare il ruolo "{role.display_name}" perché è protetto dal sistema', 'danger')
+        return redirect(url_for('manage_roles'))
+    
+    role.active = not role.active
+    db.session.commit()
+    
+    status = 'attivato' if role.active else 'disattivato'
+    flash(f'Ruolo "{role.display_name}" {status} con successo', 'success')
+    return redirect(url_for('manage_roles'))
+
+
+@app.route('/admin/roles/delete/<int:role_id>')
+@login_required
+def delete_role(role_id):
+    """Elimina un ruolo (solo se non ci sono utenti associati)"""
+    if not current_user.has_permission('can_manage_roles'):
+        flash('Non hai i permessi per eliminare ruoli', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    role = UserRole.query.get_or_404(role_id)
+    
+    # Verifica che non sia un ruolo di sistema protetto
+    protected_roles = ['Admin', 'Project Manager', 'Management']
+    if role.name in protected_roles:
+        flash(f'Non è possibile eliminare il ruolo "{role.display_name}" perché è protetto dal sistema', 'danger')
+        return redirect(url_for('manage_roles'))
+    
+    # Verifica che non ci siano utenti con questo ruolo
+    users_with_role = User.query.filter_by(role=role.name).count()
+    if users_with_role > 0:
+        flash(f'Impossibile eliminare il ruolo "{role.display_name}": ci sono {users_with_role} utenti associati', 'danger')
+        return redirect(url_for('manage_roles'))
+    
+    role_name = role.display_name
+    db.session.delete(role)
+    db.session.commit()
+    
+    flash(f'Ruolo "{role_name}" eliminato con successo', 'success')
+    return redirect(url_for('manage_roles'))

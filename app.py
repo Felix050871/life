@@ -72,6 +72,12 @@ def to_italian_time(timestamp):
     # Se il timestamp non ha timezone, assumiamo sia UTC
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=utc_tz)
+
+@app.template_filter('users_with_role_count')
+def users_with_role_count(role_name):
+    """Conta il numero di utenti con un determinato ruolo"""
+    from models import User
+    return User.query.filter_by(role=role_name).count()
     
     # Converte all'orario italiano
     return timestamp.astimezone(italy_tz)

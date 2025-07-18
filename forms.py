@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, SelectMultipleField, FloatField, DateField, TimeField, TextAreaField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, Length, NumberRange, ValidationError, EqualTo
-from models import User, Sede
+from models import User, Sede, UserRole
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
@@ -13,14 +13,7 @@ class UserForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password')
-    role = SelectField('Ruolo', choices=[
-        ('Admin', 'Admin'),
-        ('Responsabili', 'Responsabili'),
-        ('Redattore', 'Redattore'),
-        ('Sviluppatore', 'Sviluppatore'),
-        ('Operatore', 'Operatore'),
-        ('Management', 'Management')
-    ], validators=[DataRequired()])
+    role = SelectField('Ruolo', choices=[], validators=[DataRequired()])
     first_name = StringField('Nome', validators=[DataRequired(), Length(max=100)])
     last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
     sede = SelectField('Sede', coerce=int, validators=[])
@@ -41,6 +34,28 @@ class UserForm(FlaskForm):
             self.sede.choices = [(0, 'Nessuna sede')] + [(sede.id, sede.name) for sede in sedi_attive]
         except:
             self.sede.choices = [(0, 'Nessuna sede')]
+        
+        # Popola le scelte dei ruoli dinamicamente
+        try:
+            ruoli_attivi = UserRole.query.filter_by(active=True).all()
+            self.role.choices = [(role.name, role.display_name) for role in ruoli_attivi]
+            # Fallback ai ruoli legacy se non ci sono ruoli personalizzati
+            if not self.role.choices:
+                self.role.choices = [
+                    ('Admin', 'Admin'),
+                    ('Project Manager', 'Project Manager'),
+                    ('Redattore', 'Redattore'),
+                    ('Sviluppatore', 'Sviluppatore'),
+                    ('Operatore', 'Operatore')
+                ]
+        except:
+            self.role.choices = [
+                ('Admin', 'Admin'),
+                ('Project Manager', 'Project Manager'),
+                ('Redattore', 'Redattore'),
+                ('Sviluppatore', 'Sviluppatore'),
+                ('Operatore', 'Operatore')
+            ]
         
         # Set password validators based on mode
         if not is_edit:
@@ -419,3 +434,61 @@ class WorkScheduleForm(FlaskForm):
             ).first()
             if existing:
                 raise ValidationError('Nome orario già esistente per questa sede. Scegli un altro nome.')
+
+
+class RoleForm(FlaskForm):
+    """Form per gestire i ruoli dinamici"""
+    name = StringField('Nome Ruolo (Codice)', validators=[DataRequired(), Length(max=50)])
+    display_name = StringField('Nome Visualizzato', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Descrizione', validators=[Length(max=500)])
+    
+    # Permessi come checkboxes
+    can_manage_users = BooleanField('Gestire Utenti')
+    can_manage_shifts = BooleanField('Gestire Turni')
+    can_approve_leave = BooleanField('Approvare Ferie/Permessi')
+    can_request_leave = BooleanField('Richiedere Ferie/Permessi')
+    can_access_attendance = BooleanField('Accedere alle Presenze', default=True)
+    can_access_dashboard = BooleanField('Accedere alla Dashboard', default=True)
+    can_view_reports = BooleanField('Visualizzare Report')
+    can_manage_sedi = BooleanField('Gestire Sedi')
+    can_manage_roles = BooleanField('Gestire Ruoli')
+    
+    is_active = BooleanField('Attivo', default=True)
+    submit = SubmitField('Salva Ruolo')
+    
+    def __init__(self, original_name=None, *args, **kwargs):
+        super(RoleForm, self).__init__(*args, **kwargs)
+        self.original_name = original_name
+    
+    def validate_name(self, name):
+        """Valida che il nome del ruolo sia unico"""
+        if name.data != self.original_name:
+            role = UserRole.query.filter_by(name=name.data).first()
+            if role:
+                raise ValidationError('Nome ruolo già esistente. Scegli un altro nome.')
+    
+    def get_permissions_dict(self):
+        """Converte i permessi del form in un dizionario"""
+        return {
+            'can_manage_users': self.can_manage_users.data,
+            'can_manage_shifts': self.can_manage_shifts.data,
+            'can_approve_leave': self.can_approve_leave.data,
+            'can_request_leave': self.can_request_leave.data,
+            'can_access_attendance': self.can_access_attendance.data,
+            'can_access_dashboard': self.can_access_dashboard.data,
+            'can_view_reports': self.can_view_reports.data,
+            'can_manage_sedi': self.can_manage_sedi.data,
+            'can_manage_roles': self.can_manage_roles.data
+        }
+    
+    def populate_permissions(self, permissions_dict):
+        """Popola i campi permessi dal dizionario"""
+        self.can_manage_users.data = permissions_dict.get('can_manage_users', False)
+        self.can_manage_shifts.data = permissions_dict.get('can_manage_shifts', False)
+        self.can_approve_leave.data = permissions_dict.get('can_approve_leave', False)
+        self.can_request_leave.data = permissions_dict.get('can_request_leave', False)
+        self.can_access_attendance.data = permissions_dict.get('can_access_attendance', True)
+        self.can_access_dashboard.data = permissions_dict.get('can_access_dashboard', True)
+        self.can_view_reports.data = permissions_dict.get('can_view_reports', False)
+        self.can_manage_sedi.data = permissions_dict.get('can_manage_sedi', False)
+        self.can_manage_roles.data = permissions_dict.get('can_manage_roles', False)
