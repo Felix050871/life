@@ -1579,6 +1579,14 @@ def create_leave_request():
                 reason=form.reason.data
             )
             
+            # Auto-approve sick leave, set others as pending
+            if form.leave_type.data == 'Malattia':
+                leave_request.status = 'Approved'
+                leave_request.approved_by = current_user.id  # Self-approved
+                leave_request.approved_at = datetime.now()
+            else:
+                leave_request.status = 'Pending'
+            
             # Aggiungi orari per i permessi
             if form.leave_type.data == 'Permesso':
                 leave_request.start_time = form.start_time.data
@@ -1588,7 +1596,9 @@ def create_leave_request():
             db.session.commit()
             
             # Messaggio di successo personalizzato
-            if form.leave_type.data == 'Permesso':
+            if form.leave_type.data == 'Malattia':
+                flash('Richiesta di malattia approvata automaticamente', 'success')
+            elif form.leave_type.data == 'Permesso':
                 duration = leave_request.get_duration_display()
                 flash(f'Richiesta di permesso inviata con successo ({duration})', 'success')
             else:
