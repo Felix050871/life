@@ -23,13 +23,8 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
 
-# Configure the database - Workly usa un database separato
-workly_db_url = os.environ.get("WORKLY_DATABASE_URL")
-if not workly_db_url:
-    # Fallback a SQLite locale per sviluppo Workly
-    workly_db_url = "sqlite:///workly.db"
-    
-app.config["SQLALCHEMY_DATABASE_URI"] = workly_db_url
+# Configure the database
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
