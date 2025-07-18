@@ -1647,6 +1647,63 @@ def reject_leave(request_id):
     flash('Richiesta rifiutata', 'warning')
     return redirect(url_for('leave_requests'))
 
+@app.route('/users')
+@login_required
+def users():
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per gestire gli utenti', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    page = request.args.get('page', 1, type=int)
+    users = User.query.order_by(User.created_at.desc()).paginate(
+        page=page, per_page=10, error_out=False)
+    return render_template('users.html', users=users)
+
+@app.route('/new_user', methods=['GET', 'POST'])
+@login_required
+def new_user():
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per creare utenti', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = UserForm(is_edit=False)
+    if form.validate_on_submit():
+        # Crea il nuovo utente
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=generate_password_hash(form.password.data),
+            role=form.role.data,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            sede_id=form.sede.data if form.sede.data != 0 else None,  # Legacy field
+            part_time_percentage=form.get_part_time_percentage_as_float(),
+            active=form.is_active.data
+        )
+        db.session.add(user)
+        db.session.flush()  # Per ottenere l'ID dell'utente
+        
+        # Gestisci sedi multiple
+        selected_sedi_ids = form.sedi.data
+        
+        # Se è un ruolo Management, aggiungi tutte le sedi
+        if form.role.data == 'Management':
+            all_sedi = Sede.query.filter_by(active=True).all()
+            for sede in all_sedi:
+                user.add_sede(sede)
+        else:
+            # Associa le sedi selezionate
+            for sede_id in selected_sedi_ids:
+                sede = Sede.query.get(sede_id)
+                if sede:
+                    user.add_sede(sede)
+        
+        db.session.commit()
+        flash('Utente creato con successo', 'success')
+        return redirect(url_for('users'))
+    
+    return render_template('users.html', form=form, editing=False)
+
 @app.route('/user_management')
 @login_required
 def user_management():
@@ -1658,35 +1715,7 @@ def user_management():
     form = UserForm(is_edit=False)
     return render_template('user_management.html', users=users, form=form)
 
-@app.route('/create_user', methods=['POST'])
-@login_required
-def create_user():
-    if not current_user.can_manage_users():
-        flash('Non hai i permessi per creare utenti', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    form = UserForm(is_edit=False)
-    if form.validate_on_submit():
-        user = User(
-            username=form.username.data,
-            email=form.email.data,
-            password_hash=generate_password_hash(form.password.data),
-            role=form.role.data,
-            first_name=form.first_name.data,
-            last_name=form.last_name.data,
-            sede_id=form.sede.data if form.sede.data != 0 else None,
-            part_time_percentage=form.get_part_time_percentage_as_float(),
-            active=form.is_active.data
-        )
-        db.session.add(user)
-        db.session.commit()
-        flash('Utente creato con successo', 'success')
-    else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'{field}: {error}', 'danger')
-    
-    return redirect(url_for('user_management'))
+
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -1698,19 +1727,45 @@ def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     form = UserForm(original_username=user.username, is_edit=True, obj=user)
     
+    if request.method == 'GET':
+        # Popola il campo sedi con le sedi attualmente associate all'utente
+        current_sedi_ids = [sede.id for sede in user.get_sedi_list()]
+        form.sedi.data = current_sedi_ids
+    
     if form.validate_on_submit():
         user.username = form.username.data
         user.email = form.email.data
         user.role = form.role.data
         user.first_name = form.first_name.data
         user.last_name = form.last_name.data
-        user.sede_id = form.sede.data if form.sede.data != 0 else None
+        user.sede_id = form.sede.data if form.sede.data != 0 else None  # Legacy field
         user.part_time_percentage = form.get_part_time_percentage_as_float()
         user.active = form.is_active.data
         
         # Update password only if provided
         if form.password.data:
             user.password_hash = generate_password_hash(form.password.data)
+        
+        # Aggiorna associazioni sedi
+        # Prima rimuovi tutte le associazioni esistenti
+        current_sedi = user.get_sedi_list()
+        for sede in current_sedi:
+            user.remove_sede(sede)
+        
+        # Aggiungi le nuove associazioni
+        selected_sedi_ids = form.sedi.data
+        
+        # Se è un ruolo Management, aggiungi tutte le sedi
+        if form.role.data == 'Management':
+            all_sedi = Sede.query.filter_by(active=True).all()
+            for sede in all_sedi:
+                user.add_sede(sede)
+        else:
+            # Associa le sedi selezionate
+            for sede_id in selected_sedi_ids:
+                sede = Sede.query.get(sede_id)
+                if sede:
+                    user.add_sede(sede)
         
         db.session.commit()
         flash(f'Utente {user.username} modificato con successo', 'success')

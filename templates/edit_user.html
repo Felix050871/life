@@ -90,7 +90,7 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 {{ form.role.label(class="form-label") }}
-                                {{ form.role(class="form-select") }}
+                                {{ form.role(class="form-select", id="role") }}
                                 {% if form.role.errors %}
                                     <div class="text-danger">
                                         {% for error in form.role.errors %}
@@ -118,6 +118,19 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                {{ form.sedi.label(class="form-label") }}
+                                {{ form.sedi(class="form-select", multiple=True, size="5", id="sedi-select") }}
+                                <small class="text-muted" id="sedi-help">Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più sedi</small>
+                                <small class="text-info" id="management-help" style="display:none;">Gli utenti Management vengono automaticamente associati a tutte le sedi</small>
+                                {% if form.sedi.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.sedi.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 <div class="form-check">
                                     {{ form.is_active(class="form-check-input") }}
                                     {{ form.is_active.label(class="form-check-label") }}
@@ -136,4 +149,39 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Gestisce la selezione automatica delle sedi per Management
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('role');
+    const sediSelect = document.getElementById('sedi-select');
+    const sediHelp = document.getElementById('sedi-help');
+    const managementHelp = document.getElementById('management-help');
+    
+    if (roleSelect && sediSelect) {
+        function toggleSediManagement() {
+            if (roleSelect.value === 'Management') {
+                // Seleziona tutte le opzioni per Management
+                for (let option of sediSelect.options) {
+                    option.selected = true;
+                }
+                sediSelect.disabled = true;
+                sediHelp.style.display = 'none';
+                managementHelp.style.display = 'block';
+            } else {
+                sediSelect.disabled = false;
+                sediHelp.style.display = 'block';
+                managementHelp.style.display = 'none';
+            }
+        }
+        
+        roleSelect.addEventListener('change', toggleSediManagement);
+        
+        // Esegui al caricamento della pagina
+        toggleSediManagement();
+    }
+});
+</script>
 {% endblock %}

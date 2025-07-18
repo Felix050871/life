@@ -16,7 +16,8 @@ class UserForm(FlaskForm):
     role = SelectField('Ruolo', choices=[], validators=[DataRequired()])
     first_name = StringField('Nome', validators=[DataRequired(), Length(max=100)])
     last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
-    sede = SelectField('Sede', coerce=int, validators=[])
+    sede = SelectField('Sede', coerce=int, validators=[])  # Legacy field
+    sedi = SelectMultipleField('Sedi', coerce=int, validators=[DataRequired()])  # New multi-select field
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
     is_active = BooleanField('Attivo', default=True)
@@ -27,13 +28,15 @@ class UserForm(FlaskForm):
         self.original_username = original_username
         self.is_edit = is_edit
         
-        # Popola le scelte delle sedi
+        # Popola le scelte delle sedi (per entrambi i campi)
         try:
             from models import Sede as SedeModel
             sedi_attive = SedeModel.query.filter_by(active=True).all()
             self.sede.choices = [(0, 'Nessuna sede')] + [(sede.id, sede.name) for sede in sedi_attive]
+            self.sedi.choices = [(sede.id, sede.name) for sede in sedi_attive]
         except:
             self.sede.choices = [(0, 'Nessuna sede')]
+            self.sedi.choices = []
         
         # Popola le scelte dei ruoli dinamicamente
         try:
@@ -73,6 +76,13 @@ class UserForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user and (not self.original_username or user.username != self.original_username):
             raise ValidationError('Email già esistente. Scegli un\'altra email.')
+    
+    def validate_sedi(self, sedi):
+        # Per utenti Management, le sedi vengono assegnate automaticamente
+        if self.role.data == 'Management':
+            return
+        if not sedi.data:
+            raise ValidationError('Seleziona almeno una sede per l\'utente.')
     
     def validate_password(self, password):
         # For new users, password is required

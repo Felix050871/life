@@ -114,8 +114,17 @@
                 
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        {{ form.location_id.label(class="form-label") }}
-                        {{ form.location_id(class="form-select") }}
+                        {{ form.sedi.label(class="form-label") }}
+                        {{ form.sedi(class="form-select", multiple=True, size="5", id="sedi-select") }}
+                        <small class="text-muted" id="sedi-help">Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più sedi</small>
+                        <small class="text-info" id="management-help" style="display:none;">Gli utenti Management vengono automaticamente associati a tutte le sedi</small>
+                        {% if form.sedi.errors %}
+                            <div class="text-danger">
+                                {% for error in form.sedi.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
                     
                     <div class="col-md-6 mb-3">
@@ -158,7 +167,7 @@
                                 <th>Utente</th>
                                 <th>Email</th>
                                 <th>Ruolo</th>
-                                <th>Sede</th>
+                                <th>Sedi</th>
                                 <th>Part-time</th>
                                 <th>Status</th>
                                 <th>Ultima Presenza</th>
@@ -184,8 +193,11 @@
                                     </span>
                                 </td>
                                 <td>
-                                    {% if user.location %}
-                                        {{ user.location.name }}
+                                    {% set user_sedi = user.get_sedi_list() %}
+                                    {% if user_sedi %}
+                                        {% for sede in user_sedi %}
+                                            <span class="badge bg-info me-1">{{ sede.name }}</span>
+                                        {% endfor %}
                                     {% else %}
                                         <span class="text-muted">Nessuna sede</span>
                                     {% endif %}
@@ -291,5 +303,36 @@ function confirmDelete(userId) {
         window.location.href = '/users/delete/' + userId;
     }
 }
+
+// Gestisce la selezione automatica delle sedi per Management
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('role');
+    const sediSelect = document.getElementById('sedi-select');
+    const sediHelp = document.getElementById('sedi-help');
+    const managementHelp = document.getElementById('management-help');
+    
+    if (roleSelect && sediSelect) {
+        function toggleSediManagement() {
+            if (roleSelect.value === 'Management') {
+                // Seleziona tutte le opzioni per Management
+                for (let option of sediSelect.options) {
+                    option.selected = true;
+                }
+                sediSelect.disabled = true;
+                sediHelp.style.display = 'none';
+                managementHelp.style.display = 'block';
+            } else {
+                sediSelect.disabled = false;
+                sediHelp.style.display = 'block';
+                managementHelp.style.display = 'none';
+            }
+        }
+        
+        roleSelect.addEventListener('change', toggleSediManagement);
+        
+        // Esegui al caricamento della pagina
+        toggleSediManagement();
+    }
+});
 </script>
 {% endblock %}
