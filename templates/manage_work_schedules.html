@@ -148,6 +148,12 @@
                                                title="{% if schedule.active %}Disattiva{% else %}Attiva{% endif %}">
                                                 <i class="fas fa-{% if schedule.active %}pause{% else %}play{% endif %}"></i>
                                             </a>
+                                            <a href="{{ url_for('delete_work_schedule', schedule_id=schedule.id) }}" 
+                                               class="btn btn-sm btn-outline-danger" 
+                                               title="Elimina definitivamente"
+                                               onclick="return confirm('Sei sicuro di voler eliminare definitivamente questo orario? L\'operazione non può essere annullata.')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

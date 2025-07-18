@@ -4092,6 +4092,9 @@ def create_work_schedule():
             start_time_max=form.start_time_max.data,
             end_time_min=form.end_time_min.data,
             end_time_max=form.end_time_max.data,
+            # Imposta campi legacy per compatibilità usando il valore minimo
+            start_time=form.start_time_min.data,
+            end_time=form.end_time_min.data,
             days_of_week=days_of_week,
             description=form.description.data,
             active=form.is_active.data
@@ -4150,6 +4153,9 @@ def edit_work_schedule(schedule_id):
         schedule.start_time_max = form.start_time_max.data
         schedule.end_time_min = form.end_time_min.data
         schedule.end_time_max = form.end_time_max.data
+        # Aggiorna campi legacy per compatibilità
+        schedule.start_time = form.start_time_min.data
+        schedule.end_time = form.end_time_min.data
         schedule.days_of_week = days_of_week
         schedule.description = form.description.data
         schedule.active = form.is_active.data
@@ -4174,6 +4180,27 @@ def toggle_work_schedule(schedule_id):
     
     status = 'attivato' if schedule.active else 'disattivato'
     flash(f'Orario "{schedule.name}" {status} con successo', 'success')
+    return redirect(url_for('manage_work_schedules'))
+
+@app.route('/admin/orari/delete/<int:schedule_id>')
+@login_required
+def delete_work_schedule(schedule_id):
+    """Elimina definitivamente un orario di lavoro"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per eliminare orari', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    schedule = WorkSchedule.query.get_or_404(schedule_id)
+    schedule_name = schedule.name
+    
+    try:
+        db.session.delete(schedule)
+        db.session.commit()
+        flash(f'Orario "{schedule_name}" eliminato definitivamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore durante l\'eliminazione. Potrebbero esistere dipendenze.', 'error')
+        
     return redirect(url_for('manage_work_schedules'))
 
 
