@@ -87,6 +87,7 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 18, 2025: **Miglioramenti UI Gestione Ruoli** - Risolti problemi di leggibilità con sfondo scuro per tutte le schede, rimosso permesso "Gestire Turni" dai template e dai ruoli Admin/Management, aggiornato forms.py per rimuovere can_manage_shifts
 - July 18, 2025: **Progetto Workly Creato** - Clone completo e indipendente della piattaforma NS12 con branding generico "Workly Platform", rimosso logo aziendale, aggiornati tutti i template e riferimenti, creati README.md e configurazione .replit per deployment autonomo
 
 ## User Preferences
