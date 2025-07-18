@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Orari di Lavoro{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1><i class="fas fa-clock me-2"></i>Gestione Orari di Lavoro</h1>
+            <p class="text-muted">Configura gli orari di entrata e uscita per ogni sede</p>
+            
+            <!-- Form per aggiungere nuovo orario -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus me-2"></i>Aggiungi Nuovo Orario</h5>
+                </div>
+                <div class="card-body">
+                    {% if form.sede.choices|length > 0 %}
+                    <form method="POST" action="{{ url_for('create_work_schedule') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="row">
+                            <div class="col-md-3">
+                                {{ form.sede.label(class="form-label") }}
+                                {{ form.sede(class="form-select") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control", placeholder="es. Orario Standard") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.start_time.label(class="form-label") }}
+                                {{ form.start_time(class="form-control") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.end_time.label(class="form-label") }}
+                                {{ form.end_time(class="form-control") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.description.label(class="form-label") }}
+                                {{ form.description(class="form-control", placeholder="Descrizione opzionale") }}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.is_active(class="form-check-input") }}
+                                    {{ form.is_active.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Nessuna sede attiva disponibile. <a href="{{ url_for('manage_sedi') }}">Crea prima una sede</a> per aggiungere orari di lavoro.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Lista orari esistenti -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list me-2"></i>Orari Esistenti</h5>
+                </div>
+                <div class="card-body">
+                    {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Sede</th>
+                                    <th>Nome Orario</th>
+                                    <th>Entrata</th>
+                                    <th>Uscita</th>
+                                    <th>Durata</th>
+                                    <th>Descrizione</th>
+                                    <th>Stato</th>
+                                    <th>Creato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in schedules %}
+                                <tr class="{% if not schedule.active %}table-secondary{% endif %}">
+                                    <td>
+                                        <span class="badge bg-info">{{ schedule.sede_obj.name }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ schedule.name }}</strong>
+                                        {% if not schedule.active %}
+                                        <span class="badge bg-secondary ms-2">Disattivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ schedule.start_time.strftime('%H:%M') }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ schedule.end_time.strftime('%H:%M') }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ "%.1f"|format(schedule.get_duration_hours()) }}h</span>
+                                    </td>
+                                    <td>{{ schedule.description or "-" }}</td>
+                                    <td>
+                                        {% if schedule.active %}
+                                        <span class="badge bg-success">Attivo</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Disattivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ schedule.created_at.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('edit_work_schedule', schedule_id=schedule.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="Modifica">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('toggle_work_schedule', schedule_id=schedule.id) }}" 
+                                               class="btn btn-sm btn-outline-{% if schedule.active %}warning{% else %}success{% endif %}" 
+                                               title="{% if schedule.active %}Disattiva{% else %}Attiva{% endif %}">
+                                                <i class="fas fa-{% if schedule.active %}pause{% else %}play{% endif %}"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nessun orario di lavoro configurato. Aggiungi il primo orario per iniziare.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

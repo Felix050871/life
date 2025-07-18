@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Presenze - Workly{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-clock me-2"></i>Gestione Presenze
+        </h1>
+        {% if current_user.can_manage_users() %}
+        <a href="{{ url_for('new_attendance') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Nuova Presenza
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Da Data</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">A Data</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}">
+                </div>
+                {% if current_user.can_view_all_attendances() %}
+                <div class="col-md-3">
+                    <label class="form-label">Utente</label>
+                    <select name="user_id" class="form-select">
+                        <option value="">Tutti gli utenti</option>
+                        <!-- Add user options here -->
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-search me-1"></i>Filtra
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Attendances Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if attendances.items %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                {% if current_user.can_view_all_attendances() %}
+                                <th>Utente</th>
+                                {% endif %}
+                                <th>Data</th>
+                                <th>Entrata</th>
+                                <th>Uscita</th>
+                                <th>Pausa</th>
+                                <th>Ore Totali</th>
+                                <th>Sede</th>
+                                <th>Status</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendances.items %}
+                            <tr>
+                                {% if current_user.can_view_all_attendances() %}
+                                <td>
+                                    <strong>{{ attendance.user.full_name }}</strong><br>
+                                    <small class="text-muted">{{ attendance.user.role|title }}</small>
+                                </td>
+                                {% endif %}
+                                <td>{{ attendance.date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if attendance.entry_time %}
+                                        <span class="badge bg-success">{{ attendance.entry_time.strftime('%H:%M') }}</span>
+                                        {% if attendance.is_late %}
+                                            <i class="fas fa-clock text-warning ms-1" title="In ritardo"></i>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.exit_time %}
+                                        <span class="badge bg-danger">{{ attendance.exit_time.strftime('%H:%M') }}</span>
+                                        {% if attendance.is_early %}
+                                            <i class="fas fa-clock text-info ms-1" title="Uscita anticipata"></i>
+                                        {% endif %}
+                                    {% elif attendance.entry_time %}
+                                        <span class="badge bg-warning">In corso</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.break_start and attendance.break_end %}
+                                        {% set break_duration = (attendance.break_end - attendance.break_start).total_seconds() / 60 %}
+                                        <span class="badge bg-info">{{ "%.0f"|format(break_duration) }}min</span>
+                                    {% elif attendance.break_start %}
+                                        <span class="badge bg-warning">In pausa</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.total_hours > 0 %}
+                                        <strong>{{ "%.2f"|format(attendance.total_hours) }}h</strong>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.location %}
+                                        {{ attendance.location.name }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.entry_time and attendance.exit_time %}
+                                        <span class="badge bg-success">Completa</span>
+                                    {% elif attendance.entry_time %}
+                                        <span class="badge bg-warning">In corso</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Non iniziata</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if current_user.can_manage_users() %}
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ attendance.id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete({{ attendance.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        {% if attendance.notes %}
+                                            <button class="btn btn-outline-info btn-sm" data-bs-toggle="tooltip" title="{{ attendance.notes }}">
+                                                <i class="fas fa-sticky-note"></i>
+                                            </button>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if attendances.pages > 1 %}
+                <nav aria-label="Pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if attendances.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('attendance', page=attendances.prev_num) }}">Precedente</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in attendances.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != attendances.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('attendance', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if attendances.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('attendance', page=attendances.next_num) }}">Successivo</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna presenza trovata</h5>
+                    <p class="text-muted">Non ci sono presenze registrate per i criteri selezionati.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(attendanceId) {
+    if (confirm('Sei sicuro di voler eliminare questa presenza?')) {
+        // Add delete logic here
+        window.location.href = '/attendance/delete/' + attendanceId;
+    }
+}
+
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,974 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Gestione Presenze{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Timeline styles for interventions */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -40px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+}
+
+.timeline-marker:before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 20px;
+    width: 2px;
+    height: 100%;
+    background-color: #dee2e6;
+    z-index: -1;
+}
+
+.timeline-item:last-child .timeline-marker:before {
+    display: none;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #6c757d;
+}
+
+.timeline-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.timeline-description {
+    margin-bottom: 8px;
+    color: #495057;
+}
+
+.timeline-duration {
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-home me-2"></i>Home - Vista Team</h2>
+        <p class="text-muted">Benvenuto, {{ current_user.get_full_name() }} - Gestione presenze e turni team con navigazione settimanale</p>
+    </div>
+</div>
+
+<!-- Personal Attendance Section for PM ONLY (not Ente) -->
+{% if current_user.role == 'Project Manager' %}
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4><i class="fas fa-calendar-day me-2"></i>Le Mie Presenze - {{ today_date.strftime('%d/%m/%Y') if today_date else '' }}</h4>
+            </div>
+            <div class="card-body">
+                <!-- Today's Status -->
+                <div class="alert alert-info mb-4">
+                    <h6><i class="fas fa-calendar-day me-1"></i>Stato di Oggi - {{ today_date.strftime('%d/%m/%Y') if today_date else '' }}</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Stato Attuale:</strong> 
+                            {% if user_status == 'out' %}
+                                <span class="badge bg-secondary">Non presente</span>
+                            {% elif user_status == 'in' %}
+                                <span class="badge bg-success">Presente</span>
+                            {% elif user_status == 'break' %}
+                                <span class="badge bg-warning">In Pausa</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-6">
+                            <strong>Ore Lavorate:</strong> {{ format_hours(today_work_hours) if today_work_hours else '0h 00\'' }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="row mb-3">
+                    <div class="col-6 col-md-3 mb-2">
+                        <button type="button" class="btn btn-success w-100 {% if user_status not in ['out', 'break'] %}disabled{% endif %}" 
+                                {% if user_status in ['out', 'break'] %}onclick="handleClockIn()"{% else %}disabled{% endif %}>
+                            <i class="fas fa-sign-in-alt me-1"></i>Entrata
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        <button type="button" class="btn btn-danger w-100 {% if user_status != 'in' %}disabled{% endif %}" 
+                                {% if user_status == 'in' %}onclick="handleClockOut()"{% else %}disabled{% endif %}>
+                            <i class="fas fa-sign-out-alt me-1"></i>Uscita
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        {% if user_status == 'break' %}
+                        <button type="button" class="btn btn-success w-100" onclick="handleBreakEnd()">
+                            <i class="fas fa-play me-1"></i>Fine Pausa
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-warning w-100 {% if user_status != 'in' %}disabled{% endif %}" 
+                                {% if user_status == 'in' %}onclick="handleBreakStart()"{% else %}disabled{% endif %}>
+                            <i class="fas fa-pause me-1"></i>Inizio Pausa
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="col-6 col-md-3 mb-2">
+                        <a href="{{ url_for('generate_qr_codes') }}" class="btn btn-info w-100">
+                            <i class="fas fa-qrcode me-1"></i>QR Code
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Events Timeline -->
+                {% if today_events %}
+                <div class="mt-4">
+                    <h6><i class="fas fa-clock me-1"></i>Eventi di Oggi</h6>
+                    <div class="timeline-events">
+                        {% for event in today_events %}
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge {% if event.event_type == 'clock_in' %}bg-success{% elif event.event_type == 'clock_out' %}bg-danger{% elif event.event_type == 'break_start' %}bg-warning{% else %}bg-info{% endif %} me-2">
+                                {% if event.event_type == 'clock_in' %}Entrata{% elif event.event_type == 'clock_out' %}Uscita
+                                {% elif event.event_type == 'break_start' %}Inizio Pausa{% else %}Fine Pausa{% endif %}
+                            </span>
+                            <span class="text-muted">{{ event.timestamp|format_time_italian }}:{{ "%02d"|format(event.timestamp.second) }}</span>
+                            {% if event.notes %}
+                                <span class="ms-2 small text-info">- {{ event.notes }}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- End Intervention Modal -->
+<div class="modal fade" id="endInterventionModal" tabindex="-1" aria-labelledby="endInterventionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="endInterventionModalLabel">Termina Intervento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('end_intervention') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <p>Sei sicuro di voler terminare l'intervento di reperibilità in corso?</p>
+                    <div class="mb-3">
+                        <label for="endDescription" class="form-label">Descrizione finale (opzionale)</label>
+                        <textarea class="form-control" id="endDescription" name="description" rows="3" placeholder="Aggiungi dettagli sull'intervento..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-stop me-1"></i>Termina Intervento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Summary Stats -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h5>{{ present_users|length }}</h5>
+                <small>Persone Presenti</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar fa-2x mb-2"></i>
+                <h5>{{ today.strftime('%d/%m') }}</h5>
+                <small>Data Odierna</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h5>{{ today.strftime('%H:%M') }}</h5>
+                <small>Ora Attuale</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Persone Attualmente Presenti -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users me-2"></i>Persone Attualmente Presenti</h5>
+                <small class="text-muted">{{ today.strftime('%A %d/%m/%Y - %H:%M') }}</small>
+            </div>
+            <div class="card-body">
+                {% if present_users %}
+                    <div class="row">
+                        {% for user in present_users %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card bg-success bg-opacity-10 border-success">
+                                <div class="card-body py-3">
+                                    <div class="text-center">
+                                        <i class="fas fa-user-check fa-2x text-success mb-2"></i>
+                                        <h6 class="card-title mb-1">{{ user.get_full_name() }}</h6>
+                                        <small class="text-muted">{{ user.role }}</small>
+                                    </div>
+                                    
+                                    <!-- Timeline eventi oggi -->
+                                    {% if user.today_events and user.today_events|length >= 1 %}
+                                    <div class="mt-3 pt-2 border-top border-success border-opacity-25">
+                                        <small class="text-muted d-block text-center mb-2">Timeline oggi:</small>
+                                        <div class="d-flex flex-wrap justify-content-center gap-1">
+                                            {% for event in user.today_events %}
+                                            <span class="badge 
+                                                {% if event.event_type == 'clock_in' %}bg-success
+                                                {% elif event.event_type == 'clock_out' %}bg-danger
+                                                {% elif event.event_type == 'break_start' %}bg-warning text-dark
+                                                {% else %}bg-info
+                                                {% endif %}" style="font-size: 0.7em;">
+                                                {% if event.event_type == 'clock_in' %}<i class="fas fa-sign-in-alt"></i>
+                                                {% elif event.event_type == 'clock_out' %}<i class="fas fa-sign-out-alt"></i>
+                                                {% elif event.event_type == 'break_start' %}<i class="fas fa-pause"></i>
+                                                {% else %}<i class="fas fa-play"></i>
+                                                {% endif %}
+                                                {{ event.timestamp|format_time_italian }}
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nessuno presente al momento</h5>
+                        <p class="text-muted">Non ci sono persone attualmente registrate come presenti.</p>
+                    </div>
+                {% endif %}
+                
+                <!-- Legend -->
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <span class="badge bg-success me-2" style="font-size: 0.7em;">
+                            <i class="fas fa-sign-in-alt"></i> Entrata
+                        </span>
+                        <span class="badge bg-danger me-2" style="font-size: 0.7em;">
+                            <i class="fas fa-sign-out-alt"></i> Uscita
+                        </span>
+                        <span class="badge bg-warning text-dark me-2" style="font-size: 0.7em;">
+                            <i class="fas fa-pause"></i> Pausa
+                        </span>
+                        <span class="badge bg-info me-2" style="font-size: 0.7em;">
+                            <i class="fas fa-play"></i> Ripresa
+                        </span>
+                        <span class="ms-3">Aggiornamento automatico ogni minuto</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Turni Settimanali -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-calendar-alt me-2"></i>Programmazione Settimanale</h5>
+                <div class="d-flex align-items-center">
+                    <a href="{{ url_for('ente_home', week_offset=(week_offset - 1)) }}" class="btn btn-outline-secondary btn-sm me-2">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <span class="text-muted">{{ week_start.strftime('%d/%m/%Y') }} - {{ week_end.strftime('%d/%m/%Y') }}</span>
+                    <a href="{{ url_for('ente_home', week_offset=(week_offset + 1)) }}" class="btn btn-outline-secondary btn-sm ms-2">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if shifts_by_day or week_dates %}
+                    <div class="row">
+                        {% for day_info in week_dates %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 
+                                {% if day_info.is_today %}border-warning border-3{% endif %}">
+                                <div class="card-header text-center
+                                    {% if day_info.is_today %}bg-warning text-dark{% else %}bg-light{% endif %}">
+                                    <h6 class="mb-0 {% if not day_info.is_today %}text-dark{% else %}fw-bold{% endif %}">
+                                        {{ day_info.weekday }}<br>
+                                        <small>{{ day_info.date.strftime('%d/%m') }}</small>
+                                    </h6>
+                                </div>
+                                <div class="card-body p-2 bg-white">
+                                    {% if day_info.date in shifts_by_day %}
+                                        {% for shift in shifts_by_day[day_info.date] %}
+                                        {% set attendance = attendance_by_date[day_info.date][shift.user_id] if day_info.date in attendance_by_date and shift.user_id in attendance_by_date[day_info.date] else none %}
+                                        
+                                        <div class="mb-2 p-2 border rounded shadow-sm position-relative bg-primary bg-opacity-75">
+                                            <!-- Indicatore presenza -->
+                                            <div class="position-absolute top-0 start-0 mt-1 ms-1">
+                                                {% if attendance and attendance.clock_in %}
+                                                    {% if attendance.clock_out %}
+                                                        {% if attendance.shift_status == 'ritardo' %}
+                                                        <span class="badge bg-warning" title="Presente - Entrata in ritardo">
+                                                            <i class="fas fa-check"></i> <i class="fas fa-clock text-danger"></i>
+                                                        </span>
+                                                        {% elif attendance.shift_status == 'anticipo' %}
+                                                        <span class="badge bg-info" title="Presente - Entrata in anticipo">
+                                                            <i class="fas fa-check"></i> <i class="fas fa-clock text-info"></i>
+                                                        </span>
+                                                        {% else %}
+                                                        <span class="badge bg-success" title="Presente - Completato">
+                                                            <i class="fas fa-check"></i>
+                                                        </span>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        {% if attendance.shift_status == 'ritardo' %}
+                                                        <span class="badge bg-warning" title="Presente - Entrata in ritardo">
+                                                            <i class="fas fa-clock"></i> <i class="fas fa-exclamation-triangle text-danger"></i>
+                                                        </span>
+                                                        {% elif attendance.shift_status == 'anticipo' %}
+                                                        <span class="badge bg-info" title="Presente - Entrata in anticipo">
+                                                            <i class="fas fa-clock"></i> <i class="fas fa-thumbs-up text-info"></i>
+                                                        </span>
+                                                        {% else %}
+                                                        <span class="badge bg-warning" title="Presente - In corso">
+                                                            <i class="fas fa-clock"></i>
+                                                        </span>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-danger" title="Assente">
+                                                        <i class="fas fa-times"></i>
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Header con nome e badge turno -->
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <div class="ms-5">
+                                                    <strong class="text-white">{{ shift.user.get_full_name() }}</strong>
+                                                    {% if shift.has_leave_request %}
+                                                    <span class="text-warning ms-1" title="Richiesta {{ shift.leave_request.leave_type }}: {{ shift.leave_request.start_date.strftime('%d/%m') }}-{{ shift.leave_request.end_date.strftime('%d/%m') }} ({{ shift.leave_request.status }})">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                    <small class="text-white d-block">{{ shift.user.role }}</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    {% if shift.shift_type == 'Mattina' %}
+                                                    <span class="badge bg-success">Mattina</span>
+                                                    {% elif shift.shift_type == 'Pomeriggio' %}
+                                                    <span class="badge bg-warning">Pomeriggio</span>
+                                                    {% elif shift.shift_type == 'Sera' %}
+                                                    <span class="badge bg-danger">Sera</span>
+                                                    {% elif shift.shift_type == 'Notte' %}
+                                                    <span class="badge bg-secondary">Notte</span>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">{{ shift.shift_type }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Informazioni orari a larghezza piena -->
+                                            <div class="row g-2">
+                                                <!-- Orari programmati -->
+                                                <div class="col-12">
+                                                    <div class="p-2 bg-primary bg-opacity-10 rounded">
+                                                        <div class="text-white">
+                                                            <i class="fas fa-calendar me-1"></i>
+                                                            <strong>Turno:</strong> {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                                                        </div>
+                                                        <small class="text-white">{{ "%.1f"|format(shift.get_duration_hours()) }}h programmate</small>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Timeline eventi se presenti -->
+                                                {% if day_info.date in events_by_date and shift.user_id in events_by_date[day_info.date] %}
+                                                <div class="col-12">
+                                                    <div class="p-2 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
+                                                        <div class="text-center mb-2">
+                                                            <small class="text-muted"><strong>Timeline eventi:</strong></small>
+                                                        </div>
+                                                        <div class="d-flex flex-wrap justify-content-center gap-1">
+                                                            {% for event in events_by_date[day_info.date][shift.user_id] %}
+                                                            <span class="badge 
+                                                                {% if event.event_type == 'clock_in' %}bg-success
+                                                                {% elif event.event_type == 'clock_out' %}bg-danger
+                                                                {% elif event.event_type == 'break_start' %}bg-warning text-dark
+                                                                {% else %}bg-info
+                                                                {% endif %}" style="font-size: 0.7em;">
+                                                                {% if event.event_type == 'clock_in' %}<i class="fas fa-sign-in-alt"></i>
+                                                                {% elif event.event_type == 'clock_out' %}<i class="fas fa-sign-out-alt"></i>
+                                                                {% elif event.event_type == 'break_start' %}<i class="fas fa-pause"></i>
+                                                                {% else %}<i class="fas fa-play"></i>
+                                                                {% endif %}
+                                                                {{ event.timestamp|format_time_italian }}
+                                                            </span>
+                                                            {% endfor %}
+                                                        </div>
+                                                        {% if attendance and attendance.work_hours > 0 %}
+                                                        <div class="text-center mt-2">
+                                                            <small class="text-info">
+                                                                <i class="fas fa-stopwatch me-1"></i>
+                                                                <strong>Lavorate:</strong> <span id="work-hours-{{ shift.user_id }}-{{ day_info.date.strftime('%Y-%m-%d') }}">{{ format_hours(attendance.work_hours) }}</span>
+                                                            </small>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-calendar-times text-muted"></i>
+                                            <small class="text-muted d-block">Nessun turno programmato</small>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Sezione Reperibilità -->
+                                    {% if day_info.date in reperibilita_by_date %}
+                                        <div class="mt-2 pt-2 border-top">
+                                            <h6 class="text-info mb-2"><i class="fas fa-phone-volume me-1"></i>Reperibilità</h6>
+                                            {% for rep_shift in reperibilita_by_date[day_info.date] %}
+                                            <div class="mb-2 p-2 bg-info bg-opacity-75 border border-info rounded">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <strong class="text-white">{{ rep_shift.user.get_full_name() }}</strong>
+                                                        <br><small class="text-white">{{ rep_shift.user.role }}</small>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-1">
+                                                    <i class="fas fa-phone text-white me-1"></i>
+                                                    <small class="text-white"><strong>Reperibilità:</strong> {{ rep_shift.start_time.strftime('%H:%M') }} - {{ rep_shift.end_time.strftime('%H:%M') }}</small>
+                                                    {% if rep_shift.description %}
+                                                        <br><small class="text-white">{{ rep_shift.description }}</small>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <!-- Interventi dell'utente per questo turno specifico -->
+                                                {% if day_info.date in interventions_by_date %}
+                                                    {% set shift_interventions = interventions_by_date[day_info.date] | selectattr('user_id', 'equalto', rep_shift.user_id) | selectattr('shift_id', 'equalto', rep_shift.id) | list %}
+                                                    {% if shift_interventions %}
+                                                    <div class="mt-2 pt-2 border-top border-light border-opacity-25">
+                                                        <small class="text-white d-block mb-1"><i class="fas fa-tools me-1"></i><strong>Interventi:</strong></small>
+                                                        {% for intervention in shift_interventions %}
+                                                        <div class="mb-1 p-1 bg-warning bg-opacity-25 rounded border border-warning border-opacity-50">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <span class="badge bg-warning text-dark" style="font-size: 0.65em;">
+                                                                    <i class="fas fa-play"></i> {{ intervention.start_datetime|format_time_italian }}
+                                                                </span>
+                                                                {% if intervention.end_datetime %}
+                                                                <span class="badge bg-success" style="font-size: 0.65em;">
+                                                                    <i class="fas fa-stop"></i> {{ intervention.end_datetime|format_time_italian }}
+                                                                </span>
+                                                                {% else %}
+                                                                <span class="badge bg-danger" style="font-size: 0.65em;">
+                                                                    <i class="fas fa-clock"></i> In corso
+                                                                </span>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="text-center mt-1">
+                                                                <span class="badge {% if intervention.is_remote %}bg-info{% else %}bg-secondary{% endif %}" style="font-size: 0.6em;">
+                                                                    {% if intervention.is_remote %}
+                                                                    <i class="fas fa-laptop"></i> Remoto
+                                                                    {% else %}
+                                                                    <i class="fas fa-building"></i> Presenza
+                                                                    {% endif %}
+                                                                </span>
+                                                                <span class="badge {% if intervention.priority == 'Alta' %}bg-danger{% elif intervention.priority == 'Media' %}bg-warning text-dark{% else %}bg-success{% endif %} ms-1" style="font-size: 0.6em;">
+                                                                    {% if intervention.priority == 'Alta' %}
+                                                                    <i class="fas fa-exclamation-triangle"></i> Alta
+                                                                    {% elif intervention.priority == 'Media' %}
+                                                                    <i class="fas fa-minus"></i> Media
+                                                                    {% else %}
+                                                                    <i class="fas fa-check-circle"></i> Bassa
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
+                                                            {% if intervention.description %}
+                                                            <small class="text-white d-block mt-1" style="font-size: 0.65em;">
+                                                                <strong>Descrizione:</strong> {{ intervention.description }}
+                                                            </small>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun turno programmato</h5>
+                    <p class="text-muted">Non ci sono turni programmati per questa settimana.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Legenda indicatori presenza -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Legenda Indicatori Presenza</h6>
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-success me-2"><i class="fas fa-check"></i></span>
+                            <small>Completato</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-warning me-2"><i class="fas fa-clock"></i></span>
+                            <small>In corso</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-danger me-2"><i class="fas fa-times"></i></span>
+                            <small>Assente</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-warning me-2"><i class="fas fa-exclamation-triangle text-danger"></i></span>
+                            <small>Ritardo</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="badge bg-info me-2"><i class="fas fa-thumbs-up text-info"></i></span>
+                            <small>Anticipo</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Turni Personalizzati PM -->
+{% if current_user.role == 'Project Manager' %}
+<div class="row mb-4">
+    <!-- Prossimi Turni Presidio -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-day me-2"></i>Prossimi Turni Presidio</h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_presidio_shifts %}
+                <div class="list-group list-group-flush">
+                    {% for shift in upcoming_presidio_shifts %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ shift.date.strftime('%d/%m/%Y') }}</strong><br>
+                            <small class="text-muted">
+                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                                <br><span class="badge bg-{{ 'success' if shift.shift_type == 'Mattina' else 'warning' if shift.shift_type == 'Pomeriggio' else 'danger' if shift.shift_type == 'Sera' else 'secondary' }} text-dark">
+                                    {{ shift.shift_type }}
+                                </span>
+                            </small>
+                        </div>
+                        <span class="badge bg-primary">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">Nessun turno di presidio programmato</p>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('shifts') }}" class="btn btn-primary">
+                        <i class="fas fa-calendar-alt me-1"></i>Visualizza Turnazioni
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prossimi Turni Reperibilità -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-phone me-2"></i>Prossimi Turni Reperibilità</h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_reperibilita_shifts %}
+                <div class="list-group list-group-flush">
+                    {% for shift in upcoming_reperibilita_shifts %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ shift.date.strftime('%d/%m/%Y') }}</strong><br>
+                            <small class="text-muted">
+                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                                {% if shift.description %}
+                                    <br>{{ shift.description }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <span class="badge bg-warning text-dark">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">Nessun turno di reperibilità programmato</p>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('reperibilita_shifts') }}" class="btn btn-warning">
+                        <i class="fas fa-phone me-1"></i>Gestisci Reperibilità
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interventi Reperibilità PM -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tools me-2"></i>Gestione Interventi Reperibilità</h5>
+            </div>
+            <div class="card-body">
+                {% if active_intervention %}
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Intervento In Corso</h6>
+                    <p><strong>Iniziato:</strong> {{ active_intervention.start_datetime.strftime('%d/%m/%Y alle %H:%M') }}</p>
+                    <p><strong>Tipo:</strong> 
+                        <span class="badge {% if active_intervention.is_remote %}bg-info{% else %}bg-secondary{% endif %}">
+                            {% if active_intervention.is_remote %}
+                            <i class="fas fa-laptop"></i> Da remoto
+                            {% else %}
+                            <i class="fas fa-building"></i> In presenza
+                            {% endif %}
+                        </span>
+                        <span class="badge {% if active_intervention.priority == 'Alta' %}bg-danger{% elif active_intervention.priority == 'Media' %}bg-warning text-dark{% else %}bg-success{% endif %} ms-1">
+                            {% if active_intervention.priority == 'Alta' %}
+                            <i class="fas fa-exclamation-triangle"></i> Alta
+                            {% elif active_intervention.priority == 'Media' %}
+                            <i class="fas fa-minus"></i> Media
+                            {% else %}
+                            <i class="fas fa-check-circle"></i> Bassa
+                            {% endif %}
+                        </span>
+                    </p>
+                    {% if active_intervention.description %}
+                    <p><strong>Descrizione:</strong> {{ active_intervention.description }}</p>
+                    {% endif %}
+                    {% if active_intervention.shift %}
+                    <p><strong>Turno:</strong> {{ active_intervention.shift.date.strftime('%d/%m/%Y') }} {{ active_intervention.shift.start_time.strftime('%H:%M') }}-{{ active_intervention.shift.end_time.strftime('%H:%M') }}</p>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-danger" onclick="showEndInterventionModal()">
+                        <i class="fas fa-stop me-1"></i>Termina Intervento
+                    </button>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <p>Nessun intervento di reperibilità in corso.</p>
+                    <p>Vai alla <a href="{{ url_for('reperibilita_shifts') }}">sezione reperibilità</a> per registrare un intervento su un turno specifico.</p>
+                </div>
+                {% endif %}
+                
+                <!-- Timeline Interventi Recenti -->
+                {% if recent_interventions %}
+                <div class="mt-4">
+                    <h6><i class="fas fa-history me-2"></i>Interventi Recenti (ultimi 7 giorni)</h6>
+                    <div class="timeline">
+                        {% for intervention in recent_interventions %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if intervention.end_datetime %}bg-success{% else %}bg-warning{% endif %}">
+                                <i class="fas {% if intervention.end_datetime %}fa-check{% else %}fa-clock{% endif %}"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <strong>{{ intervention.start_datetime.strftime('%d/%m/%Y alle %H:%M') }}</strong>
+                                    {% if intervention.end_datetime %}
+                                    - {{ intervention.end_datetime.strftime('%H:%M') }}
+                                    <span class="badge bg-success ms-2">Completato</span>
+                                    {% else %}
+                                    <span class="badge bg-warning ms-2">In Corso</span>
+                                    {% endif %}
+                                    <span class="badge {% if intervention.is_remote %}bg-info{% else %}bg-secondary{% endif %} ms-1">
+                                        {% if intervention.is_remote %}
+                                        <i class="fas fa-laptop"></i> Remoto
+                                        {% else %}
+                                        <i class="fas fa-building"></i> Presenza
+                                        {% endif %}
+                                    </span>
+                                    <span class="badge {% if intervention.priority == 'Alta' %}bg-danger{% elif intervention.priority == 'Media' %}bg-warning text-dark{% else %}bg-success{% endif %} ms-1">
+                                        {% if intervention.priority == 'Alta' %}
+                                        <i class="fas fa-exclamation-triangle"></i> Alta
+                                        {% elif intervention.priority == 'Media' %}
+                                        <i class="fas fa-minus"></i> Media
+                                        {% else %}
+                                        <i class="fas fa-check-circle"></i> Bassa
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if intervention.description %}
+                                <div class="timeline-description">
+                                    {{ intervention.description }}
+                                </div>
+                                {% endif %}
+                                {% if intervention.end_datetime %}
+                                <div class="timeline-duration">
+                                    <small class="text-muted">
+                                        Durata: {{ ((intervention.end_datetime - intervention.start_datetime).total_seconds() / 3600) | round(1) }}h
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tools me-2"></i>Azioni Rapide</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('shifts') }}" class="btn btn-secondary">
+                        <i class="fas fa-calendar-alt me-1"></i>Visualizza Turnazioni
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="btn btn-success">
+                        <i class="fas fa-chart-bar me-1"></i>Statistiche Team
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Aggiorna automaticamente le ore lavorate ogni 30 secondi
+function updateWorkHours() {
+    // Trova tutti gli elementi delle ore lavorate
+    const workHourElements = document.querySelectorAll('[id^="work-hours-"]');
+    
+    workHourElements.forEach(element => {
+        const idParts = element.id.split('-');
+        if (idParts.length >= 4) {
+            const userId = idParts[2];
+            const dateStr = idParts.slice(3).join('-');
+            
+            // Effettua chiamata API per aggiornare le ore
+            fetch(`/api/work_hours/${userId}/${dateStr}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.work_hours !== undefined) {
+                        // Converti ore decimali in formato ore:minuti
+                        const hours = Math.floor(data.work_hours);
+                        const minutes = Math.floor((data.work_hours - hours) * 60);
+                        element.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}'`;
+                    }
+                })
+                .catch(error => {
+                    // Gestione silenziosa degli errori per evitare spam in console
+                    // Solo per debug: console.log('Errore aggiornamento ore:', error);
+                });
+        }
+    });
+}
+
+// Avvia aggiornamento automatico
+setInterval(updateWorkHours, 30000); // Ogni 30 secondi
+
+// Aggiorna al caricamento della pagina
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updateWorkHours, 2000); // Dopo 2 secondi dal caricamento
+});
+</script>
+
+<!-- JavaScript per gestione presenze PM -->
+{% if current_user.role == 'Project Manager' %}
+<script>
+// Modal Management
+function showConfirmModal(title, message, onConfirm) {
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    document.getElementById('confirmModalLabel').textContent = title;
+    document.getElementById('confirmModalBody').textContent = message;
+    
+    // Remove previous event listeners and add new one
+    const confirmBtn = document.getElementById('confirmModalBtn');
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    
+    newConfirmBtn.addEventListener('click', function() {
+        modal.hide();
+        onConfirm();
+    });
+    
+    modal.show();
+}
+
+// Handle clock-in
+function handleClockIn() {
+    showConfirmModal('Conferma', 'Vuoi registrare l\'entrata?', function() {
+        submitClockIn();
+    });
+}
+
+// Handle clock-out
+function handleClockOut() {
+    showConfirmModal('Conferma', 'Vuoi registrare l\'uscita?', function() {
+        submitClockOut();
+    });
+}
+
+// Handle break start
+function handleBreakStart() {
+    showConfirmModal('Conferma', 'Vuoi iniziare la pausa?', function() {
+        submitBreakStart();
+    });
+}
+
+// Handle break end
+function handleBreakEnd() {
+    showConfirmModal('Conferma', 'Vuoi terminare la pausa?', function() {
+        submitBreakEnd();
+    });
+}
+
+// Handle end intervention
+function showEndInterventionModal() {
+    const modal = new bootstrap.Modal(document.getElementById('endInterventionModal'));
+    modal.show();
+}
+
+// Submit functions
+function submitClockIn() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("clock_in") }}';
+    
+    const token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = 'csrf_token';
+    token.value = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    form.appendChild(token);
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function submitClockOut() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("clock_out") }}';
+    
+    const token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = 'csrf_token';
+    token.value = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    form.appendChild(token);
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function submitBreakStart() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("break_start") }}';
+    
+    const token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = 'csrf_token';
+    token.value = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    form.appendChild(token);
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function submitBreakEnd() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("break_end") }}';
+    
+    const token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = 'csrf_token';
+    token.value = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    form.appendChild(token);
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+
+<!-- Modal di conferma per PM -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Conferma</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                Sei sicuro di voler procedere?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" id="confirmModalBtn">Conferma</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

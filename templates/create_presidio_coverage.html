@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova Copertura Presidio - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-plus me-2"></i>Nuova Copertura Presidio
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Periodo di Validità -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-calendar-alt me-2"></i>Periodo di Validità
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.start_date.label(class="form-label") }}
+                            {{ form.start_date(class="form-control") }}
+                            {% for error in form.start_date.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.end_date.label(class="form-label") }}
+                            {{ form.end_date(class="form-control") }}
+                            {% for error in form.end_date.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <hr class="mb-4">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.days_of_week.label(class="form-label") }}
+                            <div class="mb-2">
+                                <small class="text-muted d-block">Tieni premuto Ctrl (o Cmd su Mac) per selezionare più giorni</small>
+                                <div class="btn-group btn-group-sm mt-1" role="group">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="selectWeekdays()">
+                                        Lun-Ven
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="selectWeekend()">
+                                        Sab-Dom
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="selectAll()">
+                                        Tutti
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearAll()">
+                                        Nessuno
+                                    </button>
+                                </div>
+                            </div>
+                            {{ form.days_of_week(class="form-select", id="days_of_week", style="height: 160px;") }}
+                            {% for error in form.days_of_week.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.required_roles.label(class="form-label") }}
+                            <small class="text-muted d-block">Seleziona uno o più ruoli che possono coprire questo turno</small>
+                            {{ form.required_roles(class="form-select", style="height: 140px;") }}
+                            {% for error in form.required_roles.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.start_time.label(class="form-label") }}
+                            {{ form.start_time(class="form-control") }}
+                            {% for error in form.start_time.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.end_time.label(class="form-label") }}
+                            {{ form.end_time(class="form-control") }}
+                            {% for error in form.end_time.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", placeholder="Descrizione opzionale della copertura") }}
+                        {% for error in form.description.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.is_active(class="form-check-input", checked=True) }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                        </div>
+                        {% for error in form.is_active.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Indietro
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Suggerimenti
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><strong>Selezione multipla:</strong> Puoi selezionare più giorni contemporaneamente per creare coperture identiche</li>
+                    <li><strong>Sovrapposizioni:</strong> È possibile creare più coperture per lo stesso giorno e orario con ruoli diversi</li>
+                    <li><strong>Continuità:</strong> Assicurati che gli orari si sovrappongano leggermente per garantire la continuità del servizio</li>
+                    <li><strong>Ruoli multipli:</strong> Puoi selezionare più ruoli (es. "Sviluppatore o Redattore") per maggiore flessibilità nella copertura</li>
+                    <li><strong>Descrizione:</strong> Usa la descrizione per specificare attività particolari o note operative</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectWeekdays() {
+    const select = document.getElementById('days_of_week');
+    for (let i = 0; i < select.options.length; i++) {
+        select.options[i].selected = i < 5; // Lunedì (0) a Venerdì (4)
+    }
+}
+
+function selectWeekend() {
+    const select = document.getElementById('days_of_week');
+    for (let i = 0; i < select.options.length; i++) {
+        select.options[i].selected = i >= 5; // Sabato (5) e Domenica (6)
+    }
+}
+
+function selectAll() {
+    const select = document.getElementById('days_of_week');
+    for (let i = 0; i < select.options.length; i++) {
+        select.options[i].selected = true;
+    }
+}
+
+function clearAll() {
+    const select = document.getElementById('days_of_week');
+    for (let i = 0; i < select.options.length; i++) {
+        select.options[i].selected = false;
+    }
+}
+</script>
+{% endblock %}

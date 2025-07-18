@@ -1,0 +1,884 @@
+from datetime import datetime, date, timedelta
+from zoneinfo import ZoneInfo
+from flask_login import UserMixin
+from app import db
+
+# Funzione helper per timestamp italiano
+def italian_now():
+    return datetime.now(ZoneInfo('Europe/Rome'))
+
+def convert_to_italian_time(timestamp):
+    """Converte un timestamp dal database all'orario italiano"""
+    if timestamp is None:
+        return None
+    
+    # Se il timestamp non ha timezone, assumiamo che sia UTC
+    if timestamp.tzinfo is None:
+        utc_tz = ZoneInfo('UTC')
+        timestamp = timestamp.replace(tzinfo=utc_tz)
+    
+    # Converti all'orario italiano
+    return timestamp.astimezone(ZoneInfo('Europe/Rome'))
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(50), nullable=False)  # Admin, Responsabili, Redattore, Sviluppatore, Operatore, Management
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede di appartenenza
+    active = db.Column(db.Boolean, default=True)  # Renamed to avoid UserMixin conflict
+    part_time_percentage = db.Column(db.Float, default=100.0)  # Percentuale di lavoro: 100% = tempo pieno, 50% = metà tempo, ecc.
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationship con Sede
+    sede_obj = db.relationship('Sede', backref='users')
+    
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    
+    def can_manage_users(self):
+        return self.role == 'Admin'
+    
+    def can_manage_shifts(self):
+        return self.role in ['Admin', 'Responsabili']
+    
+    def can_approve_leave(self):
+        return self.role == 'Responsabili'
+    
+    def can_request_leave(self):
+        return self.role in ['Redattore', 'Sviluppatore', 'Operatore']
+    
+    def can_access_attendance(self):
+        """L'utente Management non può accedere alla gestione presenze"""
+        return self.role not in ['Management']
+    
+    def can_access_dashboard(self):
+        """L'utente Management non può accedere alla dashboard"""
+        return self.role not in ['Management']
+    
+    def can_view_reports(self):
+        return self.role in ['Admin', 'Responsabili', 'Management']
+
+
+class AttendanceEvent(db.Model):
+    """Modello per registrare eventi multipli di entrata/uscita nella stessa giornata"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+    event_type = db.Column(db.String(20), nullable=False)  # 'clock_in', 'clock_out', 'break_start', 'break_end'
+    timestamp = db.Column(db.DateTime, nullable=False)
+    notes = db.Column(db.Text)
+    shift_status = db.Column(db.String(20), nullable=True)  # 'anticipo', 'normale', 'ritardo' per entrate/uscite
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    user = db.relationship('User', backref='attendance_events')
+    
+    @staticmethod
+    def get_user_status(user_id, target_date=None):
+        """Restituisce lo stato attuale dell'utente (dentro/fuori/in pausa)"""
+        if target_date is None:
+            target_date = date.today()
+            
+        events = AttendanceEvent.query.filter(
+            AttendanceEvent.user_id == user_id,
+            AttendanceEvent.date == target_date
+        ).order_by(AttendanceEvent.timestamp).all()
+        
+        status = 'out'  # Stato iniziale: fuori
+        last_event = None
+        
+        for event in events:
+            # Non modificare l'oggetto event direttamente per evitare problemi SQLAlchemy
+            italian_timestamp = convert_to_italian_time(event.timestamp)
+            
+            if event.event_type == 'clock_in':
+                status = 'in'
+            elif event.event_type == 'clock_out':
+                status = 'out'
+            elif event.event_type == 'break_start':
+                status = 'break'
+            elif event.event_type == 'break_end':
+                status = 'in'
+            last_event = event
+            
+        return status, last_event
+    
+    @staticmethod
+    def can_perform_action(user_id, action_type, target_date=None):
+        """Verifica se l'utente può eseguire una determinata azione"""
+        status, _ = AttendanceEvent.get_user_status(user_id, target_date)
+        
+        valid_transitions = {
+            'clock_in': ['out'],
+            'clock_out': ['in', 'break'],
+            'break_start': ['in'],
+            'break_end': ['break']
+        }
+        
+        return status in valid_transitions.get(action_type, [])
+    
+    @staticmethod
+    def get_daily_work_hours(user_id, target_date=None):
+        """Calcola le ore lavorate totali per la giornata sommando tutte le sessioni di lavoro separate"""
+        if target_date is None:
+            target_date = date.today()
+        
+        try:
+            # Import db here to avoid circular imports
+            from app import db
+            
+            # Use raw SQL to avoid SQLAlchemy object encoding issues
+            from sqlalchemy import text
+            result = db.session.execute(
+                text("SELECT event_type, timestamp FROM attendance_event WHERE user_id = :user_id AND date = :target_date ORDER BY timestamp"),
+                {"user_id": user_id, "target_date": target_date}
+            )
+            
+            events = []
+            for row in result:
+                events.append({
+                    'event_type': row[0],
+                    'timestamp': row[1]
+                })
+            
+            if not events:
+                return 0
+        except Exception as e:
+            # Log error and return 0 hours if query fails
+            print(f"Error in get_daily_work_hours query: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
+        
+        # Prepara lista con timestamp convertiti (ora i dati sono già dictionary)
+        converted_events = []
+        for event in events:
+            # Assicurati che il timestamp sia un datetime object
+            if isinstance(event['timestamp'], str):
+                timestamp = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00'))
+            else:
+                timestamp = event['timestamp']
+            
+            converted_events.append({
+                'event_type': event['event_type'],
+                'timestamp': convert_to_italian_time(timestamp)
+            })
+        
+        total_work_seconds = 0
+        current_session_start = None
+        break_start = None
+        break_duration = 0
+        
+        for event in converted_events:
+            if event['event_type'] == 'clock_in':
+                if current_session_start is None:
+                    current_session_start = event['timestamp']
+                    break_duration = 0  # Reset break duration for new session
+                    
+            elif event['event_type'] == 'clock_out':
+                if current_session_start is not None:
+                    # Calcola durata sessione meno pause
+                    session_duration_seconds = (event['timestamp'] - current_session_start).total_seconds()
+                    
+                    # Converti tutto ai minuti con arrotondamento matematico corretto
+                    session_duration_minutes = round(session_duration_seconds / 60)
+                    break_duration_minutes = round(break_duration / 60)
+                    
+                    work_minutes = max(0, session_duration_minutes - break_duration_minutes)
+                    total_work_seconds += work_minutes * 60
+                    
+                    # Reset per prossima sessione
+                    current_session_start = None
+                    break_duration = 0
+                    
+            elif event['event_type'] == 'break_start':
+                if current_session_start is not None:
+                    break_start = event['timestamp']
+                    
+            elif event['event_type'] == 'break_end':
+                if break_start is not None and current_session_start is not None:
+                    # Aggiungi durata pausa alla sessione corrente
+                    break_seconds = (event['timestamp'] - break_start).total_seconds()
+                    break_minutes = round(break_seconds / 60)
+                    break_duration += break_minutes * 60
+                    break_start = None
+        
+        # Se c'è una sessione in corso (solo per oggi)
+        if current_session_start and target_date == date.today():
+            from zoneinfo import ZoneInfo
+            italy_tz = ZoneInfo('Europe/Rome')
+            current_time = datetime.now(italy_tz)
+            
+            # Se c'è una pausa in corso, aggiungila alla durata pause
+            ongoing_break = 0
+            if break_start:
+                ongoing_break = (current_time - break_start).total_seconds()
+                
+            # Calcola tempo sessione corrente
+            session_duration_seconds = (current_time - current_session_start).total_seconds()
+            session_duration_minutes = round(session_duration_seconds / 60)
+            break_duration_minutes = round(break_duration / 60)
+            ongoing_break_minutes = round(ongoing_break / 60)
+            
+            work_minutes = max(0, session_duration_minutes - break_duration_minutes - ongoing_break_minutes)
+            total_work_seconds += work_minutes * 60
+        
+        # Converti secondi in ore mantenendo precisione ai minuti
+        # Tronca ai minuti: total_work_seconds è già in incrementi di 60 secondi
+        work_hours = total_work_seconds / 3600
+        
+        # Non può essere negativo
+        return max(0, work_hours)
+    
+    @staticmethod
+    def get_daily_events(user_id, target_date=None):
+        """Restituisce tutti gli eventi della giornata ordinati per timestamp"""
+        if target_date is None:
+            target_date = date.today()
+            
+        events = AttendanceEvent.query.filter(
+            AttendanceEvent.user_id == user_id,
+            AttendanceEvent.date == target_date
+        ).order_by(AttendanceEvent.timestamp).all()
+        
+        # Crea lista di eventi con timestamp convertiti senza modificare gli originali
+        converted_events = []
+        for event in events:
+            # Crea un oggetto semplice con i dati necessari
+            event_data = type('Event', (), {
+                'id': event.id,
+                'user_id': event.user_id,
+                'date': event.date,
+                'event_type': event.event_type,
+                'timestamp': convert_to_italian_time(event.timestamp),
+                'notes': event.notes,
+                'created_at': event.created_at,
+                'user': event.user
+            })()
+            converted_events.append(event_data)
+        
+        return converted_events
+    
+    @staticmethod
+    def get_daily_summary(user_id, target_date):
+        """Crea un riassunto giornaliero compatibile con la visualizzazione storica"""
+        events = AttendanceEvent.get_daily_events(user_id, target_date)
+        
+        if not events:
+            return None
+            
+        # Trova primo clock_in e ultimo clock_out del giorno
+        first_clock_in = None
+        last_clock_out = None
+        first_break_start = None
+        last_break_end = None
+        
+        for event in events:
+            if event.event_type == 'clock_in' and first_clock_in is None:
+                first_clock_in = event.timestamp
+            elif event.event_type == 'clock_out':
+                last_clock_out = event.timestamp
+            elif event.event_type == 'break_start' and first_break_start is None:
+                first_break_start = event.timestamp
+            elif event.event_type == 'break_end':
+                last_break_end = event.timestamp
+        
+        # Crea un oggetto simile ad AttendanceRecord per compatibilità
+        class DailySummary:
+            def __init__(self, date, clock_in, clock_out, break_start, break_end, user_id):
+                self.date = date
+                self.clock_in = clock_in
+                self.clock_out = clock_out
+                self.break_start = break_start
+                self.break_end = break_end
+                self.user_id = user_id
+                self.notes = events[-1].notes if events and events[-1].notes else None
+            
+            def get_work_hours(self):
+                return AttendanceEvent.get_daily_work_hours(self.user_id, self.date)
+        
+        return DailySummary(
+            date=target_date,
+            clock_in=first_clock_in,
+            clock_out=last_clock_out,
+            break_start=first_break_start,
+            break_end=last_break_end,
+            user_id=user_id
+        )
+    
+    @staticmethod
+    def get_date_range_summaries(user_id, start_date, end_date):
+        """Restituisce riassunti giornalieri per un range di date"""
+        summaries = []
+        current_date = start_date
+        
+        while current_date <= end_date:
+            summary = AttendanceEvent.get_daily_summary(user_id, current_date)
+            if summary:
+                summaries.append(summary)
+            current_date += timedelta(days=1)
+        
+        return sorted(summaries, key=lambda x: x.date, reverse=True)
+    
+    @staticmethod
+    def get_events_as_records(user_id, start_date, end_date):
+        """Converte gli eventi in UN SOLO record per giorno per evitare duplicati"""
+        events = AttendanceEvent.query.filter(
+            AttendanceEvent.user_id == user_id,
+            AttendanceEvent.date >= start_date,
+            AttendanceEvent.date <= end_date
+        ).order_by(AttendanceEvent.date.asc(), AttendanceEvent.timestamp.asc()).all()
+        
+        # Raggruppa eventi per data
+        events_by_date = {}
+        for event in events:
+            if event.date not in events_by_date:
+                events_by_date[event.date] = []
+            events_by_date[event.date].append(event)
+        
+        records = []
+        
+        # Per ogni giorno, crea UN SOLO record con primo clock_in e ultimo clock_out
+        for date, day_events in events_by_date.items():
+            if not day_events:
+                continue
+                
+            # Trova primo clock_in e ultimo clock_out del giorno
+            first_clock_in = None
+            last_clock_out = None
+            first_break_start = None
+            last_break_end = None
+            all_notes = []
+            
+            for event in day_events:
+                if event.event_type == 'clock_in' and first_clock_in is None:
+                    first_clock_in = event.timestamp
+                elif event.event_type == 'clock_out':
+                    last_clock_out = event.timestamp
+                elif event.event_type == 'break_start' and first_break_start is None:
+                    first_break_start = event.timestamp
+                elif event.event_type == 'break_end':
+                    last_break_end = event.timestamp
+                
+                if event.notes:
+                    all_notes.append(event.notes)
+            
+            # Crea UN SOLO record per giorno
+            class DayRecord:
+                def __init__(self, date, clock_in=None, clock_out=None, break_start=None, break_end=None, notes=None, user=None):
+                    self.date = date
+                    self.clock_in = clock_in
+                    self.clock_out = clock_out
+                    self.break_start = break_start
+                    self.break_end = break_end
+                    self.notes = notes or ""
+                    self.user_id = user_id
+                    self.user = user
+                
+                def get_work_hours(self):
+                    return AttendanceEvent.get_daily_work_hours(self.user_id, self.date)
+            
+            # Ottieni informazioni utente dal primo evento del giorno
+            user = day_events[0].user if day_events else None
+            
+            records.append(DayRecord(
+                date=date,
+                clock_in=first_clock_in,
+                clock_out=last_clock_out,
+                break_start=first_break_start,
+                break_end=last_break_end,
+                notes=' | '.join(all_notes) if all_notes else '',
+                user=user
+            ))
+        
+        # Ordina per data decrescente
+        records.sort(key=lambda x: x.date, reverse=True)
+        return records
+    
+    @staticmethod
+    def create_work_sequences(day_events):
+        """Crea sequenze di lavoro (entrata-uscita) da una lista di eventi"""
+        sequences = []
+        current_seq = {}
+        
+        for event in day_events:
+            if event.event_type == 'clock_in':
+                # Inizia una nuova sequenza
+                if current_seq:  # Se c'era una sequenza precedente senza clock_out
+                    sequences.append(current_seq)
+                current_seq = {
+                    'clock_in': event.timestamp,
+                    'notes': event.notes or ''
+                }
+            elif event.event_type == 'clock_out':
+                if current_seq:  # Se c'è una sequenza attiva
+                    current_seq['clock_out'] = event.timestamp
+                    if event.notes:
+                        current_seq['notes'] += (' ' + event.notes if current_seq['notes'] else event.notes)
+                    sequences.append(current_seq)
+                    current_seq = {}
+                else:
+                    # Clock out senza clock in precedente - solo se ha timestamp valido
+                    if event.timestamp:
+                        sequences.append({
+                            'clock_out': event.timestamp,
+                            'notes': event.notes or ''
+                        })
+            elif event.event_type == 'break_start':
+                if current_seq:
+                    current_seq['break_start'] = event.timestamp
+                    if event.notes:
+                        current_seq['notes'] += (' ' + event.notes if current_seq['notes'] else event.notes)
+            elif event.event_type == 'break_end':
+                if current_seq:
+                    current_seq['break_end'] = event.timestamp
+                    if event.notes:
+                        current_seq['notes'] += (' ' + event.notes if current_seq['notes'] else event.notes)
+        
+        # Aggiungi l'ultima sequenza se incompleta e ha almeno un timestamp
+        if current_seq and (current_seq.get('clock_in') or current_seq.get('clock_out')):
+            sequences.append(current_seq)
+        
+        # Filtra sequenze che hanno almeno un timestamp valido
+        valid_sequences = []
+        for seq in sequences:
+            if seq.get('clock_in') or seq.get('clock_out') or seq.get('break_start') or seq.get('break_end'):
+                valid_sequences.append(seq)
+        
+        # Se non ci sono sequenze valide, non creare righe vuote
+        return valid_sequences if valid_sequences else []
+    
+    @staticmethod
+    def validate_data_integrity(user_id=None, date_range_days=7):
+        """Identifica incongruenze nei dati di presenza (clock_in senza clock_out, etc.)"""
+        from datetime import date, timedelta
+        
+        query = AttendanceEvent.query
+        if user_id:
+            query = query.filter(AttendanceEvent.user_id == user_id)
+        
+        # Controlla ultimi N giorni se non specificato diversamente
+        end_date = date.today()
+        start_date = end_date - timedelta(days=date_range_days)
+        query = query.filter(AttendanceEvent.date >= start_date, AttendanceEvent.date <= end_date)
+        
+        events = query.order_by(AttendanceEvent.date.asc(), AttendanceEvent.timestamp.asc()).all()
+        
+        issues = []
+        events_by_user_date = {}
+        
+        # Raggruppa eventi per utente e data
+        for event in events:
+            key = (event.user_id, event.date)
+            if key not in events_by_user_date:
+                events_by_user_date[key] = []
+            events_by_user_date[key].append(event)
+        
+        # Controlla ogni giorno per ogni utente
+        for (user_id, date_check), day_events in events_by_user_date.items():
+            clock_ins = [e for e in day_events if e.event_type == 'clock_in']
+            clock_outs = [e for e in day_events if e.event_type == 'clock_out']
+            break_starts = [e for e in day_events if e.event_type == 'break_start']
+            break_ends = [e for e in day_events if e.event_type == 'break_end']
+            
+            # Controlla incongruenze
+            if len(clock_ins) != len(clock_outs):
+                issues.append({
+                    'type': 'unmatched_clock_events',
+                    'user_id': user_id,
+                    'date': date_check,
+                    'description': f'Clock-in: {len(clock_ins)}, Clock-out: {len(clock_outs)}',
+                    'severity': 'high'
+                })
+            
+            if len(break_starts) != len(break_ends):
+                issues.append({
+                    'type': 'unmatched_break_events',
+                    'user_id': user_id,
+                    'date': date_check,
+                    'description': f'Break-start: {len(break_starts)}, Break-end: {len(break_ends)}',
+                    'severity': 'medium'
+                })
+        
+        return issues
+
+class LeaveRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    leave_type = db.Column(db.String(50), nullable=False)  # Ferie, Permesso, Malattia
+    reason = db.Column(db.Text)
+    status = db.Column(db.String(20), default='Pending')  # Pending, Approved, Rejected
+    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    user = db.relationship('User', foreign_keys=[user_id], backref='leave_requests')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_leaves')
+
+class Shift(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    shift_type = db.Column(db.String(50), nullable=False)  # Morning, Afternoon, Evening
+    created_at = db.Column(db.DateTime, default=italian_now)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    user = db.relationship('User', foreign_keys=[user_id], backref='shifts')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_shifts')
+    
+    def get_duration_hours(self):
+        from datetime import datetime, timedelta
+        start_dt = datetime.combine(date.today(), self.start_time)
+        end_dt = datetime.combine(date.today(), self.end_time)
+        if end_dt < start_dt:  # Next day
+            end_dt += timedelta(days=1)
+        return (end_dt - start_dt).total_seconds() / 3600
+
+class ShiftTemplate(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    description = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    creator = db.relationship('User', backref='shift_templates')
+
+
+class PresidioCoverage(db.Model):
+    """Definisce la copertura presidio per giorno della settimana e fascia oraria con periodo di validità"""
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_week = db.Column(db.Integer, nullable=False)  # 0=Lunedì, 1=Martedì, ..., 6=Domenica
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    required_roles = db.Column(db.Text, nullable=False)  # JSON array dei ruoli richiesti per questa fascia
+    description = db.Column(db.String(200))  # Descrizione opzionale della copertura
+    is_active = db.Column(db.Boolean, default=True)
+    # Nuovi campi per periodo di validità
+    start_date = db.Column(db.Date, nullable=False)  # Data inizio validità
+    end_date = db.Column(db.Date, nullable=False)    # Data fine validità
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+
+    creator = db.relationship('User', backref='presidio_coverages')
+
+    def get_day_name(self):
+        """Restituisce il nome del giorno in italiano"""
+        days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+        return days[self.day_of_week] if self.day_of_week < len(days) else 'Sconosciuto'
+    
+    def get_time_range(self):
+        """Restituisce la fascia oraria formattata"""
+        return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
+    
+    def get_required_roles_list(self):
+        """Restituisce la lista dei ruoli richiesti dal JSON"""
+        import json
+        try:
+            return json.loads(self.required_roles)
+        except (json.JSONDecodeError, TypeError):
+            return []
+    
+    def set_required_roles_list(self, roles_list):
+        """Imposta la lista dei ruoli richiesti come JSON"""
+        import json
+        self.required_roles = json.dumps(roles_list)
+    
+    def get_required_roles_display(self):
+        """Restituisce i ruoli formattati per la visualizzazione"""
+        roles = self.get_required_roles_list()
+        if len(roles) == 1:
+            return roles[0]
+        elif len(roles) == 2:
+            return f"{roles[0]} o {roles[1]}"
+        elif len(roles) > 2:
+            return f"{', '.join(roles[:-1])} o {roles[-1]}"
+        return "Nessun ruolo"
+    
+    def is_valid_for_date(self, check_date):
+        """Verifica se la copertura è valida per una data specifica"""
+        return self.start_date <= check_date <= self.end_date and self.is_active
+    
+    def get_period_display(self):
+        """Restituisce il periodo di validità formattato"""
+        return f"{self.start_date.strftime('%d/%m/%Y')} - {self.end_date.strftime('%d/%m/%Y')}"
+
+
+class ReperibilitaCoverage(db.Model):
+    """Definisce la copertura reperibilità per giorno della settimana e fascia oraria con periodo di validità"""
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_week = db.Column(db.Integer, nullable=False)  # 0=Lunedì, 1=Martedì, ..., 6=Domenica, 7=Festivi
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    required_roles = db.Column(db.Text, nullable=False)  # JSON array dei ruoli richiesti per questa fascia
+    description = db.Column(db.String(200))  # Descrizione opzionale della copertura
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Periodo di validità
+    start_date = db.Column(db.Date, nullable=False)  # Data inizio validità
+    end_date = db.Column(db.Date, nullable=False)    # Data fine validità
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    creator = db.relationship('User', backref='reperibilita_coverages')
+    
+    def get_day_name(self):
+        """Restituisce il nome del giorno in italiano"""
+        days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica', 'Festivi']
+        return days[self.day_of_week] if self.day_of_week < len(days) else 'Sconosciuto'
+    
+    def get_time_range(self):
+        """Restituisce la fascia oraria formattata"""
+        return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
+    
+    def get_required_roles_list(self):
+        """Restituisce la lista dei ruoli richiesti dal JSON"""
+        try:
+            import json
+            return json.loads(self.required_roles)
+        except:
+            return []
+    
+    def set_required_roles_list(self, roles_list):
+        """Imposta la lista dei ruoli richiesti come JSON"""
+        import json
+        self.required_roles = json.dumps(roles_list)
+    
+    def get_required_roles_display(self):
+        """Restituisce i ruoli formattati per la visualizzazione"""
+        roles = self.get_required_roles_list()
+        return ', '.join(roles) if roles else 'Nessuno'
+    
+    def is_valid_for_date(self, check_date):
+        """Verifica se la copertura è valida per una data specifica"""
+        return self.start_date <= check_date <= self.end_date and self.is_active
+    
+    def get_period_display(self):
+        """Restituisce il periodo di validità formattato"""
+        return f"{self.start_date.strftime('%d/%m/%Y')} - {self.end_date.strftime('%d/%m/%Y')}"
+
+
+class ReperibilitaShift(db.Model):
+    """Turni di reperibilità separati dai turni normali"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    description = db.Column(db.String(200))  # Descrizione del turno reperibilità
+    created_at = db.Column(db.DateTime, default=italian_now)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    user = db.relationship('User', foreign_keys=[user_id], backref='reperibilita_shifts')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_reperibilita_shifts')
+    
+    def get_duration_hours(self):
+        """Calcola la durata del turno in ore"""
+        start = datetime.combine(date.today(), self.start_time)
+        end = datetime.combine(date.today(), self.end_time)
+        
+        # Handle overnight shifts
+        if end < start:
+            end += timedelta(days=1)
+        
+        duration = end - start
+        return duration.total_seconds() / 3600
+
+
+class ReperibilitaIntervention(db.Model):
+    """Interventi di reperibilità registrati dagli utenti"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shift_id = db.Column(db.Integer, db.ForeignKey('reperibilita_shift.id'), nullable=True)
+    start_datetime = db.Column(db.DateTime, nullable=False)
+    end_datetime = db.Column(db.DateTime, nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    priority = db.Column(db.String(10), default='Media', nullable=False)  # 'Bassa', 'Media', 'Alta'
+    is_remote = db.Column(db.Boolean, default=True, nullable=False)  # True = remoto, False = in presenza
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationships
+    user = db.relationship('User', backref='reperibilita_interventions')
+    shift = db.relationship('ReperibilitaShift', backref='interventions')
+    
+    @property
+    def duration_minutes(self):
+        """Calcola la durata dell'intervento in minuti"""
+        if self.end_datetime:
+            delta = self.end_datetime - self.start_datetime
+            return round(delta.total_seconds() / 60, 1)
+        return None
+    
+    @property
+    def is_active(self):
+        """Controlla se l'intervento è ancora attivo (non terminato)"""
+        return self.end_datetime is None
+    
+    def __repr__(self):
+        return f'<ReperibilitaIntervention {self.user.username} at {self.start_datetime}>'
+
+
+class Intervention(db.Model):
+    """Interventi generici registrati dagli utenti (non di reperibilità)"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    start_datetime = db.Column(db.DateTime, nullable=False)
+    end_datetime = db.Column(db.DateTime, nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    priority = db.Column(db.String(10), default='Media', nullable=False)  # 'Bassa', 'Media', 'Alta'
+    is_remote = db.Column(db.Boolean, default=True, nullable=False)  # True = remoto, False = in presenza
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationships
+    user = db.relationship('User', backref='general_interventions')
+    
+    @property
+    def duration_minutes(self):
+        """Calcola la durata dell'intervento in minuti"""
+        if self.end_datetime:
+            delta = self.end_datetime - self.start_datetime
+            return round(delta.total_seconds() / 60, 1)
+        return None
+    
+    @property
+    def is_active(self):
+        """Controlla se l'intervento è ancora attivo (non terminato)"""
+        return self.end_datetime is None
+    
+    def __repr__(self):
+        return f'<Intervention {self.user.username} at {self.start_datetime}>'
+
+
+class ReperibilitaTemplate(db.Model):
+    """Template per generazione automatica turni reperibilità"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    description = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    creator = db.relationship('User', backref='reperibilita_templates')
+
+
+class Holiday(db.Model):
+    """Festività italiane gestibili dagli amministratori"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    month = db.Column(db.Integer, nullable=False)  # 1-12
+    day = db.Column(db.Integer, nullable=False)    # 1-31
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    description = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Relationships
+    creator = db.relationship('User', backref='created_holidays')
+    
+    def __repr__(self):
+        return f'<Holiday {self.name}: {self.day}/{self.month}>'
+    
+    @property
+    def date_display(self):
+        """Formato visualizzazione data"""
+        return f"{self.day:02d}/{self.month:02d}"
+    
+    def is_holiday_on_date(self, check_date):
+        """Verifica se questa festività cade nella data specificata"""
+        return (check_date.month == self.month and 
+                check_date.day == self.day and 
+                self.is_active)
+
+
+class PasswordResetToken(db.Model):
+    """Token per reset password"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(100), nullable=False, unique=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationships
+    user = db.relationship('User', backref='password_reset_tokens')
+    
+    @property
+    def is_expired(self):
+        """Controlla se il token è scaduto"""
+        from datetime import datetime
+        # Confronta entrambi in UTC per evitare problemi timezone
+        now_utc = datetime.utcnow()
+        return now_utc > self.expires_at
+    
+    @property
+    def is_valid(self):
+        """Controlla se il token è valido (non usato e non scaduto)"""
+        return not self.used and not self.is_expired
+    
+    def __repr__(self):
+        return f'<PasswordResetToken {self.token[:8]}... for {self.user.username if self.user else "Unknown"}>'
+
+
+class Sede(db.Model):
+    """Modello per le sedi aziendali"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    address = db.Column(db.String(200), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationships (users già definito tramite backref in User)
+    work_schedules = db.relationship('WorkSchedule', backref='sede_obj', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<Sede {self.name}>'
+    
+    def get_active_schedules(self):
+        """Restituisce gli orari di lavoro attivi per questa sede"""
+        return self.work_schedules.filter_by(active=True).all()
+
+
+class WorkSchedule(db.Model):
+    """Modello per gli orari di lavoro per ogni sede"""
+    id = db.Column(db.Integer, primary_key=True)
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Constraint per evitare duplicati nella stessa sede
+    __table_args__ = (db.UniqueConstraint('sede_id', 'name', name='_sede_schedule_name_uc'),)
+    
+    def __repr__(self):
+        return f'<WorkSchedule {self.name} at {self.sede_obj.name if self.sede_obj else "Unknown Sede"}>'
+    
+    def get_duration_hours(self):
+        """Calcola la durata in ore dell'orario di lavoro"""
+        start_minutes = self.start_time.hour * 60 + self.start_time.minute
+        end_minutes = self.end_time.hour * 60 + self.end_time.minute
+        
+        # Gestisci il caso di orario che attraversa la mezzanotte
+        if end_minutes < start_minutes:
+            end_minutes += 24 * 60
+        
+        duration_minutes = end_minutes - start_minutes
+        return duration_minutes / 60.0
+    
+    @property
+    def duration_display(self):
+        """Formato di visualizzazione della durata"""
+        hours = self.get_duration_hours()
+        return f"{hours:.1f}h"

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Replica Presidio - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-copy me-2"></i>Replica Presidio
+    </h1>
+    <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Annulla
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Nuovo Periodo di Validità
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.start_date.label(class="form-label") }}
+                                {{ form.start_date(class="form-control") }}
+                                {% if form.start_date.errors %}
+                                    {% for error in form.start_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.end_date.label(class="form-label") }}
+                                {{ form.end_date(class="form-control") }}
+                                {% if form.end_date.errors %}
+                                    {% for error in form.end_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Presidio Originale
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Periodo Attuale:</strong><br>
+                    <span class="badge bg-secondary">{{ original_start_date.strftime('%d/%m/%Y') }} - {{ original_end_date.strftime('%d/%m/%Y') }}</span>
+                </p>
+                <p class="mb-2">
+                    <strong>Coperture Incluse:</strong><br>
+                    <span class="badge bg-primary">{{ coverage_count }} coperture</span>
+                </p>
+                <hr>
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-lightbulb me-1"></i>
+                    <small>
+                        <strong>Cosa succede:</strong><br>
+                        Tutte le coperture del presidio originale verranno copiate identiche nel nuovo periodo, cambiando solo le date di validità.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card border-warning mt-3">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Attenzione
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0 small">
+                    <li><i class="fas fa-check-circle text-success me-1"></i>Giorni della settimana: mantenuti</li>
+                    <li><i class="fas fa-check-circle text-success me-1"></i>Orari di copertura: mantenuti</li>
+                    <li><i class="fas fa-check-circle text-success me-1"></i>Ruoli richiesti: mantenuti</li>
+                    <li><i class="fas fa-check-circle text-success me-1"></i>Descrizioni: mantenute</li>
+                    <li><i class="fas fa-edit text-primary me-1"></i>Date validità: <strong>modificate</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

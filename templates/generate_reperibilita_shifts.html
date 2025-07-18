@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Genera Turnazioni Reperibilità{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-cogs"></i> Genera Turnazioni Reperibilità</h4>
+                    <p class="mb-0 text-muted">Crea automaticamente i turni di reperibilità basati sulle coperture configurate</p>
+                </div>
+                <div class="card-body">
+                    <!-- Info box -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Come funziona la generazione</h6>
+                        <ul class="mb-0">
+                            <li>I turni vengono assegnati in base alle <strong>coperture reperibilità</strong> configurate</li>
+                            <li>Il sistema bilancia automaticamente il carico tra gli utenti considerando il <strong>30% della capacità normale</strong></li>
+                            <li>Gli utenti con <strong>ferie o permessi</strong> vengono esclusi automaticamente</li>
+                            <li>La generazione sovrascrive eventuali turni esistenti nel periodo selezionato</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control", placeholder="es. Reperibilità Gennaio 2025") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.start_date.label(class="form-label") }}
+                                {{ form.start_date(class="form-control") }}
+                                {% if form.start_date.errors %}
+                                    <div class="text-danger">{{ form.start_date.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.end_date.label(class="form-label") }}
+                                {{ form.end_date(class="form-control") }}
+                                {% if form.end_date.errors %}
+                                    <div class="text-danger">{{ form.end_date.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3", placeholder="Descrizione opzionale del template di reperibilità...") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">{{ form.description.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Warning box -->
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Attenzione</h6>
+                            <p class="mb-0">
+                                La generazione eliminerà <strong>tutti i turni di reperibilità esistenti</strong> nel periodo selezionato.
+                                Assicurati che le <strong>coperture reperibilità</strong> siano configurate correttamente prima di procedere.
+                            </p>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('reperibilita_shifts') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Annulla
+                            </a>
+                            <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-info">
+                                <i class="fas fa-cog"></i> Gestisci Coperture
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

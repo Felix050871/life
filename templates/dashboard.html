@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Workly{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="mb-4">
+                <i class="fas fa-home me-2"></i>Benvenuto, {{ current_user.first_name }}!
+            </h1>
+            
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Registrazione Presenze
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if today_attendance %}
+                        <div class="row g-3">
+                            {% if not today_attendance.entry_time %}
+                                <div class="col-md-3">
+                                    <form method="POST" action="{{ url_for('checkin') }}">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-sign-in-alt me-1"></i>Entrata
+                                        </button>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <div class="col-md-3">
+                                    <button class="btn btn-outline-success w-100" disabled>
+                                        <i class="fas fa-check me-1"></i>Entrata: {{ today_attendance.entry_time.strftime('%H:%M') }}
+                                    </button>
+                                </div>
+                            {% endif %}
+                            
+                            {% if today_attendance.entry_time and not today_attendance.exit_time %}
+                                {% if not today_attendance.break_start %}
+                                    <div class="col-md-3">
+                                        <form method="POST" action="{{ url_for('break_start') }}">
+                                            <button type="submit" class="btn btn-warning w-100">
+                                                <i class="fas fa-pause me-1"></i>Inizio Pausa
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% elif not today_attendance.break_end %}
+                                    <div class="col-md-3">
+                                        <form method="POST" action="{{ url_for('break_end') }}">
+                                            <button type="submit" class="btn btn-info w-100">
+                                                <i class="fas fa-play me-1"></i>Fine Pausa
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <div class="col-md-3">
+                                        <button class="btn btn-outline-info w-100" disabled>
+                                            <i class="fas fa-check me-1"></i>Pausa Completata
+                                        </button>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="col-md-3">
+                                    <form method="POST" action="{{ url_for('checkout') }}">
+                                        <button type="submit" class="btn btn-danger w-100">
+                                            <i class="fas fa-sign-out-alt me-1"></i>Uscita
+                                        </button>
+                                    </form>
+                                </div>
+                            {% elif today_attendance.exit_time %}
+                                <div class="col-md-3">
+                                    <button class="btn btn-outline-danger w-100" disabled>
+                                        <i class="fas fa-check me-1"></i>Uscita: {{ today_attendance.exit_time.strftime('%H:%M') }}
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if today_attendance.entry_time %}
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <strong>Oggi:</strong>
+                                    {% if today_attendance.total_hours > 0 %}
+                                        {{ "%.2f"|format(today_attendance.total_hours) }} ore lavorate
+                                    {% else %}
+                                        In corso...
+                                    {% endif %}
+                                    {% if current_user.location %}
+                                        | Sede: {{ current_user.location.name }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="row">
+                            <div class="col-md-3">
+                                <form method="POST" action="{{ url_for('checkin') }}">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Entrata
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Recent Attendances -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Presenze Recenti
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_attendances %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Entrata</th>
+                                        <th>Uscita</th>
+                                        <th>Ore Totali</th>
+                                        <th>Sede</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attendance in recent_attendances %}
+                                    <tr>
+                                        <td>{{ attendance.date.strftime('%d/%m/%Y') }}</td>
+                                        <td>
+                                            {% if attendance.entry_time %}
+                                                {{ attendance.entry_time.strftime('%H:%M') }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if attendance.exit_time %}
+                                                {{ attendance.exit_time.strftime('%H:%M') }}
+                                            {% else %}
+                                                <span class="text-warning">In corso</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if attendance.total_hours > 0 %}
+                                                {{ "%.2f"|format(attendance.total_hours) }}h
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if attendance.location %}
+                                                {{ attendance.location.name }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('attendance') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>Vedi Tutte le Presenze
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">Nessuna presenza registrata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Monthly Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Statistiche Mensili
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-12 mb-3">
+                            <h3 class="text-primary mb-1">{{ "%.1f"|format(stats.total_hours_month) }}</h3>
+                            <small class="text-muted">Ore Totali</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success mb-1">{{ stats.days_worked }}</h4>
+                            <small class="text-muted">Giorni Lavorati</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-info mb-1">{{ "%.1f"|format(stats.avg_hours_day) }}</h4>
+                            <small class="text-muted">Media Ore/Giorno</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pending Interventions -->
+            {% if pending_interventions %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks me-2"></i>Interventi in Sospeso
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for intervention in pending_interventions %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ intervention.title }}</strong><br>
+                                <small class="text-muted">{{ intervention.intervention_type|title }}</small>
+                            </div>
+                            <span class="badge bg-warning">{{ intervention.status|title }}</span>
+                        </div>
+                        {% if not loop.last %}<hr>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Quick Links -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-external-link-alt me-2"></i>Link Rapidi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('qr_entrata') }}" target="_blank" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-qrcode me-1"></i>QR Code Entrata
+                        </a>
+                        <a href="{{ url_for('qr_uscita') }}" target="_blank" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-qrcode me-1"></i>QR Code Uscita
+                        </a>
+                        <a href="{{ url_for('attendance') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-clock me-1"></i>Storico Presenze
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

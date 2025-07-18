@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Errore del Server{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center">
+                <h1 class="display-1 text-danger">500</h1>
+                <h2 class="mb-4">Errore Interno del Server</h2>
+                <p class="lead mb-4">Si è verificato un errore inaspettato. Il nostro team è stato notificato e sta lavorando per risolvere il problema.</p>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-home me-2"></i>Torna alla Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}Ferie e Permessi - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-umbrella-beach me-2"></i>Gestione Ferie e Permessi</h2>
+        {% if can_approve %}
+        <p class="text-muted">Gestisci le richieste di ferie e permessi del team</p>
+        {% else %}
+        <p class="text-muted">Le tue richieste di ferie e permessi</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New Request Form (for workers) -->
+{% if current_user.can_request_leave() %}
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus me-2"></i>Nuova Richiesta</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_leave_request') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.start_date.label(class="form-label") }}
+                            {{ form.start_date(class="form-control") }}
+                            {% if form.start_date.errors %}
+                            <div class="text-danger">
+                                {% for error in form.start_date.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.end_date.label(class="form-label") }}
+                            {{ form.end_date(class="form-control") }}
+                            {% if form.end_date.errors %}
+                            <div class="text-danger">
+                                {% for error in form.end_date.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.leave_type.label(class="form-label") }}
+                            {{ form.leave_type(class="form-select") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Giorni Richiesti</label>
+                            <input type="text" class="form-control" id="days-count" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.reason.label(class="form-label") }}
+                        {{ form.reason(class="form-control", rows="3", placeholder="Motivo della richiesta (opzionale)") }}
+                    </div>
+                    
+                    <div class="text-center">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Requests List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>
+                    {% if can_approve %}Tutte le Richieste{% else %}Le Mie Richieste{% endif %}
+                </h5>
+                {% if can_approve %}
+                <div>
+                    <span class="badge bg-warning">
+                        {{ requests|selectattr('status', 'equalto', 'Pending')|list|length }} Da Approvare
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if requests %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                {% if can_approve %}<th>Utente</th>{% endif %}
+                                <th>Periodo</th>
+                                <th>Giorni</th>
+                                <th>Tipo</th>
+                                <th>Motivo</th>
+                                <th>Stato</th>
+                                <th>Data Richiesta</th>
+                                {% if can_approve %}<th>Azioni</th>{% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in requests %}
+                            <tr class="{% if request.status == 'Pending' %}table-warning{% endif %}">
+                                {% if can_approve %}
+                                <td>
+                                    <strong>{{ request.user.get_full_name() }}</strong><br>
+                                    <small class="text-muted">{{ request.user.role }}</small>
+                                </td>
+                                {% endif %}
+                                <td>
+                                    <strong>{{ request.start_date.strftime('%d/%m/%Y') }}</strong><br>
+                                    <strong>{{ request.end_date.strftime('%d/%m/%Y') }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ (request.end_date - request.start_date).days + 1 }} giorni
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if request.leave_type == 'Ferie' %}
+                                    <span class="badge bg-success">{{ request.leave_type }}</span>
+                                    {% elif request.leave_type == 'Permesso' %}
+                                    <span class="badge bg-info">{{ request.leave_type }}</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">{{ request.leave_type }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.reason %}
+                                    <small>{{ request.reason[:50] }}{% if request.reason|length > 50 %}...{% endif %}</small>
+                                    {% else %}
+                                    <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.status == 'Approved' %}
+                                    <span class="badge bg-success">Approvata</span>
+                                    {% if request.approver %}
+                                    <br><small class="text-muted">da {{ request.approver.get_full_name() }}</small>
+                                    {% endif %}
+                                    {% elif request.status == 'Rejected' %}
+                                    <span class="badge bg-danger">Rifiutata</span>
+                                    {% if request.approver %}
+                                    <br><small class="text-muted">da {{ request.approver.get_full_name() }}</small>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="badge bg-warning">In Attesa</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ request.created_at.strftime('%d/%m/%Y') }}</small>
+                                    {% if request.approved_at %}
+                                    <br><small class="text-muted">Resp: {{ request.approved_at.strftime('%d/%m/%Y') }}</small>
+                                    {% endif %}
+                                </td>
+                                {% if can_approve and request.status == 'Pending' %}
+                                <td>
+                                    <div class="btn-group-vertical btn-group-sm">
+                                        <a href="{{ url_for('approve_leave', request_id=request.id) }}" 
+                                           class="btn btn-success btn-sm confirm-link"
+                                           data-message="Approvare questa richiesta?">
+                                            <i class="fas fa-check me-1"></i>Approva
+                                        </a>
+                                        <a href="{{ url_for('reject_leave', request_id=request.id) }}" 
+                                           class="btn btn-danger btn-sm confirm-link"
+                                           data-message="Rifiutare questa richiesta?">
+                                            <i class="fas fa-times me-1"></i>Rifiuta
+                                        </a>
+                                    </div>
+                                </td>
+                                {% elif can_approve %}
+                                <td>
+                                    <span class="text-muted">--</span>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-umbrella-beach fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna richiesta trovata</h5>
+                    {% if current_user.can_request_leave() %}
+                    <p class="text-muted">Inizia creando la tua prima richiesta di ferie o permesso</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics (for managers) -->
+{% if can_approve and requests %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Statistiche Richieste</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4 class="text-primary">{{ requests|length }}</h4>
+                        <small>Totali</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-warning">{{ requests|selectattr('status', 'equalto', 'Pending')|list|length }}</h4>
+                        <small>In Attesa</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-success">{{ requests|selectattr('status', 'equalto', 'Approved')|list|length }}</h4>
+                        <small>Approvate</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-danger">{{ requests|selectattr('status', 'equalto', 'Rejected')|list|length }}</h4>
+                        <small>Rifiutate</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Calculate days between dates
+function calculateDays() {
+    const startDate = document.querySelector('input[name="start_date"]').value;
+    const endDate = document.querySelector('input[name="end_date"]').value;
+    const daysCount = document.getElementById('days-count');
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (end >= start) {
+            const timeDiff = end.getTime() - start.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+            daysCount.value = daysDiff + ' giorni';
+        } else {
+            daysCount.value = 'Date non valide';
+        }
+    } else {
+        daysCount.value = '';
+    }
+}
+
+// Set default start date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    if (startDateInput && !startDateInput.value) {
+        startDateInput.value = today;
+    }
+    
+    // Add event listeners
+    if (startDateInput && endDateInput) {
+        startDateInput.addEventListener('change', calculateDays);
+        endDateInput.addEventListener('change', calculateDays);
+        calculateDays(); // Initial calculation
+    }
+});
+
+// Gestione modal di conferma personalizzato per evitare "una pagina incorporata"
+document.addEventListener('DOMContentLoaded', function() {
+    // Intercetta tutti i link con class="confirm-link"
+    document.querySelectorAll('.confirm-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const message = this.dataset.message || 'Sei sicuro di voler procedere?';
+            const href = this.href;
+            
+            showCustomConfirm(message, () => {
+                window.location.href = href;
+            });
+        });
+    });
+});
+
+function showCustomConfirm(message, onConfirm) {
+    let modal = document.getElementById('customConfirmModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" id="customConfirmModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Conferma</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="customConfirmBody">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="button" class="btn btn-primary" id="customConfirmOk">Conferma</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal = document.getElementById('customConfirmModal');
+    }
+    
+    document.getElementById('customConfirmBody').textContent = message;
+    
+    const okBtn = document.getElementById('customConfirmOk');
+    okBtn.onclick = function() {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        modalInstance.hide();
+        if (onConfirm) onConfirm();
+    };
+    
+    new bootstrap.Modal(modal).show();
+}
+</script>
+{% endblock %}

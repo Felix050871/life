@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Utenti - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-users me-2"></i>Gestione Utenti</h2>
+        <p class="text-muted">Amministra gli utenti e i loro ruoli nel sistema</p>
+    </div>
+</div>
+
+<!-- Create User Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-plus me-2"></i>Crea Nuovo Utente</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_user') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {{ form.username(class="form-control") }}
+                            {% if form.username.errors %}
+                            <div class="text-danger">
+                                {% for error in form.username.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control") }}
+                            {% if form.email.errors %}
+                            <div class="text-danger">
+                                {% for error in form.email.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.first_name.label(class="form-label") }}
+                            {{ form.first_name(class="form-control") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.last_name.label(class="form-label") }}
+                            {{ form.last_name(class="form-control") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control") }}
+                            <small class="text-muted">Minimo 6 caratteri</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.role.label(class="form-label") }}
+                            {{ form.role(class="form-select") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.part_time_percentage.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.part_time_percentage(class="form-control") }}
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="text-muted">Es: 100, 75,5, 50 (usa virgola per decimali)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ form.is_active(class="form-check-input") }}
+                                {{ form.is_active.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3 text-end">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>Utenti Registrati</h5>
+                <div>
+                    <span class="badge bg-success">{{ users|selectattr('is_active', 'equalto', True)|list|length }} Attivi</span>
+                    <span class="badge bg-secondary">{{ users|selectattr('is_active', 'equalto', False)|list|length }} Inattivi</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Utente</th>
+                                <th>Contatto</th>
+                                <th>Ruolo</th>
+                                <th>% Lavoro</th>
+                                <th>Stato</th>
+                                <th>Registrato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr class="{% if not user.active %}table-secondary{% endif %}">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            {% if user.active %}
+                                            <i class="fas fa-user-circle fa-2x text-success"></i>
+                                            {% else %}
+                                            <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <strong>{{ user.get_full_name() }}</strong><br>
+                                            <small class="text-muted">@{{ user.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <i class="fas fa-envelope me-1"></i>{{ user.email }}
+                                </td>
+                                <td>
+                                    {% if user.role == 'Admin' %}
+                                    <span class="badge bg-danger">{{ user.role }}</span>
+                                    {% elif user.role == 'Project Manager' %}
+                                    <span class="badge bg-warning">{{ user.role }}</span>
+                                    {% elif user.role == 'Ente' %}
+                                    <span class="badge bg-info">{{ user.role }}</span>
+                                    {% else %}
+                                    <span class="badge bg-primary">{{ user.role }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.role in ['Project Manager', 'Redattore', 'Sviluppatore', 'Operatore'] %}
+                                    <span class="badge bg-light text-dark">{{ user.part_time_percentage }}%</span>
+                                    {% else %}
+                                    <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.active %}
+                                    <span class="badge bg-success">Attivo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inattivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ user.created_at.strftime('%d/%m/%Y') }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('edit_user', user_id=user.id) }}" 
+                                           class="btn btn-outline-primary"
+                                           title="Modifica utente">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if user.id != current_user.id %}
+                                        <a href="{{ url_for('toggle_user', user_id=user.id) }}" 
+                                           class="btn {% if user.active %}btn-outline-danger{% else %}btn-outline-success{% endif %} confirm-link"
+                                           data-message="{% if user.active %}Disattivare{% else %}Attivare{% endif %} questo utente?"
+                                           title="{% if user.active %}Disattiva{% else %}Attiva{% endif %} utente">
+                                            {% if user.active %}
+                                            <i class="fas fa-user-slash"></i>
+                                            {% else %}
+                                            <i class="fas fa-user-check"></i>
+                                            {% endif %}
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun utente trovato</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Statistics -->
+{% if users %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Statistiche Utenti</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <h4 class="text-danger">{{ users|selectattr('role', 'equalto', 'Admin')|list|length }}</h4>
+                        <small>Admin</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-warning">{{ users|selectattr('role', 'equalto', 'Project Manager')|list|length }}</h4>
+                        <small>Project Manager</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Redattore')|list|length }}</h4>
+                        <small>Redattori</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Sviluppatore')|list|length }}</h4>
+                        <small>Sviluppatori</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Operatore')|list|length }}</h4>
+                        <small>Operatori</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-info">{{ users|selectattr('role', 'equalto', 'Ente')|list|length }}</h4>
+                        <small>Enti</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Role-based part-time percentage visibility
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.querySelector('select[name="role"]');
+    const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
+    
+    function togglePartTimeField() {
+        const selectedRole = roleSelect.value;
+        const showPartTime = ['Project Manager', 'Redattore', 'Sviluppatore', 'Operatore'].includes(selectedRole);
+        
+        if (showPartTime) {
+            partTimeGroup.style.display = 'block';
+        } else {
+            partTimeGroup.style.display = 'none';
+            document.querySelector('input[name="part_time_percentage"]').value = 100;
+        }
+    }
+    
+    roleSelect.addEventListener('change', togglePartTimeField);
+    togglePartTimeField(); // Initial call
+    
+    // Gestione modal di conferma personalizzato per evitare "una pagina incorporata"
+    document.querySelectorAll('.confirm-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const message = this.dataset.message || 'Sei sicuro di voler procedere?';
+            const href = this.href;
+            
+            showCustomConfirm(message, () => {
+                window.location.href = href;
+            });
+        });
+    });
+});
+
+function showCustomConfirm(message, onConfirm) {
+    let modal = document.getElementById('customConfirmModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" id="customConfirmModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Conferma</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="customConfirmBody">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="button" class="btn btn-primary" id="customConfirmOk">Conferma</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal = document.getElementById('customConfirmModal');
+    }
+    
+    document.getElementById('customConfirmBody').textContent = message;
+    
+    const okBtn = document.getElementById('customConfirmOk');
+    okBtn.onclick = function() {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        modalInstance.hide();
+        if (onConfirm) onConfirm();
+    };
+    
+    new bootstrap.Modal(modal).show();
+}
+</script>
+{% endblock %}

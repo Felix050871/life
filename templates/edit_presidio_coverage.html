@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Copertura Presidio - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-edit me-2"></i>Modifica Copertura Presidio
+                </h4>
+                <small class="text-muted">
+                    {{ coverage.get_day_name() }} - {{ coverage.get_time_range() }} - {{ coverage.required_role }}
+                </small>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Periodo di Validità -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-calendar-alt me-2"></i>Periodo di Validità
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.start_date.label(class="form-label") }}
+                            {{ form.start_date(class="form-control") }}
+                            {% for error in form.start_date.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.end_date.label(class="form-label") }}
+                            {{ form.end_date(class="form-control") }}
+                            {% for error in form.end_date.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <hr class="mb-4">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.days_of_week.label(class="form-label") }}
+                            <small class="text-muted d-block">Solo un giorno alla volta in modifica</small>
+                            {{ form.days_of_week(class="form-select", style="height: 160px;") }}
+                            {% for error in form.days_of_week.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.required_roles.label(class="form-label") }}
+                            <small class="text-muted d-block">Seleziona uno o più ruoli che possono coprire questo turno</small>
+                            {{ form.required_roles(class="form-select", style="height: 140px;") }}
+                            {% for error in form.required_roles.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.start_time.label(class="form-label") }}
+                            {{ form.start_time(class="form-control") }}
+                            {% for error in form.start_time.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.end_time.label(class="form-label") }}
+                            {{ form.end_time(class="form-control") }}
+                            {% for error in form.end_time.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", placeholder="Descrizione opzionale della copertura") }}
+                        {% for error in form.description.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                        </div>
+                        {% for error in form.is_active.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Indietro
+                        </a>
+                        <div>
+                            <button type="button" onclick="submitAsNew()" class="btn btn-success me-2">
+                                <i class="fas fa-copy me-1"></i>Salva come Nuovo
+                            </button>
+                            <button type="submit" name="action" value="update" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Salva Modifiche
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Modifica Esistente
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0 small">
+                            Le modifiche influenzeranno la generazione dei turni futuri. 
+                            I turni già assegnati non verranno modificati automaticamente.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-copy me-2"></i>Salva come Nuovo
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0 small">
+                            Crea una nuova copertura con le impostazioni modificate, 
+                            mantenendo quella originale invariata. Utile per creare coperture per periodi diversi.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function submitAsNew() {
+    // Crea un campo hidden per l'azione
+    const form = document.querySelector('form');
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'save_as_new';
+    form.appendChild(actionInput);
+    
+    // Invia il form
+    form.submit();
+}
+</script>
+{% endblock %}

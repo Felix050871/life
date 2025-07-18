@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Sedi - Workly{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-map-marker-alt me-2"></i>Gestione Sedi
+        </h1>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('new_location') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Nuova Sede
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- New/Edit Location Form -->
+    {% if form is defined %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                {% if editing %}
+                    <i class="fas fa-edit me-2"></i>Modifica Sede
+                {% else %}
+                    <i class="fas fa-plus me-2"></i>Nuova Sede
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control") }}
+                        {% if form.name.errors %}
+                            <div class="text-danger">
+                                {% for error in form.name.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check mt-4">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.address.label(class="form-label") }}
+                    {{ form.address(class="form-control", rows="3") }}
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control", rows="3") }}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        {{ form.start_time.label(class="form-label") }}
+                        {{ form.start_time(class="form-control") }}
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        {{ form.end_time.label(class="form-label") }}
+                        {{ form.end_time(class="form-control") }}
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        {{ form.break_duration.label(class="form-label") }}
+                        {{ form.break_duration(class="form-control") }}
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Salva
+                    </button>
+                    <a href="{{ url_for('locations') }}" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Locations List -->
+    <div class="card">
+        <div class="card-body">
+            {% if locations.items %}
+                <div class="row">
+                    {% for location in locations.items %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0">
+                                        {{ location.name }}
+                                        {% if location.is_active %}
+                                            <span class="badge bg-success ms-2">Attiva</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary ms-2">Inattiva</span>
+                                        {% endif %}
+                                    </h5>
+                                    {% if current_user.role == 'admin' %}
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('edit_location', id=location.id) }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-outline-danger" onclick="confirmDelete({{ location.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if location.address %}
+                                <p class="card-text">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    {{ location.address }}
+                                </p>
+                                {% endif %}
+                                
+                                {% if location.description %}
+                                <p class="card-text text-muted">{{ location.description }}</p>
+                                {% endif %}
+                                
+                                <div class="row text-center">
+                                    {% if location.start_time and location.end_time %}
+                                    <div class="col-4">
+                                        <small class="text-muted">Orario</small><br>
+                                        <strong>{{ location.start_time.strftime('%H:%M') }} - {{ location.end_time.strftime('%H:%M') }}</strong>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="col-4">
+                                        <small class="text-muted">Pausa</small><br>
+                                        <strong>{{ location.break_duration }}min</strong>
+                                    </div>
+                                    
+                                    <div class="col-4">
+                                        <small class="text-muted">Utenti</small><br>
+                                        <strong>{{ location.users|length }}</strong>
+                                    </div>
+                                </div>
+                                
+                                {% if location.users %}
+                                <hr>
+                                <h6 class="text-muted">Utenti Associati</h6>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for user in location.users[:5] %}
+                                        <span class="badge bg-light text-dark">{{ user.full_name }}</span>
+                                    {% endfor %}
+                                    {% if location.users|length > 5 %}
+                                        <span class="badge bg-secondary">+{{ location.users|length - 5 }} altri</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if locations.pages > 1 %}
+                <nav aria-label="Pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if locations.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('locations', page=locations.prev_num) }}">Precedente</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in locations.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != locations.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('locations', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if locations.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('locations', page=locations.next_num) }}">Successivo</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna sede configurata</h5>
+                    <p class="text-muted">Crea la prima sede aziendale per iniziare.</p>
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('new_location') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Crea Prima Sede
+                    </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(locationId) {
+    if (confirm('Sei sicuro di voler eliminare questa sede? Tutti i dati associati verranno rimossi.')) {
+        window.location.href = '/locations/delete/' + locationId;
+    }
+}
+</script>
+{% endblock %}

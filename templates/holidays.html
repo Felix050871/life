@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Festività{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-calendar-day"></i> Gestione Festività</h2>
+                <a href="{{ url_for('add_holiday') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Aggiungi Festività
+                </a>
+            </div>
+
+            {% if holidays %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Festività Configurate</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Data</th>
+                                    <th>Descrizione</th>
+                                    <th>Stato</th>
+                                    <th>Creata da</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for holiday in holidays %}
+                                <tr class="{{ 'table-secondary' if not holiday.is_active else '' }}">
+                                    <td>
+                                        <strong>{{ holiday.name }}</strong>
+                                        {% if not holiday.is_active %}
+                                        <small class="text-muted">(Disattivata)</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ holiday.date_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if holiday.description %}
+                                        {{ holiday.description }}
+                                        {% else %}
+                                        <em class="text-muted">Nessuna descrizione</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if holiday.is_active %}
+                                        <span class="badge bg-success">Attiva</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Disattivata</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ holiday.creator.get_full_name() if holiday.creator else 'N/A' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('edit_holiday', holiday_id=holiday.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Modifica
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-1" 
+                                                onclick="confirmDelete('{{ holiday.name }}', '{{ url_for('delete_holiday', holiday_id=holiday.id) }}')">
+                                            <i class="fas fa-trash"></i> Elimina
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Nessuna festività configurata</strong><br>
+                Clicca su "Aggiungi Festività" per iniziare a configurare le festività nazionali.
+            </div>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Torna alla Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per conferma eliminazione -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Conferma Eliminazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler eliminare la festività <strong id="holidayName"></strong>?</p>
+                <p class="text-muted">Questa azione non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Elimina</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(holidayName, deleteUrl) {
+    document.getElementById('holidayName').textContent = holidayName;
+    document.getElementById('confirmDeleteBtn').href = deleteUrl;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}

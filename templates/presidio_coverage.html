@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Copertura Presidio - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-shield-alt me-2"></i>Copertura Presidio</h1>
+    <a href="{{ url_for('create_presidio_coverage') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Nuova Copertura
+    </a>
+</div>
+
+<!-- Lista Presidi Configurati -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Presidi Configurati
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if presidio_groups %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Periodo Validità</th>
+                                    <th>Coperture</th>
+                                    <th>Creato da</th>
+                                    <th>Data Creazione</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for period_key, presidio in presidio_groups.items() %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary">
+                                                {{ presidio.start_date.strftime('%d/%m/%Y') }} - {{ presidio.end_date.strftime('%d/%m/%Y') }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                <strong>{{ presidio.coverages|length }} coperture</strong><br>
+                                                {% set days = [] %}
+                                                {% for coverage in presidio.coverages %}
+                                                    {% set day_name = coverage.get_day_name() %}
+                                                    {% if day_name not in days %}
+                                                        {% set _ = days.append(day_name) %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                <span class="text-muted">{{ days|join(', ') }}</span>
+                                            </div>
+                                        </td>
+                                        <td>{{ presidio.created_by }}</td>
+                                        <td>{{ presidio.created_at.strftime('%d/%m/%Y') }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('view_presidio_detail', period_key=period_key) }}" 
+                                                   class="btn btn-outline-info" title="Visualizza Dettaglio">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('replica_presidio', period_key=period_key) }}" 
+                                                   class="btn btn-outline-success" title="Replica Presidio">
+                                                    <i class="fas fa-copy"></i>
+                                                </a>
+                                                <a href="{{ url_for('edit_presidio_coverage', coverage_id=presidio.coverages[0].id) }}" 
+                                                   class="btn btn-outline-primary" title="Modifica">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        title="Elimina Presidio" 
+                                                        onclick="deletePresidio('{{ period_key }}', '{{ presidio.start_date.strftime('%d/%m/%Y') }} - {{ presidio.end_date.strftime('%d/%m/%Y') }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-info-circle text-muted me-2"></i>
+                        <span class="text-muted">Nessun presidio configurato</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Informazioni
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Le coperture presidio definiscono quando ogni ruolo deve essere presente</li>
+                    <li>È possibile creare sovrapposizioni di orari e ruoli per garantire continuità</li>
+                    <li>Le coperture vengono utilizzate per generare automaticamente le turnazioni</li>
+                    <li>Solo utenti con permessi di gestione turni possono modificare le coperture</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deletePresidio(periodKey, periodDisplay) {
+    showCustomConfirm(`Sei sicuro di voler eliminare il presidio ${periodDisplay}?\n\nQuesta azione eliminerà tutte le coperture associate a questo periodo.`, function() {
+        // Crea un form nascosto per inviare la richiesta POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ url_for('delete_entire_presidio', period_key='PERIOD_KEY') }}`.replace('PERIOD_KEY', periodKey);
+        
+        // Aggiungi il CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrf_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+        
+        // Aggiungi al documento e invia
+        document.body.appendChild(form);
+        form.submit();
+    });
+}
+
+function showCustomConfirm(message, onConfirm) {
+    // Crea modal se non esiste
+    let modal = document.getElementById('customConfirmModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" id="customConfirmModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Conferma</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="customConfirmBody">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="button" class="btn btn-primary" id="customConfirmOk">Conferma</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal = document.getElementById('customConfirmModal');
+    }
+    
+    // Aggiorna messaggio
+    document.getElementById('customConfirmBody').textContent = message;
+    
+    // Gestisci conferma
+    const okBtn = document.getElementById('customConfirmOk');
+    okBtn.onclick = function() {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        modalInstance.hide();
+        if (onConfirm) onConfirm();
+    };
+    
+    // Mostra modal
+    new bootstrap.Modal(modal).show();
+}
+</script>
+{% endblock %}
