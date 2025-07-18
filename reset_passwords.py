@@ -13,11 +13,11 @@ def reset_user_passwords():
     # Definisci le password corrette
     user_passwords = {
         'admin': 'admin123',
-        'responsabile': 'resp123',
+        'responsabile': 'responsabile123',
         'dev': 'dev123',
-        'operatore': 'op123',
-        'redattore': 'red123',
-        'management': 'mgmt123'
+        'operatore': 'operatore123',
+        'redattore': 'redattore123',
+        'management': 'management123'
     }
     
     with app.app_context():
