@@ -87,6 +87,8 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 18, 2025: **Responsabile Dual-Mode Implementation** - Configurato ruolo Responsabile con doppia funzionalità: registrazione presenze personali e richieste ferie con approvazione automatica, visualizzazione e gestione presenze/ferie della propria sede tramite dashboard dedicata
+- July 18, 2025: **Esclusione Admin/Management dalle Presenze** - Rimossi completamente Admin e Management da tutte le query di visualizzazione presenze team per nascondere utenti amministrativi dalle operazioni quotidiane
 - July 18, 2025: **Validazione Date Passate Ferie** - Implementata validazione completa server-side e client-side per impedire richieste di ferie/malattie/permessi in date passate, aggiunto controllo HTML5 min sui campi data e messaggi di errore specifici
 - July 18, 2025: **Permessi Supervisione Management** - Rimossa gestione turnazioni dal ruolo Management, implementata visualizzazione completa presenze di tutte le sedi in dashboard dedicata, accesso a tutti i dati presenze/reperibilità/interventi per supervisione e controllo senza funzioni operative
 - July 18, 2025: **Gestione Completa Richieste Ferie** - Implementato blocco registrazioni multiple nella stessa giornata per garantire integrità dati, aggiunto supporto per visualizzazione ferie/permessi/malattie approvate nello storico presenze, approvazione automatica richieste di malattia senza necessità di autorizzazione, possibilità per utenti di cancellare proprie richieste non ancora approvate
@@ -95,7 +97,6 @@ The application uses SQLAlchemy models with the following key entities:
 - July 18, 2025: **Rimozione Turni dalle Statistiche** - Eliminati tutti i riferimenti ai turni dalle pagine statistiche e dashboard, rimossi campi shifts_assigned, shifts_past, shifts_future dalle statistiche utente, aggiornati template per sostituire turni con interventi, mantenuti solo dati presenze e interventi
 - July 18, 2025: **Range Orari Flessibili** - Implementati range orari di entrata e uscita (start_time_min/max, end_time_min/max) sostituendo orari fissi, aggiornati modelli con metodi di visualizzazione range, form con validazioni, template con input group e JavaScript per sincronizzazione automatica min/max
 - July 18, 2025: **Selezione Giorni Settimana Orari** - Aggiunto campo days_of_week al modello WorkSchedule, implementati preset (Lun-Ven, Sab-Dom, Tutti giorni, Personalizzato), aggiornati form e template con JavaScript per sincronizzazione automatica, visualizzazione giorni nella tabella orari
-- July 18, 2025: **Miglioramenti UI Gestione Ruoli** - Risolti problemi di leggibilità con sfondo scuro per tutte le schede, rimosso permesso "Gestire Turni" dai template e dai ruoli Admin/Management, aggiornato forms.py per rimuovere can_manage_shifts
 - July 18, 2025: **Progetto Workly Creato** - Clone completo e indipendente della piattaforma NS12 con branding generico "Workly Platform", rimosso logo aziendale, aggiornati tutti i template e riferimenti, creati README.md e configurazione .replit per deployment autonomo
 
 ## User Preferences

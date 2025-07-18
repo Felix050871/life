@@ -95,8 +95,8 @@ class User(UserMixin, db.Model):
             'can_manage_users': self.role == 'Admin',
             'can_manage_shifts': self.role in ['Admin', 'Project Manager'],
             'can_approve_leave': self.role in ['Project Manager', 'Management', 'Responsabili'],
-            'can_request_leave': self.role in ['Redattore', 'Sviluppatore', 'Operatore'],
-            'can_access_attendance': self.role not in ['Ente'],
+            'can_request_leave': self.role in ['Redattore', 'Sviluppatore', 'Operatore', 'Responsabili'],
+            'can_access_attendance': self.role not in ['Ente', 'Admin'],
             'can_access_dashboard': self.role not in ['Ente'],
             'can_view_reports': self.role in ['Admin', 'Project Manager', 'Management']
         }

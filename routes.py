@@ -76,9 +76,11 @@ def dashboard():
     if current_user.role == 'Management':
         return redirect(url_for('dashboard_team'))
     
-    # Responsabili visualizzano presenze della propria sede
+    # Responsabili visualizzano presenze della propria sede ma hanno anche dashboard personale
     if current_user.role == 'Responsabili':
-        return redirect(url_for('dashboard_sede'))
+        # Permettiamo al Responsabile di avere la dashboard normale (per presenze personali)
+        # ma con link per visualizzare la dashboard sede
+        pass  # continua con la dashboard normale
     
     # Reindirizza l'utente Ente e PM alla home page con vista team per coerenza visiva
     if current_user.role in ['Ente', 'Project Manager']:
@@ -190,7 +192,7 @@ def dashboard():
         # Get all users except Ente users
         all_team_users = User.query.filter(
             User.active == True,
-            User.role != 'Ente'
+            ~User.role.in_(['Ente', 'Admin', 'Management'])
         ).all()
         
         # Get all shifts for the current week for all team members
@@ -369,10 +371,11 @@ def dashboard_sede():
         flash('Non hai i permessi per visualizzare questo contenuto.', 'danger')
         return redirect(url_for('dashboard'))
     
-    # Get users from the same sede
+    # Get users from the same sede (esclusi Admin e Management)
     sede_users = User.query.filter(
         User.sede_id == current_user.sede_id,
-        User.active == True
+        User.active == True,
+        ~User.role.in_(['Admin', 'Management'])
     ).all()
     
     # Get attendance data for today
@@ -429,7 +432,7 @@ def ente_home():
     try:
         users = User.query.filter(
             User.active == True,
-            User.role != 'Ente'
+            ~User.role.in_(['Ente', 'Admin', 'Management'])
         ).all()
         
         # Check who is currently present (simplified check)
@@ -1083,18 +1086,22 @@ def attendance():
     if show_team_data:
         # Get team attendance data for PM, Management, Responsabili and Ente
         if current_user.role == 'Management':
-            # Management vede tutti gli utenti di tutte le sedi
-            team_users = User.query.filter(User.active.is_(True)).all()
+            # Management vede tutti gli utenti di tutte le sedi (esclusi Admin e Management)
+            team_users = User.query.filter(
+                User.active.is_(True),
+                ~User.role.in_(['Admin', 'Management'])
+            ).all()
         elif current_user.role == 'Responsabili':
-            # Responsabili vedono solo utenti della propria sede
+            # Responsabili vedono solo utenti della propria sede (esclusi Admin e Management)
             team_users = User.query.filter(
                 User.sede_id == current_user.sede_id,
-                User.active.is_(True)
+                User.active.is_(True),
+                ~User.role.in_(['Admin', 'Management'])
             ).all()
         else:
-            # PM e Ente vedono solo utenti operativi
+            # PM e Ente vedono solo utenti operativi (esclusi Admin e Management)
             team_users = User.query.filter(
-                User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager']),
+                User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager', 'Responsabili']),
                 User.active.is_(True)
             ).all()
         
@@ -1698,8 +1705,8 @@ def create_leave_request():
                 reason=form.reason.data
             )
             
-            # Auto-approve sick leave, set others as pending
-            if form.leave_type.data == 'Malattia':
+            # Auto-approve sick leave and Responsabili requests, set others as pending
+            if form.leave_type.data == 'Malattia' or current_user.role == 'Responsabili':
                 leave_request.status = 'Approved'
                 leave_request.approved_by = current_user.id  # Self-approved
                 leave_request.approved_at = datetime.now()
@@ -1717,6 +1724,8 @@ def create_leave_request():
             # Messaggio di successo personalizzato
             if form.leave_type.data == 'Malattia':
                 flash('Richiesta di malattia approvata automaticamente', 'success')
+            elif current_user.role == 'Responsabili':
+                flash(f'Richiesta di {form.leave_type.data.lower()} approvata automaticamente', 'success')
             elif form.leave_type.data == 'Permesso':
                 duration = leave_request.get_duration_display()
                 flash(f'Richiesta di permesso inviata con successo ({duration})', 'success')
@@ -3666,7 +3675,7 @@ def export_attendance_csv():
     
     if show_team_data:
         team_users = User.query.filter(
-            User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager']),
+            User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager', 'Responsabili']),
             User.active.is_(True)
         ).all()
         
