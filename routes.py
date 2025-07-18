@@ -650,6 +650,28 @@ def clock_in():
         else:
             return redirect(url_for('dashboard'))
     
+    # Verifica se ha già registrato una presenza completa (entrata+uscita) oggi
+    from zoneinfo import ZoneInfo
+    italy_tz = ZoneInfo('Europe/Rome')
+    today = datetime.now(italy_tz).date()
+    
+    existing_events = AttendanceEvent.query.filter(
+        AttendanceEvent.user_id == current_user.id,
+        AttendanceEvent.date == today
+    ).all()
+    
+    # Conta entrate e uscite complete
+    clock_ins = [e for e in existing_events if e.event_type == 'clock_in']
+    clock_outs = [e for e in existing_events if e.event_type == 'clock_out']
+    
+    # Blocca se ha già una presenza completa (entrata+uscita) oggi
+    if len(clock_ins) > 0 and len(clock_outs) > 0 and len(clock_ins) == len(clock_outs):
+        flash('Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.', 'warning')
+        if current_user.role == 'Project Manager':
+            return redirect(url_for('ente_home'))
+        else:
+            return redirect(url_for('dashboard'))
+    
     # Usa l'orario italiano invece di UTC
     from zoneinfo import ZoneInfo
     italy_tz = ZoneInfo('Europe/Rome')
@@ -722,6 +744,28 @@ def clock_out():
         if status == 'out':
             flash('Non sei presente. Devi prima registrare l\'entrata.', 'warning')
         # Redirect PM to ente_home, altri utenti alla dashboard
+        if current_user.role == 'Project Manager':
+            return redirect(url_for('ente_home'))
+        else:
+            return redirect(url_for('dashboard'))
+    
+    # Verifica se ha già registrato una presenza completa (entrata+uscita) oggi
+    from zoneinfo import ZoneInfo
+    italy_tz = ZoneInfo('Europe/Rome')
+    today = datetime.now(italy_tz).date()
+    
+    existing_events = AttendanceEvent.query.filter(
+        AttendanceEvent.user_id == current_user.id,
+        AttendanceEvent.date == today
+    ).all()
+    
+    # Conta entrate e uscite complete
+    clock_ins = [e for e in existing_events if e.event_type == 'clock_in']
+    clock_outs = [e for e in existing_events if e.event_type == 'clock_out']
+    
+    # Blocca se ha già una presenza completa (entrata+uscita) oggi
+    if len(clock_ins) > 0 and len(clock_outs) > 0 and len(clock_ins) == len(clock_outs):
+        flash('Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.', 'warning')
         if current_user.role == 'Project Manager':
             return redirect(url_for('ente_home'))
         else:
@@ -1052,10 +1096,64 @@ def attendance():
     
     # Non ci sono più turni da controllare - rimosso controllo assenze basato su turni
     
+    # Aggiungi record per le giornate con ferie/permessi/malattie approvate
+    leave_records = []
+    
+    # Determina l'utente per cui cercare le richieste di ferie
+    target_user_id = current_user.id if not show_team_data else None
+    
+    if target_user_id:
+        # Cerca richieste di ferie approvate nel periodo
+        approved_leaves = LeaveRequest.query.filter(
+            LeaveRequest.user_id == target_user_id,
+            LeaveRequest.status == 'Approved',
+            LeaveRequest.start_date <= end_date,
+            LeaveRequest.end_date >= start_date
+        ).all()
+        
+        for leave in approved_leaves:
+            current_date = max(leave.start_date, start_date)
+            while current_date <= min(leave.end_date, end_date):
+                # Verifica se esiste già un record di presenza per questa data
+                existing_record = any(r.date == current_date for r in event_records + old_records)
+                
+                if not existing_record:
+                    # Crea un record per la giornata di ferie/permesso/malattia
+                    class LeaveRecord:
+                        def __init__(self, date, leave_type, reason, user_id):
+                            self.date = date
+                            self.clock_in = None
+                            self.clock_out = None
+                            self.break_start = None
+                            self.break_end = None
+                            self.notes = f"{leave_type}: {reason}" if reason else leave_type
+                            self.user_id = user_id
+                            self.user = User.query.get(user_id)
+                            self.shift_status = leave_type.lower()  # 'ferie', 'permesso', 'malattia'
+                            self.exit_status = 'normale'
+                            self.leave_type = leave_type
+                            self.leave_reason = reason
+                        
+                        def get_work_hours(self):
+                            return 0  # Nessuna ora lavorata durante ferie/permessi
+                        
+                        def get_attendance_indicators(self):
+                            return {'entry': None, 'exit': None}
+                    
+                    leave_records.append(LeaveRecord(
+                        date=current_date,
+                        leave_type=leave.leave_type,
+                        reason=leave.reason,
+                        user_id=target_user_id
+                    ))
+                
+                current_date += timedelta(days=1)
+    
     # Combina tutti i record
     records = []
     records.extend(event_records)
     records.extend(old_records)
+    records.extend(leave_records)
     
     # Riordina per data e timestamp decrescente
     def sort_key(record):
