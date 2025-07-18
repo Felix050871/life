@@ -368,7 +368,7 @@ class AttendanceEvent(db.Model):
             
             def get_attendance_indicators(self):
                 """Restituisce gli indicatori di ritardo/anticipo per entrata e uscita"""
-                from utils import check_user_schedule
+                from utils import check_user_schedule_with_permissions
                 
                 indicators = {'entry': None, 'exit': None}
                 
@@ -376,13 +376,13 @@ class AttendanceEvent(db.Model):
                     return indicators
                 
                 # Controlla lo stato dell'entrata
-                check_result = check_user_schedule(self.user_id, self.clock_in)
+                check_result = check_user_schedule_with_permissions(self.user_id, self.clock_in)
                 if check_result['has_schedule']:
                     indicators['entry'] = check_result['entry_status']
                 
                 # Controlla lo stato dell'uscita se presente
                 if self.clock_out:
-                    check_result = check_user_schedule(self.user_id, self.clock_out)
+                    check_result = check_user_schedule_with_permissions(self.user_id, self.clock_out)
                     if check_result['has_schedule']:
                         indicators['exit'] = check_result['exit_status']
                 
@@ -471,7 +471,7 @@ class AttendanceEvent(db.Model):
                 
                 def get_attendance_indicators(self):
                     """Restituisce gli indicatori di ritardo/anticipo per entrata e uscita"""
-                    from utils import check_user_schedule
+                    from utils import check_user_schedule_with_permissions
                     
                     indicators = {'entry': None, 'exit': None}
                     
@@ -479,13 +479,13 @@ class AttendanceEvent(db.Model):
                         return indicators
                     
                     # Controlla lo stato dell'entrata
-                    check_result = check_user_schedule(self.user_id, self.clock_in)
+                    check_result = check_user_schedule_with_permissions(self.user_id, self.clock_in)
                     if check_result['has_schedule']:
                         indicators['entry'] = check_result['entry_status']
                     
                     # Controlla lo stato dell'uscita se presente
                     if self.clock_out:
-                        check_result = check_user_schedule(self.user_id, self.clock_out)
+                        check_result = check_user_schedule_with_permissions(self.user_id, self.clock_out)
                         if check_result['has_schedule']:
                             indicators['exit'] = check_result['exit_status']
                     
