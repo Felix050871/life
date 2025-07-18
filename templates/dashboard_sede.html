@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Sede - Workly{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">
+                    <i class="fas fa-building me-2"></i>
+                    Dashboard Sede - {{ current_sede.name if current_sede else "Nessuna sede" }}
+                </h1>
+                <div class="text-muted">
+                    <i class="fas fa-calendar-day me-1"></i>
+                    {{ today.strftime('%d/%m/%Y') }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if current_sede %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>Presenze del Personale
+                            {% if current_sede.address %}
+                                <small class="text-muted">- {{ current_sede.address }}</small>
+                            {% endif %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if sede_users %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Utente</th>
+                                            <th>Ruolo</th>
+                                            <th>Stato</th>
+                                            <th>Entrata</th>
+                                            <th>Uscita</th>
+                                            <th>Ore Lavorate</th>
+                                            <th>Note</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in sede_users %}
+                                        {% set attendance = today_attendance[user.id] %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ user.get_full_name() }}</strong>
+                                                <br>
+                                                <small class="text-muted">@{{ user.username }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ user.role }}</span>
+                                                {% if user.part_time_percentage < 100 %}
+                                                    <br>
+                                                    <small class="text-muted">Part-time {{ user.part_time_percentage }}%</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attendance.leave_request %}
+                                                    {% if attendance.leave_request.leave_type == 'Ferie' %}
+                                                        <span class="badge bg-info">
+                                                            <i class="fas fa-umbrella-beach me-1"></i>Ferie
+                                                        </span>
+                                                    {% elif attendance.leave_request.leave_type == 'Permesso' %}
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-clock me-1"></i>Permesso
+                                                        </span>
+                                                    {% elif attendance.leave_request.leave_type == 'Malattia' %}
+                                                        <span class="badge bg-danger">
+                                                            <i class="fas fa-notes-medical me-1"></i>Malattia
+                                                        </span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    {% if attendance.status == 'in' %}
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check-circle me-1"></i>Presente
+                                                        </span>
+                                                    {% elif attendance.status == 'break' %}
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-pause-circle me-1"></i>In Pausa
+                                                        </span>
+                                                    {% elif attendance.status == 'out' %}
+                                                        {% if attendance.daily_summary and attendance.daily_summary.clock_in %}
+                                                            <span class="badge bg-secondary">
+                                                                <i class="fas fa-sign-out-alt me-1"></i>Uscito
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-light text-dark">
+                                                                <i class="fas fa-minus-circle me-1"></i>Nessuna presenza
+                                                            </span>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attendance.daily_summary and attendance.daily_summary.clock_in %}
+                                                    {{ attendance.daily_summary.clock_in.strftime('%H:%M') }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attendance.daily_summary and attendance.daily_summary.clock_out %}
+                                                    {{ attendance.daily_summary.clock_out.strftime('%H:%M') }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attendance.daily_summary and attendance.daily_summary.total_hours %}
+                                                    <strong>{{ "%.1f"|format(attendance.daily_summary.total_hours) }}h</strong>
+                                                {% else %}
+                                                    <span class="text-muted">0h</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attendance.leave_request and attendance.leave_request.reason %}
+                                                    <small class="text-muted">{{ attendance.leave_request.reason[:50] }}{% if attendance.leave_request.reason|length > 50 %}...{% endif %}</small>
+                                                {% elif attendance.last_event and attendance.last_event.notes %}
+                                                    <small class="text-muted">{{ attendance.last_event.notes[:50] }}{% if attendance.last_event.notes|length > 50 %}...{% endif %}</small>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-users text-muted fa-2x mb-2"></i>
+                                <p class="text-muted">Nessun utente assegnato a questa sede</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>Azioni Disponibili
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('attendance', view='team') }}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-calendar-check me-2"></i>
+                                    Storico Presenze
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('leave_requests') }}" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    Richieste Ferie
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('reports') }}" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-chart-bar me-2"></i>
+                                    Report Sede
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-user me-2"></i>
+                                    Vista Personale
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Non hai una sede assegnata. Contatta l'amministratore per configurare la tua sede.
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

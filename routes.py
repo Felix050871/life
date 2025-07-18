@@ -76,6 +76,10 @@ def dashboard():
     if current_user.role == 'Management':
         return redirect(url_for('dashboard_team'))
     
+    # Responsabili visualizzano presenze della propria sede
+    if current_user.role == 'Responsabili':
+        return redirect(url_for('dashboard_sede'))
+    
     # Reindirizza l'utente Ente e PM alla home page con vista team per coerenza visiva
     if current_user.role in ['Ente', 'Project Manager']:
         return redirect(url_for('ente_home'))
@@ -353,6 +357,54 @@ def dashboard_team():
     return render_template('dashboard_team.html',
                          all_users=all_users,
                          all_sedi=all_sedi,
+                         today_attendance=today_attendance,
+                         today=today,
+                         current_user=current_user)
+
+@app.route('/dashboard_sede')
+@login_required
+def dashboard_sede():
+    """Dashboard per visualizzare le presenze della propria sede - per Responsabili"""
+    if not current_user.can_view_sede_attendance():
+        flash('Non hai i permessi per visualizzare questo contenuto.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Get users from the same sede
+    sede_users = User.query.filter(
+        User.sede_id == current_user.sede_id,
+        User.active == True
+    ).all()
+    
+    # Get attendance data for today
+    today = date.today()
+    today_attendance = {}
+    
+    for user in sede_users:
+        status, last_event = AttendanceEvent.get_user_status(user.id, today)
+        daily_summary = AttendanceEvent.get_daily_summary(user.id, today)
+        
+        # Check for approved leave requests
+        leave_request = LeaveRequest.query.filter(
+            LeaveRequest.user_id == user.id,
+            LeaveRequest.status == 'Approved',
+            LeaveRequest.start_date <= today,
+            LeaveRequest.end_date >= today
+        ).first()
+        
+        today_attendance[user.id] = {
+            'user': user,
+            'status': status,
+            'last_event': last_event,
+            'daily_summary': daily_summary,
+            'leave_request': leave_request
+        }
+    
+    # Get current user's sede
+    current_sede = current_user.sede_obj
+    
+    return render_template('dashboard_sede.html',
+                         sede_users=sede_users,
+                         current_sede=current_sede,
                          today_attendance=today_attendance,
                          today=today,
                          current_user=current_user)
@@ -997,17 +1049,17 @@ def attendance():
                 flash('Note salvate', 'success')
         return redirect(url_for('attendance'))
     
-    # Handle team/personal view toggle for PM, Management and Ente
+    # Handle team/personal view toggle for PM, Management, Responsabili and Ente
     view_mode = request.args.get('view', 'personal')
-    if current_user.role in ['Project Manager', 'Management']:
-        # PM and Management can toggle between personal and team view
+    if current_user.role in ['Project Manager', 'Management', 'Responsabili']:
+        # PM, Management e Responsabili can toggle between personal and team view
         show_team_data = (view_mode == 'team')
     elif current_user.role == 'Ente':
         # Ente vede sempre e solo dati team
         show_team_data = True
         view_mode = 'team'
     else:
-        # Non-PM/Management/Ente users see only personal data
+        # Non-PM/Management/Responsabili/Ente users see only personal data
         show_team_data = False
         view_mode = 'personal'
     
@@ -1029,10 +1081,16 @@ def attendance():
             start_date = end_date - timedelta(days=30)
     
     if show_team_data:
-        # Get team attendance data for PM, Management and Ente
+        # Get team attendance data for PM, Management, Responsabili and Ente
         if current_user.role == 'Management':
             # Management vede tutti gli utenti di tutte le sedi
             team_users = User.query.filter(User.active.is_(True)).all()
+        elif current_user.role == 'Responsabili':
+            # Responsabili vedono solo utenti della propria sede
+            team_users = User.query.filter(
+                User.sede_id == current_user.sede_id,
+                User.active.is_(True)
+            ).all()
         else:
             # PM e Ente vedono solo utenti operativi
             team_users = User.query.filter(
@@ -1585,10 +1643,16 @@ def leave_requests():
     form = LeaveRequestForm()
     
     if current_user.can_approve_leave():
-        # Project managers see all requests
-        requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).order_by(
-            LeaveRequest.created_at.desc()
-        ).all()
+        if current_user.role == 'Responsabili':
+            # Responsabili vedono solo le richieste della propria sede
+            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).filter(
+                User.sede_id == current_user.sede_id
+            ).order_by(LeaveRequest.created_at.desc()).all()
+        else:
+            # Project managers e Management vedono tutte le richieste
+            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).order_by(
+                LeaveRequest.created_at.desc()
+            ).all()
         can_approve = True
     else:
         # Users see only their requests
