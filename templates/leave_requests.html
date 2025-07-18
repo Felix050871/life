@@ -26,48 +26,86 @@
                 <form method="POST" action="{{ url_for('create_leave_request') }}">
                     {{ form.hidden_tag() }}
                     
-                    <div class="row">
+                    <!-- Tipo di richiesta -->
+                    <div class="mb-3">
+                        {{ form.leave_type.label(class="form-label") }}
+                        {{ form.leave_type(class="form-select", id="leave_type") }}
+                        {% if form.leave_type.errors %}
+                            <div class="text-danger">
+                                {% for error in form.leave_type.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Campi per date -->
+                    <div id="date_fields" class="row" style="display: none;">
                         <div class="col-md-6 mb-3">
                             {{ form.start_date.label(class="form-label") }}
                             {{ form.start_date(class="form-control") }}
                             {% if form.start_date.errors %}
-                            <div class="text-danger">
-                                {% for error in form.start_date.errors %}
-                                <small>{{ error }}</small>
-                                {% endfor %}
-                            </div>
+                                <div class="text-danger">
+                                    {% for error in form.start_date.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3" id="end_date_field">
                             {{ form.end_date.label(class="form-label") }}
                             {{ form.end_date(class="form-control") }}
                             {% if form.end_date.errors %}
-                            <div class="text-danger">
-                                {% for error in form.end_date.errors %}
-                                <small>{{ error }}</small>
-                                {% endfor %}
-                            </div>
+                                <div class="text-danger">
+                                    {% for error in form.end_date.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                         </div>
                     </div>
                     
-                    <div class="row">
+                    <!-- Campi per orari (solo per permessi) -->
+                    <div id="time_fields" class="row" style="display: none;">
                         <div class="col-md-6 mb-3">
-                            {{ form.leave_type.label(class="form-label") }}
-                            {{ form.leave_type(class="form-select") }}
+                            {{ form.start_time.label(class="form-label") }}
+                            {{ form.start_time(class="form-control") }}
+                            {% if form.start_time.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.start_time.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Giorni Richiesti</label>
-                            <input type="text" class="form-control" id="days-count" readonly>
+                            {{ form.end_time.label(class="form-label") }}
+                            {{ form.end_time(class="form-control") }}
+                            {% if form.end_time.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.end_time.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     
-                    <div class="mb-3">
+                    <!-- Campo motivo -->
+                    <div id="reason_field" class="mb-3" style="display: none;">
                         {{ form.reason.label(class="form-label") }}
                         {{ form.reason(class="form-control", rows="3", placeholder="Motivo della richiesta (opzionale)") }}
+                        {% if form.reason.errors %}
+                            <div class="text-danger">
+                                {% for error in form.reason.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
                     
-                    <div class="text-center">
+                    <!-- Pulsante di invio -->
+                    <div id="submit_button" class="text-center" style="display: none;">
                         {{ form.submit(class="btn btn-primary") }}
                     </div>
                 </form>
@@ -101,7 +139,7 @@
                             <tr>
                                 {% if can_approve %}<th>Utente</th>{% endif %}
                                 <th>Periodo</th>
-                                <th>Giorni</th>
+                                <th>Durata</th>
                                 <th>Tipo</th>
                                 <th>Motivo</th>
                                 <th>Stato</th>
@@ -119,13 +157,21 @@
                                 </td>
                                 {% endif %}
                                 <td>
-                                    <strong>{{ request.start_date.strftime('%d/%m/%Y') }}</strong><br>
-                                    <strong>{{ request.end_date.strftime('%d/%m/%Y') }}</strong>
+                                    <strong>{{ request.start_date.strftime('%d/%m/%Y') }}</strong>
+                                    {% if request.leave_type == 'Permesso' and request.is_time_based() %}
+                                        <br><small class="text-muted">{{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}</small>
+                                    {% elif request.start_date != request.end_date %}
+                                        <br><strong>{{ request.end_date.strftime('%d/%m/%Y') }}</strong>
+                                    {% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">
-                                        {{ (request.end_date - request.start_date).days + 1 }} giorni
-                                    </span>
+                                    {% if request.leave_type == 'Permesso' and request.is_time_based() %}
+                                        <span class="badge bg-info">{{ request.get_duration_display() }}</span>
+                                    {% else %}
+                                        <span class="badge bg-info">
+                                            {{ (request.end_date - request.start_date).days + 1 }} giorni
+                                        </span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if request.leave_type == 'Ferie' %}
@@ -333,5 +379,79 @@ function showCustomConfirm(message, onConfirm) {
     
     new bootstrap.Modal(modal).show();
 }
+
+// Gestione dinamica form richieste
+document.addEventListener('DOMContentLoaded', function() {
+    const leaveTypeSelect = document.getElementById('leave_type');
+    const dateFields = document.getElementById('date_fields');
+    const timeFields = document.getElementById('time_fields');
+    const reasonField = document.getElementById('reason_field');
+    const submitButton = document.getElementById('submit_button');
+    const endDateField = document.getElementById('end_date_field');
+    const endDateInput = document.querySelector('#end_date_field input');
+    
+    function updateFormFields() {
+        const selectedType = leaveTypeSelect.value;
+        
+        // Nascondi tutti i campi
+        dateFields.style.display = 'none';
+        timeFields.style.display = 'none';
+        reasonField.style.display = 'none';
+        submitButton.style.display = 'none';
+        
+        if (selectedType === '') {
+            return;
+        }
+        
+        // Mostra campi comuni
+        dateFields.style.display = 'block';
+        reasonField.style.display = 'block';
+        submitButton.style.display = 'block';
+        
+        if (selectedType === 'Ferie') {
+            // Ferie: mostra data inizio e fine
+            endDateField.style.display = 'block';
+            endDateInput.required = true;
+            
+            // Aggiorna le label
+            document.querySelector('label[for="start_date"]').textContent = 'Data Inizio Ferie';
+            document.querySelector('label[for="end_date"]').textContent = 'Data Fine Ferie';
+            
+        } else if (selectedType === 'Malattia') {
+            // Malattia: mostra data inizio e fine
+            endDateField.style.display = 'block';
+            endDateInput.required = true;
+            
+            // Aggiorna le label
+            document.querySelector('label[for="start_date"]').textContent = 'Data Inizio Malattia';
+            document.querySelector('label[for="end_date"]').textContent = 'Data Fine Malattia';
+            
+        } else if (selectedType === 'Permesso') {
+            // Permesso: data singola + orari
+            endDateField.style.display = 'none';
+            endDateInput.required = false;
+            timeFields.style.display = 'block';
+            
+            // Aggiorna le label
+            document.querySelector('label[for="start_date"]').textContent = 'Data Permesso';
+            
+            // Copia automaticamente la data di inizio in quella di fine
+            const startDateInput = document.querySelector('input[name="start_date"]');
+            const endDateInputHidden = document.querySelector('input[name="end_date"]');
+            
+            startDateInput.addEventListener('change', function() {
+                if (leaveTypeSelect.value === 'Permesso') {
+                    endDateInputHidden.value = startDateInput.value;
+                }
+            });
+        }
+    }
+    
+    // Aggiorna campi quando cambia il tipo
+    leaveTypeSelect.addEventListener('change', updateFormFields);
+    
+    // Inizializza al caricamento
+    updateFormFields();
+});
 </script>
 {% endblock %}

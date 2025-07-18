@@ -1459,11 +1459,14 @@ def create_leave_request():
     
     form = LeaveRequestForm()
     if form.validate_on_submit():
+        # Per permessi, imposta automaticamente end_date = start_date
+        end_date = form.start_date.data if form.leave_type.data == 'Permesso' else form.end_date.data
+        
         # Check for overlapping requests
         overlapping = LeaveRequest.query.filter(
             LeaveRequest.user_id == current_user.id,
             LeaveRequest.status.in_(['Pending', 'Approved']),
-            LeaveRequest.start_date <= form.end_date.data,
+            LeaveRequest.start_date <= end_date,
             LeaveRequest.end_date >= form.start_date.data
         ).first()
         
@@ -1473,13 +1476,25 @@ def create_leave_request():
             leave_request = LeaveRequest(
                 user_id=current_user.id,
                 start_date=form.start_date.data,
-                end_date=form.end_date.data,
+                end_date=end_date,
                 leave_type=form.leave_type.data,
                 reason=form.reason.data
             )
+            
+            # Aggiungi orari per i permessi
+            if form.leave_type.data == 'Permesso':
+                leave_request.start_time = form.start_time.data
+                leave_request.end_time = form.end_time.data
+            
             db.session.add(leave_request)
             db.session.commit()
-            flash('Richiesta inviata con successo', 'success')
+            
+            # Messaggio di successo personalizzato
+            if form.leave_type.data == 'Permesso':
+                duration = leave_request.get_duration_display()
+                flash(f'Richiesta di permesso inviata con successo ({duration})', 'success')
+            else:
+                flash('Richiesta inviata con successo', 'success')
     else:
         for field, errors in form.errors.items():
             for error in errors:

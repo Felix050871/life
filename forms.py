@@ -114,19 +114,42 @@ class AttendanceForm(FlaskForm):
     submit = SubmitField('Registra')
 
 class LeaveRequestForm(FlaskForm):
-    start_date = DateField('Data Inizio', validators=[DataRequired()])
-    end_date = DateField('Data Fine', validators=[DataRequired()])
-    leave_type = SelectField('Tipo', choices=[
+    leave_type = SelectField('Tipo Richiesta', choices=[
+        ('', 'Seleziona tipo richiesta'),
         ('Ferie', 'Ferie'),
         ('Permesso', 'Permesso'),
         ('Malattia', 'Malattia')
     ], validators=[DataRequired()])
+    
+    # Campi per date (sempre presenti)
+    start_date = DateField('Data Inizio', validators=[DataRequired()])
+    end_date = DateField('Data Fine', validators=[Optional()])
+    
+    # Campi per orari (solo per permessi)
+    start_time = TimeField('Ora Inizio', validators=[Optional()])
+    end_time = TimeField('Ora Fine', validators=[Optional()])
+    
     reason = TextAreaField('Motivo', validators=[Length(max=500)])
     submit = SubmitField('Invia Richiesta')
     
     def validate_end_date(self, end_date):
-        if end_date.data < self.start_date.data:
+        if self.leave_type.data in ['Ferie', 'Malattia'] and end_date.data and end_date.data < self.start_date.data:
             raise ValidationError('La data di fine deve essere successiva alla data di inizio.')
+    
+    def validate_start_time(self, start_time):
+        if self.leave_type.data == 'Permesso' and not start_time.data:
+            raise ValidationError('L\'ora di inizio è richiesta per i permessi.')
+    
+    def validate_end_time(self, end_time):
+        if self.leave_type.data == 'Permesso':
+            if not end_time.data:
+                raise ValidationError('L\'ora di fine è richiesta per i permessi.')
+            if self.start_time.data and end_time.data <= self.start_time.data:
+                raise ValidationError('L\'ora di fine deve essere successiva all\'ora di inizio.')
+    
+    def validate_end_date_for_permission(self, end_date):
+        if self.leave_type.data == 'Permesso' and end_date.data and end_date.data != self.start_date.data:
+            raise ValidationError('I permessi devono essere richiesti per una sola giornata.')
 
 class ShiftForm(FlaskForm):
     user_id = SelectField('Utente', coerce=int, validators=[DataRequired()])

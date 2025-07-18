@@ -789,8 +789,7 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
     day_of_week = check_date.weekday()  # 0=Lunedì, 6=Domenica
     
     schedule = WorkSchedule.query.filter_by(
-        sede_id=user.sede_id,
-        is_active=True
+        sede_id=user.sede_id
     ).first()
     
     if not schedule:
