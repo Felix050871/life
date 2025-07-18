@@ -138,10 +138,10 @@
             <div class="mt-4">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="card bg-light">
+                        <div class="card bg-dark text-white" style="background-color: #212529 !important;">
                             <div class="card-body">
-                                <h6 class="card-title"><i class="fas fa-info-circle me-1"></i>Informazioni</h6>
-                                <ul class="list-unstyled mb-0 small">
+                                <h6 class="card-title text-white"><i class="fas fa-info-circle me-1"></i>Informazioni</h6>
+                                <ul class="list-unstyled mb-0 small text-white">
                                     <li><i class="fas fa-chevron-right me-1"></i>I ruoli dinamici permettono di personalizzare i permessi utente</li>
                                     <li><i class="fas fa-chevron-right me-1"></i>I ruoli "Admin", "Project Manager" e "Management" sono protetti dal sistema</li>
                                     <li><i class="fas fa-chevron-right me-1"></i>Non è possibile eliminare ruoli con utenti associati</li>
@@ -151,17 +151,17 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card bg-light">
+                        <div class="card bg-dark text-white" style="background-color: #212529 !important;">
                             <div class="card-body">
-                                <h6 class="card-title"><i class="fas fa-chart-bar me-1"></i>Statistiche</h6>
+                                <h6 class="card-title text-white"><i class="fas fa-chart-bar me-1"></i>Statistiche</h6>
                                 <div class="row text-center">
                                     <div class="col-6">
                                         <div class="h4 text-primary">{{ roles|length }}</div>
-                                        <small class="text-muted">Ruoli Totali</small>
+                                        <small class="text-light">Ruoli Totali</small>
                                     </div>
                                     <div class="col-6">
                                         <div class="h4 text-success">{{ roles|selectattr('active')|list|length }}</div>
-                                        <small class="text-muted">Ruoli Attivi</small>
+                                        <small class="text-light">Ruoli Attivi</small>
                                     </div>
                                 </div>
                             </div>

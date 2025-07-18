@@ -451,7 +451,7 @@ class RoleForm(FlaskForm):
     
     # Permessi come checkboxes
     can_manage_users = BooleanField('Gestire Utenti')
-    can_manage_shifts = BooleanField('Gestire Turni')
+
     can_approve_leave = BooleanField('Approvare Ferie/Permessi')
     can_request_leave = BooleanField('Richiedere Ferie/Permessi')
     can_access_attendance = BooleanField('Accedere alle Presenze', default=True)
@@ -478,7 +478,7 @@ class RoleForm(FlaskForm):
         """Converte i permessi del form in un dizionario"""
         return {
             'can_manage_users': self.can_manage_users.data,
-            'can_manage_shifts': self.can_manage_shifts.data,
+
             'can_approve_leave': self.can_approve_leave.data,
             'can_request_leave': self.can_request_leave.data,
             'can_access_attendance': self.can_access_attendance.data,
@@ -491,7 +491,7 @@ class RoleForm(FlaskForm):
     def populate_permissions(self, permissions_dict):
         """Popola i campi permessi dal dizionario"""
         self.can_manage_users.data = permissions_dict.get('can_manage_users', False)
-        self.can_manage_shifts.data = permissions_dict.get('can_manage_shifts', False)
+
         self.can_approve_leave.data = permissions_dict.get('can_approve_leave', False)
         self.can_request_leave.data = permissions_dict.get('can_request_leave', False)
         self.can_access_attendance.data = permissions_dict.get('can_access_attendance', True)
