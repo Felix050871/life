@@ -144,7 +144,7 @@
                                 <th>Motivo</th>
                                 <th>Stato</th>
                                 <th>Data Richiesta</th>
-                                {% if can_approve %}<th>Azioni</th>{% endif %}
+                                <th>Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -210,8 +210,8 @@
                                     <br><small class="text-muted">Resp: {{ request.approved_at.strftime('%d/%m/%Y') }}</small>
                                     {% endif %}
                                 </td>
-                                {% if can_approve and request.status == 'Pending' %}
                                 <td>
+                                    {% if can_approve and request.status == 'Pending' %}
                                     <div class="btn-group-vertical btn-group-sm">
                                         <a href="{{ url_for('approve_leave', request_id=request.id) }}" 
                                            class="btn btn-success btn-sm confirm-link"
@@ -224,12 +224,16 @@
                                             <i class="fas fa-times me-1"></i>Rifiuta
                                         </a>
                                     </div>
-                                </td>
-                                {% elif can_approve %}
-                                <td>
+                                    {% elif request.user_id == current_user.id and request.status == 'Pending' %}
+                                    <a href="{{ url_for('delete_leave', request_id=request.id) }}" 
+                                       class="btn btn-outline-danger btn-sm confirm-link"
+                                       data-message="Cancellare questa richiesta?">
+                                        <i class="fas fa-trash me-1"></i>Cancella
+                                    </a>
+                                    {% else %}
                                     <span class="text-muted">--</span>
+                                    {% endif %}
                                 </td>
-                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>

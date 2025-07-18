@@ -1642,6 +1642,27 @@ def reject_leave(request_id):
     flash('Richiesta rifiutata', 'warning')
     return redirect(url_for('leave_requests'))
 
+@app.route('/delete_leave/<int:request_id>')
+@login_required
+def delete_leave(request_id):
+    leave_request = LeaveRequest.query.get_or_404(request_id)
+    
+    # Verifica che sia l'utente proprietario della richiesta
+    if leave_request.user_id != current_user.id:
+        flash('Non puoi cancellare richieste di altri utenti', 'danger')
+        return redirect(url_for('leave_requests'))
+    
+    # Verifica che la richiesta non sia già approvata
+    if leave_request.status == 'Approved':
+        flash('Non puoi cancellare richieste già approvate', 'warning')
+        return redirect(url_for('leave_requests'))
+    
+    # Cancella la richiesta
+    db.session.delete(leave_request)
+    db.session.commit()
+    flash('Richiesta cancellata con successo', 'success')
+    return redirect(url_for('leave_requests'))
+
 @app.route('/users')
 @login_required
 def users():
