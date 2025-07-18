@@ -33,7 +33,7 @@
                                 <tr {% if not role.active %}class="table-secondary"{% endif %}>
                                     <td>
                                         <strong>{{ role.name }}</strong>
-                                        {% if role.name in ['Admin', 'Management', 'Staff'] %}
+                                        {% if role.name in ['Admin'] %}
                                         <span class="badge bg-warning ms-1">Protetto</span>
                                         {% endif %}
                                     </td>
@@ -79,7 +79,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            {% if role.name in ['Admin', 'Management', 'Staff'] %}
+                                            {% if role.name in ['Admin'] %}
                                             <button class="btn btn-outline-secondary" disabled title="Ruolo protetto dal sistema">
                                                 <i class="fas fa-lock"></i>
                                             </button>
