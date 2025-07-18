@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% block title %}Workly - Workforce Management Platform{% endblock %}</title>
+    <title>{% block title %}Workly - Workforce Staff Platform{% endblock %}</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
@@ -17,7 +17,7 @@
     <nav class="navbar navbar-dark bg-dark py-2">
         <div class="container">
             <a class="navbar-brand mx-auto" href="{% if current_user.role == 'Ente' %}{{ url_for('ente_home') }}{% elif current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('shifts') }}{% endif %}">
-                <i class="fas fa-clock me-2"></i>Workly - Workforce Management Platform
+                <i class="fas fa-clock me-2"></i>Workly - Workforce Staff Platform
             </a>
         </div>
     </nav>

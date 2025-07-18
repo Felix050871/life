@@ -554,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- JavaScript per gestione presenze PM -->
 {% if current_user.role == 'Project Manager' %}
 <script>
-// Modal Management
+// Modal Staff
 function showConfirmModal(title, message, onConfirm) {
     const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
     document.getElementById('confirmModalLabel').textContent = title;

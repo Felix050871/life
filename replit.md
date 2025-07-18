@@ -36,7 +36,9 @@ The application uses SQLAlchemy models with the following key entities:
 ## Key Features
 
 ### User Management System
-- Role-based access control with 6 user types: Admin, Project Manager, Redattore, Sviluppatore, Operatore, Ente
+- Role-based access control with 8 user types: Admin, Project Manager, Staff, Management, Redattore, Sviluppatore, Operatore, Ente
+- **Staff**: Supervisione globale di tutte le sedi senza funzioni operative
+- **Management**: Gestione locale sede con funzioni operative personali e supervisione sede
 - User creation, modification, and deactivation capabilities
 - Part-time percentage tracking for specific roles
 - Secure password hashing with Werkzeug
@@ -87,8 +89,9 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
-- July 18, 2025: **Responsabile Dual-Mode Implementation** - Configurato ruolo Responsabile con doppia funzionalità: registrazione presenze personali e richieste ferie con approvazione automatica, visualizzazione e gestione presenze/ferie della propria sede tramite dashboard dedicata
-- July 18, 2025: **Esclusione Admin/Management dalle Presenze** - Rimossi completamente Admin e Management da tutte le query di visualizzazione presenze team per nascondere utenti amministrativi dalle operazioni quotidiane
+- July 18, 2025: **Riorganizzazione Ruoli Sistema** - Rinominati ruoli: "Management" → "Staff" (supervisione globale), "Responsabili" → "Management" (gestione sede locale), rimossi permessi "gestire turni" dal Project Manager, abilitata modifica ruoli Management e Staff tramite interfaccia admin
+- July 18, 2025: **Responsabile Dual-Mode Implementation** - Configurato ruolo Management con doppia funzionalità: registrazione presenze personali e richieste ferie con approvazione automatica, visualizzazione e gestione presenze/ferie della propria sede tramite dashboard dedicata
+- July 18, 2025: **Esclusione Admin/Staff dalle Presenze** - Rimossi completamente Admin e Staff da tutte le query di visualizzazione presenze team per nascondere utenti amministrativi dalle operazioni quotidiane
 - July 18, 2025: **Validazione Date Passate Ferie** - Implementata validazione completa server-side e client-side per impedire richieste di ferie/malattie/permessi in date passate, aggiunto controllo HTML5 min sui campi data e messaggi di errore specifici
 - July 18, 2025: **Permessi Supervisione Management** - Rimossa gestione turnazioni dal ruolo Management, implementata visualizzazione completa presenze di tutte le sedi in dashboard dedicata, accesso a tutti i dati presenze/reperibilità/interventi per supervisione e controllo senza funzioni operative
 - July 18, 2025: **Gestione Completa Richieste Ferie** - Implementato blocco registrazioni multiple nella stessa giornata per garantire integrità dati, aggiunto supporto per visualizzazione ferie/permessi/malattie approvate nello storico presenze, approvazione automatica richieste di malattia senza necessità di autorizzazione, possibilità per utenti di cancellare proprie richieste non ancora approvate

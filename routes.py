@@ -72,13 +72,13 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Management può visualizzare tutte le presenze di tutte le sedi
-    if current_user.role == 'Management':
+    # Staff può visualizzare tutte le presenze di tutte le sedi
+    if current_user.role == 'Staff':
         return redirect(url_for('dashboard_team'))
     
-    # Responsabili visualizzano presenze della propria sede ma hanno anche dashboard personale
-    if current_user.role == 'Responsabili':
-        # Permettiamo al Responsabile di avere la dashboard normale (per presenze personali)
+    # Management visualizzano presenze della propria sede ma hanno anche dashboard personale
+    if current_user.role == 'Management':
+        # Permettiamo al Management di avere la dashboard normale (per presenze personali)
         # ma con link per visualizzare la dashboard sede
         pass  # continua con la dashboard normale
     
@@ -192,7 +192,7 @@ def dashboard():
         # Get all users except Ente users
         all_team_users = User.query.filter(
             User.active == True,
-            ~User.role.in_(['Ente', 'Admin', 'Management'])
+            ~User.role.in_(['Ente', 'Admin', 'Staff'])
         ).all()
         
         # Get all shifts for the current week for all team members
@@ -375,7 +375,7 @@ def dashboard_sede():
     sede_users = User.query.filter(
         User.sede_id == current_user.sede_id,
         User.active == True,
-        ~User.role.in_(['Admin', 'Management'])
+        ~User.role.in_(['Admin', 'Staff'])
     ).all()
     
     # Get attendance data for today
@@ -432,7 +432,7 @@ def ente_home():
     try:
         users = User.query.filter(
             User.active == True,
-            ~User.role.in_(['Ente', 'Admin', 'Management'])
+            ~User.role.in_(['Ente', 'Admin', 'Staff'])
         ).all()
         
         # Check who is currently present (simplified check)
@@ -1054,7 +1054,7 @@ def attendance():
     
     # Handle team/personal view toggle for PM, Management, Responsabili and Ente
     view_mode = request.args.get('view', 'personal')
-    if current_user.role in ['Project Manager', 'Management', 'Responsabili']:
+    if current_user.role in ['Project Manager', 'Staff', 'Responsabili']:
         # PM, Management e Responsabili can toggle between personal and team view
         show_team_data = (view_mode == 'team')
     elif current_user.role == 'Ente':
@@ -1085,23 +1085,23 @@ def attendance():
     
     if show_team_data:
         # Get team attendance data for PM, Management, Responsabili and Ente
-        if current_user.role == 'Management':
-            # Management vede tutti gli utenti di tutte le sedi (esclusi Admin e Management)
+        if current_user.role == 'Staff':
+            # Staff vede tutti gli utenti di tutte le sedi (esclusi Admin e Staff)
             team_users = User.query.filter(
                 User.active.is_(True),
-                ~User.role.in_(['Admin', 'Management'])
+                ~User.role.in_(['Admin', 'Staff'])
             ).all()
-        elif current_user.role == 'Responsabili':
-            # Responsabili vedono solo utenti della propria sede (esclusi Admin e Management)
+        elif current_user.role == 'Management':
+            # Management vedono solo utenti della propria sede (esclusi Admin e Staff)
             team_users = User.query.filter(
                 User.sede_id == current_user.sede_id,
                 User.active.is_(True),
-                ~User.role.in_(['Admin', 'Management'])
+                ~User.role.in_(['Admin', 'Staff'])
             ).all()
         else:
-            # PM e Ente vedono solo utenti operativi (esclusi Admin e Management)
+            # PM e Ente vedono solo utenti operativi (esclusi Admin e Staff)
             team_users = User.query.filter(
-                User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager', 'Responsabili']),
+                User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager', 'Staff']),
                 User.active.is_(True)
             ).all()
         
@@ -1705,8 +1705,8 @@ def create_leave_request():
                 reason=form.reason.data
             )
             
-            # Auto-approve sick leave and Responsabili requests, set others as pending
-            if form.leave_type.data == 'Malattia' or current_user.role == 'Responsabili':
+            # Auto-approve sick leave and Management requests, set others as pending
+            if form.leave_type.data == 'Malattia' or current_user.role == 'Management':
                 leave_request.status = 'Approved'
                 leave_request.approved_by = current_user.id  # Self-approved
                 leave_request.approved_at = datetime.now()
@@ -1724,7 +1724,7 @@ def create_leave_request():
             # Messaggio di successo personalizzato
             if form.leave_type.data == 'Malattia':
                 flash('Richiesta di malattia approvata automaticamente', 'success')
-            elif current_user.role == 'Responsabili':
+            elif current_user.role == 'Management':
                 flash(f'Richiesta di {form.leave_type.data.lower()} approvata automaticamente', 'success')
             elif form.leave_type.data == 'Permesso':
                 duration = leave_request.get_duration_display()
@@ -2823,7 +2823,7 @@ def reperibilita_shifts():
     templates = ReperibilitaTemplate.query.order_by(ReperibilitaTemplate.created_at.desc()).all()
     
     # Parametri di visualizzazione
-    if current_user.role in ['Admin', 'Project Manager', 'Management']:
+    if current_user.role in ['Admin', 'Project Manager', 'Staff']:
         view_mode = request.args.get('view', 'all')
     elif current_user.role == 'Ente':
         view_mode = 'all'  # Ente vede sempre tutti
@@ -4417,7 +4417,7 @@ def edit_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin', 'Project Manager', 'Management']
+    protected_roles = ['Admin', 'Project Manager']
     if role.name in protected_roles:
         flash(f'Il ruolo "{role.display_name}" è protetto e non può essere modificato', 'danger')
         return redirect(url_for('manage_roles'))
@@ -4457,7 +4457,7 @@ def toggle_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin', 'Project Manager', 'Management']
+    protected_roles = ['Admin', 'Project Manager']
     if role.name in protected_roles:
         flash(f'Non è possibile disattivare il ruolo "{role.display_name}" perché è protetto dal sistema', 'danger')
         return redirect(url_for('manage_roles'))
@@ -4481,7 +4481,7 @@ def delete_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin', 'Project Manager', 'Management']
+    protected_roles = ['Admin', 'Project Manager']
     if role.name in protected_roles:
         flash(f'Non è possibile eliminare il ruolo "{role.display_name}" perché è protetto dal sistema', 'danger')
         return redirect(url_for('manage_roles'))
