@@ -118,13 +118,11 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                {{ form.sedi.label(class="form-label") }}
-                                {{ form.sedi(class="form-select", multiple=True, size="5", id="sedi-select") }}
-                                <small class="text-muted" id="sedi-help">Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più sedi</small>
-                                <small class="text-info" id="management-help" style="display:none;">Gli utenti Management vengono automaticamente associati a tutte le sedi</small>
-                                {% if form.sedi.errors %}
+                                {{ form.sede.label(class="form-label") }}
+                                {{ form.sede(class="form-select") }}
+                                {% if form.sede.errors %}
                                     <div class="text-danger">
-                                        {% for error in form.sedi.errors %}
+                                        {% for error in form.sede.errors %}
                                             <small>{{ error }}</small>
                                         {% endfor %}
                                     </div>
@@ -136,7 +134,10 @@
                                     {{ form.is_active.label(class="form-check-label") }}
                                 </div>
                             </div>
-                            <div class="col-md-6 mb-3 text-end">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3 text-end">
                                 <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='{{ url_for('user_management') }}'">
                                     Annulla
                                 </button>
@@ -153,35 +154,25 @@
 
 {% block scripts %}
 <script>
-// Gestisce la selezione automatica delle sedi per Management
+// Role-based part-time percentage visibility
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.getElementById('role');
-    const sediSelect = document.getElementById('sedi-select');
-    const sediHelp = document.getElementById('sedi-help');
-    const managementHelp = document.getElementById('management-help');
+    const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
     
-    if (roleSelect && sediSelect) {
-        function toggleSediManagement() {
-            if (roleSelect.value === 'Management') {
-                // Seleziona tutte le opzioni per Management
-                for (let option of sediSelect.options) {
-                    option.selected = true;
-                }
-                sediSelect.disabled = true;
-                sediHelp.style.display = 'none';
-                managementHelp.style.display = 'block';
-            } else {
-                sediSelect.disabled = false;
-                sediHelp.style.display = 'block';
-                managementHelp.style.display = 'none';
-            }
+    function togglePartTimeField() {
+        const selectedRole = roleSelect.value;
+        const showPartTime = ['Project Manager', 'Redattore', 'Sviluppatore', 'Operatore'].includes(selectedRole);
+        
+        if (showPartTime) {
+            partTimeGroup.style.display = 'block';
+        } else {
+            partTimeGroup.style.display = 'none';
+            document.querySelector('input[name="part_time_percentage"]').value = '100.0';
         }
-        
-        roleSelect.addEventListener('change', toggleSediManagement);
-        
-        // Esegui al caricamento della pagina
-        toggleSediManagement();
     }
+    
+    roleSelect.addEventListener('change', togglePartTimeField);
+    togglePartTimeField(); // Initial call
 });
 </script>
 {% endblock %}

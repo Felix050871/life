@@ -79,13 +79,11 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            {{ form.sedi.label(class="form-label") }}
-                            {{ form.sedi(class="form-select", multiple=True, size="4", id="sedi-select") }}
-                            <small class="text-muted" id="sedi-help">Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più sedi</small>
-                            <small class="text-info" id="management-help" style="display:none;">Gli utenti Management vengono automaticamente associati a tutte le sedi</small>
-                            {% if form.sedi.errors %}
+                            {{ form.sede.label(class="form-label") }}
+                            {{ form.sede(class="form-select") }}
+                            {% if form.sede.errors %}
                                 <div class="text-danger">
-                                    {% for error in form.sedi.errors %}
+                                    {% for error in form.sede.errors %}
                                         <small>{{ error }}</small>
                                     {% endfor %}
                                 </div>
@@ -167,10 +165,8 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.sedi %}
-                                        {% for sede in user.sedi %}
-                                            <span class="badge bg-secondary me-1">{{ sede.name }}</span>
-                                        {% endfor %}
+                                    {% if user.sede_obj %}
+                                        <span class="badge bg-secondary">{{ user.sede_obj.name }}</span>
                                     {% else %}
                                         <span class="text-muted">Nessuna sede</span>
                                     {% endif %}
@@ -274,9 +270,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.querySelector('select[name="role"]');
     const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
-    const sediSelect = document.getElementById('sedi-select');
-    const sediHelp = document.getElementById('sedi-help');
-    const managementHelp = document.getElementById('management-help');
+
     
     function togglePartTimeField() {
         const selectedRole = roleSelect.value;
@@ -289,29 +283,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function toggleSediManagement() {
-        if (roleSelect.value === 'Management') {
-            // Seleziona tutte le opzioni per Management
-            for (let option of sediSelect.options) {
-                option.selected = true;
-            }
-            sediSelect.disabled = true;
-            sediHelp.style.display = 'none';
-            managementHelp.style.display = 'block';
-        } else {
-            sediSelect.disabled = false;
-            sediHelp.style.display = 'block';
-            managementHelp.style.display = 'none';
-            document.querySelector('input[name="part_time_percentage"]').value = 100;
-        }
-    }
-    
-    roleSelect.addEventListener('change', function() {
-        togglePartTimeField();
-        toggleSediManagement();
-    });
+    roleSelect.addEventListener('change', togglePartTimeField);
     togglePartTimeField(); // Initial call
-    toggleSediManagement(); // Initial call
     
     // Gestione modal di conferma personalizzato per evitare "una pagina incorporata"
     document.querySelectorAll('.confirm-link').forEach(link => {

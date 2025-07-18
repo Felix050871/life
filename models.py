@@ -71,12 +71,8 @@ class User(UserMixin, db.Model):
     part_time_percentage = db.Column(db.Float, default=100.0)  # Percentuale di lavoro: 100% = tempo pieno, 50% = metà tempo, ecc.
     created_at = db.Column(db.DateTime, default=italian_now)
     
-    # Relationship con Sede (legacy)
+    # Relationship con Sede
     sede_obj = db.relationship('Sede', backref='users')
-    
-    # Relationship many-to-many con Sedi
-    sedi = db.relationship('Sede', secondary=user_sede_association, 
-                          backref='associated_users', lazy='select')
     
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -128,27 +124,9 @@ class User(UserMixin, db.Model):
     def can_view_reports(self):
         return self.has_permission('can_view_reports')
     
-    def get_sedi_list(self):
-        """Ottieni lista delle sedi associate all'utente"""
-        return self.sedi.all()
-    
-    def get_sedi_names(self):
-        """Ottieni lista dei nomi delle sedi associate"""
-        return [sede.name for sede in self.sedi.all()]
-    
-    def has_sede(self, sede_id):
-        """Verifica se l'utente è associato a una sede specifica"""
-        return self.sedi.filter_by(id=sede_id).first() is not None
-    
-    def add_sede(self, sede):
-        """Associa l'utente a una sede"""
-        if not self.has_sede(sede.id):
-            self.sedi.append(sede)
-    
-    def remove_sede(self, sede):
-        """Rimuovi associazione con una sede"""
-        if self.has_sede(sede.id):
-            self.sedi.remove(sede)
+    def get_sede_name(self):
+        """Ottieni il nome della sede associata all'utente"""
+        return self.sede_obj.name if self.sede_obj else "Nessuna sede"
 
 
 class AttendanceEvent(db.Model):

@@ -1677,27 +1677,14 @@ def new_user():
             role=form.role.data,
             first_name=form.first_name.data,
             last_name=form.last_name.data,
-            sede_id=form.sede.data if form.sede.data != 0 else None,  # Legacy field
+            sede_id=form.sede.data,
             part_time_percentage=form.get_part_time_percentage_as_float(),
             active=form.is_active.data
         )
         db.session.add(user)
         db.session.flush()  # Per ottenere l'ID dell'utente
         
-        # Gestisci sedi multiple
-        selected_sedi_ids = form.sedi.data
-        
-        # Se è un ruolo Management, aggiungi tutte le sedi
-        if form.role.data == 'Management':
-            all_sedi = Sede.query.filter_by(active=True).all()
-            for sede in all_sedi:
-                user.sedi.append(sede)
-        else:
-            # Associa le sedi selezionate
-            for sede_id in selected_sedi_ids:
-                sede = Sede.query.get(sede_id)
-                if sede:
-                    user.sedi.append(sede)
+        # Non c'è più gestione sedi multiple
         
         db.session.commit()
         flash('Utente creato con successo', 'success')
@@ -1712,7 +1699,7 @@ def user_management():
         flash('Non hai i permessi per gestire gli utenti', 'danger')
         return redirect(url_for('dashboard'))
     
-    users = User.query.options(joinedload(User.sedi)).order_by(User.created_at.desc()).all()
+    users = User.query.options(joinedload(User.sede_obj)).order_by(User.created_at.desc()).all()
     form = UserForm(is_edit=False)
     return render_template('user_management.html', users=users, form=form)
 
@@ -1729,9 +1716,9 @@ def edit_user(user_id):
     form = UserForm(original_username=user.username, is_edit=True, obj=user)
     
     if request.method == 'GET':
-        # Popola il campo sedi con le sedi attualmente associate all'utente
-        current_sedi_ids = [sede.id for sede in user.sedi]
-        form.sedi.data = current_sedi_ids
+        # Popola il campo sede con la sede attualmente associata all'utente
+        if user.sede_id:
+            form.sede.data = user.sede_id
     
     if form.validate_on_submit():
         user.username = form.username.data
@@ -1739,7 +1726,7 @@ def edit_user(user_id):
         user.role = form.role.data
         user.first_name = form.first_name.data
         user.last_name = form.last_name.data
-        user.sede_id = form.sede.data if form.sede.data != 0 else None  # Legacy field
+        user.sede_id = form.sede.data
         user.part_time_percentage = form.get_part_time_percentage_as_float()
         user.active = form.is_active.data
         
@@ -1747,24 +1734,7 @@ def edit_user(user_id):
         if form.password.data:
             user.password_hash = generate_password_hash(form.password.data)
         
-        # Aggiorna associazioni sedi
-        # Prima rimuovi tutte le associazioni esistenti
-        user.sedi.clear()
-        
-        # Aggiungi le nuove associazioni
-        selected_sedi_ids = form.sedi.data
-        
-        # Se è un ruolo Management, aggiungi tutte le sedi
-        if form.role.data == 'Management':
-            all_sedi = Sede.query.filter_by(active=True).all()
-            for sede in all_sedi:
-                user.sedi.append(sede)
-        else:
-            # Associa le sedi selezionate
-            for sede_id in selected_sedi_ids:
-                sede = Sede.query.get(sede_id)
-                if sede:
-                    user.sedi.append(sede)
+        # Non c'è più gestione sedi multiple
         
         db.session.commit()
         flash(f'Utente {user.username} modificato con successo', 'success')
