@@ -94,11 +94,11 @@ class User(UserMixin, db.Model):
         legacy_map = {
             'can_manage_users': self.role == 'Admin',
             'can_manage_shifts': self.role in ['Admin', 'Project Manager'],
-            'can_approve_leave': self.role == 'Project Manager',
+            'can_approve_leave': self.role in ['Project Manager', 'Management'],
             'can_request_leave': self.role in ['Redattore', 'Sviluppatore', 'Operatore'],
             'can_access_attendance': self.role not in ['Ente'],
             'can_access_dashboard': self.role not in ['Ente'],
-            'can_view_reports': self.role in ['Admin', 'Project Manager']
+            'can_view_reports': self.role in ['Admin', 'Project Manager', 'Management']
         }
         return legacy_map.get(permission, False)
     
@@ -127,6 +127,14 @@ class User(UserMixin, db.Model):
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""
         return self.sede_obj.name if self.sede_obj else "Nessuna sede"
+    
+    def can_view_all_attendance(self):
+        """Verifica se l'utente può visualizzare le presenze di tutti gli utenti"""
+        return self.role in ['Admin', 'Project Manager', 'Management']
+    
+    def can_view_all_reperibilita(self):
+        """Verifica se l'utente può visualizzare tutte le reperibilità"""
+        return self.role in ['Admin', 'Project Manager', 'Management']
 
 
 class AttendanceEvent(db.Model):

@@ -72,6 +72,10 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Management può visualizzare tutte le presenze di tutte le sedi
+    if current_user.role == 'Management':
+        return redirect(url_for('dashboard_team'))
+    
     # Reindirizza l'utente Ente e PM alla home page con vista team per coerenza visiva
     if current_user.role in ['Ente', 'Project Manager']:
         return redirect(url_for('ente_home'))
@@ -307,6 +311,51 @@ def dashboard():
                          user_status=user_status,
                          today_events=today_events,
                          today_work_hours=today_work_hours)
+
+@app.route('/dashboard_team')
+@login_required
+def dashboard_team():
+    """Dashboard per visualizzare le presenze di tutte le sedi - per Management"""
+    if not current_user.can_view_all_attendance():
+        flash('Non hai i permessi per visualizzare questo contenuto.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Get all active users from all sedi
+    all_users = User.query.filter(User.active == True).all()
+    
+    # Get all active sedi
+    all_sedi = Sede.query.filter(Sede.active == True).all()
+    
+    # Get attendance data for today
+    today = date.today()
+    today_attendance = {}
+    
+    for user in all_users:
+        status, last_event = AttendanceEvent.get_user_status(user.id, today)
+        daily_summary = AttendanceEvent.get_daily_summary(user.id, today)
+        
+        # Check for approved leave requests
+        leave_request = LeaveRequest.query.filter(
+            LeaveRequest.user_id == user.id,
+            LeaveRequest.status == 'Approved',
+            LeaveRequest.start_date <= today,
+            LeaveRequest.end_date >= today
+        ).first()
+        
+        today_attendance[user.id] = {
+            'user': user,
+            'status': status,
+            'last_event': last_event,
+            'daily_summary': daily_summary,
+            'leave_request': leave_request
+        }
+    
+    return render_template('dashboard_team.html',
+                         all_users=all_users,
+                         all_sedi=all_sedi,
+                         today_attendance=today_attendance,
+                         today=today,
+                         current_user=current_user)
 
 @app.route('/ente-home')
 @login_required
@@ -948,17 +997,17 @@ def attendance():
                 flash('Note salvate', 'success')
         return redirect(url_for('attendance'))
     
-    # Handle team/personal view toggle for PM and Ente
+    # Handle team/personal view toggle for PM, Management and Ente
     view_mode = request.args.get('view', 'personal')
-    if current_user.role == 'Project Manager':
-        # PM can toggle between personal and team view
+    if current_user.role in ['Project Manager', 'Management']:
+        # PM and Management can toggle between personal and team view
         show_team_data = (view_mode == 'team')
     elif current_user.role == 'Ente':
         # Ente vede sempre e solo dati team
         show_team_data = True
         view_mode = 'team'
     else:
-        # Non-PM/Ente users see only personal data
+        # Non-PM/Management/Ente users see only personal data
         show_team_data = False
         view_mode = 'personal'
     
@@ -980,11 +1029,16 @@ def attendance():
             start_date = end_date - timedelta(days=30)
     
     if show_team_data:
-        # Get team attendance data for PM
-        team_users = User.query.filter(
-            User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager']),
-            User.active.is_(True)
-        ).all()
+        # Get team attendance data for PM, Management and Ente
+        if current_user.role == 'Management':
+            # Management vede tutti gli utenti di tutte le sedi
+            team_users = User.query.filter(User.active.is_(True)).all()
+        else:
+            # PM e Ente vedono solo utenti operativi
+            team_users = User.query.filter(
+                User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager']),
+                User.active.is_(True)
+            ).all()
         
         old_records = []
         event_records = []
@@ -2696,7 +2750,7 @@ def reperibilita_shifts():
     templates = ReperibilitaTemplate.query.order_by(ReperibilitaTemplate.created_at.desc()).all()
     
     # Parametri di visualizzazione
-    if current_user.role in ['Admin', 'Project Manager']:
+    if current_user.role in ['Admin', 'Project Manager', 'Management']:
         view_mode = request.args.get('view', 'all')
     elif current_user.role == 'Ente':
         view_mode = 'all'  # Ente vede sempre tutti

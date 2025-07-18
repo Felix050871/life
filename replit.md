@@ -87,6 +87,8 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 18, 2025: **Validazione Date Passate Ferie** - Implementata validazione completa server-side e client-side per impedire richieste di ferie/malattie/permessi in date passate, aggiunto controllo HTML5 min sui campi data e messaggi di errore specifici
+- July 18, 2025: **Permessi Supervisione Management** - Rimossa gestione turnazioni dal ruolo Management, implementata visualizzazione completa presenze di tutte le sedi in dashboard dedicata, accesso a tutti i dati presenze/reperibilità/interventi per supervisione e controllo senza funzioni operative
 - July 18, 2025: **Gestione Completa Richieste Ferie** - Implementato blocco registrazioni multiple nella stessa giornata per garantire integrità dati, aggiunto supporto per visualizzazione ferie/permessi/malattie approvate nello storico presenze, approvazione automatica richieste di malattia senza necessità di autorizzazione, possibilità per utenti di cancellare proprie richieste non ancora approvate
 - July 18, 2025: **Sistema Controllo Orari Sede con Permessi** - Implementato controllo intelligente entrate/uscite basato su orari sede invece di turni, considera permessi approvati per calcolo ritardi/anticipi, aggiornato modello LeaveRequest con campi start_time/end_time per permessi orari, sostituito "Assente" con "Nessuna presenza e nessuna comunicazione di ferie/permessi/malattia"
 - July 18, 2025: **Menu Operativi Admin/PM** - Nascosti menu operativi (Presenze, Reperibilità, Ferie/Permessi, Interventi) per ruoli Admin e Project Manager, rimossa voce "Gestione Team", eliminato completamente controllo turni dalla registrazione presenze
