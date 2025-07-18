@@ -169,59 +169,7 @@
 </div>
 {% endif %}
 
-<!-- Weekly Attendance Calendar - Hidden for Admin -->
-{% if current_user.role != 'Admin' %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-calendar-week me-2"></i>Calendario Turni - Settimana Corrente</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center">
-                        <thead>
-                            <tr>
-                                {% for day_info in weekly_calendar %}
-                                <th class="{% if day_info.is_today %}table-warning{% endif %}">
-                                    <strong class="{% if day_info.is_today %}text-dark fw-bold{% endif %}">{{ day_info.weekday }}</strong><br>
-                                    <small class="{% if day_info.is_today %}text-dark{% endif %}">{{ day_info.date.strftime('%d/%m') }}</small>
-                                </th>
-                                {% endfor %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                {% for day_info in weekly_calendar %}
-                                <td class="p-2 {% if day_info.is_today %}table-warning{% endif %}">
-                                    <!-- Turni programmati -->
-                                    {% if day_info.shifts %}
-                                        <div>
-                                            {% for shift in day_info.shifts %}
-                                                <div class="badge bg-info text-dark mb-1">
-                                                    <i class="fas fa-clock me-1"></i>{{ shift.start_time.strftime('%H:%M') }}-{{ shift.end_time.strftime('%H:%M') }}
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    {% else %}
-                                        <span class="text-muted"><i class="fas fa-minus"></i></span>
-                                    {% endif %}
-                                </td>
-                                {% endfor %}
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="text-center mt-3">
-                    <small class="text-muted">
-                        <i class="fas fa-clock text-info me-1"></i>Turno Programmato
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
+
 
 <!-- Quick Stats - Hidden for Admin -->
 {% if current_user.role != 'Admin' %}

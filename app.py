@@ -72,15 +72,15 @@ def to_italian_time(timestamp):
     # Se il timestamp non ha timezone, assumiamo sia UTC
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=utc_tz)
+    
+    # Converte all'orario italiano
+    return timestamp.astimezone(italy_tz)
 
 @app.template_filter('users_with_role_count')
 def users_with_role_count(role_name):
     """Conta il numero di utenti con un determinato ruolo"""
     from models import User
     return User.query.filter_by(role=role_name).count()
-    
-    # Converte all'orario italiano
-    return timestamp.astimezone(italy_tz)
 
 @app.template_filter('format_time_italian')
 def format_time_italian(timestamp):
@@ -88,6 +88,12 @@ def format_time_italian(timestamp):
     if not timestamp:
         return "--:--"
     
-    # Converti a orario italiano
-    italian_time = to_italian_time(timestamp)
-    return italian_time.strftime('%H:%M')
+    try:
+        # Converti a orario italiano
+        italian_time = to_italian_time(timestamp)
+        if not italian_time:
+            return "--:--"
+        return italian_time.strftime('%H:%M')
+    except Exception as e:
+        app.logger.error(f"Error formatting time: {e}")
+        return "--:--"
