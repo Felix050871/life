@@ -468,6 +468,28 @@ class AttendanceEvent(db.Model):
                 
                 def get_work_hours(self):
                     return AttendanceEvent.get_daily_work_hours(self.user_id, self.date)
+                
+                def get_attendance_indicators(self):
+                    """Restituisce gli indicatori di ritardo/anticipo per entrata e uscita"""
+                    from utils import check_user_schedule
+                    
+                    indicators = {'entry': None, 'exit': None}
+                    
+                    if not self.clock_in:
+                        return indicators
+                    
+                    # Controlla lo stato dell'entrata
+                    check_result = check_user_schedule(self.user_id, self.clock_in)
+                    if check_result['has_schedule']:
+                        indicators['entry'] = check_result['entry_status']
+                    
+                    # Controlla lo stato dell'uscita se presente
+                    if self.clock_out:
+                        check_result = check_user_schedule(self.user_id, self.clock_out)
+                        if check_result['has_schedule']:
+                            indicators['exit'] = check_result['exit_status']
+                    
+                    return indicators
             
             # Ottieni informazioni utente dal primo evento del giorno
             user = day_events[0].user if day_events else None
