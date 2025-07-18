@@ -50,21 +50,12 @@
                         </a>
                     </li>
                     {% endif %}
-                    <!-- Menu Presidio -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-shield-alt me-1"></i>Presidio
+                    
+                    <!-- Menu Turnazioni -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('shifts') }}">
+                            <i class="fas fa-calendar-alt me-1"></i>Turnazioni
                         </a>
-                        <ul class="dropdown-menu">
-                            {% if current_user.can_manage_shifts() %}
-                            <li><a class="dropdown-item" href="{{ url_for('presidio_coverage') }}">
-                                <i class="fas fa-shield-alt me-1"></i>Copertura Presidio
-                            </a></li>
-                            {% endif %}
-                            <li><a class="dropdown-item" href="{{ url_for('shifts') }}">
-                                <i class="fas fa-calendar-alt me-1"></i>Turnazioni
-                            </a></li>
-                        </ul>
                     </li>
                     
                     <!-- Menu Reperibilità -->

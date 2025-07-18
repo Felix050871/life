@@ -8,8 +8,8 @@ import base64
 from defusedcsv import csv
 from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
-from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, PresidioCoverage, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, italian_now
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, PresidioCoverageForm, SedeForm, WorkScheduleForm
+from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, italian_now
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, check_user_shift_schedule, format_hours
 
 # Define require_login decorator
@@ -520,17 +520,11 @@ def ente_home():
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
     
     # Get shifts and intervention data for PM
-    upcoming_presidio_shifts = []
     upcoming_reperibilita_shifts = []
     active_intervention = None
     recent_interventions = []
     
     if current_user.role == 'Project Manager':
-        # Get upcoming presidio shifts for PM
-        upcoming_presidio_shifts = Shift.query.filter(
-            Shift.user_id == current_user.id,
-            Shift.date >= today_date
-        ).order_by(Shift.date, Shift.start_time).limit(5).all()
         
         # Get upcoming reperibilità shifts for PM
         upcoming_reperibilita_shifts = ReperibilitaShift.query.filter(
@@ -579,7 +573,7 @@ def ente_home():
                          today_events=today_events,
                          today_work_hours=today_work_hours,
                          today_date=today_date,
-                         upcoming_presidio_shifts=upcoming_presidio_shifts,
+
                          upcoming_reperibilita_shifts=upcoming_reperibilita_shifts,
                          active_intervention=active_intervention,
                          recent_interventions=recent_interventions)
@@ -2086,321 +2080,6 @@ def reset_password(token):
         return redirect(url_for('login'))
     
     return render_template('reset_password.html', form=form, token=token)
-
-@app.errorhandler(404)
-def not_found_error(error):
-    return render_template('404.html'), 404
-
-@app.route('/presidio_coverage')
-@login_required
-def presidio_coverage():
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per gestire la copertura presidio', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    coverages = PresidioCoverage.query.filter_by(is_active=True).order_by(
-        PresidioCoverage.start_date, PresidioCoverage.end_date, 
-        PresidioCoverage.day_of_week, PresidioCoverage.start_time
-    ).all()
-    
-    # Raggruppa per periodo di validità
-    presidio_groups = {}
-    for coverage in coverages:
-        period_key = f"{coverage.start_date.strftime('%Y-%m-%d')}_{coverage.end_date.strftime('%Y-%m-%d')}"
-        if period_key not in presidio_groups:
-            presidio_groups[period_key] = {
-                'start_date': coverage.start_date,
-                'end_date': coverage.end_date,
-                'coverages': [],
-                'created_by': coverage.creator.get_full_name(),
-                'created_at': coverage.created_at
-            }
-        presidio_groups[period_key]['coverages'].append(coverage)
-    
-    # Organizza per giorno della settimana per la vista settimanale (se necessaria)
-    coverage_by_day = {}
-    for coverage in coverages:
-        day = coverage.day_of_week
-        if day not in coverage_by_day:
-            coverage_by_day[day] = []
-        coverage_by_day[day].append(coverage)
-    
-    return render_template('presidio_coverage.html', 
-                         presidio_groups=presidio_groups, 
-                         coverage_by_day=coverage_by_day)
-
-
-@app.route('/presidio_coverage/create', methods=['GET', 'POST'])
-@login_required
-def create_presidio_coverage():
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per creare coperture presidio', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    form = PresidioCoverageForm()
-    if form.validate_on_submit():
-        # Crea una copertura per ogni giorno selezionato
-        coverages_created = 0
-        for day in form.days_of_week.data:
-            coverage = PresidioCoverage(
-                day_of_week=day,
-                start_time=form.start_time.data,
-                end_time=form.end_time.data,
-                start_date=form.start_date.data,
-                end_date=form.end_date.data,
-                description=form.description.data,
-                is_active=form.is_active.data,
-                created_by=current_user.id
-            )
-            coverage.set_required_roles_list(form.required_roles.data)
-            db.session.add(coverage)
-            coverages_created += 1
-        
-        db.session.commit()
-        
-        if coverages_created == 1:
-            flash('Copertura presidio creata con successo', 'success')
-        else:
-            flash(f'{coverages_created} coperture presidio create con successo', 'success')
-        
-        return redirect(url_for('presidio_coverage'))
-    
-    return render_template('create_presidio_coverage.html', form=form)
-
-
-@app.route('/presidio_coverage/edit/<int:coverage_id>', methods=['GET', 'POST'])
-@login_required
-def edit_presidio_coverage(coverage_id):
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per modificare le coperture presidio', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    coverage = PresidioCoverage.query.get_or_404(coverage_id)
-    
-    if request.method == 'GET':
-        # Pre-popola il form con i dati esistenti
-        form = PresidioCoverageForm()
-        form.start_date.data = coverage.start_date
-        form.end_date.data = coverage.end_date
-        form.days_of_week.data = [coverage.day_of_week]
-        form.required_roles.data = coverage.get_required_roles_list()
-        form.start_time.data = coverage.start_time
-        form.end_time.data = coverage.end_time
-        form.description.data = coverage.description
-        form.is_active.data = coverage.is_active
-    else:
-        # Gestisci POST
-        form = PresidioCoverageForm()
-    
-    if form.validate_on_submit():
-        action = request.form.get('action', 'update')
-        
-        if action == 'save_as_new':
-            # Crea nuove coperture per ogni giorno selezionato
-            coverages_created = 0
-            for day in form.days_of_week.data:
-                new_coverage = PresidioCoverage(
-                    day_of_week=day,
-                    start_time=form.start_time.data,
-                    end_time=form.end_time.data,
-                    start_date=form.start_date.data,
-                    end_date=form.end_date.data,
-                    description=form.description.data,
-                    is_active=form.is_active.data,
-                    created_by=current_user.id
-                )
-                new_coverage.set_required_roles_list(form.required_roles.data)
-                db.session.add(new_coverage)
-                coverages_created += 1
-            
-            db.session.commit()
-            
-            if coverages_created == 1:
-                flash('Nuova copertura presidio creata con successo', 'success')
-            else:
-                flash(f'{coverages_created} nuove coperture presidio create con successo', 'success')
-        else:
-            # Modifica esistente
-            coverage.day_of_week = form.days_of_week.data[0] if form.days_of_week.data else coverage.day_of_week
-            coverage.start_time = form.start_time.data
-            coverage.end_time = form.end_time.data
-            coverage.start_date = form.start_date.data
-            coverage.end_date = form.end_date.data
-            coverage.set_required_roles_list(form.required_roles.data)
-            coverage.description = form.description.data
-            coverage.is_active = form.is_active.data
-            db.session.commit()
-            flash('Copertura presidio modificata con successo', 'success')
-        
-        return redirect(url_for('presidio_coverage'))
-    
-    return render_template('edit_presidio_coverage.html', form=form, coverage=coverage)
-
-
-@app.route('/presidio_coverage/detail/<period_key>')
-@login_required
-def view_presidio_detail(period_key):
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per visualizzare le coperture presidio', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    # Decodifica period_key (formato: YYYY-MM-DD_YYYY-MM-DD)
-    start_date_str, end_date_str = period_key.split('_')
-    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    
-    # Trova tutte le coperture per questo periodo
-    coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.start_date == start_date,
-        PresidioCoverage.end_date == end_date,
-        PresidioCoverage.is_active == True
-    ).order_by(PresidioCoverage.day_of_week, PresidioCoverage.start_time).all()
-    
-    if not coverages:
-        flash('Presidio non trovato', 'error')
-        return redirect(url_for('presidio_coverage'))
-    
-    # Organizza per giorno della settimana
-    coverage_by_day = {}
-    for coverage in coverages:
-        day = coverage.day_of_week
-        if day not in coverage_by_day:
-            coverage_by_day[day] = []
-        coverage_by_day[day].append(coverage)
-    
-    return render_template('presidio_detail.html', 
-                         coverage_by_day=coverage_by_day,
-                         start_date=start_date,
-                         end_date=end_date,
-                         period_key=period_key)
-
-@app.route('/presidio_coverage/delete/<int:coverage_id>', methods=['POST'])
-@login_required
-def delete_presidio_coverage(coverage_id):
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per eliminare le coperture presidio', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    coverage = PresidioCoverage.query.get_or_404(coverage_id)
-    coverage.is_active = False  # Soft delete
-    db.session.commit()
-    flash('Copertura presidio eliminata con successo', 'success')
-    return redirect(url_for('presidio_coverage'))
-
-@app.route('/presidio_coverage/replica/<period_key>')
-@login_required
-def replica_presidio(period_key):
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per replicare i presidi', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    # Decodifica period_key
-    start_date_str, end_date_str = period_key.split('_')
-    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    
-    # Trova tutte le coperture per questo periodo
-    original_coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.start_date == start_date,
-        PresidioCoverage.end_date == end_date,
-        PresidioCoverage.is_active == True
-    ).all()
-    
-    if not original_coverages:
-        flash('Presidio non trovato', 'error')
-        return redirect(url_for('presidio_coverage'))
-    
-    # Crea form con date vuote per il nuovo periodo
-    from forms import PresidioReplicaForm
-    form = PresidioReplicaForm()
-    
-    return render_template('replica_presidio.html', 
-                         form=form,
-                         period_key=period_key,
-                         original_start_date=start_date,
-                         original_end_date=end_date,
-                         coverage_count=len(original_coverages))
-
-@app.route('/presidio_coverage/replica/<period_key>', methods=['POST'])
-@login_required
-def replica_presidio_post(period_key):
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per replicare i presidi', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    # Decodifica period_key originale
-    start_date_str, end_date_str = period_key.split('_')
-    original_start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-    original_end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    
-    from forms import PresidioReplicaForm
-    form = PresidioReplicaForm()
-    
-    if form.validate_on_submit():
-        # Trova tutte le coperture originali
-        original_coverages = PresidioCoverage.query.filter(
-            PresidioCoverage.start_date == original_start_date,
-            PresidioCoverage.end_date == original_end_date,
-            PresidioCoverage.is_active == True
-        ).all()
-        
-        # Replica tutte le coperture con le nuove date
-        replicated_count = 0
-        for orig_coverage in original_coverages:
-            new_coverage = PresidioCoverage()
-            new_coverage.day_of_week = orig_coverage.day_of_week
-            new_coverage.start_time = orig_coverage.start_time
-            new_coverage.end_time = orig_coverage.end_time
-            new_coverage.required_roles = orig_coverage.required_roles
-            new_coverage.description = orig_coverage.description
-            new_coverage.start_date = form.start_date.data
-            new_coverage.end_date = form.end_date.data
-            new_coverage.created_by = current_user.id
-            new_coverage.is_active = True
-            db.session.add(new_coverage)
-            replicated_count += 1
-        
-        db.session.commit()
-        flash(f'Presidio replicato con successo: {replicated_count} coperture create per il periodo {form.start_date.data.strftime("%d/%m/%Y")} - {form.end_date.data.strftime("%d/%m/%Y")}', 'success')
-        return redirect(url_for('presidio_coverage'))
-    
-    return render_template('replica_presidio.html', 
-                         form=form,
-                         period_key=period_key,
-                         original_start_date=original_start_date,
-                         original_end_date=original_end_date,
-                         coverage_count=len(PresidioCoverage.query.filter(
-                             PresidioCoverage.start_date == original_start_date,
-                             PresidioCoverage.end_date == original_end_date,
-                             PresidioCoverage.is_active == True
-                         ).all()))
-
-@app.route('/presidio_coverage/delete_presidio/<period_key>', methods=['POST'])
-@login_required
-def delete_entire_presidio(period_key):
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per eliminare i presidi', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    # Decodifica period_key
-    start_date_str, end_date_str = period_key.split('_')
-    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    
-    # Elimina tutte le coperture per questo periodo
-    coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.start_date == start_date,
-        PresidioCoverage.end_date == end_date
-    ).all()
-    
-    count = len(coverages)
-    for coverage in coverages:
-        coverage.is_active = False  # Soft delete
-    
-    db.session.commit()
-    flash(f'Presidio eliminato con successo ({count} coperture rimosse)', 'success')
-    return redirect(url_for('presidio_coverage'))
-
 
 @app.errorhandler(404)
 def not_found_error(error):
