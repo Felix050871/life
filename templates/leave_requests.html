@@ -439,11 +439,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const startDateInput = document.querySelector('input[name="start_date"]');
             const endDateInputHidden = document.querySelector('input[name="end_date"]');
             
-            startDateInput.addEventListener('change', function() {
-                if (leaveTypeSelect.value === 'Permesso') {
-                    endDateInputHidden.value = startDateInput.value;
-                }
-            });
+            if (startDateInput && endDateInputHidden) {
+                startDateInput.addEventListener('change', function() {
+                    if (leaveTypeSelect.value === 'Permesso') {
+                        endDateInputHidden.value = startDateInput.value;
+                    }
+                });
+            }
         }
     }
     

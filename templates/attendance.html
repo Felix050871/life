@@ -98,11 +98,12 @@
                                     {% if record.shift_status == 'assente' %}
                                     <span class="text-danger fw-bold">Nessuna presenza</span>
                                     {% elif record.clock_in %}
-                                    <span class="{% if record.shift_status == 'ritardo' %}text-warning{% elif record.shift_status == 'anticipo' %}text-info{% else %}text-success{% endif %}">
+                                    {% set indicators = record.get_attendance_indicators() %}
+                                    <span class="{% if indicators.entry == 'ritardo' %}text-danger{% elif indicators.entry == 'anticipo' %}text-info{% else %}text-success{% endif %}">
                                         {{ record.clock_in|format_time_italian }}
-                                        {% if record.shift_status == 'ritardo' %}
+                                        {% if indicators.entry == 'ritardo' %}
                                         <i class="fas fa-exclamation-triangle text-danger ms-1" title="Entrata in ritardo"></i>
-                                        {% elif record.shift_status == 'anticipo' %}
+                                        {% elif indicators.entry == 'anticipo' %}
                                         <i class="fas fa-thumbs-up text-info ms-1" title="Entrata in anticipo"></i>
                                         {% endif %}
                                     </span>
@@ -127,11 +128,12 @@
                                     {% if record.shift_status == 'assente' %}
                                     <span class="text-danger fw-bold">Nessuna presenza</span>
                                     {% elif record.clock_out %}
-                                    <span class="{% if record.exit_status == 'anticipo' %}text-warning{% elif record.exit_status == 'straordinario' %}text-info{% else %}text-success{% endif %}">
+                                    {% set indicators = record.get_attendance_indicators() %}
+                                    <span class="{% if indicators.exit == 'anticipo' %}text-warning{% elif indicators.exit == 'straordinario' %}text-info{% else %}text-success{% endif %}">
                                         {{ record.clock_out|format_time_italian }}
-                                        {% if record.exit_status == 'anticipo' %}
+                                        {% if indicators.exit == 'anticipo' %}
                                         <i class="fas fa-exclamation-triangle text-warning ms-1" title="Uscita anticipata"></i>
-                                        {% elif record.exit_status == 'straordinario' %}
+                                        {% elif indicators.exit == 'straordinario' %}
                                         <i class="fas fa-thumbs-up text-info ms-1" title="Straordinario"></i>
                                         {% endif %}
                                     </span>

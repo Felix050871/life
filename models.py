@@ -365,6 +365,28 @@ class AttendanceEvent(db.Model):
             
             def get_work_hours(self):
                 return AttendanceEvent.get_daily_work_hours(self.user_id, self.date)
+            
+            def get_attendance_indicators(self):
+                """Restituisce gli indicatori di ritardo/anticipo per entrata e uscita"""
+                from utils import check_user_schedule
+                
+                indicators = {'entry': None, 'exit': None}
+                
+                if not self.clock_in:
+                    return indicators
+                
+                # Controlla lo stato dell'entrata
+                check_result = check_user_schedule(self.user_id, self.clock_in)
+                if check_result['has_schedule']:
+                    indicators['entry'] = check_result['entry_status']
+                
+                # Controlla lo stato dell'uscita se presente
+                if self.clock_out:
+                    check_result = check_user_schedule(self.user_id, self.clock_out)
+                    if check_result['has_schedule']:
+                        indicators['exit'] = check_result['exit_status']
+                
+                return indicators
         
         return DailySummary(
             date=target_date,
@@ -998,6 +1020,19 @@ class WorkSchedule(db.Model):
     
     def __repr__(self):
         return f'<WorkSchedule {self.name} at {self.sede_obj.name if self.sede_obj else "Unknown Sede"}>'
+    
+    def get_days_of_week_list(self):
+        """Restituisce la lista dei giorni della settimana come interi"""
+        if not self.days_of_week:
+            return []
+        # Assicurati che sia una lista e non una stringa JSON
+        if isinstance(self.days_of_week, str):
+            import json
+            try:
+                return json.loads(self.days_of_week)
+            except:
+                return []
+        return self.days_of_week if isinstance(self.days_of_week, list) else []
     
     def get_duration_hours(self):
         """Calcola la durata media in ore dell'orario di lavoro basandosi sui range"""
