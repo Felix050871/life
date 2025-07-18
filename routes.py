@@ -11,7 +11,7 @@ from app import app, db, csrf
 from sqlalchemy.orm import joinedload
 from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, italian_now
 from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm
-from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, check_user_shift_schedule, format_hours
+from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours
 
 # Define require_login decorator
 def require_login(f):
@@ -605,18 +605,7 @@ def get_work_hours(user_id, date_str):
 @app.route('/check_shift_before_clock_in', methods=['POST'])
 @login_required  
 def check_shift_before_clock_in():
-    """Check if user has shift before clock-in and return popup data"""
-    # Usa l'orario italiano per controllo turni
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    now = datetime.now(italy_tz)
-    
-    try:
-        has_shift, shift_info, warning_msg = check_user_shift_schedule(current_user.id, now)
-    except Exception as e:
-        app.logger.error(f"Error in check_user_shift_schedule: {e}")
-        has_shift, shift_info, warning_msg = False, None, "Errore nella verifica del turno. Vuoi procedere comunque con la registrazione?"
-    
+    """Check if user can clock-in (no shift validation)"""
     # Check if can perform clock-in action
     if not AttendanceEvent.can_perform_action(current_user.id, 'clock_in'):
         status, last_event = AttendanceEvent.get_user_status(current_user.id)
@@ -633,24 +622,7 @@ def check_shift_before_clock_in():
                 'already_clocked': True
             })
     
-    if warning_msg or (has_shift and shift_info and (shift_info['is_early'] or shift_info['is_late'])):
-        popup_message = warning_msg
-        if has_shift and shift_info:
-            if shift_info['is_early']:
-                from zoneinfo import ZoneInfo
-                italy_tz = ZoneInfo('Europe/Rome')
-                now_naive = now.replace(tzinfo=None)
-                minutes_early = ((datetime.combine(date.today(), datetime.strptime(shift_info['start_time'], '%H:%M').time()) - now_naive).total_seconds() // 60)
-                popup_message = f"Entrata anticipata di {minutes_early:.0f} minuti rispetto al turno {shift_info['start_time']}-{shift_info['end_time']}. Vuoi continuare?"
-            elif shift_info['is_late']:
-                popup_message = f"Entrata in ritardo rispetto al turno {shift_info['start_time']}-{shift_info['end_time']}. Vuoi continuare?"
-        
-        return jsonify({
-            'success': True,
-            'needs_confirmation': True,
-            'message': popup_message
-        })
-    
+    # No shift validation - always allow clock-in
     return jsonify({
         'success': True,
         'needs_confirmation': False
@@ -709,7 +681,7 @@ def clock_in():
 @app.route('/check_shift_before_clock_out', methods=['POST'])
 @login_required  
 def check_shift_before_clock_out():
-    """Check if user has shift before clock-out and return popup data"""
+    """Check if user can clock-out (no shift validation)"""
     # Check if can perform clock-out action
     if not AttendanceEvent.can_perform_action(current_user.id, 'clock_out'):
         status, last_event = AttendanceEvent.get_user_status(current_user.id)
@@ -720,32 +692,7 @@ def check_shift_before_clock_out():
                 'already_clocked': True
             })
     
-    # Usa l'orario italiano per controllo turni
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    now = datetime.now(italy_tz)
-    
-    try:
-        has_shift, shift_info, warning_msg = check_user_shift_schedule(current_user.id, now)
-    except Exception as e:
-        app.logger.error(f"Error in check_user_shift_schedule clock_out: {e}")
-        has_shift, shift_info, warning_msg = False, None, "Errore nella verifica del turno. Vuoi procedere comunque con la registrazione?"
-    
-    if warning_msg or (has_shift and shift_info and (shift_info['is_early'] or shift_info['is_late'])):
-        popup_message = warning_msg
-        if has_shift and shift_info:
-            if shift_info['is_early']:
-                popup_message = f"Uscita anticipata rispetto al turno {shift_info['start_time']}-{shift_info['end_time']}. Vuoi continuare?"
-            elif shift_info['is_late']:
-                minutes_late = ((now - datetime.combine(date.today(), datetime.strptime(shift_info['end_time'], '%H:%M').time())).total_seconds() // 60)
-                popup_message = f"Uscita in ritardo di {minutes_late:.0f} minuti rispetto al turno {shift_info['start_time']}-{shift_info['end_time']}. Vuoi continuare?"
-        
-        return jsonify({
-            'success': True,
-            'needs_confirmation': True,
-            'message': popup_message
-        })
-    
+    # No shift validation - always allow clock-out
     return jsonify({
         'success': True,
         'needs_confirmation': False
@@ -781,35 +728,8 @@ def clock_out():
     event.event_type = 'clock_out'
     event.timestamp = now
     
-    # Calcola exit_status con la nuova logica (5 minuti di tolleranza)
-    exit_status = 'normale'
-    try:
-        # Trova il turno di oggi
-        today_shift = Shift.query.filter_by(
-            user_id=current_user.id,
-            date=now.date()
-        ).first()
-        
-        if today_shift:
-            # Crea orario fine turno in timezone italiano
-            shift_end_datetime = datetime.combine(now.date(), today_shift.end_time)
-            shift_end_datetime = shift_end_datetime.replace(tzinfo=italy_tz)
-            
-            # Limiti per uscita: 5 minuti di tolleranza
-            exit_early_limit = shift_end_datetime - timedelta(minutes=5)
-            exit_late_limit = shift_end_datetime
-            
-            if now < exit_early_limit:
-                exit_status = 'anticipo'  # Uscita anticipata = giallo warning
-            elif now > exit_late_limit:
-                exit_status = 'ritardo'   # Uscita in ritardo = celeste thumbs up (straordinari)
-            else:
-                exit_status = 'normale'   # Uscita normale = verde check
-    except Exception as e:
-        app.logger.error(f"Error calculating exit_status: {e}")
-        exit_status = 'normale'
-    
-    event.shift_status = exit_status
+    # Sempre exit_status normale (non ci sono più turni)
+    event.shift_status = 'normale'
     
     try:
         db.session.add(event)
@@ -1111,75 +1031,7 @@ def attendance():
                 else:
                     record.exit_status = 'normale'
     
-    # Aggiunge record di assenza per tutti i giorni se ci sono turni ma nessuna presenza
-    if show_team_data:
-        # Per vista team, controlla ogni utente per tutti i giorni
-        for user in team_users:
-            # Ottieni tutti i turni dell'utente nel periodo
-            user_all_shifts = [s for s in user_shifts if s.user_id == user.id]
-            # Raggruppa per data
-            shifts_by_date = {}
-            for shift in user_all_shifts:
-                if shift.date not in shifts_by_date:
-                    shifts_by_date[shift.date] = []
-                shifts_by_date[shift.date].append(shift)
-            
-            # Controlla ogni data con turni
-            for shift_date, date_shifts in shifts_by_date.items():
-                # Controlla se l'utente ha eventi in questa data
-                user_date_events = [r for r in event_records if r.user_id == user.id and r.date == shift_date]
-                if not user_date_events:
-                    # Crea record di assenza
-                    class AbsenceRecord:
-                        def __init__(self, date, user_id, user):
-                            self.date = date
-                            self.user_id = user_id
-                            self.user = user
-                            self.clock_in = None
-                            self.clock_out = None
-                            self.break_start = None
-                            self.break_end = None
-                            self.notes = ""
-                            self.shift_status = 'assente'
-                            self.exit_status = 'assente'
-                        
-                        def get_work_hours(self):
-                            return 0
-                    
-                    absence_record = AbsenceRecord(shift_date, user.id, user)
-                    event_records.append(absence_record)
-    else:
-        # Per vista personale, controlla solo l'utente corrente per tutti i giorni
-        # Raggruppa turni per data
-        shifts_by_date = {}
-        for shift in user_shifts:
-            if shift.date not in shifts_by_date:
-                shifts_by_date[shift.date] = []
-            shifts_by_date[shift.date].append(shift)
-        
-        # Controlla ogni data con turni
-        for shift_date, date_shifts in shifts_by_date.items():
-            # Controlla se l'utente ha eventi in questa data
-            user_date_events = [r for r in event_records if r.date == shift_date]
-            if not user_date_events:
-                # Crea record di assenza
-                class AbsenceRecord:
-                    def __init__(self, date, user_id):
-                        self.date = date
-                        self.user_id = user_id
-                        self.clock_in = None
-                        self.clock_out = None
-                        self.break_start = None
-                        self.break_end = None
-                        self.notes = ""
-                        self.shift_status = 'assente'
-                        self.exit_status = 'assente'
-                    
-                    def get_work_hours(self):
-                        return 0
-                
-                absence_record = AbsenceRecord(shift_date, current_user.id)
-                event_records.append(absence_record)
+    # Non ci sono più turni da controllare - rimosso controllo assenze basato su turni
     
     # Combina tutti i record
     records = []

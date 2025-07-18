@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta, time
-from models import User, Shift, LeaveRequest, AttendanceEvent, PresidioCoverage, italian_now
+from models import User, LeaveRequest, AttendanceEvent, PresidioCoverage, italian_now
 from app import db
 import random
 import json
@@ -747,82 +747,7 @@ def get_team_statistics(start_date=None, end_date=None):
             'team_onsite_interventions': 0
         }
 
-def check_user_shift_schedule(user_id, check_datetime=None):
-    """
-    Check if a user has a scheduled shift for the given datetime.
-    Returns a tuple (has_shift, shift_info, warning_message)
-    
-    Args:
-        user_id: ID of the user to check
-        check_datetime: datetime to check (defaults to now)
-    
-    Returns:
-        tuple: (bool, dict|None, str|None)
-            - has_shift: True if user has a shift at this time
-            - shift_info: dict with shift details if found
-            - warning_message: warning message if no shift found
-    """
-    if not check_datetime:
-        check_datetime = datetime.now()
-    
-    check_date = check_datetime.date()
-    check_time = check_datetime.time()
-    
-    # Find shifts for this user on this date
-    shifts = Shift.query.filter_by(
-        user_id=user_id,
-        date=check_date
-    ).all()
-    
-    if not shifts:
-        return False, None, f"Nessun turno programmato per oggi ({check_date.strftime('%d/%m/%Y')}). Registrazione comunque consentita."
-    
-    # Check if current time falls within any scheduled shift
-    for shift in shifts:
-        # Convert times to datetime objects for comparison - ensure timezone aware
-        shift_start = datetime.combine(check_date, shift.start_time)
-        shift_end = datetime.combine(check_date, shift.end_time)
-        
-        # Make them timezone aware if check_datetime has timezone
-        if check_datetime.tzinfo is not None:
-            # Get the timezone from check_datetime
-            tz = check_datetime.tzinfo
-            shift_start = shift_start.replace(tzinfo=tz)
-            shift_end = shift_end.replace(tzinfo=tz)
-        
-        # Handle shifts that cross midnight
-        if shift.end_time < shift.start_time:
-            shift_end = shift_end + timedelta(days=1)
-        
-        # Allow some flexibility (30 minutes before start, 1 hour after end)
-        tolerance_start = shift_start - timedelta(minutes=30)
-        tolerance_end = shift_end + timedelta(hours=1)
-        
-        # Ensure tolerance times also have timezone
-        if check_datetime.tzinfo is not None:
-            tz = check_datetime.tzinfo
-            if tolerance_start.tzinfo is None:
-                tolerance_start = tolerance_start.replace(tzinfo=tz)
-            if tolerance_end.tzinfo is None:
-                tolerance_end = tolerance_end.replace(tzinfo=tz)
-        
-        if tolerance_start <= check_datetime <= tolerance_end:
-            shift_info = {
-                'id': shift.id,
-                'start_time': shift.start_time.strftime('%H:%M'),
-                'end_time': shift.end_time.strftime('%H:%M'),
-                'shift_type': shift.shift_type,
-                'is_within_schedule': shift_start <= check_datetime <= shift_end,
-                'is_early': check_datetime < shift_start,
-                'is_late': check_datetime > shift_end
-            }
-            return True, shift_info, None
-    
-    # User has shifts today but not at this time
-    shift_times = [f"{s.start_time.strftime('%H:%M')}-{s.end_time.strftime('%H:%M')}" for s in shifts]
-    warning_msg = f"Turno non programmato per questo orario. I tuoi turni di oggi: {', '.join(shift_times)}. Registrazione comunque consentita."
-    
-    return False, None, warning_msg
+# Funzione rimossa - non ci sono più turni da controllare
 
 
 def generate_reperibilita_shifts(start_date, end_date, created_by_id):
