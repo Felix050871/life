@@ -43,7 +43,7 @@
                     <div id="date_fields" class="row" style="display: none;">
                         <div class="col-md-6 mb-3">
                             {{ form.start_date.label(class="form-label") }}
-                            {{ form.start_date(class="form-control") }}
+                            {{ form.start_date(class="form-control", min=today.strftime('%Y-%m-%d')) }}
                             {% if form.start_date.errors %}
                                 <div class="text-danger">
                                     {% for error in form.start_date.errors %}
@@ -54,7 +54,7 @@
                         </div>
                         <div class="col-md-6 mb-3" id="end_date_field">
                             {{ form.end_date.label(class="form-label") }}
-                            {{ form.end_date(class="form-control") }}
+                            {{ form.end_date(class="form-control", min=today.strftime('%Y-%m-%d')) }}
                             {% if form.end_date.errors %}
                                 <div class="text-danger">
                                     {% for error in form.end_date.errors %}

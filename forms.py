@@ -132,7 +132,15 @@ class LeaveRequestForm(FlaskForm):
     reason = TextAreaField('Motivo', validators=[Length(max=500)])
     submit = SubmitField('Invia Richiesta')
     
+    def validate_start_date(self, field):
+        from datetime import date
+        if field.data and field.data < date.today():
+            raise ValidationError('La data di inizio non può essere nel passato.')
+    
     def validate_end_date(self, end_date):
+        from datetime import date
+        if end_date.data and end_date.data < date.today():
+            raise ValidationError('La data di fine non può essere nel passato.')
         if self.leave_type.data in ['Ferie', 'Malattia'] and end_date.data and end_date.data < self.start_date.data:
             raise ValidationError('La data di fine deve essere successiva alla data di inizio.')
     

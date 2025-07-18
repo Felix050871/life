@@ -1546,7 +1546,8 @@ def leave_requests():
     return render_template('leave_requests.html', 
                          requests=requests, 
                          form=form,
-                         can_approve=can_approve)
+                         can_approve=can_approve,
+                         today=date.today())
 
 @app.route('/create_leave_request', methods=['POST'])
 @login_required
