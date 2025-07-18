@@ -167,7 +167,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <small>{{ user.created_at.strftime('%d/%m/%Y') }}</small>
+                                    <small>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else 'N/A' }}</small>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">

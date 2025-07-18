@@ -82,7 +82,7 @@
                                         <span class="badge bg-info">{{ sede.users|length }} utenti</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">{{ sede.work_schedules|length }} orari</span>
+                                        <span class="badge bg-success">{{ sede.work_schedules|list|length }} orari</span>
                                     </td>
                                     <td>
                                         {% if sede.active %}
@@ -91,7 +91,7 @@
                                         <span class="badge bg-secondary">Disattivata</span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ sede.created_at.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ sede.created_at.strftime('%d/%m/%Y') if sede.created_at else 'N/A' }}</td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a href="{{ url_for('edit_sede', sede_id=sede.id) }}" 
