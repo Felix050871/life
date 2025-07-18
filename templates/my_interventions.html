@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-tools me-2"></i>
-                    {% if current_user.role in ['Project Manager', 'Ente'] %}
+                    {% if current_user.role in ['Management', 'Ente'] %}
                         Tutti gli Interventi
                     {% else %}
                         I Miei Interventi
@@ -105,7 +105,7 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    {% if current_user.role in ['Project Manager', 'Ente'] %}
+                                    {% if current_user.role in ['Management', 'Ente'] %}
                                     <th>Utente</th>
                                     {% endif %}
                                     <th>Data/Ora Inizio</th>
@@ -120,7 +120,7 @@
                             <tbody>
                                 {% for intervention in general_interventions %}
                                 <tr>
-                                    {% if current_user.role in ['Project Manager', 'Ente'] %}
+                                    {% if current_user.role in ['Management', 'Ente'] %}
                                     <td>
                                         <strong>{{ intervention.user.get_full_name() }}</strong><br>
                                         <small class="text-muted">{{ intervention.user.role }}</small>
@@ -205,7 +205,7 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    {% if current_user.role in ['Project Manager', 'Ente'] %}
+                                    {% if current_user.role in ['Management', 'Ente'] %}
                                     <th>Utente</th>
                                     {% endif %}
                                     <th>Data/Ora Inizio</th>
@@ -221,7 +221,7 @@
                             <tbody>
                                 {% for intervention in reperibilita_interventions %}
                                 <tr>
-                                    {% if current_user.role in ['Project Manager', 'Ente'] %}
+                                    {% if current_user.role in ['Management', 'Ente'] %}
                                     <td>
                                         <strong>{{ intervention.user.get_full_name() }}</strong><br>
                                         <small class="text-muted">{{ intervention.user.role }}</small>

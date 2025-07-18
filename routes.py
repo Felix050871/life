@@ -83,7 +83,7 @@ def dashboard():
         pass  # continua con la dashboard normale
     
     # Reindirizza l'utente Ente e PM alla home page con vista team per coerenza visiva
-    if current_user.role in ['Ente', 'Project Manager']:
+    if current_user.role in ['Ente', 'Management']:
         return redirect(url_for('ente_home'))
     
     # Blocca l'accesso alla dashboard per altri utenti senza permessi
@@ -114,7 +114,7 @@ def dashboard():
     today_events = []
     
     # Get current user's status and today's events (for regular users only, PM will be handled separately)
-    if current_user.role not in ['Project Manager', 'Ente', 'Admin']:
+    if current_user.role not in ['Management', 'Ente', 'Admin']:
         user_status, _ = AttendanceEvent.get_user_status(current_user.id, today_date)
         today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
@@ -130,7 +130,7 @@ def dashboard():
     active_intervention = None
     recent_interventions = []
     current_time = italian_now().time()
-    if current_user.role in ['Project Manager', 'Operatore', 'Redattore', 'Sviluppatore']:
+    if current_user.role in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
         upcoming_reperibilita_shifts = ReperibilitaShift.query.filter(
             ReperibilitaShift.user_id == current_user.id,
             ReperibilitaShift.date >= date.today()
@@ -188,7 +188,7 @@ def dashboard():
     attendance_by_date = {}
     week_dates = []
     
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         # Get all users except Ente users
         all_team_users = User.query.filter(
             User.active == True,
@@ -289,7 +289,7 @@ def dashboard():
                     continue
     
     # Add personal attendance data for PM
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         # Get PM's personal attendance data (same as regular users)
         user_status = AttendanceEvent.get_user_status(current_user.id)
         today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
@@ -416,7 +416,7 @@ def dashboard_sede():
 @login_required
 def ente_home():
     """Home page per utente Ente e PM con vista team e navigazione settimanale"""
-    if current_user.role not in ['Ente', 'Project Manager']:
+    if current_user.role not in ['Ente', 'Management']:
         flash('Accesso non autorizzato.', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -619,7 +619,7 @@ def ente_home():
     today_events = []
     today_date = today.date()
     
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         user_status, last_event = AttendanceEvent.get_user_status(current_user.id)
         today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
@@ -629,7 +629,7 @@ def ente_home():
     active_intervention = None
     recent_interventions = []
     
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         
         # Get upcoming reperibilità shifts for PM
         upcoming_reperibilita_shifts = ReperibilitaShift.query.filter(
@@ -749,7 +749,7 @@ def clock_in():
         elif status == 'break':
             flash('Sei in pausa. Devi prima terminare la pausa.', 'warning')
         # Redirect PM to ente_home, altri utenti alla dashboard
-        if current_user.role == 'Project Manager':
+        if current_user.role == 'Management':
             return redirect(url_for('ente_home'))
         else:
             return redirect(url_for('dashboard'))
@@ -771,7 +771,7 @@ def clock_in():
     # Blocca se ha già una presenza completa (entrata+uscita) oggi
     if len(clock_ins) > 0 and len(clock_outs) > 0 and len(clock_ins) == len(clock_outs):
         flash('Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.', 'warning')
-        if current_user.role == 'Project Manager':
+        if current_user.role == 'Management':
             return redirect(url_for('ente_home'))
         else:
             return redirect(url_for('dashboard'))
@@ -810,7 +810,7 @@ def clock_in():
         flash('Errore nel salvare l\'entrata', 'danger')
     
     # Redirect PM to ente_home, altri utenti alla dashboard
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         return redirect(url_for('ente_home'))
     else:
         return redirect(url_for('dashboard'))
@@ -848,7 +848,7 @@ def clock_out():
         if status == 'out':
             flash('Non sei presente. Devi prima registrare l\'entrata.', 'warning')
         # Redirect PM to ente_home, altri utenti alla dashboard
-        if current_user.role == 'Project Manager':
+        if current_user.role == 'Management':
             return redirect(url_for('ente_home'))
         else:
             return redirect(url_for('dashboard'))
@@ -870,7 +870,7 @@ def clock_out():
     # Blocca se ha già una presenza completa (entrata+uscita) oggi
     if len(clock_ins) > 0 and len(clock_outs) > 0 and len(clock_ins) == len(clock_outs):
         flash('Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.', 'warning')
-        if current_user.role == 'Project Manager':
+        if current_user.role == 'Management':
             return redirect(url_for('ente_home'))
         else:
             return redirect(url_for('dashboard'))
@@ -907,7 +907,7 @@ def clock_out():
         flash('Errore nel salvare l\'uscita', 'danger')
     
     # Redirect PM to ente_home, altri utenti alla dashboard
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         return redirect(url_for('ente_home'))
     else:
         return redirect(url_for('dashboard'))
@@ -927,7 +927,7 @@ def break_start():
         elif status == 'break':
             flash('Sei già in pausa.', 'warning')
         # Redirect PM to ente_home, altri utenti alla dashboard
-        if current_user.role == 'Project Manager':
+        if current_user.role == 'Management':
             return redirect(url_for('ente_home'))
         else:
             return redirect(url_for('dashboard'))
@@ -953,7 +953,7 @@ def break_start():
         flash('Errore nel salvare l\'inizio pausa', 'danger')
     
     # Redirect PM to ente_home, altri utenti alla dashboard
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         return redirect(url_for('ente_home'))
     else:
         return redirect(url_for('dashboard'))
@@ -973,7 +973,7 @@ def break_end():
         elif status == 'in':
             flash('Non sei in pausa.', 'warning')
         # Redirect PM to ente_home, altri utenti alla dashboard
-        if current_user.role == 'Project Manager':
+        if current_user.role == 'Management':
             return redirect(url_for('ente_home'))
         else:
             return redirect(url_for('dashboard'))
@@ -999,7 +999,7 @@ def break_end():
         flash('Errore nel salvare la fine pausa', 'danger')
     
     # Redirect PM to ente_home, altri utenti alla dashboard
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         return redirect(url_for('ente_home'))
     else:
         return redirect(url_for('dashboard'))
@@ -1054,7 +1054,7 @@ def attendance():
     
     # Handle team/personal view toggle for PM, Management, Responsabili and Ente
     view_mode = request.args.get('view', 'personal')
-    if current_user.role in ['Project Manager', 'Staff', 'Responsabili']:
+    if current_user.role in ['Management', 'Staff', 'Responsabili']:
         # PM, Management e Responsabili can toggle between personal and team view
         show_team_data = (view_mode == 'team')
     elif current_user.role == 'Ente':
@@ -1101,7 +1101,7 @@ def attendance():
         else:
             # PM e Ente vedono solo utenti operativi (esclusi Admin e Staff)
             team_users = User.query.filter(
-                User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager', 'Staff']),
+                User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Management', 'Staff']),
                 User.active.is_(True)
             ).all()
         
@@ -1324,7 +1324,7 @@ def shifts():
                              shifts=None)
     else:
         # Parametri di visualizzazione per utenti normali
-        if current_user.role in ['Admin', 'Project Manager']:
+        if current_user.role in ['Admin', 'Management']:
             view_mode = request.args.get('view', 'all')
         elif current_user.role == 'Ente':
             view_mode = 'all'  # Ente vede sempre tutti
@@ -2290,7 +2290,7 @@ def edit_shift(shift_id):
     
     # Get available users for assignment
     users = User.query.filter(
-        User.role.in_(['Project Manager', 'Redattore', 'Sviluppatore', 'Operatore']),
+        User.role.in_(['Management', 'Redattore', 'Sviluppatore', 'Operatore']),
         User.active.is_(True)
     ).order_by(User.first_name, User.last_name).all()
     
@@ -2438,7 +2438,7 @@ def calculate_shift_presence(shift):
 @login_required
 def team_shifts():
     # Solo PM può vedere i turni del team
-    if current_user.role not in ['Project Manager']:
+    if current_user.role not in ['Management']:
         flash('Non hai i permessi per accedere a questa funzionalità.', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -2537,7 +2537,7 @@ def team_shifts():
 @csrf.exempt
 def change_shift_user(shift_id):
     """Cambia l'utente assegnato a un turno (solo PM)"""
-    if current_user.role not in ['Project Manager']:
+    if current_user.role not in ['Management']:
         return jsonify({'success': False, 'message': 'Non hai i permessi per modificare i turni.'})
     
     try:
@@ -2600,7 +2600,7 @@ def internal_error(error):
 @require_login
 def reperibilita_coverage():
     """Lista coperture reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from models import ReperibilitaCoverage
@@ -2642,7 +2642,7 @@ def reperibilita_coverage():
 @require_login
 def create_reperibilita_coverage():
     """Crea nuova copertura reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from forms import ReperibilitaCoverageForm
@@ -2685,7 +2685,7 @@ def create_reperibilita_coverage():
 @require_login
 def edit_reperibilita_coverage(coverage_id):
     """Modifica copertura reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from forms import ReperibilitaCoverageForm
@@ -2729,7 +2729,7 @@ def edit_reperibilita_coverage(coverage_id):
 @require_login
 def delete_reperibilita_coverage(coverage_id):
     """Elimina copertura reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from models import ReperibilitaCoverage
@@ -2751,7 +2751,7 @@ def delete_reperibilita_coverage(coverage_id):
 @require_login
 def view_reperibilita_coverage(period_key):
     """Visualizza dettagli coperture reperibilità per un periodo (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from models import ReperibilitaCoverage
@@ -2782,7 +2782,7 @@ def view_reperibilita_coverage(period_key):
 @require_login  
 def delete_reperibilita_period(period_key):
     """Elimina tutte le coperture reperibilità di un periodo (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from models import ReperibilitaCoverage
@@ -2823,7 +2823,7 @@ def reperibilita_shifts():
     templates = ReperibilitaTemplate.query.order_by(ReperibilitaTemplate.created_at.desc()).all()
     
     # Parametri di visualizzazione
-    if current_user.role in ['Admin', 'Project Manager', 'Staff']:
+    if current_user.role in ['Admin', 'Management', 'Staff']:
         view_mode = request.args.get('view', 'all')
     elif current_user.role == 'Ente':
         view_mode = 'all'  # Ente vede sempre tutti
@@ -2877,7 +2877,7 @@ def reperibilita_shifts():
     # Get active intervention for current user
     active_intervention = None
     current_time = italian_now().time()
-    if current_user.role in ['Project Manager', 'Operatore', 'Redattore', 'Sviluppatore']:
+    if current_user.role in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
         active_intervention = ReperibilitaIntervention.query.filter_by(
             user_id=current_user.id,
             end_datetime=None
@@ -2944,7 +2944,7 @@ def reperibilita_template_detail(start_date, end_date):
 @require_login
 def reperibilita_replica(period_key):
     """Replica template reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         flash('Non hai i permessi per replicare i template di reperibilità', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -3048,7 +3048,7 @@ def reperibilita_replica(period_key):
 @require_login
 def generate_reperibilita_shifts():
     """Genera turnazioni reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from forms import ReperibilitaTemplateForm
@@ -3110,7 +3110,7 @@ def generate_reperibilita_shifts():
 @require_login
 def regenerate_reperibilita_template(template_id):
     """Rigenera turni reperibilità da template esistente (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from models import ReperibilitaTemplate, ReperibilitaShift
@@ -3164,7 +3164,7 @@ def regenerate_reperibilita_template(template_id):
 @login_required
 def start_intervention():
     """Inizia un intervento di reperibilità"""
-    if current_user.role not in ['Project Manager', 'Operatore', 'Redattore', 'Sviluppatore']:
+    if current_user.role not in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
         flash('Non hai i permessi per registrare interventi di reperibilità.', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -3212,7 +3212,7 @@ def start_intervention():
 @login_required
 def end_intervention():
     """Termina un intervento di reperibilità"""
-    if current_user.role not in ['Project Manager', 'Operatore', 'Redattore', 'Sviluppatore']:
+    if current_user.role not in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
         flash('Non hai i permessi per registrare interventi di reperibilità.', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -3235,7 +3235,7 @@ def end_intervention():
     flash('Intervento di reperibilità terminato con successo.', 'success')
     
     # Redirect PM to ente_home, others to reperibilita_shifts
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         return redirect(url_for('ente_home'))
     else:
         return redirect(url_for('reperibilita_shifts'))
@@ -3245,7 +3245,7 @@ def end_intervention():
 @require_login
 def delete_reperibilita_template(template_id):
     """Elimina un template reperibilità e tutti i suoi turni (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Project Manager']):
+    if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
     from models import ReperibilitaTemplate, ReperibilitaShift
@@ -3653,7 +3653,7 @@ def export_attendance_csv():
     
     # Handle team/personal view toggle for PM
     view_mode = request.args.get('view', 'personal')
-    if current_user.role == 'Project Manager':
+    if current_user.role == 'Management':
         show_team_data = (view_mode == 'team')
     else:
         show_team_data = False
@@ -3675,7 +3675,7 @@ def export_attendance_csv():
     
     if show_team_data:
         team_users = User.query.filter(
-            User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Project Manager', 'Responsabili']),
+            User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Management', 'Responsabili']),
             User.active.is_(True)
         ).all()
         
@@ -3851,7 +3851,7 @@ def my_interventions():
     end_datetime = datetime.combine(end_date, datetime.max.time())
     
     # PM ed Ente vedono tutti gli interventi, altri utenti solo i propri
-    if current_user.role in ['Project Manager', 'Ente']:
+    if current_user.role in ['Management', 'Ente']:
         # Ottieni tutti gli interventi di reperibilità filtrati per data
         reperibilita_interventions = ReperibilitaIntervention.query.join(User).filter(
             ReperibilitaIntervention.start_datetime >= start_datetime,
@@ -3915,7 +3915,7 @@ def export_general_interventions_csv():
     end_datetime = datetime.combine(end_date, datetime.max.time())
     
     # PM ed Ente vedono tutti gli interventi, altri utenti solo i propri
-    if current_user.role in ['Project Manager', 'Ente']:
+    if current_user.role in ['Management', 'Ente']:
         general_interventions = Intervention.query.join(User).filter(
             Intervention.start_datetime >= start_datetime,
             Intervention.start_datetime <= end_datetime
@@ -3934,7 +3934,7 @@ def export_general_interventions_csv():
     writer = csv.writer(output)
     
     # Header
-    if current_user.role in ['Project Manager', 'Ente']:
+    if current_user.role in ['Management', 'Ente']:
         header = ['Utente', 'Nome', 'Cognome', 'Ruolo', 'Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
                  'Durata (minuti)', 'Priorità', 'Tipologia', 'Descrizione', 'Stato']
     else:
@@ -3946,7 +3946,7 @@ def export_general_interventions_csv():
     for intervention in general_interventions:
         row = []
         
-        if current_user.role in ['Project Manager', 'Ente']:
+        if current_user.role in ['Management', 'Ente']:
             row.extend([
                 intervention.user.username,
                 intervention.user.first_name,
@@ -4010,7 +4010,7 @@ def export_reperibilita_interventions_csv():
     end_datetime = datetime.combine(end_date, datetime.max.time())
     
     # PM ed Ente vedono tutti gli interventi, altri utenti solo i propri
-    if current_user.role in ['Project Manager', 'Ente']:
+    if current_user.role in ['Management', 'Ente']:
         reperibilita_interventions = ReperibilitaIntervention.query.join(User).filter(
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
@@ -4029,7 +4029,7 @@ def export_reperibilita_interventions_csv():
     writer = csv.writer(output)
     
     # Header
-    if current_user.role in ['Project Manager', 'Ente']:
+    if current_user.role in ['Management', 'Ente']:
         header = ['Utente', 'Nome', 'Cognome', 'Ruolo', 'Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
                  'Durata (minuti)', 'Priorità', 'Tipologia', 'Data Turno', 'Ora Inizio Turno', 'Ora Fine Turno', 
                  'Descrizione', 'Stato']
@@ -4043,7 +4043,7 @@ def export_reperibilita_interventions_csv():
     for intervention in reperibilita_interventions:
         row = []
         
-        if current_user.role in ['Project Manager', 'Ente']:
+        if current_user.role in ['Management', 'Ente']:
             row.extend([
                 intervention.user.username,
                 intervention.user.first_name,
@@ -4417,7 +4417,7 @@ def edit_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin', 'Project Manager']
+    protected_roles = ['Admin', 'Management']
     if role.name in protected_roles:
         flash(f'Il ruolo "{role.display_name}" è protetto e non può essere modificato', 'danger')
         return redirect(url_for('manage_roles'))
@@ -4457,7 +4457,7 @@ def toggle_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin', 'Project Manager']
+    protected_roles = ['Admin', 'Management']
     if role.name in protected_roles:
         flash(f'Non è possibile disattivare il ruolo "{role.display_name}" perché è protetto dal sistema', 'danger')
         return redirect(url_for('manage_roles'))
@@ -4481,7 +4481,7 @@ def delete_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin', 'Project Manager']
+    protected_roles = ['Admin', 'Management']
     if role.name in protected_roles:
         flash(f'Non è possibile eliminare il ruolo "{role.display_name}" perché è protetto dal sistema', 'danger')
         return redirect(url_for('manage_roles'))

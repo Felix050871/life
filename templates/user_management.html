@@ -156,7 +156,7 @@
                                 <td>
                                     {% if user.role == 'Admin' %}
                                     <span class="badge bg-danger">{{ user.role }}</span>
-                                    {% elif user.role == 'Project Manager' %}
+                                    {% elif user.role == 'Management' %}
                                     <span class="badge bg-warning">{{ user.role }}</span>
                                     {% elif user.role == 'Ente' %}
                                     <span class="badge bg-info">{{ user.role }}</span>
@@ -172,7 +172,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.role in ['Project Manager', 'Redattore', 'Sviluppatore', 'Operatore'] %}
+                                    {% if user.role in ['Management', 'Redattore', 'Sviluppatore', 'Operatore'] %}
                                     <span class="badge bg-light text-dark">{{ user.part_time_percentage }}%</span>
                                     {% else %}
                                     <span class="text-muted">--</span>
@@ -240,8 +240,8 @@
                         <small>Admin</small>
                     </div>
                     <div class="col-md-2">
-                        <h4 class="text-warning">{{ users|selectattr('role', 'equalto', 'Project Manager')|list|length }}</h4>
-                        <small>Project Manager</small>
+                        <h4 class="text-warning">{{ users|selectattr('role', 'equalto', 'Management')|list|length }}</h4>
+                        <small>Management</small>
                     </div>
                     <div class="col-md-2">
                         <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Redattore')|list|length }}</h4>
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function togglePartTimeField() {
         const selectedRole = roleSelect.value;
-        const showPartTime = ['Project Manager', 'Redattore', 'Sviluppatore', 'Operatore'].includes(selectedRole);
+        const showPartTime = ['Management', 'Redattore', 'Sviluppatore', 'Operatore'].includes(selectedRole);
         
         if (showPartTime) {
             partTimeGroup.style.display = 'block';

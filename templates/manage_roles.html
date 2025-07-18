@@ -33,7 +33,7 @@
                                 <tr {% if not role.active %}class="table-secondary"{% endif %}>
                                     <td>
                                         <strong>{{ role.name }}</strong>
-                                        {% if role.name in ['Admin', 'Project Manager', 'Staff'] %}
+                                        {% if role.name in ['Admin', 'Management', 'Staff'] %}
                                         <span class="badge bg-warning ms-1">Protetto</span>
                                         {% endif %}
                                     </td>
@@ -79,7 +79,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            {% if role.name in ['Admin', 'Project Manager', 'Staff'] %}
+                                            {% if role.name in ['Admin', 'Management', 'Staff'] %}
                                             <button class="btn btn-outline-secondary" disabled title="Ruolo protetto dal sistema">
                                                 <i class="fas fa-lock"></i>
                                             </button>
@@ -143,7 +143,7 @@
                                 <h6 class="card-title text-white"><i class="fas fa-info-circle me-1"></i>Informazioni</h6>
                                 <ul class="list-unstyled mb-0 small text-white">
                                     <li><i class="fas fa-chevron-right me-1"></i>I ruoli dinamici permettono di personalizzare i permessi utente</li>
-                                    <li><i class="fas fa-chevron-right me-1"></i>I ruoli "Admin", "Project Manager" e "Staff" sono protetti dal sistema</li>
+                                    <li><i class="fas fa-chevron-right me-1"></i>I ruoli "Admin", "Management" e "Staff" sono protetti dal sistema</li>
                                     <li><i class="fas fa-chevron-right me-1"></i>Non è possibile eliminare ruoli con utenti associati</li>
                                     <li><i class="fas fa-chevron-right me-1"></i>I ruoli protetti hanno funzionalità specifiche integrate</li>
                                 </ul>

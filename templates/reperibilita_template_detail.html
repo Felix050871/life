@@ -19,7 +19,7 @@
             <a href="{{ url_for('reperibilita_shifts') }}" class="btn btn-outline-secondary me-2">
                 <i class="fas fa-arrow-left"></i> Torna alla Lista
             </a>
-            {% if current_user.role in ['Admin', 'Project Manager'] %}
+            {% if current_user.role in ['Admin', 'Management'] %}
             <a href="{{ url_for('reperibilita_replica', period_key=period_key) }}" class="btn btn-outline-info">
                 <i class="fas fa-copy"></i> Replica Template
             </a>

@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function togglePartTimeField() {
         const selectedRole = roleSelect.value;
-        const showPartTime = ['Project Manager', 'Redattore', 'Sviluppatore', 'Operatore'].includes(selectedRole);
+        const showPartTime = ['Management', 'Redattore', 'Sviluppatore', 'Operatore'].includes(selectedRole);
         
         if (showPartTime) {
             partTimeGroup.style.display = 'block';

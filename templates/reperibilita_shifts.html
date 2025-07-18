@@ -9,7 +9,7 @@
         <h2><i class="fas fa-phone me-2"></i>Gestione Reperibilità</h2>
         <p class="text-muted">Visualizza i turni di reperibilità</p>
     </div>
-    {% if current_user.role in ['Admin', 'Project Manager'] %}
+    {% if current_user.role in ['Admin', 'Management'] %}
     <div class="col-auto">
         <a href="{{ url_for('generate_reperibilita_shifts') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Genera Turnazioni
@@ -21,7 +21,7 @@
 
 
 <!-- Template Staff -->
-{% if current_user.role in ['Admin', 'Project Manager', 'Ente'] %}
+{% if current_user.role in ['Admin', 'Management', 'Ente'] %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
@@ -60,7 +60,7 @@
                                         <a href="{{ url_for('reperibilita_template_detail', start_date=template.start_date.strftime('%Y-%m-%d'), end_date=template.end_date.strftime('%Y-%m-%d')) }}" class="btn btn-primary" title="Visualizza turni">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        {% if current_user.role in ['Admin', 'Project Manager'] %}
+                                        {% if current_user.role in ['Admin', 'Management'] %}
                                         <a href="{{ url_for('regenerate_reperibilita_template', template_id=template.id) }}" class="btn btn-outline-warning" title="Rigenera turni">
                                             <i class="fas fa-sync-alt"></i>
                                         </a>
@@ -96,7 +96,7 @@
                 <h5><i class="fas fa-phone-alt me-2"></i>Turni di Reperibilità</h5>
                 
                 <!-- Toggle per vista solo per PM/Admin -->
-                {% if current_user.role in ['Admin', 'Project Manager'] %}
+                {% if current_user.role in ['Admin', 'Management'] %}
                 <div class="btn-group btn-group-sm" role="group">
                     <a href="{{ url_for('reperibilita_shifts', view='all', period=request.args.get('period', 'week'), display=request.args.get('display', 'table')) }}" 
                        class="btn btn-outline-primary {% if request.args.get('view') == 'all' or request.args.get('view') is none %}active{% endif %}">

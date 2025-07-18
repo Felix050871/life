@@ -416,7 +416,7 @@
                 </div>
                 
                 <!-- Toggle view solo per PM/Admin -->
-                {% if current_user.role in ['Admin', 'Project Manager'] %}
+                {% if current_user.role in ['Admin', 'Management'] %}
                 <div class="d-flex justify-content-center mb-3">
                     <div class="btn-group" role="group">
                         {% if selected_template %}

@@ -245,7 +245,7 @@
 
 <!-- Personal Attendance Section for PM -->
 <!-- DEBUG: current_user.role = {{ current_user.role }} -->
-{% if current_user.role == 'Project Manager' %}
+{% if current_user.role == 'Management' %}
 <div class="row mb-4">
     <div class="col-md-8 mx-auto">
         <div class="card">
@@ -522,7 +522,7 @@
 {% endif %}
 
 <!-- Team Staff Section (for PM and Ente) -->
-{% if current_user.role in ['Project Manager', 'Ente'] %}
+{% if current_user.role in ['Management', 'Ente'] %}
 <div class="row mb-4">
     <div class="col">
         <h4><i class="fas fa-users-cog me-2"></i>Gestione Team</h4>
@@ -649,7 +649,7 @@
 </div>
 
 <!-- Reperibilità Section for authorized users -->
-{% if current_user.role in ['Project Manager', 'Operatore', 'Redattore', 'Sviluppatore'] %}
+{% if current_user.role in ['Management', 'Operatore', 'Redattore', 'Sviluppatore'] %}
 <div class="row">
     <!-- Reperibilità Shifts -->
     <div class="col-md-6 mb-4">

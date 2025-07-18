@@ -75,7 +75,7 @@
 </div>
 
 <!-- Personal Attendance Section for PM ONLY (not Ente) -->
-{% if current_user.role == 'Project Manager' %}
+{% if current_user.role == 'Management' %}
 <div class="row mb-4">
     <div class="col-md-8 mx-auto">
         <div class="card">
@@ -305,7 +305,7 @@
 
 
 <!-- Turni Personalizzati PM -->
-{% if current_user.role == 'Project Manager' %}
+{% if current_user.role == 'Management' %}
 <div class="row mb-4">
     <!-- Prossimi Turni Presidio -->
     <div class="col-md-6 mb-4">
@@ -552,7 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <!-- JavaScript per gestione presenze PM -->
-{% if current_user.role == 'Project Manager' %}
+{% if current_user.role == 'Management' %}
 <script>
 // Modal Staff
 function showConfirmModal(title, message, onConfirm) {
