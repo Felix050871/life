@@ -64,6 +64,31 @@
                             </div>
                         </div>
                         
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                {{ form.days_preset.label(class="form-label") }}
+                                {{ form.days_preset(class="form-select", id="days_preset") }}
+                                {% if form.days_preset.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.days_preset.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.days_of_week.label(class="form-label") }}
+                                {{ form.days_of_week(class="form-select", multiple=true, id="days_of_week", style="height: 120px;") }}
+                                {% if form.days_of_week.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.days_of_week.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
                         <div class="mt-3">
                             {{ form.description.label(class="form-label") }}
                             {{ form.description(class="form-control", rows="3") }}
@@ -104,4 +129,60 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const daysPreset = document.getElementById('days_preset');
+    const daysOfWeek = document.getElementById('days_of_week');
+    
+    if (daysPreset && daysOfWeek) {
+        // Preset configurations
+        const presets = {
+            'workdays': [0, 1, 2, 3, 4],
+            'weekend': [5, 6],
+            'all_week': [0, 1, 2, 3, 4, 5, 6],
+            'custom': []
+        };
+        
+        // Update days selection when preset changes
+        daysPreset.addEventListener('change', function() {
+            const selectedPreset = this.value;
+            const presetDays = presets[selectedPreset] || [];
+            
+            // Clear all selections
+            for (let option of daysOfWeek.options) {
+                option.selected = false;
+            }
+            
+            // Select preset days (only if not custom)
+            if (selectedPreset !== 'custom') {
+                for (let day of presetDays) {
+                    const option = daysOfWeek.querySelector(`option[value="${day}"]`);
+                    if (option) {
+                        option.selected = true;
+                    }
+                }
+            }
+        });
+        
+        // When manual selection changes, check if it matches a preset
+        daysOfWeek.addEventListener('change', function() {
+            const selectedDays = Array.from(this.selectedOptions).map(opt => parseInt(opt.value)).sort((a, b) => a - b);
+            
+            // Check if selection matches any preset
+            let matchingPreset = 'custom';
+            for (let [preset, days] of Object.entries(presets)) {
+                if (preset !== 'custom' && JSON.stringify(days) === JSON.stringify(selectedDays)) {
+                    matchingPreset = preset;
+                    break;
+                }
+            }
+            
+            daysPreset.value = matchingPreset;
+        });
+    }
+});
+</script>
 {% endblock %}

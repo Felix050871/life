@@ -4079,11 +4079,18 @@ def create_work_schedule():
     
     form = WorkScheduleForm()
     if form.validate_on_submit():
+        # Determina i giorni della settimana dal preset o dalla selezione personalizzata
+        if form.days_preset.data != 'custom':
+            days_of_week = form.get_days_from_preset(form.days_preset.data)
+        else:
+            days_of_week = form.days_of_week.data
+        
         schedule = WorkSchedule(
             sede_id=form.sede.data,
             name=form.name.data,
             start_time=form.start_time.data,
             end_time=form.end_time.data,
+            days_of_week=days_of_week,
             description=form.description.data,
             active=form.is_active.data
         )
@@ -4108,11 +4115,31 @@ def edit_work_schedule(schedule_id):
     schedule = WorkSchedule.query.get_or_404(schedule_id)
     form = WorkScheduleForm(obj=schedule)
     
+    # Precompila i campi days_of_week e days_preset basandosi sui dati esistenti
+    if request.method == 'GET':
+        form.days_of_week.data = schedule.days_of_week or [0, 1, 2, 3, 4]
+        # Determina il preset basandosi sui giorni salvati
+        if schedule.days_of_week == [0, 1, 2, 3, 4]:
+            form.days_preset.data = 'workdays'
+        elif schedule.days_of_week == [5, 6]:
+            form.days_preset.data = 'weekend'
+        elif schedule.days_of_week == [0, 1, 2, 3, 4, 5, 6]:
+            form.days_preset.data = 'all_week'
+        else:
+            form.days_preset.data = 'custom'
+    
     if form.validate_on_submit():
+        # Determina i giorni della settimana dal preset o dalla selezione personalizzata
+        if form.days_preset.data != 'custom':
+            days_of_week = form.get_days_from_preset(form.days_preset.data)
+        else:
+            days_of_week = form.days_of_week.data
+        
         schedule.sede_id = form.sede.data
         schedule.name = form.name.data
         schedule.start_time = form.start_time.data
         schedule.end_time = form.end_time.data
+        schedule.days_of_week = days_of_week
         schedule.description = form.description.data
         schedule.active = form.is_active.data
         

@@ -19,25 +19,35 @@
                     <form method="POST" action="{{ url_for('create_work_schedule') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 {{ form.sede.label(class="form-label") }}
                                 {{ form.sede(class="form-select") }}
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 {{ form.name.label(class="form-label") }}
                                 {{ form.name(class="form-control", placeholder="es. Orario Standard") }}
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-4">
+                                {{ form.description.label(class="form-label") }}
+                                {{ form.description(class="form-control", placeholder="Descrizione opzionale") }}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-3">
                                 {{ form.start_time.label(class="form-label") }}
                                 {{ form.start_time(class="form-control") }}
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 {{ form.end_time.label(class="form-label") }}
                                 {{ form.end_time(class="form-control") }}
                             </div>
-                            <div class="col-md-2">
-                                {{ form.description.label(class="form-label") }}
-                                {{ form.description(class="form-control", placeholder="Descrizione opzionale") }}
+                            <div class="col-md-3">
+                                {{ form.days_preset.label(class="form-label") }}
+                                {{ form.days_preset(class="form-select", id="days_preset") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.days_of_week.label(class="form-label") }}
+                                {{ form.days_of_week(class="form-select", multiple=true, id="days_of_week", style="height: 120px;") }}
                             </div>
                         </div>
                         <div class="row mt-3">
@@ -74,6 +84,7 @@
                                 <tr>
                                     <th>Sede</th>
                                     <th>Nome Orario</th>
+                                    <th>Giorni</th>
                                     <th>Entrata</th>
                                     <th>Uscita</th>
                                     <th>Durata</th>
@@ -94,6 +105,9 @@
                                         {% if not schedule.active %}
                                         <span class="badge bg-secondary ms-2">Disattivo</span>
                                         {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-info">{{ schedule.get_days_display() }}</small>
                                     </td>
                                     <td>
                                         <span class="badge bg-success">{{ schedule.start_time.strftime('%H:%M') }}</span>
@@ -142,4 +156,69 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const daysPreset = document.getElementById('days_preset');
+    const daysOfWeek = document.getElementById('days_of_week');
+    
+    if (daysPreset && daysOfWeek) {
+        // Preset configurations
+        const presets = {
+            'workdays': [0, 1, 2, 3, 4],
+            'weekend': [5, 6],
+            'all_week': [0, 1, 2, 3, 4, 5, 6],
+            'custom': []
+        };
+        
+        // Update days selection when preset changes
+        daysPreset.addEventListener('change', function() {
+            const selectedPreset = this.value;
+            const presetDays = presets[selectedPreset] || [];
+            
+            // Clear all selections
+            for (let option of daysOfWeek.options) {
+                option.selected = false;
+            }
+            
+            // Select preset days (only if not custom)
+            if (selectedPreset !== 'custom') {
+                for (let day of presetDays) {
+                    const option = daysOfWeek.querySelector(`option[value="${day}"]`);
+                    if (option) {
+                        option.selected = true;
+                    }
+                }
+            }
+        });
+        
+        // When manual selection changes, check if it matches a preset
+        daysOfWeek.addEventListener('change', function() {
+            const selectedDays = Array.from(this.selectedOptions).map(opt => parseInt(opt.value)).sort((a, b) => a - b);
+            
+            // Check if selection matches any preset
+            let matchingPreset = 'custom';
+            for (let [preset, days] of Object.entries(presets)) {
+                if (preset !== 'custom' && JSON.stringify(days) === JSON.stringify(selectedDays)) {
+                    matchingPreset = preset;
+                    break;
+                }
+            }
+            
+            daysPreset.value = matchingPreset;
+        });
+        
+        // Initialize preset based on current selection
+        const initialDays = Array.from(daysOfWeek.selectedOptions).map(opt => parseInt(opt.value)).sort((a, b) => a - b);
+        for (let [preset, days] of Object.entries(presets)) {
+            if (preset !== 'custom' && JSON.stringify(days) === JSON.stringify(initialDays)) {
+                daysPreset.value = preset;
+                break;
+            }
+        }
+    }
+});
+</script>
 {% endblock %}

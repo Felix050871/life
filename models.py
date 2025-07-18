@@ -921,6 +921,7 @@ class WorkSchedule(db.Model):
     name = db.Column(db.String(100), nullable=False)
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
+    days_of_week = db.Column(db.JSON, nullable=False, default=list)  # Lista dei giorni della settimana [0,1,2,3,4] per Lun-Ven
     description = db.Column(db.Text, nullable=True)
     active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
@@ -948,3 +949,42 @@ class WorkSchedule(db.Model):
         """Formato di visualizzazione della durata"""
         hours = self.get_duration_hours()
         return f"{hours:.1f}h"
+    
+    def get_days_display(self):
+        """Restituisce i giorni della settimana in formato leggibile"""
+        days_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+        if not self.days_of_week:
+            return 'Nessun giorno'
+        
+        selected_days = [days_names[day] for day in self.days_of_week if 0 <= day < 7]
+        
+        # Controlla pattern comuni
+        if self.days_of_week == [0, 1, 2, 3, 4]:
+            return 'Lunedì-Venerdì'
+        elif self.days_of_week == [5, 6]:
+            return 'Sabato-Domenica'
+        elif len(selected_days) == 7:
+            return 'Tutti i giorni'
+        elif len(selected_days) <= 3:
+            return ', '.join(selected_days)
+        else:
+            return f"{', '.join(selected_days[:-1])} e {selected_days[-1]}"
+    
+    def set_days_from_list(self, days_list):
+        """Imposta i giorni della settimana da una lista di stringhe"""
+        day_mapping = {
+            'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3, 
+            'friday': 4, 'saturday': 5, 'sunday': 6
+        }
+        self.days_of_week = [day_mapping.get(day.lower()) for day in days_list if day.lower() in day_mapping]
+        self.days_of_week = [day for day in self.days_of_week if day is not None]
+    
+    @staticmethod
+    def get_weekday_presets():
+        """Restituisce i preset comuni per i giorni della settimana"""
+        return {
+            'workdays': ([0, 1, 2, 3, 4], 'Lunedì-Venerdì'),
+            'weekend': ([5, 6], 'Sabato-Domenica'),
+            'all_week': ([0, 1, 2, 3, 4, 5, 6], 'Tutti i giorni'),
+            'custom': ([], 'Personalizzato')
+        }

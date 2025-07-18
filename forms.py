@@ -408,6 +408,25 @@ class WorkScheduleForm(FlaskForm):
     name = StringField('Nome Orario', validators=[DataRequired(), Length(max=100)])
     start_time = TimeField('Orario Inizio', validators=[DataRequired()])
     end_time = TimeField('Orario Fine', validators=[DataRequired()])
+    
+    # Preset e selezione giorni della settimana
+    days_preset = SelectField('Preset Giorni', choices=[
+        ('workdays', 'Lunedì-Venerdì'),
+        ('weekend', 'Sabato-Domenica'),
+        ('all_week', 'Tutti i giorni'),
+        ('custom', 'Personalizzato')
+    ], default='workdays')
+    
+    days_of_week = SelectMultipleField('Giorni della Settimana', choices=[
+        (0, 'Lunedì'),
+        (1, 'Martedì'),
+        (2, 'Mercoledì'),
+        (3, 'Giovedì'),
+        (4, 'Venerdì'),
+        (5, 'Sabato'),
+        (6, 'Domenica')
+    ], coerce=int, default=[0, 1, 2, 3, 4])
+    
     description = TextAreaField('Descrizione', validators=[Length(max=500)])
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Orario')
@@ -421,6 +440,21 @@ class WorkScheduleForm(FlaskForm):
             self.sede.choices = [(sede.id, sede.name) for sede in sedi_attive]
         except:
             self.sede.choices = []
+    
+    def validate_days_of_week(self, days_of_week):
+        """Valida che almeno un giorno sia selezionato"""
+        if not days_of_week.data:
+            raise ValidationError('Seleziona almeno un giorno della settimana.')
+    
+    def get_days_from_preset(self, preset):
+        """Restituisce i giorni corrispondenti al preset selezionato"""
+        presets = {
+            'workdays': [0, 1, 2, 3, 4],  # Lun-Ven
+            'weekend': [5, 6],            # Sab-Dom
+            'all_week': [0, 1, 2, 3, 4, 5, 6],  # Tutti
+            'custom': []                  # Da definire manualmente
+        }
+        return presets.get(preset, [0, 1, 2, 3, 4])
     
     def validate_end_time(self, end_time):
         """Valida che l'orario di fine sia successivo a quello di inizio"""
