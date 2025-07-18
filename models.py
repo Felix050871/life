@@ -76,7 +76,7 @@ class User(UserMixin, db.Model):
     
     # Relationship many-to-many con Sedi
     sedi = db.relationship('Sede', secondary=user_sede_association, 
-                          backref='associated_users', lazy='dynamic')
+                          backref='associated_users', lazy='select')
     
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"

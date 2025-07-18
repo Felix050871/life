@@ -8,6 +8,7 @@ import base64
 from defusedcsv import csv
 from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
+from sqlalchemy.orm import joinedload
 from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, italian_now
 from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, check_user_shift_schedule, format_hours
@@ -1711,7 +1712,7 @@ def user_management():
         flash('Non hai i permessi per gestire gli utenti', 'danger')
         return redirect(url_for('dashboard'))
     
-    users = User.query.order_by(User.created_at.desc()).all()
+    users = User.query.options(joinedload(User.sedi)).order_by(User.created_at.desc()).all()
     form = UserForm(is_edit=False)
     return render_template('user_management.html', users=users, form=form)
 
