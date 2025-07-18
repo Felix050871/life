@@ -11,7 +11,7 @@ from app import app, db, csrf
 from sqlalchemy.orm import joinedload
 from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, italian_now
 from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm
-from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours
+from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions
 
 # Define require_login decorator
 def require_login(f):
@@ -662,6 +662,17 @@ def clock_in():
     event.event_type = 'clock_in'
     event.timestamp = now
     
+    # Controlla gli orari della sede e permessi per determinare lo stato
+    try:
+        schedule_check = check_user_schedule_with_permissions(current_user.id, now)
+        if schedule_check['has_schedule']:
+            event.shift_status = schedule_check['entry_status']
+        else:
+            event.shift_status = 'normale'
+    except Exception as e:
+        app.logger.error(f"Error checking schedule for entry: {e}")
+        event.shift_status = 'normale'
+    
     try:
         db.session.add(event)
         db.session.commit()
@@ -728,8 +739,16 @@ def clock_out():
     event.event_type = 'clock_out'
     event.timestamp = now
     
-    # Sempre exit_status normale (non ci sono più turni)
-    event.shift_status = 'normale'
+    # Controlla gli orari della sede e permessi per determinare lo stato
+    try:
+        schedule_check = check_user_schedule_with_permissions(current_user.id, now)
+        if schedule_check['has_schedule']:
+            event.shift_status = schedule_check['exit_status']
+        else:
+            event.shift_status = 'normale'
+    except Exception as e:
+        app.logger.error(f"Error checking schedule for exit: {e}")
+        event.shift_status = 'normale'
     
     try:
         db.session.add(event)

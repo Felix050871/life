@@ -583,8 +583,35 @@ class LeaveRequest(db.Model):
     approved_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     
+    # Campi per permessi orari
+    start_time = db.Column(db.Time, nullable=True)  # Orario inizio per permessi parziali
+    end_time = db.Column(db.Time, nullable=True)    # Orario fine per permessi parziali
+    
     user = db.relationship('User', foreign_keys=[user_id], backref='leave_requests')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_leaves')
+    
+    def is_time_based(self):
+        """Verifica se il permesso è basato su orari (permessi parziali)"""
+        return self.start_time is not None and self.end_time is not None
+    
+    def get_duration_display(self):
+        """Restituisce la durata del permesso in formato leggibile"""
+        if self.is_time_based():
+            # Calcola la durata in ore
+            start_dt = datetime.combine(date.today(), self.start_time)
+            end_dt = datetime.combine(date.today(), self.end_time)
+            if end_dt < start_dt:  # Attraversa mezzanotte
+                end_dt += timedelta(days=1)
+            duration = end_dt - start_dt
+            hours = duration.total_seconds() / 3600
+            return f"{hours:.1f}h ({self.start_time.strftime('%H:%M')}-{self.end_time.strftime('%H:%M')})"
+        else:
+            # Permesso giornaliero intero
+            if self.start_date == self.end_date:
+                return "Giornata intera"
+            else:
+                days = (self.end_date - self.start_date).days + 1
+                return f"{days} giorni"
 
 class Shift(db.Model):
     id = db.Column(db.Integer, primary_key=True)

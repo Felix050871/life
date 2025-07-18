@@ -747,7 +747,142 @@ def get_team_statistics(start_date=None, end_date=None):
             'team_onsite_interventions': 0
         }
 
-# Funzione rimossa - non ci sono più turni da controllare
+def check_user_schedule_with_permissions(user_id, check_datetime=None):
+    """
+    Controlla gli orari di lavoro dell'utente basandosi sulla sede e sui permessi approvati.
+    
+    Args:
+        user_id: ID dell'utente
+        check_datetime: datetime da controllare (default: ora corrente)
+        
+    Returns:
+        dict: {
+            'has_schedule': bool,
+            'schedule_info': dict,
+            'entry_status': str,  # 'normale', 'ritardo', 'anticipo'
+            'exit_status': str,   # 'normale', 'ritardo', 'anticipo'
+            'message': str
+        }
+    """
+    from models import User, WorkSchedule, LeaveRequest
+    from datetime import datetime, time, timedelta
+    
+    if not check_datetime:
+        check_datetime = datetime.now()
+    
+    check_date = check_datetime.date()
+    check_time = check_datetime.time()
+    
+    # Ottieni l'utente e la sua sede
+    user = User.query.get(user_id)
+    if not user or not user.sede_id:
+        return {
+            'has_schedule': False,
+            'schedule_info': None,
+            'entry_status': 'normale',
+            'exit_status': 'normale',
+            'message': 'Utente non ha una sede assegnata'
+        }
+    
+    # Trova l'orario di lavoro per la sede dell'utente
+    # Controlla se è un giorno della settimana coperto dagli orari
+    day_of_week = check_date.weekday()  # 0=Lunedì, 6=Domenica
+    
+    schedule = WorkSchedule.query.filter_by(
+        sede_id=user.sede_id,
+        is_active=True
+    ).first()
+    
+    if not schedule:
+        return {
+            'has_schedule': False,
+            'schedule_info': None,
+            'entry_status': 'normale',
+            'exit_status': 'normale',
+            'message': 'Nessun orario di lavoro configurato per la sede'
+        }
+    
+    # Controlla se questo giorno è coperto dall'orario
+    days_of_week = schedule.get_days_of_week_list()
+    if day_of_week not in days_of_week:
+        return {
+            'has_schedule': False,
+            'schedule_info': None,
+            'entry_status': 'normale',
+            'exit_status': 'normale',
+            'message': 'Giorno non lavorativo secondo l\'orario della sede'
+        }
+    
+    # Orari base dalla sede
+    base_start_time = schedule.start_time_min
+    base_end_time = schedule.end_time_min
+    
+    # Controlla se ci sono permessi approvati per oggi
+    approved_leaves = LeaveRequest.query.filter(
+        LeaveRequest.user_id == user_id,
+        LeaveRequest.status == 'Approved',
+        LeaveRequest.start_date <= check_date,
+        LeaveRequest.end_date >= check_date
+    ).all()
+    
+    # Calcola gli orari effettivi considerando i permessi
+    effective_start_time = base_start_time
+    effective_end_time = base_end_time
+    
+    for leave in approved_leaves:
+        if leave.leave_type == 'Permesso':
+            # Per i permessi, assumiamo che siano orari (es. 9:00-11:00)
+            # Se il permesso copre l'inizio della giornata, sposta l'orario di entrata
+            if hasattr(leave, 'start_time') and hasattr(leave, 'end_time'):
+                # Se il permesso inizia dall'orario di lavoro, sposta l'entrata
+                if leave.start_time <= base_start_time:
+                    effective_start_time = leave.end_time
+    
+    # Calcola lo stato di entrata/uscita
+    entry_status = 'normale'
+    exit_status = 'normale'
+    
+    # Tolleranza: 15 minuti per l'entrata, 5 minuti per l'uscita
+    entry_tolerance = timedelta(minutes=15)
+    exit_tolerance = timedelta(minutes=5)
+    
+    # Converti i tempi in datetime per il confronto
+    effective_start_datetime = datetime.combine(check_date, effective_start_time)
+    effective_end_datetime = datetime.combine(check_date, effective_end_time)
+    
+    # Controlla lo stato di entrata
+    if check_time <= effective_start_time:
+        entry_status = 'anticipo'
+    elif check_datetime > effective_start_datetime + entry_tolerance:
+        entry_status = 'ritardo'
+    else:
+        entry_status = 'normale'
+    
+    # Controlla lo stato di uscita
+    if check_time < effective_end_time:
+        exit_status = 'anticipo'
+    elif check_datetime > effective_end_datetime + exit_tolerance:
+        exit_status = 'straordinario'
+    else:
+        exit_status = 'normale'
+    
+    schedule_info = {
+        'sede_name': user.sede_obj.name if user.sede_obj else 'Sconosciuta',
+        'base_start_time': base_start_time.strftime('%H:%M'),
+        'base_end_time': base_end_time.strftime('%H:%M'),
+        'effective_start_time': effective_start_time.strftime('%H:%M'),
+        'effective_end_time': effective_end_time.strftime('%H:%M'),
+        'has_permissions': len(approved_leaves) > 0,
+        'permissions': [{'type': l.leave_type, 'reason': l.reason} for l in approved_leaves]
+    }
+    
+    return {
+        'has_schedule': True,
+        'schedule_info': schedule_info,
+        'entry_status': entry_status,
+        'exit_status': exit_status,
+        'message': None
+    }
 
 
 def generate_reperibilita_shifts(start_date, end_date, created_by_id):

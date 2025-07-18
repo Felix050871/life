@@ -87,6 +87,8 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 18, 2025: **Sistema Controllo Orari Sede con Permessi** - Implementato controllo intelligente entrate/uscite basato su orari sede invece di turni, considera permessi approvati per calcolo ritardi/anticipi, aggiornato modello LeaveRequest con campi start_time/end_time per permessi orari, sostituito "Assente" con "Nessuna presenza e nessuna comunicazione di ferie/permessi/malattia"
+- July 18, 2025: **Menu Operativi Admin/PM** - Nascosti menu operativi (Presenze, Reperibilità, Ferie/Permessi, Interventi) per ruoli Admin e Project Manager, rimossa voce "Gestione Team", eliminato completamente controllo turni dalla registrazione presenze
 - July 18, 2025: **Rimozione Turni dalle Statistiche** - Eliminati tutti i riferimenti ai turni dalle pagine statistiche e dashboard, rimossi campi shifts_assigned, shifts_past, shifts_future dalle statistiche utente, aggiornati template per sostituire turni con interventi, mantenuti solo dati presenze e interventi
 - July 18, 2025: **Range Orari Flessibili** - Implementati range orari di entrata e uscita (start_time_min/max, end_time_min/max) sostituendo orari fissi, aggiornati modelli con metodi di visualizzazione range, form con validazioni, template con input group e JavaScript per sincronizzazione automatica min/max
 - July 18, 2025: **Selezione Giorni Settimana Orari** - Aggiunto campo days_of_week al modello WorkSchedule, implementati preset (Lun-Ven, Sab-Dom, Tutti giorni, Personalizzato), aggiornati form e template con JavaScript per sincronizzazione automatica, visualizzazione giorni nella tabella orari

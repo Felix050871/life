@@ -81,7 +81,7 @@
                                 <td>
                                     {{ record.date.strftime('%d/%m/%Y') }}
                                     {% if record.shift_status == 'assente' %}
-                                    <i class="fas fa-exclamation-circle text-danger ms-2" title="Assenza con turno programmato"></i>
+                                    <i class="fas fa-exclamation-circle text-danger ms-2" title="Nessuna presenza e nessuna comunicazione di ferie/permessi/malattia"></i>
                                     {% endif %}
                                 </td>
                                 {% if show_team_data %}
@@ -96,7 +96,7 @@
                                 {% endif %}
                                 <td>
                                     {% if record.shift_status == 'assente' %}
-                                    <span class="text-danger fw-bold">Assente</span>
+                                    <span class="text-danger fw-bold">Nessuna presenza</span>
                                     {% elif record.clock_in %}
                                     <span class="{% if record.shift_status == 'ritardo' %}text-warning{% elif record.shift_status == 'anticipo' %}text-info{% else %}text-success{% endif %}">
                                         {{ record.clock_in|format_time_italian }}
@@ -125,7 +125,7 @@
                                 </td>
                                 <td>
                                     {% if record.shift_status == 'assente' %}
-                                    <span class="text-danger fw-bold">Assente</span>
+                                    <span class="text-danger fw-bold">Nessuna presenza</span>
                                     {% elif record.clock_out %}
                                     <span class="{% if record.exit_status == 'anticipo' %}text-warning{% elif record.exit_status == 'straordinario' %}text-info{% else %}text-success{% endif %}">
                                         {{ record.clock_out|format_time_italian }}
@@ -141,7 +141,7 @@
                                 </td>
                                 <td>
                                     {% if record.shift_status == 'assente' %}
-                                    <span class="badge bg-danger">Assente</span>
+                                    <span class="badge bg-danger">Nessuna presenza</span>
                                     {% elif record.clock_in and record.clock_out %}
                                     <span class="badge bg-primary">{{ format_hours(record.get_work_hours()) }}</span>
                                     {% else %}
@@ -169,31 +169,31 @@
                         <div class="col-md-6">
                             <small class="text-light">
                                 <i class="fas fa-exclamation-triangle text-danger me-1"></i>
-                                <strong>Ritardo:</strong> Entrata oltre 15 minuti dopo l'inizio del turno
+                                <strong>Ritardo:</strong> Entrata oltre 15 minuti dopo l'orario di lavoro della sede
                             </small>
                         </div>
                         <div class="col-md-6">
                             <small class="text-light">
                                 <i class="fas fa-thumbs-up text-info me-1"></i>
-                                <strong>Anticipo:</strong> Entrata oltre 30 minuti prima del turno
+                                <strong>Anticipo:</strong> Entrata prima dell'orario di lavoro
                             </small>
                         </div>
                         <div class="col-md-6">
                             <small class="text-light">
                                 <i class="fas fa-exclamation-triangle text-warning me-1"></i>
-                                <strong>Uscita Anticipata:</strong> Uscita oltre 5 minuti prima della fine turno
+                                <strong>Uscita Anticipata:</strong> Uscita oltre 5 minuti prima della fine orario
                             </small>
                         </div>
                         <div class="col-md-6">
                             <small class="text-light">
                                 <i class="fas fa-thumbs-up text-info me-1"></i>
-                                <strong>Straordinario:</strong> Uscita oltre 10 minuti dopo la fine turno
+                                <strong>Straordinario:</strong> Uscita oltre 5 minuti dopo la fine orario
                             </small>
                         </div>
                         <div class="col-12">
                             <small class="text-light">
                                 <i class="fas fa-exclamation-circle text-danger me-1"></i>
-                                <strong>Assenza:</strong> Turno programmato per oggi ma nessuna presenza registrata
+                                <strong>Nessuna presenza:</strong> Nessuna presenza e nessuna comunicazione di ferie/permessi/malattia
                             </small>
                         </div>
                     </div>
