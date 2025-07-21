@@ -312,8 +312,20 @@ class User(UserMixin, db.Model):
         return self.can_manage_schedules() or self.can_view_schedules()
     
     def can_access_shifts_menu(self):
-        """Accesso al menu Turni"""
-        return self.can_access_turni()
+        """Accesso al menu Turni - considera anche utenti multi-sede"""
+        if not self.can_access_turni():
+            return False
+        
+        # Se l'utente ha una sede specifica, verifica se supporta i turni
+        if self.sede_obj:
+            return self.sede_obj.is_turni_mode()
+        
+        # Se l'utente ha accesso a tutte le sedi, verifica se almeno una supporta i turni
+        if self.all_sedi:
+            accessible_sedi = self.get_accessible_sedi()
+            return any(sede.is_turni_mode() for sede in accessible_sedi)
+        
+        return False
     
     def can_access_reperibilita_menu(self):
         """Accesso al menu Reperibilità"""

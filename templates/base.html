@@ -76,7 +76,7 @@
                     {% endif %}
 
                     <!-- TURNI -->
-                    {% if current_user.can_access_shifts_menu() and (current_user.sede_obj and current_user.sede_obj.is_turni_mode()) %}
+                    {% if current_user.can_access_shifts_menu() and ((current_user.sede_obj and current_user.sede_obj.is_turni_mode()) or current_user.all_sedi) %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-calendar-alt me-1"></i>Turni
