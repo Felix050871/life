@@ -4539,17 +4539,25 @@ def process_generate_turni_from_coverage():
     replace_existing = 'replace_existing' in request.form
     confirm_overwrite = 'confirm_overwrite' in request.form
     
+    # Debug parametri ricevuti
+    print(f"DEBUG: sede_id={sede_id}, coverage_period_id={coverage_period_id}")
+    print(f"DEBUG: form data keys: {list(request.form.keys())}")
+    
     if not all([sede_id, coverage_period_id]):
-        flash('Dati mancanti per la generazione turni', 'danger')
+        flash(f'Dati mancanti per la generazione turni (sede_id: {sede_id}, coverage_period_id: {coverage_period_id})', 'danger')
         return redirect(url_for('generate_turnazioni'))
     
     sede = Sede.query.get_or_404(sede_id)
     
-    # Verifica permessi
-    if current_user.role != 'Admin':
-        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
-            flash('Non hai i permessi per generare turni per questa sede', 'danger')
-            return redirect(url_for('generate_turnazioni'))
+    # Verifica permessi - supporta utenti multi-sede
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per generare turni', 'danger')
+        return redirect(url_for('dashboard'))
+        
+    # Per utenti non-admin, verifica accesso alla sede specifica
+    if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
+        flash('Non hai accesso per generare turni per questa sede', 'danger')
+        return redirect(url_for('generate_turnazioni'))
     
     try:
         # Decodifica period_id per ottenere le date della copertura
@@ -4686,11 +4694,15 @@ def view_generated_shifts():
     
     sede = Sede.query.get_or_404(sede_id)
     
-    # Verifica permessi sulla sede
-    if current_user.role != 'Admin':
-        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
-            flash('Non hai i permessi per visualizzare i turni di questa sede', 'danger')
-            return redirect(url_for('generate_turnazioni'))
+    # Verifica permessi sulla sede - supporta utenti multi-sede
+    if not current_user.can_view_shifts() and not current_user.can_manage_shifts():
+        flash('Non hai i permessi per visualizzare i turni', 'danger')
+        return redirect(url_for('dashboard'))
+        
+    # Per utenti non-admin, verifica accesso alla sede specifica
+    if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
+        flash('Non hai accesso per visualizzare i turni di questa sede', 'danger')
+        return redirect(url_for('generate_turnazioni'))
     
     # Decodifica period_id per ottenere le date
     try:
@@ -5547,9 +5559,8 @@ def manage_coverage():
         flash("Nessuna sede con modalità turni accessibile", "warning")
         return redirect(url_for("dashboard"))
     
-    # Ottieni tutte le coperture per le sedi accessibili
+    # Ottieni tutte le coperture attive (PresidioCoverage non ha sede_id)
     coverage_list = PresidioCoverage.query.filter(
-        PresidioCoverage.sede_id.in_([sede.id for sede in accessible_sedi]),
         PresidioCoverage.is_active == True
     ).order_by(PresidioCoverage.start_date.desc()).all()
     
@@ -5579,9 +5590,8 @@ def view_turni_by_coverage():
         flash("Nessuna sede con modalità turni accessibile", "warning")
         return redirect(url_for("dashboard"))
     
-    # Ottieni le coperture attive per le sedi accessibili
+    # Ottieni le coperture attive (PresidioCoverage non ha sede_id)
     available_coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.sede_id.in_([sede.id for sede in accessible_sedi]),
         PresidioCoverage.is_active == True
     ).order_by(PresidioCoverage.start_date.desc()).all()
     
@@ -5592,14 +5602,19 @@ def view_turni_by_coverage():
     
     if selected_coverage_id:
         selected_coverage = PresidioCoverage.query.get(selected_coverage_id)
-        if selected_coverage and selected_coverage.sede_id in [sede.id for sede in accessible_sedi]:
+        if selected_coverage:
             # Ottieni tutti i turni per il periodo della copertura selezionata
-            turni_for_coverage = Shift.query.filter(
-                Shift.date >= selected_coverage.start_date,
-                Shift.date <= selected_coverage.end_date
-            ).join(User, Shift.user_id == User.id).filter(
-                User.sede_id == selected_coverage.sede_id
-            ).order_by(Shift.date.desc(), Shift.start_time).all()
+            # Per ora prendiamo tutti i turni del periodo per tutte le sedi accessibili
+            sede_ids = [sede.id for sede in accessible_sedi] if accessible_sedi else []
+            if sede_ids:
+                turni_for_coverage = Shift.query.filter(
+                    Shift.date >= selected_coverage.start_date,
+                    Shift.date <= selected_coverage.end_date
+                ).join(User, Shift.user_id == User.id).filter(
+                    User.sede_id.in_(sede_ids)
+                ).order_by(Shift.date.desc(), Shift.start_time).all()
+            else:
+                turni_for_coverage = []
     
     return render_template("view_turni_by_coverage.html",
                          available_coverages=available_coverages,
