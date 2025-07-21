@@ -134,7 +134,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('view_reperibilita_period', period_key=period_key) }}" class="btn btn-outline-primary btn-sm" title="Visualizza dettagli">
+                                            <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-primary btn-sm" title="Visualizza coperture">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if current_user.role in ['Admin', 'Management'] %}
@@ -463,13 +463,6 @@ function deleteCoverage(periodKey, periodName) {
 // Funzione per eliminare copertura reperibilità
 function deleteCoverage(periodKey, periodName) {
     if (confirm('Sei sicuro di voler eliminare la copertura del periodo "' + periodName + '"?\n\nQuesta operazione eliminerà anche tutti i turni generati per questo periodo e non può essere annullata.')) {
-        window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
-    }
-}
-
-// Funzione per eliminare copertura reperibilità
-function deleteCoverage(periodKey, periodName) {
-    if (confirm(`Sei sicuro di voler eliminare la copertura del periodo "${periodName}"?\n\nQuesta operazione eliminerà anche tutti i turni generati per questo periodo e non può essere annullata.`)) {
         window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
     }
 }
