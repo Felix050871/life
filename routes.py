@@ -72,24 +72,10 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Staff può visualizzare tutte le presenze di tutte le sedi
-    if current_user.role == 'Staff':
-        return redirect(url_for('dashboard_team'))
-    
-    # Management visualizzano presenze della propria sede ma hanno anche dashboard personale
-    if current_user.role == 'Management':
-        # Permettiamo al Management di avere la dashboard normale (per presenze personali)
-        # ma con link per visualizzare la dashboard sede
-        pass  # continua con la dashboard normale
-    
-    # Reindirizza l'utente Ente e PM alla home page con vista team per coerenza visiva
-    if current_user.role in ['Ente', 'Management']:
-        return redirect(url_for('ente_home'))
-    
-    # Blocca l'accesso alla dashboard per altri utenti senza permessi
+    # Verifica permessi di accesso alla dashboard
     if not current_user.can_access_dashboard():
         flash('Non hai i permessi per accedere alla dashboard.', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('login'))
     
     stats = get_user_statistics(current_user.id)
     
@@ -1866,8 +1852,8 @@ def reports():
             'avg_hours_per_user': 0
         }
     
-    # Get user statistics for all active users (excluding Admin and Ente)
-    users = User.query.filter_by(active=True).filter(~User.role.in_(['Admin', 'Ente'])).all()
+    # Get user statistics for all active users (excluding Amministratore and Ospite)
+    users = User.query.filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
     app.logger.error(f"REPORTS: Found {len(users)} active users (excluding Admin and Ente)")
     
     user_stats = []
@@ -1926,7 +1912,7 @@ def reports():
     # Get attendance data for charts - calculate real data
     attendance_data = []
     current_date = start_date
-    active_user_ids = [user.id for user in User.query.filter(User.active.is_(True)).filter(~User.role.in_(['Admin', 'Ente'])).all()]
+    active_user_ids = [user.id for user in User.query.filter(User.active.is_(True)).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()]
     
     while current_date <= end_date:
         # Calculate total hours and workers for this day
@@ -4109,9 +4095,10 @@ def qr_page(action):
 @app.route('/admin/qr_codes')
 @require_login
 def admin_generate_qr_codes():
-    """Gestione codici QR (solo Admin)"""
-    if current_user.role != 'Admin':
-        return redirect(url_for('not_found_error'))
+    """Gestione codici QR"""
+    if not current_user.can_manage_qr():
+        flash('Non hai i permessi per gestire i codici QR', 'danger')
+        return redirect(url_for('dashboard'))
     
     from utils import qr_codes_exist, get_qr_code_urls
     
@@ -4136,9 +4123,10 @@ def admin_generate_qr_codes():
 @app.route('/admin/generate_static_qr')
 @require_login  
 def generate_static_qr():
-    """Genera QR code statici e li salva su file (solo Admin)"""
-    if current_user.role != 'Admin':
-        return redirect(url_for('not_found_error'))
+    """Genera QR code statici e li salva su file"""
+    if not current_user.can_manage_qr():
+        flash('Non hai i permessi per generare codici QR', 'danger')
+        return redirect(url_for('dashboard'))
     
     from utils import generate_static_qr_codes
     
@@ -4163,16 +4151,18 @@ def manage_turni():
         flash('Non hai i permessi per accedere alla gestione turni', 'danger')
         return redirect(url_for('dashboard'))
     
-    # Filtra sedi in base al ruolo
-    if current_user.role == 'Admin':
-        # Admin vede tutte le sedi di tipo "Turni"
+    # Filtra sedi in base ai permessi
+    if current_user.can_manage_shifts():
+        # Utenti con permesso di gestione vedono tutte le sedi di tipo "Turni"
         sedi_turni = Sede.query.filter_by(tipologia='Turni', active=True).all()
-    else:
-        # Management vede solo la propria sede se è di tipo "Turni"
+    elif current_user.can_view_shifts():
+        # Utenti con solo permesso di visualizzazione vedono solo la propria sede
         if current_user.sede_obj and current_user.sede_obj.is_turni_mode():
             sedi_turni = [current_user.sede_obj]
         else:
             sedi_turni = []
+    else:
+        sedi_turni = []
     
     # Per ogni sede, calcola statistiche sui turni esistenti
     sede_stats = {}
@@ -4199,7 +4189,7 @@ def manage_turni():
     return render_template('manage_turni.html', 
                          sedi_turni=sedi_turni, 
                          sede_stats=sede_stats,
-                         is_admin=(current_user.role == 'Admin'))
+                         can_manage_all=(current_user.can_manage_shifts()))
 
 @app.route('/admin/turni/coverage/create', methods=['POST'])
 @login_required
@@ -4985,11 +4975,14 @@ def api_roles():
     """API endpoint per ottenere la lista dei ruoli disponibili"""
     try:
         from models import UserRole
-        roles = UserRole.query.filter(UserRole.name != 'Admin').all()
-        role_names = [role.name for role in roles] if roles else ['Management', 'Staff', 'Redattore', 'Sviluppatore', 'Operatore', 'Ente']
+        roles = UserRole.query.filter(
+            UserRole.active == True,
+            UserRole.name != 'Amministratore'
+        ).all()
+        role_names = [role.name for role in roles] if roles else ['Responsabile', 'Supervisore', 'Operatore', 'Ospite']
         return jsonify(role_names)
     except Exception as e:
-        return jsonify(['Management', 'Staff', 'Redattore', 'Sviluppatore', 'Operatore', 'Ente'])
+        return jsonify(['Responsabile', 'Supervisore', 'Operatore', 'Ospite'])
 
 
 # ===============================
@@ -5000,7 +4993,7 @@ def api_roles():
 @login_required
 def manage_sedi():
     """Gestione delle sedi aziendali"""
-    if not current_user.can_manage_users():
+    if not current_user.can_manage_sedi():
         flash('Non hai i permessi per gestire le sedi', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -5041,7 +5034,7 @@ def manage_sedi():
 @login_required
 def create_sede():
     """Crea una nuova sede"""
-    if not current_user.can_manage_users():
+    if not current_user.can_manage_sedi():
         flash('Non hai i permessi per creare sedi', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -5068,7 +5061,7 @@ def create_sede():
 @login_required
 def edit_sede(sede_id):
     """Modifica una sede esistente"""
-    if not current_user.can_manage_users():
+    if not current_user.can_manage_sedi():
         flash('Non hai i permessi per modificare sedi', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -5108,7 +5101,7 @@ def toggle_sede(sede_id):
 @login_required
 def manage_work_schedules():
     """Gestione degli orari di lavoro"""
-    if not current_user.can_manage_users():
+    if not current_user.can_manage_schedules():
         flash('Non hai i permessi per gestire gli orari', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -5120,7 +5113,7 @@ def manage_work_schedules():
 @login_required
 def create_work_schedule():
     """Crea un nuovo orario di lavoro"""
-    if not current_user.can_manage_users():
+    if not current_user.can_manage_schedules():
         flash('Non hai i permessi per creare orari', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -5160,7 +5153,7 @@ def create_work_schedule():
 @login_required
 def edit_work_schedule(schedule_id):
     """Modifica un orario di lavoro esistente"""
-    if not current_user.can_manage_users():
+    if not current_user.can_manage_schedules():
         flash('Non hai i permessi per modificare orari', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -5217,7 +5210,7 @@ def edit_work_schedule(schedule_id):
 @login_required
 def toggle_work_schedule(schedule_id):
     """Attiva/disattiva un orario di lavoro"""
-    if not current_user.can_manage_users():
+    if not current_user.can_manage_schedules():
         flash('Non hai i permessi per modificare orari', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -5233,7 +5226,7 @@ def toggle_work_schedule(schedule_id):
 @login_required
 def delete_work_schedule(schedule_id):
     """Elimina definitivamente un orario di lavoro"""
-    if not current_user.can_manage_users():
+    if not current_user.can_manage_schedules():
         flash('Non hai i permessi per eliminare orari', 'danger')
         return redirect(url_for('dashboard'))
     

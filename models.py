@@ -95,27 +95,73 @@ class User(UserMixin, db.Model):
         return self._legacy_permissions(permission)
     
     def _legacy_permissions(self, permission):
-        """Permessi legacy per retrocompatibilità"""
-        legacy_map = {
-            'can_manage_users': self.role == 'Admin',
-            'can_manage_shifts': self.role in ['Admin', 'Management'],
-            'can_view_shifts': self.role in ['Admin', 'Management', 'Staff', 'Operatore', 'Sviluppatore', 'Redattore'],
-            'can_manage_reperibilita': self.role in ['Admin', 'Management'],
-            'can_view_reperibilita': self.role in ['Admin', 'Management', 'Staff', 'Operatore', 'Sviluppatore', 'Redattore'],
-            'can_approve_leave': self.role in ['Management', 'Staff', 'Management'],
-            'can_request_leave': self.role in ['Redattore', 'Sviluppatore', 'Operatore', 'Management'],
-            'can_access_attendance': self.role not in ['Ente', 'Admin'],
-            'can_access_dashboard': self.role not in ['Ente'],
-            'can_view_reports': self.role in ['Admin', 'Management', 'Staff']
-        }
-        return legacy_map.get(permission, False)
+        """Permessi legacy per retrocompatibilità - saranno rimossi quando tutti i ruoli avranno permessi"""
+        # Admin ha tutti i permessi per default
+        if self.role == 'Admin':
+            return True
+        return False
     
-    # Metodi di compatibilità
+    # Metodi di autorizzazione granulari per ogni funzionalità del menu
+    
+    # === HOME ===
+    def can_access_dashboard(self):
+        return self.has_permission('can_access_dashboard')
+    
+    # === RUOLI ===
+    def can_manage_roles(self):
+        return self.has_permission('can_manage_roles')
+    
+    def can_view_roles(self):
+        return self.has_permission('can_view_roles')
+    
+    # === UTENTI ===
     def can_manage_users(self):
         return self.has_permission('can_manage_users')
     
+    def can_view_users(self):
+        return self.has_permission('can_view_users')
+    
+    # === SEDI ===
+    def can_manage_sedi(self):
+        return self.has_permission('can_manage_sedi')
+    
+    def can_view_sedi(self):
+        return self.has_permission('can_view_sedi')
+    
+    # === ORARI ===
+    def can_manage_schedules(self):
+        return self.has_permission('can_manage_schedules')
+    
+    def can_view_schedules(self):
+        return self.has_permission('can_view_schedules')
+    
+    # === TURNI ===
     def can_manage_shifts(self):
         return self.has_permission('can_manage_shifts')
+    
+    def can_view_shifts(self):
+        return self.has_permission('can_view_shifts')
+    
+    # === REPERIBILITÀ ===
+    def can_manage_reperibilita(self):
+        return self.has_permission('can_manage_reperibilita')
+    
+    def can_view_reperibilita(self):
+        return self.has_permission('can_view_reperibilita')
+    
+    # === PRESENZE ===
+    def can_manage_attendance(self):
+        return self.has_permission('can_manage_attendance')
+    
+    def can_view_attendance(self):
+        return self.has_permission('can_view_attendance')
+    
+    def can_access_attendance(self):
+        return self.has_permission('can_access_attendance')
+    
+    # === FERIE/PERMESSI ===
+    def can_manage_leave(self):
+        return self.has_permission('can_manage_leave')
     
     def can_approve_leave(self):
         return self.has_permission('can_approve_leave')
@@ -123,47 +169,104 @@ class User(UserMixin, db.Model):
     def can_request_leave(self):
         return self.has_permission('can_request_leave')
     
-    def can_access_attendance(self):
-        return self.has_permission('can_access_attendance')
+    def can_view_leave(self):
+        return self.has_permission('can_view_leave')
     
-    def can_access_dashboard(self):
-        return self.has_permission('can_access_dashboard')
+    # === INTERVENTI ===
+    def can_manage_interventions(self):
+        return self.has_permission('can_manage_interventions')
     
+    def can_view_interventions(self):
+        return self.has_permission('can_view_interventions')
+    
+    # === FESTIVITÀ ===
+    def can_manage_holidays(self):
+        return self.has_permission('can_manage_holidays')
+    
+    def can_view_holidays(self):
+        return self.has_permission('can_view_holidays')
+    
+    # === GESTIONE QR ===
+    def can_manage_qr(self):
+        return self.has_permission('can_manage_qr')
+    
+    def can_view_qr(self):
+        return self.has_permission('can_view_qr')
+    
+    # === STATISTICHE ===
     def can_view_reports(self):
         return self.has_permission('can_view_reports')
     
-    def can_view_shifts(self):
-        return self.has_permission('can_view_shifts')
+    def can_manage_reports(self):
+        return self.has_permission('can_manage_reports')
     
-    def can_manage_reperibilita(self):
-        return self.has_permission('can_manage_reperibilita')
+    # === MESSAGGI ===
+    def can_send_messages(self):
+        return self.has_permission('can_send_messages')
     
-    def can_view_reperibilita(self):
-        return self.has_permission('can_view_reperibilita')
+    def can_view_messages(self):
+        return self.has_permission('can_view_messages')
     
     def can_access_turni(self):
         """Verifica se l'utente può accedere alla gestione turni"""
-        # Verifica i permessi di gestione o visualizzazione turni
-        if self.has_permission('can_manage_shifts') or self.has_permission('can_view_shifts'):
-            return True
-        # Admin può gestire turni per tutte le sedi "Turni" (legacy)
-        if self.role == 'Admin':
-            return True
-        # Tutti i ruoli operativi possono accedere ai turni se la sede è di tipo "Turni" (legacy)
-        if self.role in ['Management', 'Operatore', 'Sviluppatore', 'Redattore'] and self.sede_obj and self.sede_obj.is_turni_mode():
-            return True
-        return False
+        return self.has_permission('can_manage_shifts') or self.has_permission('can_view_shifts')
     
     def can_access_reperibilita(self):
         """Verifica se l'utente può accedere alla gestione reperibilità"""
-        # Verifica i permessi di gestione o visualizzazione reperibilità
-        if self.has_permission('can_manage_reperibilita') or self.has_permission('can_view_reperibilita'):
-            return True
-        # Legacy: Admin e Management possono sempre accedere
-        if self.role in ['Admin', 'Management', 'Staff']:
-            return True
-        # Altri ruoli operativi solo se hanno il permesso specifico
-        return False
+        return self.has_permission('can_manage_reperibilita') or self.has_permission('can_view_reperibilita')
+    
+    # === METODI DI ACCESSO AI MENU ===
+    def can_access_roles_menu(self):
+        """Accesso al menu Ruoli"""
+        return self.can_manage_roles() or self.can_view_roles()
+    
+    def can_access_users_menu(self):
+        """Accesso al menu Utenti"""
+        return self.can_manage_users() or self.can_view_users()
+    
+    def can_access_sedi_menu(self):
+        """Accesso al menu Sedi"""
+        return self.can_manage_sedi() or self.can_view_sedi()
+    
+    def can_access_schedules_menu(self):
+        """Accesso al menu Orari"""
+        return self.can_manage_schedules() or self.can_view_schedules()
+    
+    def can_access_shifts_menu(self):
+        """Accesso al menu Turni"""
+        return self.can_access_turni()
+    
+    def can_access_reperibilita_menu(self):
+        """Accesso al menu Reperibilità"""
+        return self.can_access_reperibilita()
+    
+    def can_access_attendance_menu(self):
+        """Accesso al menu Presenze"""
+        return self.can_manage_attendance() or self.can_view_attendance() or self.can_access_attendance()
+    
+    def can_access_leave_menu(self):
+        """Accesso al menu Ferie/Permessi"""
+        return self.can_manage_leave() or self.can_approve_leave() or self.can_request_leave() or self.can_view_leave()
+    
+    def can_access_interventions_menu(self):
+        """Accesso al menu Interventi"""
+        return self.can_manage_interventions() or self.can_view_interventions()
+    
+    def can_access_holidays_menu(self):
+        """Accesso al menu Festività"""
+        return self.can_manage_holidays() or self.can_view_holidays()
+    
+    def can_access_qr_menu(self):
+        """Accesso al menu Gestione QR"""
+        return self.can_manage_qr() or self.can_view_qr()
+    
+    def can_access_reports_menu(self):
+        """Accesso al menu Statistiche"""
+        return self.can_view_reports() or self.can_manage_reports()
+    
+    def can_access_messages_menu(self):
+        """Accesso al menu Messaggi"""
+        return self.can_send_messages() or self.can_view_messages()
     
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""
@@ -171,15 +274,15 @@ class User(UserMixin, db.Model):
     
     def can_view_all_attendance(self):
         """Verifica se l'utente può visualizzare le presenze di tutti gli utenti"""
-        return self.role in ['Admin', 'Management', 'Staff']
+        return self.can_manage_attendance()
     
     def can_view_sede_attendance(self):
         """Verifica se l'utente può visualizzare le presenze della propria sede"""
-        return self.role == 'Management'
+        return self.can_view_attendance()
     
     def can_view_all_reperibilita(self):
         """Verifica se l'utente può visualizzare tutte le reperibilità"""
-        return self.role in ['Admin', 'Management', 'Staff']
+        return self.can_manage_reperibilita()
     
     def get_sedi_list(self):
         """Restituisce la lista delle sedi associate all'utente (per compatibilità template)"""

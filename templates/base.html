@@ -32,82 +32,51 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    <!-- HOME -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{% if current_user.role == 'Ente' %}{{ url_for('ente_home') }}{% elif current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('shifts') }}{% endif %}">
+                        <a class="nav-link" href="{% if current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('index') }}{% endif %}">
                             <i class="fas fa-home me-1"></i>Home
                         </a>
                     </li>
 
-                    {% if current_user.can_access_attendance() and current_user.role not in ['Admin', 'Staff'] %}
+                    <!-- RUOLI (ordine menu admin) -->
+                    {% if current_user.can_access_roles_menu() %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('attendance') }}">
-                            <i class="fas fa-clock me-1"></i>Presenze
-                        </a>
-                    </li>
-                    {% elif current_user.role == 'Ente' %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('attendance', view='team') }}">
-                            <i class="fas fa-clock me-1"></i>Presenze
+                        <a class="nav-link" href="{{ url_for('manage_roles') }}">
+                            <i class="fas fa-users-gear me-1"></i>Ruoli
                         </a>
                     </li>
                     {% endif %}
-                    
 
-                    
-                    <!-- Menu Reperibilità (basato su permessi) -->
-                    {% if current_user.can_access_reperibilita() %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-phone-alt me-1"></i>Reperibilità
-                        </a>
-                        <ul class="dropdown-menu">
-                            {% if current_user.can_manage_reperibilita() %}
-                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_coverage') }}">
-                                <i class="fas fa-phone-volume me-1"></i>Copertura Reperibilità
-                            </a></li>
-                            {% endif %}
-                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_shifts') }}">
-                                <i class="fas fa-phone-alt me-1"></i>Reperibilità
-                            </a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- Gestione Team rimossa - non più necessaria -->
-                    {% if (current_user.can_request_leave() or current_user.can_approve_leave()) and current_user.role not in ['Admin', 'Staff'] %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('leave_requests') }}">
-                            <i class="fas fa-umbrella-beach me-1"></i>Ferie/Permessi
-                        </a>
-                    </li>
-                    {% endif %}
-                    <!-- Interventi (tutti tranne Admin e Staff) -->
-                    {% if current_user.role not in ['Admin', 'Staff'] %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('my_interventions') }}">
-                            <i class="fas fa-tools me-1"></i>Interventi
-                        </a>
-                    </li>
-                    {% endif %}
-                    {% if current_user.can_manage_users() %}
+                    <!-- UTENTI -->
+                    {% if current_user.can_access_users_menu() %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('user_management') }}">
                             <i class="fas fa-users me-1"></i>Utenti
                         </a>
                     </li>
+                    {% endif %}
+
+                    <!-- SEDI -->
+                    {% if current_user.can_access_sedi_menu() %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('manage_sedi') }}">
                             <i class="fas fa-building me-1"></i>Sedi
                         </a>
                     </li>
+                    {% endif %}
+
+                    <!-- ORARI -->
+                    {% if current_user.can_access_schedules_menu() %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('manage_work_schedules') }}">
                             <i class="fas fa-clock me-1"></i>Orari
                         </a>
                     </li>
                     {% endif %}
-                    
-                    <!-- Menu Turni (basato su permessi) -->
-                    {% if current_user.can_access_turni() %}
+
+                    <!-- TURNI -->
+                    {% if current_user.can_access_shifts_menu() %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-calendar-alt me-1"></i>Turni
@@ -115,7 +84,7 @@
                         <ul class="dropdown-menu">
                             {% if current_user.can_manage_shifts() %}
                             <li><a class="dropdown-item" href="{{ url_for('manage_turni') }}">
-                                <i class="fas fa-calendar-alt me-1"></i>Gestione Turni
+                                <i class="fas fa-cog me-1"></i>Gestione Turni
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('generate_turnazioni') }}">
                                 <i class="fas fa-magic me-1"></i>Genera Turnazioni
@@ -129,33 +98,84 @@
                         </ul>
                     </li>
                     {% endif %}
-                    {% if current_user.has_permission('can_manage_roles') %}
+
+                    <!-- REPERIBILITÀ -->
+                    {% if current_user.can_access_reperibilita_menu() %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-phone-alt me-1"></i>Reperibilità
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if current_user.can_manage_reperibilita() %}
+                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_coverage') }}">
+                                <i class="fas fa-cog me-1"></i>Gestione Coperture
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_view_reperibilita() %}
+                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_shifts') }}">
+                                <i class="fas fa-phone-alt me-1"></i>Visualizza Reperibilità
+                            </a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
+
+                    <!-- PRESENZE -->
+                    {% if current_user.can_access_attendance_menu() %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manage_roles') }}">
-                            <i class="fas fa-users-gear me-1"></i>Ruoli
+                        <a class="nav-link" href="{{ url_for('attendance') }}">
+                            <i class="fas fa-clock me-1"></i>Presenze
                         </a>
                     </li>
                     {% endif %}
-                    <!-- Statistiche Team (per tutti i ruoli con permesso report) -->
-                    {% if current_user.can_view_reports() %}
+
+                    <!-- FERIE/PERMESSI -->
+                    {% if current_user.can_access_leave_menu() %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('leave_requests') }}">
+                            <i class="fas fa-umbrella-beach me-1"></i>Ferie/Permessi
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <!-- INTERVENTI -->
+                    {% if current_user.can_access_interventions_menu() %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('my_interventions') }}">
+                            <i class="fas fa-tools me-1"></i>Interventi
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <!-- FESTIVITÀ -->
+                    {% if current_user.can_access_holidays_menu() %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('holidays') }}">
+                            <i class="fas fa-calendar-day me-1"></i>Festività
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <!-- GESTIONE QR -->
+                    {% if current_user.can_access_qr_menu() %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_generate_qr_codes') }}">
+                            <i class="fas fa-qrcode me-1"></i>Gestione QR
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <!-- STATISTICHE -->
+                    {% if current_user.can_access_reports_menu() %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('reports') }}">
-                            <i class="fas fa-chart-bar me-1"></i>Statistiche Team
+                            <i class="fas fa-chart-bar me-1"></i>Statistiche
                         </a>
                     </li>
                     {% endif %}
-                    
-                    <!-- Menu Staff specifici -->
-                    {% if current_user.role == 'Staff' %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('attendance', view='team') }}">
-                            <i class="fas fa-users me-1"></i>Supervisione Presenze
-                        </a>
-                    </li>
-                    {% endif %}
-                    
-                    <!-- Messaggi Interni (per Management e Staff) -->
-                    {% if current_user.role in ['Management', 'Staff'] %}
+
+                    <!-- MESSAGGI -->
+                    {% if current_user.can_access_messages_menu() %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('internal_messages') }}">
                             <i class="fas fa-envelope me-1"></i>Messaggi
@@ -163,18 +183,6 @@
                             {% if unread_count > 0 %}
                                 <span class="badge bg-danger ms-1">{{ unread_count }}</span>
                             {% endif %}
-                        </a>
-                    </li>
-                    {% endif %}
-                    {% if current_user.can_manage_users() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_generate_qr_codes') }}">
-                            <i class="fas fa-qrcode me-1"></i>Gestione QR Codes
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('holidays') }}">
-                            <i class="fas fa-calendar-day me-1"></i>Festività
                         </a>
                     </li>
                     {% endif %}

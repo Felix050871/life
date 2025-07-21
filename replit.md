@@ -36,9 +36,14 @@ The application uses SQLAlchemy models with the following key entities:
 ## Key Features
 
 ### User Management System
-- Role-based access control with 8 user types: Admin, Project Manager, Staff, Management, Redattore, Sviluppatore, Operatore, Ente
-- **Staff**: Supervisione globale di tutte le sedi senza funzioni operative
-- **Management**: Gestione locale sede con funzioni operative personali e supervisione sede
+- **Permission-based access control** with granular 30+ permissions for each menu functionality
+- **Dynamic role management** with 5 standardized roles:
+  - **Amministratore**: Full system access with all permissions
+  - **Responsabile**: Local site management with operational functions
+  - **Supervisore**: Global site supervision with view-only access
+  - **Operatore**: Standard operational access to core functions
+  - **Ospite**: Limited access for external users
+- **Admin-configurable permissions**: Each role's permissions can be dynamically managed
 - User creation, modification, and deactivation capabilities
 - Part-time percentage tracking for specific roles
 - Secure password hashing with Werkzeug
@@ -89,18 +94,13 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
-- July 18, 2025: **Riorganizzazione Ruoli Sistema** - Rinominati ruoli: "Management" → "Staff" (supervisione globale), "Responsabili" → "Management" (gestione sede locale), rimossi permessi "gestire turni" dal Project Manager, abilitata modifica ruoli Management e Staff tramite interfaccia admin
-- July 18, 2025: **Responsabile Dual-Mode Implementation** - Configurato ruolo Management con doppia funzionalità: registrazione presenze personali e richieste ferie con approvazione automatica, visualizzazione e gestione presenze/ferie della propria sede tramite dashboard dedicata
-- July 18, 2025: **Esclusione Admin/Staff dalle Presenze** - Rimossi completamente Admin e Staff da tutte le query di visualizzazione presenze team per nascondere utenti amministrativi dalle operazioni quotidiane
-- July 18, 2025: **Validazione Date Passate Ferie** - Implementata validazione completa server-side e client-side per impedire richieste di ferie/malattie/permessi in date passate, aggiunto controllo HTML5 min sui campi data e messaggi di errore specifici
-- July 18, 2025: **Permessi Supervisione Management** - Rimossa gestione turnazioni dal ruolo Management, implementata visualizzazione completa presenze di tutte le sedi in dashboard dedicata, accesso a tutti i dati presenze/reperibilità/interventi per supervisione e controllo senza funzioni operative
-- July 18, 2025: **Gestione Completa Richieste Ferie** - Implementato blocco registrazioni multiple nella stessa giornata per garantire integrità dati, aggiunto supporto per visualizzazione ferie/permessi/malattie approvate nello storico presenze, approvazione automatica richieste di malattia senza necessità di autorizzazione, possibilità per utenti di cancellare proprie richieste non ancora approvate
-- July 18, 2025: **Sistema Controllo Orari Sede con Permessi** - Implementato controllo intelligente entrate/uscite basato su orari sede invece di turni, considera permessi approvati per calcolo ritardi/anticipi, aggiornato modello LeaveRequest con campi start_time/end_time per permessi orari, sostituito "Assente" con "Nessuna presenza e nessuna comunicazione di ferie/permessi/malattia"
-- July 18, 2025: **Menu Operativi Admin/PM** - Nascosti menu operativi (Presenze, Reperibilità, Ferie/Permessi, Interventi) per ruoli Admin e Project Manager, rimossa voce "Gestione Team", eliminato completamente controllo turni dalla registrazione presenze
-- July 18, 2025: **Rimozione Turni dalle Statistiche** - Eliminati tutti i riferimenti ai turni dalle pagine statistiche e dashboard, rimossi campi shifts_assigned, shifts_past, shifts_future dalle statistiche utente, aggiornati template per sostituire turni con interventi, mantenuti solo dati presenze e interventi
+- July 21, 2025: **Sistema Permessi Granulari Completo** - Implementato sistema completo di 30+ permessi granulari per ogni funzionalità del menu (gestione/visualizzazione), eliminati tutti i riferimenti ai vecchi ruoli legacy (Admin, Staff, Management, Redattore, PM, Ente), creati 5 nuovi ruoli standardizzati: Amministratore, Responsabile, Supervisore, Operatore, Ospite con permessi specifici
+- July 21, 2025: **Controlli Autorizzazione Basati su Permessi** - Migrate tutte le route da controlli diretti sui ruoli a metodi granulari di permesso (can_manage_users, can_view_shifts, etc.), aggiornato menu di navigazione con ordine specificato: Home - Ruoli - Utenti - Sedi - Orari - Turni - Reperibilità - Festività - Gestione QR - Statistiche
+- July 21, 2025: **Interfaccia Admin Dinamica** - Menu admin completamente gestibile con ordine specificato, sistema permessi rispecchia esattamente le funzionalità dei menu utenti, admin può controllare dinamicamente accesso a gestione/visualizzazione per ogni funzionalità
+- July 21, 2025: **Semplificazione Sistema Turni** - Rimosso sistema di classificazione turni (Mattina/Pomeriggio/Sera/Notte), semplificato con tipo unico "Turno", aggiornati form EditShiftForm e ShiftForm, modificate route di gestione turni per focus su orari invece che tipologie
 - July 18, 2025: **Range Orari Flessibili** - Implementati range orari di entrata e uscita (start_time_min/max, end_time_min/max) sostituendo orari fissi, aggiornati modelli con metodi di visualizzazione range, form con validazioni, template con input group e JavaScript per sincronizzazione automatica min/max
 - July 18, 2025: **Selezione Giorni Settimana Orari** - Aggiunto campo days_of_week al modello WorkSchedule, implementati preset (Lun-Ven, Sab-Dom, Tutti giorni, Personalizzato), aggiornati form e template con JavaScript per sincronizzazione automatica, visualizzazione giorni nella tabella orari
-- July 21, 2025: **Semplificazione Sistema Turni** - Rimosso sistema di classificazione turni (Mattina/Pomeriggio/Sera/Notte), semplificato con tipo unico "Turno", aggiornati form EditShiftForm e ShiftForm, modificate route di gestione turni per focus su orari invece che tipologie
+- July 18, 2025: **Sistema Controllo Orari Sede con Permessi** - Implementato controllo intelligente entrate/uscite basato su orari sede invece di turni, considera permessi approvati per calcolo ritardi/anticipi, aggiornato modello LeaveRequest con campi start_time/end_time per permessi orari
 - July 18, 2025: **Progetto Workly Creato** - Clone completo e indipendente della piattaforma NS12 con branding generico "Workly Platform", rimosso logo aziendale, aggiornati tutti i template e riferimenti, creati README.md e configurazione .replit per deployment autonomo
 
 ## User Preferences
