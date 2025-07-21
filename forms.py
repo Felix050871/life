@@ -217,17 +217,29 @@ class PresidioCoverageForm(FlaskForm):
     ], coerce=int, validators=[DataRequired()], render_kw={'class': 'form-select', 'size': '7', 'multiple': True})
     start_time = TimeField('Ora Inizio', validators=[DataRequired()])
     end_time = TimeField('Ora Fine', validators=[DataRequired()])
-    required_roles = SelectMultipleField('Ruoli Richiesti', choices=[
-        ('Admin', 'Admin'),
-        ('Project Manager', 'Project Manager'),
-        ('Redattore', 'Redattore'),
-        ('Sviluppatore', 'Sviluppatore'),
-        ('Operatore', 'Operatore'),
-        ('Ente', 'Ente')
-    ], validators=[DataRequired()])
+    required_roles = SelectMultipleField('Ruoli Richiesti', choices=[], validators=[DataRequired()])
     description = StringField('Descrizione', validators=[Length(max=200)])
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Copertura')
+    
+    def __init__(self, *args, **kwargs):
+        super(PresidioCoverageForm, self).__init__(*args, **kwargs)
+        # Popola i ruoli dinamicamente dal database
+        from models import UserRole
+        try:
+            roles = UserRole.query.all()
+            self.required_roles.choices = [(role.name, role.name) for role in roles]
+        except:
+            # Fallback se il database non è disponibile
+            self.required_roles.choices = [
+                ('Admin', 'Admin'),
+                ('Management', 'Management'),
+                ('Staff', 'Staff'),
+                ('Redattore', 'Redattore'),
+                ('Sviluppatore', 'Sviluppatore'),
+                ('Operatore', 'Operatore'),
+                ('Ente', 'Ente')
+            ]
 
     def validate_end_time(self, end_time):
         if end_time.data <= self.start_time.data:
@@ -269,20 +281,29 @@ class ReperibilitaCoverageForm(FlaskForm):
     start_time = TimeField('Ora Inizio', validators=[DataRequired()])
     end_time = TimeField('Ora Fine', validators=[DataRequired()])
     
-    required_roles = SelectMultipleField('Ruoli Richiesti', choices=[
-        ('Admin', 'Admin'),
-        ('Project Manager', 'Project Manager'),
-        ('Redattore', 'Redattore'),
-        ('Sviluppatore', 'Sviluppatore'),
-        ('Operatore', 'Operatore'),
-        ('Ente', 'Ente')
-    ], validators=[DataRequired()])
-    
-
-    
+    required_roles = SelectMultipleField('Ruoli Richiesti', choices=[], validators=[DataRequired()])
     description = StringField('Descrizione', validators=[Length(max=200)])
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Copertura')
+    
+    def __init__(self, *args, **kwargs):
+        super(ReperibilitaCoverageForm, self).__init__(*args, **kwargs)
+        # Popola i ruoli dinamicamente dal database
+        from models import UserRole
+        try:
+            roles = UserRole.query.all()
+            self.required_roles.choices = [(role.name, role.name) for role in roles]
+        except:
+            # Fallback se il database non è disponibile
+            self.required_roles.choices = [
+                ('Admin', 'Admin'),
+                ('Management', 'Management'),
+                ('Staff', 'Staff'),
+                ('Redattore', 'Redattore'),
+                ('Sviluppatore', 'Sviluppatore'),
+                ('Operatore', 'Operatore'),
+                ('Ente', 'Ente')
+            ]
     
     def validate_end_time(self, end_time):
         if end_time.data and self.start_time.data:
