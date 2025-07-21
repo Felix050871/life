@@ -4728,12 +4728,12 @@ def regenerate_turni_from_coverage():
             for coverage in day_coverages:
                 # Debug: verifica utenti della sede
                 all_sede_users = User.query.filter(User.sede_id == sede_id).all()
-                active_sede_users = User.query.filter(User.sede_id == sede_id, User.is_active == True).all()
+                active_sede_users = User.query.filter(User.sede_id == sede_id, User.active == True).all()
                 
                 # Ottieni utenti disponibili per questa sede e copertura
                 available_users = User.query.filter(
                     User.sede_id == sede_id,
-                    User.is_active == True,
+                    User.active == True,
                     User.role.in_(['Operatore', 'Sviluppatore', 'Redattore', 'Management'])
                 ).all()
                 
