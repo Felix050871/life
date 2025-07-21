@@ -5571,18 +5571,10 @@ def manage_coverage():
         flash("Nessuna sede con modalità turni accessibile", "warning")
         return redirect(url_for("dashboard"))
     
-    # Ottieni tutte le coperture attive e rimuovi duplicati
-    coverage_query = PresidioCoverage.query.filter(
+    # Ottieni tutte le coperture attive DISTINTE per evitare duplicati dalla query
+    coverage_list = PresidioCoverage.query.filter(
         PresidioCoverage.is_active == True
-    ).order_by(PresidioCoverage.start_date.desc()).all()
-    
-    # Rimuovi duplicati basandosi sull'ID
-    coverage_list = []
-    seen_ids = set()
-    for coverage in coverage_query:
-        if coverage.id not in seen_ids:
-            coverage_list.append(coverage)
-            seen_ids.add(coverage.id)
+    ).order_by(PresidioCoverage.start_date.desc(), PresidioCoverage.id.desc()).distinct().all()
     
     return render_template("manage_coverage.html",
                          coverage_list=coverage_list,
@@ -5590,7 +5582,7 @@ def manage_coverage():
                          can_manage=current_user.can_manage_coverage())
 
 @app.route("/view_turni_by_coverage")
-@login_required
+@login_required  
 def view_turni_by_coverage():
     """Visualizza Turni - Terza funzionalità per selezione copertura"""
     if not current_user.can_view_shifts():
@@ -5599,6 +5591,16 @@ def view_turni_by_coverage():
     
     # Import necessari
     from models import Sede, PresidioCoverage, Shift
+    
+    # Ottieni coverage_id dai parametri
+    coverage_id = request.args.get("coverage_id", type=int)
+    
+    if not coverage_id:
+        flash("ID copertura non specificato", "warning")
+        return redirect(url_for("manage_coverage"))
+    
+    # Trova la copertura
+    selected_coverage = PresidioCoverage.query.get_or_404(coverage_id)
     
     # Ottieni le sedi accessibili per utente
     if current_user.all_sedi:
@@ -5610,36 +5612,24 @@ def view_turni_by_coverage():
         flash("Nessuna sede con modalità turni accessibile", "warning")
         return redirect(url_for("dashboard"))
     
-    # Ottieni le coperture attive (PresidioCoverage non ha sede_id)
-    available_coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.is_active == True
-    ).order_by(PresidioCoverage.start_date.desc()).all()
-    
-    # Se è selezionata una copertura specifica, mostra i turni
-    selected_coverage_id = request.args.get("coverage_id", type=int)
-    selected_coverage = None
+    # Filtra i turni per questa copertura (dato che PresidioCoverage non ha sede_id, 
+    # mostriamo tutti i turni delle sedi accessibili per ora)
     turni_for_coverage = []
+    for sede in accessible_sedi:
+        sede_shifts = Shift.query.filter(
+            Shift.sede_id == sede.id,
+            # Filtriamo per il periodo della copertura
+            Shift.data >= selected_coverage.start_date,
+            Shift.data <= selected_coverage.end_date
+        ).order_by(Shift.data.desc()).all()
+        turni_for_coverage.extend(sede_shifts)
     
-    if selected_coverage_id:
-        selected_coverage = PresidioCoverage.query.get(selected_coverage_id)
-        if selected_coverage:
-            # Ottieni tutti i turni per il periodo della copertura selezionata
-            # Per ora prendiamo tutti i turni del periodo per tutte le sedi accessibili
-            sede_ids = [sede.id for sede in accessible_sedi] if accessible_sedi else []
-            if sede_ids:
-                turni_for_coverage = Shift.query.filter(
-                    Shift.date >= selected_coverage.start_date,
-                    Shift.date <= selected_coverage.end_date
-                ).join(User, Shift.user_id == User.id).filter(
-                    User.sede_id.in_(sede_ids)
-                ).order_by(Shift.date.desc(), Shift.start_time).all()
-            else:
-                turni_for_coverage = []
+    # Statistiche
+    total_turni = len(turni_for_coverage)
     
     return render_template("view_turni_by_coverage.html",
-                         available_coverages=available_coverages,
+                         accessible_sedi=accessible_sedi,
                          selected_coverage=selected_coverage,
                          turni_for_coverage=turni_for_coverage,
-                         accessible_sedi=accessible_sedi,
-                         date=date)
+                         total_turni=total_turni)
 

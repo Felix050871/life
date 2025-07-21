@@ -73,7 +73,7 @@
                 </div>
                 <div>
                     {% if period_data.end_date >= today %}
-                    <button class="btn btn-success" onclick="showGenerateModal('{{ period_data.period_id }}', '{{ period_key }}', '{{ sede.id }}')">
+                    <button class="btn btn-success" onclick="showGenerateModal('{{ period_data.period_id }}', '{{ period_key }}', {{ sede.id }})">
                         <i class="fas fa-magic me-1"></i>Genera Turni
                     </button>
                     {% else %}
@@ -231,15 +231,21 @@ function showGenerateModal(periodId, periodDisplay, sedeId) {
     const modal = new bootstrap.Modal(document.getElementById('generateModal'));
     modal.show();
     
-    // Debug finale prima dell'invio form
-    document.querySelector('#generateModal form').addEventListener('submit', function(e) {
+    // Debug finale prima dell'invio form (rimuovi listener esistenti prima)
+    const form = document.querySelector('#generateModal form');
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    newForm.addEventListener('submit', function(e) {
         const periodIdValue = document.getElementById('coverage_period_id').value;
         console.log('DEBUG: Form submission - coverage_period_id:', periodIdValue);
-        if (!periodIdValue) {
+        if (!periodIdValue || periodIdValue.trim() === '') {
             console.error('DEBUG: coverage_period_id is empty!');
             e.preventDefault();
-            alert('Errore: ID periodo copertura mancante');
+            alert('Errore: ID periodo copertura mancante. Valore: "' + periodIdValue + '"');
+            return false;
         }
+        return true;
     });
 }
 </script>
