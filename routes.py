@@ -5571,10 +5571,35 @@ def manage_coverage():
         flash("Nessuna sede con modalità turni accessibile", "warning")
         return redirect(url_for("dashboard"))
     
-    # Ottieni tutte le coperture attive DISTINTE per evitare duplicati dalla query
-    coverage_list = PresidioCoverage.query.filter(
+    # Ottieni template unici di copertura (raggruppate per periodo e sede)
+    from collections import defaultdict
+    sede_ids = [sede.id for sede in accessible_sedi] if accessible_sedi else []
+    
+    # Ottieni tutte le coperture per le sedi accessibili
+    coverage_query = PresidioCoverage.query.filter(
+        PresidioCoverage.sede_id.in_(sede_ids),
         PresidioCoverage.is_active == True
-    ).order_by(PresidioCoverage.start_date.desc(), PresidioCoverage.id.desc()).distinct().all()
+    ).order_by(PresidioCoverage.start_date.desc())
+    
+    all_coverages = coverage_query.all()
+    
+    # Raggruppa per template (stesso periodo e sede)
+    coverage_templates = defaultdict(list)
+    for coverage in all_coverages:
+        period_key = f"{coverage.start_date.strftime('%Y%m%d')}-{coverage.end_date.strftime('%Y%m%d')}-{coverage.sede_id}"
+        coverage_templates[period_key].append(coverage)
+    
+    # Crea lista template con il primo elemento di ogni gruppo come rappresentante
+    coverage_list = []
+    for period_key, coverages in coverage_templates.items():
+        # Usa la prima copertura come rappresentante del template
+        template = coverages[0]
+        # Aggiungi info sul numero di coperture in questo template
+        template.template_coverage_count = len(coverages)
+        coverage_list.append(template)
+    
+    # Ordina per data di inizio decrescente
+    coverage_list.sort(key=lambda x: x.start_date, reverse=True)
     
     return render_template("manage_coverage.html",
                          coverage_list=coverage_list,

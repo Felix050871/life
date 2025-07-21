@@ -47,9 +47,9 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5><i class="fas fa-list me-2"></i>Coperture Attive
+                <h5><i class="fas fa-list me-2"></i>Template di Copertura
                     {% if coverage_list %}
-                        <span class="badge bg-secondary ms-2">{{ coverage_list|length }}</span>
+                        <span class="badge bg-secondary ms-2">{{ coverage_list|length }} template</span>
                     {% endif %}
                 </h5>
             </div>
@@ -61,7 +61,7 @@
                             <tr>
                                 <th>Sede</th>
                                 <th>Periodo</th>
-                                <th>Utenti Coinvolti</th>
+                                <th>Template</th>
                                 <th>Ore Turno</th>
                                 <th>Stato</th>
                                 <th>Azioni</th>
@@ -78,7 +78,7 @@
                                     <small class="text-muted">{{ coverage.end_date.strftime('%d/%m/%Y') }}</small>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">{{ coverage.users_count }} utenti</span>
+                                    <span class="badge bg-info">{{ coverage.template_coverage_count or 1 }} coperture</span>
                                 </td>
                                 <td>
                                     <small>{{ coverage.start_time.strftime('%H:%M') }} - {{ coverage.end_time.strftime('%H:%M') }}</small>
