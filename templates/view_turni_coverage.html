@@ -96,14 +96,16 @@
                 <div class="row">
                     {% for copertura in period_data.coperture %}
                     <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card h-100 border-left-{{ 'success' if copertura.is_valid_for_date(today) else 'secondary' }}">
+                        <div class="card h-100 border-left-{% if copertura.start_date <= today <= copertura.end_date %}success{% elif copertura.start_date > today %}warning{% else %}secondary{% endif %}">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h6 class="card-title mb-1">{{ copertura.get_day_name() }}</h6>
-                                    {% if copertura.is_valid_for_date(today) %}
+                                    {% if copertura.start_date <= today <= copertura.end_date %}
                                         <span class="badge bg-success">Attiva</span>
+                                    {% elif copertura.start_date > today %}
+                                        <span class="badge bg-warning">Futura</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">Inattiva</span>
+                                        <span class="badge bg-secondary">Scaduta</span>
                                     {% endif %}
                                 </div>
                                 <p class="text-muted mb-2">
@@ -351,6 +353,11 @@ function deleteCoveragePeriod(periodKey) {
 .border-left-success {
     border-left: 4px solid #28a745 !important;
     background: rgba(40, 167, 69, 0.05);
+}
+
+.border-left-warning {
+    border-left: 4px solid #ffc107 !important;
+    background: rgba(255, 193, 7, 0.05);
 }
 
 .border-left-secondary {
