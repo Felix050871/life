@@ -3059,7 +3059,13 @@ def generate_reperibilita_shifts():
     
     form = ReperibilitaTemplateForm()
     
+    import sys
+    print(f"[DEBUG] Form creato, scelte disponibili: {len(form.coverage_period.choices)}", flush=True, file=sys.stderr)
+    print(f"[DEBUG] Form errors prima validazione: {form.errors}", flush=True, file=sys.stderr)
+    print(f"[DEBUG] Form data: coverage_period={form.coverage_period.data}, use_full_period={form.use_full_period.data}", flush=True, file=sys.stderr)
+    
     if form.validate_on_submit():
+        print(f"[DEBUG] Form validato con successo!", flush=True, file=sys.stderr)
         # Verifica che sia stata selezionata una copertura
         if not form.coverage_period.data:
             flash('Seleziona una copertura reperibilità', 'error')
@@ -3124,6 +3130,8 @@ def generate_reperibilita_shifts():
             print(f"[ERROR] Traceback: {traceback.format_exc()}", flush=True, file=sys.stderr)
             db.session.rollback()
             flash(f'Errore durante la generazione: {str(e)}', 'error')
+    else:
+        print(f"[DEBUG] Form NON validato. Errori: {form.errors}", flush=True, file=sys.stderr)
     
     return render_template('generate_reperibilita_shifts.html', form=form)
 
