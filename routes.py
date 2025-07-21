@@ -4302,8 +4302,12 @@ def view_turni_coverage():
     
     sede_id = request.args.get('sede', type=int)
     if not sede_id:
-        flash('ID sede non specificato', 'danger')
-        return redirect(url_for('manage_turni'))
+        # Se l'utente non è Admin, usa la sua sede per default
+        if current_user.role != 'Admin' and current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+            sede_id = current_user.sede_obj.id
+        else:
+            flash('ID sede non specificato. Seleziona una sede dalla pagina Gestione Turni.', 'warning')
+            return redirect(url_for('manage_turni'))
     
     sede = Sede.query.get_or_404(sede_id)
     
@@ -4361,8 +4365,12 @@ def generate_turni_from_coverage():
     
     sede_id = request.args.get('sede', type=int)
     if not sede_id:
-        flash('ID sede non specificato', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        # Se l'utente non è Admin, usa la sua sede per default
+        if current_user.role != 'Admin' and current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+            sede_id = current_user.sede_obj.id
+        else:
+            flash('ID sede non specificato. Seleziona una sede dalla pagina Genera Turni.', 'warning')
+            return redirect(url_for('generate_turnazioni'))
     
     sede = Sede.query.get_or_404(sede_id)
     
