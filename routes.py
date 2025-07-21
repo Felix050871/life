@@ -1706,8 +1706,8 @@ def delete_leave(request_id):
 @app.route('/users')
 @login_required
 def users():
-    if not current_user.can_manage_users():
-        flash('Non hai i permessi per gestire gli utenti', 'danger')
+    if not (current_user.can_manage_users() or current_user.can_view_users()):
+        flash('Non hai i permessi per accedere agli utenti', 'danger')
         return redirect(url_for('dashboard'))
     
     page = request.args.get('page', 1, type=int)
@@ -1751,8 +1751,8 @@ def new_user():
 @app.route('/user_management')
 @login_required
 def user_management():
-    if not current_user.can_manage_users():
-        flash('Non hai i permessi per gestire gli utenti', 'danger')
+    if not (current_user.can_manage_users() or current_user.can_view_users()):
+        flash('Non hai i permessi per accedere alla gestione utenti', 'danger')
         return redirect(url_for('dashboard'))
     
     users = User.query.options(joinedload(User.sede_obj)).order_by(User.created_at.desc()).all()
@@ -1963,9 +1963,9 @@ def reports():
 @app.route('/holidays')
 @login_required
 def holidays():
-    """Gestione festività (solo Admin)"""
-    if current_user.role != 'Admin':
-        flash('Solo gli amministratori possono gestire le festività', 'danger')
+    """Gestione festività"""
+    if not (current_user.can_manage_holidays() or current_user.can_view_holidays()):
+        flash('Non hai i permessi per accedere alle festività', 'danger')
         return redirect(url_for('dashboard'))
     
     from models import Holiday
@@ -4109,8 +4109,8 @@ def qr_page(action):
 @require_login
 def admin_generate_qr_codes():
     """Gestione codici QR"""
-    if not current_user.can_manage_qr():
-        flash('Non hai i permessi per gestire i codici QR', 'danger')
+    if not (current_user.can_manage_qr() or current_user.can_view_qr()):
+        flash('Non hai i permessi per accedere ai codici QR', 'danger')
         return redirect(url_for('dashboard'))
     
     from utils import qr_codes_exist, get_qr_code_urls
@@ -5006,8 +5006,8 @@ def api_roles():
 @login_required
 def manage_sedi():
     """Gestione delle sedi aziendali"""
-    if not current_user.can_manage_sedi():
-        flash('Non hai i permessi per gestire le sedi', 'danger')
+    if not (current_user.can_manage_sedi() or current_user.can_view_sedi()):
+        flash('Non hai i permessi per accedere alle sedi', 'danger')
         return redirect(url_for('dashboard'))
     
     sedi = Sede.query.order_by(Sede.created_at.desc()).all()
@@ -5114,8 +5114,8 @@ def toggle_sede(sede_id):
 @login_required
 def manage_work_schedules():
     """Gestione degli orari di lavoro"""
-    if not current_user.can_manage_schedules():
-        flash('Non hai i permessi per gestire gli orari', 'danger')
+    if not (current_user.can_manage_schedules() or current_user.can_view_schedules()):
+        flash('Non hai i permessi per accedere agli orari', 'danger')
         return redirect(url_for('dashboard'))
     
     schedules = WorkSchedule.query.join(Sede).order_by(Sede.name, WorkSchedule.start_time).all()
@@ -5263,8 +5263,8 @@ def delete_work_schedule(schedule_id):
 @login_required
 def manage_roles():
     """Gestisce i ruoli dinamici del sistema (solo Admin)"""
-    if not current_user.has_permission('can_manage_roles'):
-        flash('Non hai i permessi per gestire i ruoli', 'danger')
+    if not (current_user.has_permission('can_manage_roles') or current_user.has_permission('can_view_roles')):
+        flash('Non hai i permessi per accedere ai ruoli', 'danger')
         return redirect(url_for('dashboard'))
     
     roles = UserRole.query.order_by(UserRole.name).all()
@@ -5395,7 +5395,7 @@ def delete_role(role_id):
 @login_required
 def internal_messages():
     """Visualizza i messaggi interni per l'utente corrente"""
-    if not current_user.role in ['Management', 'Staff']:
+    if not (current_user.can_send_messages() or current_user.can_view_messages()):
         flash('Non hai i permessi per accedere ai messaggi interni', 'danger')
         return redirect(url_for('dashboard'))
     
