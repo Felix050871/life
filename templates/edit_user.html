@@ -119,7 +119,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.sede.label(class="form-label") }}
-                                {{ form.sede(class="form-select") }}
+                                {{ form.sede(class="form-select", id="sedeSelect") }}
+                                <small class="text-muted">Sede di assegnazione specifica</small>
                                 {% if form.sede.errors %}
                                     <div class="text-danger">
                                         {% for error in form.sede.errors %}
@@ -129,6 +130,20 @@
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="form-check">
+                                    {{ form.all_sedi(class="form-check-input", id="allSediCheck") }}
+                                    {{ form.all_sedi.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Se abilitato, può accedere a tutte le sedi</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="form-check mb-2">
+                                    {{ form.all_sedi(class="form-check-input", id="allSediCheck") }}
+                                    {{ form.all_sedi.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted mb-3 d-block">Se abilitato, può accedere a tutte le sedi</small>
                                 <div class="form-check">
                                     {{ form.is_active(class="form-check-input") }}
                                     {{ form.is_active.label(class="form-check-label") }}
@@ -154,14 +169,25 @@
 
 {% block scripts %}
 <script>
-// Role-based part-time percentage visibility
+// Role-based part-time percentage visibility and sede management
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.getElementById('role');
     const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
+    const allSediCheck = document.getElementById('allSediCheck');
+    const sedeSelect = document.getElementById('sedeSelect');
+    
+    function toggleSedeSelect() {
+        if (allSediCheck && allSediCheck.checked) {
+            sedeSelect.disabled = true;
+            sedeSelect.value = -1; // Imposta su "Seleziona una sede"
+        } else {
+            sedeSelect.disabled = false;
+        }
+    }
     
     function togglePartTimeField() {
         const selectedRole = roleSelect.value;
-        const showPartTime = ['Management', 'Redattore', 'Sviluppatore', 'Operatore'].includes(selectedRole);
+        const showPartTime = ['Responsabile', 'Operatore'].includes(selectedRole);
         
         if (showPartTime) {
             partTimeGroup.style.display = 'block';
@@ -171,8 +197,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    roleSelect.addEventListener('change', togglePartTimeField);
-    togglePartTimeField(); // Initial call
+    // Event listeners
+    if (roleSelect) {
+        roleSelect.addEventListener('change', togglePartTimeField);
+        togglePartTimeField(); // Initial call
+    }
+    
+    if (allSediCheck && sedeSelect) {
+        allSediCheck.addEventListener('change', toggleSedeSelect);
+        toggleSedeSelect(); // Chiamata iniziale
+    }
 });
 </script>
 {% endblock %}

@@ -1732,7 +1732,8 @@ def new_user():
             role=form.role.data,
             first_name=form.first_name.data,
             last_name=form.last_name.data,
-            sede_id=form.sede.data,
+            all_sedi=form.all_sedi.data,
+            sede_id=form.sede.data if not form.all_sedi.data else None,
             part_time_percentage=form.get_part_time_percentage_as_float(),
             active=form.is_active.data
         )
@@ -1771,7 +1772,8 @@ def edit_user(user_id):
     form = UserForm(original_username=user.username, is_edit=True, obj=user)
     
     if request.method == 'GET':
-        # Popola il campo sede con la sede attualmente associata all'utente
+        # Popola i campi sede e all_sedi con i valori attuali
+        form.all_sedi.data = user.all_sedi
         if user.sede_id:
             form.sede.data = user.sede_id
     
@@ -1781,7 +1783,8 @@ def edit_user(user_id):
         user.role = form.role.data
         user.first_name = form.first_name.data
         user.last_name = form.last_name.data
-        user.sede_id = form.sede.data
+        user.all_sedi = form.all_sedi.data
+        user.sede_id = form.sede.data if not form.all_sedi.data else None
         user.part_time_percentage = form.get_part_time_percentage_as_float()
         user.active = form.is_active.data
         

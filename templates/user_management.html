@@ -80,7 +80,8 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             {{ form.sede.label(class="form-label") }}
-                            {{ form.sede(class="form-select") }}
+                            {{ form.sede(class="form-select", id="sedeSelectNew") }}
+                            <small class="text-muted">Sede di assegnazione specifica</small>
                             {% if form.sede.errors %}
                                 <div class="text-danger">
                                     {% for error in form.sede.errors %}
@@ -90,6 +91,11 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
+                            <div class="form-check mb-3">
+                                {{ form.all_sedi(class="form-check-input", id="allSediCheckNew") }}
+                                {{ form.all_sedi.label(class="form-check-label") }}
+                            </div>
+                            <small class="text-muted mb-2 d-block">Se abilitato, può accedere a tutte le sedi</small>
                             <div class="form-check mb-3">
                                 {{ form.is_active(class="form-check-input") }}
                                 {{ form.is_active.label(class="form-check-label") }}
@@ -123,6 +129,8 @@
                         <thead>
                             <tr>
                                 <th>Utente</th>
+                                <th>Ruolo</th>
+                                <th>Sedi</th>
                                 <th>Contatto</th>
                                 <th>Ruolo</th>
                                 <th>Sedi</th>
@@ -154,18 +162,26 @@
                                     <i class="fas fa-envelope me-1"></i>{{ user.email }}
                                 </td>
                                 <td>
-                                    {% if user.role == 'Admin' %}
+                                    {% if user.role == 'Amministratore' %}
                                     <span class="badge bg-danger">{{ user.role }}</span>
-                                    {% elif user.role == 'Management' %}
+                                    {% elif user.role == 'Responsabile' %}
                                     <span class="badge bg-warning">{{ user.role }}</span>
-                                    {% elif user.role == 'Ente' %}
+                                    {% elif user.role == 'Supervisore' %}
                                     <span class="badge bg-info">{{ user.role }}</span>
-                                    {% else %}
+                                    {% elif user.role == 'Operatore' %}
                                     <span class="badge bg-primary">{{ user.role }}</span>
+                                    {% elif user.role == 'Ospite' %}
+                                    <span class="badge bg-secondary">{{ user.role }}</span>
+                                    {% else %}
+                                    <span class="badge bg-dark">{{ user.role }}</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.sede_obj %}
+                                    {% if user.all_sedi %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-globe me-1"></i>Tutte le sedi
+                                        </span>
+                                    {% elif user.sede_obj %}
                                         <span class="badge bg-secondary">{{ user.sede_obj.name }}</span>
                                     {% else %}
                                         <span class="text-muted">Nessuna sede</span>
@@ -236,26 +252,25 @@
             <div class="card-body">
                 <div class="row text-center">
                     <div class="col-md-2">
-                        <h4 class="text-danger">{{ users|selectattr('role', 'equalto', 'Admin')|list|length }}</h4>
-                        <small>Admin</small>
+                        <h4 class="text-danger">{{ users|selectattr('role', 'equalto', 'Amministratore')|list|length }}</h4>
+                        <small>Amministratori</small>
                     </div>
                     <div class="col-md-2">
-                        <h4 class="text-warning">{{ users|selectattr('role', 'equalto', 'Management')|list|length }}</h4>
-                        <small>Management</small>
+                        <h4 class="text-warning">{{ users|selectattr('role', 'equalto', 'Responsabile')|list|length }}</h4>
+                        <small>Responsabili</small>
                     </div>
                     <div class="col-md-2">
-                        <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Redattore')|list|length }}</h4>
-                        <small>Redattori</small>
+                        <h4 class="text-info">{{ users|selectattr('role', 'equalto', 'Supervisore')|list|length }}</h4>
+                        <small>Supervisori</small>
                     </div>
-                    <div class="col-md-2">
-                        <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Sviluppatore')|list|length }}</h4>
-                        <small>Sviluppatori</small>
-                    </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Operatore')|list|length }}</h4>
                         <small>Operatori</small>
                     </div>
-
+                    <div class="col-md-3">
+                        <h4 class="text-secondary">{{ users|selectattr('role', 'equalto', 'Ospite')|list|length }}</h4>
+                        <small>Ospiti</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -270,11 +285,21 @@
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.querySelector('select[name="role"]');
     const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
+    const allSediCheck = document.getElementById('allSediCheckNew');
+    const sedeSelect = document.getElementById('sedeSelectNew');
 
+    function toggleSedeSelect() {
+        if (allSediCheck && allSediCheck.checked) {
+            sedeSelect.disabled = true;
+            sedeSelect.value = -1; // Imposta su "Seleziona una sede"
+        } else {
+            sedeSelect.disabled = false;
+        }
+    }
     
     function togglePartTimeField() {
         const selectedRole = roleSelect.value;
-        const showPartTime = ['Management', 'Redattore', 'Sviluppatore', 'Operatore'].includes(selectedRole);
+        const showPartTime = ['Responsabile', 'Operatore'].includes(selectedRole);
         
         if (showPartTime) {
             partTimeGroup.style.display = 'block';
@@ -283,8 +308,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    roleSelect.addEventListener('change', togglePartTimeField);
-    togglePartTimeField(); // Initial call
+    // Event listeners
+    if (roleSelect) {
+        roleSelect.addEventListener('change', togglePartTimeField);
+        togglePartTimeField(); // Initial call
+    }
+    
+    if (allSediCheck && sedeSelect) {
+        allSediCheck.addEventListener('change', toggleSedeSelect);
+        toggleSedeSelect(); // Chiamata iniziale
+    }
     
     // Gestione modal di conferma personalizzato per evitare "una pagina incorporata"
     document.querySelectorAll('.confirm-link').forEach(link => {

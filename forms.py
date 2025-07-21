@@ -16,7 +16,8 @@ class UserForm(FlaskForm):
     role = SelectField('Ruolo', choices=[], validators=[DataRequired()])
     first_name = StringField('Nome', validators=[DataRequired(), Length(max=100)])
     last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
-    sede = SelectField('Sede', coerce=int, validators=[DataRequired()])
+    sede = SelectField('Sede', coerce=int, validators=[])
+    all_sedi = BooleanField('Accesso a tutte le sedi', default=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
     is_active = BooleanField('Attivo', default=True)
@@ -31,9 +32,9 @@ class UserForm(FlaskForm):
         try:
             from models import Sede as SedeModel
             sedi_attive = SedeModel.query.filter_by(active=True).all()
-            self.sede.choices = [(sede.id, sede.name) for sede in sedi_attive]
+            self.sede.choices = [(-1, 'Seleziona una sede')] + [(sede.id, sede.name) for sede in sedi_attive]
         except:
-            self.sede.choices = []
+            self.sede.choices = [(-1, 'Seleziona una sede')]
         
         # Popola le scelte dei ruoli dinamicamente
         try:
@@ -74,12 +75,13 @@ class UserForm(FlaskForm):
         if user and (not self.original_username or user.username != self.original_username):
             raise ValidationError('Email già esistente. Scegli un\'altra email.')
     
-    def validate_sedi(self, sedi):
-        # Per utenti Management, le sedi vengono assegnate automaticamente
-        if self.role.data == 'Management':
+    def validate_sede(self, sede):
+        # Se all_sedi è False, deve essere selezionata una sede specifica
+        if not self.all_sedi.data and (not sede.data or sede.data == -1):
+            raise ValidationError('Seleziona una sede o abilita "Accesso a tutte le sedi".')
+        # Se all_sedi è True, non è necessaria una sede specifica
+        if self.all_sedi.data:
             return
-        if not sedi.data:
-            raise ValidationError('Seleziona almeno una sede per l\'utente.')
     
     def validate_password(self, password):
         # For new users, password is required

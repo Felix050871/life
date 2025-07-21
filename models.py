@@ -70,6 +70,7 @@ class User(UserMixin, db.Model):
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede principale (legacy)
+    all_sedi = db.Column(db.Boolean, default=False)  # True se l'utente può accedere a tutte le sedi
     active = db.Column(db.Boolean, default=True)  # Renamed to avoid UserMixin conflict
     part_time_percentage = db.Column(db.Float, default=100.0)  # Percentuale di lavoro: 100% = tempo pieno, 50% = metà tempo, ecc.
     created_at = db.Column(db.DateTime, default=italian_now)
@@ -81,6 +82,28 @@ class User(UserMixin, db.Model):
     
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
+    
+    def get_accessible_sedi(self):
+        """Restituisce tutte le sedi accessibili dall'utente"""
+        if self.all_sedi:
+            return Sede.query.filter_by(active=True).all()
+        elif self.sede_id:
+            return [self.sede_obj] if self.sede_obj and self.sede_obj.active else []
+        return []
+    
+    def can_access_sede(self, sede_id):
+        """Verifica se l'utente può accedere a una specifica sede"""
+        if self.all_sedi:
+            return True
+        return self.sede_id == sede_id
+    
+    def get_sede_display(self):
+        """Restituisce la descrizione delle sedi assegnate per visualizzazione"""
+        if self.all_sedi:
+            return "Tutte le sedi"
+        elif self.sede_obj:
+            return self.sede_obj.name
+        return "Nessuna sede"
     
     def get_role_obj(self):
         """Ottieni l'oggetto UserRole associato"""
