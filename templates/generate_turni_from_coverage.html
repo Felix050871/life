@@ -191,7 +191,14 @@
 
 <script>
 function showGenerateModal(periodId, periodDisplay) {
-    document.getElementById('coverage_period_id').value = periodId;
+    console.log('DEBUG: Setting coverage_period_id to:', periodId);
+    const hiddenInput = document.getElementById('coverage_period_id');
+    if (hiddenInput) {
+        hiddenInput.value = periodId;
+        console.log('DEBUG: Hidden input value set to:', hiddenInput.value);
+    } else {
+        console.error('DEBUG: Hidden input coverage_period_id not found');
+    }
     document.getElementById('display_period').textContent = periodDisplay;
     
     // Imposta date predefinite
@@ -210,8 +217,20 @@ function showGenerateModal(periodId, periodDisplay) {
         document.getElementById('generate_end_date').min = this.value;
     });
     
+    // Mostra il modal
     const modal = new bootstrap.Modal(document.getElementById('generateModal'));
     modal.show();
+    
+    // Debug finale prima dell'invio form
+    document.querySelector('#generateModal form').addEventListener('submit', function(e) {
+        const periodIdValue = document.getElementById('coverage_period_id').value;
+        console.log('DEBUG: Form submission - coverage_period_id:', periodIdValue);
+        if (!periodIdValue) {
+            console.error('DEBUG: coverage_period_id is empty!');
+            e.preventDefault();
+            alert('Errore: ID periodo copertura mancante');
+        }
+    });
 }
 </script>
 

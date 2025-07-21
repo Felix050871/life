@@ -4433,9 +4433,15 @@ def view_turni_coverage():
         PresidioCoverage.start_time
     ).all()
     
-    # Raggruppa coperture per periodo di validità
+    # Raggruppa coperture per periodo di validità (evita duplicati)
     coperture_grouped = {}
+    coperture_ids_seen = set()
     for copertura in coperture:
+        # Evita duplicati
+        if copertura.id in coperture_ids_seen:
+            continue
+        coperture_ids_seen.add(copertura.id)
+        
         period_key = f"{copertura.start_date.strftime('%Y-%m-%d')} - {copertura.end_date.strftime('%Y-%m-%d')}"
         if period_key not in coperture_grouped:
             coperture_grouped[period_key] = {
@@ -4499,9 +4505,15 @@ def generate_turni_from_coverage():
         PresidioCoverage.start_time
     ).all()
     
-    # Raggruppa coperture per periodo di validità
+    # Raggruppa coperture per periodo di validità (evita duplicati con ID univoci)
     coperture_grouped = {}
+    coperture_ids_seen = set()
     for copertura in coperture:
+        # Evita duplicati
+        if copertura.id in coperture_ids_seen:
+            continue
+        coperture_ids_seen.add(copertura.id)
+        
         period_key = f"{copertura.start_date.strftime('%Y-%m-%d')} - {copertura.end_date.strftime('%Y-%m-%d')}"
         if period_key not in coperture_grouped:
             coperture_grouped[period_key] = {
