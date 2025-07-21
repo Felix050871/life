@@ -5629,3 +5629,58 @@ def view_coverage_templates():
                          total_templates=len(all_coverages),
                          today=date.today())
 
+@app.route("/view_turni_for_period")
+@login_required  
+def view_turni_for_period():
+    """Visualizza i turni generati per un periodo specifico"""
+    if not current_user.can_view_shifts():
+        flash("Non hai i permessi per visualizzare i turni", "danger")
+        return redirect(url_for("dashboard"))
+    
+    # Import necessari
+    from models import Sede, Shift
+    from datetime import datetime
+    
+    # Ottieni parametri
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    
+    if not start_date_str or not end_date_str:
+        flash("Periodo non specificato correttamente", "warning")
+        return redirect(url_for("view_coverage_templates"))
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash("Formato data non valido", "error")
+        return redirect(url_for("view_coverage_templates"))
+    
+    # Ottieni le sedi accessibili per utente
+    if current_user.all_sedi:
+        accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
+    elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+        accessible_sedi = [current_user.sede_obj]
+    else:
+        accessible_sedi = []
+        flash("Nessuna sede con modalità turni accessibile", "warning")
+        return redirect(url_for("dashboard"))
+    
+    # Trova i turni per il periodo specificato
+    turni_periodo = []
+    for sede in accessible_sedi:
+        sede_shifts = Shift.query.filter(
+            Shift.sede_id == sede.id,
+            Shift.data >= start_date,
+            Shift.data <= end_date
+        ).order_by(Shift.data.desc(), Shift.start_time).all()
+        turni_periodo.extend(sede_shifts)
+    
+    return render_template("view_turni_period.html",
+                         turni_periodo=turni_periodo,
+                         start_date=start_date,
+                         end_date=end_date,
+                         accessible_sedi=accessible_sedi,
+                         total_turni=len(turni_periodo),
+                         today=date.today())
+
