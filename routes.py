@@ -2833,8 +2833,8 @@ def reperibilita_shifts():
     from datetime import datetime, timedelta
     from collections import defaultdict
     
-    # Get current template list for generation
-    templates = ReperibilitaTemplate.query.order_by(ReperibilitaTemplate.created_at.desc()).all()
+    # Get current template list for generation (legacy - ora usiamo coperture)
+    templates = []  # Svuotato perché ora usiamo le coperture invece dei template
     
     # Parametri di visualizzazione
     if current_user.role in ['Admin', 'Management', 'Staff']:

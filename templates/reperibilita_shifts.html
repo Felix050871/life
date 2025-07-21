@@ -26,7 +26,10 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-layer-group me-2"></i>Template di Reperibilità</h5>
+                <h5><i class="fas fa-layer-group me-2"></i>Coperture Reperibilità Attive</h5>
+                <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-cog"></i> Gestisci Coperture
+                </a>
             </div>
             <div class="card-body">
                 {% if templates %}
@@ -246,8 +249,8 @@
                                     <small class="text-muted">{{ shift.user.role }}</small>
                                 </td>
                                 <td>
-                                    {% if shift.user.sede %}
-                                        <span class="badge bg-info">{{ shift.user.sede.name }}</span>
+                                    {% if shift.user.sede_obj %}
+                                        <span class="badge bg-info">{{ shift.user.sede_obj.name }}</span>
                                     {% else %}
                                         <span class="badge bg-secondary">Nessuna sede</span>
                                     {% endif %}
@@ -297,8 +300,8 @@
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div class="flex-grow-1">
                                                     <strong>{{ shift.user.get_full_name() }}</strong><br>
-                                                    {% if shift.user.sede %}
-                                                        <small class="badge bg-secondary badge-sm">{{ shift.user.sede.name }}</small>
+                                                    {% if shift.user.sede_obj %}
+                                                        <small class="badge bg-secondary badge-sm">{{ shift.user.sede_obj.name }}</small>
                                                     {% endif %}
                                                     <small class="text-muted d-block">
                                                         {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
