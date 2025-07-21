@@ -56,8 +56,8 @@
                         </div>
                         <div class="card-footer">
                             <div class="d-flex gap-2 justify-content-center flex-wrap">
-                                <button class="btn btn-sm btn-primary" onclick="createTurno({{ sede.id }}, '{{ sede.name }}')">
-                                    <i class="fas fa-plus me-1"></i>Nuovo Turno
+                                <button class="btn btn-sm btn-primary" onclick="createCopertura({{ sede.id }}, '{{ sede.name }}')">
+                                    <i class="fas fa-plus me-1"></i>Nuova Copertura
                                 </button>
                                 <a href="{{ url_for('shifts') }}?sede={{ sede.id }}" 
                                    class="btn btn-sm btn-outline-primary">
@@ -122,15 +122,15 @@
     </div>
 </div>
 
-<!-- Modal per creare nuovo turno -->
-<div class="modal fade" id="createTurnoModal" tabindex="-1">
+<!-- Modal per creare nuova copertura -->
+<div class="modal fade" id="createCoperturaModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Crea Nuovo Turno</h5>
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Crea Nuova Copertura Turni</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="createTurnoForm" method="POST" action="{{ url_for('create_turno_shift') }}">
+            <form id="createCoperturaForm" method="POST" action="{{ url_for('create_shift_coverage') }}">
                 <div class="modal-body">
                     <input type="hidden" id="sede_id" name="sede_id" value="">
                     
@@ -141,19 +141,76 @@
                         </div>
                     </div>
                     
+                    <!-- Periodo di validità -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label" for="user_id">Utente *</label>
-                            <select class="form-select" id="user_id" name="user_id" required>
-                                <option value="">Seleziona utente...</option>
-                            </select>
+                            <label class="form-label" for="start_date">Data Inizio Validità *</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="shift_date">Data Turno *</label>
-                            <input type="date" class="form-control" id="shift_date" name="date" required>
+                            <label class="form-label" for="end_date">Data Fine Validità *</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
                         </div>
                     </div>
                     
+                    <!-- Giorni della settimana -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Giorni della Settimana *</label>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_0" name="days_of_week" value="0">
+                                        <label class="form-check-label" for="day_0">Lunedì</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_1" name="days_of_week" value="1">
+                                        <label class="form-check-label" for="day_1">Martedì</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_2" name="days_of_week" value="2">
+                                        <label class="form-check-label" for="day_2">Mercoledì</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_3" name="days_of_week" value="3">
+                                        <label class="form-check-label" for="day_3">Giovedì</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_4" name="days_of_week" value="4">
+                                        <label class="form-check-label" for="day_4">Venerdì</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_5" name="days_of_week" value="5">
+                                        <label class="form-check-label" for="day_5">Sabato</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_6" name="days_of_week" value="6">
+                                        <label class="form-check-label" for="day_6">Domenica</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="day_7" name="days_of_week" value="7">
+                                        <label class="form-check-label" for="day_7">Festivi</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Orari copertura -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label" for="start_time">Ora Inizio *</label>
@@ -165,15 +222,50 @@
                         </div>
                     </div>
                     
+                    <!-- Ruoli richiesti -->
                     <div class="row mb-3">
                         <div class="col-md-12">
-                            <label class="form-label" for="shift_type">Tipo Turno</label>
-                            <select class="form-select" id="shift_type" name="shift_type">
-                                <option value="regular">Regolare</option>
-                                <option value="overtime">Straordinario</option>
-                                <option value="holiday">Festivo</option>
-                                <option value="night">Notturno</option>
-                            </select>
+                            <label class="form-label">Ruoli Richiesti *</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_management" name="required_roles" value="Management">
+                                        <label class="form-check-label" for="role_management">Management</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_redattore" name="required_roles" value="Redattore">
+                                        <label class="form-check-label" for="role_redattore">Redattore</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_sviluppatore" name="required_roles" value="Sviluppatore">
+                                        <label class="form-check-label" for="role_sviluppatore">Sviluppatore</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_operatore" name="required_roles" value="Operatore">
+                                        <label class="form-check-label" for="role_operatore">Operatore</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_ente" name="required_roles" value="Ente">
+                                        <label class="form-check-label" for="role_ente">Ente</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Descrizione -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label" for="description">Descrizione Copertura</label>
+                            <textarea class="form-control" id="description" name="description" rows="2" placeholder="Descrizione della copertura..."></textarea>
                         </div>
                     </div>
                     
@@ -182,7 +274,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i>Crea Turno
+                        <i class="fas fa-save me-1"></i>Crea Copertura
                     </button>
                 </div>
             </form>
@@ -191,39 +283,26 @@
 </div>
 
 <script>
-function createTurno(sedeId, sedeName) {
+function createCopertura(sedeId, sedeName) {
     // Imposta i valori nel modal
     document.getElementById('sede_id').value = sedeId;
     document.getElementById('sede_name').value = sedeName;
     
-    // Carica gli utenti della sede
-    fetch(`/api/sede/${sedeId}/users`)
-        .then(response => response.json())
-        .then(users => {
-            const userSelect = document.getElementById('user_id');
-            userSelect.innerHTML = '<option value="">Seleziona utente...</option>';
-            
-            users.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = `${user.first_name} ${user.last_name}`;
-                userSelect.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Errore caricamento utenti:', error);
-            alert('Errore nel caricamento degli utenti');
-        });
-    
     // Mostra il modal
-    const modal = new bootstrap.Modal(document.getElementById('createTurnoModal'));
+    const modal = new bootstrap.Modal(document.getElementById('createCoperturaModal'));
     modal.show();
 }
 
 // Imposta data minima a oggi
 document.addEventListener('DOMContentLoaded', function() {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('shift_date').min = today;
+    document.getElementById('start_date').min = today;
+    document.getElementById('end_date').min = today;
+    
+    // Imposta data fine minima quando cambia data inizio
+    document.getElementById('start_date').addEventListener('change', function() {
+        document.getElementById('end_date').min = this.value;
+    });
 });
 </script>
 

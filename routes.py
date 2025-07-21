@@ -4170,8 +4170,12 @@ def manage_turni():
             User.active == True
         ).count()
         
-        # Conta template di copertura per questa sede
-        coperture_count = 0  # Per ora 0, implementeremo i template in futuro
+        # Conta coperture attive per questa sede
+        from models import ShiftCoverage
+        coperture_count = ShiftCoverage.query.filter(
+            ShiftCoverage.is_active == True,
+            ShiftCoverage.sedi_ids.like(f'%{sede.id}%')  # Controlla se l'ID della sede è nel JSON
+        ).count()
         
         sede_stats[sede.id] = {
             'turni_count': turni_count,
@@ -4237,26 +4241,35 @@ def get_sede_users(sede_id):
     
     return jsonify(users_data)
 
-@app.route('/admin/turni/create', methods=['POST'])
+@app.route('/admin/turni/coverage/create', methods=['POST'])
 @login_required
-def create_turno_shift():
-    """Crea un nuovo turno"""
+def create_shift_coverage():
+    """Crea una nuova copertura turni"""
     if not current_user.can_access_turni():
-        flash('Non hai i permessi per creare turni', 'danger')
+        flash('Non hai i permessi per creare coperture turni', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
         sede_id = request.form.get('sede_id', type=int)
-        user_id = request.form.get('user_id', type=int)
-        date_str = request.form.get('date')
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
         start_time_str = request.form.get('start_time')
         end_time_str = request.form.get('end_time')
-        shift_type = request.form.get('shift_type', 'regular')
-        notes = request.form.get('notes', '')
+        days_of_week = request.form.getlist('days_of_week')
+        required_roles = request.form.getlist('required_roles')
+        description = request.form.get('description', '')
         
         # Validazioni
-        if not all([sede_id, user_id, date_str, start_time_str, end_time_str]):
+        if not all([sede_id, start_date_str, end_date_str, start_time_str, end_time_str]):
             flash('Tutti i campi obbligatori devono essere compilati', 'danger')
+            return redirect(url_for('manage_turni'))
+        
+        if not days_of_week:
+            flash('Seleziona almeno un giorno della settimana', 'danger')
+            return redirect(url_for('manage_turni'))
+            
+        if not required_roles:
+            flash('Seleziona almeno un ruolo richiesto', 'danger')
             return redirect(url_for('manage_turni'))
         
         # Verifica permessi sede
@@ -4270,52 +4283,78 @@ def create_turno_shift():
             flash('La sede selezionata non è configurata per la modalità turni', 'danger')
             return redirect(url_for('manage_turni'))
         
-        # Verifica che l'utente appartenga alla sede
-        user = User.query.get_or_404(user_id)
-        if user.sede_id != sede_id:
-            flash('L\'utente selezionato non appartiene a questa sede', 'danger')
-            return redirect(url_for('manage_turni'))
-        
         # Conversione date e orari
-        from datetime import datetime, time
-        shift_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        from datetime import datetime
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         start_time = datetime.strptime(start_time_str, '%H:%M').time()
         end_time = datetime.strptime(end_time_str, '%H:%M').time()
         
-        # Verifica che l'orario sia valido
+        # Validazioni date e orari
+        if start_date > end_date:
+            flash('La data di inizio deve essere precedente alla data di fine', 'danger')
+            return redirect(url_for('manage_turni'))
+            
         if start_time >= end_time:
             flash('L\'orario di inizio deve essere precedente all\'orario di fine', 'danger')
             return redirect(url_for('manage_turni'))
         
-        # Verifica sovrapposizioni con turni esistenti
-        existing_shifts = Shift.query.filter_by(
-            user_id=user_id,
-            date=shift_date
-        ).all()
+        # Crea coperture separate per ogni giorno della settimana selezionato
+        coperture_create = 0
+        for day in days_of_week:
+            day_int = int(day)
+            
+            # Verifica sovrapposizioni esistenti per questo giorno e orario
+            from models import ShiftCoverage
+            existing = ShiftCoverage.query.filter(
+                ShiftCoverage.day_of_week == day_int,
+                ShiftCoverage.is_active == True,
+                ShiftCoverage.start_date <= end_date,
+                ShiftCoverage.end_date >= start_date
+            ).all()
+            
+            # Filtra per sedi che includono questa sede
+            overlapping = []
+            for coverage in existing:
+                coverage_sedi = coverage.get_sedi_ids_list()
+                if sede_id in coverage_sedi:
+                    # Controlla sovrapposizione oraria
+                    if (start_time < coverage.end_time and end_time > coverage.start_time):
+                        overlapping.append(coverage)
+            
+            if overlapping:
+                day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica', 'Festivi']
+                day_name = day_names[day_int] if day_int < len(day_names) else str(day_int)
+                flash(f'Sovrapposizione esistente per {day_name} negli orari {start_time.strftime("%H:%M")} - {end_time.strftime("%H:%M")}', 'warning')
+                continue
+            
+            # Crea la copertura per questo giorno
+            coverage = ShiftCoverage(
+                day_of_week=day_int,
+                start_time=start_time,
+                end_time=end_time,
+                start_date=start_date,
+                end_date=end_date,
+                description=description,
+                created_by=current_user.id
+            )
+            
+            # Imposta ruoli richiesti e sedi coinvolte
+            coverage.set_required_roles_list(required_roles)
+            coverage.set_sedi_ids_list([sede_id])
+            
+            db.session.add(coverage)
+            coperture_create += 1
         
-        for existing in existing_shifts:
-            if (start_time < existing.end_time and end_time > existing.start_time):
-                flash(f'Sovrapposizione con turno esistente: {existing.start_time.strftime("%H:%M")} - {existing.end_time.strftime("%H:%M")}', 'danger')
-                return redirect(url_for('manage_turni'))
-        
-        # Crea il turno (rimuovo notes se non esiste nel modello)
-        shift = Shift(
-            user_id=user_id,
-            date=shift_date,
-            start_time=start_time,
-            end_time=end_time,
-            shift_type=shift_type,
-            created_by=current_user.id
-        )
-        
-        db.session.add(shift)
-        db.session.commit()
-        
-        flash(f'Turno creato con successo per {user.get_full_name()} il {shift_date.strftime("%d/%m/%Y")}', 'success')
+        if coperture_create > 0:
+            db.session.commit()
+            flash(f'Copertura turni creata con successo: {coperture_create} fasce orarie configurate', 'success')
+        else:
+            flash('Nessuna copertura creata a causa di sovrapposizioni esistenti', 'warning')
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Errore nella creazione del turno: {str(e)}', 'danger')
+        flash(f'Errore nella creazione della copertura: {str(e)}', 'danger')
     
     return redirect(url_for('manage_turni'))
 
