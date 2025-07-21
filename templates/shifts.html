@@ -137,7 +137,7 @@
 {% endif %}
 
 <!-- Staff Controls -->
-{% if sede_supports_turni %}
+{% if sede_supports_turni and can_manage %}
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card">
@@ -233,7 +233,7 @@
 {% endif %}
 
 <!-- Template Staff -->
-{% if can_manage %}
+{% if can_manage and sede_supports_turni %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">

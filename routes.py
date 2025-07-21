@@ -1211,7 +1211,10 @@ def attendance():
 @app.route('/shifts')
 @login_required
 def shifts():
-    if current_user.can_manage_shifts():
+    # Se l'utente accede tramite il link "Visualizza Turni" dal menu,
+    # mostra solo la visualizzazione senza gestione
+    view_only = request.args.get('view_only', 'false').lower() == 'true'
+    if current_user.can_manage_shifts() and not view_only:
         # Managers see template management interface
         shift_form = ShiftForm()
         template_form = ShiftTemplateForm()

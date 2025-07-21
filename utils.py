@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta, time
-from models import User, LeaveRequest, AttendanceEvent, PresidioCoverage, italian_now
+from models import User, LeaveRequest, AttendanceEvent, PresidioCoverage, Shift, italian_now
 from app import db
 import random
 import json
