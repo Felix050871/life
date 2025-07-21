@@ -2224,10 +2224,11 @@ def edit_shift(shift_id):
     from forms import EditShiftForm
     form = EditShiftForm()
     
-    # Get available users for assignment
+    # Get available users for assignment (only from the same sede as the shift)
     users = User.query.filter(
         User.role.in_(['Management', 'Redattore', 'Sviluppatore', 'Operatore']),
-        User.active.is_(True)
+        User.active.is_(True),
+        User.sede_id == shift.user.sede_id
     ).order_by(User.first_name, User.last_name).all()
     
     # Popola le scelte del form con gli utenti disponibili
@@ -2269,8 +2270,8 @@ def edit_shift(shift_id):
                 
                 flash(f'Turno modificato con successo: {old_user} ({old_time}, {old_type}) → {new_user.get_full_name()} ({new_time}, {form.shift_type.data})', 'success')
                 
-                # Redirect back to team shifts page 
-                return redirect(url_for('team_shifts'))
+                # Redirect back to the referring page or dashboard
+                return redirect(request.referrer or url_for('dashboard'))
                 
         except Exception as e:
             db.session.rollback()
