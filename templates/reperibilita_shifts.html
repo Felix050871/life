@@ -20,8 +20,8 @@
 
 
 
-<!-- Template Staff -->
-{% if current_user.role in ['Admin', 'Management', 'Ente'] %}
+<!-- Coperture - Solo se non ci sono turni generati -->
+{% if not hide_coverage_section and current_user.role in ['Admin', 'Management', 'Ente'] %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">

@@ -2833,7 +2833,7 @@ def reperibilita_shifts():
     from datetime import datetime, timedelta
     from collections import defaultdict
     
-    # Get current template list for generation (legacy - ora usiamo coperture)
+    # Get current template list for generation (legacy - ora usiamo coperture) 
     templates = []  # Svuotato perché ora usiamo le coperture invece dei template
     
     # Parametri di visualizzazione
@@ -2869,6 +2869,9 @@ def reperibilita_shifts():
         shifts = shifts_query.filter_by(user_id=current_user.id).order_by(ReperibilitaShift.date.asc()).all()
     else:
         shifts = shifts_query.order_by(ReperibilitaShift.date.asc()).all()
+    
+    # Ma nascondiamo completamente la sezione template/coperture se ci sono turni generati
+    hide_coverage_section = len(shifts) > 0
     
     # Organizza shifts per giorno (per vista calendario)
     shifts_by_day = defaultdict(list)
@@ -2929,7 +2932,8 @@ def reperibilita_shifts():
                          active_intervention=active_intervention,
                          calendar_days=calendar_days,
                          today_date=today,
-                         current_time=current_time)
+                         current_time=current_time,
+                         hide_coverage_section=hide_coverage_section)
 
 
 @app.route('/reperibilita_template/<start_date>/<end_date>')
