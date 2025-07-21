@@ -73,6 +73,8 @@ class UserRole(db.Model):
             # Reperibilità
             'can_manage_reperibilita': 'Gestire Reperibilità',
             'can_view_reperibilita': 'Visualizzare Reperibilità',
+            'can_manage_coverage': 'Gestire Coperture Reperibilità',
+            'can_view_coverage': 'Visualizzare Coperture Reperibilità',
             
             # Gestione presenze
             'can_manage_attendance': 'Gestire Presenze',
@@ -222,6 +224,14 @@ class User(UserMixin, db.Model):
     def can_view_reperibilita(self):
         return self.has_permission('can_view_reperibilita')
     
+    def can_manage_coverage(self):
+        """Permesso per gestire coperture reperibilità"""
+        return self.has_permission('can_manage_coverage')
+    
+    def can_view_coverage(self):
+        """Permesso per visualizzare coperture reperibilità"""
+        return self.has_permission('can_view_coverage')
+    
     # === PRESENZE ===
     def can_manage_attendance(self):
         return self.has_permission('can_manage_attendance')
@@ -348,6 +358,10 @@ class User(UserMixin, db.Model):
     def can_access_reperibilita_menu(self):
         """Accesso al menu Reperibilità"""
         return self.can_access_reperibilita()
+    
+    def can_access_coverage_menu(self):
+        """Accesso al menu Gestione Coperture"""
+        return self.can_manage_coverage() or self.can_view_coverage()
     
     def can_access_attendance_menu(self):
         """Accesso al menu Presenze"""

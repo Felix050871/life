@@ -82,16 +82,18 @@
                             <i class="fas fa-calendar-alt me-1"></i>Turni
                         </a>
                         <ul class="dropdown-menu">
+                            {% if current_user.can_access_coverage_menu() %}
+                            <li><a class="dropdown-item" href="{{ url_for('manage_coverage') }}">
+                                <i class="fas fa-shield-alt me-1"></i>Gestione Coperture
+                            </a></li>
+                            {% endif %}
                             {% if current_user.can_manage_shifts() %}
                             <li><a class="dropdown-item" href="{{ url_for('manage_turni') }}">
                                 <i class="fas fa-cog me-1"></i>Gestione Turni
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('generate_turnazioni') }}">
-                                <i class="fas fa-magic me-1"></i>Genera Turnazioni
-                            </a></li>
                             {% endif %}
                             {% if current_user.can_view_shifts() %}
-                            <li><a class="dropdown-item" href="{{ url_for('shifts', view_only='true') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('view_turni_by_coverage') }}">
                                 <i class="fas fa-eye me-1"></i>Visualizza Turni
                             </a></li>
                             {% endif %}

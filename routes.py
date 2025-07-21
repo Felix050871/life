@@ -615,7 +615,7 @@ def check_shift_before_clock_in():
 def clock_in():
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per registrare presenze.', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
         
     app.logger.error(f"CLOCK_IN: User {current_user.id} attempting clock-in")
     
@@ -740,7 +740,7 @@ def check_shift_before_clock_out():
 def clock_out():
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per registrare presenze.', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
         
     # Verifica se può fare clock-out
     if not AttendanceEvent.can_perform_action(current_user.id, 'clock_out'):
@@ -817,7 +817,7 @@ def clock_out():
 def break_start():
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per registrare presenze.', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
         
     # Verifica se può iniziare la pausa
     if not AttendanceEvent.can_perform_action(current_user.id, 'break_start'):
@@ -863,7 +863,7 @@ def break_start():
 def break_end():
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per registrare presenze.', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
         
     # Verifica se può terminare la pausa
     if not AttendanceEvent.can_perform_action(current_user.id, 'break_end'):
@@ -1374,12 +1374,12 @@ def shifts():
 def create_shift():
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per creare turni', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
     
     # Check if user's sede supports turni mode
     if not current_user.sede_obj or not current_user.sede_obj.is_turni_mode():
         flash('La tua sede non supporta la modalità turni', 'warning')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
     
     form = ShiftForm()
     workers = User.query.filter(
@@ -1410,7 +1410,7 @@ def create_shift():
             if has_overlap:
                 flash('⚠️ ATTENZIONE: Questo turno si sovrappone o è consecutivo ad un turno esistente. I doppi turni sono sconsigliati salvo casi eccezionali.', 'warning')
                 # Don't create the shift - require explicit confirmation
-                return redirect(url_for('shifts'))
+                return redirect(url_for('manage_turni'))
             else:
                 # Multiple non-overlapping shifts on same day - allow with warning
                 flash('⚠️ NOTA: L\'utente avrà multipli turni non consecutivi in questa data.', 'info')
@@ -1431,19 +1431,19 @@ def create_shift():
             for error in errors:
                 flash(f'{field}: {error}', 'danger')
     
-    return redirect(url_for('shifts'))
+    return redirect(url_for('manage_turni'))
 
 @app.route('/generate_shifts', methods=['POST'])
 @login_required
 def generate_shifts():
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per generare turni', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
     
     # Check if user's sede supports turni mode
     if not current_user.sede_obj or not current_user.sede_obj.is_turni_mode():
         flash('La tua sede non supporta la modalità turni', 'warning')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
     
     form = ShiftTemplateForm()
     if form.validate_on_submit():
@@ -1472,14 +1472,14 @@ def generate_shifts():
             for error in errors:
                 flash(f'{field}: {error}', 'danger')
     
-    return redirect(url_for('shifts'))
+    return redirect(url_for('manage_turni'))
 
 @app.route('/regenerate_template/<int:template_id>', methods=['POST'])
 @login_required
 def regenerate_template(template_id):
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per rigenerare turni', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
     
     template = ShiftTemplate.query.get_or_404(template_id)
     
@@ -1513,14 +1513,14 @@ def regenerate_template(template_id):
     else:
         flash(f'Errore nella rigenerazione: {message}', 'danger')
     
-    return redirect(url_for('shifts'))
+    return redirect(url_for('manage_turni'))
 
 @app.route('/delete_template/<int:template_id>', methods=['POST'])
 @login_required
 def delete_template(template_id):
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per eliminare template', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
     
     template = ShiftTemplate.query.get_or_404(template_id)
     
@@ -1535,7 +1535,7 @@ def delete_template(template_id):
     db.session.commit()
     
     flash(f'Template "{template.name}" eliminato insieme a {shifts_deleted} turni associati', 'success')
-    return redirect(url_for('shifts'))
+    return redirect(url_for('manage_turni'))
 
 @app.route('/view_template/<int:template_id>')
 @login_required
@@ -2300,7 +2300,7 @@ def edit_shift(shift_id):
     # Check if shift is in the future or today
     if shift.date < date.today():
         flash('Non è possibile modificare turni passati', 'warning')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
     
     # Verifica permessi sulla sede (se non admin)
     if current_user.role != 'Admin':
@@ -3754,7 +3754,7 @@ def export_attendance_csv():
     # Controllo permessi
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per esportare presenze.', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('manage_turni'))
     
     # Handle team/personal view toggle for PM
     view_mode = request.args.get('view', 'personal')
@@ -5510,3 +5510,88 @@ def mark_message_read(message_id):
     db.session.commit()
     
     return redirect(url_for('internal_messages'))
+
+
+# =====================================
+# NUOVO SISTEMA TURNI - 3 FUNZIONALITÀ
+# =====================================
+
+@app.route("/manage_coverage")
+@login_required
+def manage_coverage():
+    """Gestione Coperture - Prima funzionalità del menu Turni"""
+    if not current_user.can_access_coverage_menu():
+        flash("Non hai i permessi per accedere a questa sezione", "danger")
+        return redirect(url_for("dashboard"))
+    
+    # Ottieni le sedi accessibili per utente
+    if current_user.all_sedi:
+        # Utenti multi-sede vedono tutte le sedi turni
+        from models import Sede
+        accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
+    elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+        # Utenti sede-specifici vedono solo la loro sede se supporta turni
+        accessible_sedi = [current_user.sede_obj]
+    else:
+        accessible_sedi = []
+        flash("Nessuna sede con modalità turni accessibile", "warning")
+        return redirect(url_for("dashboard"))
+    
+    # Ottieni tutte le coperture per le sedi accessibili
+    coverage_list = PresidioCoverage.query.filter(
+        PresidioCoverage.sede_id.in_([sede.id for sede in accessible_sedi]),
+        PresidioCoverage.is_active == True
+    ).order_by(PresidioCoverage.start_date.desc()).all()
+    
+    return render_template("manage_coverage.html",
+                         coverage_list=coverage_list,
+                         accessible_sedi=accessible_sedi,
+                         can_manage=current_user.can_manage_coverage())
+
+@app.route("/view_turni_by_coverage")
+@login_required
+def view_turni_by_coverage():
+    """Visualizza Turni - Terza funzionalità per selezione copertura"""
+    if not current_user.can_view_shifts():
+        flash("Non hai i permessi per visualizzare i turni", "danger")
+        return redirect(url_for("dashboard"))
+    
+    # Ottieni le sedi accessibili per utente
+    if current_user.all_sedi:
+        from models import Sede
+        accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
+    elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+        accessible_sedi = [current_user.sede_obj]
+    else:
+        accessible_sedi = []
+        flash("Nessuna sede con modalità turni accessibile", "warning")
+        return redirect(url_for("dashboard"))
+    
+    # Ottieni le coperture attive per le sedi accessibili
+    available_coverages = PresidioCoverage.query.filter(
+        PresidioCoverage.sede_id.in_([sede.id for sede in accessible_sedi]),
+        PresidioCoverage.is_active == True
+    ).order_by(PresidioCoverage.start_date.desc()).all()
+    
+    # Se è selezionata una copertura specifica, mostra i turni
+    selected_coverage_id = request.args.get("coverage_id", type=int)
+    selected_coverage = None
+    turni_for_coverage = []
+    
+    if selected_coverage_id:
+        selected_coverage = PresidioCoverage.query.get(selected_coverage_id)
+        if selected_coverage and selected_coverage.sede_id in [sede.id for sede in accessible_sedi]:
+            # Ottieni tutti i turni per il periodo della copertura selezionata
+            turni_for_coverage = Shift.query.filter(
+                Shift.date >= selected_coverage.start_date,
+                Shift.date <= selected_coverage.end_date
+            ).join(User, Shift.user_id == User.id).filter(
+                User.sede_id == selected_coverage.sede_id
+            ).order_by(Shift.date.desc(), Shift.start_time).all()
+    
+    return render_template("view_turni_by_coverage.html",
+                         available_coverages=available_coverages,
+                         selected_coverage=selected_coverage,
+                         turni_for_coverage=turni_for_coverage,
+                         accessible_sedi=accessible_sedi)
+

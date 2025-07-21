@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Coperture{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-shield-alt me-2"></i>Gestione Coperture Reperibilità</h2>
+        <p class="text-muted">Gestisci le coperture di reperibilità per le sedi turni</p>
+    </div>
+</div>
+
+<!-- Sedi Accessibili -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Sedi Turni Accessibili:</strong>
+            {% for sede in accessible_sedi %}
+                <span class="badge bg-primary ms-1">{{ sede.name }}</span>
+            {% endfor %}
+            {% if not accessible_sedi %}
+                <span class="text-muted">Nessuna sede turni accessibile</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Azioni Rapide -->
+{% if can_manage %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('create_reperibilita_coverage') }}" class="btn btn-success">
+                <i class="fas fa-plus me-1"></i>Nuova Copertura
+            </a>
+            <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-1"></i>Gestisci Tutte le Coperture
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Lista Coperture -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Coperture Attive
+                    {% if coverage_list %}
+                        <span class="badge bg-secondary ms-2">{{ coverage_list|length }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if coverage_list %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sede</th>
+                                <th>Periodo</th>
+                                <th>Utenti Coinvolti</th>
+                                <th>Ore Turno</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for coverage in coverage_list %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ coverage.sede.name if coverage.sede else 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted d-block">{{ coverage.start_date.strftime('%d/%m/%Y') }}</small>
+                                    <small class="text-muted">{{ coverage.end_date.strftime('%d/%m/%Y') }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ coverage.users_count }} utenti</span>
+                                </td>
+                                <td>
+                                    <small>{{ coverage.start_time.strftime('%H:%M') }} - {{ coverage.end_time.strftime('%H:%M') }}</small>
+                                </td>
+                                <td>
+                                    {% if coverage.is_active %}
+                                    <span class="badge bg-success">Attiva</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inattiva</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('view_coverage_details', coverage_id=coverage.id) }}" 
+                                           class="btn btn-outline-primary" title="Visualizza dettagli">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if can_manage %}
+                                        <a href="{{ url_for('edit_reperibilita_coverage', coverage_id=coverage.id) }}" 
+                                           class="btn btn-outline-warning" title="Modifica">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessuna copertura attiva</h5>
+                    <p class="text-muted">Non ci sono coperture di reperibilità configurate per le sedi turni accessibili.</p>
+                    {% if can_manage %}
+                    <a href="{{ url_for('create_reperibilita_coverage') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Crea Prima Copertura
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Informazioni Utili -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-light">
+            <h6><i class="fas fa-lightbulb me-2"></i>Come funziona la Gestione Coperture</h6>
+            <ul class="mb-0">
+                <li><strong>Crea Coperture:</strong> Definisci periodi e orari di reperibilità per ogni sede turni</li>
+                <li><strong>Multi-sede:</strong> {% if accessible_sedi|length > 1 %}Puoi gestire coperture per {{ accessible_sedi|length }} sedi turni{% else %}Gestisci coperture per la tua sede{% endif %}</li>
+                <li><strong>Genera Turni:</strong> Una volta create le coperture, utilizza "Gestione Turni" per generare i turni automaticamente</li>
+                <li><strong>Visualizza:</strong> Usa "Visualizza Turni" per consultare i turni generati per ogni copertura</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
