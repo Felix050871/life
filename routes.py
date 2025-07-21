@@ -3055,11 +3055,16 @@ def generate_reperibilita_shifts():
     
     from forms import ReperibilitaTemplateForm
     from models import ReperibilitaTemplate, ReperibilitaShift
-    from utils import generate_reperibilita_shifts
+    from utils import generate_reperibilita_shifts_from_coverage
     
     form = ReperibilitaTemplateForm()
     
     if form.validate_on_submit():
+        # Verifica che sia stata selezionata una copertura
+        if not form.coverage_period.data:
+            flash('Seleziona una copertura reperibilità', 'error')
+            return render_template('generate_reperibilita_shifts.html', form=form)
+        
         # Elimina turni esistenti nel periodo
         existing_shifts = ReperibilitaShift.query.filter(
             ReperibilitaShift.date >= form.start_date.data,
@@ -3069,18 +3074,10 @@ def generate_reperibilita_shifts():
         for shift in existing_shifts:
             db.session.delete(shift)
         
-        # Crea template
-        template = ReperibilitaTemplate()
-        template.name = form.name.data
-        template.start_date = form.start_date.data
-        template.end_date = form.end_date.data
-        template.description = form.description.data
-        template.created_by = current_user.id
-        db.session.add(template)
-        
         try:
-            # Genera turni reperibilità
-            shifts_created, warnings = generate_reperibilita_shifts(
+            # Genera turni reperibilità dalla copertura selezionata
+            shifts_created, warnings = generate_reperibilita_shifts_from_coverage(
+                form.coverage_period.data,  # period_key della copertura
                 form.start_date.data,
                 form.end_date.data,
                 current_user.id
@@ -3089,7 +3086,7 @@ def generate_reperibilita_shifts():
             db.session.commit()
             
             # Costruisci messaggio di successo
-            success_msg = f'Template "{form.name.data}" creato con successo. Turni reperibilità generati: {shifts_created}.'
+            success_msg = f'Turni reperibilità generati: {shifts_created}.'
             
             if warnings:
                 if len(warnings) <= 3:

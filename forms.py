@@ -370,12 +370,53 @@ class ReperibilitaReplicaForm(FlaskForm):
 
 
 class ReperibilitaTemplateForm(FlaskForm):
-    """Form per generare turnazioni reperibilità"""
-    name = StringField('Nome Template', validators=[DataRequired(), Length(max=100)])
-    start_date = DateField('Data Inizio', validators=[DataRequired()])
-    end_date = DateField('Data Fine', validators=[DataRequired()])
-    description = TextAreaField('Descrizione')
+    """Form per generare turnazioni reperibilità da coperture esistenti"""
+    coverage_period = SelectField('Copertura Reperibilità', choices=[], validators=[DataRequired()])
+    start_date = DateField('Data Inizio Generazione', validators=[DataRequired()])
+    end_date = DateField('Data Fine Generazione', validators=[DataRequired()])
+    description = TextAreaField('Descrizione (opzionale)')
     submit = SubmitField('Genera Turnazioni Reperibilità')
+    
+    def __init__(self, *args, **kwargs):
+        super(ReperibilitaTemplateForm, self).__init__(*args, **kwargs)
+        # Popola le coperture dinamicamente dal database
+        from models import ReperibilitaCoverage
+        from datetime import date
+        try:
+            # Raggruppa le coperture per periodo (start_date + end_date)
+            coverages = ReperibilitaCoverage.query.filter(
+                ReperibilitaCoverage.is_active == True,
+                ReperibilitaCoverage.end_date >= date.today()
+            ).all()
+            
+            # Crea un dizionario raggruppato per periodo
+            periods = {}
+            for coverage in coverages:
+                period_key = f"{coverage.start_date.strftime('%Y-%m-%d')}__{coverage.end_date.strftime('%Y-%m-%d')}"
+                if period_key not in periods:
+                    periods[period_key] = {
+                        'start_date': coverage.start_date,
+                        'end_date': coverage.end_date,
+                        'coverages': []
+                    }
+                periods[period_key]['coverages'].append(coverage)
+            
+            # Crea le scelte per il SelectField
+            choices = []
+            for period_key, data in periods.items():
+                sedi_names = set()
+                for c in data['coverages']:
+                    sedi_names.update([name for name in c.get_sedi_names().split(', ') if name != 'Nessuna sede'])
+                
+                sedi_text = ', '.join(sorted(sedi_names)) if sedi_names else 'Tutte le sedi'
+                label = f"{data['start_date'].strftime('%d/%m/%Y')} - {data['end_date'].strftime('%d/%m/%Y')} ({sedi_text})"
+                choices.append((period_key, label))
+            
+            self.coverage_period.choices = sorted(choices, key=lambda x: x[1])
+            
+        except:
+            # Fallback se il database non è disponibile
+            self.coverage_period.choices = [('', 'Nessuna copertura disponibile')]
     
     def validate_end_date(self, end_date):
         if end_date.data and self.start_date.data and end_date.data < self.start_date.data:

@@ -27,10 +27,11 @@
                         {{ form.hidden_tag() }}
                         
                         <div class="mb-3">
-                            {{ form.name.label(class="form-label") }}
-                            {{ form.name(class="form-control", placeholder="es. Reperibilità Gennaio 2025") }}
-                            {% if form.name.errors %}
-                                <div class="text-danger">{{ form.name.errors[0] }}</div>
+                            {{ form.coverage_period.label(class="form-label") }}
+                            {{ form.coverage_period(class="form-select") }}
+                            <div class="form-text">Seleziona la copertura reperibilità da cui generare i turni</div>
+                            {% if form.coverage_period.errors %}
+                                <div class="text-danger">{{ form.coverage_period.errors[0] }}</div>
                             {% endif %}
                         </div>
 

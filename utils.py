@@ -513,6 +513,127 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
         return False, f"Errore durante la generazione: {str(e)}"
 
 
+def generate_reperibilita_shifts_from_coverage(coverage_period, start_date, end_date, created_by_id):
+    """
+    Genera turni di reperibilità basati su una copertura esistente selezionata
+    """
+    from models import User, ReperibilitaCoverage, ReperibilitaShift, LeaveRequest
+    from app import db
+    from datetime import timedelta
+    from collections import defaultdict
+    
+    # Parse il period_key per ottenere le date della copertura
+    try:
+        coverage_start, coverage_end = coverage_period.split('__')
+        coverage_start_date = datetime.strptime(coverage_start, '%Y-%m-%d').date()
+        coverage_end_date = datetime.strptime(coverage_end, '%Y-%m-%d').date()
+    except:
+        return 0, ["Errore nel formato della copertura selezionata"]
+    
+    # Ottieni tutte le coperture per il periodo selezionato
+    coverages = ReperibilitaCoverage.query.filter(
+        ReperibilitaCoverage.is_active == True,
+        ReperibilitaCoverage.start_date == coverage_start_date,
+        ReperibilitaCoverage.end_date == coverage_end_date
+    ).all()
+    
+    if not coverages:
+        return 0, ["Nessuna copertura trovata per il periodo selezionato"]
+    
+    # Ottieni utenti attivi escludendo Admin e Ente
+    all_users = User.query.filter_by(active=True).filter(~User.role.in_(['Admin', 'Ente'])).all()
+    users_by_role = defaultdict(list)
+    for user in all_users:
+        users_by_role[user.role].append(user)
+    
+    # Ottieni le richieste di ferie per il periodo
+    leave_requests = LeaveRequest.query.filter(
+        LeaveRequest.status.in_(['Pending', 'Approved']),
+        LeaveRequest.start_date <= end_date,
+        LeaveRequest.end_date >= start_date
+    ).all()
+    
+    # Mappa delle date di ferie per utente
+    user_leave_dates = defaultdict(set)
+    for leave in leave_requests:
+        current_date = max(leave.start_date, start_date)
+        while current_date <= min(leave.end_date, end_date):
+            user_leave_dates[leave.user_id].add(current_date)
+            current_date += timedelta(days=1)
+    
+    # Calcola utilizzazione attuale per bilanciamento
+    current_utilization = defaultdict(float)
+    
+    shifts_created = 0
+    warnings = []
+    
+    # Genera turni giorno per giorno
+    current_date = start_date
+    while current_date <= end_date:
+        day_of_week = current_date.weekday()  # 0=Monday, 6=Sunday
+        
+        # Trova coperture per questo giorno della settimana
+        day_coverages = [c for c in coverages if c.day_of_week == day_of_week]
+        
+        for coverage in day_coverages:
+            # Ottieni ruoli richiesti per questa copertura
+            required_roles = coverage.get_required_roles_list()
+            if not required_roles:
+                continue
+            
+            # Ottieni sedi per questa copertura
+            coverage_sedi = coverage.get_sedi_ids_list()
+            
+            # Per ogni ruolo richiesto, assegna un utente
+            for required_role in required_roles:
+                eligible_users = users_by_role.get(required_role, [])
+                
+                if not eligible_users:
+                    warnings.append(f"Nessun utente con ruolo {required_role} disponibile")
+                    continue
+                
+                # Filtra utenti che sono nella sede giusta (se specificata)
+                if coverage_sedi:
+                    eligible_users = [u for u in eligible_users if u.sede_id in coverage_sedi]
+                
+                # Filtra utenti non in ferie
+                available_users = [
+                    user for user in eligible_users
+                    if user.id not in user_leave_dates or current_date not in user_leave_dates[user.id]
+                ]
+                
+                if not available_users:
+                    sede_names = coverage.get_sedi_names()
+                    warnings.append(f"Nessun {required_role} disponibile il {current_date.strftime('%d/%m/%Y')} per {sede_names}")
+                    continue
+                
+                # Ordina per utilizzazione corrente (bilanciamento)
+                available_users.sort(key=lambda u: current_utilization[u.id])
+                
+                selected_user = available_users[0]
+                
+                # Crea il turno di reperibilità
+                shift = ReperibilitaShift()
+                shift.user_id = selected_user.id
+                shift.date = current_date
+                shift.start_time = coverage.start_time
+                shift.end_time = coverage.end_time
+                shift.description = coverage.description or f"Reperibilità {required_role}"
+                shift.created_by = created_by_id
+                
+                db.session.add(shift)
+                shifts_created += 1
+                
+                # Aggiorna utilizzazione per bilanciamento
+                shift_hours = (coverage.end_time.hour - coverage.start_time.hour) + \
+                             (coverage.end_time.minute - coverage.start_time.minute) / 60
+                current_utilization[selected_user.id] += shift_hours
+        
+        current_date += timedelta(days=1)
+    
+    return shifts_created, warnings
+
+
 def determine_shift_type(start_time, end_time):
     """
     Determine shift type based on start and end times
