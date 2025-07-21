@@ -2211,6 +2211,16 @@ def edit_shift(shift_id):
         flash('Non è possibile modificare turni passati', 'warning')
         return redirect(url_for('shifts'))
     
+    # Verifica permessi sulla sede (se non admin)
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != shift.user.sede_id:
+            flash('Non hai i permessi per modificare turni per questa sede', 'danger')
+            return redirect(url_for('dashboard'))
+        # Verifica che la sede sia di tipo "Turni" per utenti non-admin
+        if not current_user.sede_obj.is_turni_mode():
+            flash('La modifica turni è disponibile solo per sedi di tipo "Turni"', 'warning')
+            return redirect(url_for('dashboard'))
+    
     from forms import EditShiftForm
     form = EditShiftForm()
     
@@ -4785,6 +4795,10 @@ def delete_shift(shift_id):
     if current_user.role != 'Admin':
         if not current_user.sede_obj or current_user.sede_obj.id != shift.user.sede_id:
             flash('Non hai i permessi per eliminare turni per questa sede', 'danger')
+            return redirect(request.referrer or url_for('dashboard'))
+        # Verifica che la sede sia di tipo "Turni" per utenti non-admin
+        if not current_user.sede_obj.is_turni_mode():
+            flash('La modifica turni è disponibile solo per sedi di tipo "Turni"', 'warning')
             return redirect(request.referrer or url_for('dashboard'))
     
     try:
