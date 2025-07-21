@@ -134,7 +134,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('internal_messages') }}">
                             <i class="fas fa-envelope me-1"></i>Messaggi
-                            {% set unread_count = current_user.received_messages.filter_by(is_read=False).count() %}
+                            {% set unread_count = current_user.received_messages|selectattr('is_read', 'equalto', False)|list|length %}
                             {% if unread_count > 0 %}
                                 <span class="badge bg-danger ms-1">{{ unread_count }}</span>
                             {% endif %}
