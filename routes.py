@@ -4393,9 +4393,8 @@ def process_generate_turni_from_coverage():
                         date=current_date,
                         start_time=copertura.start_time,
                         end_time=copertura.end_time,
-                        turno_type='Normale',
-                        description=f'Generato da copertura: {copertura.description or "Nessuna descrizione"}',
-                        created_by_id=current_user.id
+                        shift_type='Normale',
+                        created_by=current_user.id
                     )
                     db.session.add(new_shift)
                     turni_creati += 1
@@ -4487,6 +4486,13 @@ def view_generated_shifts():
     dates_with_shifts = len(shifts_by_date)
     period_days = (coverage_end_date - coverage_start_date).days + 1
     
+    # Calcola utenti unici coinvolti
+    unique_users = set()
+    for shift in shifts:
+        if shift.user:
+            unique_users.add(shift.user.id)
+    unique_users_count = len(unique_users)
+    
     return render_template('view_generated_shifts.html',
                          sede=sede,
                          coverage_start_date=coverage_start_date,
@@ -4496,6 +4502,7 @@ def view_generated_shifts():
                          total_shifts=total_shifts,
                          dates_with_shifts=dates_with_shifts,
                          period_days=period_days,
+                         unique_users_count=unique_users_count,
                          today=date.today(),
                          is_admin=(current_user.role == 'Admin'))
 
