@@ -88,9 +88,11 @@
                             <thead>
                                 <tr>
                                     <th>Periodo Copertura</th>
+                                    <th>Sedi</th>
                                     <th>Giorni Attivi</th>
                                     <th>Numero Turni</th>
                                     <th>Stato</th>
+                                    <th>Azioni</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -98,6 +100,19 @@
                                 <tr>
                                     <td>
                                         <strong>{{ group.start_date.strftime('%d/%m/%Y') }} - {{ group.end_date.strftime('%d/%m/%Y') }}</strong>
+                                    </td>
+                                    <td>
+                                        {% set sedi_names = [] %}
+                                        {% for coverage in group.coverages %}
+                                            {% set coverage_sedi = coverage.get_sedi_names().split(', ') if coverage.get_sedi_names() else ['Tutte le sedi'] %}
+                                            {% set _ = sedi_names.extend(coverage_sedi) %}
+                                        {% endfor %}
+                                        {% set unique_sedi = sedi_names|unique|sort %}
+                                        {% if unique_sedi|length > 2 %}
+                                            <span class="badge bg-secondary" title="{{ unique_sedi|join(', ') }}">{{ unique_sedi|length }} sedi</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ unique_sedi|join(', ') }}</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         {% set days = [] %}
@@ -116,6 +131,21 @@
                                         {% else %}
                                             <span class="badge bg-secondary">Scaduta</span>
                                         {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('view_reperibilita_period', period_key=period_key) }}" class="btn btn-outline-primary btn-sm" title="Visualizza dettagli">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.role in ['Admin', 'Management'] %}
+                                            <a href="{{ url_for('generate_reperibilita_shifts') }}?regenerate={{ period_key }}" class="btn btn-outline-warning btn-sm" title="Rigenera turni">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" title="Elimina copertura" onclick="deleteCoverage('{{ period_key }}', '{{ group.start_date.strftime('%d/%m/%Y') }} - {{ group.end_date.strftime('%d/%m/%Y') }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -197,6 +227,7 @@
                             <tr>
                                 <th>Data</th>
                                 <th>Utente</th>
+                                <th>Sede</th>
                                 <th>Orario</th>
                                 <th>Durata</th>
                                 <th>Descrizione</th>
@@ -213,6 +244,13 @@
                                 <td>
                                     {{ shift.user.get_full_name() }}<br>
                                     <small class="text-muted">{{ shift.user.role }}</small>
+                                </td>
+                                <td>
+                                    {% if shift.user.sede %}
+                                        <span class="badge bg-info">{{ shift.user.sede.name }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Nessuna sede</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
@@ -259,7 +297,10 @@
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div class="flex-grow-1">
                                                     <strong>{{ shift.user.get_full_name() }}</strong><br>
-                                                    <small class="text-muted">
+                                                    {% if shift.user.sede %}
+                                                        <small class="badge bg-secondary badge-sm">{{ shift.user.sede.name }}</small>
+                                                    {% endif %}
+                                                    <small class="text-muted d-block">
                                                         {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
                                                     </small>
                                                 </div>
@@ -410,6 +451,27 @@ function showStartInterventionModal(shiftId) {
 function showEndInterventionModal() {
     const modal = new bootstrap.Modal(document.getElementById('endInterventionModal'));
     modal.show();
+}
+
+// Funzione per eliminare copertura reperibilità
+function deleteCoverage(periodKey, periodName) {
+    if (confirm(`Sei sicuro di voler eliminare la copertura del periodo "${periodName}"?\n\nQuesta operazione eliminerà anche tutti i turni generati per questo periodo e non può essere annullata.`)) {
+        window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
+    }
+}
+
+// Funzione per eliminare copertura reperibilità
+function deleteCoverage(periodKey, periodName) {
+    if (confirm('Sei sicuro di voler eliminare la copertura del periodo "' + periodName + '"?\n\nQuesta operazione eliminerà anche tutti i turni generati per questo periodo e non può essere annullata.')) {
+        window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
+    }
+}
+
+// Funzione per eliminare copertura reperibilità
+function deleteCoverage(periodKey, periodName) {
+    if (confirm(`Sei sicuro di voler eliminare la copertura del periodo "${periodName}"?\n\nQuesta operazione eliminerà anche tutti i turni generati per questo periodo e non può essere annullata.`)) {
+        window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
+    }
 }
 </script>
 

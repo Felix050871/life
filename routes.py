@@ -2787,30 +2787,42 @@ def delete_reperibilita_period(period_key):
     if not (current_user.role in ['Admin', 'Management']):
         return redirect(url_for('not_found_error'))
     
-    from models import ReperibilitaCoverage
+    from models import ReperibilitaCoverage, ReperibilitaShift
     
     # Decodifica period_key
     start_date_str, end_date_str = period_key.split('_')
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
     
-    # Trova e elimina tutte le coperture per questo periodo
+    # Trova tutte le coperture per questo periodo
     coverages = ReperibilitaCoverage.query.filter(
         ReperibilitaCoverage.start_date == start_date,
         ReperibilitaCoverage.end_date == end_date
     ).all()
     
+    # Trova anche tutti i turni generati per questo periodo
+    shifts = ReperibilitaShift.query.filter(
+        ReperibilitaShift.date >= start_date,
+        ReperibilitaShift.date <= end_date
+    ).all()
+    
     try:
-        count = len(coverages)
+        coverage_count = len(coverages)
+        shift_count = len(shifts)
+        
+        # Elimina prima i turni, poi le coperture
+        for shift in shifts:
+            db.session.delete(shift)
         for coverage in coverages:
             db.session.delete(coverage)
+            
         db.session.commit()
-        flash(f'Eliminate {count} coperture reperibilità del periodo {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}', 'success')
+        flash(f'Eliminate {coverage_count} coperture reperibilità e {shift_count} turni del periodo {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
     
-    return redirect(url_for('reperibilita_coverage'))
+    return redirect(url_for('reperibilita_shifts'))
 
 
 @app.route('/reperibilita_shifts')
