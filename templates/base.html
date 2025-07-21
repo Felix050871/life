@@ -53,14 +53,14 @@
                     
 
                     
-                    <!-- Menu Reperibilità (escluso Admin e Staff) -->
-                    {% if current_user.role not in ['Admin', 'Staff'] %}
+                    <!-- Menu Reperibilità (tutti tranne Staff) -->
+                    {% if current_user.role != 'Staff' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-phone-alt me-1"></i>Reperibilità
                         </a>
                         <ul class="dropdown-menu">
-                            {% if current_user.can_manage_shifts() %}
+                            {% if current_user.role in ['Admin', 'Management'] %}
                             <li><a class="dropdown-item" href="{{ url_for('reperibilita_coverage') }}">
                                 <i class="fas fa-phone-volume me-1"></i>Copertura Reperibilità
                             </a></li>

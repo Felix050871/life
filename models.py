@@ -93,7 +93,7 @@ class User(UserMixin, db.Model):
         """Permessi legacy per retrocompatibilità"""
         legacy_map = {
             'can_manage_users': self.role == 'Admin',
-            'can_manage_shifts': self.role in ['Admin'],
+            'can_manage_shifts': self.role in ['Admin', 'Management'],
             'can_approve_leave': self.role in ['Management', 'Staff', 'Management'],
             'can_request_leave': self.role in ['Redattore', 'Sviluppatore', 'Operatore', 'Management'],
             'can_access_attendance': self.role not in ['Ente', 'Admin'],
