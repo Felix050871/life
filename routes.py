@@ -4765,6 +4765,45 @@ def regenerate_turni_from_coverage():
         flash(f'Errore durante la rigenerazione turni: {str(e)}', 'danger')
         return redirect(url_for('generate_turnazioni'))
 
+@app.route('/delete_shift/<int:shift_id>', methods=['POST'])
+@login_required
+def delete_shift(shift_id):
+    """Elimina un singolo turno"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per eliminare turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    shift = Shift.query.get_or_404(shift_id)
+    
+    # Verifica che il turno non sia nel passato
+    from datetime import date
+    if shift.date < date.today():
+        flash('Non è possibile eliminare turni passati', 'warning')
+        return redirect(request.referrer or url_for('dashboard'))
+    
+    # Verifica permessi sulla sede (se non admin)
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != shift.user.sede_id:
+            flash('Non hai i permessi per eliminare turni per questa sede', 'danger')
+            return redirect(request.referrer or url_for('dashboard'))
+    
+    try:
+        # Salva info per messaggio di conferma
+        user_name = shift.user.get_full_name()
+        shift_date = shift.date.strftime('%d/%m/%Y')
+        shift_time = f"{shift.start_time.strftime('%H:%M')} - {shift.end_time.strftime('%H:%M')}"
+        
+        db.session.delete(shift)
+        db.session.commit()
+        
+        flash(f'Turno eliminato: {user_name} - {shift_date} ({shift_time})', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante l\'eliminazione del turno: {str(e)}', 'danger')
+    
+    return redirect(request.referrer or url_for('dashboard'))
+
 @app.route('/admin/turni/delete-period', methods=['POST'])
 @login_required
 def delete_turni_period():
