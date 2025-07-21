@@ -4315,13 +4315,12 @@ def process_generate_turni_from_coverage():
     
     sede_id = request.form.get('sede_id', type=int)
     coverage_period_id = request.form.get('coverage_period_id')
-    generate_start_date = request.form.get('generate_start_date')
-    generate_end_date = request.form.get('generate_end_date')
+    use_coverage_dates = 'use_coverage_dates' in request.form
     replace_existing = 'replace_existing' in request.form
     
-    if not all([sede_id, coverage_period_id, generate_start_date, generate_end_date]):
+    if not all([sede_id, coverage_period_id]):
         flash('Dati mancanti per la generazione turni', 'danger')
-        return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
+        return redirect(url_for('generate_turnazioni'))
     
     sede = Sede.query.get_or_404(sede_id)
     
@@ -4332,23 +4331,32 @@ def process_generate_turni_from_coverage():
             return redirect(url_for('generate_turnazioni'))
     
     try:
-        from datetime import datetime
-        start_date = datetime.strptime(generate_start_date, '%Y-%m-%d').date()
-        end_date = datetime.strptime(generate_end_date, '%Y-%m-%d').date()
+        # Decodifica period_id per ottenere le date della copertura
+        start_str, end_str = coverage_period_id.split('-')
+        start_date = datetime.strptime(start_str, '%Y%m%d').date()
+        end_date = datetime.strptime(end_str, '%Y%m%d').date()
         
-        if start_date > end_date:
-            flash('La data di inizio deve essere precedente alla data di fine', 'danger')
-            return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
+        # Ottieni le coperture per questo periodo
+        from models import PresidioCoverage
+        coperture = PresidioCoverage.query.filter(
+            PresidioCoverage.start_date <= end_date,
+            PresidioCoverage.end_date >= start_date,
+            PresidioCoverage.is_active == True
+        ).all()
         
-        # TODO: Implementare la logica di generazione turni
-        # Per ora mostriamo un messaggio di sviluppo
-        flash(f'Funzionalità in sviluppo: Generazione turni per {sede.name} dal {start_date.strftime("%d/%m/%Y")} al {end_date.strftime("%d/%m/%Y")}', 'info')
+        if not coperture:
+            flash('Nessuna copertura trovata per il periodo specificato', 'warning')
+            return redirect(url_for('generate_turnazioni'))
         
-    except ValueError as e:
-        flash('Date non valide fornite', 'danger')
-        return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
+        # TODO: Implementare la logica di generazione turni basata sulle coperture
+        # Per ora mostriamo un messaggio di sviluppo con le coperture trovate
+        flash(f'Funzionalità in sviluppo: Generazione turni per {sede.name} dal {start_date.strftime("%d/%m/%Y")} al {end_date.strftime("%d/%m/%Y")} utilizzando {len(coperture)} coperture', 'info')
+        
+    except (ValueError, AttributeError) as e:
+        flash('ID periodo non valido', 'danger')
+        return redirect(url_for('generate_turnazioni'))
     
-    return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
+    return redirect(url_for('generate_turnazioni'))
 
 @app.route('/api/sede/<int:sede_id>/coperture')
 @login_required
@@ -4403,6 +4411,82 @@ def api_get_sede_coperture(sede_id):
         'total_coperture': len(coperture),
         'active_coperture': len([c for c in coperture if c.is_valid_for_date(date.today())])
     })
+
+@app.route('/admin/turni/visualizza-generati')
+@login_required
+def view_generated_shifts():
+    """Visualizza i turni generati per una specifica copertura"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per visualizzare i turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede_id = request.args.get('sede', type=int)
+    period_id = request.args.get('period')
+    
+    if not all([sede_id, period_id]):
+        flash('Parametri mancanti per la visualizzazione turni', 'danger')
+        return redirect(url_for('generate_turnazioni'))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    
+    # Verifica permessi sulla sede
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
+            flash('Non hai i permessi per visualizzare i turni di questa sede', 'danger')
+            return redirect(url_for('generate_turnazioni'))
+    
+    # Decodifica period_id per ottenere le date
+    try:
+        start_str, end_str = period_id.split('-')
+        coverage_start_date = datetime.strptime(start_str, '%Y%m%d').date()
+        coverage_end_date = datetime.strptime(end_str, '%Y%m%d').date()
+    except (ValueError, AttributeError):
+        flash('Periodo non valido specificato', 'danger')
+        return redirect(url_for('generate_turnazioni'))
+    
+    # Ottieni i turni generati nel periodo delle coperture
+    shifts = Shift.query.filter(
+        Shift.user.has(sede=sede_id),
+        Shift.date >= coverage_start_date,
+        Shift.date <= coverage_end_date
+    ).order_by(Shift.date, Shift.start_time).all()
+    
+    # Raggruppa turni per data
+    shifts_by_date = {}
+    for shift in shifts:
+        date_str = shift.date.strftime('%Y-%m-%d')
+        if date_str not in shifts_by_date:
+            shifts_by_date[date_str] = {
+                'date': shift.date,
+                'date_display': shift.date.strftime('%d/%m/%Y'),
+                'day_name': ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'][shift.date.weekday()],
+                'shifts': []
+            }
+        shifts_by_date[date_str]['shifts'].append(shift)
+    
+    # Ottieni le coperture di riferimento per il confronto
+    from models import PresidioCoverage
+    reference_coverages = PresidioCoverage.query.filter(
+        PresidioCoverage.start_date <= coverage_end_date,
+        PresidioCoverage.end_date >= coverage_start_date,
+        PresidioCoverage.is_active == True
+    ).all()
+    
+    total_shifts = len(shifts)
+    dates_with_shifts = len(shifts_by_date)
+    period_days = (coverage_end_date - coverage_start_date).days + 1
+    
+    return render_template('view_generated_shifts.html',
+                         sede=sede,
+                         coverage_start_date=coverage_start_date,
+                         coverage_end_date=coverage_end_date,
+                         shifts_by_date=shifts_by_date,
+                         reference_coverages=reference_coverages,
+                         total_shifts=total_shifts,
+                         dates_with_shifts=dates_with_shifts,
+                         period_days=period_days,
+                         today=date.today(),
+                         is_admin=(current_user.role == 'Admin'))
 
 @app.route('/admin/turnazioni')
 @login_required
