@@ -67,7 +67,7 @@
                                     <th>Indirizzo</th>
                                     <th>Descrizione</th>
                                     <th>Utenti</th>
-                                    <th>Orari</th>
+                                    <th>Orari/Turni</th>
                                     <th>Stato</th>
                                     <th>Creata</th>
                                     <th>Azioni</th>
@@ -95,7 +95,16 @@
                                         <span class="badge bg-info">{{ sede.users|length }} utenti</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">{{ sede.work_schedules|list|length }} orari</span>
+                                        {% set stats = sedi_stats.get(sede.id, {}) %}
+                                        {% if sede.tipologia == 'Turni' %}
+                                            <div class="d-flex flex-column gap-1">
+                                                <span class="badge bg-primary">{{ stats.get('turni_count', 0) }} turni</span>
+                                                <span class="badge bg-info">{{ stats.get('reperibilita_turni_count', 0) }} reperibilità</span>
+                                                <span class="badge bg-secondary">{{ stats.get('orari_count', 0) }} orari</span>
+                                            </div>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ stats.get('orari_count', 0) }} orari</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if sede.active %}

@@ -4150,8 +4150,37 @@ def manage_sedi():
         return redirect(url_for('dashboard'))
     
     sedi = Sede.query.order_by(Sede.created_at.desc()).all()
+    
+    # Calcola statistiche aggiuntive per ogni sede
+    sedi_stats = {}
+    for sede in sedi:
+        stats = {
+            'orari_count': sede.work_schedules.filter_by(active=True).count(),
+            'turni_count': 0,
+            'reperibilita_turni_count': 0
+        }
+        
+        # Conta turni regolari per utenti di questa sede
+        if sede.is_turni_mode():
+            from models import Shift
+            turni_count = db.session.query(Shift).join(User).filter(
+                User.sede_id == sede.id,
+                User.active == True
+            ).count()
+            stats['turni_count'] = turni_count
+            
+            # Conta turni reperibilità per utenti di questa sede
+            from models import ReperibilitaShift
+            reperibilita_count = db.session.query(ReperibilitaShift).join(User).filter(
+                User.sede_id == sede.id,
+                User.active == True
+            ).count()
+            stats['reperibilita_turni_count'] = reperibilita_count
+        
+        sedi_stats[sede.id] = stats
+    
     form = SedeForm()
-    return render_template('manage_sedi.html', sedi=sedi, form=form)
+    return render_template('manage_sedi.html', sedi=sedi, sedi_stats=sedi_stats, form=form)
 
 @app.route('/admin/sedi/create', methods=['POST'])
 @login_required
