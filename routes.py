@@ -1231,23 +1231,48 @@ def shifts():
         sedi_turni_accessible = current_user.get_turni_sedi()
         sede_supports_turni = len(sedi_turni_accessible) > 0
         
+        # Carica anche i turni esistenti per i manager
+        accessible_sedi = current_user.get_turni_sedi()
+        if accessible_sedi:
+            shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
+                User.sede_id.in_([sede.id for sede in accessible_sedi])
+            ).order_by(Shift.date.desc(), Shift.start_time).all()
+        else:
+            shifts = []
+        
+        # Calcola statistiche
+        total_hours = sum(shift.get_duration_hours() for shift in shifts)
+        future_shifts = len([s for s in shifts if s.date >= date.today()])
+        unique_users = len(set(shift.user_id for shift in shifts))
+        
+        # Helper per giorni della settimana in italiano
+        def get_italian_weekday(date_obj):
+            giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+            return giorni[date_obj.weekday()]
+        
         return render_template('shifts.html', 
                              shift_form=shift_form,
                              template_form=template_form,
                              shift_templates=shift_templates,
                              can_manage=True,
                              selected_template=None,
-                             shifts=None,
+                             shifts=shifts,
+                             today=date.today(),
+                             total_hours=round(total_hours, 1),
+                             future_shifts=future_shifts,
+                             unique_users=unique_users,
+                             view_mode='all',
                              user_sede=user_sede,
-                             sede_supports_turni=sede_supports_turni)
+                             sede_supports_turni=sede_supports_turni,
+                             get_italian_weekday=get_italian_weekday)
     else:
-        # Parametri di visualizzazione per utenti normali
-        if current_user.role in ['Admin', 'Management']:
+        # Parametri di visualizzazione per utenti con solo permesso view
+        if current_user.can_view_shifts() and current_user.all_sedi:
+            # Utenti multi-sede con permesso view vedono tutti i turni
             view_mode = request.args.get('view', 'all')
-        elif current_user.role == 'Ente':
-            view_mode = 'all'  # Ente vede sempre tutti
         else:
-            view_mode = 'personal'  # Utenti normali vedono solo i propri
+            # Altri utenti vedono solo i propri turni
+            view_mode = 'personal'
         
         if view_mode == 'personal':
             # Show only personal shifts
@@ -1294,7 +1319,20 @@ def shifts():
                                  sede_supports_turni=sede_supports_turni,
                                  get_italian_weekday=get_italian_weekday)
         else:
-            # Show all templates in read-only mode (solo per Ente)
+            # Show all shifts for multi-sede users
+            accessible_sedi = current_user.get_turni_sedi()
+            if accessible_sedi:
+                shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
+                    User.sede_id.in_([sede.id for sede in accessible_sedi])
+                ).order_by(Shift.date.desc(), Shift.start_time).all()
+            else:
+                shifts = []
+            
+            # Calcola statistiche per tutti i turni
+            total_hours = sum(shift.get_duration_hours() for shift in shifts)
+            future_shifts = len([s for s in shifts if s.date >= date.today()])
+            unique_users = len(set(shift.user_id for shift in shifts))
+            
             shift_templates = ShiftTemplate.query.order_by(ShiftTemplate.created_at.desc()).all()
             
             # Helper per giorni della settimana in italiano
@@ -1312,7 +1350,10 @@ def shifts():
                                  can_manage=False,
                                  view_mode=view_mode,
                                  selected_template=None,
-                                 shifts=None,
+                                 shifts=shifts,
+                                 total_hours=round(total_hours, 1),
+                                 future_shifts=future_shifts,
+                                 unique_users=unique_users,
                                  user_sede=user_sede,
                                  sede_supports_turni=sede_supports_turni,
                                  get_italian_weekday=get_italian_weekday)
