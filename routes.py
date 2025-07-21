@@ -4463,7 +4463,7 @@ def process_generate_turni_from_coverage():
             return redirect(url_for('generate_turnazioni'))
         
         # Controlla se esistono già turni nel periodo prima di procedere
-        existing_shifts = Shift.query.join(User).filter(
+        existing_shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
             User.sede_id == sede_id,
             Shift.date >= start_date,
             Shift.date <= end_date
