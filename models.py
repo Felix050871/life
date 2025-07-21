@@ -49,6 +49,9 @@ class UserRole(db.Model):
         return {
             'can_manage_users': 'Gestire Utenti',
             'can_manage_shifts': 'Gestire Turni',
+            'can_view_shifts': 'Visualizzare Turni',
+            'can_manage_reperibilita': 'Gestire Reperibilità',
+            'can_view_reperibilita': 'Visualizzare Reperibilità',
             'can_approve_leave': 'Approvare Ferie/Permessi',
             'can_request_leave': 'Richiedere Ferie/Permessi',
             'can_access_attendance': 'Accedere alle Presenze',
@@ -96,6 +99,9 @@ class User(UserMixin, db.Model):
         legacy_map = {
             'can_manage_users': self.role == 'Admin',
             'can_manage_shifts': self.role in ['Admin', 'Management'],
+            'can_view_shifts': self.role in ['Admin', 'Management', 'Staff', 'Operatore', 'Sviluppatore', 'Redattore'],
+            'can_manage_reperibilita': self.role in ['Admin', 'Management'],
+            'can_view_reperibilita': self.role in ['Admin', 'Management', 'Staff', 'Operatore', 'Sviluppatore', 'Redattore'],
             'can_approve_leave': self.role in ['Management', 'Staff', 'Management'],
             'can_request_leave': self.role in ['Redattore', 'Sviluppatore', 'Operatore', 'Management'],
             'can_access_attendance': self.role not in ['Ente', 'Admin'],
@@ -126,14 +132,37 @@ class User(UserMixin, db.Model):
     def can_view_reports(self):
         return self.has_permission('can_view_reports')
     
+    def can_view_shifts(self):
+        return self.has_permission('can_view_shifts')
+    
+    def can_manage_reperibilita(self):
+        return self.has_permission('can_manage_reperibilita')
+    
+    def can_view_reperibilita(self):
+        return self.has_permission('can_view_reperibilita')
+    
     def can_access_turni(self):
         """Verifica se l'utente può accedere alla gestione turni"""
-        # Admin può gestire turni per tutte le sedi "Turni"
+        # Verifica i permessi di gestione o visualizzazione turni
+        if self.has_permission('can_manage_shifts') or self.has_permission('can_view_shifts'):
+            return True
+        # Admin può gestire turni per tutte le sedi "Turni" (legacy)
         if self.role == 'Admin':
             return True
-        # Tutti i ruoli operativi possono accedere ai turni se la sede è di tipo "Turni"
+        # Tutti i ruoli operativi possono accedere ai turni se la sede è di tipo "Turni" (legacy)
         if self.role in ['Management', 'Operatore', 'Sviluppatore', 'Redattore'] and self.sede_obj and self.sede_obj.is_turni_mode():
             return True
+        return False
+    
+    def can_access_reperibilita(self):
+        """Verifica se l'utente può accedere alla gestione reperibilità"""
+        # Verifica i permessi di gestione o visualizzazione reperibilità
+        if self.has_permission('can_manage_reperibilita') or self.has_permission('can_view_reperibilita'):
+            return True
+        # Legacy: Admin e Management possono sempre accedere
+        if self.role in ['Admin', 'Management', 'Staff']:
+            return True
+        # Altri ruoli operativi solo se hanno il permesso specifico
         return False
     
     def get_sede_name(self):

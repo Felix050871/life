@@ -54,14 +54,14 @@
                     
 
                     
-                    <!-- Menu Reperibilità (tutti tranne Staff) -->
-                    {% if current_user.role != 'Staff' %}
+                    <!-- Menu Reperibilità (basato su permessi) -->
+                    {% if current_user.can_access_reperibilita() %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-phone-alt me-1"></i>Reperibilità
                         </a>
                         <ul class="dropdown-menu">
-                            {% if current_user.role in ['Admin', 'Management'] %}
+                            {% if current_user.can_manage_reperibilita() %}
                             <li><a class="dropdown-item" href="{{ url_for('reperibilita_coverage') }}">
                                 <i class="fas fa-phone-volume me-1"></i>Copertura Reperibilità
                             </a></li>
@@ -106,19 +106,26 @@
                     </li>
                     {% endif %}
                     
-                    <!-- Menu Turni (per Admin e Management di sedi Turni) -->
+                    <!-- Menu Turni (basato su permessi) -->
                     {% if current_user.can_access_turni() %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-calendar-alt me-1"></i>Turni
                         </a>
                         <ul class="dropdown-menu">
+                            {% if current_user.can_manage_shifts() %}
                             <li><a class="dropdown-item" href="{{ url_for('manage_turni') }}">
                                 <i class="fas fa-calendar-alt me-1"></i>Gestione Turni
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('generate_turnazioni') }}">
                                 <i class="fas fa-magic me-1"></i>Genera Turnazioni
                             </a></li>
+                            {% endif %}
+                            {% if current_user.can_view_shifts() %}
+                            <li><a class="dropdown-item" href="{{ url_for('shifts') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizza Turni
+                            </a></li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}

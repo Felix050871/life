@@ -2533,9 +2533,10 @@ def internal_error(error):
 @app.route('/reperibilita_coverage')
 @require_login
 def reperibilita_coverage():
-    """Lista coperture reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Lista coperture reperibilità"""
+    if not current_user.can_access_reperibilita():
+        flash('Non hai i permessi per visualizzare le coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from models import ReperibilitaCoverage
     from collections import defaultdict
@@ -2575,9 +2576,10 @@ def reperibilita_coverage():
 @app.route('/reperibilita_coverage/create', methods=['GET', 'POST'])
 @require_login
 def create_reperibilita_coverage():
-    """Crea nuova copertura reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Crea nuova copertura reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per creare coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from forms import ReperibilitaCoverageForm
     from models import ReperibilitaCoverage
@@ -2619,9 +2621,10 @@ def create_reperibilita_coverage():
 @app.route('/reperibilita_coverage/edit/<int:coverage_id>', methods=['GET', 'POST'])
 @require_login
 def edit_reperibilita_coverage(coverage_id):
-    """Modifica copertura reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Modifica copertura reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per modificare coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from forms import ReperibilitaCoverageForm
     from models import ReperibilitaCoverage
@@ -2664,9 +2667,10 @@ def edit_reperibilita_coverage(coverage_id):
 @app.route('/reperibilita_coverage/delete/<int:coverage_id>', methods=['GET'])
 @require_login
 def delete_reperibilita_coverage(coverage_id):
-    """Elimina copertura reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Elimina copertura reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per eliminare coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from models import ReperibilitaCoverage
     
@@ -2686,9 +2690,10 @@ def delete_reperibilita_coverage(coverage_id):
 @app.route('/reperibilita_coverage/view/<period_key>')
 @require_login
 def view_reperibilita_coverage(period_key):
-    """Visualizza dettagli coperture reperibilità per un periodo (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Visualizza dettagli coperture reperibilità per un periodo"""
+    if not current_user.can_access_reperibilita():
+        flash('Non hai i permessi per visualizzare coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from models import ReperibilitaCoverage
     
@@ -2717,9 +2722,10 @@ def view_reperibilita_coverage(period_key):
 @app.route('/reperibilita_coverage/delete_period/<period_key>')
 @require_login  
 def delete_reperibilita_period(period_key):
-    """Elimina tutte le coperture reperibilità di un periodo (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Elimina tutte le coperture reperibilità di un periodo"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per eliminare periodi reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from models import ReperibilitaCoverage, ReperibilitaShift
     
@@ -2930,8 +2936,8 @@ def reperibilita_template_detail(start_date, end_date):
 @app.route('/reperibilita_replica/<period_key>', methods=['GET', 'POST'])
 @require_login
 def reperibilita_replica(period_key):
-    """Replica template reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
+    """Replica template reperibilità"""
+    if not current_user.can_manage_reperibilita():
         flash('Non hai i permessi per replicare i template di reperibilità', 'danger')
         return redirect(url_for('dashboard'))
     
