@@ -1082,6 +1082,7 @@ class Sede(db.Model):
     name = db.Column(db.String(100), nullable=False, unique=True)
     address = db.Column(db.String(200), nullable=True)
     description = db.Column(db.Text, nullable=True)
+    tipologia = db.Column(db.String(20), nullable=False, default='Oraria')  # 'Oraria' o 'Turni'
     active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     
@@ -1094,6 +1095,14 @@ class Sede(db.Model):
     def get_active_schedules(self):
         """Restituisce gli orari di lavoro attivi per questa sede"""
         return self.work_schedules.filter_by(active=True).all()
+    
+    def is_turni_mode(self):
+        """Restituisce True se la sede opera con modalità turni"""
+        return self.tipologia == 'Turni'
+    
+    def is_oraria_mode(self):
+        """Restituisce True se la sede opera con modalità oraria"""
+        return self.tipologia == 'Oraria'
 
 
 class WorkSchedule(db.Model):

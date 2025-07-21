@@ -4167,6 +4167,7 @@ def create_sede():
             name=form.name.data,
             address=form.address.data,
             description=form.description.data,
+            tipologia=form.tipologia.data,
             active=form.is_active.data
         )
         db.session.add(sede)
@@ -4194,6 +4195,7 @@ def edit_sede(sede_id):
         sede.name = form.name.data
         sede.address = form.address.data
         sede.description = form.description.data
+        sede.tipologia = form.tipologia.data
         sede.active = form.is_active.data
         
         db.session.commit()

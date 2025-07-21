@@ -507,6 +507,10 @@ class SedeForm(FlaskForm):
     name = StringField('Nome Sede', validators=[DataRequired(), Length(max=100)])
     address = StringField('Indirizzo', validators=[Length(max=200)])
     description = TextAreaField('Descrizione', validators=[Length(max=500)])
+    tipologia = SelectField('Tipologia Sede', choices=[
+        ('Oraria', 'Oraria - Gestione basata su orari'),
+        ('Turni', 'Turni - Gestione basata su turnazioni')
+    ], default='Oraria', validators=[DataRequired()])
     is_active = BooleanField('Attiva', default=True)
     submit = SubmitField('Salva Sede')
     
