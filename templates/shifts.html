@@ -107,7 +107,7 @@
 
 {% if can_manage and current_user.role != 'Ente' %}
 <!-- Quick Actions -->
-{% if sede_supports_turni %}
+{% if has_turni_access %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="d-flex gap-2 flex-wrap">
@@ -137,7 +137,7 @@
 {% endif %}
 
 <!-- Staff Controls -->
-{% if sede_supports_turni and can_manage %}
+{% if has_turni_access and can_manage %}
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card">
@@ -233,7 +233,7 @@
 {% endif %}
 
 <!-- Template Staff -->
-{% if can_manage and sede_supports_turni %}
+{% if can_manage and has_turni_access %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
