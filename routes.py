@@ -4410,11 +4410,15 @@ def view_turni_coverage():
     
     sede = Sede.query.get_or_404(sede_id)
     
-    # Verifica permessi sulla sede
-    if current_user.role != 'Admin':
-        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
-            flash('Non hai i permessi per accedere a questa sede', 'danger')
-            return redirect(url_for('manage_turni'))
+    # Verifica permessi sulla sede - supporta utenti multi-sede
+    if not current_user.can_manage_shifts() and not current_user.can_view_shifts():
+        flash('Non hai i permessi per visualizzare le coperture', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Per utenti non-admin, verifica accesso alla sede specifica
+    if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
+        flash('Non hai accesso a questa sede specifica', 'danger')
+        return redirect(url_for('manage_turni'))
     
     if not sede.is_turni_mode():
         flash('La sede selezionata non è configurata per la modalità turni', 'warning')
@@ -4473,11 +4477,15 @@ def generate_turni_from_coverage():
     
     sede = Sede.query.get_or_404(sede_id)
     
-    # Verifica permessi sulla sede
-    if current_user.role != 'Admin':
-        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
-            flash('Non hai i permessi per accedere a questa sede', 'danger')
-            return redirect(url_for('generate_turnazioni'))
+    # Verifica permessi sulla sede - supporta utenti multi-sede  
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per generare turni', 'danger')
+        return redirect(url_for('dashboard'))
+        
+    # Per utenti non-admin, verifica accesso alla sede specifica
+    if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
+        flash('Non hai accesso a questa sede specifica', 'danger')
+        return redirect(url_for('generate_turnazioni'))
     
     if not sede.is_turni_mode():
         flash('La sede selezionata non è configurata per la modalità turni', 'warning')
@@ -5524,10 +5532,12 @@ def manage_coverage():
         flash("Non hai i permessi per accedere a questa sezione", "danger")
         return redirect(url_for("dashboard"))
     
+    # Import necessari
+    from models import Sede, PresidioCoverage
+    
     # Ottieni le sedi accessibili per utente
     if current_user.all_sedi:
         # Utenti multi-sede vedono tutte le sedi turni
-        from models import Sede
         accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
     elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
         # Utenti sede-specifici vedono solo la loro sede se supporta turni
@@ -5556,9 +5566,11 @@ def view_turni_by_coverage():
         flash("Non hai i permessi per visualizzare i turni", "danger")
         return redirect(url_for("dashboard"))
     
+    # Import necessari
+    from models import Sede, PresidioCoverage, Shift
+    
     # Ottieni le sedi accessibili per utente
     if current_user.all_sedi:
-        from models import Sede
         accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
     elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
         accessible_sedi = [current_user.sede_obj]
@@ -5593,5 +5605,6 @@ def view_turni_by_coverage():
                          available_coverages=available_coverages,
                          selected_coverage=selected_coverage,
                          turni_for_coverage=turni_for_coverage,
-                         accessible_sedi=accessible_sedi)
+                         accessible_sedi=accessible_sedi,
+                         date=date)
 

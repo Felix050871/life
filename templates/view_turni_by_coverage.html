@@ -93,7 +93,8 @@
                 <div class="row mb-4">
                     {% set total_hours = turni_for_coverage | sum(attribute='get_duration_hours') %}
                     {% set unique_users = turni_for_coverage | map(attribute='user_id') | list | unique | list | length %}
-                    {% set future_shifts = turni_for_coverage | selectattr('date', '>=', date.today()) | list | length %}
+                    {% set today = date.today() %}
+                    {% set future_shifts = turni_for_coverage | selectattr('date', '>=', today) | list | length %}
                     
                     <div class="col-md-3">
                         <div class="card bg-info text-white">
@@ -144,12 +145,12 @@
                         </thead>
                         <tbody>
                             {% for turno in turni_for_coverage %}
-                            <tr {% if turno.date < date.today() %}class="table-secondary"{% elif turno.date == date.today() %}class="table-warning"{% endif %}>
+                            <tr {% if turno.date < today %}class="table-secondary"{% elif turno.date == today %}class="table-warning"{% endif %}>
                                 <td>
                                     <strong>{{ turno.date.strftime('%d/%m/%Y') }}</strong>
-                                    {% if turno.date == date.today() %}
+                                    {% if turno.date == today %}
                                     <span class="badge bg-warning text-dark ms-1">Oggi</span>
-                                    {% elif turno.date < date.today() %}
+                                    {% elif turno.date < today %}
                                     <span class="badge bg-secondary ms-1">Passato</span>
                                     {% endif %}
                                 </td>
