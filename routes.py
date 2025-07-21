@@ -4240,6 +4240,31 @@ def get_sede_users(sede_id):
     
     return jsonify(users_data)
 
+@app.route('/api/roles', methods=['GET'])
+@login_required
+def get_available_roles():
+    """Restituisce tutti i ruoli distinti presenti nel database"""
+    try:
+        # Query per ottenere tutti i ruoli distinti dalla tabella users
+        roles_query = db.session.query(User.role).distinct().filter(
+            User.active == True,
+            User.role.isnot(None),
+            User.role != ''
+        ).all()
+        
+        # Estrai i ruoli dalla query
+        roles = [role[0] for role in roles_query if role[0]]
+        
+        # Ordina alfabeticamente
+        roles.sort()
+        
+        return jsonify(roles)
+        
+    except Exception as e:
+        # In caso di errore, restituisci ruoli di fallback
+        fallback_roles = ['Management', 'Redattore', 'Sviluppatore', 'Operatore', 'Ente']
+        return jsonify(fallback_roles)
+
 @app.route('/admin/turni/coverage/create', methods=['POST'])
 @login_required
 def create_shift_coverage():
@@ -4252,14 +4277,29 @@ def create_shift_coverage():
         sede_id = request.form.get('sede_id', type=int)
         start_date_str = request.form.get('start_date')
         end_date_str = request.form.get('end_date')
-        start_time_str = request.form.get('start_time')
-        end_time_str = request.form.get('end_time')
         days_of_week = request.form.getlist('days_of_week')
         required_roles = request.form.getlist('required_roles')
         description = request.form.get('description', '')
         
+        # Raccogli orari per ogni giorno selezionato
+        day_schedules = {}
+        for day in days_of_week:
+            day_int = int(day)
+            start_time_str = request.form.get(f'start_time_{day}')
+            end_time_str = request.form.get(f'end_time_{day}')
+            break_start_str = request.form.get(f'break_start_{day}')
+            break_end_str = request.form.get(f'break_end_{day}')
+            
+            if start_time_str and end_time_str:
+                day_schedules[day_int] = {
+                    'start_time': start_time_str,
+                    'end_time': end_time_str,
+                    'break_start': break_start_str if break_start_str else None,
+                    'break_end': break_end_str if break_end_str else None
+                }
+        
         # Validazioni
-        if not all([sede_id, start_date_str, end_date_str, start_time_str, end_time_str]):
+        if not all([sede_id, start_date_str, end_date_str]):
             flash('Tutti i campi obbligatori devono essere compilati', 'danger')
             return redirect(url_for('manage_turni'))
         
@@ -4269,6 +4309,10 @@ def create_shift_coverage():
             
         if not required_roles:
             flash('Seleziona almeno un ruolo richiesto', 'danger')
+            return redirect(url_for('manage_turni'))
+            
+        if not day_schedules:
+            flash('Configura almeno un orario per i giorni selezionati', 'danger')
             return redirect(url_for('manage_turni'))
         
         # Verifica permessi sede
@@ -4282,28 +4326,49 @@ def create_shift_coverage():
             flash('La sede selezionata non è configurata per la modalità turni', 'danger')
             return redirect(url_for('manage_turni'))
         
-        # Conversione date e orari
+        # Conversione date
         from datetime import datetime
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        start_time = datetime.strptime(start_time_str, '%H:%M').time()
-        end_time = datetime.strptime(end_time_str, '%H:%M').time()
         
-        # Validazioni date e orari
+        # Validazioni date
         if start_date > end_date:
             flash('La data di inizio deve essere precedente alla data di fine', 'danger')
-            return redirect(url_for('manage_turni'))
-            
-        if start_time >= end_time:
-            flash('L\'orario di inizio deve essere precedente all\'orario di fine', 'danger')
             return redirect(url_for('manage_turni'))
         
         # Crea coperture separate per ogni giorno della settimana selezionato
         coperture_create = 0
-        for day in days_of_week:
-            day_int = int(day)
+        for day_int, schedule in day_schedules.items():
+            # Conversione orari per questo giorno
+            start_time = datetime.strptime(schedule['start_time'], '%H:%M').time()
+            end_time = datetime.strptime(schedule['end_time'], '%H:%M').time()
             
-            # Verifica sovrapposizioni esistenti per questo giorno e orario (uso PresidioCoverage)
+            # Validazione orari
+            if start_time >= end_time:
+                day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica', 'Festivi']
+                day_name = day_names[day_int] if day_int < len(day_names) else str(day_int)
+                flash(f'Orario non valido per {day_name}: l\'ora di inizio deve essere precedente all\'ora di fine', 'danger')
+                continue
+            
+            # Validazione pausa (se presente)
+            if schedule['break_start'] and schedule['break_end']:
+                break_start = datetime.strptime(schedule['break_start'], '%H:%M').time()
+                break_end = datetime.strptime(schedule['break_end'], '%H:%M').time()
+                
+                if break_start >= break_end:
+                    day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica', 'Festivi']
+                    day_name = day_names[day_int] if day_int < len(day_names) else str(day_int)
+                    flash(f'Orario pausa non valido per {day_name}', 'warning')
+                    continue
+                
+                # La pausa deve essere dentro il turno
+                if not (start_time <= break_start < break_end <= end_time):
+                    day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica', 'Festivi']
+                    day_name = day_names[day_int] if day_int < len(day_names) else str(day_int)
+                    flash(f'La pausa per {day_name} deve essere compresa nell\'orario di copertura', 'warning')
+                    continue
+            
+            # Verifica sovrapposizioni esistenti per questo giorno e orario
             from models import PresidioCoverage
             existing = PresidioCoverage.query.filter(
                 PresidioCoverage.day_of_week == day_int,
@@ -4321,6 +4386,11 @@ def create_shift_coverage():
                 flash(f'Sovrapposizione esistente per {day_name} negli orari {start_time.strftime("%H:%M")} - {end_time.strftime("%H:%M")}', 'warning')
                 continue
             
+            # Crea descrizione estesa con pausa se presente
+            extended_description = description
+            if schedule['break_start'] and schedule['break_end']:
+                extended_description += f" (Pausa: {schedule['break_start']}-{schedule['break_end']})"
+            
             # Crea la copertura per questo giorno usando PresidioCoverage
             coverage = PresidioCoverage(
                 day_of_week=day_int,
@@ -4328,7 +4398,7 @@ def create_shift_coverage():
                 end_time=end_time,
                 start_date=start_date,
                 end_date=end_date,
-                description=description,
+                description=extended_description,
                 created_by=current_user.id
             )
             

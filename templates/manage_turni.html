@@ -153,72 +153,251 @@
                         </div>
                     </div>
                     
-                    <!-- Giorni della settimana -->
+                    <!-- Configurazione per giorni settimana -->
                     <div class="row mb-3">
                         <div class="col-md-12">
-                            <label class="form-label">Giorni della Settimana *</label>
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="day_0" name="days_of_week" value="0">
-                                        <label class="form-check-label" for="day_0">Lunedì</label>
+                            <label class="form-label">Configurazione Giorni della Settimana *</label>
+                            <div id="days-config">
+                                <!-- Lunedì -->
+                                <div class="card mb-2 day-config" data-day="0">
+                                    <div class="card-header py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input day-checkbox" type="checkbox" id="day_0" name="days_of_week" value="0">
+                                            <label class="form-check-label fw-bold" for="day_0">Lunedì</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body day-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Inizio</label>
+                                                <input type="time" class="form-control" name="start_time_0" id="start_time_0">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fine</label>
+                                                <input type="time" class="form-control" name="end_time_0" id="end_time_0">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Inizio</label>
+                                                <input type="time" class="form-control" name="break_start_0" id="break_start_0">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Fine</label>
+                                                <input type="time" class="form-control" name="break_end_0" id="break_end_0">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="day_1" name="days_of_week" value="1">
-                                        <label class="form-check-label" for="day_1">Martedì</label>
+                                
+                                <!-- Martedì -->
+                                <div class="card mb-2 day-config" data-day="1">
+                                    <div class="card-header py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input day-checkbox" type="checkbox" id="day_1" name="days_of_week" value="1">
+                                            <label class="form-check-label fw-bold" for="day_1">Martedì</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body day-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Inizio</label>
+                                                <input type="time" class="form-control" name="start_time_1" id="start_time_1">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fine</label>
+                                                <input type="time" class="form-control" name="end_time_1" id="end_time_1">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Inizio</label>
+                                                <input type="time" class="form-control" name="break_start_1" id="break_start_1">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Fine</label>
+                                                <input type="time" class="form-control" name="break_end_1" id="break_end_1">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="day_2" name="days_of_week" value="2">
-                                        <label class="form-check-label" for="day_2">Mercoledì</label>
+                                
+                                <!-- Mercoledì -->
+                                <div class="card mb-2 day-config" data-day="2">
+                                    <div class="card-header py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input day-checkbox" type="checkbox" id="day_2" name="days_of_week" value="2">
+                                            <label class="form-check-label fw-bold" for="day_2">Mercoledì</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body day-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Inizio</label>
+                                                <input type="time" class="form-control" name="start_time_2" id="start_time_2">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fine</label>
+                                                <input type="time" class="form-control" name="end_time_2" id="end_time_2">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Inizio</label>
+                                                <input type="time" class="form-control" name="break_start_2" id="break_start_2">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Fine</label>
+                                                <input type="time" class="form-control" name="break_end_2" id="break_end_2">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="day_3" name="days_of_week" value="3">
-                                        <label class="form-check-label" for="day_3">Giovedì</label>
+                                
+                                <!-- Giovedì -->
+                                <div class="card mb-2 day-config" data-day="3">
+                                    <div class="card-header py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input day-checkbox" type="checkbox" id="day_3" name="days_of_week" value="3">
+                                            <label class="form-check-label fw-bold" for="day_3">Giovedì</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body day-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Inizio</label>
+                                                <input type="time" class="form-control" name="start_time_3" id="start_time_3">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fine</label>
+                                                <input type="time" class="form-control" name="end_time_3" id="end_time_3">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Inizio</label>
+                                                <input type="time" class="form-control" name="break_start_3" id="break_start_3">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Fine</label>
+                                                <input type="time" class="form-control" name="break_end_3" id="break_end_3">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="day_4" name="days_of_week" value="4">
-                                        <label class="form-check-label" for="day_4">Venerdì</label>
+                                
+                                <!-- Venerdì -->
+                                <div class="card mb-2 day-config" data-day="4">
+                                    <div class="card-header py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input day-checkbox" type="checkbox" id="day_4" name="days_of_week" value="4">
+                                            <label class="form-check-label fw-bold" for="day_4">Venerdì</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body day-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Inizio</label>
+                                                <input type="time" class="form-control" name="start_time_4" id="start_time_4">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fine</label>
+                                                <input type="time" class="form-control" name="end_time_4" id="end_time_4">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Inizio</label>
+                                                <input type="time" class="form-control" name="break_start_4" id="break_start_4">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Fine</label>
+                                                <input type="time" class="form-control" name="break_end_4" id="break_end_4">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="day_5" name="days_of_week" value="5">
-                                        <label class="form-check-label" for="day_5">Sabato</label>
+                                
+                                <!-- Sabato -->
+                                <div class="card mb-2 day-config" data-day="5">
+                                    <div class="card-header py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input day-checkbox" type="checkbox" id="day_5" name="days_of_week" value="5">
+                                            <label class="form-check-label fw-bold" for="day_5">Sabato</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body day-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Inizio</label>
+                                                <input type="time" class="form-control" name="start_time_5" id="start_time_5">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fine</label>
+                                                <input type="time" class="form-control" name="end_time_5" id="end_time_5">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Inizio</label>
+                                                <input type="time" class="form-control" name="break_start_5" id="break_start_5">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Fine</label>
+                                                <input type="time" class="form-control" name="break_end_5" id="break_end_5">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="day_6" name="days_of_week" value="6">
-                                        <label class="form-check-label" for="day_6">Domenica</label>
+                                
+                                <!-- Domenica -->
+                                <div class="card mb-2 day-config" data-day="6">
+                                    <div class="card-header py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input day-checkbox" type="checkbox" id="day_6" name="days_of_week" value="6">
+                                            <label class="form-check-label fw-bold" for="day_6">Domenica</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body day-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Inizio</label>
+                                                <input type="time" class="form-control" name="start_time_6" id="start_time_6">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fine</label>
+                                                <input type="time" class="form-control" name="end_time_6" id="end_time_6">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Inizio</label>
+                                                <input type="time" class="form-control" name="break_start_6" id="break_start_6">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Fine</label>
+                                                <input type="time" class="form-control" name="break_end_6" id="break_end_6">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="day_7" name="days_of_week" value="7">
-                                        <label class="form-check-label" for="day_7">Festivi</label>
+                                
+                                <!-- Festivi -->
+                                <div class="card mb-2 day-config" data-day="7">
+                                    <div class="card-header py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input day-checkbox" type="checkbox" id="day_7" name="days_of_week" value="7">
+                                            <label class="form-check-label fw-bold" for="day_7">Festivi</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body day-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Inizio</label>
+                                                <input type="time" class="form-control" name="start_time_7" id="start_time_7">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Fine</label>
+                                                <input type="time" class="form-control" name="end_time_7" id="end_time_7">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Inizio</label>
+                                                <input type="time" class="form-control" name="break_start_7" id="break_start_7">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Pausa Fine</label>
+                                                <input type="time" class="form-control" name="break_end_7" id="break_end_7">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Orari copertura -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label" for="start_time">Ora Inizio *</label>
-                            <input type="time" class="form-control" id="start_time" name="start_time" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="end_time">Ora Fine *</label>
-                            <input type="time" class="form-control" id="end_time" name="end_time" required>
                         </div>
                     </div>
                     
@@ -226,37 +405,8 @@
                     <div class="row mb-3">
                         <div class="col-md-12">
                             <label class="form-label">Ruoli Richiesti *</label>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="role_management" name="required_roles" value="Management">
-                                        <label class="form-check-label" for="role_management">Management</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="role_redattore" name="required_roles" value="Redattore">
-                                        <label class="form-check-label" for="role_redattore">Redattore</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="role_sviluppatore" name="required_roles" value="Sviluppatore">
-                                        <label class="form-check-label" for="role_sviluppatore">Sviluppatore</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="role_operatore" name="required_roles" value="Operatore">
-                                        <label class="form-check-label" for="role_operatore">Operatore</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="role_ente" name="required_roles" value="Ente">
-                                        <label class="form-check-label" for="role_ente">Ente</label>
-                                    </div>
-                                </div>
+                            <div class="row" id="roles-container">
+                                <!-- I ruoli verranno caricati dinamicamente -->
                             </div>
                         </div>
                     </div>
@@ -288,9 +438,53 @@ function createCopertura(sedeId, sedeName) {
     document.getElementById('sede_id').value = sedeId;
     document.getElementById('sede_name').value = sedeName;
     
+    // Carica i ruoli disponibili
+    loadAvailableRoles();
+    
     // Mostra il modal
     const modal = new bootstrap.Modal(document.getElementById('createCoperturaModal'));
     modal.show();
+}
+
+function loadAvailableRoles() {
+    fetch('/api/roles')
+        .then(response => response.json())
+        .then(roles => {
+            const container = document.getElementById('roles-container');
+            container.innerHTML = '';
+            
+            roles.forEach((role, index) => {
+                const colSize = roles.length <= 3 ? 'col-md-4' : 'col-md-3';
+                const div = document.createElement('div');
+                div.className = colSize;
+                div.innerHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="role_${index}" name="required_roles" value="${role}">
+                        <label class="form-check-label" for="role_${index}">${role}</label>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        })
+        .catch(error => {
+            console.error('Errore caricamento ruoli:', error);
+            // Fallback con ruoli di default
+            const defaultRoles = ['Management', 'Redattore', 'Sviluppatore', 'Operatore', 'Ente'];
+            const container = document.getElementById('roles-container');
+            container.innerHTML = '';
+            
+            defaultRoles.forEach((role, index) => {
+                const div = document.createElement('div');
+                div.className = 'col-md-3';
+                div.innerHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="role_${index}" name="required_roles" value="${role}">
+                        <label class="form-check-label" for="role_${index}">${role}</label>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        });
 }
 
 // Imposta data minima a oggi
@@ -302,6 +496,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Imposta data fine minima quando cambia data inizio
     document.getElementById('start_date').addEventListener('change', function() {
         document.getElementById('end_date').min = this.value;
+    });
+    
+    // Gestione checkbox giorni della settimana
+    document.querySelectorAll('.day-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const dayConfig = this.closest('.day-config');
+            const dayDetails = dayConfig.querySelector('.day-details');
+            
+            if (this.checked) {
+                dayDetails.style.display = 'block';
+                // Rendi obbligatori i campi orario per questo giorno
+                const startTime = dayDetails.querySelector(`input[name="start_time_${this.value}"]`);
+                const endTime = dayDetails.querySelector(`input[name="end_time_${this.value}"]`);
+                if (startTime) startTime.required = true;
+                if (endTime) endTime.required = true;
+            } else {
+                dayDetails.style.display = 'none';
+                // Rimuovi l'obbligo dai campi orario
+                const inputs = dayDetails.querySelectorAll('input[type="time"]');
+                inputs.forEach(input => {
+                    input.required = false;
+                    input.value = '';
+                });
+            }
+        });
     });
 });
 </script>
