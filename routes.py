@@ -962,7 +962,7 @@ def attendance():
         show_team_data = True
         view_mode = 'team'
     elif current_user.can_view_attendance() and view_mode == 'sede':
-        # Responsabili con permesso possono vedere presenze della propria sede
+        # Utenti con permesso "Visualizzare Presenze" possono vedere presenze della propria sede
         show_team_data = True
         view_mode = 'sede'
     else:
