@@ -36,22 +36,10 @@
                                     <p class="text-muted small">
                                         {{ sede.users|selectattr('active')|list|length }} utenti attivi
                                     </p>
-                                    <div class="d-grid gap-2">
-                                        <a href="{{ url_for('shifts') }}?sede={{ sede.id }}" 
-                                           class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-calendar-alt me-1"></i>Turni Regolari
-                                        </a>
-                                        <a href="{{ url_for('generate_reperibilita_shifts') }}?sede={{ sede.id }}" 
-                                           class="btn btn-outline-success btn-sm">
-                                            <i class="fas fa-phone-alt me-1"></i>Turni Reperibilità
-                                        </a>
-                                        {% if is_admin %}
-                                        <a href="{{ url_for('reperibilita_coverage') }}?sede={{ sede.id }}" 
-                                           class="btn btn-outline-info btn-sm">
-                                            <i class="fas fa-cogs me-1"></i>Coperture
-                                        </a>
-                                        {% endif %}
-                                    </div>
+                                    <a href="{{ url_for('generate_turni_from_coverage') }}?sede={{ sede.id }}" 
+                                       class="btn btn-primary">
+                                        <i class="fas fa-calendar-alt me-1"></i>Turni Regolari
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -62,52 +50,33 @@
             
             <!-- Guida alla generazione -->
             <div class="row">
-                <div class="col-md-6">
-                    <div class="card h-100">
+                <div class="col-md-12">
+                    <div class="card">
                         <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Turni Regolari</h5>
+                            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Generazione Turni da Coperture</h5>
                         </div>
                         <div class="card-body">
-                            <h6>Come funziona:</h6>
-                            <ol class="small">
-                                <li><strong>Template:</strong> Crea template di turni con orari e pattern</li>
-                                <li><strong>Utenti:</strong> Assegna utenti ai template</li>
-                                <li><strong>Generazione:</strong> Il sistema crea automaticamente i turni</li>
-                                <li><strong>Bilanciamento:</strong> Distribuzione equa del carico di lavoro</li>
-                            </ol>
-                            
-                            <h6>Caratteristiche:</h6>
-                            <ul class="small">
-                                <li>Rispetta le richieste di ferie approvate</li>
-                                <li>Considera le percentuali part-time</li>
-                                <li>Evita sovrapposizioni negli orari</li>
-                                <li>Supporta pattern ricorrenti</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="card h-100">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="fas fa-phone-alt me-2"></i>Turni Reperibilità</h5>
-                        </div>
-                        <div class="card-body">
-                            <h6>Come funziona:</h6>
-                            <ol class="small">
-                                <li><strong>Coperture:</strong> Definisci gli orari di reperibilità</li>
-                                <li><strong>Assegnazioni:</strong> Seleziona gli utenti disponibili</li>
-                                <li><strong>Rotazione:</strong> Il sistema alterna gli assegnati</li>
-                                <li><strong>Interventi:</strong> Tracciamento delle chiamate</li>
-                            </ol>
-                            
-                            <h6>Caratteristiche:</h6>
-                            <ul class="small">
-                                <li>Copertura 24/7 se configurata</li>
-                                <li>Rotazione automatica degli utenti</li>
-                                <li>Registrazione interventi</li>
-                                <li>Priorità interventi (Alta/Media/Bassa)</li>
-                            </ul>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Come funziona:</h6>
+                                    <ol class="small">
+                                        <li><strong>Coperture:</strong> Utilizza le coperture create per definire orari e ruoli</li>
+                                        <li><strong>Periodo:</strong> Seleziona il periodo per cui generare i turni</li>
+                                        <li><strong>Assegnazione:</strong> Il sistema assegna automaticamente gli utenti</li>
+                                        <li><strong>Bilanciamento:</strong> Distribuzione equa del carico di lavoro</li>
+                                    </ol>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Caratteristiche:</h6>
+                                    <ul class="small">
+                                        <li>Basato sulle coperture create per ogni sede</li>
+                                        <li>Rispetta le richieste di ferie approvate</li>
+                                        <li>Considera le percentuali part-time</li>
+                                        <li>Assegna solo utenti con ruoli appropriati</li>
+                                        <li>Evita sovrapposizioni negli orari</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

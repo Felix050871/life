@@ -4246,6 +4246,110 @@ def view_turni_coverage():
                          today=date.today(),
                          is_admin=(current_user.role == 'Admin'))
 
+@app.route('/admin/turni/genera-da-coperture')
+@login_required
+def generate_turni_from_coverage():
+    """Pagina per generare turni basati sulle coperture create"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per generare turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede_id = request.args.get('sede', type=int)
+    if not sede_id:
+        flash('ID sede non specificato', 'danger')
+        return redirect(url_for('generate_turnazioni'))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    
+    # Verifica permessi sulla sede
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
+            flash('Non hai i permessi per accedere a questa sede', 'danger')
+            return redirect(url_for('generate_turnazioni'))
+    
+    if not sede.is_turni_mode():
+        flash('La sede selezionata non è configurata per la modalità turni', 'warning')
+        return redirect(url_for('generate_turnazioni'))
+    
+    # Ottieni le coperture attive per questa sede
+    from models import PresidioCoverage
+    coperture = PresidioCoverage.query.filter_by(is_active=True).order_by(
+        PresidioCoverage.start_date.desc(),
+        PresidioCoverage.day_of_week,
+        PresidioCoverage.start_time
+    ).all()
+    
+    # Raggruppa coperture per periodo di validità
+    coperture_grouped = {}
+    for copertura in coperture:
+        period_key = f"{copertura.start_date.strftime('%Y-%m-%d')} - {copertura.end_date.strftime('%Y-%m-%d')}"
+        if period_key not in coperture_grouped:
+            coperture_grouped[period_key] = {
+                'start_date': copertura.start_date,
+                'end_date': copertura.end_date,
+                'coperture': [],
+                'is_active': copertura.start_date <= date.today() <= copertura.end_date,
+                'period_id': f"{copertura.start_date.strftime('%Y%m%d')}-{copertura.end_date.strftime('%Y%m%d')}"
+            }
+        coperture_grouped[period_key]['coperture'].append(copertura)
+    
+    # Statistiche
+    total_coperture = len(coperture)
+    active_coperture = len([c for c in coperture if c.is_valid_for_date(date.today())])
+    
+    return render_template('generate_turni_from_coverage.html',
+                         sede=sede,
+                         coperture_grouped=coperture_grouped,
+                         total_coperture=total_coperture,
+                         active_coperture=active_coperture,
+                         today=date.today(),
+                         is_admin=(current_user.role == 'Admin'))
+
+@app.route('/admin/turni/process-generate-from-coverage', methods=['POST'])
+@login_required
+def process_generate_turni_from_coverage():
+    """Processa la generazione dei turni basata sulle coperture"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per generare turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede_id = request.form.get('sede_id', type=int)
+    coverage_period_id = request.form.get('coverage_period_id')
+    generate_start_date = request.form.get('generate_start_date')
+    generate_end_date = request.form.get('generate_end_date')
+    replace_existing = 'replace_existing' in request.form
+    
+    if not all([sede_id, coverage_period_id, generate_start_date, generate_end_date]):
+        flash('Dati mancanti per la generazione turni', 'danger')
+        return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    
+    # Verifica permessi
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
+            flash('Non hai i permessi per generare turni per questa sede', 'danger')
+            return redirect(url_for('generate_turnazioni'))
+    
+    try:
+        from datetime import datetime
+        start_date = datetime.strptime(generate_start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(generate_end_date, '%Y-%m-%d').date()
+        
+        if start_date > end_date:
+            flash('La data di inizio deve essere precedente alla data di fine', 'danger')
+            return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
+        
+        # TODO: Implementare la logica di generazione turni
+        # Per ora mostriamo un messaggio di sviluppo
+        flash(f'Funzionalità in sviluppo: Generazione turni per {sede.name} dal {start_date.strftime("%d/%m/%Y")} al {end_date.strftime("%d/%m/%Y")}', 'info')
+        
+    except ValueError as e:
+        flash('Date non valide fornite', 'danger')
+        return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
+    
+    return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
+
 @app.route('/admin/turnazioni')
 @login_required
 def generate_turnazioni():
