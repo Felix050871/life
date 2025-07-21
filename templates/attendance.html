@@ -17,7 +17,10 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-history me-2"></i>Storico Presenze {% if show_team_data %}- Team{% else %}- Personali{% endif %}</h5>
+                <h5><i class="fas fa-history me-2"></i>Storico Presenze 
+                {% if view_mode == 'team' %}- Team
+                {% elif view_mode == 'sede' %}- Sede
+                {% else %}- Personali{% endif %}</h5>
                 <div class="d-flex gap-2">
                     {% if current_user.role == 'Management' %}
                     <div class="btn-group" role="group">
@@ -30,6 +33,17 @@
                             <i class="fas fa-users me-1"></i>Team
                         </a>
                     </div>
+                    {% elif current_user.can_view_attendance() %}
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('attendance', view='personal', start_date=start_date, end_date=end_date) }}" 
+                           class="btn btn-sm {% if view_mode == 'personal' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i>Le Mie
+                        </a>
+                        <a href="{{ url_for('attendance', view='sede', start_date=start_date, end_date=end_date) }}" 
+                           class="btn btn-sm {% if view_mode == 'sede' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-building me-1"></i>Sede
+                        </a>
+                    </div>
                     {% endif %}
                     <button type="button" class="btn btn-success btn-sm" onclick="exportToCSV()">
                         <i class="fas fa-file-csv me-1"></i>Esporta CSV
@@ -39,7 +53,7 @@
             <div class="card-body">
                 <!-- Date Filter Form -->
                 <form method="GET" action="{{ url_for('attendance') }}" class="row g-3 mb-4">
-                    {% if current_user.role == 'Management' %}
+                    {% if current_user.role == 'Management' or current_user.can_view_attendance() %}
                     <input type="hidden" name="view" value="{{ view_mode }}">
                     {% endif %}
                     <div class="col-md-3">

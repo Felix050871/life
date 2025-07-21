@@ -961,6 +961,10 @@ def attendance():
         # Ente e Staff vedono sempre e solo dati team
         show_team_data = True
         view_mode = 'team'
+    elif current_user.can_view_attendance() and view_mode == 'sede':
+        # Responsabili con permesso possono vedere presenze della propria sede
+        show_team_data = True
+        view_mode = 'sede'
     else:
         # Altri utenti vedono solo dati personali
         show_team_data = False
@@ -993,6 +997,13 @@ def attendance():
             ).all()
         elif current_user.role == 'Management':
             # Management vedono solo utenti della propria sede (esclusi Admin e Staff)
+            team_users = User.query.filter(
+                User.sede_id == current_user.sede_id,
+                User.active.is_(True),
+                ~User.role.in_(['Admin', 'Staff'])
+            ).all()
+        elif view_mode == 'sede' and current_user.sede_id:
+            # Responsabili con permessi vedono solo utenti della propria sede
             team_users = User.query.filter(
                 User.sede_id == current_user.sede_id,
                 User.active.is_(True),
