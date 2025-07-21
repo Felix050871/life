@@ -4711,6 +4711,10 @@ def regenerate_turni_from_coverage():
         new_shifts_count = 0
         current_date = start_date
         
+        # Debug info
+        print(f"DEBUG: Generating shifts from {start_date} to {end_date}")
+        print(f"DEBUG: Found {len(coperture)} total coverages")
+        
         while current_date <= end_date:
             # Trova le coperture per questo giorno della settimana
             day_of_week = current_date.weekday()  # 0=Lunedì, 6=Domenica
@@ -4719,6 +4723,8 @@ def regenerate_turni_from_coverage():
                            c.start_date <= current_date <= c.end_date and
                            c.day_of_week == day_of_week]
             
+            print(f"DEBUG: Date {current_date} (weekday {day_of_week}): {len(day_coverages)} coverages")
+            
             for coverage in day_coverages:
                 # Ottieni utenti disponibili per questa sede e copertura
                 available_users = User.query.filter(
@@ -4726,6 +4732,8 @@ def regenerate_turni_from_coverage():
                     User.is_active == True,
                     User.role.in_(['Operatore', 'Sviluppatore', 'Redattore', 'Management'])
                 ).all()
+                
+                print(f"DEBUG: Coverage {coverage.name}: {len(available_users)} users, required: {coverage.required_staff}")
                 
                 if available_users and coverage.required_staff > 0:
                     # Seleziona utenti per questa copertura (logica semplificata)
@@ -4742,6 +4750,7 @@ def regenerate_turni_from_coverage():
                         )
                         db.session.add(new_shift)
                         new_shifts_count += 1
+                        print(f"DEBUG: Created shift for {user.username} on {current_date}")
             
             current_date += timedelta(days=1)
         
@@ -4754,7 +4763,7 @@ def regenerate_turni_from_coverage():
             flash(f'Turni generati con successo! Creati {new_shifts_count} nuovi turni.', 'success')
         
         # Reindirizza alla visualizzazione dei turni generati
-        return redirect(url_for('view_generated_shifts', sede_id=sede_id, period_id=coverage_period_id))
+        return redirect(url_for('view_generated_shifts', sede=sede_id, period=coverage_period_id))
         
     except Exception as e:
         db.session.rollback()
