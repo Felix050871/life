@@ -98,31 +98,5 @@
         <p class="mb-0">Non ci sono turni di reperibilità programmati per questo periodo.</p>
     </div>
     {% endif %}
-                            <td>
-                                {% set weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'] %}
-                                {{ weekdays[shift.date.weekday()] }}
-                            </td>
-                            <td>
-                                <strong>{{ shift.user.get_full_name() }}</strong>
-                            </td>
-                            <td>
-                                <span class="badge bg-secondary">{{ shift.user.role }}</span>
-                            </td>
-                            <td>
-                                <i class="fas fa-phone-alt text-info me-1"></i>
-                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
-                            </td>
-                            <td>
-                                <span class="badge bg-info">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
-                            </td>
-                            <td>{{ shift.description or '-' }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
