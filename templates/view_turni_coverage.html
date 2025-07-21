@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Visualizza Coperture - {{ sede.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2><i class="fas fa-eye me-2"></i>Coperture Turni - {{ sede.name }}</h2>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-map-marker-alt me-1"></i>{{ sede.address or 'Indirizzo non specificato' }}
+                    </p>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('manage_turni') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alla Gestione
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted mb-1">Coperture Totali</h5>
+                    <h3 class="text-primary mb-0">{{ total_coperture }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted mb-1">Coperture Attive</h5>
+                    <h3 class="text-success mb-0">{{ active_coperture }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted mb-1">Sede</h5>
+                    <span class="badge bg-info fs-6">{{ sede.tipologia }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coperture per periodo -->
+    {% if coperture_grouped %}
+        {% for period_key, period_data in coperture_grouped.items() %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Periodo: {{ period_data.start_date.strftime('%d/%m/%Y') }} - {{ period_data.end_date.strftime('%d/%m/%Y') }}
+                    </h5>
+                    {% if period_data.is_active %}
+                        <span class="badge bg-success">ATTIVO</span>
+                    {% else %}
+                        {% if period_data.end_date < today %}
+                            <span class="badge bg-secondary">SCADUTO</span>
+                        {% else %}
+                            <span class="badge bg-warning">FUTURO</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-cog"></i> Azioni
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="generateShiftsForPeriod('{{ period_key }}')">
+                            <i class="fas fa-magic me-2"></i>Genera Turni
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="editCoveragePeriod('{{ period_key }}')">
+                            <i class="fas fa-edit me-2"></i>Modifica Periodo
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-warning" href="#" onclick="disableCoveragePeriod('{{ period_key }}')">
+                            <i class="fas fa-pause me-2"></i>Disabilita
+                        </a></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteCoveragePeriod('{{ period_key }}')">
+                            <i class="fas fa-trash me-2"></i>Elimina
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for copertura in period_data.coperture %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-left-{{ 'success' if copertura.is_valid_for_date(today) else 'secondary' }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-1">{{ copertura.get_day_name() }}</h6>
+                                    {% if copertura.is_valid_for_date(today) %}
+                                        <span class="badge bg-success">Attiva</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inattiva</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-clock me-1"></i>{{ copertura.get_time_range() }}
+                                </p>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-users me-1"></i>{{ copertura.get_required_roles_display() }}
+                                </p>
+                                {% if copertura.description %}
+                                <p class="text-muted small mb-2">{{ copertura.description }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer">
+                                <small class="text-muted">
+                                    Creato il {{ copertura.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                    {% if copertura.creator %}
+                                        da {{ copertura.creator.get_full_name() }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <!-- Stato vuoto -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">Nessuna Copertura Trovata</h4>
+                        <p class="text-muted">
+                            Non sono state create coperture per questa sede.
+                            <br>Utilizza il pulsante "Nuova Copertura" per crearne una.
+                        </p>
+                        <a href="{{ url_for('manage_turni') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Crea Prima Copertura
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function generateShiftsForPeriod(periodKey) {
+    // TODO: Implementare generazione turni per il periodo specifico
+    alert('Funzionalità in sviluppo: Generazione turni per ' + periodKey);
+}
+
+function editCoveragePeriod(periodKey) {
+    // TODO: Implementare modifica del periodo
+    alert('Funzionalità in sviluppo: Modifica periodo ' + periodKey);
+}
+
+function disableCoveragePeriod(periodKey) {
+    if (confirm('Sei sicuro di voler disabilitare tutte le coperture di questo periodo?')) {
+        // TODO: Implementare disabilitazione
+        alert('Funzionalità in sviluppo: Disabilitazione periodo ' + periodKey);
+    }
+}
+
+function deleteCoveragePeriod(periodKey) {
+    if (confirm('ATTENZIONE: Questa azione eliminerà definitivamente tutte le coperture del periodo.\n\nSei sicuro di voler continuare?')) {
+        // TODO: Implementare eliminazione
+        alert('Funzionalità in sviluppo: Eliminazione periodo ' + periodKey);
+    }
+}
+</script>
+
+<style>
+.border-left-success {
+    border-left: 3px solid #28a745 !important;
+}
+
+.border-left-secondary {
+    border-left: 3px solid #6c757d !important;
+}
+</style>
+
+{% endblock %}

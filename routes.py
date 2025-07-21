@@ -4187,6 +4187,65 @@ def manage_turni():
                          sede_stats=sede_stats,
                          is_admin=(current_user.role == 'Admin'))
 
+@app.route('/admin/turni/coperture')
+@login_required
+def view_turni_coverage():
+    """Visualizza le coperture create per una sede specifica"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per visualizzare le coperture', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede_id = request.args.get('sede', type=int)
+    if not sede_id:
+        flash('ID sede non specificato', 'danger')
+        return redirect(url_for('manage_turni'))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    
+    # Verifica permessi sulla sede
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
+            flash('Non hai i permessi per accedere a questa sede', 'danger')
+            return redirect(url_for('manage_turni'))
+    
+    if not sede.is_turni_mode():
+        flash('La sede selezionata non è configurata per la modalità turni', 'warning')
+        return redirect(url_for('manage_turni'))
+    
+    # Ottieni le coperture create per questa sede
+    # Per ora prendiamo tutte le coperture attive - in futuro potremmo aggiungere un campo sede_id
+    from models import PresidioCoverage
+    coperture = PresidioCoverage.query.filter_by(is_active=True).order_by(
+        PresidioCoverage.start_date.desc(),
+        PresidioCoverage.day_of_week,
+        PresidioCoverage.start_time
+    ).all()
+    
+    # Raggruppa coperture per periodo di validità
+    coperture_grouped = {}
+    for copertura in coperture:
+        period_key = f"{copertura.start_date.strftime('%Y-%m-%d')} - {copertura.end_date.strftime('%Y-%m-%d')}"
+        if period_key not in coperture_grouped:
+            coperture_grouped[period_key] = {
+                'start_date': copertura.start_date,
+                'end_date': copertura.end_date,
+                'coperture': [],
+                'is_active': copertura.start_date <= date.today() <= copertura.end_date
+            }
+        coperture_grouped[period_key]['coperture'].append(copertura)
+    
+    # Statistiche
+    total_coperture = len(coperture)
+    active_coperture = len([c for c in coperture if c.is_valid_for_date(date.today())])
+    
+    return render_template('view_turni_coverage.html',
+                         sede=sede,
+                         coperture_grouped=coperture_grouped,
+                         total_coperture=total_coperture,
+                         active_coperture=active_coperture,
+                         today=date.today(),
+                         is_admin=(current_user.role == 'Admin'))
+
 @app.route('/admin/turnazioni')
 @login_required
 def generate_turnazioni():
