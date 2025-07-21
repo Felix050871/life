@@ -4430,6 +4430,7 @@ def process_generate_turni_from_coverage():
     coverage_period_id = request.form.get('coverage_period_id')
     use_coverage_dates = 'use_coverage_dates' in request.form
     replace_existing = 'replace_existing' in request.form
+    confirm_overwrite = 'confirm_overwrite' in request.form
     
     if not all([sede_id, coverage_period_id]):
         flash('Dati mancanti per la generazione turni', 'danger')
@@ -4460,6 +4461,29 @@ def process_generate_turni_from_coverage():
         if not coperture:
             flash('Nessuna copertura trovata per il periodo specificato', 'warning')
             return redirect(url_for('generate_turnazioni'))
+        
+        # Controlla se esistono già turni nel periodo prima di procedere
+        existing_shifts = Shift.query.join(User).filter(
+            User.sede_id == sede_id,
+            Shift.date >= start_date,
+            Shift.date <= end_date
+        ).all()
+        
+        # Se esistono turni e l'utente non ha confermato la sovrascrittura, chiedi conferma
+        if existing_shifts and not confirm_overwrite:
+            turni_count = len(existing_shifts)
+            date_range = f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
+            
+            # Renderizza template di conferma con informazioni sui turni esistenti
+            return render_template('confirm_overwrite_shifts.html',
+                                 sede=sede,
+                                 period_id=coverage_period_id,
+                                 start_date=start_date,
+                                 end_date=end_date,
+                                 date_range=date_range,
+                                 existing_shifts_count=turni_count,
+                                 use_coverage_dates=use_coverage_dates,
+                                 replace_existing=replace_existing)
         
         # Implementa la generazione turni reale basata sulle coperture
         from models import Shift

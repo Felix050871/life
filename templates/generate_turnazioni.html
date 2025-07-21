@@ -208,26 +208,23 @@
 // Funzioni per le azioni senza necessità di caricamento dinamico
 
 function showGenerateModal(sedeId, periodId, periodDisplay) {
-    // Conferma la generazione e procedi direttamente
-    if (confirm(`Generare turni per il periodo ${periodDisplay}?\n\nI turni saranno creati per l'intero periodo della copertura.`)) {
-        // Crea un form nascosto per inviare la richiesta
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/admin/turni/process-generate-from-coverage';
-        form.style.display = 'none';
-        
-        // Aggiungi i campi necessari
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-        form.innerHTML = `
-            <input type="hidden" name="csrf_token" value="${csrfToken}"/>
-            <input type="hidden" name="sede_id" value="${sedeId}">
-            <input type="hidden" name="coverage_period_id" value="${periodId}">
-            <input type="hidden" name="use_coverage_dates" value="true">
-        `;
-        
-        document.body.appendChild(form);
-        form.submit();
-    }
+    // Crea un form nascosto per inviare la richiesta - la route gestirà il controllo turni esistenti
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/admin/turni/process-generate-from-coverage';
+    form.style.display = 'none';
+    
+    // Aggiungi i campi necessari
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+    form.innerHTML = `
+        <input type="hidden" name="csrf_token" value="${csrfToken}"/>
+        <input type="hidden" name="sede_id" value="${sedeId}">
+        <input type="hidden" name="coverage_period_id" value="${periodId}">
+        <input type="hidden" name="use_coverage_dates" value="true">
+    `;
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 
 function viewGeneratedShifts(sedeId, periodId) {
