@@ -372,8 +372,9 @@ class ReperibilitaReplicaForm(FlaskForm):
 class ReperibilitaTemplateForm(FlaskForm):
     """Form per generare turnazioni reperibilità da coperture esistenti"""
     coverage_period = SelectField('Copertura Reperibilità', choices=[], validators=[DataRequired()])
-    start_date = DateField('Data Inizio Generazione', validators=[DataRequired()])
-    end_date = DateField('Data Fine Generazione', validators=[DataRequired()])
+    use_full_period = BooleanField('Usa intero periodo della copertura', default=True)
+    start_date = DateField('Data Inizio Personalizzata')
+    end_date = DateField('Data Fine Personalizzata')
     description = TextAreaField('Descrizione (opzionale)')
     submit = SubmitField('Genera Turnazioni Reperibilità')
     
@@ -419,8 +420,20 @@ class ReperibilitaTemplateForm(FlaskForm):
             self.coverage_period.choices = [('', 'Nessuna copertura disponibile')]
     
     def validate_end_date(self, end_date):
-        if end_date.data and self.start_date.data and end_date.data < self.start_date.data:
-            raise ValidationError('La data di fine deve essere successiva alla data di inizio.')
+        # Validazione solo se non si usa l'intero periodo
+        if not self.use_full_period.data and end_date.data and self.start_date.data:
+            if end_date.data < self.start_date.data:
+                raise ValidationError('La data di fine deve essere successiva alla data di inizio.')
+    
+    def validate_start_date(self, start_date):
+        # Validazione solo se non si usa l'intero periodo
+        if not self.use_full_period.data and not start_date.data:
+            raise ValidationError('Specifica una data di inizio personalizzata.')
+            
+    def validate_coverage_period(self, coverage_period):
+        # Validazione date personalizzate se non si usa l'intero periodo
+        if not self.use_full_period.data and not self.end_date.data:
+            raise ValidationError('Specifica una data di fine personalizzata.')
 
 
 class HolidayForm(FlaskForm):

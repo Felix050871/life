@@ -3065,10 +3065,21 @@ def generate_reperibilita_shifts():
             flash('Seleziona una copertura reperibilità', 'error')
             return render_template('generate_reperibilita_shifts.html', form=form)
         
+        # Determina le date da usare
+        if form.use_full_period.data:
+            # Usa le date della copertura
+            coverage_start, coverage_end = form.coverage_period.data.split('__')
+            start_date = datetime.strptime(coverage_start, '%Y-%m-%d').date()
+            end_date = datetime.strptime(coverage_end, '%Y-%m-%d').date()
+        else:
+            # Usa le date personalizzate
+            start_date = form.start_date.data
+            end_date = form.end_date.data
+        
         # Elimina turni esistenti nel periodo
         existing_shifts = ReperibilitaShift.query.filter(
-            ReperibilitaShift.date >= form.start_date.data,
-            ReperibilitaShift.date <= form.end_date.data
+            ReperibilitaShift.date >= start_date,
+            ReperibilitaShift.date <= end_date
         ).all()
         
         for shift in existing_shifts:
@@ -3078,8 +3089,8 @@ def generate_reperibilita_shifts():
             # Genera turni reperibilità dalla copertura selezionata
             shifts_created, warnings = generate_reperibilita_shifts_from_coverage(
                 form.coverage_period.data,  # period_key della copertura
-                form.start_date.data,
-                form.end_date.data,
+                start_date,
+                end_date,
                 current_user.id
             )
             
