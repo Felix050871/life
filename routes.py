@@ -4579,7 +4579,7 @@ def view_generated_shifts():
         return redirect(url_for('dashboard'))
     
     sede_id = request.args.get('sede', type=int)
-    period_id = request.args.get('period')
+    period_id = request.args.get('period') or request.args.get('coverage_period')
     
     if not all([sede_id, period_id]):
         flash('Parametri mancanti per la visualizzazione turni', 'danger')

@@ -76,6 +76,9 @@
                         <i class="fas fa-cog"></i> Azioni
                     </button>
                     <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="viewGeneratedShifts('{{ period_data.period_id }}')">
+                            <i class="fas fa-eye me-2"></i>Visualizza
+                        </a></li>
                         <li><a class="dropdown-item" href="#" onclick="generateShiftsForPeriod('{{ period_data.period_id }}')">
                             <i class="fas fa-magic me-2"></i>Genera Turni
                         </a></li>
@@ -156,6 +159,12 @@
 </div>
 
 <script>
+function viewGeneratedShifts(periodKey) {
+    // Reindirizza alla pagina di visualizzazione turni con filtro per il periodo
+    const sedeId = {{ sede.id }};
+    window.location.href = `/view_generated_shifts?sede=${sedeId}&coverage_period=${periodKey}`;
+}
+
 function generateShiftsForPeriod(periodKey) {
     // Mostra modal di conferma con opzioni
     showGenerateShiftsModal(periodKey);
