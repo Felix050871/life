@@ -176,9 +176,36 @@
 
 <script>
 function regenerateShifts() {
-    if (confirm('Sei sicuro di voler rigenerare tutti i turni per questo periodo? I turni esistenti verranno sostituiti.')) {
-        // TODO: Implementare rigenerazione
-        alert('Funzionalità di rigenerazione in sviluppo');
+    if (confirm('Sei sicuro di voler rigenerare tutti i turni per questo periodo? I turni esistenti da oggi in poi verranno sostituiti.')) {
+        // Crea un form per inviare i dati alla route di rigenerazione
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("regenerate_turni_from_coverage") }}';
+        
+        // Aggiungi CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrf_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+        
+        // Aggiungi sede_id
+        const sedeId = document.createElement('input');
+        sedeId.type = 'hidden';
+        sedeId.name = 'sede_id';
+        sedeId.value = '{{ sede.id }}';
+        form.appendChild(sedeId);
+        
+        // Aggiungi coverage_period_id
+        const periodId = document.createElement('input');
+        periodId.type = 'hidden';
+        periodId.name = 'coverage_period_id';
+        periodId.value = '{{ coverage_start_date.strftime("%Y%m%d") }}-{{ coverage_end_date.strftime("%Y%m%d") }}';
+        form.appendChild(periodId);
+        
+        // Aggiungi al documento e invia
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 

@@ -4646,6 +4646,121 @@ def view_generated_shifts():
                          today=date.today(),
                          is_admin=(current_user.role == 'Admin'))
 
+@app.route('/admin/turni/regenerate-from-coverage', methods=['POST'])
+@login_required
+def regenerate_turni_from_coverage():
+    """Rigenera i turni eliminando quelli esistenti da oggi in poi e creandone di nuovi"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per rigenerare turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede_id = request.form.get('sede_id', type=int)
+    coverage_period_id = request.form.get('coverage_period_id')
+    
+    if not all([sede_id, coverage_period_id]):
+        flash('Dati mancanti per la rigenerazione turni', 'danger')
+        return redirect(url_for('generate_turnazioni'))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    
+    # Verifica permessi
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
+            flash('Non hai i permessi per rigenerare turni per questa sede', 'danger')
+            return redirect(url_for('generate_turnazioni'))
+    
+    try:
+        # Decodifica period_id per ottenere le date della copertura
+        start_str, end_str = coverage_period_id.split('-')
+        start_date = datetime.strptime(start_str, '%Y%m%d').date()
+        end_date = datetime.strptime(end_str, '%Y%m%d').date()
+        
+        # Data di inizio per l'eliminazione (da oggi in poi)
+        from datetime import date, timedelta
+        today = date.today()
+        delete_from_date = max(start_date, today)
+        
+        # Elimina turni esistenti da oggi in poi
+        from models import Shift
+        shifts_to_delete = Shift.query.join(User, Shift.user_id == User.id).filter(
+            User.sede_id == sede_id,
+            Shift.date >= delete_from_date,
+            Shift.date <= end_date
+        ).all()
+        
+        deleted_count = len(shifts_to_delete)
+        for shift in shifts_to_delete:
+            db.session.delete(shift)
+        
+        db.session.commit()
+        
+        # Rigenera turni per tutto il periodo originale
+        from models import PresidioCoverage
+        
+        coperture = PresidioCoverage.query.filter(
+            PresidioCoverage.start_date <= end_date,
+            PresidioCoverage.end_date >= start_date,
+            PresidioCoverage.is_active == True
+        ).all()
+        
+        if not coperture:
+            flash('Nessuna copertura trovata per il periodo specificato', 'warning')
+            return redirect(url_for('generate_turnazioni'))
+        
+        # Genera i nuovi turni
+        new_shifts_count = 0
+        current_date = start_date
+        
+        while current_date <= end_date:
+            # Trova le coperture per questo giorno della settimana
+            day_of_week = current_date.weekday()  # 0=Lunedì, 6=Domenica
+            
+            day_coverages = [c for c in coperture if 
+                           c.start_date <= current_date <= c.end_date and
+                           day_of_week in c.get_active_days()]
+            
+            for coverage in day_coverages:
+                # Ottieni utenti disponibili per questa sede e copertura
+                available_users = User.query.filter(
+                    User.sede_id == sede_id,
+                    User.is_active == True,
+                    User.role.in_(['Operatore', 'Sviluppatore', 'Redattore', 'Management'])
+                ).all()
+                
+                if available_users and coverage.required_staff > 0:
+                    # Seleziona utenti per questa copertura (logica semplificata)
+                    selected_users = available_users[:coverage.required_staff]
+                    
+                    for user in selected_users:
+                        new_shift = Shift(
+                            user_id=user.id,
+                            date=current_date,
+                            start_time=coverage.start_time,
+                            end_time=coverage.end_time,
+                            description=f"Turno generato da copertura {coverage.name}",
+                            created_by=current_user.id
+                        )
+                        db.session.add(new_shift)
+                        new_shifts_count += 1
+            
+            current_date += timedelta(days=1)
+        
+        db.session.commit()
+        
+        # Messaggio di successo
+        if deleted_count > 0:
+            flash(f'Turni rigenerati con successo! Eliminati {deleted_count} turni esistenti, creati {new_shifts_count} nuovi turni.', 'success')
+        else:
+            flash(f'Turni generati con successo! Creati {new_shifts_count} nuovi turni.', 'success')
+        
+        # Reindirizza alla visualizzazione dei turni generati
+        return redirect(url_for('view_generated_shifts', sede_id=sede_id, period_id=coverage_period_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante la rigenerazione turni: {str(e)}', 'danger')
+        return redirect(url_for('generate_turnazioni'))
+
 @app.route('/admin/turnazioni')
 @login_required
 def generate_turnazioni():
