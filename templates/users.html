@@ -193,11 +193,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    {% set user_sedi = user.get_sedi_list() %}
-                                    {% if user_sedi %}
-                                        {% for sede in user_sedi %}
-                                            <span class="badge bg-info me-1">{{ sede.name }}</span>
-                                        {% endfor %}
+                                    {% if user.sede_obj %}
+                                        <span class="badge bg-info me-1">{{ user.sede_obj.name }}</span>
                                     {% else %}
                                         <span class="text-muted">Nessuna sede</span>
                                     {% endif %}
