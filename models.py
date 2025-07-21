@@ -124,6 +124,10 @@ class User(UserMixin, db.Model):
             return True
         return False
     
+    def has_role(self, role_name):
+        """Verifica se l'utente ha un determinato ruolo"""
+        return self.role == role_name
+    
     # Metodi di autorizzazione granulari per ogni funzionalità del menu
     
     # === HOME ===

@@ -100,7 +100,7 @@ def dashboard():
     today_events = []
     
     # Get current user's status and today's events (for regular users only, PM will be handled separately)
-    if current_user.role not in ['Management', 'Ente', 'Admin']:
+    if current_user.can_view_attendance() and not current_user.has_role('Amministratore'):
         user_status, _ = AttendanceEvent.get_user_status(current_user.id, today_date)
         today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
@@ -116,7 +116,7 @@ def dashboard():
     active_intervention = None
     recent_interventions = []
     current_time = italian_now().time()
-    if current_user.role in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
+    if current_user.can_view_reperibilita():
         upcoming_reperibilita_shifts = ReperibilitaShift.query.filter(
             ReperibilitaShift.user_id == current_user.id,
             ReperibilitaShift.date >= date.today()
@@ -171,8 +171,8 @@ def dashboard():
 
     
     # Add personal attendance data for PM
-    if current_user.role == 'Management':
-        # Get PM's personal attendance data (same as regular users)
+    if current_user.can_manage_users() and current_user.can_view_attendance():
+        # Get manager's personal attendance data (same as regular users)
         user_status = AttendanceEvent.get_user_status(current_user.id)
         today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
@@ -293,8 +293,8 @@ def dashboard_sede():
 @app.route('/ente-home')
 @login_required
 def ente_home():
-    """Home page per utente Ente e PM con vista team e navigazione settimanale"""
-    if current_user.role not in ['Ente', 'Management']:
+    """Home page per gestori team con vista team e navigazione settimanale"""
+    if not (current_user.can_manage_users() or current_user.can_view_all_attendance()):
         flash('Accesso non autorizzato.', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -907,10 +907,10 @@ def break_end():
 @app.route('/attendance', methods=['GET', 'POST'])
 @login_required
 def attendance():
-    # Controllo permessi: Ente e Staff possono solo visualizzare dati team, non gestire presenze personali
-    if not current_user.can_access_attendance() and current_user.role not in ['Ente', 'Staff']:
+    # Controllo permessi di accesso alle presenze
+    if not current_user.can_access_attendance():
         flash('Non hai i permessi per accedere alla gestione presenze.', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('dashboard'))
     
     form = AttendanceForm()
     
@@ -1605,8 +1605,8 @@ def create_leave_request():
                 reason=form.reason.data
             )
             
-            # Auto-approve sick leave and Management requests, set others as pending
-            if form.leave_type.data == 'Malattia' or current_user.role == 'Management':
+            # Auto-approve sick leave and manager requests, set others as pending
+            if form.leave_type.data == 'Malattia' or current_user.can_approve_leave():
                 leave_request.status = 'Approved'
                 leave_request.approved_by = current_user.id  # Self-approved
                 leave_request.approved_at = datetime.now()
@@ -1628,7 +1628,7 @@ def create_leave_request():
             # Messaggio di successo personalizzato
             if form.leave_type.data == 'Malattia':
                 flash('Richiesta di malattia approvata automaticamente', 'success')
-            elif current_user.role == 'Management':
+            elif current_user.can_approve_leave():
                 flash(f'Richiesta di {form.leave_type.data.lower()} approvata automaticamente', 'success')
             elif form.leave_type.data == 'Permesso':
                 duration = leave_request.get_duration_display()
@@ -2361,7 +2361,7 @@ def calculate_shift_presence(shift):
 @login_required
 def team_shifts():
     # Solo PM può vedere i turni del team
-    if current_user.role not in ['Management']:
+    if not current_user.can_view_shifts():
         flash('Non hai i permessi per accedere a questa funzionalità.', 'danger')
         return redirect(url_for('dashboard'))
     
