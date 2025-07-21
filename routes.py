@@ -776,6 +776,28 @@ def clock_in():
         else:
             return redirect(url_for('dashboard'))
     
+    # Verifica se ha richieste ferie/permessi/malattia approvate per oggi
+    from models import LeaveRequest
+    approved_leave = LeaveRequest.query.filter(
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.start_date <= today,
+        LeaveRequest.end_date >= today,
+        LeaveRequest.status == 'Approved'
+    ).first()
+    
+    if approved_leave:
+        leave_type_display = {
+            'Ferie': 'ferie',
+            'Permesso': 'permesso', 
+            'Malattia': 'malattia'
+        }.get(approved_leave.leave_type, approved_leave.leave_type.lower())
+        
+        flash(f'Hai una richiesta di {leave_type_display} approvata per oggi ({approved_leave.start_date.strftime("%d/%m/%Y")} - {approved_leave.end_date.strftime("%d/%m/%Y")}). Devi prima cancellare la richiesta di {leave_type_display} se vuoi registrare la presenza.', 'warning')
+        if current_user.role == 'Management':
+            return redirect(url_for('ente_home'))
+        else:
+            return redirect(url_for('dashboard'))
+    
     # Usa l'orario italiano invece di UTC
     from zoneinfo import ZoneInfo
     italy_tz = ZoneInfo('Europe/Rome')
