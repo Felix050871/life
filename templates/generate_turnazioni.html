@@ -208,23 +208,67 @@
 // Funzioni per le azioni senza necessità di caricamento dinamico
 
 function showGenerateModal(sedeId, periodId, periodDisplay) {
-    // Crea un form nascosto per inviare la richiesta - la route gestirà il controllo turni esistenti
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/admin/turni/process-generate-from-coverage';
-    form.style.display = 'none';
-    
-    // Aggiungi i campi necessari
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-    form.innerHTML = `
-        <input type="hidden" name="csrf_token" value="${csrfToken}"/>
-        <input type="hidden" name="sede_id" value="${sedeId}">
-        <input type="hidden" name="coverage_period_id" value="${periodId}">
-        <input type="hidden" name="use_coverage_dates" value="true">
+    // Mostra modal di configurazione per la generazione turni
+    const modalHtml = `
+        <div class="modal fade" id="generateTurniModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Genera Turni da Coperture</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="/admin/turni/process-generate-from-coverage">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="modal-body">
+                            <input type="hidden" name="sede_id" value="${sedeId}">
+                            <input type="hidden" name="coverage_period_id" value="${periodId}">
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Stai per generare turni basati sulle coperture del periodo <strong>${periodDisplay}</strong>.
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="use_coverage_dates" id="useCoverageDates" checked>
+                                <label class="form-check-label" for="useCoverageDates">
+                                    Usa le date del periodo di copertura
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="replace_existing" id="replaceExisting">
+                                <label class="form-check-label" for="replaceExisting">
+                                    Sostituisci turni esistenti
+                                </label>
+                                <small class="form-text text-muted">
+                                    Se spuntato, i turni esistenti per le stesse date/orari verranno sostituiti
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-magic me-1"></i>Genera Turni
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     `;
     
-    document.body.appendChild(form);
-    form.submit();
+    // Rimuovi modal esistente se presente
+    const existingModal = document.getElementById('generateTurniModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Aggiungi nuovo modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Mostra il modal
+    const modal = new bootstrap.Modal(document.getElementById('generateTurniModal'));
+    modal.show();
 }
 
 function viewGeneratedShifts(sedeId, periodId) {

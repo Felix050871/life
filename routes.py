@@ -4469,8 +4469,8 @@ def process_generate_turni_from_coverage():
             Shift.date <= end_date
         ).all()
         
-        # Se esistono turni e l'utente non ha confermato la sovrascrittura, chiedi conferma
-        if existing_shifts and not confirm_overwrite:
+        # Se esistono turni e l'utente non ha scelto di sostituirli, chiedi conferma
+        if existing_shifts and not replace_existing and not confirm_overwrite:
             turni_count = len(existing_shifts)
             date_range = f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
             
