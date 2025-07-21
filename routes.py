@@ -2885,9 +2885,34 @@ def reperibilita_shifts():
             end_datetime=None
         ).first()
     
+    # Ottieni le coperture di reperibilità raggruppate per periodo invece dei template
+    from collections import OrderedDict
+    from models import ReperibilitaCoverage
+    coverage_query = ReperibilitaCoverage.query.filter(
+        ReperibilitaCoverage.is_active == True
+    ).order_by(
+        ReperibilitaCoverage.start_date,
+        ReperibilitaCoverage.end_date,
+        ReperibilitaCoverage.day_of_week
+    ).all()
+    
+    # Raggruppa coperture per periodo (start_date, end_date)
+    reperibilita_groups = OrderedDict()
+    for coverage in coverage_query:
+        period_key = f"{coverage.start_date}_{coverage.end_date}"
+        if period_key not in reperibilita_groups:
+            # Crea oggetto gruppo con dati del periodo
+            reperibilita_groups[period_key] = type('obj', (object,), {
+                'start_date': coverage.start_date,
+                'end_date': coverage.end_date,
+                'coverages': []
+            })()
+        reperibilita_groups[period_key].coverages.append(coverage)
+
     return render_template('reperibilita_shifts.html', 
                          shifts=shifts, 
                          templates=templates,
+                         reperibilita_groups=reperibilita_groups,
                          shifts_by_day=shifts_by_day,
                          active_intervention=active_intervention,
                          calendar_days=calendar_days,
@@ -3059,13 +3084,7 @@ def generate_reperibilita_shifts():
     
     form = ReperibilitaTemplateForm()
     
-    import sys
-    print(f"[DEBUG] Form creato, scelte disponibili: {len(form.coverage_period.choices)}", flush=True, file=sys.stderr)
-    print(f"[DEBUG] Form errors prima validazione: {form.errors}", flush=True, file=sys.stderr)
-    print(f"[DEBUG] Form data: coverage_period={form.coverage_period.data}, use_full_period={form.use_full_period.data}", flush=True, file=sys.stderr)
-    
     if form.validate_on_submit():
-        print(f"[DEBUG] Form validato con successo!", flush=True, file=sys.stderr)
         # Verifica che sia stata selezionata una copertura
         if not form.coverage_period.data:
             flash('Seleziona una copertura reperibilità', 'error')
@@ -3130,11 +3149,7 @@ def generate_reperibilita_shifts():
             print(f"[ERROR] Traceback: {traceback.format_exc()}", flush=True, file=sys.stderr)
             db.session.rollback()
             flash(f'Errore durante la generazione: {str(e)}', 'error')
-    else:
-        print(f"[DEBUG] Form NON validato. Errori: {form.errors}", flush=True, file=sys.stderr)
-        print(f"[DEBUG] use_full_period: {form.use_full_period.data}", flush=True, file=sys.stderr)
-        print(f"[DEBUG] start_date data: {form.start_date.data}", flush=True, file=sys.stderr)
-        print(f"[DEBUG] end_date data: {form.end_date.data}", flush=True, file=sys.stderr)
+
     
     return render_template('generate_reperibilita_shifts.html', form=form)
 

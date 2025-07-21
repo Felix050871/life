@@ -76,11 +76,60 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="alert alert-info text-center">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Nessun template di reperibilità esistente. 
-                    <a href="{{ url_for('generate_reperibilita_shifts') }}" class="alert-link">Crea il primo template</a>.
-                </div>
+                <!-- Mostra coperture invece dei template -->
+                {% if reperibilita_groups %}
+                    <div class="alert alert-success text-center">
+                        <i class="fas fa-check-circle me-2"></i>
+                        {{ reperibilita_groups|length }} coperture reperibilità attive. 
+                        <a href="{{ url_for('generate_reperibilita_shifts') }}" class="alert-link">Genera turni da coperture</a>.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Periodo Copertura</th>
+                                    <th>Giorni Attivi</th>
+                                    <th>Numero Turni</th>
+                                    <th>Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for period_key, group in reperibilita_groups.items() %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ group.start_date.strftime('%d/%m/%Y') }} - {{ group.end_date.strftime('%d/%m/%Y') }}</strong>
+                                    </td>
+                                    <td>
+                                        {% set days = [] %}
+                                        {% for coverage in group.coverages %}
+                                            {% set day_names = {'0': 'Lun', '1': 'Mar', '2': 'Mer', '3': 'Gio', '4': 'Ven', '5': 'Sab', '6': 'Dom'} %}
+                                            {% set _ = days.append(day_names[coverage.day_of_week|string]) %}
+                                        {% endfor %}
+                                        <span class="badge bg-primary">{{ days|unique|sort|join(', ') }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ group.coverages|length }} turni/settimana</span>
+                                    </td>
+                                    <td>
+                                        {% if group.end_date >= today_date %}
+                                            <span class="badge bg-success">Attiva</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Scaduta</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Nessuna copertura reperibilità configurata. 
+                        <a href="{{ url_for('reperibilita_coverage') }}" class="alert-link">Crea le prime coperture</a> poi 
+                        <a href="{{ url_for('generate_reperibilita_shifts') }}" class="alert-link">genera i turni</a>.
+                    </div>
+                {% endif %}
                 {% endif %}
             </div>
         </div>
