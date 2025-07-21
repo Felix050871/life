@@ -4755,7 +4755,7 @@ def regenerate_turni_from_coverage():
                             date=current_date,
                             start_time=coverage.start_time,
                             end_time=coverage.end_time,
-                            description=f"Turno generato da copertura {coverage.description or 'Presidio'}",
+                            shift_type='Normale',
                             created_by=current_user.id
                         )
                         db.session.add(new_shift)
