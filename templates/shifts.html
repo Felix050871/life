@@ -107,20 +107,37 @@
 
 {% if can_manage and current_user.role != 'Ente' %}
 <!-- Quick Actions -->
+{% if sede_supports_turni %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ url_for('presidio_coverage') }}" class="btn btn-info">
-                <i class="fas fa-shield-alt me-1"></i>Gestisci Copertura Presidio
+            <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-info">
+                <i class="fas fa-shield-alt me-1"></i>Gestisci Copertura Reperibilità
             </a>
-            <a href="{{ url_for('create_presidio_coverage') }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('create_reperibilita_coverage') }}" class="btn btn-outline-primary">
                 <i class="fas fa-plus me-1"></i>Nuova Copertura
             </a>
         </div>
     </div>
 </div>
+{% else %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Sede non configurata per la modalità "Turni"</strong><br>
+            {% if user_sede %}
+            La tua sede "{{ user_sede.name }}" è configurata in modalità "{{ user_sede.tipologia }}". Contatta l'amministratore per abilitare la gestione turni.
+            {% else %}
+            Nessuna sede assegnata. Contatta l'amministratore per assegnarti a una sede con modalità "Turni".
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Staff Controls -->
+{% if sede_supports_turni %}
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card">
@@ -208,7 +225,7 @@
                     
                     <div class="alert alert-info mt-3 mb-0" role="alert">
                         <strong>Nota:</strong> Prima di generare turni, assicurati di aver configurato la 
-                        <a href="{{ url_for('presidio_coverage') }}" class="alert-link">copertura presidio</a> 
+                        <a href="{{ url_for('reperibilita_coverage') }}" class="alert-link">copertura reperibilità</a> 
                         per definire quando ogni ruolo deve essere presente.
                     </div>
                 </form>
@@ -216,6 +233,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endif %}
 
 <!-- Template Staff -->

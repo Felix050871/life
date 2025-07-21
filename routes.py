@@ -1215,13 +1215,19 @@ def shifts():
         # Get existing shift templates
         shift_templates = ShiftTemplate.query.order_by(ShiftTemplate.created_at.desc()).all()
         
+        # Check if user's sede supports turni mode
+        user_sede = current_user.sede_obj if current_user.sede_obj else None
+        sede_supports_turni = user_sede.is_turni_mode() if user_sede else False
+        
         return render_template('shifts.html', 
                              shift_form=shift_form,
                              template_form=template_form,
                              shift_templates=shift_templates,
                              can_manage=True,
                              selected_template=None,
-                             shifts=None)
+                             shifts=None,
+                             user_sede=user_sede,
+                             sede_supports_turni=sede_supports_turni)
     else:
         # Parametri di visualizzazione per utenti normali
         if current_user.role in ['Admin', 'Management']:
@@ -1258,6 +1264,10 @@ def shifts():
                 giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
                 return giorni[date_obj.weekday()]
             
+            # Check if user's sede supports turni mode
+            user_sede = current_user.sede_obj if current_user.sede_obj else None
+            sede_supports_turni = user_sede.is_turni_mode() if user_sede else False
+            
             return render_template('shifts.html',
                                  shifts=shifts,
                                  today=date.today(),
@@ -1268,6 +1278,8 @@ def shifts():
                                  view_mode=view_mode,
                                  selected_template=None,
                                  shift_templates=[],
+                                 user_sede=user_sede,
+                                 sede_supports_turni=sede_supports_turni,
                                  get_italian_weekday=get_italian_weekday)
         else:
             # Show all templates in read-only mode (solo per Ente)
@@ -1278,6 +1290,10 @@ def shifts():
                 giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
                 return giorni[date_obj.weekday()]
             
+            # Check if user's sede supports turni mode
+            user_sede = current_user.sede_obj if current_user.sede_obj else None
+            sede_supports_turni = user_sede.is_turni_mode() if user_sede else False
+            
             return render_template('shifts.html', 
                                  shift_templates=shift_templates,
                                  today=date.today(),
@@ -1285,6 +1301,8 @@ def shifts():
                                  view_mode=view_mode,
                                  selected_template=None,
                                  shifts=None,
+                                 user_sede=user_sede,
+                                 sede_supports_turni=sede_supports_turni,
                                  get_italian_weekday=get_italian_weekday)
 
 @app.route('/create_shift', methods=['POST'])
