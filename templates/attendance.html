@@ -103,7 +103,7 @@
                                     <span class="text-info fw-bold">{{ record.shift_status|title }}</span>
                                     {% elif record.clock_in %}
                                     {% set indicators = record.get_attendance_indicators() %}
-                                    <span class="{% if indicators.entry == 'ritardo' %}text-danger{% elif indicators.entry == 'anticipo' %}text-info{% else %}text-white{% endif %}" style="{% if indicators.entry not in ['ritardo', 'anticipo'] %}color: white !important;{% endif %}">
+                                    <span style="{% if indicators.entry == 'ritardo' %}color: #dc3545 !important;{% elif indicators.entry == 'anticipo' %}color: #0dcaf0 !important;{% else %}color: white !important;{% endif %}">
                                         {{ record.clock_in|format_time_italian }}
                                         {% if indicators.entry == 'ritardo' %}
                                         <i class="fas fa-exclamation-triangle text-danger ms-1" title="Entrata in ritardo"></i>
@@ -137,7 +137,7 @@
                                     <span class="text-info">--</span>
                                     {% elif record.clock_out %}
                                     {% set indicators = record.get_attendance_indicators() %}
-                                    <span class="{% if indicators.exit == 'anticipo' %}text-warning{% elif indicators.exit == 'straordinario' %}text-info{% else %}text-white{% endif %}" style="{% if indicators.exit not in ['anticipo', 'straordinario'] %}color: white !important;{% endif %}">
+                                    <span style="{% if indicators.exit == 'anticipo' %}color: #ffc107 !important;{% elif indicators.exit == 'straordinario' %}color: #0dcaf0 !important;{% else %}color: white !important;{% endif %}">
                                         {{ record.clock_out|format_time_italian }}
                                         {% if indicators.exit == 'anticipo' %}
                                         <i class="fas fa-exclamation-triangle text-warning ms-1" title="Uscita anticipata"></i>
