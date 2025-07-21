@@ -4348,9 +4348,72 @@ def process_generate_turni_from_coverage():
             flash('Nessuna copertura trovata per il periodo specificato', 'warning')
             return redirect(url_for('generate_turnazioni'))
         
-        # TODO: Implementare la logica di generazione turni basata sulle coperture
-        # Per ora mostriamo un messaggio di sviluppo con le coperture trovate
-        flash(f'Funzionalità in sviluppo: Generazione turni per {sede.name} dal {start_date.strftime("%d/%m/%Y")} al {end_date.strftime("%d/%m/%Y")} utilizzando {len(coperture)} coperture', 'info')
+        # Implementa la generazione turni reale basata sulle coperture
+        from models import Shift
+        turni_creati = 0
+        turni_sostituiti = 0
+        current_date = start_date
+        
+        while current_date <= end_date:
+            # Trova le coperture per questo giorno della settimana
+            day_of_week = current_date.weekday()  # 0=Lunedì, 6=Domenica
+            
+            coperture_giorno = [c for c in coperture if c.day_of_week == day_of_week and c.is_valid_for_date(current_date)]
+            
+            for copertura in coperture_giorno:
+                # Verifica se esiste già un turno per questa data e orario
+                existing_shift = Shift.query.filter_by(
+                    date=current_date,
+                    start_time=copertura.start_time,
+                    end_time=copertura.end_time
+                ).first()
+                
+                if existing_shift and not replace_existing:
+                    continue  # Salta se esiste già e non si vuole sostituire
+                elif existing_shift and replace_existing:
+                    db.session.delete(existing_shift)
+                    turni_sostituiti += 1
+                
+                # Trova utenti disponibili per i ruoli richiesti
+                required_roles = copertura.get_required_roles_list()
+                available_users = User.query.filter(
+                    User.sede_id == sede_id,
+                    User.active == True,
+                    User.role.in_(required_roles)
+                ).all()
+                
+                if available_users:
+                    # Semplice assegnazione: rotazione basata su data per equità
+                    user_index = (current_date.day + copertura.id) % len(available_users)
+                    assigned_user = available_users[user_index]
+                    
+                    # Crea il turno
+                    new_shift = Shift(
+                        user_id=assigned_user.id,
+                        date=current_date,
+                        start_time=copertura.start_time,
+                        end_time=copertura.end_time,
+                        turno_type='Normale',
+                        description=f'Generato da copertura: {copertura.description or "Nessuna descrizione"}',
+                        created_by_id=current_user.id
+                    )
+                    db.session.add(new_shift)
+                    turni_creati += 1
+            
+            current_date += timedelta(days=1)
+        
+        db.session.commit()
+        
+        if turni_creati > 0 or turni_sostituiti > 0:
+            message_parts = []
+            if turni_creati > 0:
+                message_parts.append(f'{turni_creati} turni creati')
+            if turni_sostituiti > 0:
+                message_parts.append(f'{turni_sostituiti} turni sostituiti')
+            
+            flash(f'Generazione completata! {" e ".join(message_parts)} per {sede.name} dal {start_date.strftime("%d/%m/%Y")} al {end_date.strftime("%d/%m/%Y")}', 'success')
+        else:
+            flash(f'Nessun turno generato - potrebbero già esistere turni per il periodo o non ci sono utenti disponibili', 'warning')
         
     except (ValueError, AttributeError) as e:
         flash('ID periodo non valido', 'danger')
@@ -4394,7 +4457,7 @@ def view_generated_shifts():
     
     # Ottieni i turni generati nel periodo delle coperture
     shifts = Shift.query.filter(
-        Shift.user.has(sede=sede_id),
+        Shift.user.has(sede_id=sede_id),
         Shift.date >= coverage_start_date,
         Shift.date <= coverage_end_date
     ).order_by(Shift.date, Shift.start_time).all()
