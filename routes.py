@@ -4335,7 +4335,7 @@ def view_turni_coverage():
                 'start_date': copertura.start_date,
                 'end_date': copertura.end_date,
                 'coperture': [],
-                'is_active': copertura.start_date <= date.today() <= copertura.end_date
+                'is_active': copertura.is_active and copertura.end_date >= date.today()
             }
         coperture_grouped[period_key]['coperture'].append(copertura)
     
@@ -4393,7 +4393,7 @@ def generate_turni_from_coverage():
                 'start_date': copertura.start_date,
                 'end_date': copertura.end_date,
                 'coperture': [],
-                'is_active': copertura.start_date <= date.today() <= copertura.end_date,
+                'is_active': copertura.is_active and copertura.end_date >= date.today(),
                 'period_id': f"{copertura.start_date.strftime('%Y%m%d')}-{copertura.end_date.strftime('%Y%m%d')}"
             }
         coperture_grouped[period_key]['coperture'].append(copertura)
@@ -4653,7 +4653,7 @@ def generate_turnazioni():
                     'start_date': copertura.start_date,
                     'end_date': copertura.end_date,
                     'coperture': [],
-                    'is_active': copertura.start_date <= date.today() <= copertura.end_date,
+                    'is_active': copertura.is_active and copertura.end_date >= date.today(),
                     'period_id': f"{copertura.start_date.strftime('%Y%m%d')}-{copertura.end_date.strftime('%Y%m%d')}"
                 }
             coperture_grouped[period_key]['coperture'].append(copertura)
