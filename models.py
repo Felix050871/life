@@ -733,7 +733,7 @@ class PresidioCoverage(db.Model):
     day_of_week = db.Column(db.Integer, nullable=False)  # 0=Lunedì, 1=Martedì, ..., 6=Domenica
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
-    required_roles = db.Column(db.Text, nullable=False)  # JSON array dei ruoli richiesti per questa fascia
+    required_roles = db.Column(db.Text, nullable=False)  # JSON object con ruoli e numerosità: {"Operatore": 2, "Tecnico": 1}
     description = db.Column(db.String(200))  # Descrizione opzionale della copertura
     is_active = db.Column(db.Boolean, default=True)
     # Nuovi campi per periodo di validità
@@ -753,29 +753,52 @@ class PresidioCoverage(db.Model):
         """Restituisce la fascia oraria formattata"""
         return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
     
-    def get_required_roles_list(self):
-        """Restituisce la lista dei ruoli richiesti dal JSON"""
+    def get_required_roles_dict(self):
+        """Restituisce il dizionario ruoli e numerosità dal JSON"""
         import json
         try:
             return json.loads(self.required_roles)
         except (json.JSONDecodeError, TypeError):
-            return []
+            return {}
+    
+    def set_required_roles_dict(self, roles_dict):
+        """Imposta il dizionario ruoli e numerosità come JSON"""
+        import json
+        self.required_roles = json.dumps(roles_dict)
+    
+    def get_required_roles_list(self):
+        """Retrocompatibilità: restituisce solo la lista dei ruoli"""
+        return list(self.get_required_roles_dict().keys())
     
     def set_required_roles_list(self, roles_list):
-        """Imposta la lista dei ruoli richiesti come JSON"""
-        import json
-        self.required_roles = json.dumps(roles_list)
+        """Retrocompatibilità: converte lista in dizionario con count=1"""
+        roles_dict = {role: 1 for role in roles_list}
+        self.set_required_roles_dict(roles_dict)
     
     def get_required_roles_display(self):
-        """Restituisce i ruoli formattati per la visualizzazione"""
-        roles = self.get_required_roles_list()
-        if len(roles) == 1:
-            return roles[0]
-        elif len(roles) == 2:
-            return f"{roles[0]} o {roles[1]}"
-        elif len(roles) > 2:
-            return f"{', '.join(roles[:-1])} o {roles[-1]}"
-        return "Nessun ruolo"
+        """Restituisce i ruoli con numerosità formattati per la visualizzazione"""
+        roles_dict = self.get_required_roles_dict()
+        if not roles_dict:
+            return "Nessun ruolo"
+        
+        role_strings = []
+        for role, count in roles_dict.items():
+            if count == 1:
+                role_strings.append(role)
+            else:
+                role_strings.append(f"{count} {role}")
+        
+        if len(role_strings) == 1:
+            return role_strings[0]
+        elif len(role_strings) == 2:
+            return f"{role_strings[0]} + {role_strings[1]}"
+        else:
+            return ", ".join(role_strings[:-1]) + f" + {role_strings[-1]}"
+    
+    def get_total_resources_needed(self):
+        """Restituisce il numero totale di risorse necessarie"""
+        roles_dict = self.get_required_roles_dict()
+        return sum(roles_dict.values())
     
     def is_valid_for_date(self, check_date):
         """Verifica se la copertura è valida per una data specifica"""
