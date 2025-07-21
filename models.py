@@ -754,18 +754,11 @@ class PresidioCoverage(db.Model):
         return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
     
     def get_required_roles_dict(self):
-        """Restituisce il dizionario ruoli e numerosità dal JSON, con retrocompatibilità per liste"""
+        """Restituisce il dizionario ruoli e numerosità dal JSON"""
         import json
         try:
             data = json.loads(self.required_roles)
-            # Se è una lista (formato vecchio), converte in dizionario
-            if isinstance(data, list):
-                return {role: 1 for role in data}
-            # Se è già un dizionario, lo restituisce così com'è
-            elif isinstance(data, dict):
-                return data
-            else:
-                return {}
+            return data if isinstance(data, dict) else {}
         except (json.JSONDecodeError, TypeError):
             return {}
     
