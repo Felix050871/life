@@ -131,7 +131,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="createCoperturaForm" method="POST" action="{{ url_for('create_shift_coverage') }}">
-                {{ csrf_token() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <input type="hidden" id="sede_id" name="sede_id" value="">
                     
