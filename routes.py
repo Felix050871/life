@@ -4450,8 +4450,8 @@ def process_generate_turni_from_coverage():
         start_date = datetime.strptime(start_str, '%Y%m%d').date()
         end_date = datetime.strptime(end_str, '%Y%m%d').date()
         
-        # Ottieni le coperture per questo periodo
-        from models import PresidioCoverage
+        # Importa i modelli necessari
+        from models import PresidioCoverage, Shift
         coperture = PresidioCoverage.query.filter(
             PresidioCoverage.start_date <= end_date,
             PresidioCoverage.end_date >= start_date,
@@ -4486,7 +4486,6 @@ def process_generate_turni_from_coverage():
                                  replace_existing=replace_existing)
         
         # Implementa la generazione turni reale basata sulle coperture
-        from models import Shift
         turni_creati = 0
         turni_sostituiti = 0
         current_date = start_date
