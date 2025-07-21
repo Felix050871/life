@@ -2900,34 +2900,44 @@ def reperibilita_shifts():
             end_datetime=None
         ).first()
     
-    # Ottieni le coperture di reperibilità raggruppate per periodo invece dei template
+    # Raggruppa i turni esistenti per periodo per mostrare i periodi generati
     from collections import OrderedDict
-    from models import ReperibilitaCoverage
-    coverage_query = ReperibilitaCoverage.query.filter(
-        ReperibilitaCoverage.is_active == True
-    ).order_by(
-        ReperibilitaCoverage.start_date,
-        ReperibilitaCoverage.end_date,
-        ReperibilitaCoverage.day_of_week
-    ).all()
+    shift_periods = OrderedDict()
     
-    # Raggruppa coperture per periodo (start_date, end_date)
-    reperibilita_groups = OrderedDict()
-    for coverage in coverage_query:
-        period_key = f"{coverage.start_date}_{coverage.end_date}"
-        if period_key not in reperibilita_groups:
-            # Crea oggetto gruppo con dati del periodo
-            reperibilita_groups[period_key] = type('obj', (object,), {
-                'start_date': coverage.start_date,
-                'end_date': coverage.end_date,
-                'coverages': []
-            })()
-        reperibilita_groups[period_key].coverages.append(coverage)
+    # Ottieni tutti i turni per creare i periodi
+    all_shifts_query = ReperibilitaShift.query.order_by(ReperibilitaShift.date.asc()).all()
+    
+    for shift in all_shifts_query:
+        # Raggruppa per settimana o periodo logico
+        period_start = shift.date - timedelta(days=shift.date.weekday())  # Inizio settimana
+        period_end = period_start + timedelta(days=6)  # Fine settimana
+        period_key = f"{period_start}_{period_end}"
+        
+        if period_key not in shift_periods:
+            shift_periods[period_key] = {
+                'start_date': period_start,
+                'end_date': period_end,
+                'duration_days': (period_end - period_start).days + 1,
+                'shifts': [],
+                'unique_users': set(),
+                'unique_sedi': set()
+            }
+        
+        shift_periods[period_key]['shifts'].append(shift)
+        shift_periods[period_key]['unique_users'].add(shift.user.get_full_name())
+        if shift.user.sede_obj:
+            shift_periods[period_key]['unique_sedi'].add(shift.user.sede_obj.name)
+    
+    # Converti sets in liste ordinate e aggiungi conteggi
+    for period_data in shift_periods.values():
+        period_data['unique_users'] = sorted(list(period_data['unique_users']))
+        period_data['unique_sedi'] = sorted(list(period_data['unique_sedi']))
+        period_data['total_shifts'] = len(period_data['shifts'])
 
     return render_template('reperibilita_shifts.html', 
                          shifts=shifts, 
                          templates=templates,
-                         reperibilita_groups=reperibilita_groups,
+                         shift_periods=shift_periods,
                          shifts_by_day=shifts_by_day,
                          active_intervention=active_intervention,
                          calendar_days=calendar_days,

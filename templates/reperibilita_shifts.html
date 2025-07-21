@@ -20,84 +20,76 @@
 
 
 
-<!-- Coperture - Solo se non ci sono turni generati -->
-{% if not hide_coverage_section and current_user.role in ['Admin', 'Management', 'Ente'] %}
+<!-- Periodi Turni Generati -->
+{% if current_user.role in ['Admin', 'Management', 'Ente'] %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-layer-group me-2"></i>Coperture Reperibilità Attive</h5>
-                <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-cog"></i> Gestisci Coperture
-                </a>
+                <h5><i class="fas fa-layer-group me-2"></i>Periodi Reperibilità Generati</h5>
+                <div>
+                    <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-secondary btn-sm me-2">
+                        <i class="fas fa-cog"></i> Gestisci Coperture
+                    </a>
+                    <a href="{{ url_for('generate_reperibilita_shifts') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Genera Nuovi Turni
+                    </a>
+                </div>
             </div>
             <div class="card-body">
-                <!-- Mostra sempre le coperture reperibilità attive -->
-                {% if reperibilita_groups %}
-                    <div class="alert alert-success text-center">
-                        <i class="fas fa-check-circle me-2"></i>
-                        {{ reperibilita_groups|length }} coperture reperibilità attive. 
-                        <a href="{{ url_for('generate_reperibilita_shifts') }}" class="alert-link">Genera turni da coperture</a>.
-                    </div>
+                {% if shift_periods %}
                     <div class="table-responsive">
                         <table class="table table-hover table-sm">
                             <thead>
                                 <tr>
-                                    <th>Periodo Copertura</th>
-                                    <th>Sedi</th>
-                                    <th>Giorni Attivi</th>
+                                    <th>Periodo</th>
+                                    <th>Sedi Coinvolte</th>
+                                    <th>Utenti Assegnati</th>
                                     <th>Numero Turni</th>
                                     <th>Stato</th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for period_key, group in reperibilita_groups.items() %}
+                                {% for period_key, period_data in shift_periods.items() %}
                                 <tr>
                                     <td>
-                                        <strong>{{ group.start_date.strftime('%d/%m/%Y') }} - {{ group.end_date.strftime('%d/%m/%Y') }}</strong>
+                                        <strong>{{ period_data.start_date.strftime('%d/%m/%Y') }} - {{ period_data.end_date.strftime('%d/%m/%Y') }}</strong><br>
+                                        <small class="text-muted">{{ period_data.duration_days }} giorni</small>
                                     </td>
                                     <td>
-                                        {% set sedi_names = [] %}
-                                        {% for coverage in group.coverages %}
-                                            {% set coverage_sedi = coverage.get_sedi_names().split(', ') if coverage.get_sedi_names() else ['Tutte le sedi'] %}
-                                            {% set _ = sedi_names.extend(coverage_sedi) %}
-                                        {% endfor %}
-                                        {% set unique_sedi = sedi_names|unique|sort %}
-                                        {% if unique_sedi|length > 2 %}
-                                            <span class="badge bg-secondary" title="{{ unique_sedi|join(', ') }}">{{ unique_sedi|length }} sedi</span>
+                                        {% if period_data.unique_sedi|length > 2 %}
+                                            <span class="badge bg-secondary" title="{{ period_data.unique_sedi|join(', ') }}">{{ period_data.unique_sedi|length }} sedi</span>
                                         {% else %}
-                                            <span class="badge bg-secondary">{{ unique_sedi|join(', ') }}</span>
+                                            <span class="badge bg-secondary">{{ period_data.unique_sedi|join(', ') }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% set days = [] %}
-                                        {% for coverage in group.coverages %}
-                                            {% set day_names = {'0': 'Lun', '1': 'Mar', '2': 'Mer', '3': 'Gio', '4': 'Ven', '5': 'Sab', '6': 'Dom'} %}
-                                            {% set _ = days.append(day_names[coverage.day_of_week|string]) %}
-                                        {% endfor %}
-                                        <span class="badge bg-primary">{{ days|unique|sort|join(', ') }}</span>
+                                        <span class="badge bg-info">{{ period_data.unique_users|length }} utenti</span>
+                                        {% if period_data.unique_users|length <= 3 %}
+                                            <br><small class="text-muted">{{ period_data.unique_users|join(', ') }}</small>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-info">{{ group.coverages|length }} turni/settimana</span>
+                                        <span class="badge bg-primary">{{ period_data.total_shifts }} turni</span>
                                     </td>
                                     <td>
-                                        {% if group.end_date >= today_date %}
-                                            <span class="badge bg-success">Attiva</span>
+                                        {% if period_data.end_date >= today_date %}
+                                            <span class="badge bg-success">Attivo</span>
                                         {% else %}
-                                            <span class="badge bg-secondary">Scaduta</span>
+                                            <span class="badge bg-secondary">Scaduto</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-primary btn-sm" title="Visualizza coperture">
+                                            <a href="{{ url_for('reperibilita_template_detail', start_date=period_data.start_date.strftime('%Y-%m-%d'), end_date=period_data.end_date.strftime('%Y-%m-%d')) }}" class="btn btn-outline-primary btn-sm" title="Visualizza turni">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if current_user.role in ['Admin', 'Management'] %}
                                             <a href="{{ url_for('generate_reperibilita_shifts') }}?regenerate={{ period_key }}" class="btn btn-outline-warning btn-sm" title="Rigenera turni">
                                                 <i class="fas fa-sync-alt"></i>
                                             </a>
-                                            <button type="button" class="btn btn-outline-danger btn-sm" title="Elimina copertura" onclick="deleteCoverage('{{ period_key }}', '{{ group.start_date.strftime('%d/%m/%Y') }} - {{ group.end_date.strftime('%d/%m/%Y') }}')">
+                                            <button type="button" class="btn btn-outline-danger btn-sm" title="Elimina periodo" onclick="deletePeriod('{{ period_key }}', '{{ period_data.start_date.strftime('%d/%m/%Y') }} - {{ period_data.end_date.strftime('%d/%m/%Y') }}')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                             {% endif %}
@@ -111,8 +103,8 @@
                 {% else %}
                     <div class="alert alert-info text-center">
                         <i class="fas fa-info-circle me-2"></i>
-                        Nessuna copertura reperibilità configurata. 
-                        <a href="{{ url_for('reperibilita_coverage') }}" class="alert-link">Crea le prime coperture</a> poi 
+                        Nessun periodo di reperibilità generato. 
+                        <a href="{{ url_for('reperibilita_coverage') }}" class="alert-link">Crea le coperture</a> poi 
                         <a href="{{ url_for('generate_reperibilita_shifts') }}" class="alert-link">genera i turni</a>.
                     </div>
                 {% endif %}
@@ -418,6 +410,13 @@ function deleteCoverage(periodKey, periodName) {
 // Funzione per eliminare copertura reperibilità
 function deleteCoverage(periodKey, periodName) {
     if (confirm('Sei sicuro di voler eliminare la copertura del periodo "' + periodName + '"?\n\nQuesta operazione eliminerà anche tutti i turni generati per questo periodo e non può essere annullata.')) {
+        window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
+    }
+}
+
+// Funzione per eliminare periodo turni
+function deletePeriod(periodKey, periodName) {
+    if (confirm('Sei sicuro di voler eliminare tutti i turni del periodo "' + periodName + '"?\n\nQuesta operazione non può essere annullata.')) {
         window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
     }
 }
