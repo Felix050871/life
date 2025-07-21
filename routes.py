@@ -5309,7 +5309,7 @@ def edit_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin']
+    protected_roles = ['Admin', 'Amministratore']
     if role.name in protected_roles:
         flash(f'Il ruolo "{role.display_name}" è protetto e non può essere modificato', 'danger')
         return redirect(url_for('manage_roles'))
@@ -5349,7 +5349,7 @@ def toggle_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin']
+    protected_roles = ['Admin', 'Amministratore']
     if role.name in protected_roles:
         flash(f'Non è possibile disattivare il ruolo "{role.display_name}" perché è protetto dal sistema', 'danger')
         return redirect(url_for('manage_roles'))
@@ -5373,7 +5373,7 @@ def delete_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin']
+    protected_roles = ['Admin', 'Amministratore']
     if role.name in protected_roles:
         flash(f'Non è possibile eliminare il ruolo "{role.display_name}" perché è protetto dal sistema', 'danger')
         return redirect(url_for('manage_roles'))
