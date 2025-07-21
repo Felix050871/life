@@ -9,7 +9,7 @@
             <h1><i class="fas fa-magic me-2"></i>Genera Turnazioni</h1>
             <p class="text-muted">Crea automaticamente turni e coperture per le sedi con modalità "Turni"</p>
             
-            {% if not sedi_turni %}
+            {% if not sedi_with_coverage %}
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
                 {% if is_admin %}
@@ -21,41 +21,117 @@
             </div>
             {% else %}
             
-            <!-- Selettore sede -->
+            <!-- Sedi con coperture -->
+            {% for sede_data in sedi_with_coverage %}
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5><i class="fas fa-building me-2"></i>Seleziona Sede</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-1"><i class="fas fa-building me-2"></i>{{ sede_data.sede.name }}</h4>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-users me-1"></i>{{ sede_data.sede.users|selectattr('active')|list|length }} utenti attivi
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-cogs me-1"></i>{{ sede_data.total_coperture }} coperture totali
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-check-circle me-1"></i>{{ sede_data.active_coperture }} attive
+                        </p>
+                    </div>
+                    <span class="badge bg-primary fs-6">{{ sede_data.sede.tipologia }}</span>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        {% for sede in sedi_turni %}
-                        <div class="col-12 mb-4">
-                            <div class="card border-primary">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h5 class="mb-1">{{ sede.name }}</h5>
-                                        <p class="text-muted mb-0">
-                                            {{ sede.users|selectattr('active')|list|length }} utenti attivi
-                                        </p>
-                                    </div>
-                                    <span class="badge bg-primary">{{ sede.tipologia }}</span>
+                    {% if sede_data.coperture_grouped %}
+                        {% for period_key, period_data in sede_data.coperture_grouped.items() %}
+                        <div class="card mb-3 border-left-{{ 'success' if period_data.is_active else 'secondary' }}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-calendar-alt me-2"></i>
+                                        Periodo: {{ period_data.start_date.strftime('%d/%m/%Y') }} - {{ period_data.end_date.strftime('%d/%m/%Y') }}
+                                    </h6>
+                                    {% if period_data.is_active %}
+                                        <span class="badge bg-success">ATTIVO</span>
+                                    {% else %}
+                                        {% if period_data.end_date < today %}
+                                            <span class="badge bg-secondary">SCADUTO</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">FUTURO</span>
+                                        {% endif %}
+                                    {% endif %}
                                 </div>
-                                <div class="card-body">
-                                    <div id="coperture-sede-{{ sede.id }}">
-                                        <div class="text-center py-3">
-                                            <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                                <span class="visually-hidden">Caricamento...</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-cog"></i> Azioni
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="showGenerateModal({{ sede_data.sede.id }}, '{{ period_data.period_id }}', '{{ period_key }}')">
+                                            <i class="fas fa-magic me-2"></i>Genera Turni
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="viewGeneratedShifts({{ sede_data.sede.id }}, '{{ period_data.period_id }}')">
+                                            <i class="fas fa-eye me-2"></i>Visualizza
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="editCoveragePeriod('{{ period_data.period_id }}')">
+                                            <i class="fas fa-edit me-2"></i>Modifica Periodo
+                                        </a></li>
+                                        <li><a class="dropdown-item text-warning" href="#" onclick="disableCoveragePeriod('{{ period_data.period_id }}')">
+                                            <i class="fas fa-pause me-2"></i>Disabilita
+                                        </a></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteCoveragePeriod('{{ period_data.period_id }}')">
+                                            <i class="fas fa-trash me-2"></i>Elimina
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for copertura in period_data.coperture %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card h-100 border-left-{{ 'success' if copertura.is_valid_for_date(today) else 'secondary' }}">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="card-title mb-1">{{ copertura.get_day_name() }}</h6>
+                                                    {% if copertura.is_valid_for_date(today) %}
+                                                        <span class="badge bg-success">Attiva</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inattiva</span>
+                                                    {% endif %}
+                                                </div>
+                                                <p class="text-muted mb-2">
+                                                    <i class="fas fa-clock me-1"></i>{{ copertura.get_time_range() }}
+                                                </p>
+                                                <p class="text-muted mb-2">
+                                                    <i class="fas fa-users me-1"></i>{{ copertura.get_required_roles_display() }}
+                                                </p>
+                                                {% if copertura.description %}
+                                                <p class="text-muted small mb-0">{{ copertura.description }}</p>
+                                                {% endif %}
                                             </div>
-                                            <p class="text-muted mt-2 mb-0">Caricamento coperture...</p>
+                                            <div class="card-footer">
+                                                <small class="text-muted">
+                                                    Creato il {{ copertura.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                                    {% if copertura.creator %}
+                                                        da {{ copertura.creator.get_full_name() }}
+                                                    {% endif %}
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
-                    </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-2">Nessuna copertura creata per questa sede</p>
+                            <a href="{{ url_for('manage_turni') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i>Crea Copertura
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
+            {% endfor %}
             
             <!-- Guida alla generazione -->
             <div class="row">
@@ -129,104 +205,7 @@
 </div>
 
 <script>
-// Carica le coperture per ogni sede al caricamento della pagina
-document.addEventListener('DOMContentLoaded', function() {
-    {% for sede in sedi_turni %}
-    loadSedeCopertrue({{ sede.id }});
-    {% endfor %}
-});
-
-async function loadSedeCopertrue(sedeId) {
-    try {
-        const response = await fetch(`/api/sede/${sedeId}/coperture`);
-        if (!response.ok) throw new Error('Errore nel caricamento');
-        
-        const data = await response.json();
-        const container = document.getElementById(`coperture-sede-${sedeId}`);
-        
-        if (data.coperture_grouped && Object.keys(data.coperture_grouped).length > 0) {
-            let html = '';
-            
-            for (const [periodKey, periodData] of Object.entries(data.coperture_grouped)) {
-                const isActive = new Date(periodData.end_date) >= new Date();
-                const statusBadge = periodData.is_active ? 
-                    '<span class="badge bg-success">ATTIVO</span>' :
-                    (new Date(periodData.end_date) < new Date() ? 
-                        '<span class="badge bg-secondary">SCADUTO</span>' : 
-                        '<span class="badge bg-warning">FUTURO</span>');
-                
-                html += `
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0">
-                                <i class="fas fa-calendar-alt me-1"></i>
-                                ${periodData.start_date} - ${periodData.end_date}
-                            </h6>
-                            <div>
-                                ${statusBadge}
-                                ${isActive ? `
-                                    <button class="btn btn-success btn-sm ms-2" onclick="showGenerateModal(${sedeId}, '${periodData.period_id}', '${periodKey}')">
-                                        <i class="fas fa-magic me-1"></i>Genera Turni
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm ms-1" onclick="viewGeneratedShifts(${sedeId}, '${periodData.period_id}')">
-                                        <i class="fas fa-eye me-1"></i>Visualizza
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                        <div class="row">
-                `;
-                
-                periodData.coperture.forEach(copertura => {
-                    const isActiveClass = copertura.is_valid ? 'border-success' : 'border-secondary';
-                    const statusBadgeClass = copertura.is_valid ? 'bg-success' : 'bg-secondary';
-                    
-                    html += `
-                        <div class="col-md-6 col-lg-4 mb-2">
-                            <div class="card card-sm h-100 ${isActiveClass}">
-                                <div class="card-body p-2">
-                                    <div class="d-flex justify-content-between align-items-start mb-1">
-                                        <small class="fw-bold">${copertura.day_name}</small>
-                                        <span class="badge ${statusBadgeClass} badge-sm">${copertura.is_valid ? 'Attiva' : 'Inattiva'}</span>
-                                    </div>
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-clock me-1"></i>${copertura.time_range}
-                                    </small>
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-users me-1"></i>${copertura.roles_display}
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                html += '</div></div>';
-            }
-            
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = `
-                <div class="text-center py-4">
-                    <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
-                    <p class="text-muted mb-2">Nessuna copertura creata per questa sede</p>
-                    <a href="/admin/turni" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus me-1"></i>Crea Copertura
-                    </a>
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Errore caricamento coperture:', error);
-        const container = document.getElementById(`coperture-sede-${sedeId}`);
-        container.innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
-                <p class="text-muted mb-0">Errore nel caricamento delle coperture</p>
-            </div>
-        `;
-    }
-}
+// Funzioni per le azioni senza necessità di caricamento dinamico
 
 function showGenerateModal(sedeId, periodId, periodDisplay) {
     // Conferma la generazione e procedi direttamente
@@ -254,6 +233,25 @@ function showGenerateModal(sedeId, periodId, periodDisplay) {
 function viewGeneratedShifts(sedeId, periodId) {
     // Reindirizza alla pagina di visualizzazione turni generati
     window.location.href = `/admin/turni/visualizza-generati?sede=${sedeId}&period=${periodId}`;
+}
+
+function editCoveragePeriod(periodId) {
+    // TODO: Implementare modifica periodo copertura
+    alert(`Modifica periodo ${periodId} - Funzionalità in sviluppo`);
+}
+
+function disableCoveragePeriod(periodId) {
+    if (confirm('Sei sicuro di voler disabilitare tutte le coperture di questo periodo?')) {
+        // TODO: Implementare disabilitazione periodo
+        alert(`Disabilitazione periodo ${periodId} - Funzionalità in sviluppo`);
+    }
+}
+
+function deleteCoveragePeriod(periodId) {
+    if (confirm('ATTENZIONE: Questa azione eliminerà TUTTE le coperture del periodo. Continuare?')) {
+        // TODO: Implementare eliminazione periodo
+        alert(`Eliminazione periodo ${periodId} - Funzionalità in sviluppo`);
+    }
 }
 </script>
 
