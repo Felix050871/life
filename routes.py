@@ -3132,6 +3132,9 @@ def generate_reperibilita_shifts():
             flash(f'Errore durante la generazione: {str(e)}', 'error')
     else:
         print(f"[DEBUG] Form NON validato. Errori: {form.errors}", flush=True, file=sys.stderr)
+        print(f"[DEBUG] use_full_period: {form.use_full_period.data}", flush=True, file=sys.stderr)
+        print(f"[DEBUG] start_date data: {form.start_date.data}", flush=True, file=sys.stderr)
+        print(f"[DEBUG] end_date data: {form.end_date.data}", flush=True, file=sys.stderr)
     
     return render_template('generate_reperibilita_shifts.html', form=form)
 
