@@ -4170,14 +4170,12 @@ def manage_turni():
             User.active == True
         ).count()
         
-        reperibilita_count = db.session.query(ReperibilitaShift).join(User, ReperibilitaShift.user_id == User.id).filter(
-            User.sede_id == sede.id,
-            User.active == True
-        ).count()
+        # Conta template di copertura per questa sede
+        coperture_count = 0  # Per ora 0, implementeremo i template in futuro
         
         sede_stats[sede.id] = {
             'turni_count': turni_count,
-            'reperibilita_count': reperibilita_count,
+            'coperture_count': coperture_count,
             'users_count': len([u for u in sede.users if u.active])
         }
     
@@ -4206,6 +4204,120 @@ def generate_turnazioni():
     return render_template('generate_turnazioni.html', 
                          sedi_turni=sedi_turni,
                          is_admin=(current_user.role == 'Admin'))
+
+@app.route('/api/sede/<int:sede_id>/users')
+@login_required
+def get_sede_users(sede_id):
+    """API per ottenere gli utenti di una sede specifica"""
+    if not current_user.can_access_turni():
+        return jsonify({'error': 'Non autorizzato'}), 403
+    
+    sede = Sede.query.get_or_404(sede_id)
+    
+    # Verifica che l'utente possa accedere a questa sede
+    if current_user.role != 'Admin' and (not current_user.sede_obj or current_user.sede_obj.id != sede_id):
+        return jsonify({'error': 'Non autorizzato'}), 403
+    
+    # Ottieni utenti attivi della sede (esclusi Admin e Staff)
+    users = User.query.filter_by(
+        sede_id=sede_id, 
+        active=True
+    ).filter(
+        User.role.notin_(['Admin', 'Staff'])
+    ).order_by(User.first_name, User.last_name).all()
+    
+    users_data = []
+    for user in users:
+        users_data.append({
+            'id': user.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role
+        })
+    
+    return jsonify(users_data)
+
+@app.route('/admin/turni/create', methods=['POST'])
+@login_required
+def create_turno_shift():
+    """Crea un nuovo turno"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per creare turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        sede_id = request.form.get('sede_id', type=int)
+        user_id = request.form.get('user_id', type=int)
+        date_str = request.form.get('date')
+        start_time_str = request.form.get('start_time')
+        end_time_str = request.form.get('end_time')
+        shift_type = request.form.get('shift_type', 'regular')
+        notes = request.form.get('notes', '')
+        
+        # Validazioni
+        if not all([sede_id, user_id, date_str, start_time_str, end_time_str]):
+            flash('Tutti i campi obbligatori devono essere compilati', 'danger')
+            return redirect(url_for('manage_turni'))
+        
+        # Verifica permessi sede
+        sede = Sede.query.get_or_404(sede_id)
+        if current_user.role != 'Admin' and (not current_user.sede_obj or current_user.sede_obj.id != sede_id):
+            flash('Non hai i permessi per questa sede', 'danger')
+            return redirect(url_for('manage_turni'))
+        
+        # Verifica che la sede sia di tipo "Turni"
+        if not sede.is_turni_mode():
+            flash('La sede selezionata non è configurata per la modalità turni', 'danger')
+            return redirect(url_for('manage_turni'))
+        
+        # Verifica che l'utente appartenga alla sede
+        user = User.query.get_or_404(user_id)
+        if user.sede_id != sede_id:
+            flash('L\'utente selezionato non appartiene a questa sede', 'danger')
+            return redirect(url_for('manage_turni'))
+        
+        # Conversione date e orari
+        from datetime import datetime, time
+        shift_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        start_time = datetime.strptime(start_time_str, '%H:%M').time()
+        end_time = datetime.strptime(end_time_str, '%H:%M').time()
+        
+        # Verifica che l'orario sia valido
+        if start_time >= end_time:
+            flash('L\'orario di inizio deve essere precedente all\'orario di fine', 'danger')
+            return redirect(url_for('manage_turni'))
+        
+        # Verifica sovrapposizioni con turni esistenti
+        existing_shifts = Shift.query.filter_by(
+            user_id=user_id,
+            date=shift_date
+        ).all()
+        
+        for existing in existing_shifts:
+            if (start_time < existing.end_time and end_time > existing.start_time):
+                flash(f'Sovrapposizione con turno esistente: {existing.start_time.strftime("%H:%M")} - {existing.end_time.strftime("%H:%M")}', 'danger')
+                return redirect(url_for('manage_turni'))
+        
+        # Crea il turno (rimuovo notes se non esiste nel modello)
+        shift = Shift(
+            user_id=user_id,
+            date=shift_date,
+            start_time=start_time,
+            end_time=end_time,
+            shift_type=shift_type,
+            created_by=current_user.id
+        )
+        
+        db.session.add(shift)
+        db.session.commit()
+        
+        flash(f'Turno creato con successo per {user.get_full_name()} il {shift_date.strftime("%d/%m/%Y")}', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore nella creazione del turno: {str(e)}', 'danger')
+    
+    return redirect(url_for('manage_turni'))
 
 # ===============================
 # GESTIONE SEDI E ORARI DI LAVORO
