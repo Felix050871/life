@@ -211,7 +211,7 @@
                                            title="Modifica utente">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        {% if user.id != current_user.id %}
+                                        {% if user.id != current_user.id and user.role != 'Amministratore' %}
                                         <a href="{{ url_for('toggle_user', user_id=user.id) }}" 
                                            class="btn {% if user.active %}btn-outline-danger{% else %}btn-outline-success{% endif %} confirm-link"
                                            data-message="{% if user.active %}Disattivare{% else %}Attivare{% endif %} questo utente?"

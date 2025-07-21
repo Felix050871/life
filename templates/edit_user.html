@@ -145,8 +145,15 @@
                                 </div>
                                 <small class="text-muted mb-3 d-block">Se abilitato, può accedere a tutte le sedi</small>
                                 <div class="form-check">
-                                    {{ form.is_active(class="form-check-input") }}
-                                    {{ form.is_active.label(class="form-check-label") }}
+                                    {% if user.role == 'Amministratore' %}
+                                        {{ form.is_active(class="form-check-input", disabled=true, checked=true) }}
+                                        {{ form.is_active.label(class="form-check-label text-muted") }}
+                                        <input type="hidden" name="is_active" value="True">
+                                        <small class="text-muted d-block">L'amministratore non può essere disattivato</small>
+                                    {% else %}
+                                        {{ form.is_active(class="form-check-input") }}
+                                        {{ form.is_active.label(class="form-check-label") }}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

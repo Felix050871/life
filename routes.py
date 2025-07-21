@@ -1778,6 +1778,11 @@ def edit_user(user_id):
             form.sede.data = user.sede_id
     
     if form.validate_on_submit():
+        # Impedisce la disattivazione dell'amministratore
+        if user.role == 'Amministratore' and not form.is_active.data:
+            flash('Non è possibile disattivare l\'utente amministratore', 'danger')
+            return render_template('edit_user.html', form=form, user=user)
+        
         user.username = form.username.data
         user.email = form.email.data
         user.role = form.role.data
@@ -1813,6 +1818,11 @@ def toggle_user(user_id):
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
         flash('Non puoi disattivare il tuo account', 'warning')
+        return redirect(url_for('user_management'))
+    
+    # Impedisce la disattivazione dell'amministratore
+    if user.role == 'Amministratore':
+        flash('Non è possibile disattivare l\'utente amministratore', 'danger')
         return redirect(url_for('user_management'))
     
     user.active = not user.active
