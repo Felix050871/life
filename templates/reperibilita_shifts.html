@@ -32,54 +32,7 @@
                 </a>
             </div>
             <div class="card-body">
-                {% if templates %}
-                <!-- Template List -->
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Nome Template</th>
-                                <th>Periodo</th>
-                                <th>Descrizione</th>
-                                <th>Creato da</th>
-                                <th>Data Creazione</th>
-                                <th>Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for template in templates %}
-                            <tr>
-                                <td><strong>{{ template.name }}</strong></td>
-                                <td>
-                                    <span class="badge bg-info">
-                                        {{ template.start_date.strftime('%d/%m/%Y') }} - {{ template.end_date.strftime('%d/%m/%Y') }}
-                                    </span>
-                                </td>
-                                <td>{{ template.description or 'Nessuna descrizione' }}</td>
-                                <td>Administrator System</td>
-                                <td>{{ template.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('reperibilita_template_detail', start_date=template.start_date.strftime('%Y-%m-%d'), end_date=template.end_date.strftime('%Y-%m-%d')) }}" class="btn btn-primary" title="Visualizza turni">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        {% if current_user.role in ['Admin', 'Management'] %}
-                                        <a href="{{ url_for('regenerate_reperibilita_template', template_id=template.id) }}" class="btn btn-outline-warning" title="Rigenera turni">
-                                            <i class="fas fa-sync-alt"></i>
-                                        </a>
-                                        <a href="javascript:void(0)" class="btn btn-outline-danger" title="Elimina template" onclick="deleteTemplate({{ template.id }}, '{{ template.name }}')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <!-- Mostra coperture invece dei template -->
+                <!-- Mostra sempre le coperture reperibilità attive -->
                 {% if reperibilita_groups %}
                     <div class="alert alert-success text-center">
                         <i class="fas fa-check-circle me-2"></i>
@@ -162,7 +115,6 @@
                         <a href="{{ url_for('reperibilita_coverage') }}" class="alert-link">Crea le prime coperture</a> poi 
                         <a href="{{ url_for('generate_reperibilita_shifts') }}" class="alert-link">genera i turni</a>.
                     </div>
-                {% endif %}
                 {% endif %}
             </div>
         </div>
