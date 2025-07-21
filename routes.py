@@ -4717,7 +4717,7 @@ def regenerate_turni_from_coverage():
             
             day_coverages = [c for c in coperture if 
                            c.start_date <= current_date <= c.end_date and
-                           day_of_week in c.get_active_days()]
+                           c.day_of_week == day_of_week]
             
             for coverage in day_coverages:
                 # Ottieni utenti disponibili per questa sede e copertura
