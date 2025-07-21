@@ -210,16 +210,16 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.is_active %}
+                                    {% if user.active %}
                                         <span class="badge bg-success">Attivo</span>
                                     {% else %}
                                         <span class="badge bg-danger">Inattivo</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% set last_attendance = user.attendances.order_by(user.attendances.property.mapper.class_.date.desc()).first() %}
-                                    {% if last_attendance %}
-                                        {{ last_attendance.date.strftime('%d/%m/%Y') }}
+                                    {% set last_date = user.get_last_attendance_date() %}
+                                    {% if last_date %}
+                                        {{ last_date.strftime('%d/%m/%Y') }}
                                     {% else %}
                                         <span class="text-muted">Mai</span>
                                     {% endif %}

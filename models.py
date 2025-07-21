@@ -74,6 +74,9 @@ class User(UserMixin, db.Model):
     # Relationship con Sede
     sede_obj = db.relationship('Sede', backref='users')
     
+    # Relationship con AttendanceEvent
+    attendances = db.relationship('AttendanceEvent', backref='user', lazy='dynamic')
+    
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
     
@@ -145,6 +148,13 @@ class User(UserMixin, db.Model):
         if self.sede_obj:
             return [self.sede_obj.name]
         return []
+    
+    def get_last_attendance_date(self):
+        """Restituisce la data dell'ultima presenza dell'utente"""
+        last_attendance = self.attendances.order_by(AttendanceEvent.date.desc()).first()
+        if last_attendance:
+            return last_attendance.date
+        return None
 
 
 class AttendanceEvent(db.Model):
