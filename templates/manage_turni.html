@@ -130,7 +130,7 @@
                 <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Crea Nuova Copertura Turni</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="createCoperturaForm" method="POST" action="{{ url_for('create_turni_coverage') }}">
+            <form id="createCoperturaForm" method="POST" action="{{ url_for('create_shift_coverage') }}">
                 {{ csrf_token() }}
                 <div class="modal-body">
                     <input type="hidden" id="sede_id" name="sede_id" value="">
