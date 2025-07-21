@@ -837,6 +837,16 @@ def get_team_statistics(start_date=None, end_date=None):
         
         team_avg_resolution_time = sum(team_resolution_times) / len(team_resolution_times) if team_resolution_times else 0
         
+        # Calculate role-based statistics
+        role_stats = {}
+        all_active_users = User.query.filter(User.active.is_(True)).all()
+        
+        for user in all_active_users:
+            role = user.role
+            if role not in role_stats:
+                role_stats[role] = 0
+            role_stats[role] += 1
+        
         return {
             'active_users': active_users,
             'total_hours': round(estimated_hours, 2),
@@ -849,7 +859,9 @@ def get_team_statistics(start_date=None, end_date=None):
             'team_avg_resolution_time_minutes': round(team_avg_resolution_time, 1),
             'total_team_intervention_hours': round(total_team_intervention_hours, 2),
             'team_remote_interventions': team_remote_interventions,
-            'team_onsite_interventions': team_onsite_interventions
+            'team_onsite_interventions': team_onsite_interventions,
+            # Statistiche per ruolo
+            'role_stats': role_stats
         }
         
     except Exception as e:

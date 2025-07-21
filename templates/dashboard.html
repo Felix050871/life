@@ -239,8 +239,29 @@
             </div>
         </div>
     </div>
-
 </div>
+
+<!-- User Role Statistics -->
+{% if team_stats.role_stats %}
+<div class="row mb-4">
+    <div class="col">
+        <h4><i class="fas fa-user-tag me-2"></i>Statistiche Utenti</h4>
+    </div>
+</div>
+<div class="row mb-4">
+    {% for role, count in team_stats.role_stats.items() %}
+    <div class="col-md-2 col-sm-4 col-6 mb-3">
+        <div class="card {% if role == 'Amministratore' %}bg-danger{% elif role == 'Responsabile' %}bg-primary{% elif role == 'Supervisore' %}bg-warning{% elif role == 'Operatore' %}bg-info{% elif role == 'Ospite' %}bg-secondary{% else %}bg-success{% endif %}">
+            <div class="card-body text-center text-white">
+                <h4>{{ count }}</h4>
+                <small>{{ role }}</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 {% endif %}
 
 <!-- Personal Attendance Section for managers -->
