@@ -4283,12 +4283,24 @@ def create_shift_coverage():
         
         # Raccogli orari per ogni giorno selezionato
         day_schedules = {}
+        base_start_time = request.form.get('base_start_time')
+        base_end_time = request.form.get('base_end_time')
+        base_break_start = request.form.get('base_break_start')
+        base_break_end = request.form.get('base_break_end')
+        
         for day in days_of_week:
             day_int = int(day)
-            start_time_str = request.form.get(f'start_time_{day}')
-            end_time_str = request.form.get(f'end_time_{day}')
-            break_start_str = request.form.get(f'break_start_{day}')
-            break_end_str = request.form.get(f'break_end_{day}')
+            # Prima controlla se ci sono orari personalizzati per questo giorno
+            custom_start = request.form.get(f'start_time_{day}')
+            custom_end = request.form.get(f'end_time_{day}')
+            custom_break_start = request.form.get(f'break_start_{day}')
+            custom_break_end = request.form.get(f'break_end_{day}')
+            
+            # Usa orari personalizzati se presenti, altrimenti usa quelli di base
+            start_time_str = custom_start if custom_start else base_start_time
+            end_time_str = custom_end if custom_end else base_end_time
+            break_start_str = custom_break_start if custom_break_start else base_break_start
+            break_end_str = custom_break_end if custom_break_end else base_break_end
             
             if start_time_str and end_time_str:
                 day_schedules[day_int] = {
