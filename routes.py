@@ -5673,7 +5673,8 @@ def view_turni_for_period():
         sede_ids = [sede.id for sede in accessible_sedi]
         
         # Query turni filtrando per periodo e utenti delle sedi
-        turni_periodo = Shift.query.join(User).filter(
+        # Specificare la condizione JOIN esplicita per evitare ambiguità
+        turni_periodo = Shift.query.join(User, Shift.user_id == User.id).filter(
             User.sede_id.in_(sede_ids),
             Shift.date >= start_date,
             Shift.date <= end_date
