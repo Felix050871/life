@@ -7,9 +7,11 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-users-gear me-2"></i>Gestione Ruoli</h2>
+                {% if current_user.can_manage_roles() %}
                 <a href="{{ url_for('create_role') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-1"></i>Nuovo Ruolo
                 </a>
+                {% endif %}
             </div>
 
             <div class="card">
@@ -67,6 +69,7 @@
                                         <span class="badge bg-primary">{{ user_count }}</span>
                                     </td>
                                     <td>
+                                        {% if current_user.can_manage_roles() %}
                                         <div class="btn-group btn-group-sm">
                                             {% if role.name in ['Admin', 'Amministratore'] %}
                                             <button class="btn btn-outline-secondary" disabled title="Ruolo protetto dal sistema">
@@ -105,6 +108,9 @@
                                             {% endif %}
                                             {% endif %}
                                         </div>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Solo lettura</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
