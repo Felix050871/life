@@ -2200,9 +2200,9 @@ def not_found_error(error):
 @app.route('/edit_shift/<int:shift_id>', methods=['GET', 'POST'])
 @login_required
 def edit_shift(shift_id):
-    if not current_user.can_manage_shifts():
+    if not current_user.can_access_turni():
         flash('Non hai i permessi per modificare turni', 'danger')
-        return redirect(url_for('shifts'))
+        return redirect(url_for('dashboard'))
     
     shift = Shift.query.get_or_404(shift_id)
     
@@ -4769,7 +4769,7 @@ def regenerate_turni_from_coverage():
 @login_required
 def delete_shift(shift_id):
     """Elimina un singolo turno"""
-    if not current_user.can_manage_shifts():
+    if not current_user.can_access_turni():
         flash('Non hai i permessi per eliminare turni', 'danger')
         return redirect(url_for('dashboard'))
     

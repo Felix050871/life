@@ -131,8 +131,8 @@ class User(UserMixin, db.Model):
         # Admin può gestire turni per tutte le sedi "Turni"
         if self.role == 'Admin':
             return True
-        # Management può gestire turni solo se la sua sede è di tipo "Turni"
-        if self.role == 'Management' and self.sede_obj and self.sede_obj.is_turni_mode():
+        # Tutti i ruoli operativi possono accedere ai turni se la sede è di tipo "Turni"
+        if self.role in ['Management', 'Operatore', 'Sviluppatore', 'Redattore'] and self.sede_obj and self.sede_obj.is_turni_mode():
             return True
         return False
     
