@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Turni{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1><i class="fas fa-calendar-alt me-2"></i>Gestione Turni</h1>
+            <p class="text-muted">Gestisci i turni per le sedi configurate con modalità "Turni"</p>
+            
+            {% if not sedi_turni %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                {% if is_admin %}
+                Nessuna sede configurata con modalità "Turni". 
+                <a href="{{ url_for('manage_sedi') }}">Configura le sedi</a> per iniziare a gestire i turni.
+                {% else %}
+                La tua sede non è configurata per la modalità "Turni". Contatta l'amministratore per abilitare la gestione turni.
+                {% endif %}
+            </div>
+            {% else %}
+            
+            <!-- Lista sedi con turni -->
+            <div class="row">
+                {% for sede in sedi_turni %}
+                {% set stats = sede_stats.get(sede.id, {}) %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-building me-2"></i>{{ sede.name }}
+                            </h5>
+                            <span class="badge bg-primary">Turni</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <h6 class="text-muted">Utenti</h6>
+                                    <span class="badge bg-info fs-6">{{ stats.get('users_count', 0) }}</span>
+                                </div>
+                                <div class="col-4">
+                                    <h6 class="text-muted">Turni</h6>
+                                    <span class="badge bg-primary fs-6">{{ stats.get('turni_count', 0) }}</span>
+                                </div>
+                                <div class="col-4">
+                                    <h6 class="text-muted">Reperibilità</h6>
+                                    <span class="badge bg-success fs-6">{{ stats.get('reperibilita_count', 0) }}</span>
+                                </div>
+                            </div>
+                            
+                            {% if sede.description %}
+                            <hr>
+                            <p class="text-muted small mb-0">{{ sede.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                <a href="{{ url_for('shifts') }}?sede={{ sede.id }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>Visualizza Turni
+                                </a>
+                                <a href="{{ url_for('generate_turnazioni') }}?sede={{ sede.id }}" 
+                                   class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-magic me-1"></i>Genera Turni
+                                </a>
+                                {% if is_admin %}
+                                <a href="{{ url_for('reperibilita_coverage') }}?sede={{ sede.id }}" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-cogs me-1"></i>Coperture
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Sezione informativa -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-info-circle me-2"></i>Informazioni Gestione Turni</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-calendar-alt me-2"></i>Turni Regolari</h6>
+                                    <p class="text-muted small">
+                                        I turni regolari sono assegnazioni di lavoro standard per gli utenti.
+                                        Possono essere creati manualmente o generati automaticamente.
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-phone-alt me-2"></i>Turni Reperibilità</h6>
+                                    <p class="text-muted small">
+                                        I turni di reperibilità gestiscono la copertura per interventi
+                                        di emergenza e supporto fuori orario.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {% if is_admin %}
+                            <hr>
+                            <div class="alert alert-primary mb-0">
+                                <strong>Modalità Admin:</strong> Puoi gestire turni per tutte le sedi configurate con modalità "Turni".
+                                Utilizza la <a href="{{ url_for('manage_sedi') }}" class="alert-link">gestione sedi</a> per modificare la tipologia delle sedi.
+                            </div>
+                            {% else %}
+                            <hr>
+                            <div class="alert alert-info mb-0">
+                                <strong>Modalità Management:</strong> Puoi gestire turni solo per la tua sede di competenza.
+                                Per modifiche alla tipologia della sede, contatta l'amministratore.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

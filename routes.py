@@ -4138,6 +4138,76 @@ def generate_static_qr():
 
 
 # ===============================
+# GESTIONE TURNI PER SEDI
+# ===============================
+
+@app.route('/admin/turni')
+@login_required
+def manage_turni():
+    """Gestione turni per sedi di tipo 'Turni'"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per accedere alla gestione turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Filtra sedi in base al ruolo
+    if current_user.role == 'Admin':
+        # Admin vede tutte le sedi di tipo "Turni"
+        sedi_turni = Sede.query.filter_by(tipologia='Turni', active=True).all()
+    else:
+        # Management vede solo la propria sede se è di tipo "Turni"
+        if current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+            sedi_turni = [current_user.sede_obj]
+        else:
+            sedi_turni = []
+    
+    # Per ogni sede, calcola statistiche sui turni esistenti
+    sede_stats = {}
+    for sede in sedi_turni:
+        from models import Shift, ReperibilitaShift
+        
+        turni_count = db.session.query(Shift).join(User).filter(
+            User.sede_id == sede.id,
+            User.active == True
+        ).count()
+        
+        reperibilita_count = db.session.query(ReperibilitaShift).join(User).filter(
+            User.sede_id == sede.id,
+            User.active == True
+        ).count()
+        
+        sede_stats[sede.id] = {
+            'turni_count': turni_count,
+            'reperibilita_count': reperibilita_count,
+            'users_count': len([u for u in sede.users if u.active])
+        }
+    
+    return render_template('manage_turni.html', 
+                         sedi_turni=sedi_turni, 
+                         sede_stats=sede_stats,
+                         is_admin=(current_user.role == 'Admin'))
+
+@app.route('/admin/turnazioni')
+@login_required
+def generate_turnazioni():
+    """Generazione automatica turnazioni"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per generare turnazioni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Filtra sedi in base al ruolo
+    if current_user.role == 'Admin':
+        sedi_turni = Sede.query.filter_by(tipologia='Turni', active=True).all()
+    else:
+        if current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+            sedi_turni = [current_user.sede_obj]
+        else:
+            sedi_turni = []
+    
+    return render_template('generate_turnazioni.html', 
+                         sedi_turni=sedi_turni,
+                         is_admin=(current_user.role == 'Admin'))
+
+# ===============================
 # GESTIONE SEDI E ORARI DI LAVORO
 # ===============================
 

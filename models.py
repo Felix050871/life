@@ -126,6 +126,16 @@ class User(UserMixin, db.Model):
     def can_view_reports(self):
         return self.has_permission('can_view_reports')
     
+    def can_access_turni(self):
+        """Verifica se l'utente può accedere alla gestione turni"""
+        # Admin può gestire turni per tutte le sedi "Turni"
+        if self.role == 'Admin':
+            return True
+        # Management può gestire turni solo se la sua sede è di tipo "Turni"
+        if self.role == 'Management' and self.sede_obj and self.sede_obj.is_turni_mode():
+            return True
+        return False
+    
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""
         return self.sede_obj.name if self.sede_obj else "Nessuna sede"

@@ -104,6 +104,23 @@
                         </a>
                     </li>
                     {% endif %}
+                    
+                    <!-- Menu Turni (per Admin e Management di sedi Turni) -->
+                    {% if current_user.can_access_turni() %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-calendar-alt me-1"></i>Turni
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('manage_turni') }}">
+                                <i class="fas fa-calendar-alt me-1"></i>Gestione Turni
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('generate_turnazioni') }}">
+                                <i class="fas fa-magic me-1"></i>Genera Turnazioni
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
                     {% if current_user.has_permission('can_manage_roles') %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('manage_roles') }}">
