@@ -74,9 +74,7 @@
                         <button class="btn btn-success" onclick="regenerateShifts()">
                             <i class="fas fa-sync me-1"></i>Rigenera Turni
                         </button>
-                        <button class="btn btn-warning" onclick="extendPeriod()">
-                            <i class="fas fa-plus-circle me-1"></i>Estendi Periodo
-                        </button>
+
                         {% if is_admin %}
                         <button class="btn btn-danger" onclick="deleteShifts()">
                             <i class="fas fa-trash me-1"></i>Elimina Turni Periodo
@@ -209,15 +207,37 @@ function regenerateShifts() {
     }
 }
 
-function extendPeriod() {
-    // TODO: Implementare estensione periodo
-    alert('Funzionalità di estensione periodo in sviluppo');
-}
-
 function deleteShifts() {
-    if (confirm('ATTENZIONE: Questa azione eliminerà TUTTI i turni del periodo. Continuare?')) {
-        // TODO: Implementare eliminazione
-        alert('Funzionalità di eliminazione in sviluppo');
+    if (confirm('ATTENZIONE: Questa azione eliminerà TUTTI i turni del periodo da oggi in poi. Continuare?')) {
+        // Crea un form per inviare i dati alla route di eliminazione
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("delete_turni_period") }}';
+        
+        // Aggiungi CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrf_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+        
+        // Aggiungi sede_id
+        const sedeId = document.createElement('input');
+        sedeId.type = 'hidden';
+        sedeId.name = 'sede_id';
+        sedeId.value = '{{ sede.id }}';
+        form.appendChild(sedeId);
+        
+        // Aggiungi coverage_period_id
+        const periodId = document.createElement('input');
+        periodId.type = 'hidden';
+        periodId.name = 'coverage_period_id';
+        periodId.value = '{{ coverage_start_date.strftime("%Y%m%d") }}-{{ coverage_end_date.strftime("%Y%m%d") }}';
+        form.appendChild(periodId);
+        
+        // Aggiungi al documento e invia
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 

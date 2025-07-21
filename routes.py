@@ -4711,10 +4711,6 @@ def regenerate_turni_from_coverage():
         new_shifts_count = 0
         current_date = start_date
         
-        # Debug info
-        print(f"DEBUG: Generating shifts from {start_date} to {end_date}")
-        print(f"DEBUG: Found {len(coperture)} total coverages")
-        
         while current_date <= end_date:
             # Trova le coperture per questo giorno della settimana
             day_of_week = current_date.weekday()  # 0=Lunedì, 6=Domenica
@@ -4723,13 +4719,7 @@ def regenerate_turni_from_coverage():
                            c.start_date <= current_date <= c.end_date and
                            c.day_of_week == day_of_week]
             
-            print(f"DEBUG: Date {current_date} (weekday {day_of_week}): {len(day_coverages)} coverages")
-            
             for coverage in day_coverages:
-                # Debug: verifica utenti della sede
-                all_sede_users = User.query.filter(User.sede_id == sede_id).all()
-                active_sede_users = User.query.filter(User.sede_id == sede_id, User.active == True).all()
-                
                 # Ottieni utenti disponibili per questa sede e copertura
                 available_users = User.query.filter(
                     User.sede_id == sede_id,
@@ -4740,10 +4730,6 @@ def regenerate_turni_from_coverage():
                 # Calcola il numero totale di staff richiesto dai ruoli
                 roles_dict = coverage.get_required_roles_dict()
                 total_required_staff = sum(roles_dict.values()) if roles_dict else 1
-                
-                print(f"DEBUG: Sede {sede_id} - Total users: {len(all_sede_users)}, Active: {len(active_sede_users)}, With valid roles: {len(available_users)}")
-                print(f"DEBUG: Available users: {[f'{u.username}({u.role})' for u in available_users]}")
-                print(f"DEBUG: Coverage {coverage.description or 'Senza nome'}: required: {total_required_staff}, roles: {roles_dict}")
                 
                 if available_users and total_required_staff > 0:
                     # Seleziona utenti per questa copertura (logica semplificata)
@@ -4760,7 +4746,6 @@ def regenerate_turni_from_coverage():
                         )
                         db.session.add(new_shift)
                         new_shifts_count += 1
-                        print(f"DEBUG: Created shift for {user.username} on {current_date}")
             
             current_date += timedelta(days=1)
         
@@ -4778,6 +4763,72 @@ def regenerate_turni_from_coverage():
     except Exception as e:
         db.session.rollback()
         flash(f'Errore durante la rigenerazione turni: {str(e)}', 'danger')
+        return redirect(url_for('generate_turnazioni'))
+
+@app.route('/admin/turni/delete-period', methods=['POST'])
+@login_required
+def delete_turni_period():
+    """Elimina tutti i turni di un periodo da oggi in poi"""
+    if not current_user.can_access_turni():
+        flash('Non hai i permessi per eliminare turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede_id = request.form.get('sede_id', type=int)
+    coverage_period_id = request.form.get('coverage_period_id')
+    
+    if not all([sede_id, coverage_period_id]):
+        flash('Dati mancanti per l\'eliminazione turni', 'danger')
+        return redirect(url_for('generate_turnazioni'))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    
+    # Verifica permessi
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
+            flash('Non hai i permessi per eliminare turni per questa sede', 'danger')
+            return redirect(url_for('generate_turnazioni'))
+    
+    try:
+        # Decodifica period_id per ottenere le date della copertura
+        start_str, end_str = coverage_period_id.split('-')
+        start_date = datetime.strptime(start_str, '%Y%m%d').date()
+        end_date = datetime.strptime(end_str, '%Y%m%d').date()
+        
+        # Data di inizio per l'eliminazione (da oggi in poi)
+        from datetime import date
+        today = date.today()
+        delete_from_date = max(start_date, today)
+        
+        # Elimina turni esistenti da oggi in poi
+        from models import Shift
+        shifts_to_delete = Shift.query.join(User, Shift.user_id == User.id).filter(
+            User.sede_id == sede_id,
+            Shift.date >= delete_from_date,
+            Shift.date <= end_date
+        ).all()
+        
+        deleted_count = len(shifts_to_delete)
+        for shift in shifts_to_delete:
+            db.session.delete(shift)
+        
+        db.session.commit()
+        
+        # Messaggio di successo
+        if deleted_count > 0:
+            preserved_days = (today - start_date).days if today > start_date else 0
+            if preserved_days > 0:
+                flash(f'Eliminati {deleted_count} turni dal {delete_from_date.strftime("%d/%m/%Y")} al {end_date.strftime("%d/%m/%Y")} (preservati {preserved_days} giorni già lavorati)', 'success')
+            else:
+                flash(f'Eliminati {deleted_count} turni dal {delete_from_date.strftime("%d/%m/%Y")} al {end_date.strftime("%d/%m/%Y")}', 'success')
+        else:
+            flash('Nessun turno da eliminare nel periodo specificato', 'info')
+        
+        # Reindirizza alla visualizzazione dei turni generati
+        return redirect(url_for('view_generated_shifts', sede=sede_id, period=coverage_period_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante l\'eliminazione turni: {str(e)}', 'danger')
         return redirect(url_for('generate_turnazioni'))
 
 @app.route('/admin/turnazioni')
