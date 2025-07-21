@@ -27,86 +27,21 @@
         </div>
     </div>
 
-    <!-- Vista Calendario Reperibilità -->
-    {% if shifts_by_day %}
-    <div class="card">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0">
-                <i class="fas fa-calendar me-2"></i>Calendario Reperibilità
-            </h5>
-        </div>
-        <div class="card-body p-3">
-            <div class="row">
-                {% for day_info in calendar_days %}
-                <div class="col-lg-{% if (calendar_days|length) <= 7 %}{{ 12 // 7 if loop.index <= 7 else 12 }}{% else %}3{% endif %} col-md-4 col-sm-6 mb-3">
-                    <div class="card h-100 {% if day_info.is_today %}border-info{% else %}border-light{% endif %}">
-                        <div class="card-header text-center p-2 {% if day_info.is_today %}bg-info text-white{% else %}bg-light text-dark{% endif %}">
-                            <h6 class="mb-0">
-                                {{ day_info.weekday }}<br>
-                                <small>{{ day_info.date.strftime('%d/%m/%Y') }}</small>
-                            </h6>
-                        </div>
-                        <div class="card-body p-2 bg-white">
-                            {% if day_info.date in shifts_by_day %}
-                                {% for shift in shifts_by_day[day_info.date] %}
-                                <div class="mb-2 p-2 border rounded shadow-sm bg-info bg-opacity-75">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <strong class="text-white">{{ shift.user.get_full_name() }}</strong>
-                                            <small class="text-white d-block">{{ shift.user.role }}</small>
-                                        </div>
-                                    </div>
-                                    <div class="mt-1">
-                                        <div class="mb-1">
-                                            <i class="fas fa-phone-alt text-white me-1"></i>
-                                            <small class="text-white"><strong>Reperibilità:</strong> {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}</small>
-                                            <span class="badge bg-light text-dark border ms-2">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
-                                        </div>
-                                        {% if shift.description %}
-                                        <div class="mb-1">
-                                            <i class="fas fa-info-circle text-white me-1"></i>
-                                            <small class="text-white">{{ shift.description }}</small>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="text-center text-muted py-3">
-                                    <i class="fas fa-calendar-times"></i><br>
-                                    <small>Nessuna reperibilità</small>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- Legenda -->
-            <div class="card mt-3">
-                <div class="card-body p-2">
-                    <small class="text-muted">
-                        <strong>Legenda:</strong>
-                        <span class="badge bg-info ms-2">Reperibilità</span>
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <div class="alert alert-info text-center">
-        <i class="fas fa-info-circle fa-2x mb-2"></i>
-        <h5>Nessun turno di reperibilità trovato</h5>
-        <p class="mb-0">Non ci sono turni di reperibilità programmati per questo periodo.</p>
-    </div>
-    {% endif %}
-
-    <!-- Tabella dettagli -->
+    <!-- Vista Tabella Reperibilità -->
     {% if shifts %}
-    <div class="card mt-4">
-        <div class="card-header">
-            <h5><i class="fas fa-list me-2"></i>Dettaglio Turni</h5>
+    <div class="card">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Lista Turni Reperibilità
+            </h5>
+            <div class="btn-group btn-group-sm" role="group">
+                <a href="?view=table" class="btn btn-light active">
+                    <i class="fas fa-list"></i> Lista
+                </a>
+                <a href="?view=calendar" class="btn btn-outline-light">
+                    <i class="fas fa-calendar"></i> Calendario
+                </a>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -116,16 +51,53 @@
                             <th>Data</th>
                             <th>Giorno</th>
                             <th>Utente</th>
-                            <th>Ruolo</th>
+                            <th>Sede</th>
                             <th>Orario</th>
-                            <th>Ore</th>
+                            <th>Durata</th>
                             <th>Descrizione</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for shift in shifts %}
                         <tr>
-                            <td>{{ shift.date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <strong>{{ shift.date.strftime('%d/%m/%Y') }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ shift.date.strftime('%A')|title }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ shift.user.get_full_name() }}</strong><br>
+                                <small class="text-muted">{{ shift.user.role }}</small>
+                            </td>
+                            <td>
+                                {% if shift.user.sede_obj %}
+                                    <span class="badge bg-info">{{ shift.user.sede_obj.name }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Nessuna sede</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <i class="fas fa-phone-alt text-info me-1"></i>
+                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                            </td>
+                            <td>
+                                <span class="badge bg-warning text-dark">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
+                            </td>
+                            <td>{{ shift.description or 'Reperibilità' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle fa-2x mb-2"></i>
+        <h5>Nessun turno di reperibilità trovato</h5>
+        <p class="mb-0">Non ci sono turni di reperibilità programmati per questo periodo.</p>
+    </div>
+    {% endif %}
                             <td>
                                 {% set weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'] %}
                                 {{ weekdays[shift.date.weekday()] }}
