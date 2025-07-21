@@ -139,6 +139,12 @@ class User(UserMixin, db.Model):
     def can_view_all_reperibilita(self):
         """Verifica se l'utente può visualizzare tutte le reperibilità"""
         return self.role in ['Admin', 'Management', 'Staff']
+    
+    def get_sedi_list(self):
+        """Restituisce la lista delle sedi associate all'utente (per compatibilità template)"""
+        if self.sede_obj:
+            return [self.sede_obj.name]
+        return []
 
 
 class AttendanceEvent(db.Model):
