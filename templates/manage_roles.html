@@ -50,15 +50,37 @@
                                             {% for permission, value in role.permissions.items() %}
                                                 {% if value %}
                                                 <span class="badge bg-info">
-                                                    {% if permission == 'can_manage_users' %}Gestire Utenti
+                                                    {% if permission == 'can_access_dashboard' %}Dashboard
+                                                    {% elif permission == 'can_manage_roles' %}Gestire Ruoli
+                                                    {% elif permission == 'can_view_roles' %}can_view_roles
+                                                    {% elif permission == 'can_manage_users' %}Gestire Utenti
+                                                    {% elif permission == 'can_view_users' %}can_view_users
+                                                    {% elif permission == 'can_manage_sedi' %}Gestire Sedi
+                                                    {% elif permission == 'can_view_sedi' %}can_view_sedi
+                                                    {% elif permission == 'can_manage_schedules' %}can_manage_schedules
+                                                    {% elif permission == 'can_view_schedules' %}can_view_schedules
                                                     {% elif permission == 'can_manage_shifts' %}Gestire Turni
+                                                    {% elif permission == 'can_view_shifts' %}can_view_shifts
+                                                    {% elif permission == 'can_manage_reperibilita' %}can_manage_reperibilita
+                                                    {% elif permission == 'can_view_reperibilita' %}can_view_reperibilita
+                                                    {% elif permission == 'can_manage_attendance' %}can_manage_attendance
+                                                    {% elif permission == 'can_view_attendance' %}can_view_attendance
+                                                    {% elif permission == 'can_access_attendance' %}Presenze
+                                                    {% elif permission == 'can_manage_leave' %}can_manage_leave
                                                     {% elif permission == 'can_approve_leave' %}Approvare Ferie
                                                     {% elif permission == 'can_request_leave' %}Richiedere Ferie
-                                                    {% elif permission == 'can_access_attendance' %}Presenze
-                                                    {% elif permission == 'can_access_dashboard' %}Dashboard
+                                                    {% elif permission == 'can_view_leave' %}can_view_leave
+                                                    {% elif permission == 'can_manage_interventions' %}can_manage_interventions
+                                                    {% elif permission == 'can_view_interventions' %}can_view_interventions
+                                                    {% elif permission == 'can_manage_holidays' %}can_manage_holidays
+                                                    {% elif permission == 'can_view_holidays' %}can_view_holidays
+                                                    {% elif permission == 'can_manage_qr' %}can_manage_qr
+                                                    {% elif permission == 'can_view_qr' %}can_view_qr
                                                     {% elif permission == 'can_view_reports' %}Report
-                                                    {% elif permission == 'can_manage_sedi' %}Gestire Sedi
-                                                    {% elif permission == 'can_manage_roles' %}Gestire Ruoli
+                                                    {% elif permission == 'can_manage_reports' %}can_manage_reports
+                                                    {% elif permission == 'can_view_statistics' %}can_view_statistics
+                                                    {% elif permission == 'can_send_messages' %}can_send_messages
+                                                    {% elif permission == 'can_view_messages' %}can_view_messages
                                                     {% else %}{{ permission }}
                                                     {% endif %}
                                                 </span>
