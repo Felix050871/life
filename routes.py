@@ -4170,11 +4170,10 @@ def manage_turni():
             User.active == True
         ).count()
         
-        # Conta coperture attive per questa sede
-        from models import ShiftCoverage
-        coperture_count = ShiftCoverage.query.filter(
-            ShiftCoverage.is_active == True,
-            ShiftCoverage.sedi_ids.like(f'%{sede.id}%')  # Controlla se l'ID della sede è nel JSON
+        # Conta coperture attive per questa sede (usando PresidioCoverage temporaneamente)
+        from models import PresidioCoverage
+        coperture_count = PresidioCoverage.query.filter(
+            PresidioCoverage.is_active == True
         ).count()
         
         sede_stats[sede.id] = {
@@ -4304,32 +4303,26 @@ def create_shift_coverage():
         for day in days_of_week:
             day_int = int(day)
             
-            # Verifica sovrapposizioni esistenti per questo giorno e orario
-            from models import ShiftCoverage
-            existing = ShiftCoverage.query.filter(
-                ShiftCoverage.day_of_week == day_int,
-                ShiftCoverage.is_active == True,
-                ShiftCoverage.start_date <= end_date,
-                ShiftCoverage.end_date >= start_date
-            ).all()
+            # Verifica sovrapposizioni esistenti per questo giorno e orario (uso PresidioCoverage)
+            from models import PresidioCoverage
+            existing = PresidioCoverage.query.filter(
+                PresidioCoverage.day_of_week == day_int,
+                PresidioCoverage.is_active == True,
+                PresidioCoverage.start_date <= end_date,
+                PresidioCoverage.end_date >= start_date,
+                # Controlla sovrapposizione oraria
+                PresidioCoverage.start_time < end_time,
+                PresidioCoverage.end_time > start_time
+            ).first()
             
-            # Filtra per sedi che includono questa sede
-            overlapping = []
-            for coverage in existing:
-                coverage_sedi = coverage.get_sedi_ids_list()
-                if sede_id in coverage_sedi:
-                    # Controlla sovrapposizione oraria
-                    if (start_time < coverage.end_time and end_time > coverage.start_time):
-                        overlapping.append(coverage)
-            
-            if overlapping:
+            if existing:
                 day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica', 'Festivi']
                 day_name = day_names[day_int] if day_int < len(day_names) else str(day_int)
                 flash(f'Sovrapposizione esistente per {day_name} negli orari {start_time.strftime("%H:%M")} - {end_time.strftime("%H:%M")}', 'warning')
                 continue
             
-            # Crea la copertura per questo giorno
-            coverage = ShiftCoverage(
+            # Crea la copertura per questo giorno usando PresidioCoverage
+            coverage = PresidioCoverage(
                 day_of_week=day_int,
                 start_time=start_time,
                 end_time=end_time,
@@ -4339,9 +4332,8 @@ def create_shift_coverage():
                 created_by=current_user.id
             )
             
-            # Imposta ruoli richiesti e sedi coinvolte
+            # Imposta ruoli richiesti
             coverage.set_required_roles_list(required_roles)
-            coverage.set_sedi_ids_list([sede_id])
             
             db.session.add(coverage)
             coperture_create += 1
