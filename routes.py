@@ -3086,6 +3086,10 @@ def generate_reperibilita_shifts():
             db.session.delete(shift)
         
         try:
+            print(f"[DEBUG] Generazione turni per copertura: {form.coverage_period.data}")
+            print(f"[DEBUG] Periodo: {start_date} - {end_date}")
+            print(f"[DEBUG] Usa intero periodo: {form.use_full_period.data}")
+            
             # Genera turni reperibilità dalla copertura selezionata
             shifts_created, warnings = generate_reperibilita_shifts_from_coverage(
                 form.coverage_period.data,  # period_key della copertura
@@ -3094,10 +3098,13 @@ def generate_reperibilita_shifts():
                 current_user.id
             )
             
-            db.session.commit()
+            print(f"[DEBUG] Risultato generazione: {shifts_created} turni, warnings: {warnings}")
             
-            # Costruisci messaggio di successo
-            success_msg = f'Turni reperibilità generati: {shifts_created}.'
+            db.session.commit()
+            print(f"[DEBUG] Commit completato")
+            
+            # Costruisci messaggio di successo con dettagli debug
+            success_msg = f'Turni reperibilità generati: {shifts_created} per il periodo {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}.'
             
             if warnings:
                 if len(warnings) <= 3:
@@ -3110,6 +3117,9 @@ def generate_reperibilita_shifts():
             return redirect(url_for('reperibilita_shifts'))
             
         except Exception as e:
+            import traceback
+            print(f"[ERROR] Errore durante generazione: {e}")
+            print(f"[ERROR] Traceback: {traceback.format_exc()}")
             db.session.rollback()
             flash(f'Errore durante la generazione: {str(e)}', 'error')
     
