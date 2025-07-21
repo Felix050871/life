@@ -76,7 +76,7 @@
                         <i class="fas fa-cog"></i> Azioni
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" onclick="generateShiftsForPeriod('{{ period_key }}')">
+                        <li><a class="dropdown-item" href="#" onclick="generateShiftsForPeriod('{{ period_data.period_id }}')">
                             <i class="fas fa-magic me-2"></i>Genera Turni
                         </a></li>
                         <li><a class="dropdown-item" href="#" onclick="editCoveragePeriod('{{ period_key }}')">
@@ -155,8 +155,71 @@
 
 <script>
 function generateShiftsForPeriod(periodKey) {
-    // TODO: Implementare generazione turni per il periodo specifico
-    alert('Funzionalità in sviluppo: Generazione turni per ' + periodKey);
+    // Mostra modal di conferma con opzioni
+    showGenerateShiftsModal(periodKey);
+}
+
+function showGenerateShiftsModal(periodKey) {
+    const sedeId = {{ sede.id }};
+    const modalHtml = `
+        <div class="modal fade" id="generateShiftsModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Genera Turni da Coperture</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="/admin/turni/process-generate-from-coverage">
+                        <div class="modal-body">
+                            <input type="hidden" name="sede_id" value="${sedeId}">
+                            <input type="hidden" name="coverage_period_id" value="${periodKey}">
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Stai per generare turni basati sulle coperture del periodo <strong>${periodKey}</strong>.
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="use_coverage_dates" id="useCoverageDates" checked>
+                                <label class="form-check-label" for="useCoverageDates">
+                                    Usa le date del periodo di copertura
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="replace_existing" id="replaceExisting">
+                                <label class="form-check-label" for="replaceExisting">
+                                    Sostituisci turni esistenti
+                                </label>
+                                <small class="form-text text-muted">
+                                    Se spuntato, i turni esistenti per le stesse date/orari verranno sostituiti
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-magic me-1"></i>Genera Turni
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Rimuovi modal esistente se presente
+    const existingModal = document.getElementById('generateShiftsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Aggiungi nuovo modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Mostra il modal
+    const modal = new bootstrap.Modal(document.getElementById('generateShiftsModal'));
+    modal.show();
 }
 
 function editCoveragePeriod(periodKey) {
