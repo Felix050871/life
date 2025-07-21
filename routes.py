@@ -4733,11 +4733,15 @@ def regenerate_turni_from_coverage():
                     User.role.in_(['Operatore', 'Sviluppatore', 'Redattore', 'Management'])
                 ).all()
                 
-                print(f"DEBUG: Coverage {coverage.name}: {len(available_users)} users, required: {coverage.required_staff}")
+                # Calcola il numero totale di staff richiesto dai ruoli
+                roles_dict = coverage.get_required_roles_dict()
+                total_required_staff = sum(roles_dict.values()) if roles_dict else 1
                 
-                if available_users and coverage.required_staff > 0:
+                print(f"DEBUG: Coverage {coverage.description or 'Senza nome'}: {len(available_users)} users, required: {total_required_staff}")
+                
+                if available_users and total_required_staff > 0:
                     # Seleziona utenti per questa copertura (logica semplificata)
-                    selected_users = available_users[:coverage.required_staff]
+                    selected_users = available_users[:total_required_staff]
                     
                     for user in selected_users:
                         new_shift = Shift(
@@ -4745,7 +4749,7 @@ def regenerate_turni_from_coverage():
                             date=current_date,
                             start_time=coverage.start_time,
                             end_time=coverage.end_time,
-                            description=f"Turno generato da copertura {coverage.name}",
+                            description=f"Turno generato da copertura {coverage.description or 'Presidio'}",
                             created_by=current_user.id
                         )
                         db.session.add(new_shift)
