@@ -182,111 +182,7 @@ def dashboard():
             'shifts': day_shifts
         })
     
-    # Get weekly team shifts and attendance data for PM role
-    weekly_team_data = None
-    shifts_by_day = {}
-    attendance_by_date = {}
-    week_dates = []
-    
-    if current_user.role == 'Management':
-        # Get all users except Ente users
-        all_team_users = User.query.filter(
-            User.active == True,
-            ~User.role.in_(['Ente', 'Admin', 'Staff'])
-        ).all()
-        
-        # Get all shifts for the current week for all team members
-        weekly_team_shifts = Shift.query.filter(
-            Shift.date >= week_start,
-            Shift.date < week_start + timedelta(days=7)
-        ).order_by(Shift.date, Shift.start_time).all()
-        
-        # Group shifts by day for Ente-style view
-        for i in range(7):
-            day_date = week_start + timedelta(days=i)
-            day_shifts = [s for s in weekly_team_shifts if s.date == day_date]
-            shifts_by_day[day_date] = day_shifts
-            
-            # Initialize attendance dict for this day
-            attendance_by_date[day_date] = {}
-            
-            # Add week date info
-            week_dates.append({
-                'date': day_date,
-                'weekday': weekdays[i],
-                'is_today': day_date == today
-            })
-        
-        # Get attendance data for all team users for the week
-        for user in all_team_users:
-            for i in range(7):
-                day_date = week_start + timedelta(days=i)
-                
-                # Get daily summary for this user and date
-                try:
-                    daily_summary = AttendanceEvent.get_daily_summary(user.id, day_date)
-                    if daily_summary:
-                        # Check for shifts on this date for this user
-                        user_shifts = [s for s in weekly_team_shifts if s.user_id == user.id and s.date == day_date]
-                        shift_status = 'normale'
-                        
-                        if user_shifts and daily_summary.clock_in:
-                            shift = user_shifts[0]  # Take first shift if multiple
-                            
-                            from zoneinfo import ZoneInfo
-                            italy_tz = ZoneInfo('Europe/Rome')
-                            
-                            # Create shift start time in Italian timezone
-                            shift_start_datetime = datetime.combine(day_date, shift.start_time)
-                            shift_start_datetime = shift_start_datetime.replace(tzinfo=italy_tz)
-                            # Limiti più ragionevoli: anticipo oltre 30min, ritardo oltre 15min
-                            early_limit = shift_start_datetime - timedelta(minutes=30)
-                            late_limit = shift_start_datetime + timedelta(minutes=15)
-                            
-                            # Convert daily_summary.clock_in to Italian timezone if needed
-                            clock_in_time = daily_summary.clock_in
-                            if clock_in_time.tzinfo is None:
-                                # Assume UTC and convert to Italian time
-                                utc_tz = ZoneInfo('UTC')
-                                clock_in_time = clock_in_time.replace(tzinfo=utc_tz).astimezone(italy_tz)
-                            
-                            if clock_in_time < early_limit:
-                                shift_status = 'anticipo'
-                            elif clock_in_time > late_limit:
-                                shift_status = 'ritardo'
-                            
-                            # Calculate exit status if clock_out exists
-                            exit_status = 'normale'
-                            if daily_summary.clock_out:
-                                shift_end_datetime = datetime.combine(day_date, shift.end_time)
-                                shift_end_datetime = shift_end_datetime.replace(tzinfo=italy_tz)
-                                # Exit limits: 5 minutes tolerance
-                                exit_early_limit = shift_end_datetime - timedelta(minutes=5)
-                                exit_late_limit = shift_end_datetime
-                                
-                                clock_out_time = daily_summary.clock_out
-                                if clock_out_time.tzinfo is None:
-                                    clock_out_time = clock_out_time.replace(tzinfo=utc_tz).astimezone(italy_tz)
-                                
-                                if clock_out_time < exit_early_limit:
-                                    exit_status = 'anticipo'  # Early exit = yellow warning
-                                elif clock_out_time > exit_late_limit:
-                                    exit_status = 'ritardo'   # Late exit = blue thumbs up (overtime)
-                        else:
-                            exit_status = 'normale'
-                        
-                        attendance_by_date[day_date][user.id] = {
-                            'user': user,
-                            'clock_in': daily_summary.clock_in,
-                            'clock_out': daily_summary.clock_out,
-                            'status': 'Presente' if daily_summary.clock_in and not daily_summary.clock_out else 'Assente',
-                            'work_hours': daily_summary.get_work_hours() if daily_summary.clock_in else 0,
-                            'shift_status': shift_status,
-                            'exit_status': exit_status if 'exit_status' in locals() else 'normale'
-                        }
-                except:
-                    # Skip users with database issues
-                    continue
+
     
     # Add personal attendance data for PM
     if current_user.role == 'Management':
@@ -307,10 +203,6 @@ def dashboard():
                          recent_interventions=recent_interventions,
                          recent_leaves=recent_leaves,
                          weekly_calendar=weekly_calendar,
-                         weekly_team_data=weekly_team_data,
-                         shifts_by_day=shifts_by_day,
-                         attendance_by_date=attendance_by_date,
-                         week_dates=week_dates,
                          today=today,
                          today_date=today_date,
                          current_time=current_time,

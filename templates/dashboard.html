@@ -331,195 +331,8 @@
     </div>
 </div>
 
-<!-- Weekly Team Shifts and Attendance View for PM (same as Ente) -->
-{% if shifts_by_day %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-calendar-week me-2"></i>Turni e Presenze Team - Settimana Corrente</h5>
-            </div>
-            <div class="card-body">
-                {% if shifts_by_day %}
-                    <div class="row">
-                        {% for day_info in week_dates %}
-                        <div class="col-lg-6 col-xl-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header {% if day_info.is_today %}bg-warning{% else %}bg-primary{% endif %} text-white text-center py-2">
-                                    <h6 class="mb-0">{{ day_info.weekday }}</h6>
-                                    <small>{{ day_info.date.strftime('%d/%m/%Y') }}</small>
-                                </div>
-                                <div class="card-body p-2">
-                                    {% if shifts_by_day[day_info.date] %}
-                                        {% for shift in shifts_by_day[day_info.date] %}
-                                        {% set attendance = attendance_by_date[day_info.date][shift.user_id] if day_info.date in attendance_by_date and shift.user_id in attendance_by_date[day_info.date] else none %}
-                                        
-                                        <div class="mb-2 p-2 border rounded shadow-sm position-relative">
-                                            <!-- Indicatore presenza -->
-                                            <div class="position-absolute top-0 start-0 mt-1 ms-1">
-                                                {% if attendance and attendance.clock_in %}
-                                                    {% if attendance.clock_out %}
-                                                        {% if attendance.shift_status == 'ritardo' %}
-                                                        <span class="badge bg-warning" title="Presente - Entrata in ritardo">
-                                                            <i class="fas fa-check"></i> <i class="fas fa-clock text-danger"></i>
-                                                        </span>
-                                                        {% elif attendance.shift_status == 'anticipo' %}
-                                                        <span class="badge bg-info" title="Presente - Entrata in anticipo">
-                                                            <i class="fas fa-check"></i> <i class="fas fa-clock text-info"></i>
-                                                        </span>
-                                                        {% else %}
-                                                        <span class="badge bg-success" title="Presente - Completato">
-                                                            <i class="fas fa-check"></i>
-                                                        </span>
-                                                        {% endif %}
-                                                    {% else %}
-                                                        {% if attendance.shift_status == 'ritardo' %}
-                                                        <span class="badge bg-warning" title="Presente - Entrata in ritardo">
-                                                            <i class="fas fa-clock"></i> <i class="fas fa-exclamation-triangle text-danger"></i>
-                                                        </span>
-                                                        {% elif attendance.shift_status == 'anticipo' %}
-                                                        <span class="badge bg-info" title="Presente - Entrata in anticipo">
-                                                            <i class="fas fa-clock"></i> <i class="fas fa-thumbs-up text-info"></i>
-                                                        </span>
-                                                        {% else %}
-                                                        <span class="badge bg-warning" title="Presente - In corso">
-                                                            <i class="fas fa-clock"></i>
-                                                        </span>
-                                                        {% endif %}
-                                                    {% endif %}
-                                                {% else %}
-                                                    <span class="badge bg-danger" title="Assente">
-                                                        <i class="fas fa-times"></i>
-                                                    </span>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            <!-- Informazioni utente e turno -->
-                                            <div class="row">
-                                                <div class="col-12">
-                                                    <div class="ms-5">
-                                                        <div class="d-flex justify-content-between align-items-start">
-                                                            <div>
-                                                                <strong class="text-primary">{{ shift.user.get_full_name() }}</strong>
-                                                                <span class="badge bg-secondary ms-1">{{ shift.user.role }}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Informazioni orari a larghezza piena -->
-                                            <div class="row g-2">
-                                                <!-- Orari programmati -->
-                                                <div class="col-12">
-                                                    <div class="p-2 bg-primary bg-opacity-10 rounded">
-                                                        <div class="text-white">
-                                                            <i class="fas fa-calendar me-1"></i>
-                                                            <strong>Turno:</strong> {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
-                                                        </div>
-                                                        <small class="text-white">{{ "%.1f"|format(shift.get_duration_hours()) }}h programmate</small>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Orari effettivi se presenti -->
-                                                {% if attendance and attendance.clock_in %}
-                                                <div class="col-12">
-                                                    <div class="p-2 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
-                                                        <div class="{% if attendance.shift_status == 'ritardo' %}text-warning{% elif attendance.shift_status == 'anticipo' %}text-info{% else %}text-success{% endif %}">
-                                                            <i class="fas fa-sign-in-alt me-1"></i>
-                                                            <strong>Entrata:</strong> {{ attendance.clock_in|format_time_italian }}
-                                                            {% if attendance.shift_status == 'ritardo' %}
-                                                            <span class="text-danger ms-1">(Ritardo)</span>
-                                                            {% elif attendance.shift_status == 'anticipo' %}
-                                                            <span class="text-info ms-1">(Anticipo)</span>
-                                                            {% endif %}
-                                                        </div>
-                                                        {% if attendance.clock_out %}
-                                                        <div class="{% if attendance.exit_status == 'anticipo' %}text-warning{% elif attendance.exit_status == 'ritardo' %}text-info{% else %}text-success{% endif %}">
-                                                            <i class="fas fa-sign-out-alt me-1"></i>
-                                                            <strong>Uscita:</strong> {{ attendance.clock_out.strftime('%H:%M') }}
-                                                            {% if attendance.exit_status == 'anticipo' %}
-                                                            <span class="text-warning ms-1" title="Uscita anticipata">⚠️</span>
-                                                            {% elif attendance.exit_status == 'ritardo' %}
-                                                            <span class="text-info ms-1" title="Straordinari">👍</span>
-                                                            {% else %}
-                                                            <span class="text-success ms-1" title="Uscita normale">✓</span>
-                                                            {% endif %}
-                                                        </div>
-                                                        {% else %}
-                                                        <div class="text-warning">
-                                                            <i class="fas fa-clock me-1"></i>
-                                                            <strong>Stato:</strong> In corso
-                                                        </div>
-                                                        {% endif %}
-                                                        {% if attendance.work_hours > 0 %}
-                                                        <small class="text-info d-block">
-                                                            <i class="fas fa-stopwatch me-1"></i>
-                                                            <strong>Lavorate:</strong> <span id="work-hours-{{ shift.user_id }}-{{ day_info.date.strftime('%Y-%m-%d') }}">{{ format_hours(attendance.work_hours) }}</span>
-                                                        </small>
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    {% else %}
-                                        <div class="text-center py-3">
-                                            <i class="fas fa-calendar-times text-muted"></i>
-                                            <small class="text-muted d-block">Nessun turno programmato</small>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">Nessun turno programmato</h5>
-                    <p class="text-muted">Non ci sono turni programmati per questa settimana.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- Legenda indicatori presenza -->
-    <div class="row mt-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="card-title">Legenda Indicatori Presenza</h6>
-                    <div class="row g-2">
-                        <div class="col-6 col-md-3">
-                            <span class="badge bg-success me-2"><i class="fas fa-check"></i></span>
-                            <small>Completato</small>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <span class="badge bg-warning me-2"><i class="fas fa-clock"></i></span>
-                            <small>In corso</small>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <span class="badge bg-danger me-2"><i class="fas fa-times"></i></span>
-                            <small>Assente</small>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <span class="badge bg-warning me-2"><i class="fas fa-exclamation-triangle text-danger"></i></span>
-                            <small>Ritardo</small>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <span class="badge bg-info me-2"><i class="fas fa-thumbs-up text-info"></i></span>
-                            <small>Anticipo</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
+
+
 
 <!-- Team Staff Section (for PM and Ente) -->
 {% if current_user.role in ['Management', 'Ente'] %}
@@ -537,28 +350,14 @@
             <div class="card-body">
                 <p class="text-muted">Visualizza e monitora le presenze di tutti i membri del team</p>
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('team_shifts') }}" class="btn btn-primary">
+                    <a href="{{ url_for('attendance', view='team') }}" class="btn btn-primary">
                         <i class="fas fa-users me-1"></i>Vedi Presenze Team
                     </a>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-calendar-alt me-2"></i>Turni Team</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted">Gestisci e visualizza i turni assegnati a tutto il team</p>
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('team_shifts') }}" class="btn btn-info">
-                        <i class="fas fa-calendar-week me-1"></i>Gestisci Turni Team
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+
 </div>
 {% endif %}
 
@@ -612,40 +411,7 @@
         </div>
     </div>
 
-    <!-- Upcoming Shifts -->
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-calendar-alt me-2"></i>Prossimi Turni</h5>
-            </div>
-            <div class="card-body">
-                {% if upcoming_shifts %}
-                <div class="list-group list-group-flush">
-                    {% for shift in upcoming_shifts %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>{{ shift.date.strftime('%d/%m/%Y') }}</strong><br>
-                            <small class="text-muted">
-                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
-                                ({{ shift.shift_type }})
-                            </small>
-                        </div>
-                        <span class="badge bg-info">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-muted">Nessun turno programmato</p>
-                {% endif %}
-                
-                <div class="text-center mt-3">
-                    <a href="{{ url_for('shifts') }}" class="btn btn-info">
-                        <i class="fas fa-calendar-alt me-1"></i>Vedi Tutti i Turni
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+
 </div>
 
 <!-- Reperibilità Section for authorized users -->
