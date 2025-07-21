@@ -1312,6 +1312,11 @@ def create_shift():
         flash('Non hai i permessi per creare turni', 'danger')
         return redirect(url_for('shifts'))
     
+    # Check if user's sede supports turni mode
+    if not current_user.sede_obj or not current_user.sede_obj.is_turni_mode():
+        flash('La tua sede non supporta la modalità turni', 'warning')
+        return redirect(url_for('shifts'))
+    
     form = ShiftForm()
     workers = User.query.filter(
         User.role.in_(['Redattore', 'Sviluppatore', 'Operatore']),
@@ -1369,6 +1374,11 @@ def create_shift():
 def generate_shifts():
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per generare turni', 'danger')
+        return redirect(url_for('shifts'))
+    
+    # Check if user's sede supports turni mode
+    if not current_user.sede_obj or not current_user.sede_obj.is_turni_mode():
+        flash('La tua sede non supporta la modalità turni', 'warning')
         return redirect(url_for('shifts'))
     
     form = ShiftTemplateForm()
