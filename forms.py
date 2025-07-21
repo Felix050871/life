@@ -615,16 +615,65 @@ class RoleForm(FlaskForm):
     display_name = StringField('Nome Visualizzato', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Descrizione', validators=[Length(max=500)])
     
-    # Permessi come checkboxes
+    # Permessi come checkboxes - Sistema completo di permessi granulari
+    # Dashboard e sistema base
+    can_access_dashboard = BooleanField('Accedere alla Dashboard', default=True)
+    
+    # Gestione ruoli
+    can_manage_roles = BooleanField('Gestire Ruoli')
+    can_view_roles = BooleanField('Visualizzare Ruoli')
+    
+    # Gestione utenti
     can_manage_users = BooleanField('Gestire Utenti')
-
+    can_view_users = BooleanField('Visualizzare Utenti')
+    
+    # Gestione sedi
+    can_manage_sedi = BooleanField('Gestire Sedi')
+    can_view_sedi = BooleanField('Visualizzare Sedi')
+    
+    # Gestione orari/scheduli
+    can_manage_schedules = BooleanField('Gestire Orari')
+    can_view_schedules = BooleanField('Visualizzare Orari')
+    
+    # Gestione turni
+    can_manage_shifts = BooleanField('Gestire Turni')
+    can_view_shifts = BooleanField('Visualizzare Turni')
+    
+    # Reperibilità
+    can_manage_reperibilita = BooleanField('Gestire Reperibilità')
+    can_view_reperibilita = BooleanField('Visualizzare Reperibilità')
+    
+    # Gestione presenze
+    can_manage_attendance = BooleanField('Gestire Presenze')
+    can_view_attendance = BooleanField('Visualizzare Presenze')
+    can_access_attendance = BooleanField('Accedere alle Presenze', default=True)
+    
+    # Gestione ferie/permessi
+    can_manage_leave = BooleanField('Gestire Ferie/Permessi')
     can_approve_leave = BooleanField('Approvare Ferie/Permessi')
     can_request_leave = BooleanField('Richiedere Ferie/Permessi')
-    can_access_attendance = BooleanField('Accedere alle Presenze', default=True)
-    can_access_dashboard = BooleanField('Accedere alla Dashboard', default=True)
+    can_view_leave = BooleanField('Visualizzare Ferie/Permessi')
+    
+    # Gestione interventi
+    can_manage_interventions = BooleanField('Gestire Interventi')
+    can_view_interventions = BooleanField('Visualizzare Interventi')
+    
+    # Gestione festività
+    can_manage_holidays = BooleanField('Gestire Festività')
+    can_view_holidays = BooleanField('Visualizzare Festività')
+    
+    # Gestione QR
+    can_manage_qr = BooleanField('Gestire QR')
+    can_view_qr = BooleanField('Visualizzare QR')
+    
+    # Report e statistiche
     can_view_reports = BooleanField('Visualizzare Report')
-    can_manage_sedi = BooleanField('Gestire Sedi')
-    can_manage_roles = BooleanField('Gestire Ruoli')
+    can_manage_reports = BooleanField('Gestire Report')
+    can_view_statistics = BooleanField('Visualizzare Statistiche')
+    
+    # Messaggi
+    can_send_messages = BooleanField('Inviare Messaggi')
+    can_view_messages = BooleanField('Visualizzare Messaggi')
     
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
@@ -643,25 +692,123 @@ class RoleForm(FlaskForm):
     def get_permissions_dict(self):
         """Converte i permessi del form in un dizionario"""
         return {
+            # Dashboard e sistema base
+            'can_access_dashboard': self.can_access_dashboard.data,
+            
+            # Gestione ruoli
+            'can_manage_roles': self.can_manage_roles.data,
+            'can_view_roles': self.can_view_roles.data,
+            
+            # Gestione utenti
             'can_manage_users': self.can_manage_users.data,
-
+            'can_view_users': self.can_view_users.data,
+            
+            # Gestione sedi
+            'can_manage_sedi': self.can_manage_sedi.data,
+            'can_view_sedi': self.can_view_sedi.data,
+            
+            # Gestione orari/scheduli
+            'can_manage_schedules': self.can_manage_schedules.data,
+            'can_view_schedules': self.can_view_schedules.data,
+            
+            # Gestione turni
+            'can_manage_shifts': self.can_manage_shifts.data,
+            'can_view_shifts': self.can_view_shifts.data,
+            
+            # Reperibilità
+            'can_manage_reperibilita': self.can_manage_reperibilita.data,
+            'can_view_reperibilita': self.can_view_reperibilita.data,
+            
+            # Gestione presenze
+            'can_manage_attendance': self.can_manage_attendance.data,
+            'can_view_attendance': self.can_view_attendance.data,
+            'can_access_attendance': self.can_access_attendance.data,
+            
+            # Gestione ferie/permessi
+            'can_manage_leave': self.can_manage_leave.data,
             'can_approve_leave': self.can_approve_leave.data,
             'can_request_leave': self.can_request_leave.data,
-            'can_access_attendance': self.can_access_attendance.data,
-            'can_access_dashboard': self.can_access_dashboard.data,
+            'can_view_leave': self.can_view_leave.data,
+            
+            # Gestione interventi
+            'can_manage_interventions': self.can_manage_interventions.data,
+            'can_view_interventions': self.can_view_interventions.data,
+            
+            # Gestione festività
+            'can_manage_holidays': self.can_manage_holidays.data,
+            'can_view_holidays': self.can_view_holidays.data,
+            
+            # Gestione QR
+            'can_manage_qr': self.can_manage_qr.data,
+            'can_view_qr': self.can_view_qr.data,
+            
+            # Report e statistiche
             'can_view_reports': self.can_view_reports.data,
-            'can_manage_sedi': self.can_manage_sedi.data,
-            'can_manage_roles': self.can_manage_roles.data
+            'can_manage_reports': self.can_manage_reports.data,
+            'can_view_statistics': self.can_view_statistics.data,
+            
+            # Messaggi
+            'can_send_messages': self.can_send_messages.data,
+            'can_view_messages': self.can_view_messages.data
         }
     
     def populate_permissions(self, permissions_dict):
         """Popola i campi permessi dal dizionario"""
+        # Dashboard e sistema base
+        self.can_access_dashboard.data = permissions_dict.get('can_access_dashboard', True)
+        
+        # Gestione ruoli
+        self.can_manage_roles.data = permissions_dict.get('can_manage_roles', False)
+        self.can_view_roles.data = permissions_dict.get('can_view_roles', False)
+        
+        # Gestione utenti
         self.can_manage_users.data = permissions_dict.get('can_manage_users', False)
-
+        self.can_view_users.data = permissions_dict.get('can_view_users', False)
+        
+        # Gestione sedi
+        self.can_manage_sedi.data = permissions_dict.get('can_manage_sedi', False)
+        self.can_view_sedi.data = permissions_dict.get('can_view_sedi', False)
+        
+        # Gestione orari/scheduli
+        self.can_manage_schedules.data = permissions_dict.get('can_manage_schedules', False)
+        self.can_view_schedules.data = permissions_dict.get('can_view_schedules', False)
+        
+        # Gestione turni
+        self.can_manage_shifts.data = permissions_dict.get('can_manage_shifts', False)
+        self.can_view_shifts.data = permissions_dict.get('can_view_shifts', False)
+        
+        # Reperibilità
+        self.can_manage_reperibilita.data = permissions_dict.get('can_manage_reperibilita', False)
+        self.can_view_reperibilita.data = permissions_dict.get('can_view_reperibilita', False)
+        
+        # Gestione presenze
+        self.can_manage_attendance.data = permissions_dict.get('can_manage_attendance', False)
+        self.can_view_attendance.data = permissions_dict.get('can_view_attendance', False)
+        self.can_access_attendance.data = permissions_dict.get('can_access_attendance', True)
+        
+        # Gestione ferie/permessi
+        self.can_manage_leave.data = permissions_dict.get('can_manage_leave', False)
         self.can_approve_leave.data = permissions_dict.get('can_approve_leave', False)
         self.can_request_leave.data = permissions_dict.get('can_request_leave', False)
-        self.can_access_attendance.data = permissions_dict.get('can_access_attendance', True)
-        self.can_access_dashboard.data = permissions_dict.get('can_access_dashboard', True)
+        self.can_view_leave.data = permissions_dict.get('can_view_leave', False)
+        
+        # Gestione interventi
+        self.can_manage_interventions.data = permissions_dict.get('can_manage_interventions', False)
+        self.can_view_interventions.data = permissions_dict.get('can_view_interventions', False)
+        
+        # Gestione festività
+        self.can_manage_holidays.data = permissions_dict.get('can_manage_holidays', False)
+        self.can_view_holidays.data = permissions_dict.get('can_view_holidays', False)
+        
+        # Gestione QR
+        self.can_manage_qr.data = permissions_dict.get('can_manage_qr', False)
+        self.can_view_qr.data = permissions_dict.get('can_view_qr', False)
+        
+        # Report e statistiche
         self.can_view_reports.data = permissions_dict.get('can_view_reports', False)
-        self.can_manage_sedi.data = permissions_dict.get('can_manage_sedi', False)
-        self.can_manage_roles.data = permissions_dict.get('can_manage_roles', False)
+        self.can_manage_reports.data = permissions_dict.get('can_manage_reports', False)
+        self.can_view_statistics.data = permissions_dict.get('can_view_statistics', False)
+        
+        # Messaggi
+        self.can_send_messages.data = permissions_dict.get('can_send_messages', False)
+        self.can_view_messages.data = permissions_dict.get('can_view_messages', False)
