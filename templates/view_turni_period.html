@@ -68,13 +68,13 @@
                         {% for turno in turni_periodo %}
                         <tr>
                             <td>
-                                <span class="fw-bold">{{ turno.data.strftime('%d/%m/%Y') }}</span>
+                                <span class="fw-bold">{{ turno.date.strftime('%d/%m/%Y') }}</span>
                                 <br>
-                                <small class="text-muted">{{ turno.data.strftime('%A')|title }}</small>
+                                <small class="text-muted">{{ turno.date.strftime('%A')|title }}</small>
                             </td>
                             <td>
-                                {% if turno.sede %}
-                                <span class="badge bg-primary">{{ turno.sede.name }}</span>
+                                {% if turno.user and turno.user.sede_obj %}
+                                <span class="badge bg-primary">{{ turno.user.sede_obj.name }}</span>
                                 {% else %}
                                 <span class="text-muted">N/A</span>
                                 {% endif %}
@@ -108,7 +108,7 @@
                             <td>
                                 {% if turno.is_completed %}
                                 <span class="badge bg-success">Completato</span>
-                                {% elif turno.data < today %}
+                                {% elif turno.date < today %}
                                 <span class="badge bg-warning">Scaduto</span>
                                 {% else %}
                                 <span class="badge bg-primary">Programmato</span>

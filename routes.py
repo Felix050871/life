@@ -5666,15 +5666,18 @@ def view_turni_for_period():
         flash("Nessuna sede con modalità turni accessibile", "warning")
         return redirect(url_for("dashboard"))
     
-    # Trova i turni per il periodo specificato
+    # Trova i turni per il periodo specificato filtrando per utenti delle sedi accessibili
     turni_periodo = []
-    for sede in accessible_sedi:
-        sede_shifts = Shift.query.filter(
-            Shift.sede_id == sede.id,
-            Shift.data >= start_date,
-            Shift.data <= end_date
-        ).order_by(Shift.data.desc(), Shift.start_time).all()
-        turni_periodo.extend(sede_shifts)
+    if accessible_sedi:
+        # Ottieni tutti gli utenti delle sedi accessibili
+        sede_ids = [sede.id for sede in accessible_sedi]
+        
+        # Query turni filtrando per periodo e utenti delle sedi
+        turni_periodo = Shift.query.join(User).filter(
+            User.sede_id.in_(sede_ids),
+            Shift.date >= start_date,
+            Shift.date <= end_date
+        ).order_by(Shift.date.desc(), Shift.start_time).all()
     
     return render_template("view_turni_period.html",
                          turni_periodo=turni_periodo,
