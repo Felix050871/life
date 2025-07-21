@@ -1802,9 +1802,13 @@ def delete_leave(request_id):
         flash('Non puoi cancellare richieste di altri utenti', 'danger')
         return redirect(url_for('leave_requests'))
     
-    # Verifica che la richiesta non sia già approvata
-    if leave_request.status == 'Approved':
-        flash('Non puoi cancellare richieste già approvate', 'warning')
+    # Verifica che la richiesta non sia già approvata E che non sia futura
+    from zoneinfo import ZoneInfo
+    italy_tz = ZoneInfo('Europe/Rome')
+    today = datetime.now(italy_tz).date()
+    
+    if leave_request.status == 'Approved' and leave_request.start_date < today:
+        flash('Non puoi cancellare richieste già approvate e iniziate', 'warning')
         return redirect(url_for('leave_requests'))
     
     # Cancella la richiesta

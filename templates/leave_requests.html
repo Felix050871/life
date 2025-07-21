@@ -224,7 +224,7 @@
                                             <i class="fas fa-times me-1"></i>Rifiuta
                                         </a>
                                     </div>
-                                    {% elif request.user_id == current_user.id and request.status == 'Pending' %}
+                                    {% elif request.user_id == current_user.id and (request.status == 'Pending' or (request.status == 'Approved' and request.start_date >= today)) %}
                                     <a href="{{ url_for('delete_leave', request_id=request.id) }}" 
                                        class="btn btn-outline-danger btn-sm confirm-link"
                                        data-message="Cancellare questa richiesta?">
