@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% set page_title = "Visualizza Template Coperture" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-eye me-2"></i>Visualizza Template Coperture</h2>
+                    <p class="text-muted">Visualizza tutti i template di copertura per i turni configurati</p>
+                </div>
+                <div>
+                    <span class="badge bg-info">{{ total_templates }} template totali</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template di copertura -->
+    {% if coverage_periods %}
+        {% for period_key, period_data in coverage_periods.items() %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Periodo: {{ period_data.start_date.strftime('%d/%m/%Y') }} - {{ period_data.end_date.strftime('%d/%m/%Y') }}
+                    </h5>
+                    {% if period_data.is_active %}
+                        <span class="badge bg-success">ATTIVO</span>
+                    {% else %}
+                        {% if period_data.end_date < today %}
+                            <span class="badge bg-secondary">SCADUTO</span>
+                        {% else %}
+                            <span class="badge bg-warning">FUTURO</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="badge bg-primary">{{ period_data.coverages|length }} coperture</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for coverage in period_data.coverages %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-left-{{ 'success' if coverage.is_active else 'secondary' }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-1">{{ coverage.get_day_name() }}</h6>
+                                    {% if coverage.is_active %}
+                                        <span class="badge bg-success">Attiva</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inattiva</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-clock me-1"></i>{{ coverage.get_time_range() }}
+                                </p>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-users me-1"></i>{{ coverage.get_required_roles_display() }}
+                                </p>
+                                {% if coverage.description %}
+                                <p class="text-muted small mb-2">{{ coverage.description }}</p>
+                                {% endif %}
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="showCoverageDetails({{ coverage.id }})">
+                                        <i class="fas fa-info-circle me-1"></i>Dettagli
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted">Nessun Template Disponibile</h4>
+        <p class="text-muted">Non sono stati ancora creati template di copertura per i turni.</p>
+        {% if current_user.can_manage_coverage() %}
+        <a href="{{ url_for('manage_coverage') }}" class="btn btn-primary mt-3">
+            <i class="fas fa-plus me-1"></i>Gestione Coperture
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal dettagli copertura -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dettagli Copertura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <!-- Contenuto caricato dinamicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showCoverageDetails(coverageId) {
+    // Per ora mostra un messaggio semplice
+    // In futuro si può implementare una chiamata AJAX per caricare i dettagli
+    const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    document.getElementById('modalContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
+            <h5>Dettagli Copertura ID: ${coverageId}</h5>
+            <p>Funzionalità di dettaglio in sviluppo.</p>
+        </div>
+    `;
+    modal.show();
+}
+</script>
+
+<style>
+.border-left-success {
+    border-left: 4px solid #28a745 !important;
+}
+
+.border-left-secondary {
+    border-left: 4px solid #6c757d !important;
+}
+</style>
+
+{% endblock %}
