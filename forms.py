@@ -164,25 +164,13 @@ class ShiftForm(FlaskForm):
     date = DateField('Data', validators=[DataRequired()])
     start_time = TimeField('Ora Inizio', validators=[DataRequired()])
     end_time = TimeField('Ora Fine', validators=[DataRequired()])
-    shift_type = SelectField('Tipo Turno', choices=[
-        ('Mattina', 'Mattina'),
-        ('Pomeriggio', 'Pomeriggio'),
-        ('Sera', 'Sera'),
-        ('Notte', 'Notte')
-    ], validators=[DataRequired()])
     submit = SubmitField('Crea Turno')
 
 class EditShiftForm(FlaskForm):
-    """Form per modificare turni esistenti (utente, orari, tipo turno - non data)"""
+    """Form per modificare turni esistenti (utente e orari - non data né tipo)"""
     user_id = SelectField('Utente', coerce=int, validators=[DataRequired()])
     start_time = TimeField('Ora Inizio', validators=[DataRequired()])
     end_time = TimeField('Ora Fine', validators=[DataRequired()])
-    shift_type = SelectField('Tipo Turno', choices=[
-        ('Mattina', 'Mattina'),
-        ('Pomeriggio', 'Pomeriggio'),
-        ('Sera', 'Sera'),
-        ('Notte', 'Notte')
-    ], validators=[DataRequired()])
     submit = SubmitField('Salva Modifiche')
     
     def validate_end_time(self, end_time):

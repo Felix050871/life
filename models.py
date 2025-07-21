@@ -700,7 +700,7 @@ class Shift(db.Model):
     date = db.Column(db.Date, nullable=False)
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
-    shift_type = db.Column(db.String(50), nullable=False)  # Morning, Afternoon, Evening
+    shift_type = db.Column(db.String(50), nullable=False, default='Turno')  # Simplified shift type
     created_at = db.Column(db.DateTime, default=italian_now)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     

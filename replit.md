@@ -100,6 +100,7 @@ The application uses SQLAlchemy models with the following key entities:
 - July 18, 2025: **Rimozione Turni dalle Statistiche** - Eliminati tutti i riferimenti ai turni dalle pagine statistiche e dashboard, rimossi campi shifts_assigned, shifts_past, shifts_future dalle statistiche utente, aggiornati template per sostituire turni con interventi, mantenuti solo dati presenze e interventi
 - July 18, 2025: **Range Orari Flessibili** - Implementati range orari di entrata e uscita (start_time_min/max, end_time_min/max) sostituendo orari fissi, aggiornati modelli con metodi di visualizzazione range, form con validazioni, template con input group e JavaScript per sincronizzazione automatica min/max
 - July 18, 2025: **Selezione Giorni Settimana Orari** - Aggiunto campo days_of_week al modello WorkSchedule, implementati preset (Lun-Ven, Sab-Dom, Tutti giorni, Personalizzato), aggiornati form e template con JavaScript per sincronizzazione automatica, visualizzazione giorni nella tabella orari
+- July 21, 2025: **Semplificazione Sistema Turni** - Rimosso sistema di classificazione turni (Mattina/Pomeriggio/Sera/Notte), semplificato con tipo unico "Turno", aggiornati form EditShiftForm e ShiftForm, modificate route di gestione turni per focus su orari invece che tipologie
 - July 18, 2025: **Progetto Workly Creato** - Clone completo e indipendente della piattaforma NS12 con branding generico "Workly Platform", rimosso logo aziendale, aggiornati tutti i template e riferimenti, creati README.md e configurazione .replit per deployment autonomo
 
 ## User Preferences

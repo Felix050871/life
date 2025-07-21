@@ -2255,20 +2255,18 @@ def edit_shift(shift_id):
                 # Salva i valori originali per il messaggio
                 old_user = shift.user.get_full_name()
                 old_time = f"{shift.start_time.strftime('%H:%M')} - {shift.end_time.strftime('%H:%M')}"
-                old_type = shift.shift_type
                 
                 # Aggiorna il turno
                 shift.user_id = form.user_id.data
                 shift.start_time = form.start_time.data
                 shift.end_time = form.end_time.data
-                shift.shift_type = form.shift_type.data
                 
                 db.session.commit()
                 
                 new_user = User.query.get(form.user_id.data)
                 new_time = f"{form.start_time.data.strftime('%H:%M')} - {form.end_time.data.strftime('%H:%M')}"
                 
-                flash(f'Turno modificato con successo: {old_user} ({old_time}, {old_type}) → {new_user.get_full_name()} ({new_time}, {form.shift_type.data})', 'success')
+                flash(f'Turno modificato con successo: {old_user} ({old_time}) → {new_user.get_full_name()} ({new_time})', 'success')
                 
                 # Redirect back to the referring page or dashboard
                 return redirect(request.referrer or url_for('dashboard'))
@@ -2282,7 +2280,6 @@ def edit_shift(shift_id):
         form.user_id.data = shift.user_id
         form.start_time.data = shift.start_time
         form.end_time.data = shift.end_time
-        form.shift_type.data = shift.shift_type
     
     return render_template('edit_shift.html', shift=shift, users=users, form=form)
 
@@ -4752,7 +4749,7 @@ def regenerate_turni_from_coverage():
                             date=current_date,
                             start_time=coverage.start_time,
                             end_time=coverage.end_time,
-                            shift_type='Normale',
+                            shift_type='Turno',
                             created_by=current_user.id
                         )
                         db.session.add(new_shift)
