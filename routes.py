@@ -4165,12 +4165,12 @@ def manage_turni():
     for sede in sedi_turni:
         from models import Shift, ReperibilitaShift
         
-        turni_count = db.session.query(Shift).join(User).filter(
+        turni_count = db.session.query(Shift).join(User, Shift.user_id == User.id).filter(
             User.sede_id == sede.id,
             User.active == True
         ).count()
         
-        reperibilita_count = db.session.query(ReperibilitaShift).join(User).filter(
+        reperibilita_count = db.session.query(ReperibilitaShift).join(User, ReperibilitaShift.user_id == User.id).filter(
             User.sede_id == sede.id,
             User.active == True
         ).count()
@@ -4233,7 +4233,7 @@ def manage_sedi():
         # Conta turni regolari per utenti di questa sede
         if sede.is_turni_mode():
             from models import Shift
-            turni_count = db.session.query(Shift).join(User).filter(
+            turni_count = db.session.query(Shift).join(User, Shift.user_id == User.id).filter(
                 User.sede_id == sede.id,
                 User.active == True
             ).count()
@@ -4241,7 +4241,7 @@ def manage_sedi():
             
             # Conta turni reperibilità per utenti di questa sede
             from models import ReperibilitaShift
-            reperibilita_count = db.session.query(ReperibilitaShift).join(User).filter(
+            reperibilita_count = db.session.query(ReperibilitaShift).join(User, ReperibilitaShift.user_id == User.id).filter(
                 User.sede_id == sede.id,
                 User.active == True
             ).count()
