@@ -74,8 +74,7 @@ class User(UserMixin, db.Model):
     # Relationship con Sede
     sede_obj = db.relationship('Sede', backref='users')
     
-    # Relationship con AttendanceEvent
-    attendances = db.relationship('AttendanceEvent', backref='user', lazy='dynamic')
+    # La relazione con AttendanceEvent è già definita tramite backref in AttendanceEvent.user
     
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -151,7 +150,7 @@ class User(UserMixin, db.Model):
     
     def get_last_attendance_date(self):
         """Restituisce la data dell'ultima presenza dell'utente"""
-        last_attendance = self.attendances.order_by(AttendanceEvent.date.desc()).first()
+        last_attendance = AttendanceEvent.query.filter_by(user_id=self.id).order_by(AttendanceEvent.date.desc()).first()
         if last_attendance:
             return last_attendance.date
         return None
