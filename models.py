@@ -213,6 +213,9 @@ class User(UserMixin, db.Model):
     def can_view_holidays(self):
         return self.has_permission('can_view_holidays')
     
+    def can_access_holidays(self):
+        return self.can_manage_holidays() or self.can_view_holidays()
+    
     # === GESTIONE QR ===
     def can_manage_qr(self):
         return self.has_permission('can_manage_qr')
@@ -226,6 +229,9 @@ class User(UserMixin, db.Model):
     
     def can_manage_reports(self):
         return self.has_permission('can_manage_reports')
+    
+    def can_view_statistics(self):
+        return self.has_permission('can_view_reports')
     
     # === MESSAGGI ===
     def can_send_messages(self):
