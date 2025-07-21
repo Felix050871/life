@@ -2661,6 +2661,7 @@ def create_reperibilita_coverage():
             coverage.start_time = form.start_time.data
             coverage.end_time = form.end_time.data
             coverage.set_required_roles_list(form.required_roles.data)
+            coverage.set_sedi_ids_list(form.sedi.data)  # Aggiungi le sedi selezionate
             coverage.description = form.description.data
             coverage.is_active = form.is_active.data
             coverage.start_date = form.start_date.data
@@ -2698,6 +2699,7 @@ def edit_reperibilita_coverage(coverage_id):
         coverage.start_time = form.start_time.data
         coverage.end_time = form.end_time.data
         coverage.set_required_roles_list(form.required_roles.data)
+        coverage.set_sedi_ids_list(form.sedi.data)  # Aggiungi le sedi selezionate
         coverage.description = form.description.data
         coverage.is_active = form.is_active.data
         coverage.start_date = form.start_date.data

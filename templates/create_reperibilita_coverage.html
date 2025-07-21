@@ -31,6 +31,16 @@
                             </div>
                         </div>
 
+                        <!-- Selezione Sedi -->
+                        <div class="mb-3">
+                            {{ form.sedi.label(class="form-label") }}
+                            {{ form.sedi(class="form-select", size="5", multiple=True) }}
+                            <div class="form-text">Seleziona una o più sedi per cui questa copertura sarà valida. Tieni premuto Ctrl (Cmd su Mac) per selezioni multiple.</div>
+                            {% if form.sedi.errors %}
+                                <div class="text-danger">{{ form.sedi.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
                         <div class="mb-3">
                             {{ form.days_of_week.label(class="form-label") }}
                             {{ form.days_of_week(class="form-select") }}
