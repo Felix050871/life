@@ -373,8 +373,8 @@ class ReperibilitaTemplateForm(FlaskForm):
     """Form per generare turnazioni reperibilità da coperture esistenti"""
     coverage_period = SelectField('Copertura Reperibilità', choices=[], validators=[DataRequired()])
     use_full_period = BooleanField('Usa intero periodo della copertura', default=True)
-    start_date = DateField('Data Inizio Personalizzata')
-    end_date = DateField('Data Fine Personalizzata')
+    start_date = DateField('Data Inizio Personalizzata', validators=[Optional()])
+    end_date = DateField('Data Fine Personalizzata', validators=[Optional()])
     description = TextAreaField('Descrizione (opzionale)')
     submit = SubmitField('Genera Turnazioni Reperibilità')
     
