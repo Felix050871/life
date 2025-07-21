@@ -94,6 +94,8 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 21, 2025: **Protezione Amministratore** - Implementata protezione completa contro cancellazione/disattivazione dell'utente amministratore: bloccata route toggle_user, aggiunto controllo nel form di modifica, disabilitato checkbox nel template edit_user.html, sostituito pulsante toggle con icona "protetto" nell'interfaccia utente
+- July 21, 2025: **Statistiche Utenti per Ruolo in Dashboard** - Aggiunta sezione "Statistiche Utenti" nella dashboard che mostra il numero di utenti per ogni ruolo con colori specifici (Amministratore: rosso, Responsabile: blu, Supervisore: giallo, Operatore: azzurro, Ospite: grigio), implementata logica backend in get_team_statistics()
 - July 21, 2025: **Eliminazione Riferimenti Fissi ai Ruoli** - Rimossi tutti i riferimenti hardcoded ai ruoli obsoleti (Admin, Management, Ente, Staff, etc.) da template e route, sostituiti con controlli dinamici basati sui permessi, implementato metodo has_role() per controlli specifici sui ruoli quando necessario
 - July 21, 2025: **Sistema All_Sedi Implementato** - Aggiunto campo all_sedi al database utenti, aggiornati form e template per gestire accesso globale a tutte le sedi, implementata logica di validazione e JavaScript per gestione interazione tra campi sede specifica e accesso globale
 - July 21, 2025: **Dashboard Admin Pulita** - Rimossa sezione registrazione presenze (Entrata/Uscita/Pausa/Ripresa) per amministratori, aggiornati controlli per escludere ruolo 'Amministratore' dalle funzionalità operative, mantenute solo funzioni di gestione e supervisione
