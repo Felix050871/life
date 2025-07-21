@@ -768,6 +768,7 @@ class ReperibilitaCoverage(db.Model):
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
     required_roles = db.Column(db.Text, nullable=False)  # JSON array dei ruoli richiesti per questa fascia
+    sedi_ids = db.Column(db.Text, nullable=False)  # JSON array degli ID delle sedi coinvolte
     description = db.Column(db.String(200))  # Descrizione opzionale della copertura
     is_active = db.Column(db.Boolean, default=True)
     
@@ -805,6 +806,36 @@ class ReperibilitaCoverage(db.Model):
         """Restituisce i ruoli formattati per la visualizzazione"""
         roles = self.get_required_roles_list()
         return ', '.join(roles) if roles else 'Nessuno'
+    
+    def get_sedi_ids_list(self):
+        """Restituisce la lista degli ID delle sedi dal JSON"""
+        try:
+            import json
+            return [int(sid) for sid in json.loads(self.sedi_ids)]
+        except:
+            return []
+    
+    def set_sedi_ids_list(self, sedi_ids_list):
+        """Imposta la lista degli ID delle sedi come JSON"""
+        import json
+        self.sedi_ids = json.dumps([int(sid) for sid in sedi_ids_list])
+    
+    def get_sedi_names(self):
+        """Restituisce i nomi delle sedi coinvolte"""
+        sede_ids = self.get_sedi_ids_list()
+        if not sede_ids:
+            return 'Nessuna sede'
+        
+        sedi = Sede.query.filter(Sede.id.in_(sede_ids)).all()
+        return ', '.join([sede.name for sede in sedi])
+    
+    def get_sedi_objects(self):
+        """Restituisce gli oggetti Sede coinvolti"""
+        sede_ids = self.get_sedi_ids_list()
+        if not sede_ids:
+            return []
+        
+        return Sede.query.filter(Sede.id.in_(sede_ids)).all()
     
     def is_valid_for_date(self, check_date):
         """Verifica se la copertura è valida per una data specifica"""

@@ -224,15 +224,14 @@ class PresidioCoverageForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(PresidioCoverageForm, self).__init__(*args, **kwargs)
-        # Popola i ruoli dinamicamente dal database
+        # Popola i ruoli dinamicamente dal database, escludendo Admin
         from models import UserRole
         try:
-            roles = UserRole.query.all()
+            roles = UserRole.query.filter(UserRole.name != 'Admin').all()
             self.required_roles.choices = [(role.name, role.name) for role in roles]
         except:
             # Fallback se il database non è disponibile
             self.required_roles.choices = [
-                ('Admin', 'Admin'),
                 ('Management', 'Management'),
                 ('Staff', 'Staff'),
                 ('Redattore', 'Redattore'),
@@ -266,6 +265,10 @@ class ReperibilitaCoverageForm(FlaskForm):
     start_date = DateField('Data Inizio Validità', validators=[DataRequired()])
     end_date = DateField('Data Fine Validità', validators=[DataRequired()])
     
+    # Selezione sedi - supporta selezione multipla
+    sedi = SelectMultipleField('Sedi Coinvolte', choices=[], validators=[DataRequired()], 
+                              render_kw={'class': 'form-select', 'size': '5', 'multiple': True})
+    
     # Giorni della settimana - supporta selezione multipla (include festivi)
     days_of_week = SelectMultipleField('Giorni della Settimana', choices=[
         (0, 'Lunedì'),
@@ -288,15 +291,19 @@ class ReperibilitaCoverageForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(ReperibilitaCoverageForm, self).__init__(*args, **kwargs)
-        # Popola i ruoli dinamicamente dal database
-        from models import UserRole
+        # Popola i ruoli dinamicamente dal database, escludendo Admin
+        from models import UserRole, Sede
         try:
-            roles = UserRole.query.all()
+            # Popola ruoli escludendo Admin
+            roles = UserRole.query.filter(UserRole.name != 'Admin').all()
             self.required_roles.choices = [(role.name, role.name) for role in roles]
+            
+            # Popola sedi
+            sedi = Sede.query.all()
+            self.sedi.choices = [(str(sede.id), sede.name) for sede in sedi]
         except:
             # Fallback se il database non è disponibile
             self.required_roles.choices = [
-                ('Admin', 'Admin'),
                 ('Management', 'Management'),
                 ('Staff', 'Staff'),
                 ('Redattore', 'Redattore'),
@@ -304,6 +311,7 @@ class ReperibilitaCoverageForm(FlaskForm):
                 ('Operatore', 'Operatore'),
                 ('Ente', 'Ente')
             ]
+            self.sedi.choices = [('1', 'Sede Principale')]
     
     def validate_end_time(self, end_time):
         if end_time.data and self.start_time.data:
