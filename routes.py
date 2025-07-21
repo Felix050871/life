@@ -4726,6 +4726,10 @@ def regenerate_turni_from_coverage():
             print(f"DEBUG: Date {current_date} (weekday {day_of_week}): {len(day_coverages)} coverages")
             
             for coverage in day_coverages:
+                # Debug: verifica utenti della sede
+                all_sede_users = User.query.filter(User.sede_id == sede_id).all()
+                active_sede_users = User.query.filter(User.sede_id == sede_id, User.is_active == True).all()
+                
                 # Ottieni utenti disponibili per questa sede e copertura
                 available_users = User.query.filter(
                     User.sede_id == sede_id,
@@ -4737,7 +4741,9 @@ def regenerate_turni_from_coverage():
                 roles_dict = coverage.get_required_roles_dict()
                 total_required_staff = sum(roles_dict.values()) if roles_dict else 1
                 
-                print(f"DEBUG: Coverage {coverage.description or 'Senza nome'}: {len(available_users)} users, required: {total_required_staff}")
+                print(f"DEBUG: Sede {sede_id} - Total users: {len(all_sede_users)}, Active: {len(active_sede_users)}, With valid roles: {len(available_users)}")
+                print(f"DEBUG: Available users: {[f'{u.username}({u.role})' for u in available_users]}")
+                print(f"DEBUG: Coverage {coverage.description or 'Senza nome'}: required: {total_required_staff}, roles: {roles_dict}")
                 
                 if available_users and total_required_staff > 0:
                     # Seleziona utenti per questa copertura (logica semplificata)
