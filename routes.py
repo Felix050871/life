@@ -4350,6 +4350,60 @@ def process_generate_turni_from_coverage():
     
     return redirect(url_for('generate_turni_from_coverage', sede=sede_id))
 
+@app.route('/api/sede/<int:sede_id>/coperture')
+@login_required
+def api_get_sede_coperture(sede_id):
+    """API per ottenere le coperture di una sede specifica"""
+    if not current_user.can_access_turni():
+        return jsonify({'error': 'Non autorizzato'}), 403
+    
+    sede = Sede.query.get_or_404(sede_id)
+    
+    # Verifica permessi sulla sede
+    if current_user.role != 'Admin':
+        if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
+            return jsonify({'error': 'Non autorizzato'}), 403
+    
+    if not sede.is_turni_mode():
+        return jsonify({'error': 'Sede non configurata per modalità turni'}), 400
+    
+    # Ottieni le coperture attive per questa sede
+    from models import PresidioCoverage
+    coperture = PresidioCoverage.query.filter_by(is_active=True).order_by(
+        PresidioCoverage.start_date.desc(),
+        PresidioCoverage.day_of_week,
+        PresidioCoverage.start_time
+    ).all()
+    
+    # Raggruppa coperture per periodo di validità
+    coperture_grouped = {}
+    for copertura in coperture:
+        period_key = f"{copertura.start_date.strftime('%d/%m/%Y')} - {copertura.end_date.strftime('%d/%m/%Y')}"
+        if period_key not in coperture_grouped:
+            coperture_grouped[period_key] = {
+                'start_date': copertura.start_date.strftime('%d/%m/%Y'),
+                'end_date': copertura.end_date.strftime('%d/%m/%Y'),
+                'coperture': [],
+                'is_active': copertura.start_date <= date.today() <= copertura.end_date,
+                'period_id': f"{copertura.start_date.strftime('%Y%m%d')}-{copertura.end_date.strftime('%Y%m%d')}"
+            }
+        
+        copertura_data = {
+            'id': copertura.id,
+            'day_name': copertura.get_day_name(),
+            'time_range': copertura.get_time_range(),
+            'roles_display': copertura.get_required_roles_display(),
+            'is_valid': copertura.is_valid_for_date(date.today()),
+            'description': copertura.description
+        }
+        coperture_grouped[period_key]['coperture'].append(copertura_data)
+    
+    return jsonify({
+        'coperture_grouped': coperture_grouped,
+        'total_coperture': len(coperture),
+        'active_coperture': len([c for c in coperture if c.is_valid_for_date(date.today())])
+    })
+
 @app.route('/admin/turnazioni')
 @login_required
 def generate_turnazioni():

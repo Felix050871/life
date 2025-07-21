@@ -29,17 +29,26 @@
                 <div class="card-body">
                     <div class="row">
                         {% for sede in sedi_turni %}
-                        <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="col-12 mb-4">
                             <div class="card border-primary">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">{{ sede.name }}</h5>
-                                    <p class="text-muted small">
-                                        {{ sede.users|selectattr('active')|list|length }} utenti attivi
-                                    </p>
-                                    <a href="{{ url_for('generate_turni_from_coverage') }}?sede={{ sede.id }}" 
-                                       class="btn btn-primary">
-                                        <i class="fas fa-calendar-alt me-1"></i>Turni Regolari
-                                    </a>
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-1">{{ sede.name }}</h5>
+                                        <p class="text-muted mb-0">
+                                            {{ sede.users|selectattr('active')|list|length }} utenti attivi
+                                        </p>
+                                    </div>
+                                    <span class="badge bg-primary">{{ sede.tipologia }}</span>
+                                </div>
+                                <div class="card-body">
+                                    <div id="coperture-sede-{{ sede.id }}">
+                                        <div class="text-center py-3">
+                                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                <span class="visually-hidden">Caricamento...</span>
+                                            </div>
+                                            <p class="text-muted mt-2 mb-0">Caricamento coperture...</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -118,4 +127,124 @@
         </div>
     </div>
 </div>
+
+<script>
+// Carica le coperture per ogni sede al caricamento della pagina
+document.addEventListener('DOMContentLoaded', function() {
+    {% for sede in sedi_turni %}
+    loadSedeCopertrue({{ sede.id }});
+    {% endfor %}
+});
+
+async function loadSedeCopertrue(sedeId) {
+    try {
+        const response = await fetch(`/api/sede/${sedeId}/coperture`);
+        if (!response.ok) throw new Error('Errore nel caricamento');
+        
+        const data = await response.json();
+        const container = document.getElementById(`coperture-sede-${sedeId}`);
+        
+        if (data.coperture_grouped && Object.keys(data.coperture_grouped).length > 0) {
+            let html = '';
+            
+            for (const [periodKey, periodData] of Object.entries(data.coperture_grouped)) {
+                const isActive = new Date(periodData.end_date) >= new Date();
+                const statusBadge = periodData.is_active ? 
+                    '<span class="badge bg-success">ATTIVO</span>' :
+                    (new Date(periodData.end_date) < new Date() ? 
+                        '<span class="badge bg-secondary">SCADUTO</span>' : 
+                        '<span class="badge bg-warning">FUTURO</span>');
+                
+                html += `
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                ${periodData.start_date} - ${periodData.end_date}
+                            </h6>
+                            <div>
+                                ${statusBadge}
+                                ${isActive ? `<button class="btn btn-success btn-sm ms-2" onclick="showGenerateModal(${sedeId}, '${periodData.period_id}', '${periodKey}')">
+                                    <i class="fas fa-magic me-1"></i>Genera Turni
+                                </button>` : ''}
+                            </div>
+                        </div>
+                        <div class="row">
+                `;
+                
+                periodData.coperture.forEach(copertura => {
+                    const isActiveClass = copertura.is_valid ? 'border-success' : 'border-secondary';
+                    const statusBadgeClass = copertura.is_valid ? 'bg-success' : 'bg-secondary';
+                    
+                    html += `
+                        <div class="col-md-6 col-lg-4 mb-2">
+                            <div class="card card-sm h-100 ${isActiveClass}">
+                                <div class="card-body p-2">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <small class="fw-bold">${copertura.day_name}</small>
+                                        <span class="badge ${statusBadgeClass} badge-sm">${copertura.is_valid ? 'Attiva' : 'Inattiva'}</span>
+                                    </div>
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-clock me-1"></i>${copertura.time_range}
+                                    </small>
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-users me-1"></i>${copertura.roles_display}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div></div>';
+            }
+            
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-2">Nessuna copertura creata per questa sede</p>
+                    <a href="/admin/turni" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>Crea Copertura
+                    </a>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Errore caricamento coperture:', error);
+        const container = document.getElementById(`coperture-sede-${sedeId}`);
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                <p class="text-muted mb-0">Errore nel caricamento delle coperture</p>
+            </div>
+        `;
+    }
+}
+
+function showGenerateModal(sedeId, periodId, periodDisplay) {
+    // TODO: Implementare modal di generazione
+    alert(`Generazione turni per sede ${sedeId}, periodo ${periodDisplay}`);
+}
+</script>
+
+<style>
+.card-sm .card-body {
+    padding: 0.5rem;
+}
+
+.badge-sm {
+    font-size: 0.6em;
+}
+
+.border-success {
+    border-left: 3px solid #28a745 !important;
+}
+
+.border-secondary {
+    border-left: 3px solid #6c757d !important;
+}
+</style>
+
 {% endblock %}
