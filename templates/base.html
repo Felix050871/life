@@ -128,6 +128,19 @@
                         </a>
                     </li>
                     {% endif %}
+                    
+                    <!-- Messaggi Interni (per Management e Staff) -->
+                    {% if current_user.role in ['Management', 'Staff'] %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('internal_messages') }}">
+                            <i class="fas fa-envelope me-1"></i>Messaggi
+                            {% set unread_count = current_user.received_messages.filter_by(is_read=False).count() %}
+                            {% if unread_count > 0 %}
+                                <span class="badge bg-danger ms-1">{{ unread_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endif %}
                     {% if current_user.can_manage_users() %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin_generate_qr_codes') }}">

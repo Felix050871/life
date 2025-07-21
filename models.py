@@ -1023,6 +1023,30 @@ class Holiday(db.Model):
         return query.all()
 
 
+class InternalMessage(db.Model):
+    """Modello per messaggi interni del sistema"""
+    id = db.Column(db.Integer, primary_key=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # None per messaggi di sistema
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    message_type = db.Column(db.String(50), default='info')  # 'info', 'warning', 'success', 'danger'
+    is_read = db.Column(db.Boolean, default=False)
+    related_leave_request_id = db.Column(db.Integer, db.ForeignKey('leave_request.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    related_leave_request = db.relationship('LeaveRequest', backref='messages')
+    
+    def __repr__(self):
+        return f'<InternalMessage {self.title} to {self.recipient.username}>'
+    
+    def get_sender_name(self):
+        """Restituisce il nome del mittente o 'Sistema' se è un messaggio automatico"""
+        return self.sender.get_full_name() if self.sender else 'Sistema'
+
+
 class PasswordResetToken(db.Model):
     """Token per reset password"""
     id = db.Column(db.Integer, primary_key=True)

@@ -1209,3 +1209,74 @@ def should_assign_reperibilita_shift(user, date, current_reperibilita_utilizatio
     # TODO: riattivare controlli per mattina successiva e turni serali quando risolto bug SQLAlchemy
     max_reperibilita_utilization = user.part_time_percentage * 1.0  # 100% del part-time per reperibilità
     return current_reperibilita_utilization < max_reperibilita_utilization
+
+def send_leave_request_message(leave_request, action_type, sender_user=None):
+    """Invia messaggi automatici per le richieste di ferie/permessi
+    
+    Args:
+        leave_request: Oggetto LeaveRequest
+        action_type: 'created', 'cancelled', 'approved', 'rejected'  
+        sender_user: Utente che ha eseguito l'azione (per cancelled è l'utente stesso)
+    """
+    from models import InternalMessage, User
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Determina i destinatari in base ai ruoli e alla sede
+    recipients = []
+    
+    if action_type in ['created', 'cancelled']:
+        # Richieste create o cancellate: notifica Management della stessa sede e tutti gli Staff
+        if leave_request.user.sede_id:
+            # Management della stessa sede
+            management_users = User.query.filter(
+                User.role == 'Management',
+                User.sede_id == leave_request.user.sede_id,
+                User.active == True
+            ).all()
+            recipients.extend(management_users)
+        
+        # Tutti gli Staff (supervisione globale)
+        staff_users = User.query.filter(
+            User.role == 'Staff',
+            User.active == True
+        ).all()
+        recipients.extend(staff_users)
+    
+    # Rimuovi duplicati e l'utente richiedente se presente
+    recipients = list(set(recipients))
+    if leave_request.user in recipients:
+        recipients.remove(leave_request.user)
+    
+    # Determina titolo e messaggio in base all'azione
+    if action_type == 'created':
+        title = f"Nuova richiesta {leave_request.leave_type.lower()}"
+        message = f"{leave_request.user.get_full_name()} ha richiesto {leave_request.leave_type.lower()} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')}"
+        if leave_request.reason:
+            message += f"\nMotivo: {leave_request.reason}"
+        msg_type = 'info'
+        
+    elif action_type == 'cancelled':
+        title = f"Richiesta {leave_request.leave_type.lower()} cancellata"
+        message = f"{leave_request.user.get_full_name()} ha cancellato la sua richiesta di {leave_request.leave_type.lower()} ({leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')})"
+        msg_type = 'warning'
+    
+    # Crea i messaggi per tutti i destinatari
+    for recipient in recipients:
+        internal_msg = InternalMessage(
+            recipient_id=recipient.id,
+            sender_id=sender_user.id if sender_user else None,
+            title=title,
+            message=message,
+            message_type=msg_type,
+            related_leave_request_id=leave_request.id
+        )
+        db.session.add(internal_msg)
+    
+    try:
+        db.session.commit()
+        logger.info(f"Sent {len(recipients)} messages for leave request {action_type}")
+    except Exception as e:
+        logger.error(f"Error sending leave request messages: {e}")
+        db.session.rollback()

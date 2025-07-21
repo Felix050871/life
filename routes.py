@@ -1743,6 +1743,10 @@ def create_leave_request():
             db.session.add(leave_request)
             db.session.commit()
             
+            # Invia messaggi automatici
+            from utils import send_leave_request_message
+            send_leave_request_message(leave_request, 'created', current_user)
+            
             # Messaggio di successo personalizzato
             if form.leave_type.data == 'Malattia':
                 flash('Richiesta di malattia approvata automaticamente', 'success')
@@ -1810,6 +1814,10 @@ def delete_leave(request_id):
     if leave_request.status == 'Approved' and leave_request.start_date < today:
         flash('Non puoi cancellare richieste già approvate e iniziate', 'warning')
         return redirect(url_for('leave_requests'))
+    
+    # Invia messaggi di cancellazione prima di eliminare la richiesta
+    from utils import send_leave_request_message
+    send_leave_request_message(leave_request, 'cancelled', current_user)
     
     # Cancella la richiesta
     db.session.delete(leave_request)
@@ -4598,3 +4606,47 @@ def delete_role(role_id):
     
     flash(f'Ruolo "{role_name}" eliminato con successo', 'success')
     return redirect(url_for('manage_roles'))
+
+@app.route('/messages')
+@login_required
+def internal_messages():
+    """Visualizza i messaggi interni per l'utente corrente"""
+    if not current_user.role in ['Management', 'Staff']:
+        flash('Non hai i permessi per accedere ai messaggi interni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    from models import InternalMessage
+    
+    # Messaggi per l'utente corrente
+    messages = InternalMessage.query.filter_by(
+        recipient_id=current_user.id
+    ).order_by(InternalMessage.created_at.desc()).all()
+    
+    # Conta messaggi non letti
+    unread_count = InternalMessage.query.filter_by(
+        recipient_id=current_user.id,
+        is_read=False
+    ).count()
+    
+    return render_template('internal_messages.html', 
+                         messages=messages, 
+                         unread_count=unread_count)
+
+@app.route('/message/<int:message_id>/mark_read')
+@login_required  
+def mark_message_read(message_id):
+    """Segna un messaggio come letto"""
+    from models import InternalMessage
+    
+    message = InternalMessage.query.get_or_404(message_id)
+    
+    # Verifica che sia il destinatario del messaggio
+    if message.recipient_id != current_user.id:
+        flash('Non puoi accedere a questo messaggio', 'danger')
+        return redirect(url_for('internal_messages'))
+    
+    # Segna come letto
+    message.is_read = True
+    db.session.commit()
+    
+    return redirect(url_for('internal_messages'))
