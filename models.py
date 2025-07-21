@@ -327,6 +327,24 @@ class User(UserMixin, db.Model):
         
         return False
     
+    def get_turni_sedi(self):
+        """Restituisce le sedi turni accessibili dall'utente"""
+        from models import Sede
+        
+        if self.can_manage_shifts():
+            # Utenti con permesso di gestione vedono tutte le sedi di tipo "Turni" 
+            return Sede.query.filter_by(tipologia='Turni', active=True).all()
+        elif self.can_view_shifts():
+            # Utenti con solo permesso di visualizzazione
+            if self.all_sedi:
+                # Utenti multi-sede vedono tutte le sedi turni
+                return Sede.query.filter_by(tipologia='Turni', active=True).all()
+            elif self.sede_obj and self.sede_obj.is_turni_mode():
+                # Utenti con sede specifica vedono solo la propria se supporta turni
+                return [self.sede_obj]
+        
+        return []
+    
     def can_access_reperibilita_menu(self):
         """Accesso al menu Reperibilità"""
         return self.can_access_reperibilita()

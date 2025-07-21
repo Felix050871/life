@@ -1226,9 +1226,10 @@ def shifts():
         # Get existing shift templates
         shift_templates = ShiftTemplate.query.order_by(ShiftTemplate.created_at.desc()).all()
         
-        # Check if user's sede supports turni mode
+        # Check if user has access to turni sedi
         user_sede = current_user.sede_obj if current_user.sede_obj else None
-        sede_supports_turni = user_sede.is_turni_mode() if user_sede else False
+        sedi_turni_accessible = current_user.get_turni_sedi()
+        sede_supports_turni = len(sedi_turni_accessible) > 0
         
         return render_template('shifts.html', 
                              shift_form=shift_form,
@@ -4203,18 +4204,8 @@ def manage_turni():
         flash('Non hai i permessi per accedere alla gestione turni', 'danger')
         return redirect(url_for('dashboard'))
     
-    # Filtra sedi in base ai permessi
-    if current_user.can_manage_shifts():
-        # Utenti con permesso di gestione vedono tutte le sedi di tipo "Turni"
-        sedi_turni = Sede.query.filter_by(tipologia='Turni', active=True).all()
-    elif current_user.can_view_shifts():
-        # Utenti con solo permesso di visualizzazione vedono solo la propria sede
-        if current_user.sede_obj and current_user.sede_obj.is_turni_mode():
-            sedi_turni = [current_user.sede_obj]
-        else:
-            sedi_turni = []
-    else:
-        sedi_turni = []
+    # Ottieni sedi turni accessibili dall'utente
+    sedi_turni = current_user.get_turni_sedi()
     
     # Per ogni sede, calcola statistiche sui turni esistenti
     sede_stats = {}
@@ -4938,14 +4929,8 @@ def generate_turnazioni():
         flash('Non hai i permessi per generare turnazioni', 'danger')
         return redirect(url_for('dashboard'))
     
-    # Filtra sedi in base al ruolo
-    if current_user.role == 'Admin':
-        sedi_turni = Sede.query.filter_by(tipologia='Turni', active=True).all()
-    else:
-        if current_user.sede_obj and current_user.sede_obj.is_turni_mode():
-            sedi_turni = [current_user.sede_obj]
-        else:
-            sedi_turni = []
+    # Ottieni sedi turni accessibili dall'utente
+    sedi_turni = current_user.get_turni_sedi()
     
     # Per ogni sede, carica le coperture direttamente server-side
     from models import PresidioCoverage
