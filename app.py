@@ -97,3 +97,10 @@ def format_time_italian(timestamp):
     except Exception as e:
         app.logger.error(f"Error formatting time: {e}")
         return "--:--"
+
+@app.template_filter('get_permission_display')
+def get_permission_display(permission_name):
+    """Traduce i nomi dei permessi usando la mappatura del modello UserRole"""
+    from models import UserRole
+    permissions_map = UserRole.get_available_permissions()
+    return permissions_map.get(permission_name, permission_name)

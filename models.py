@@ -45,20 +45,66 @@ class UserRole(db.Model):
     
     @classmethod
     def get_available_permissions(cls):
-        """Restituisce la lista dei permessi disponibili"""
+        """Restituisce la lista completa dei permessi disponibili con traduzioni"""
         return {
+            # Dashboard e sistema base
+            'can_access_dashboard': 'Dashboard',
+            
+            # Gestione ruoli
+            'can_manage_roles': 'Gestire Ruoli',
+            'can_view_roles': 'Visualizzare Ruoli',
+            
+            # Gestione utenti
             'can_manage_users': 'Gestire Utenti',
+            'can_view_users': 'Visualizzare Utenti',
+            
+            # Gestione sedi
+            'can_manage_sedi': 'Gestire Sedi',
+            'can_view_sedi': 'Visualizzare Sedi',
+            
+            # Gestione orari/scheduli
+            'can_manage_schedules': 'Gestire Orari',
+            'can_view_schedules': 'Visualizzare Orari',
+            
+            # Gestione turni
             'can_manage_shifts': 'Gestire Turni',
             'can_view_shifts': 'Visualizzare Turni',
+            
+            # Reperibilità
             'can_manage_reperibilita': 'Gestire Reperibilità',
             'can_view_reperibilita': 'Visualizzare Reperibilità',
+            
+            # Gestione presenze
+            'can_manage_attendance': 'Gestire Presenze',
+            'can_view_attendance': 'Visualizzare Presenze',
+            'can_access_attendance': 'Accedere alle Presenze',
+            
+            # Gestione ferie/permessi
+            'can_manage_leave': 'Gestire Ferie/Permessi',
             'can_approve_leave': 'Approvare Ferie/Permessi',
             'can_request_leave': 'Richiedere Ferie/Permessi',
-            'can_access_attendance': 'Accedere alle Presenze',
-            'can_access_dashboard': 'Accedere alla Dashboard',
+            'can_view_leave': 'Visualizzare Ferie/Permessi',
+            
+            # Gestione interventi
+            'can_manage_interventions': 'Gestire Interventi',
+            'can_view_interventions': 'Visualizzare Interventi',
+            
+            # Gestione festività
+            'can_manage_holidays': 'Gestire Festività',
+            'can_view_holidays': 'Visualizzare Festività',
+            
+            # Gestione QR
+            'can_manage_qr': 'Gestire QR',
+            'can_view_qr': 'Visualizzare QR',
+            
+            # Report e statistiche
             'can_view_reports': 'Visualizzare Report',
-            'can_manage_sedi': 'Gestire Sedi',
-            'can_manage_roles': 'Gestire Ruoli'
+            'can_manage_reports': 'Gestire Report',
+            'can_view_statistics': 'Visualizzare Statistiche',
+            
+            # Messaggi
+            'can_send_messages': 'Inviare Messaggi',
+            'can_view_messages': 'Visualizzare Messaggi'
         }
 
 class User(UserMixin, db.Model):
