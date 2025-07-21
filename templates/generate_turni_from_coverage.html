@@ -73,7 +73,7 @@
                 </div>
                 <div>
                     {% if period_data.end_date >= today %}
-                    <button class="btn btn-success" onclick="showGenerateModal('{{ period_data.period_id }}', '{{ period_key }}')">
+                    <button class="btn btn-success" onclick="showGenerateModal('{{ period_data.period_id }}', '{{ period_key }}', '{{ sede.id }}')">
                         <i class="fas fa-magic me-1"></i>Genera Turni
                     </button>
                     {% else %}
@@ -144,7 +144,7 @@
             </div>
             <form method="POST" action="{{ url_for('process_generate_turni_from_coverage') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="sede_id" value="{{ sede.id }}">
+                <input type="hidden" id="sede_id" name="sede_id" value="{{ sede.id }}">
                 <input type="hidden" id="coverage_period_id" name="coverage_period_id" value="">
                 
                 <div class="modal-body">
@@ -190,15 +190,25 @@
 </div>
 
 <script>
-function showGenerateModal(periodId, periodDisplay) {
-    console.log('DEBUG: Setting coverage_period_id to:', periodId);
+function showGenerateModal(periodId, periodDisplay, sedeId) {
+    console.log('DEBUG: showGenerateModal called with:', {periodId, periodDisplay, sedeId});
+    
+    // Imposta period ID
     const hiddenInput = document.getElementById('coverage_period_id');
     if (hiddenInput) {
         hiddenInput.value = periodId;
         console.log('DEBUG: Hidden input value set to:', hiddenInput.value);
     } else {
         console.error('DEBUG: Hidden input coverage_period_id not found');
+        return;
     }
+    
+    // Imposta sede ID (backup)
+    const sedeInput = document.getElementById('sede_id');
+    if (sedeInput) {
+        sedeInput.value = sedeId;
+    }
+    
     document.getElementById('display_period').textContent = periodDisplay;
     
     // Imposta date predefinite

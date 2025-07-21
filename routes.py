@@ -4552,11 +4552,11 @@ def process_generate_turni_from_coverage():
     confirm_overwrite = 'confirm_overwrite' in request.form
     
     # Debug parametri ricevuti
-    print(f"DEBUG: sede_id={sede_id}, coverage_period_id={coverage_period_id}")
-    print(f"DEBUG: form data keys: {list(request.form.keys())}")
+    print(f"DEBUG: sede_id={sede_id}, coverage_period_id='{coverage_period_id}'")
+    print(f"DEBUG: form data: {dict(request.form)}")
     
-    if not all([sede_id, coverage_period_id]):
-        flash(f'Dati mancanti per la generazione turni (sede_id: {sede_id}, coverage_period_id: {coverage_period_id})', 'danger')
+    if not sede_id or not coverage_period_id or coverage_period_id.strip() == '':
+        flash(f'Dati mancanti per la generazione turni (sede_id: {sede_id}, coverage_period_id: \'{coverage_period_id}\')', 'danger')
         return redirect(url_for('generate_turnazioni'))
     
     sede = Sede.query.get_or_404(sede_id)
@@ -5571,10 +5571,18 @@ def manage_coverage():
         flash("Nessuna sede con modalità turni accessibile", "warning")
         return redirect(url_for("dashboard"))
     
-    # Ottieni tutte le coperture attive (PresidioCoverage non ha sede_id)
-    coverage_list = PresidioCoverage.query.filter(
+    # Ottieni tutte le coperture attive e rimuovi duplicati
+    coverage_query = PresidioCoverage.query.filter(
         PresidioCoverage.is_active == True
     ).order_by(PresidioCoverage.start_date.desc()).all()
+    
+    # Rimuovi duplicati basandosi sull'ID
+    coverage_list = []
+    seen_ids = set()
+    for coverage in coverage_query:
+        if coverage.id not in seen_ids:
+            coverage_list.append(coverage)
+            seen_ids.add(coverage.id)
     
     return render_template("manage_coverage.html",
                          coverage_list=coverage_list,
