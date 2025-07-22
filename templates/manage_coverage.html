@@ -58,8 +58,6 @@
                                 <th>Sede</th>
                                 <th>Periodo</th>
                                 <th>Template</th>
-                                <th>Orari</th>
-                                <th>Pause</th>
                                 <th>Stato</th>
                                 <th>Azioni</th>
                             </tr>
@@ -68,7 +66,7 @@
                             {% for coverage in coverage_list %}
                             <tr>
                                 <td>
-                                    <span class="badge bg-primary">Presidio</span>
+                                    <span class="badge bg-primary">Sede Turni</span>
                                 </td>
                                 <td>
                                     <small class="text-muted d-block">{{ coverage.start_date.strftime('%d/%m/%Y') }}</small>
@@ -76,24 +74,6 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-info">{{ coverage.template_coverage_count or 1 }} coperture</span>
-                                </td>
-                                <td>
-                                    {% if coverage.start_time and coverage.end_time %}
-                                    <div class="small text-primary">
-                                        <i class="fas fa-clock me-1"></i>{{ coverage.start_time.strftime('%H:%M') }} - {{ coverage.end_time.strftime('%H:%M') }}
-                                    </div>
-                                    {% else %}
-                                    <small class="text-muted">Non definito</small>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if coverage.break_start_time and coverage.break_end_time %}
-                                    <div class="small text-warning">
-                                        <i class="fas fa-coffee me-1"></i>{{ coverage.break_start_time.strftime('%H:%M') }} - {{ coverage.break_end_time.strftime('%H:%M') }}
-                                    </div>
-                                    {% else %}
-                                    <small class="text-muted">-</small>
-                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if coverage.is_active %}
