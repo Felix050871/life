@@ -5557,7 +5557,7 @@ def manage_coverage():
         return redirect(url_for("dashboard"))
     
     # Import necessari
-    from models import Sede, ReperibilitaCoverage
+    from models import Sede, PresidioCoverage
     
     # Ottieni le sedi accessibili per utente
     if current_user.all_sedi:
@@ -5571,26 +5571,17 @@ def manage_coverage():
         flash("Nessuna sede con modalità turni accessibile", "warning")
         return redirect(url_for("dashboard"))
     
-    # Ottieni template unici di copertura (raggruppate per periodo)
+    # Ottieni template unici di copertura presidio (raggruppate per periodo)
     from collections import defaultdict
-    sede_ids = [sede.id for sede in accessible_sedi] if accessible_sedi else []
     
-    # Ottieni tutte le coperture attive
-    all_coverages = ReperibilitaCoverage.query.filter(
-        ReperibilitaCoverage.is_active == True
-    ).order_by(ReperibilitaCoverage.start_date.desc()).all()
-    
-    # Filtra coperture che includono le sedi accessibili
-    filtered_coverages = []
-    for coverage in all_coverages:
-        coverage_sedi_ids = coverage.get_sedi_ids_list()
-        # Se almeno una sede accessibile è inclusa nella copertura
-        if any(sede_id in coverage_sedi_ids for sede_id in sede_ids):
-            filtered_coverages.append(coverage)
+    # Ottieni tutte le coperture presidio attive
+    all_coverages = PresidioCoverage.query.filter(
+        PresidioCoverage.is_active == True
+    ).order_by(PresidioCoverage.start_date.desc()).all()
     
     # Raggruppa per template (stesso periodo)
     coverage_templates = defaultdict(list)
-    for coverage in filtered_coverages:
+    for coverage in all_coverages:
         period_key = f"{coverage.start_date.strftime('%Y%m%d')}-{coverage.end_date.strftime('%Y%m%d')}"
         coverage_templates[period_key].append(coverage)
     
