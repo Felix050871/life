@@ -1,166 +1,173 @@
 {% extends "base.html" %}
 
-{% block title %}Modifica Copertura Presidio - Gestione Presenze{% endblock %}
+{% block title %}Modifica Template Copertura Presidio{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-edit me-2"></i>Modifica Template Copertura Presidio</h2>
+        <p class="text-muted">Modifica template {{ start_date.strftime('%d/%m/%Y') }} - {{ end_date.strftime('%d/%m/%Y') }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('view_presidio_coverage', period_key=period_key) }}" class="btn btn-secondary">
+            <i class="fas fa-eye me-1"></i>Solo Visualizza
+        </a>
+    </div>
+</div>
+
+<!-- Avviso -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Attenzione:</strong> Le modifiche al template di copertura influenzeranno la generazione dei turni futuri.
+            I turni già generati non saranno modificati automaticamente.
+        </div>
+    </div>
+</div>
+
+<!-- Form di modifica -->
+<div class="row">
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h4 class="card-title mb-0">
-                    <i class="fas fa-edit me-2"></i>Modifica Copertura Presidio
-                </h4>
-                <small class="text-muted">
-                    {{ coverage.get_day_name() }} - {{ coverage.get_time_range() }} - {{ coverage.required_role }}
-                </small>
+                <h5><i class="fas fa-calendar-week me-2"></i>Coperture del Template</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
-                    {{ form.hidden_tag() }}
+                <form method="POST" id="editCoverageForm">
+                    {% if coverages %}
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="coveragesTable">
+                            <thead>
+                                <tr>
+                                    <th>Giorno</th>
+                                    <th>Orario Inizio</th>
+                                    <th>Orario Fine</th>
+                                    <th>Ruoli Richiesti</th>
+                                    <th>Descrizione</th>
+                                    <th>Stato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for coverage in coverages %}
+                                <tr data-coverage-id="{{ coverage.id }}">
+                                    <td>
+                                        <strong>{{ coverage.get_day_name() }}</strong>
+                                        <input type="hidden" name="coverage_{{ coverage.id }}_day" value="{{ coverage.day_of_week }}">
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               name="coverage_{{ coverage.id }}_start_time" 
+                                               value="{{ coverage.start_time.strftime('%H:%M') }}" 
+                                               class="form-control form-control-sm" 
+                                               required>
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               name="coverage_{{ coverage.id }}_end_time" 
+                                               value="{{ coverage.end_time.strftime('%H:%M') }}" 
+                                               class="form-control form-control-sm" 
+                                               required>
+                                    </td>
+                                    <td>
+                                        <input type="text" 
+                                               name="coverage_{{ coverage.id }}_roles" 
+                                               value="{{ coverage.get_required_roles_display() }}" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="es. Operatore, 2 Tecnico" 
+                                               required>
+                                    </td>
+                                    <td>
+                                        <input type="text" 
+                                               name="coverage_{{ coverage.id }}_description" 
+                                               value="{{ coverage.description or '' }}" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Descrizione opzionale">
+                                    </td>
+                                    <td>
+                                        <select name="coverage_{{ coverage.id }}_is_active" class="form-select form-select-sm">
+                                            <option value="1" {{ 'selected' if coverage.is_active else '' }}>Attiva</option>
+                                            <option value="0" {{ 'selected' if not coverage.is_active else '' }}>Inattiva</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="deleteCoverageRow({{ coverage.id }})" 
+                                                title="Elimina copertura">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     
-                    <!-- Periodo di Validità -->
-                    <div class="row mb-4">
+                    <div class="row mt-4">
                         <div class="col-12">
-                            <h6 class="text-primary mb-3">
-                                <i class="fas fa-calendar-alt me-2"></i>Periodo di Validità
-                            </h6>
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.start_date.label(class="form-label") }}
-                            {{ form.start_date(class="form-control") }}
-                            {% for error in form.start_date.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.end_date.label(class="form-label") }}
-                            {{ form.end_date(class="form-control") }}
-                            {% for error in form.end_date.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
+                            <div class="d-flex gap-2 justify-content-between">
+                                <div>
+                                    <a href="{{ url_for('view_presidio_coverage', period_key=period_key) }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-1"></i>Annulla
+                                    </a>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-success" name="action" value="save">
+                                        <i class="fas fa-save me-1"></i>Salva Modifiche
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <hr class="mb-4">
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            {{ form.days_of_week.label(class="form-label") }}
-                            <small class="text-muted d-block">Solo un giorno alla volta in modifica</small>
-                            {{ form.days_of_week(class="form-select", style="height: 160px;") }}
-                            {% for error in form.days_of_week.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.required_roles.label(class="form-label") }}
-                            <small class="text-muted d-block">Seleziona uno o più ruoli che possono coprire questo turno</small>
-                            {{ form.required_roles(class="form-select", style="height: 140px;") }}
-                            {% for error in form.required_roles.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <h5 class="text-muted">Nessuna copertura trovata per questo template</h5>
                     </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            {{ form.start_time.label(class="form-label") }}
-                            {{ form.start_time(class="form-control") }}
-                            {% for error in form.start_time.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.end_time.label(class="form-label") }}
-                            {{ form.end_time(class="form-control") }}
-                            {% for error in form.end_time.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        {{ form.description.label(class="form-label") }}
-                        {{ form.description(class="form-control", placeholder="Descrizione opzionale della copertura") }}
-                        {% for error in form.description.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="form-check">
-                            {{ form.is_active(class="form-check-input") }}
-                            {{ form.is_active.label(class="form-check-label") }}
-                        </div>
-                        {% for error in form.is_active.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-1"></i>Indietro
-                        </a>
-                        <div>
-                            <button type="button" onclick="submitAsNew()" class="btn btn-success me-2">
-                                <i class="fas fa-copy me-1"></i>Salva come Nuovo
-                            </button>
-                            <button type="submit" name="action" value="update" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i>Salva Modifiche
-                            </button>
-                        </div>
-                    </div>
+                    {% endif %}
                 </form>
-            </div>
-        </div>
-        
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card border-warning">
-                    <div class="card-header bg-warning text-dark">
-                        <h6 class="card-title mb-0">
-                            <i class="fas fa-exclamation-triangle me-2"></i>Modifica Esistente
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <p class="mb-0 small">
-                            Le modifiche influenzeranno la generazione dei turni futuri. 
-                            I turni già assegnati non verranno modificati automaticamente.
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-success">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="card-title mb-0">
-                            <i class="fas fa-copy me-2"></i>Salva come Nuovo
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <p class="mb-0 small">
-                            Crea una nuova copertura con le impostazioni modificate, 
-                            mantenendo quella originale invariata. Utile per creare coperture per periodi diversi.
-                        </p>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function submitAsNew() {
-    // Crea un campo hidden per l'azione
-    const form = document.querySelector('form');
-    const actionInput = document.createElement('input');
-    actionInput.type = 'hidden';
-    actionInput.name = 'action';
-    actionInput.value = 'save_as_new';
-    form.appendChild(actionInput);
-    
-    // Invia il form
-    form.submit();
+function deleteCoverageRow(coverageId) {
+    if (confirm('Sei sicuro di voler eliminare questa copertura?')) {
+        const row = document.querySelector(`tr[data-coverage-id="${coverageId}"]`);
+        if (row) {
+            // Aggiungi campo hidden per marcare come eliminata
+            const deleteInput = document.createElement('input');
+            deleteInput.type = 'hidden';
+            deleteInput.name = `coverage_${coverageId}_delete`;
+            deleteInput.value = '1';
+            row.appendChild(deleteInput);
+            
+            // Nascondi la riga
+            row.style.display = 'none';
+        }
+    }
 }
+
+// Validazione form
+document.getElementById('editCoverageForm').addEventListener('submit', function(e) {
+    const startTimes = document.querySelectorAll('input[name$="_start_time"]');
+    const endTimes = document.querySelectorAll('input[name$="_end_time"]');
+    
+    for (let i = 0; i < startTimes.length; i++) {
+        if (startTimes[i].closest('tr').style.display !== 'none') {
+            const startTime = startTimes[i].value;
+            const endTime = endTimes[i].value;
+            
+            if (startTime >= endTime) {
+                alert('L\'orario di fine deve essere successivo all\'orario di inizio');
+                e.preventDefault();
+                startTimes[i].focus();
+                return;
+            }
+        }
+    }
+});
 </script>
 {% endblock %}

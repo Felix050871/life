@@ -5602,6 +5602,143 @@ def manage_coverage():
                          accessible_sedi=accessible_sedi,
                          can_manage=current_user.can_manage_coverage())
 
+@app.route("/view_presidio_coverage/<period_key>")
+@login_required
+def view_presidio_coverage(period_key):
+    """Visualizza dettagli template copertura presidio"""
+    if not current_user.can_view_coverage():
+        flash("Non hai i permessi per visualizzare le coperture", "danger")
+        return redirect(url_for("dashboard"))
+    
+    from models import PresidioCoverage
+    
+    try:
+        # Decodifica period_key per ottenere le date
+        start_str, end_str = period_key.split('-')
+        start_date = datetime.strptime(start_str, '%Y%m%d').date()
+        end_date = datetime.strptime(end_str, '%Y%m%d').date()
+    except (ValueError, AttributeError):
+        flash('Periodo non valido specificato', 'danger')
+        return redirect(url_for('manage_coverage'))
+    
+    # Ottieni tutte le coperture del template
+    coverages = PresidioCoverage.query.filter(
+        PresidioCoverage.start_date == start_date,
+        PresidioCoverage.end_date == end_date,
+        PresidioCoverage.is_active == True
+    ).order_by(PresidioCoverage.day_of_week, PresidioCoverage.start_time).all()
+    
+    if not coverages:
+        flash('Template di copertura non trovato', 'danger')
+        return redirect(url_for('manage_coverage'))
+    
+    return render_template("view_presidio_coverage.html",
+                         coverages=coverages,
+                         start_date=start_date,
+                         end_date=end_date,
+                         period_key=period_key)
+
+@app.route("/edit_presidio_coverage/<period_key>", methods=['GET', 'POST'])
+@login_required
+def edit_presidio_coverage(period_key):
+    """Modifica template copertura presidio"""
+    if not current_user.can_manage_coverage():
+        flash("Non hai i permessi per modificare le coperture", "danger")
+        return redirect(url_for("dashboard"))
+    
+    from models import PresidioCoverage
+    
+    try:
+        # Decodifica period_key per ottenere le date
+        start_str, end_str = period_key.split('-')
+        start_date = datetime.strptime(start_str, '%Y%m%d').date()
+        end_date = datetime.strptime(end_str, '%Y%m%d').date()
+    except (ValueError, AttributeError):
+        flash('Periodo non valido specificato', 'danger')
+        return redirect(url_for('manage_coverage'))
+    
+    # Ottieni tutte le coperture del template
+    coverages = PresidioCoverage.query.filter(
+        PresidioCoverage.start_date == start_date,
+        PresidioCoverage.end_date == end_date
+    ).order_by(PresidioCoverage.day_of_week, PresidioCoverage.start_time).all()
+    
+    if not coverages:
+        flash('Template di copertura non trovato', 'danger')
+        return redirect(url_for('manage_coverage'))
+    
+    # Gestisce POST per salvare le modifiche
+    if request.method == 'POST':
+        try:
+            success_count = 0
+            error_count = 0
+            
+            for coverage in coverages:
+                coverage_id = coverage.id
+                
+                # Controlla se deve essere eliminata
+                if request.form.get(f'coverage_{coverage_id}_delete'):
+                    db.session.delete(coverage)
+                    success_count += 1
+                    continue
+                
+                # Aggiorna i campi
+                start_time_str = request.form.get(f'coverage_{coverage_id}_start_time')
+                end_time_str = request.form.get(f'coverage_{coverage_id}_end_time')
+                roles_str = request.form.get(f'coverage_{coverage_id}_roles')
+                description = request.form.get(f'coverage_{coverage_id}_description')
+                is_active = request.form.get(f'coverage_{coverage_id}_is_active') == '1'
+                
+                if start_time_str and end_time_str and roles_str:
+                    from datetime import datetime
+                    coverage.start_time = datetime.strptime(start_time_str, '%H:%M').time()
+                    coverage.end_time = datetime.strptime(end_time_str, '%H:%M').time()
+                    
+                    # Parsing ruoli - supporta formato "Operatore, 2 Tecnico"
+                    roles_dict = {}
+                    for role_part in roles_str.split(','):
+                        role_part = role_part.strip()
+                        # Cerca pattern "numero ruolo" o solo "ruolo"
+                        parts = role_part.split()
+                        if len(parts) >= 2 and parts[0].isdigit():
+                            count = int(parts[0])
+                            role_name = ' '.join(parts[1:])
+                        elif len(parts) >= 2 and parts[-1].isdigit():
+                            count = int(parts[-1])
+                            role_name = ' '.join(parts[:-1])
+                        else:
+                            count = 1
+                            role_name = role_part
+                        
+                        if role_name:
+                            roles_dict[role_name] = count
+                    
+                    coverage.set_required_roles_dict(roles_dict)
+                    coverage.description = description.strip() if description else None
+                    coverage.is_active = is_active
+                    success_count += 1
+                else:
+                    error_count += 1
+            
+            db.session.commit()
+            
+            if error_count == 0:
+                flash(f'Template aggiornato con successo! {success_count} coperture modificate.', 'success')
+            else:
+                flash(f'Template parzialmente aggiornato: {success_count} successi, {error_count} errori.', 'warning')
+                
+            return redirect(url_for('view_presidio_coverage', period_key=period_key))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore durante il salvataggio: {str(e)}', 'danger')
+    
+    return render_template("edit_presidio_coverage.html",
+                         coverages=coverages,
+                         start_date=start_date,
+                         end_date=end_date,
+                         period_key=period_key)
+
 @app.route("/view_coverage_templates")
 @login_required  
 def view_coverage_templates():

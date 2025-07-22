@@ -87,14 +87,15 @@
                                     {% endif %}
                                 </td>
                                 <td>
+                                    {% set period_key = coverage.start_date.strftime('%Y%m%d') + '-' + coverage.end_date.strftime('%Y%m%d') %}
                                     <div class="btn-group btn-group-sm">
-                                        <a href="#" 
-                                           class="btn btn-outline-primary" title="Visualizza turni">
+                                        <a href="{{ url_for('view_presidio_coverage', period_key=period_key) }}" 
+                                           class="btn btn-outline-primary" title="Visualizza template">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         {% if can_manage %}
-                                        <a href="#" 
-                                           class="btn btn-outline-warning disabled" title="Modifica (in sviluppo)">
+                                        <a href="{{ url_for('edit_presidio_coverage', period_key=period_key) }}" 
+                                           class="btn btn-outline-warning" title="Modifica template">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         {% endif %}
