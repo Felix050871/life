@@ -5744,11 +5744,17 @@ def edit_presidio_coverage(period_key):
             db.session.rollback()
             flash(f'Errore durante il salvataggio: {str(e)}', 'danger')
     
+    # Ottieni ruoli disponibili per la selezione
+    from models import UserRole
+    available_roles = UserRole.query.filter(UserRole.active == True).all()
+    roles_data = [{'name': role.name, 'display_name': role.display_name} for role in available_roles]
+    
     return render_template("edit_presidio_coverage.html",
                          coverages=coverages,
                          start_date=start_date,
                          end_date=end_date,
-                         period_key=period_key)
+                         period_key=period_key,
+                         available_roles=roles_data)
 
 @app.route("/view_coverage_templates")
 @login_required  

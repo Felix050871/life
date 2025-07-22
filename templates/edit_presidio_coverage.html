@@ -47,7 +47,7 @@
                                     <th>Orario Fine</th>
                                     <th>Pausa Inizio</th>
                                     <th>Pausa Fine</th>
-                                    <th>Ruoli</th>
+                                    <th width="200">Ruoli Richiesti</th>
                                     <th>Descrizione</th>
                                     <th>Stato</th>
                                     <th>Azioni</th>
@@ -89,12 +89,25 @@
                                                placeholder="Fine pausa">
                                     </td>
                                     <td>
-                                        <input type="text" 
+                                        <div class="dropdown">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                                    data-bs-toggle="dropdown" 
+                                                    id="rolesBtn_{{ coverage.id }}">
+                                                <i class="fas fa-users me-1"></i>Seleziona Ruoli
+                                            </button>
+                                            <div class="dropdown-menu p-3" style="min-width: 250px;">
+                                                <div id="rolesContainer_{{ coverage.id }}">
+                                                    <!-- I ruoli verranno popolati via JavaScript -->
+                                                </div>
+                                                <hr>
+                                                <small class="text-muted">Seleziona ruoli e quantità per questa copertura</small>
+                                            </div>
+                                        </div>
+                                        <!-- Hidden field per i ruoli selezionati -->
+                                        <input type="hidden" 
                                                name="coverage_{{ coverage.id }}_roles" 
-                                               value="{{ coverage.get_required_roles_display() }}" 
-                                               class="form-control form-control-sm" 
-                                               placeholder="es. Operatore, 2 Tecnico" 
-                                               required>
+                                               id="rolesInput_{{ coverage.id }}"
+                                               value="{{ coverage.get_required_roles_display() }}">
                                     </td>
                                     <td>
                                         <input type="text" 
@@ -151,6 +164,122 @@
 </div>
 
 <script>
+// Ruoli disponibili dal backend
+const availableRoles = {{ available_roles|tojson }};
+
+// Inizializza i dropdown dei ruoli per ogni copertura
+document.addEventListener('DOMContentLoaded', function() {
+    {% for coverage in coverages %}
+    initializeRolesDropdown({{ coverage.id }}, '{{ coverage.get_required_roles_display() }}');
+    {% endfor %}
+});
+
+function initializeRolesDropdown(coverageId, currentRoles) {
+    const container = document.getElementById(`rolesContainer_${coverageId}`);
+    const hiddenInput = document.getElementById(`rolesInput_${coverageId}`);
+    const btn = document.getElementById(`rolesBtn_${coverageId}`);
+    
+    // Parse dei ruoli correnti (formato: "Operatore, 2 Tecnico")
+    const currentRolesMap = {};
+    if (currentRoles && currentRoles.trim()) {
+        const parts = currentRoles.split(',');
+        parts.forEach(part => {
+            const trimmed = part.trim();
+            const match = trimmed.match(/^(\d+)\s+(.+)$/) || trimmed.match(/^(.+)\s+(\d+)$/);
+            if (match) {
+                const [, first, second] = match;
+                if (isNaN(first)) {
+                    currentRolesMap[first] = parseInt(second);
+                } else {
+                    currentRolesMap[second] = parseInt(first);
+                }
+            } else {
+                currentRolesMap[trimmed] = 1;
+            }
+        });
+    }
+    
+    // Crea interfaccia per ogni ruolo
+    container.innerHTML = '';
+    availableRoles.forEach(role => {
+        const roleDiv = document.createElement('div');
+        roleDiv.className = 'mb-2 d-flex align-items-center';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `role_${coverageId}_${role.name}`;
+        checkbox.className = 'form-check-input me-2';
+        checkbox.checked = currentRolesMap[role.name] > 0;
+        
+        const label = document.createElement('label');
+        label.htmlFor = checkbox.id;
+        label.className = 'form-check-label me-2 flex-grow-1';
+        label.textContent = role.display_name;
+        
+        const countInput = document.createElement('input');
+        countInput.type = 'number';
+        countInput.min = '1';
+        countInput.max = '10';
+        countInput.value = currentRolesMap[role.name] || 1;
+        countInput.className = 'form-control form-control-sm';
+        countInput.style.width = '60px';
+        countInput.disabled = !checkbox.checked;
+        
+        // Event listeners
+        checkbox.addEventListener('change', function() {
+            countInput.disabled = !this.checked;
+            updateRolesDisplay(coverageId);
+        });
+        
+        countInput.addEventListener('input', function() {
+            updateRolesDisplay(coverageId);
+        });
+        
+        roleDiv.appendChild(checkbox);
+        roleDiv.appendChild(label);
+        roleDiv.appendChild(countInput);
+        container.appendChild(roleDiv);
+    });
+    
+    updateRolesDisplay(coverageId);
+}
+
+function updateRolesDisplay(coverageId) {
+    const container = document.getElementById(`rolesContainer_${coverageId}`);
+    const hiddenInput = document.getElementById(`rolesInput_${coverageId}`);
+    const btn = document.getElementById(`rolesBtn_${coverageId}`);
+    
+    const selectedRoles = [];
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(checkbox => {
+        const roleDiv = checkbox.closest('.mb-2');
+        const countInput = roleDiv.querySelector('input[type="number"]');
+        const roleName = availableRoles.find(r => checkbox.id.includes(r.name))?.name;
+        const count = parseInt(countInput.value) || 1;
+        
+        if (roleName) {
+            if (count > 1) {
+                selectedRoles.push(`${count} ${roleName}`);
+            } else {
+                selectedRoles.push(roleName);
+            }
+        }
+    });
+    
+    const rolesText = selectedRoles.join(', ');
+    hiddenInput.value = rolesText;
+    
+    // Aggiorna il testo del pulsante
+    if (selectedRoles.length > 0) {
+        btn.innerHTML = `<i class="fas fa-users me-1"></i>${selectedRoles.length} ruoli`;
+        btn.className = 'btn btn-success btn-sm dropdown-toggle';
+    } else {
+        btn.innerHTML = '<i class="fas fa-users me-1"></i>Seleziona Ruoli';
+        btn.className = 'btn btn-outline-secondary btn-sm dropdown-toggle';
+    }
+}
+
 function deleteCoverageRow(coverageId) {
     if (confirm('Sei sicuro di voler eliminare questa copertura?')) {
         const row = document.querySelector(`tr[data-coverage-id="${coverageId}"]`);
