@@ -1,7 +1,8 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, time
+import re
 import qrcode
 from io import BytesIO, StringIO
 import base64
@@ -9,7 +10,7 @@ from defusedcsv import csv
 from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from sqlalchemy.orm import joinedload
-from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, italian_now
+from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, italian_now
 from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions
 
@@ -5755,6 +5756,154 @@ def edit_presidio_coverage(period_key):
                          end_date=end_date,
                          period_key=period_key,
                          available_roles=roles_data)
+
+
+@app.route('/admin/coverage/presidio/create', methods=['GET', 'POST'])
+@login_required
+def create_presidio_coverage():
+    """Crea un nuovo template di copertura presidio"""
+    if not current_user.has_permission('can_manage_coverage'):
+        flash('Non hai i permessi per creare coperture', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        try:
+            # Ottieni dati dal form
+            start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
+            end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date()
+            description = request.form.get('description', '')
+            is_active = request.form.get('is_active') == 'on'
+            
+            # Validazione date
+            if start_date >= end_date:
+                flash('La data di fine deve essere successiva alla data di inizio', 'danger')
+                return render_template('create_presidio_coverage.html')
+            
+            # Verifica sovrapposizioni
+            existing = PresidioCoverage.query.filter(
+                db.or_(
+                    db.and_(PresidioCoverage.start_date <= start_date, PresidioCoverage.end_date >= start_date),
+                    db.and_(PresidioCoverage.start_date <= end_date, PresidioCoverage.end_date >= end_date),
+                    db.and_(PresidioCoverage.start_date >= start_date, PresidioCoverage.end_date <= end_date)
+                )
+            ).first()
+            
+            if existing:
+                flash(f'Esiste già una copertura per il periodo {existing.start_date.strftime("%d/%m/%Y")} - {existing.end_date.strftime("%d/%m/%Y")}', 'danger')
+                return render_template('create_presidio_coverage.html')
+            
+            # Crea template base per ogni giorno del periodo
+            current_date = start_date
+            template_count = 0
+            
+            while current_date <= end_date:
+                coverage = PresidioCoverage(
+                    date=current_date,
+                    start_date=start_date,
+                    end_date=end_date,
+                    start_time=time(8, 0),  # Default 08:00
+                    end_time=time(17, 0),   # Default 17:00
+                    break_start_time=time(12, 0),  # Default 12:00
+                    break_end_time=time(13, 0),    # Default 13:00
+                    required_roles='Operatore',
+                    description=description,
+                    is_active=is_active
+                )
+                db.session.add(coverage)
+                template_count += 1
+                current_date += timedelta(days=1)
+            
+            db.session.commit()
+            flash(f'Template di copertura creato con successo per {template_count} giorni', 'success')
+            return redirect(url_for('manage_coverage'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore durante la creazione: {str(e)}', 'danger')
+    
+    return render_template('create_presidio_coverage.html')
+
+
+@app.route('/admin/coverage/presidio/generate/<period_key>')
+@login_required
+def generate_turnazioni_coverage(period_key):
+    """Genera/Rigenera turnazioni per una copertura presidio"""
+    if not current_user.has_permission('can_manage_coverage'):
+        flash('Non hai i permessi per generare turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Parse period_key (formato: YYYYMMDD-YYYYMMDD)
+        start_str, end_str = period_key.split('-')
+        start_date = datetime.strptime(start_str, '%Y%m%d').date()
+        end_date = datetime.strptime(end_str, '%Y%m%d').date()
+        
+        # Trova le coperture per il periodo
+        coverages = PresidioCoverage.query.filter(
+            PresidioCoverage.start_date == start_date,
+            PresidioCoverage.end_date == end_date
+        ).all()
+        
+        if not coverages:
+            flash('Nessun template di copertura trovato per il periodo specificato', 'danger')
+            return redirect(url_for('manage_coverage'))
+        
+        # Elimina turni esistenti per il periodo
+        from models import Shift
+        existing_shifts = Shift.query.filter(
+            Shift.date >= start_date,
+            Shift.date <= end_date
+        ).all()
+        
+        for shift in existing_shifts:
+            db.session.delete(shift)
+        
+        # Genera nuovi turni basati sui template
+        shifts_created = 0
+        for coverage in coverages:
+            if coverage.is_active:
+                # Parse ruoli richiesti
+                roles_needed = []
+                if coverage.required_roles:
+                    parts = coverage.required_roles.split(',')
+                    for part in parts:
+                        part = part.strip()
+                        # Gestisce formato "2 Operatore" o "Operatore"
+                        match = re.match(r'^(\d+)\s+(.+)$', part) or re.match(r'^(.+)\s+(\d+)$', part)
+                        if match:
+                            first, second = match.groups()
+                            if first.isdigit():
+                                count, role = int(first), second
+                            else:
+                                role, count = first, int(second)
+                        else:
+                            role, count = part, 1
+                        
+                        roles_needed.extend([role] * count)
+                
+                # Crea turni per ogni ruolo necessario
+                for role in roles_needed:
+                    shift = Shift(
+                        date=coverage.date,
+                        start_time=coverage.start_time,
+                        end_time=coverage.end_time,
+                        break_start=coverage.break_start_time,
+                        break_end=coverage.break_end_time,
+                        role=role,
+                        description=f"Turno generato da template - {coverage.description or 'Presidio'}",
+                        status='active'
+                    )
+                    db.session.add(shift)
+                    shifts_created += 1
+        
+        db.session.commit()
+        flash(f'Generati {shifts_created} turni per il periodo {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante la generazione turni: {str(e)}', 'danger')
+    
+    return redirect(url_for('manage_coverage'))
 
 @app.route("/view_coverage_templates")
 @login_required  

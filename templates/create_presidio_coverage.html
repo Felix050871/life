@@ -1,173 +1,127 @@
 {% extends "base.html" %}
 
-{% block title %}Nuova Copertura Presidio - Gestione Presenze{% endblock %}
+{% block title %}Crea Nuova Copertura Presidio{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">
-                    <i class="fas fa-plus me-2"></i>Nuova Copertura Presidio
-                </h4>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    {{ form.hidden_tag() }}
-                    
-                    <!-- Periodo di Validità -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary mb-3">
-                                <i class="fas fa-calendar-alt me-2"></i>Periodo di Validità
-                            </h6>
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.start_date.label(class="form-label") }}
-                            {{ form.start_date(class="form-control") }}
-                            {% for error in form.start_date.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.end_date.label(class="form-label") }}
-                            {{ form.end_date(class="form-control") }}
-                            {% for error in form.end_date.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    
-                    <hr class="mb-4">
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            {{ form.days_of_week.label(class="form-label") }}
-                            <div class="mb-2">
-                                <small class="text-muted d-block">Tieni premuto Ctrl (o Cmd su Mac) per selezionare più giorni</small>
-                                <div class="btn-group btn-group-sm mt-1" role="group">
-                                    <button type="button" class="btn btn-outline-secondary" onclick="selectWeekdays()">
-                                        Lun-Ven
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="selectWeekend()">
-                                        Sab-Dom
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="selectAll()">
-                                        Tutti
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="clearAll()">
-                                        Nessuno
-                                    </button>
-                                </div>
-                            </div>
-                            {{ form.days_of_week(class="form-select", id="days_of_week", style="height: 160px;") }}
-                            {% for error in form.days_of_week.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.required_roles.label(class="form-label") }}
-                            <small class="text-muted d-block">Seleziona uno o più ruoli che possono coprire questo turno</small>
-                            {{ form.required_roles(class="form-select", style="height: 140px;") }}
-                            {% for error in form.required_roles.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            {{ form.start_time.label(class="form-label") }}
-                            {{ form.start_time(class="form-control") }}
-                            {% for error in form.start_time.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.end_time.label(class="form-label") }}
-                            {{ form.end_time(class="form-control") }}
-                            {% for error in form.end_time.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        {{ form.description.label(class="form-label") }}
-                        {{ form.description(class="form-control", placeholder="Descrizione opzionale della copertura") }}
-                        {% for error in form.description.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="form-check">
-                            {{ form.is_active(class="form-check-input", checked=True) }}
-                            {{ form.is_active.label(class="form-check-label") }}
-                        </div>
-                        {% for error in form.is_active.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-1"></i>Indietro
-                        </a>
-                        {{ form.submit(class="btn btn-primary") }}
-                    </div>
-                </form>
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-plus-circle me-2"></i>Crea Nuova Copertura Presidio</h2>
+                    <p class="text-muted mb-0">Definisci un nuovo periodo di copertura per la sede turni</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('manage_coverage') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alla Gestione
+                    </a>
+                </div>
             </div>
         </div>
-        
-        <div class="card mt-4 border-info">
-            <div class="card-header bg-info text-white">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-lightbulb me-2"></i>Suggerimenti
-                </h6>
+    </div>
+
+    <!-- Form Creazione -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-plus me-2"></i>Dettagli Copertura</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="start_date" class="form-label">Data Inizio</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="end_date" class="form-label">Data Fine</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Descrizione del periodo di copertura (opzionale)"></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                                <label class="form-check-label" for="is_active">
+                                    Copertura attiva
+                                </label>
+                                <small class="form-text text-muted d-block">
+                                    Le coperture attive possono essere utilizzate per generare turni
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('manage_coverage') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Annulla
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>Crea Copertura
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="card-body">
-                <ul class="mb-0">
-                    <li><strong>Selezione multipla:</strong> Puoi selezionare più giorni contemporaneamente per creare coperture identiche</li>
-                    <li><strong>Sovrapposizioni:</strong> È possibile creare più coperture per lo stesso giorno e orario con ruoli diversi</li>
-                    <li><strong>Continuità:</strong> Assicurati che gli orari si sovrappongano leggermente per garantire la continuità del servizio</li>
-                    <li><strong>Ruoli multipli:</strong> Puoi selezionare più ruoli (es. "Sviluppatore o Redattore") per maggiore flessibilità nella copertura</li>
-                    <li><strong>Descrizione:</strong> Usa la descrizione per specificare attività particolari o note operative</li>
-                </ul>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Info Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle me-2"></i>Informazioni</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Come funziona</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Periodo:</strong> Definisci data inizio e fine</li>
+                            <li><strong>Template automatici:</strong> Viene creato un template per ogni giorno</li>
+                            <li><strong>Orari default:</strong> 08:00-17:00 con pausa 12:00-13:00</li>
+                            <li><strong>Ruolo default:</strong> Operatore</li>
+                            <li><strong>Personalizzazione:</strong> Modifica i template dopo la creazione</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Attenzione</h6>
+                        <p class="small mb-0">Non è possibile creare coperture che si sovrappongono con periodi esistenti.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-function selectWeekdays() {
-    const select = document.getElementById('days_of_week');
-    for (let i = 0; i < select.options.length; i++) {
-        select.options[i].selected = i < 5; // Lunedì (0) a Venerdì (4)
-    }
-}
-
-function selectWeekend() {
-    const select = document.getElementById('days_of_week');
-    for (let i = 0; i < select.options.length; i++) {
-        select.options[i].selected = i >= 5; // Sabato (5) e Domenica (6)
-    }
-}
-
-function selectAll() {
-    const select = document.getElementById('days_of_week');
-    for (let i = 0; i < select.options.length; i++) {
-        select.options[i].selected = true;
-    }
-}
-
-function clearAll() {
-    const select = document.getElementById('days_of_week');
-    for (let i = 0; i < select.options.length; i++) {
-        select.options[i].selected = false;
-    }
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Imposta data minima a oggi
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start_date').min = today;
+    
+    // Aggiorna data fine quando cambia data inizio
+    document.getElementById('start_date').addEventListener('change', function() {
+        const startDate = new Date(this.value);
+        const nextDay = new Date(startDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        document.getElementById('end_date').min = nextDay.toISOString().split('T')[0];
+        
+        // Se data fine è precedente a data inizio, resettala
+        const endDate = document.getElementById('end_date').value;
+        if (endDate && new Date(endDate) <= startDate) {
+            document.getElementById('end_date').value = '';
+        }
+    });
+});
 </script>
 {% endblock %}
