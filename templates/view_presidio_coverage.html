@@ -73,7 +73,18 @@
                                     <strong>{{ coverage.get_day_name() }}</strong>
                                 </td>
                                 <td>
-                                    <span class="text-info">{{ coverage.get_time_range() }}</span>
+                                    {% if coverage.start_time and coverage.end_time %}
+                                    <div class="text-info">
+                                        <i class="fas fa-clock me-1"></i>{{ coverage.start_time.strftime('%H:%M') }} - {{ coverage.end_time.strftime('%H:%M') }}
+                                    </div>
+                                    {% if coverage.break_start_time and coverage.break_end_time %}
+                                    <div class="text-muted small">
+                                        <i class="fas fa-coffee me-1"></i>Pausa: {{ coverage.break_start_time.strftime('%H:%M') }} - {{ coverage.break_end_time.strftime('%H:%M') }}
+                                    </div>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">Orari non definiti</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <span class="badge bg-success">{{ coverage.get_required_roles_display() }}</span>

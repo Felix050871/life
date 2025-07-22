@@ -5611,6 +5611,7 @@ def view_presidio_coverage(period_key):
         return redirect(url_for("dashboard"))
     
     from models import PresidioCoverage
+    from datetime import datetime
     
     try:
         # Decodifica period_key per ottenere le date
@@ -5647,6 +5648,7 @@ def edit_presidio_coverage(period_key):
         return redirect(url_for("dashboard"))
     
     from models import PresidioCoverage
+    from datetime import datetime
     
     try:
         # Decodifica period_key per ottenere le date
@@ -5685,14 +5687,23 @@ def edit_presidio_coverage(period_key):
                 # Aggiorna i campi
                 start_time_str = request.form.get(f'coverage_{coverage_id}_start_time')
                 end_time_str = request.form.get(f'coverage_{coverage_id}_end_time')
+                break_start_str = request.form.get(f'coverage_{coverage_id}_break_start_time')
+                break_end_str = request.form.get(f'coverage_{coverage_id}_break_end_time')
                 roles_str = request.form.get(f'coverage_{coverage_id}_roles')
                 description = request.form.get(f'coverage_{coverage_id}_description')
                 is_active = request.form.get(f'coverage_{coverage_id}_is_active') == '1'
                 
                 if start_time_str and end_time_str and roles_str:
-                    from datetime import datetime
                     coverage.start_time = datetime.strptime(start_time_str, '%H:%M').time()
                     coverage.end_time = datetime.strptime(end_time_str, '%H:%M').time()
+                    
+                    # Gestione pause opzionali
+                    if break_start_str and break_end_str:
+                        coverage.break_start_time = datetime.strptime(break_start_str, '%H:%M').time()
+                        coverage.break_end_time = datetime.strptime(break_end_str, '%H:%M').time()
+                    else:
+                        coverage.break_start_time = None
+                        coverage.break_end_time = None
                     
                     # Parsing ruoli - supporta formato "Operatore, 2 Tecnico"
                     roles_dict = {}

@@ -58,7 +58,7 @@
                                 <th>Sede</th>
                                 <th>Periodo</th>
                                 <th>Template</th>
-                                <th>Ore Turno</th>
+                                <th>Orari e Pause</th>
                                 <th>Stato</th>
                                 <th>Azioni</th>
                             </tr>
@@ -77,7 +77,18 @@
                                     <span class="badge bg-info">{{ coverage.template_coverage_count or 1 }} coperture</span>
                                 </td>
                                 <td>
-                                    <small>{{ coverage.start_time.strftime('%H:%M') }} - {{ coverage.end_time.strftime('%H:%M') }}</small>
+                                    {% if coverage.start_time and coverage.end_time %}
+                                    <div class="small text-info">
+                                        <i class="fas fa-clock me-1"></i>{{ coverage.start_time.strftime('%H:%M') }} - {{ coverage.end_time.strftime('%H:%M') }}
+                                    </div>
+                                    {% if coverage.break_start_time and coverage.break_end_time %}
+                                    <div class="small text-muted">
+                                        <i class="fas fa-coffee me-1"></i>{{ coverage.break_start_time.strftime('%H:%M') }} - {{ coverage.break_end_time.strftime('%H:%M') }}
+                                    </div>
+                                    {% endif %}
+                                    {% else %}
+                                    <small class="text-muted">Non definito</small>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if coverage.is_active %}

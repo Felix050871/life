@@ -43,7 +43,9 @@
                                     <th>Giorno</th>
                                     <th>Orario Inizio</th>
                                     <th>Orario Fine</th>
-                                    <th>Ruoli Richiesti</th>
+                                    <th>Pausa Inizio</th>
+                                    <th>Pausa Fine</th>
+                                    <th>Ruoli</th>
                                     <th>Descrizione</th>
                                     <th>Stato</th>
                                     <th>Azioni</th>
@@ -59,16 +61,30 @@
                                     <td>
                                         <input type="time" 
                                                name="coverage_{{ coverage.id }}_start_time" 
-                                               value="{{ coverage.start_time.strftime('%H:%M') }}" 
+                                               value="{{ coverage.start_time.strftime('%H:%M') if coverage.start_time else '' }}" 
                                                class="form-control form-control-sm" 
                                                required>
                                     </td>
                                     <td>
                                         <input type="time" 
                                                name="coverage_{{ coverage.id }}_end_time" 
-                                               value="{{ coverage.end_time.strftime('%H:%M') }}" 
+                                               value="{{ coverage.end_time.strftime('%H:%M') if coverage.end_time else '' }}" 
                                                class="form-control form-control-sm" 
                                                required>
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               name="coverage_{{ coverage.id }}_break_start_time" 
+                                               value="{{ coverage.break_start_time.strftime('%H:%M') if coverage.break_start_time else '' }}" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Inizio pausa">
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               name="coverage_{{ coverage.id }}_break_end_time" 
+                                               value="{{ coverage.break_end_time.strftime('%H:%M') if coverage.break_end_time else '' }}" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Fine pausa">
                                     </td>
                                     <td>
                                         <input type="text" 
@@ -152,18 +168,46 @@ function deleteCoverageRow(coverageId) {
 
 // Validazione form
 document.getElementById('editCoverageForm').addEventListener('submit', function(e) {
-    const startTimes = document.querySelectorAll('input[name$="_start_time"]');
-    const endTimes = document.querySelectorAll('input[name$="_end_time"]');
+    const rows = document.querySelectorAll('tr[data-coverage-id]');
     
-    for (let i = 0; i < startTimes.length; i++) {
-        if (startTimes[i].closest('tr').style.display !== 'none') {
-            const startTime = startTimes[i].value;
-            const endTime = endTimes[i].value;
+    for (let row of rows) {
+        if (row.style.display !== 'none') {
+            const startTime = row.querySelector('input[name$="_start_time"]').value;
+            const endTime = row.querySelector('input[name$="_end_time"]').value;
+            const breakStart = row.querySelector('input[name$="_break_start_time"]').value;
+            const breakEnd = row.querySelector('input[name$="_break_end_time"]').value;
             
+            // Validazione orario principale
             if (startTime >= endTime) {
                 alert('L\'orario di fine deve essere successivo all\'orario di inizio');
                 e.preventDefault();
-                startTimes[i].focus();
+                row.querySelector('input[name$="_start_time"]').focus();
+                return;
+            }
+            
+            // Validazione pause (se specificate)
+            if (breakStart && breakEnd) {
+                if (breakStart >= breakEnd) {
+                    alert('L\'orario di fine pausa deve essere successivo all\'inizio pausa');
+                    e.preventDefault();
+                    row.querySelector('input[name$="_break_start_time"]').focus();
+                    return;
+                }
+                
+                // Controllo che la pausa sia all'interno dell'orario di lavoro
+                if (breakStart < startTime || breakEnd > endTime) {
+                    alert('La pausa deve essere compresa nell\'orario di lavoro');
+                    e.preventDefault();
+                    row.querySelector('input[name$="_break_start_time"]').focus();
+                    return;
+                }
+            }
+            
+            // Se solo uno dei campi pausa è compilato
+            if ((breakStart && !breakEnd) || (!breakStart && breakEnd)) {
+                alert('Specificare entrambi gli orari della pausa o lasciarli vuoti');
+                e.preventDefault();
+                row.querySelector('input[name$="_break_start_time"]').focus();
                 return;
             }
         }
