@@ -5,8 +5,8 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <h2><i class="fas fa-shield-alt me-2"></i>Gestione Coperture Reperibilità</h2>
-        <p class="text-muted">Gestisci le coperture di reperibilità per le sedi turni</p>
+        <h2><i class="fas fa-shield-alt me-2"></i>Gestione Coperture Presidio</h2>
+        <p class="text-muted">Gestisci le coperture di presidio per le sedi turni</p>
     </div>
 </div>
 
@@ -31,10 +31,10 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ url_for('create_reperibilita_coverage') }}" class="btn btn-success">
+            <a href="{{ url_for('create_presidio_coverage') }}" class="btn btn-success">
                 <i class="fas fa-plus me-1"></i>Nuova Copertura
             </a>
-            <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('presidio_coverage') }}" class="btn btn-outline-primary">
                 <i class="fas fa-list me-1"></i>Gestisci Tutte le Coperture
             </a>
         </div>
