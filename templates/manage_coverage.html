@@ -71,7 +71,7 @@
                             {% for coverage in coverage_list %}
                             <tr>
                                 <td>
-                                    <span class="badge bg-primary">{{ coverage.sede.name if coverage.sede else 'N/A' }}</span>
+                                    <span class="badge bg-primary">{{ coverage.get_sedi_names() }}</span>
                                 </td>
                                 <td>
                                     <small class="text-muted d-block">{{ coverage.start_date.strftime('%d/%m/%Y') }}</small>
