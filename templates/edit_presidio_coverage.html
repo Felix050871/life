@@ -35,6 +35,8 @@
             </div>
             <div class="card-body">
                 <form method="POST" id="editCoverageForm">
+                    {{ csrf_token() if csrf_token }}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     {% if coverages %}
                     <div class="table-responsive">
                         <table class="table table-striped" id="coveragesTable">

@@ -61,6 +61,7 @@
                             <tr>
                                 <th>Giorno</th>
                                 <th>Orario</th>
+                                <th>Pause</th>
                                 <th>Ruoli Richiesti</th>
                                 <th>Descrizione</th>
                                 <th>Stato</th>
@@ -74,16 +75,20 @@
                                 </td>
                                 <td>
                                     {% if coverage.start_time and coverage.end_time %}
-                                    <div class="text-info">
+                                    <div class="text-primary">
                                         <i class="fas fa-clock me-1"></i>{{ coverage.start_time.strftime('%H:%M') }} - {{ coverage.end_time.strftime('%H:%M') }}
                                     </div>
-                                    {% if coverage.break_start_time and coverage.break_end_time %}
-                                    <div class="text-muted small">
-                                        <i class="fas fa-coffee me-1"></i>Pausa: {{ coverage.break_start_time.strftime('%H:%M') }} - {{ coverage.break_end_time.strftime('%H:%M') }}
-                                    </div>
-                                    {% endif %}
                                     {% else %}
                                     <span class="text-muted">Orari non definiti</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if coverage.break_start_time and coverage.break_end_time %}
+                                    <div class="text-warning">
+                                        <i class="fas fa-coffee me-1"></i>{{ coverage.break_start_time.strftime('%H:%M') }} - {{ coverage.break_end_time.strftime('%H:%M') }}
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td>

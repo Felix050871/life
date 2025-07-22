@@ -58,7 +58,8 @@
                                 <th>Sede</th>
                                 <th>Periodo</th>
                                 <th>Template</th>
-                                <th>Orari e Pause</th>
+                                <th>Orari</th>
+                                <th>Pause</th>
                                 <th>Stato</th>
                                 <th>Azioni</th>
                             </tr>
@@ -78,16 +79,20 @@
                                 </td>
                                 <td>
                                     {% if coverage.start_time and coverage.end_time %}
-                                    <div class="small text-info">
+                                    <div class="small text-primary">
                                         <i class="fas fa-clock me-1"></i>{{ coverage.start_time.strftime('%H:%M') }} - {{ coverage.end_time.strftime('%H:%M') }}
                                     </div>
-                                    {% if coverage.break_start_time and coverage.break_end_time %}
-                                    <div class="small text-muted">
-                                        <i class="fas fa-coffee me-1"></i>{{ coverage.break_start_time.strftime('%H:%M') }} - {{ coverage.break_end_time.strftime('%H:%M') }}
-                                    </div>
-                                    {% endif %}
                                     {% else %}
                                     <small class="text-muted">Non definito</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if coverage.break_start_time and coverage.break_end_time %}
+                                    <div class="small text-warning">
+                                        <i class="fas fa-coffee me-1"></i>{{ coverage.break_start_time.strftime('%H:%M') }} - {{ coverage.break_end_time.strftime('%H:%M') }}
+                                    </div>
+                                    {% else %}
+                                    <small class="text-muted">-</small>
                                     {% endif %}
                                 </td>
                                 <td>
