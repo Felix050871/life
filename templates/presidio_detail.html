@@ -203,18 +203,18 @@
                             {% if day_num in coverages_by_day %}
                             <td>{{ coverages_by_day[day_num]|length }}</td>
                             <td>
-                                {% set day_total_hours = 0 %}
+                                {% set ns = namespace(day_total_hours=0) %}
                                 {% for coverage in coverages_by_day[day_num] %}
-                                  {% set day_total_hours = day_total_hours + coverage.get_duration_hours() %}
+                                  {% set ns.day_total_hours = ns.day_total_hours + coverage.get_duration_hours() %}
                                 {% endfor %}
-                                {{ "%.1f"|format(day_total_hours) }}h
+                                {{ "%.1f"|format(ns.day_total_hours) }}h
                             </td>
                             <td>
-                                {% set day_effective_hours = 0 %}
+                                {% set ns = namespace(day_effective_hours=0) %}
                                 {% for coverage in coverages_by_day[day_num] %}
-                                  {% set day_effective_hours = day_effective_hours + coverage.get_effective_work_hours() %}
+                                  {% set ns.day_effective_hours = ns.day_effective_hours + coverage.get_effective_work_hours() %}
                                 {% endfor %}
-                                {{ "%.1f"|format(day_effective_hours) }}h
+                                {{ "%.1f"|format(ns.day_effective_hours) }}h
                             </td>
                             <td>
                                 {% set day_roles = [] %}
@@ -228,11 +228,11 @@
                                 {{ day_roles|length }}
                             </td>
                             <td>
-                                {% set day_people_count = 0 %}
+                                {% set ns = namespace(day_people_count=0) %}
                                 {% for coverage in coverages_by_day[day_num] %}
-                                  {% set day_people_count = day_people_count + coverage.role_count %}
+                                  {% set ns.day_people_count = ns.day_people_count + coverage.role_count %}
                                 {% endfor %}
-                                {{ day_people_count }}
+                                {{ ns.day_people_count }}
                             </td>
                             {% else %}
                             <td colspan="5" class="text-muted text-center">Nessuna copertura</td>
@@ -245,18 +245,18 @@
                             <th>Totale Settimana</th>
                             <th>{{ template.coverages.count() }}</th>
                             <th>
-                                {% set week_total_hours = 0 %}
+                                {% set ns = namespace(week_total_hours=0) %}
                                 {% for coverage in template.coverages %}
-                                  {% set week_total_hours = week_total_hours + coverage.get_duration_hours() %}
+                                  {% set ns.week_total_hours = ns.week_total_hours + coverage.get_duration_hours() %}
                                 {% endfor %}
-                                {{ "%.1f"|format(week_total_hours) }}h
+                                {{ "%.1f"|format(ns.week_total_hours) }}h
                             </th>
                             <th>
-                                {% set week_effective_hours = 0 %}
+                                {% set ns = namespace(week_effective_hours=0) %}
                                 {% for coverage in template.coverages %}
-                                  {% set week_effective_hours = week_effective_hours + coverage.get_effective_work_hours() %}
+                                  {% set ns.week_effective_hours = ns.week_effective_hours + coverage.get_effective_work_hours() %}
                                 {% endfor %}
-                                {{ "%.1f"|format(week_effective_hours) }}h
+                                {{ "%.1f"|format(ns.week_effective_hours) }}h
                             </th>
                             <th>
                                 {% set all_roles = [] %}
@@ -270,11 +270,11 @@
                                 {{ all_roles|length }}
                             </th>
                             <th>
-                                {% set total_people = 0 %}
+                                {% set ns = namespace(total_people=0) %}
                                 {% for coverage in template.coverages %}
-                                  {% set total_people = total_people + coverage.role_count %}
+                                  {% set ns.total_people = ns.total_people + coverage.role_count %}
                                 {% endfor %}
-                                {{ total_people }}
+                                {{ ns.total_people }}
                             </th>
                         </tr>
                     </tfoot>
