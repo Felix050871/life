@@ -71,12 +71,19 @@ def api_get_shifts_for_template(template_id):
     # Ordina le settimane per data
     sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
     
-    return jsonify({
+    response_data = {
         'success': True,
         'weeks': [week_data for _, week_data in sorted_weeks],
         'template_name': template.name,
         'period': template.get_period_display()
-    })
+    }
+    
+    # Debug della prima settimana per verificare i campi
+    if response_data['weeks'] and response_data['weeks'][0]['days'][0]['shifts']:
+        first_shift = response_data['weeks'][0]['days'][0]['shifts'][0]
+        print(f"=== First shift in response: {first_shift} ===")
+    
+    return jsonify(response_data)
 
 @app.route('/api/get_users_by_role')
 @login_required
