@@ -20,6 +20,11 @@ def api_get_shifts_for_template():
         Shift.date <= template.end_date
     ).all()
     
+    print(f"API Debug: Found {len(shifts)} shifts for template {template_id}")
+    if len(shifts) == 0:
+        print(f"No shifts found in period {template.start_date} to {template.end_date}")
+        return jsonify({'weeks': [], 'template_name': template.name})
+    
     # Organizza i turni per settimana
     weeks_data = {}
     
@@ -43,10 +48,11 @@ def api_get_shifts_for_template():
             'id': shift.id,
             'user': shift.user.username,
             'user_id': shift.user.id,
-            'role': shift.user.role,
+            'role': shift.user.role.name if shift.user.role else 'Senza ruolo',
             'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
         }
-        print(f"API Debug - Shift data: {shift_data}")  # Debug temporaneo
+        print(f"API Debug - Shift {shift.id}: user={shift.user.username}, role={shift.user.role.name if shift.user.role else 'None'}")
+        print(f"API Debug - Full shift data: {shift_data}")  # Debug temporaneo
         weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
         
         weeks_data[week_key]['shift_count'] += 1
@@ -79,6 +85,11 @@ def api_get_users_by_role():
     template_id = request.args.get('template_id')
     
     print(f"API Debug: role='{role}', template_id='{template_id}'")
+    
+    # Debug aggiuntivo per verificare il filtro
+    if not role or role == 'undefined':
+        print(f"Role undefined! Restituisco lista vuota.")
+        return jsonify([])
     
     if not role or not template_id:
         return jsonify({'error': 'Role e Template ID richiesti'}), 400
