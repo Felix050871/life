@@ -1366,11 +1366,8 @@ def genera_turni_da_template():
                                 date=current_date,
                                 start_time=coverage.start_time,
                                 end_time=coverage.end_time,
-                                break_start=coverage.break_start,
-                                break_end=coverage.break_end,
-                                notes=f'Generato da template: {template.name}',
-                                created_by=current_user.id,
-                                created_at=datetime.utcnow()
+                                shift_type='presidio',
+                                created_by=current_user.id
                             )
                             db.session.add(new_shift)
                             turni_creati += 1
@@ -5863,11 +5860,8 @@ def generate_turnazioni_coverage(period_key):
                         date=coverage.date,
                         start_time=coverage.start_time,
                         end_time=coverage.end_time,
-                        break_start=coverage.break_start_time,
-                        break_end=coverage.break_end_time,
-                        role=role,
-                        description=f"Turno generato da template - {coverage.description or 'Presidio'}",
-                        status='active'
+                        shift_type='presidio',
+                        created_by=current_user.id
                     )
                     db.session.add(shift)
                     shifts_created += 1
@@ -6394,9 +6388,8 @@ def create_presidio_shift_from_template(template, target_week_start, users_by_ro
                 date=target_date,
                 start_time=coverage.start_time,
                 end_time=coverage.end_time,
-                type='presidio',
-                sede_id=user.sede_id,
-                description=f"Presidio: {template.name} - {coverage.description or ''}"
+                shift_type='presidio',
+                created_by=created_by_id
             )
             
             db.session.add(shift)
