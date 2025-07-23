@@ -107,20 +107,11 @@ def dashboard():
         today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
     
-    # Get upcoming shifts for authorized users
+    # Get presidio coverage templates for shifts widget
     upcoming_shifts = []
     if current_user.can_view_shifts():
-        if current_user.can_manage_shifts():
-            # Managers see all shifts
-            upcoming_shifts = Shift.query.filter(
-                Shift.date >= date.today()
-            ).order_by(Shift.date, Shift.start_time).limit(10).all()
-        else:
-            # Regular users see only their own shifts
-            upcoming_shifts = Shift.query.filter(
-                Shift.user_id == current_user.id,
-                Shift.date >= date.today()
-            ).order_by(Shift.date, Shift.start_time).limit(5).all()
+        # Show active presidio coverage templates
+        upcoming_shifts = PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
     
     # Get upcoming reperibilità shifts for authorized users
     upcoming_reperibilita_shifts = []
@@ -128,17 +119,8 @@ def dashboard():
     recent_interventions = []
     current_time = italian_now().time()
     if current_user.can_view_reperibilita():
-        if current_user.can_manage_reperibilita():
-            # Managers see all reperibilità shifts
-            upcoming_reperibilita_shifts = ReperibilitaShift.query.filter(
-                ReperibilitaShift.date >= date.today()
-            ).order_by(ReperibilitaShift.date, ReperibilitaShift.start_time).limit(10).all()
-        else:
-            # Regular users see only their own reperibilità shifts
-            upcoming_reperibilita_shifts = ReperibilitaShift.query.filter(
-                ReperibilitaShift.user_id == current_user.id,
-                ReperibilitaShift.date >= date.today()
-            ).order_by(ReperibilitaShift.date, ReperibilitaShift.start_time).limit(5).all()
+        # Show active reperibilità templates
+        upcoming_reperibilita_shifts = ReperibilitaTemplate.query.order_by(ReperibilitaTemplate.start_date.desc()).all()
         
         # Get active intervention for this user
         active_intervention = ReperibilitaIntervention.query.filter_by(

@@ -277,17 +277,14 @@
             </div>
             <div class="card-body">
                 {% if upcoming_shifts %}
-                {% for shift in upcoming_shifts[:4] %}
+                {% for template in upcoming_shifts[:4] %}
                 <div class="border-bottom pb-2 mb-2">
                     <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">{{ shift.date.strftime('%d/%m/%Y') }}</span>
-                        <span class="badge bg-primary">{{ shift.user.get_sede_name() if shift.user else 'N/A' }}</span>
+                        <span class="fw-bold">{{ template.name }}</span>
+                        <span class="badge bg-primary">{{ template.sede.name if template.sede else 'Tutte' }}</span>
                     </div>
                     <small class="text-muted">
-                        {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
-                        {% if shift.user %}
-                        - {{ shift.user.get_full_name() }}
-                        {% endif %}
+                        {{ template.start_date.strftime('%d/%m/%Y') }} - {{ template.end_date.strftime('%d/%m/%Y') }}
                     </small>
                 </div>
                 {% endfor %}
@@ -325,17 +322,22 @@
                 {% endif %}
                 
                 {% if upcoming_reperibilita_shifts %}
-                <h6 class="small text-muted">I tuoi prossimi turni:</h6>
-                {% for shift in upcoming_reperibilita_shifts[:4] %}
-                <small class="d-block mb-1">
-                    {{ shift.date.strftime('%d/%m') }} 
-                    {{ shift.start_time.strftime('%H:%M') }}-{{ shift.end_time.strftime('%H:%M') }}
-                </small>
+                <h6 class="small text-muted">Template Reperibilità:</h6>
+                {% for template in upcoming_reperibilita_shifts[:4] %}
+                <div class="border-bottom pb-2 mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ template.name }}</span>
+                        <span class="badge bg-warning text-dark">Attivo</span>
+                    </div>
+                    <small class="text-muted">
+                        {{ template.start_date.strftime('%d/%m/%Y') }} - {{ template.end_date.strftime('%d/%m/%Y') }}
+                    </small>
+                </div>
                 {% endfor %}
                 {% else %}
                 <div class="text-center text-muted">
                     <i class="fas fa-calendar-times fa-2x mb-2"></i>
-                    <p class="mb-0">Nessun turno programmato</p>
+                    <p class="mb-0">Nessun template attivo</p>
                 </div>
                 {% endif %}
                 
