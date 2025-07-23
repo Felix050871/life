@@ -208,7 +208,7 @@
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-user-cog me-2"></i>Gestione Team</h5>
-                <a href="{{ url_for('list_users') }}" class="btn btn-sm btn-outline-primary">Gestisci</a>
+                <a href="{{ url_for('user_management') }}" class="btn btn-sm btn-outline-primary">Gestisci</a>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
@@ -339,7 +339,7 @@
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-phone-volume me-2"></i>Reperibilità</h5>
-                <a href="{{ url_for('reperibilita_shifts') }}" class="btn btn-sm btn-outline-primary">Visualizza</a>
+                <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-sm btn-outline-primary">Visualizza</a>
             </div>
             <div class="card-body">
                 {% if active_intervention %}
