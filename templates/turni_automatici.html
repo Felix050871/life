@@ -367,7 +367,12 @@ function editShift(shiftElement) {
             template_id: templateId
         },
         success: function(users) {
-            showUserSelectionModal(shiftId, currentUserId, users, shiftElement);
+            console.log('Users received:', users);
+            if (users && users.length > 0) {
+                showUserSelectionModal(shiftId, currentUserId, users, shiftElement);
+            } else {
+                alert('Nessun utente disponibile per questo ruolo.');
+            }
         },
         error: function() {
             alert('Errore nel caricamento degli utenti disponibili.');

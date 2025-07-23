@@ -74,6 +74,27 @@ def api_get_users_by_role():
     template_id = request.args.get('template_id')
     
     if not role or not template_id:
+        return jsonify({'error': 'Role e Template ID richiesti'}), 400
+    
+    # Trova il template per ottenere la sede
+    template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    
+    # Trova tutti gli utenti con il ruolo specificato e abilitati per la sede del template
+    users = User.query.filter_by(role=role, is_active=True).all()
+    
+    # Filtra gli utenti abilitati per la sede del template
+    available_users = []
+    for user in users:
+        if user.all_sedi or user.sede == template.sede:
+            available_users.append({
+                'id': user.id,
+                'username': user.username,
+                'full_name': user.get_full_name()
+            })
+    
+    return jsonify(available_users)
+    
+    if not role or not template_id:
         return jsonify({'error': 'Parametri mancanti'}), 400
     
     # Trova il template per ottenere la sede
