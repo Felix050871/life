@@ -27,55 +27,7 @@
         </div>
     </div>
 
-    <!-- Filtri ricerca -->
-    {% if not current_template %}
-    <div class="search-filters">
-        <form method="GET" id="presidio-search-form">
-            <input type="hidden" name="search" value="1">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="template_name" class="form-label">Nome Template</label>
-                    <input type="text" class="form-control" id="template_name" name="template_name" 
-                           value="{{ request.args.get('template_name', '') }}" 
-                           placeholder="Cerca per nome">
-                </div>
-                
-                <div class="filter-group">
-                    <label for="date_from" class="form-label">Data Da</label>
-                    <input type="date" class="form-control" id="date_from" name="date_from" 
-                           value="{{ request.args.get('date_from', '') }}">
-                </div>
-                
-                <div class="filter-group">
-                    <label for="date_to" class="form-label">Data A</label>
-                    <input type="date" class="form-control" id="date_to" name="date_to" 
-                           value="{{ request.args.get('date_to', '') }}">
-                </div>
-                
-                <div class="filter-group">
-                    <label for="is_active" class="form-label">Stato</label>
-                    <select class="form-select" id="is_active" name="is_active">
-                        <option value="">Tutti</option>
-                        <option value="true" {% if request.args.get('is_active') == 'true' %}selected{% endif %}>Attivo</option>
-                        <option value="false" {% if request.args.get('is_active') == 'false' %}selected{% endif %}>Inattivo</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa fa-search"></i> Cerca
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="reset-filters">
-                            <i class="fa fa-times"></i> Reset
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-    {% endif %}
+
 
     <!-- Lista template esistenti -->
     {% if not current_template %}
@@ -491,21 +443,6 @@ function confirmDelete(message) {
     return confirm(message || 'Sei sicuro di voler eliminare questo elemento?');
 }
 
-// Reset filtri
-document.addEventListener('DOMContentLoaded', function() {
-    const resetBtn = document.getElementById('reset-filters');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
-            const form = document.getElementById('presidio-search-form');
-            const inputs = form.querySelectorAll('input, select');
-            inputs.forEach(input => {
-                if (input.name !== 'search') {
-                    input.value = '';
-                }
-            });
-            form.submit();
-        });
-    }
-});
+
 </script>
 {% endblock %}
