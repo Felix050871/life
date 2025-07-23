@@ -114,12 +114,21 @@ def api_get_users_by_role():
     # Filtra gli utenti abilitati per la sede del template
     available_users = []
     for user in users:
-        user_sede_name = user.sede.name if user.sede else "None" 
+        # Controlla se user ha sede_id o relazione sede
+        user_sede_name = "None"
+        if hasattr(user, 'sede_id') and user.sede_id:
+            user_sede_name = f"sede_id_{user.sede_id}"
+        elif hasattr(user, 'sede') and user.sede:
+            user_sede_name = user.sede.name
+            
         template_sede_name = template.sede.name if template.sede else "None"
         print(f"API Debug: User {user.username} - sede: {user_sede_name}, template sede: {template_sede_name}, all_sedi: {user.all_sedi}")
         
-        # Utente abilitato se: ha all_sedi=True OR sede coincide OR entrambi hanno sede=None
-        if user.all_sedi or user.sede == template.sede or (user.sede is None and template.sede is None):
+        # Utente abilitato se: ha all_sedi=True OR sede_id coincide OR entrambi hanno sede=None
+        user_sede_id = getattr(user, 'sede_id', None)
+        template_sede_id = template.sede.id if template.sede else None
+        
+        if user.all_sedi or user_sede_id == template_sede_id or (user_sede_id is None and template_sede_id is None):
             available_users.append({
                 'id': user.id,
                 'username': user.username,
