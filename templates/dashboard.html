@@ -210,7 +210,7 @@
                     </div>
                     <small class="text-muted">
                         {{ leave.start_date.strftime('%d/%m') }} - {{ leave.end_date.strftime('%d/%m') }}
-                        ({{ leave.get_duration_days() }} giorni)
+                        ({{ (leave.end_date - leave.start_date).days + 1 }} giorni)
                     </small>
                 </div>
                 {% endfor %}
