@@ -131,7 +131,7 @@
                     <div class="text-center py-4">
                         <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                         <h5 class="text-warning">Nessun template disponibile</h5>
-                        <p class="text-muted">Non ci sono template presidio attivi. Creane uno dalla sezione "Gestione Template Presidio".</p>
+                        <p class="text-muted">Non ci sono template presidio attivi. Creane uno dalla sezione "Gestione Presidi".</p>
                         <a href="{{ url_for('presidio_coverage') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i>Crea Template
                         </a>
@@ -318,10 +318,9 @@ function createWeekHtml(week) {
         
         if (week.days[i].shifts && week.days[i].shifts.length > 0) {
             week.days[i].shifts.forEach(function(shift) {
-                html += '<div class="shift-item" title="' + shift.user + ' - ' + shift.time + ' (Automatico)" style="position: relative;">' +
+                html += '<div class="shift-item" title="' + shift.user + ' - ' + shift.time + '">' +
                         '<div class="fw-bold">' + (shift.user.length > 12 ? shift.user.substring(0, 12) + '...' : shift.user) + '</div>' +
                         '<small>' + shift.time + '</small>' +
-                        '<i class="fas fa-lock" style="position: absolute; top: 2px; right: 4px; font-size: 10px; opacity: 0.7; color: #ffffff;" title="Turno automatico non modificabile"></i>' +
                         '</div>';
             });
         } else {

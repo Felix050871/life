@@ -84,7 +84,12 @@
                         <ul class="dropdown-menu">
                             {% if current_user.can_manage_shifts() %}
                             <li><a class="dropdown-item" href="{{ url_for('presidio_coverage') }}">
-                                <i class="fas fa-shield-alt me-1"></i>Gestione Template Presidio
+                                <i class="fas fa-shield-alt me-1"></i>Gestione Presidi
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_view_shifts() %}
+                            <li><a class="dropdown-item" href="{{ url_for('view_presidi') }}">
+                                <i class="fas fa-binoculars me-1"></i>Visualizza Presidi
                             </a></li>
                             {% endif %}
                             {% if current_user.can_manage_shifts() or current_user.can_view_shifts() %}
@@ -95,9 +100,6 @@
                             {% if current_user.can_view_shifts() %}
                             <li><a class="dropdown-item" href="{{ url_for('visualizza_turni') }}">
                                 <i class="fas fa-eye me-1"></i>Visualizza Turni
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('view_presidi') }}">
-                                <i class="fas fa-binoculars me-1"></i>Visualizza Presidi
                             </a></li>
                             {% endif %}
                         </ul>
