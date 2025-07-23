@@ -165,7 +165,7 @@
             <div class="card-body">
                 <div class="d-grid gap-2">
                     {% if current_user.can_manage_users() %}
-                    <a href="{{ url_for('manage_users') }}" class="btn btn-primary btn-sm">
+                    <a href="{{ url_for('user_management') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-user-plus me-1"></i>Gestisci Utenti
                     </a>
                     {% endif %}
