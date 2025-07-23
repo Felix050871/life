@@ -318,9 +318,14 @@ function createWeekHtml(week) {
         
         if (week.days[i].shifts && week.days[i].shifts.length > 0) {
             week.days[i].shifts.forEach(function(shift) {
-                html += '<div class="shift-item" title="' + shift.user + ' - ' + shift.time + '">' +
-                        '<div class="fw-bold">' + (shift.user.length > 12 ? shift.user.substring(0, 12) + '...' : shift.user) + '</div>' +
+                html += '<div class="shift-item editable-shift" data-shift-id="' + shift.id + '" data-user-id="' + shift.user_id + '" data-role="' + shift.role + '" title="' + shift.user + ' - ' + shift.time + '">' +
+                        '<div class="d-flex justify-content-between align-items-start">' +
+                        '<div class="shift-content">' +
+                        '<div class="fw-bold shift-user">' + (shift.user.length > 12 ? shift.user.substring(0, 12) + '...' : shift.user) + '</div>' +
                         '<small>' + shift.time + '</small>' +
+                        '</div>' +
+                        '<i class="fas fa-edit edit-shift-btn" style="cursor: pointer; opacity: 0.7; font-size: 10px;" title="Modifica turno"></i>' +
+                        '</div>' +
                         '</div>';
             });
         } else {
@@ -333,6 +338,116 @@ function createWeekHtml(week) {
     html += '</div></div>';
     return html;
 }
+
+// Funzione per modificare un turno
+function editShift(shiftElement) {
+    var shiftId = shiftElement.data('shift-id');
+    var currentUserId = shiftElement.data('user-id');
+    var role = shiftElement.data('role');
+    var templateId = $('#template-select').val();
+    
+    if (!templateId) {
+        alert('Seleziona prima un template.');
+        return;
+    }
+    
+    // Carica utenti disponibili per questo ruolo
+    $.ajax({
+        url: '/api/get_users_by_role',
+        method: 'GET',
+        data: {
+            role: role,
+            template_id: templateId
+        },
+        success: function(users) {
+            showUserSelectionModal(shiftId, currentUserId, users, shiftElement);
+        },
+        error: function() {
+            alert('Errore nel caricamento degli utenti disponibili.');
+        }
+    });
+}
+
+// Modal per selezione utente
+function showUserSelectionModal(shiftId, currentUserId, users, shiftElement) {
+    var modal = $('<div class="modal fade" tabindex="-1">' +
+                  '<div class="modal-dialog">' +
+                  '<div class="modal-content">' +
+                  '<div class="modal-header">' +
+                  '<h5 class="modal-title">Modifica Assegnazione Turno</h5>' +
+                  '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>' +
+                  '</div>' +
+                  '<div class="modal-body">' +
+                  '<label class="form-label">Seleziona nuovo utente:</label>' +
+                  '<select class="form-select" id="new-user-select">' +
+                  '</select>' +
+                  '</div>' +
+                  '<div class="modal-footer">' +
+                  '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>' +
+                  '<button type="button" class="btn btn-primary" id="save-shift-change">Salva</button>' +
+                  '</div>' +
+                  '</div>' +
+                  '</div>' +
+                  '</div>');
+    
+    var select = modal.find('#new-user-select');
+    users.forEach(function(user) {
+        var selected = user.id == currentUserId ? 'selected' : '';
+        select.append('<option value="' + user.id + '" ' + selected + '>' + user.username + '</option>');
+    });
+    
+    modal.find('#save-shift-change').click(function() {
+        var newUserId = select.val();
+        if (newUserId != currentUserId) {
+            updateShiftUser(shiftId, newUserId, shiftElement, modal);
+        } else {
+            modal.modal('hide');
+        }
+    });
+    
+    $('body').append(modal);
+    modal.modal('show');
+    modal.on('hidden.bs.modal', function() {
+        modal.remove();
+    });
+}
+
+// Aggiorna l'utente del turno
+function updateShiftUser(shiftId, newUserId, shiftElement, modal) {
+    $.ajax({
+        url: '/api/update_shift_user',
+        method: 'POST',
+        data: {
+            shift_id: shiftId,
+            user_id: newUserId
+        },
+        success: function(response) {
+            if (response.success) {
+                // Aggiorna l'interfaccia
+                shiftElement.find('.shift-user').text(response.user.username.length > 12 ? 
+                    response.user.username.substring(0, 12) + '...' : response.user.username);
+                shiftElement.data('user-id', newUserId);
+                shiftElement.attr('title', response.user.username + ' - ' + shiftElement.find('small').text());
+                modal.modal('hide');
+                
+                // Ricarica i turni per aggiornare le statistiche
+                loadShiftsForTemplate();
+            } else {
+                alert('Errore nell\'aggiornamento: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Errore nel salvataggio delle modifiche.');
+        }
+    });
+}
+
+// Event listener per i pulsanti di modifica
+$(document).on('click', '.edit-shift-btn', function(e) {
+    e.stopPropagation();
+    var shiftElement = $(this).closest('.editable-shift');
+    editShift(shiftElement);
+});
 
 // Validazione form prima dell'invio
 document.addEventListener('DOMContentLoaded', function() {
