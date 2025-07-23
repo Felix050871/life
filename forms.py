@@ -642,6 +642,8 @@ class RoleForm(FlaskForm):
     # Reperibilità
     can_manage_reperibilita = BooleanField('Gestire Reperibilità')
     can_view_reperibilita = BooleanField('Visualizzare Reperibilità')
+    can_manage_coverage = BooleanField('Gestire Coperture Reperibilità')
+    can_view_coverage = BooleanField('Visualizzare Coperture Reperibilità')
     
     # Gestione presenze
     can_manage_attendance = BooleanField('Gestire Presenze')
@@ -718,6 +720,8 @@ class RoleForm(FlaskForm):
             # Reperibilità
             'can_manage_reperibilita': self.can_manage_reperibilita.data,
             'can_view_reperibilita': self.can_view_reperibilita.data,
+            'can_manage_coverage': self.can_manage_coverage.data,
+            'can_view_coverage': self.can_view_coverage.data,
             
             # Gestione presenze
             'can_manage_attendance': self.can_manage_attendance.data,
