@@ -232,6 +232,12 @@ class User(UserMixin, db.Model):
         """Permesso per visualizzare coperture reperibilità"""
         return self.has_permission('can_view_coverage')
     
+    def can_access_reperibilita_menu(self):
+        """Permesso per accedere al menu reperibilità"""
+        return (self.can_manage_reperibilita() or self.can_view_reperibilita() or 
+                self.can_manage_coverage() or self.can_view_coverage() or 
+                self.can_view_interventions())
+    
     # === PRESENZE ===
     def can_manage_attendance(self):
         return self.has_permission('can_manage_attendance')
