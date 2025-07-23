@@ -397,10 +397,10 @@ class User(UserMixin, db.Model):
         """Accesso al menu Messaggi"""
         return self.can_send_messages() or self.can_view_messages()
     
-    # Dashboard widget permissions
+    # Dashboard widget permissions - Admin ha accesso a tutti i widget
     def can_view_team_stats_widget(self):
         """Widget statistiche team nella dashboard"""
-        return self.has_permission('can_view_reports')
+        return self.has_role('Amministratore') or self.has_permission('can_view_reports')
     
     def can_view_my_attendance_widget(self):
         """Widget gestione presenze personali (entrata/uscita/pausa)"""
@@ -408,23 +408,23 @@ class User(UserMixin, db.Model):
     
     def can_view_team_management_widget(self):
         """Widget gestione team"""
-        return self.has_permission('can_manage_users') or self.has_permission('can_view_users')
+        return self.has_role('Amministratore') or self.has_permission('can_manage_users') or self.has_permission('can_view_users')
     
     def can_view_leave_requests_widget(self):
         """Widget richieste ferie/permessi"""
-        return self.has_permission('can_manage_leave') or self.has_permission('can_approve_leave') or self.has_permission('can_request_leave')
+        return self.has_role('Amministratore') or self.has_permission('can_manage_leave') or self.has_permission('can_approve_leave') or self.has_permission('can_request_leave')
     
     def can_view_daily_attendance_widget(self):
         """Widget presenze giornaliere per sede"""
-        return self.has_permission('can_view_attendance')
+        return self.has_role('Amministratore') or self.has_permission('can_view_attendance')
     
     def can_view_shifts_coverage_widget(self):
         """Widget coperture turni con segnalazioni"""
-        return self.has_permission('can_view_shifts') or self.has_permission('can_manage_shifts')
+        return self.has_role('Amministratore') or self.has_permission('can_view_shifts') or self.has_permission('can_manage_shifts')
     
     def can_view_reperibilita_widget(self):
         """Widget reperibilità (personali e/o team)"""
-        return self.has_permission('can_view_reperibilita') or self.has_permission('can_manage_reperibilita')
+        return self.has_role('Amministratore') or self.has_permission('can_view_reperibilita') or self.has_permission('can_manage_reperibilita')
     
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""

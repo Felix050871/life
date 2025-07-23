@@ -847,38 +847,47 @@ def get_team_statistics(start_date=None, end_date=None):
                 role_stats[role] = 0
             role_stats[role] += 1
         
-        return {
-            'active_users': active_users,
-            'total_hours': round(estimated_hours, 2),
-            'pending_leaves': pending_leaves,
-            'avg_hours_per_user': round(estimated_hours / active_users if active_users > 0 else 0, 2),
-            # Statistiche reperibilità team dettagliate
-            'total_team_interventions': total_team_interventions,
-            'completed_team_interventions': len(completed_team_interventions),
-            'active_team_interventions': active_team_interventions,
-            'team_avg_resolution_time_minutes': round(team_avg_resolution_time, 1),
-            'total_team_intervention_hours': round(total_team_intervention_hours, 2),
-            'team_remote_interventions': team_remote_interventions,
-            'team_onsite_interventions': team_onsite_interventions,
-            # Statistiche per ruolo
-            'role_stats': role_stats
-        }
+        # Creo un oggetto con attributi per compatibilità template dashboard
+        class TeamStats:
+            def __init__(self, total_users, user_counts_by_role, active_users, total_hours, pending_leaves):
+                self.total_users = total_users
+                self.user_counts_by_role = user_counts_by_role
+                self.active_users = active_users
+                self.total_hours = round(total_hours, 2)
+                self.pending_leaves = pending_leaves
+                self.avg_hours_per_user = round(total_hours / active_users if active_users > 0 else 0, 2)
+                self.total_team_interventions = total_team_interventions
+                self.completed_team_interventions = len(completed_team_interventions)
+                self.active_team_interventions = active_team_interventions
+                self.team_avg_resolution_time_minutes = round(team_avg_resolution_time, 1)
+                self.total_team_intervention_hours = round(total_team_intervention_hours, 2)
+                self.team_remote_interventions = team_remote_interventions
+                self.team_onsite_interventions = team_onsite_interventions
+                self.role_stats = role_stats
+        
+        return TeamStats(active_users, role_stats, active_users, estimated_hours, pending_leaves)
         
     except Exception as e:
         print(f"Error in get_team_statistics: {e}")
-        return {
-            'active_users': 0,
-            'total_hours': 0,
-            'pending_leaves': 0,
-            'avg_hours_per_user': 0,
-            'total_team_interventions': 0,
-            'completed_team_interventions': 0,
-            'active_team_interventions': 0,
-            'team_avg_resolution_time_minutes': 0,
-            'total_team_intervention_hours': 0,
-            'team_remote_interventions': 0,
-            'team_onsite_interventions': 0
-        }
+        # Ritorna oggetto con attributi per evitare errori template
+        class TeamStats:
+            def __init__(self):
+                self.total_users = 0
+                self.user_counts_by_role = {}
+                self.active_users = 0
+                self.total_hours = 0
+                self.pending_leaves = 0
+                self.avg_hours_per_user = 0
+                self.total_team_interventions = 0
+                self.completed_team_interventions = 0
+                self.active_team_interventions = 0
+                self.team_avg_resolution_time_minutes = 0
+                self.total_team_intervention_hours = 0
+                self.team_remote_interventions = 0
+                self.team_onsite_interventions = 0
+                self.role_stats = {}
+        
+        return TeamStats()
 
 def check_user_schedule_with_permissions(user_id, check_datetime=None):
     """
