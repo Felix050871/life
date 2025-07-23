@@ -191,8 +191,20 @@
                             <td>{{ day_name }}</td>
                             {% if day_num in coverages_by_day %}
                             <td>{{ coverages_by_day[day_num]|length }}</td>
-                            <td>{{ "%.1f"|format(coverages_by_day[day_num]|sum(attribute='get_duration_hours')|float) }}h</td>
-                            <td>{{ "%.1f"|format(coverages_by_day[day_num]|sum(attribute='get_effective_work_hours')|float) }}h</td>
+                            <td>
+                                {% set day_total_hours = 0 %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                  {% set day_total_hours = day_total_hours + coverage.get_duration_hours() %}
+                                {% endfor %}
+                                {{ "%.1f"|format(day_total_hours) }}h
+                            </td>
+                            <td>
+                                {% set day_effective_hours = 0 %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                  {% set day_effective_hours = day_effective_hours + coverage.get_effective_work_hours() %}
+                                {% endfor %}
+                                {{ "%.1f"|format(day_effective_hours) }}h
+                            </td>
                             <td>
                                 {% set day_roles = [] %}
                                 {% for coverage in coverages_by_day[day_num] %}
