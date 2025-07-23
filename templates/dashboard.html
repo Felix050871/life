@@ -300,7 +300,7 @@
                 
                 <div class="d-grid gap-2 mt-3">
                     {% if current_user.can_manage_shifts() %}
-                    <a href="{{ url_for('manage_turni') }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('turni_automatici') }}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-calendar-plus me-1"></i>Gestisci Turni
                     </a>
                     {% endif %}
