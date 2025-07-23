@@ -4,6 +4,27 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
+<style>
+/* Tabella coperture migliorata */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--bs-light);
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -90,74 +111,64 @@
         </div>
     </div>
 
-    <!-- Dettagli coperture per giorno -->
+    <!-- Dettagli coperture per giorno - Tabella strutturata -->
     <div class="row">
         <div class="col-12">
             <h4 class="mb-3">Dettaglio Coperture per Giorno</h4>
             
             {% if coverages_by_day %}
-            {% for day_num in range(7) %}
-                {% if day_num in coverages_by_day %}
-                {% set day_name = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'][day_num] %}
-                <div class="coverage-day mb-4">
-                    <div class="coverage-day-header">
-                        <h5 class="day-name">{{ day_name }}</h5>
-                        <div class="d-flex align-items-center gap-3">
-                            <small class="text-muted">{{ coverages_by_day[day_num]|length }} coperture</small>
-                            <small class="text-muted">
-                                {% set total_hours = 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 12%;">Giorno</th>
+                            <th style="width: 18%;">Orario Turno</th>
+                            <th style="width: 15%;">Pausa</th>
+                            <th style="width: 25%;">Ruoli Richiesti</th>
+                            <th style="width: 10%;">Quantità</th>
+                            <th style="width: 20%;">Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day_num in range(7) %}
+                            {% if day_num in coverages_by_day %}
                                 {% for coverage in coverages_by_day[day_num] %}
-                                  {% set total_hours = total_hours + coverage.get_duration_hours() %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-primary">{{ coverage.get_day_name() }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">{{ coverage.get_time_range() }}</span>
+                                    </td>
+                                    <td>
+                                        {% if coverage.get_break_range() %}
+                                        <span class="text-warning">{{ coverage.get_break_range() }}</span>
+                                        {% else %}
+                                        <span class="text-muted">Nessuna</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for role in coverage.get_required_roles() %}
+                                        <span class="badge bg-info me-1">{{ role }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ coverage.role_count or 1 }} persone</span>
+                                    </td>
+                                    <td>
+                                        {% if coverage.description %}
+                                        <small class="text-muted">{{ coverage.description }}</small>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                                 {% endfor %}
-                                Totale: {{ "%.1f"|format(total_hours) }}h
-                            </small>
-                        </div>
-                    </div>
-                    
-                    <div class="coverage-slots">
-                        {% for coverage in coverages_by_day[day_num] %}
-                        <div class="coverage-slot time-slot">
-                            <div class="flex-grow-1">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <span class="time-range">{{ coverage.get_time_range() }}</span>
-                                    <span class="badge bg-info">{{ "%.1f"|format(coverage.get_duration_hours()) }}h</span>
-                                </div>
-                                
-                                <!-- Informazioni sui ruoli -->
-                                <div class="roles-required mb-2">
-                                    <i class="fa fa-users me-1"></i>
-                                    <strong>Ruoli richiesti:</strong>
-                                    {% for role in coverage.get_required_roles() %}
-                                    <span class="badge bg-primary me-1">{{ role }}</span>
-                                    {% endfor %}
-                                    <span class="text-muted">({{ coverage.role_count }} persone)</span>
-                                </div>
-                                
-                                <!-- Pause se presenti -->
-                                {% if coverage.get_break_range() %}
-                                <div class="break-slot">
-                                    <small class="break-range">
-                                        <i class="fa fa-coffee me-1"></i>Pausa: {{ coverage.get_break_range() }}
-                                        ({{ "%.1f"|format(coverage.get_effective_work_hours()) }}h effettive)
-                                    </small>
-                                </div>
-                                {% endif %}
-                                
-                                <!-- Descrizione se presente -->
-                                {% if coverage.description %}
-                                <div class="mt-2">
-                                    <small class="text-muted">
-                                        <i class="fa fa-info-circle me-1"></i>{{ coverage.description }}
-                                    </small>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
+                            {% endif %}
                         {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% else %}
             <div class="alert alert-info">
                 <i class="fa fa-info-circle me-2"></i>
