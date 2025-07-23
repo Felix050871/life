@@ -1295,11 +1295,9 @@ def genera_turni_da_template():
         return redirect(url_for('turni_automatici'))
     
     template_id = request.form.get('template_id')
-    start_date_str = request.form.get('start_date')
-    end_date_str = request.form.get('end_date')
     
-    if not all([template_id, start_date_str, end_date_str]):
-        flash('Parametri mancanti per la generazione turni', 'danger')
+    if not template_id:
+        flash('Seleziona un template per la generazione turni', 'danger')
         return redirect(url_for('turni_automatici'))
     
     try:
@@ -1308,10 +1306,10 @@ def genera_turni_da_template():
         import json
         import random
         
-        # Ottieni template
+        # Ottieni template e usa le sue date
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        start_date = template.start_date
+        end_date = template.end_date
         
         # Ottieni coperture del template
         coverages = PresidioCoverage.query.filter_by(

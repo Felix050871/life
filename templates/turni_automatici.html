@@ -3,6 +3,8 @@
 {% block title %}Turni Automatici - {{ super() }}{% endblock %}
 
 {% block head %}
+<!-- jQuery prima di tutto -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <!-- DataTables CSS -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <style>
@@ -92,31 +94,28 @@
             </div>
             <div class="card-body">
                 {% if presidio_templates %}
-                <form method="POST" action="{{ url_for('genera_turni_da_template') }}" class="row g-3">
-                    <div class="col-md-4">
-                        <label for="template_id" class="form-label">Seleziona Template</label>
+                <form method="POST" action="{{ url_for('genera_turni_da_template') }}" class="row g-3 align-items-end">
+                    <div class="col-md-8">
+                        <label for="template_id" class="form-label">Seleziona Template Presidio</label>
                         <select class="form-select" name="template_id" id="template_id" required>
                             <option value="">-- Seleziona Template --</option>
                             {% for template in presidio_templates %}
                             <option value="{{ template.id }}" 
-                                    data-start="{{ template.start_date.strftime('%Y-%m-%d') }}"
-                                    data-end="{{ template.end_date.strftime('%Y-%m-%d') }}">
-                                {{ template.name }} ({{ template.get_period_display() }})
+                                    data-start="{{ template.start_date.strftime('%d/%m/%Y') }}"
+                                    data-end="{{ template.end_date.strftime('%d/%m/%Y') }}"
+                                    data-period="{{ template.get_period_display() }}">
+                                {{ template.name }} - {{ template.get_period_display() }}
                             </option>
                             {% endfor %}
                         </select>
+                        <div class="form-text" id="template-info" style="display: none;">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <span id="period-display"></span>
+                        </div>
                     </div>
-                    <div class="col-md-3">
-                        <label for="start_date" class="form-label">Data Inizio</label>
-                        <input type="date" class="form-control" name="start_date" id="start_date" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="end_date" class="form-label">Data Fine</label>
-                        <input type="date" class="form-control" name="end_date" id="end_date" required>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-plus-circle me-1"></i>Genera Turni
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-success w-100" disabled id="generate-btn">
+                            <i class="fas fa-magic me-1"></i>Genera Turni Automatici
                         </button>
                     </div>
                 </form>
@@ -262,37 +261,39 @@
 {% block scripts %}
 <script>
 $(document).ready(function() {
-    // Auto-fill dates based on selected template
+    // Gestione selezione template
     $('#template_id').change(function() {
         var selectedOption = $(this).find('option:selected');
-        var startDate = selectedOption.data('start');
-        var endDate = selectedOption.data('end');
+        var templateId = $(this).val();
+        var periodDisplay = selectedOption.data('period');
         
-        if (startDate && endDate) {
-            $('#start_date').val(startDate);
-            $('#end_date').val(endDate);
+        if (templateId && periodDisplay) {
+            // Mostra informazioni periodo
+            $('#period-display').text('Periodo template: ' + periodDisplay);
+            $('#template-info').show();
+            
+            // Abilita pulsante genera
+            $('#generate-btn').prop('disabled', false);
+        } else {
+            // Nascondi informazioni e disabilita pulsante
+            $('#template-info').hide();
+            $('#generate-btn').prop('disabled', true);
         }
     });
     
     // Validazione form
     $('form').submit(function(e) {
         var templateId = $('#template_id').val();
-        var startDate = $('#start_date').val();
-        var endDate = $('#end_date').val();
+        var selectedOption = $('#template_id').find('option:selected');
+        var templateName = selectedOption.text();
         
-        if (!templateId || !startDate || !endDate) {
+        if (!templateId) {
             e.preventDefault();
-            alert('Compila tutti i campi richiesti');
+            alert('Seleziona un template presidio');
             return false;
         }
         
-        if (new Date(startDate) > new Date(endDate)) {
-            e.preventDefault();
-            alert('La data di inizio deve essere precedente alla data di fine');
-            return false;
-        }
-        
-        return confirm('Sei sicuro di voler generare i turni per il periodo selezionato?');
+        return confirm('Sei sicuro di voler generare i turni automaticamente dal template "' + templateName + '"?');
     });
 });
 </script>
