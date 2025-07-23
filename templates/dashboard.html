@@ -412,56 +412,7 @@
 </div>
 {% endif %}
 
-<!-- Team Stats (for managers) -->
-{% if team_stats %}
-<div class="row mb-4">
-    <div class="col">
-        <h4><i class="fas fa-users me-2"></i>Statistiche Team</h4>
-    </div>
-</div>
-<div class="row mb-4">
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-body text-center">
-                <i class="fas fa-users fa-2x text-primary mb-2"></i>
-                <h5>{{ team_stats.active_users }}</h5>
-                <small>Utenti Attivi</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-body text-center">
-                <i class="fas fa-clock fa-2x text-success mb-2"></i>
-                <h5>{{ format_hours(team_stats.total_hours) }}</h5>
-                <small>Ore Totali (30gg)</small>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- User Role Statistics -->
-{% if team_stats.role_stats %}
-<div class="row mb-4">
-    <div class="col">
-        <h4><i class="fas fa-user-tag me-2"></i>Statistiche Utenti</h4>
-    </div>
-</div>
-<div class="row mb-4">
-    {% for role, count in team_stats.role_stats.items() %}
-    <div class="col-md-2 col-sm-4 col-6 mb-3">
-        <div class="card {% if role == 'Amministratore' %}bg-danger{% elif role == 'Responsabile' %}bg-primary{% elif role == 'Supervisore' %}bg-warning{% elif role == 'Operatore' %}bg-info{% elif role == 'Ospite' %}bg-secondary{% else %}bg-success{% endif %}">
-            <div class="card-body text-center text-white">
-                <h4>{{ count }}</h4>
-                <small>{{ role }}</small>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
-{% endif %}
 
 <!-- Personal Attendance Section for managers -->
 {% if current_user.can_manage_users() and current_user.can_view_attendance() %}
@@ -565,14 +516,36 @@
         <div class="card">
             <div class="card-header">
                 <h5><i class="fas fa-clock me-2"></i>Presenze Team</h5>
+                <small class="text-muted">{{ today_date.strftime('%d/%m/%Y') if today_date else '' }}</small>
             </div>
             <div class="card-body">
-                <p class="text-muted">Visualizza e monitora le presenze di tutti i membri del team</p>
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('attendance', view='team') }}" class="btn btn-primary">
-                        <i class="fas fa-users me-1"></i>Vedi Presenze Team
-                    </a>
-                </div>
+                {% if daily_attendance_data %}
+                    {% for sede_name, data in daily_attendance_data.items() %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">{{ sede_name }}</h6>
+                            <span class="badge bg-{{ 'success' if data.coverage_rate >= 80 else 'warning' if data.coverage_rate >= 50 else 'danger' }}">
+                                {{ data.present_users|length }}/{{ data.total_users }}
+                            </span>
+                        </div>
+                        {% if data.present_users %}
+                            {% for user in data.present_users %}
+                            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                <small>{{ user.get_full_name() }}</small>
+                                <span class="badge bg-success">Presente</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <small class="text-muted">Nessun utente presente</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <p class="mb-0">Nessuna presenza registrata oggi</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
