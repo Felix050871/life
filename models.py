@@ -102,11 +102,19 @@ class UserRole(db.Model):
             # Report e statistiche
             'can_view_reports': 'Visualizzare Report',
             'can_manage_reports': 'Gestire Report',
-            'can_view_statistics': 'Visualizzare Statistiche',
             
             # Messaggi
             'can_send_messages': 'Inviare Messaggi',
-            'can_view_messages': 'Visualizzare Messaggi'
+            'can_view_messages': 'Visualizzare Messaggi',
+            
+            # Widget Dashboard - Controllo granulare widget home page
+            'can_view_team_stats_widget': 'Widget Statistiche Team',
+            'can_view_my_attendance_widget': 'Widget Presenze Personali',
+            'can_view_team_management_widget': 'Widget Gestione Team',
+            'can_view_leave_requests_widget': 'Widget Richieste Ferie',
+            'can_view_daily_attendance_widget': 'Widget Presenze Giornaliere',
+            'can_view_shifts_coverage_widget': 'Widget Coperture Turni',
+            'can_view_reperibilita_widget': 'Widget Reperibilità'
         }
 
 class User(UserMixin, db.Model):
@@ -397,34 +405,34 @@ class User(UserMixin, db.Model):
         """Accesso al menu Messaggi"""
         return self.can_send_messages() or self.can_view_messages()
     
-    # Dashboard widget permissions - Admin ha accesso a tutti i widget
+    # Dashboard widget permissions - Controllo completo tramite permessi granulari
     def can_view_team_stats_widget(self):
         """Widget statistiche team nella dashboard"""
-        return self.has_role('Amministratore') or self.has_permission('can_view_reports')
+        return self.has_permission('can_view_team_stats_widget')
     
     def can_view_my_attendance_widget(self):
         """Widget gestione presenze personali (entrata/uscita/pausa)"""
-        return self.has_permission('can_view_attendance') and not self.has_role('Amministratore')
+        return self.has_permission('can_view_my_attendance_widget')
     
     def can_view_team_management_widget(self):
         """Widget gestione team"""
-        return self.has_role('Amministratore') or self.has_permission('can_manage_users') or self.has_permission('can_view_users')
+        return self.has_permission('can_view_team_management_widget')
     
     def can_view_leave_requests_widget(self):
         """Widget richieste ferie/permessi"""
-        return self.has_role('Amministratore') or self.has_permission('can_manage_leave') or self.has_permission('can_approve_leave') or self.has_permission('can_request_leave')
+        return self.has_permission('can_view_leave_requests_widget')
     
     def can_view_daily_attendance_widget(self):
         """Widget presenze giornaliere per sede"""
-        return self.has_role('Amministratore') or self.has_permission('can_view_attendance')
+        return self.has_permission('can_view_daily_attendance_widget')
     
     def can_view_shifts_coverage_widget(self):
         """Widget coperture turni con segnalazioni"""
-        return self.has_role('Amministratore') or self.has_permission('can_view_shifts') or self.has_permission('can_manage_shifts')
+        return self.has_permission('can_view_shifts_coverage_widget')
     
     def can_view_reperibilita_widget(self):
         """Widget reperibilità (personali e/o team)"""
-        return self.has_role('Amministratore') or self.has_permission('can_view_reperibilita') or self.has_permission('can_manage_reperibilita')
+        return self.has_permission('can_view_reperibilita_widget')
     
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""
