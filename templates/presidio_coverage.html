@@ -5,172 +5,127 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <style>
-/* OVERRIDE COMPLETO per migliorata leggibilità - Bordi e titoli evidenti */
+/* Stile soft e uniforme ispirato alla pagina Turni Automatici */
 
-/* Titoli principali della pagina */
-.presidio-container h2 {
-    color: #007bff !important;
-    font-weight: 800 !important;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.2) !important;
-    border: 3px solid #007bff !important;
-    padding: 1rem 1.5rem !important;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+/* Card uniformi con bordi sottili */
+.card {
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    background: rgba(255,255,255,0.05) !important;
     border-radius: 0.5rem !important;
-    margin-bottom: 2rem !important;
-}
-
-.presidio-container h4 {
-    color: #495057 !important;
-    font-weight: 700 !important;
-    background: #f8f9fa !important;
-    padding: 0.75rem 1rem !important;
-    border-left: 5px solid #007bff !important;
-    border-radius: 0.375rem !important;
     margin-bottom: 1.5rem !important;
 }
 
-/* Form container principale */
-.presidio-form-container {
-    border: 3px solid #28a745 !important;
-    background: #f8f9fa !important;
-    padding: 2rem !important;
-    border-radius: 1rem !important;
-    margin-bottom: 2rem !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
-}
-
-/* Sezioni form con bordi molto evidenti */
-.form-section {
-    margin-bottom: 2rem !important;
-    padding: 2rem !important;
-    border: 3px solid #dc3545 !important;
-    border-radius: 1rem !important;
-    background: white !important;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important;
-}
-
-.form-section-title {
-    color: white !important;
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
-    margin: -2rem -2rem 1.5rem -2rem !important;
-    padding: 1rem 2rem !important;
-    border-radius: 1rem 1rem 0 0 !important;
-    font-weight: 800 !important;
-    font-size: 1.2rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1px !important;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important;
-    border-bottom: 3px solid #c82333 !important;
-}
-
-/* Cards con bordi molto evidenti */
-.card {
-    border: 3px solid #007bff !important;
-    border-radius: 1rem !important;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
-    margin-bottom: 2rem !important;
-}
-
 .card-header {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
-    color: white !important;
-    border-bottom: 3px solid #0056b3 !important;
-    font-weight: 800 !important;
-    font-size: 1.2rem !important;
-    padding: 1.25rem 1.5rem !important;
-    border-radius: 1rem 1rem 0 0 !important;
+    background: rgba(255,255,255,0.1) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+    color: #e9ecef !important;
+    font-weight: 600 !important;
 }
 
 .card-header h5, .card-header h6 {
-    font-weight: 800 !important;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+    color: #e9ecef !important;
+    font-weight: 600 !important;
     margin: 0 !important;
-    font-size: 1.1rem !important;
 }
 
-.card-header .badge {
-    background: rgba(255,255,255,0.3) !important;
-    color: white !important;
-    border: 2px solid rgba(255,255,255,0.5) !important;
-    font-weight: 700 !important;
-    padding: 0.5rem 1rem !important;
-}
-
-/* Tabella con bordi molto evidenti */
-.table {
-    border: 3px solid #6c757d !important;
+/* Form sections con stile uniforme */
+.presidio-form-container, .coverage-form {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
     border-radius: 0.5rem !important;
-    overflow: hidden !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
 }
 
-.table th {
-    background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important;
-    color: white !important;
-    font-weight: 800 !important;
-    font-size: 1rem !important;
-    border: none !important;
+.form-section {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 0.375rem !important;
     padding: 1rem !important;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important;
+    margin-bottom: 1rem !important;
 }
 
-.table td {
-    vertical-align: middle !important;
-    font-size: 0.95rem !important;
-    padding: 1rem !important;
-    border-bottom: 2px solid #dee2e6 !important;
-    font-weight: 500 !important;
-}
-
-.table-hover tbody tr:hover {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
-    border-left: 6px solid #007bff !important;
-    transform: translateX(3px) !important;
-    transition: all 0.2s ease !important;
-}
-
-/* Badge più evidenti */
-.badge {
-    font-size: 0.8rem !important;
-    font-weight: 700 !important;
-    padding: 0.5rem 0.75rem !important;
-    border: 1px solid rgba(0,0,0,0.1) !important;
-}
-
-/* Bottoni più evidenti */
-.btn {
-    border-width: 2px !important;
-    font-weight: 700 !important;
-    padding: 0.75rem 1.5rem !important;
+.form-section-title {
+    color: #adb5bd !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    margin-bottom: 0.75rem !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
 }
 
-.btn:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-}
-
-/* Presidio template cards */
+/* Presidio template cards uniformi */
 .presidio-template-card {
-    border: 3px solid #6c757d !important;
-    margin-bottom: 2rem !important;
-    border-radius: 1rem !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    background: rgba(109, 127, 232, 0.15) !important;
+    border: 1px solid rgba(109, 127, 232, 0.3) !important;
+    border-radius: 0.5rem !important;
+    margin-bottom: 1.5rem !important;
+    overflow: hidden !important;
 }
 
 .template-header {
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
-    color: white !important;
-    padding: 1.5rem 2rem !important;
-    border-bottom: 3px solid #495057 !important;
-    border-radius: 1rem 1rem 0 0 !important;
+    background: rgba(109, 127, 232, 0.2) !important;
+    color: #e9ecef !important;
+    padding: 1rem 1.5rem !important;
+    border-bottom: 1px solid rgba(109, 127, 232, 0.3) !important;
 }
 
 .template-title {
-    font-weight: 800 !important;
-    font-size: 1.3rem !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
     margin: 0 !important;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* Tabelle con stile uniforme */
+.table {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 0.375rem !important;
+    overflow: hidden !important;
+}
+
+.table th {
+    background: rgba(255,255,255,0.1) !important;
+    color: #e9ecef !important;
+    font-weight: 600 !important;
+    border: none !important;
+    padding: 0.75rem !important;
+}
+
+.table td {
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    padding: 0.75rem !important;
+    color: #e9ecef !important;
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(255,255,255,0.08) !important;
+}
+
+/* Titoli con stile soft */
+h2, h4 {
+    color: #e9ecef !important;
+    font-weight: 600 !important;
+    margin-bottom: 1.5rem !important;
+}
+
+/* Badge uniformi */
+.badge {
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    padding: 0.25rem 0.5rem !important;
+}
+
+/* Bottoni uniformi */
+.btn {
+    font-weight: 500 !important;
+    border-radius: 0.375rem !important;
+}
+
+.btn:hover {
+    transform: none !important;
+    box-shadow: none !important;
 }
 </style>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
@@ -181,7 +136,7 @@
     <!-- Header della pagina -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 style="color: #007bff !important; font-weight: 800 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.2) !important; border: 3px solid #007bff !important; padding: 1rem 1.5rem !important; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important; border-radius: 0.5rem !important; margin-bottom: 2rem !important;"><i class="fa fa-shield-alt me-2"></i>Gestione Coperture Presidio</h2>
+            <h2><i class="fa fa-shield-alt me-2"></i>Gestione Coperture Presidio</h2>
             <p class="text-muted mb-0">Sistema completo per la gestione delle coperture presidio basato su template</p>
         </div>
         <div class="quick-actions">
@@ -202,7 +157,7 @@
     {% if not current_template %}
     <div class="row">
         <div class="col-12">
-            <h4 style="color: #495057 !important; font-weight: 700 !important; background: #f8f9fa !important; padding: 0.75rem 1rem !important; border-left: 5px solid #007bff !important; border-radius: 0.375rem !important; margin-bottom: 1.5rem !important;" class="mb-3">Template di Copertura Esistenti ({{ templates|length }})</h4>
+            <h4 class="mb-3">Template di Copertura Esistenti ({{ templates|length }})</h4>
             
             {% if templates %}
             {% for template in templates %}
@@ -280,10 +235,10 @@
     <div class="row">
         <div class="col-md-4">
             <!-- Informazioni template -->
-            <div class="presidio-template-card" style="border: 3px solid #6c757d !important; margin-bottom: 2rem !important; border-radius: 1rem !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;">
-                <div class="template-header" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important; color: white !important; padding: 1.5rem 2rem !important; border-bottom: 3px solid #495057 !important; border-radius: 1rem 1rem 0 0 !important;">
+            <div class="presidio-template-card">
+                <div class="template-header">
                     <div>
-                        <h5 class="template-title" style="font-weight: 800 !important; font-size: 1.3rem !important; margin: 0 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;">{{ current_template.name }}</h5>
+                        <h5 class="template-title">{{ current_template.name }}</h5>
                         <div class="template-period">{{ current_template.get_period_display() }}</div>
                         {% if current_template.sede %}
                         <div class="template-sede">
@@ -369,8 +324,8 @@
         
         <div class="col-md-8">
             <!-- Form aggiungi nuova copertura -->
-            <div class="coverage-form mt-4" style="border: 3px solid #dc3545 !important; border-radius: 1rem !important; background: white !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; padding: 2rem !important; margin-bottom: 2rem !important;">
-                <h5 class="form-section-title" style="color: white !important; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important; margin: -2rem -2rem 1.5rem -2rem !important; padding: 1rem 2rem !important; border-radius: 1rem 1rem 0 0 !important; font-weight: 800 !important; font-size: 1.2rem !important; text-transform: uppercase !important; letter-spacing: 1px !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; border-bottom: 3px solid #c82333 !important;">Aggiungi Nuova Copertura</h5>
+            <div class="coverage-form mt-4">
+                <h5 class="form-section-title">Aggiungi Nuova Copertura</h5>
                 
                 <form method="POST" class="needs-validation" novalidate>
                     <input type="hidden" name="action" value="add_coverage">
@@ -475,10 +430,10 @@
     {% if current_template %}
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card" style="border: 3px solid #007bff !important; border-radius: 1rem !important; box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important; margin-bottom: 2rem !important;">
-                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important; color: white !important; border-bottom: 3px solid #0056b3 !important; font-weight: 800 !important; font-size: 1.2rem !important; padding: 1.25rem 1.5rem !important; border-radius: 1rem 1rem 0 0 !important;">
-                    <h5 class="mb-0" style="font-weight: 800 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important; margin: 0 !important; font-size: 1.1rem !important;"><i class="fa fa-calendar-check me-2"></i>Coperture Definite</h5>
-                    <span class="badge bg-primary" style="background: rgba(255,255,255,0.3) !important; color: white !important; border: 2px solid rgba(255,255,255,0.5) !important; font-weight: 700 !important; padding: 0.5rem 1rem !important;">{{ current_template.coverages.filter_by(is_active=True).count() }} coperture</span>
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fa fa-calendar-check me-2"></i>Coperture Definite</h5>
+                    <span class="badge bg-primary">{{ current_template.coverages.filter_by(is_active=True).count() }} coperture</span>
                 </div>
                 <div class="card-body">
                     {% set coverages_by_day = {} %}
@@ -491,16 +446,16 @@
                     
                     {% if coverages_by_day %}
                     <div class="table-responsive">
-                        <table class="table table-hover" style="border: 3px solid #6c757d !important; border-radius: 0.5rem !important; overflow: hidden !important;">
+                        <table class="table table-hover">
                             <thead class="table-dark">
                                 <tr>
-                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 12%;">Giorno</th>
-                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 18%;">Orario Turno</th>
-                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 15%;">Pausa</th>
-                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 25%;">Ruoli Richiesti</th>
-                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 10%;">Quantità</th>
-                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 15%;">Descrizione</th>
-                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 5%;">Azioni</th>
+                                    <th style="width: 12%;">Giorno</th>
+                                    <th style="width: 18%;">Orario Turno</th>
+                                    <th style="width: 15%;">Pausa</th>
+                                    <th style="width: 25%;">Ruoli Richiesti</th>
+                                    <th style="width: 10%;">Quantità</th>
+                                    <th style="width: 15%;">Descrizione</th>
+                                    <th style="width: 5%;">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody>
