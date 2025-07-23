@@ -81,10 +81,10 @@ def dashboard():
     
     stats = get_user_statistics(current_user.id)
     
-    if current_user.can_view_reports():
+    # Widget statistics team (solo per utenti autorizzati)
+    team_stats = None
+    if current_user.can_view_team_stats_widget():
         team_stats = get_team_statistics()
-    else:
-        team_stats = None
     
     # Get today's attendance events
     today_events_check = AttendanceEvent.query.filter(
@@ -143,10 +143,17 @@ def dashboard():
         end_datetime=None
     ).first()
     
-    # Get recent leave requests
-    recent_leaves = LeaveRequest.query.filter_by(
-        user_id=current_user.id
-    ).order_by(LeaveRequest.created_at.desc()).limit(3).all()
+    # Get recent leave requests for widget
+    recent_leaves = []
+    if current_user.can_view_leave_requests_widget():
+        if current_user.can_manage_leave() or current_user.can_approve_leave():
+            # Managers see all requests
+            recent_leaves = LeaveRequest.query.order_by(LeaveRequest.created_at.desc()).limit(10).all()
+        else:
+            # Regular users see only their own
+            recent_leaves = LeaveRequest.query.filter_by(
+                user_id=current_user.id
+            ).order_by(LeaveRequest.created_at.desc()).limit(3).all()
     
     # Get weekly calendar data (Monday to Sunday)
     today = date.today()
@@ -180,6 +187,69 @@ def dashboard():
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
 
 
+    # Widget data for daily attendance by sede
+    daily_attendance_data = {}
+    if current_user.can_view_daily_attendance_widget():
+        from collections import defaultdict
+        attendance_by_sede = defaultdict(lambda: {'present_users': [], 'total_users': 0, 'coverage_rate': 0})
+        
+        # Get today's attendance events grouped by sede
+        today_attendances = AttendanceEvent.query.filter_by(date=date.today()).all()
+        present_user_ids = set()
+        
+        for attendance in today_attendances:
+            if attendance.event_type == 'clock_in':
+                present_user_ids.add(attendance.user_id)
+            elif attendance.event_type == 'clock_out':
+                present_user_ids.discard(attendance.user_id)
+        
+        # Group present users by sede
+        if present_user_ids:
+            present_users = User.query.filter(User.id.in_(present_user_ids)).all()
+            for user in present_users:
+                sede_name = user.get_sede_name()
+                attendance_by_sede[sede_name]['present_users'].append(user)
+        
+        # Calculate totals per sede
+        accessible_sedi = current_user.get_accessible_sedi() if hasattr(current_user, 'get_accessible_sedi') else []
+        for sede in accessible_sedi:
+            total_sede_users = User.query.filter_by(sede_id=sede.id, active=True).count()
+            present_count = len(attendance_by_sede[sede.name]['present_users'])
+            attendance_by_sede[sede.name]['total_users'] = total_sede_users
+            attendance_by_sede[sede.name]['coverage_rate'] = (present_count / total_sede_users * 100) if total_sede_users > 0 else 0
+        
+        daily_attendance_data = dict(attendance_by_sede)
+    
+    # Widget data for shifts coverage alerts
+    shifts_coverage_alerts = []
+    if current_user.can_view_shifts_coverage_widget():
+        # Get today's shifts with missing coverage
+        today_shifts = Shift.query.filter_by(date=date.today()).all()
+        for shift in today_shifts:
+            if not shift.user_id:  # Uncovered shift
+                shifts_coverage_alerts.append({
+                    'shift': shift,
+                    'alert_type': 'uncovered',
+                    'message': f'Turno {shift.start_time.strftime("%H:%M")}-{shift.end_time.strftime("%H:%M")} non coperto'
+                })
+    
+    # Widget data for team management quick access
+    team_management_data = {}
+    if current_user.can_view_team_management_widget():
+        # Get quick stats about team
+        if current_user.all_sedi:
+            total_team_members = User.query.filter_by(active=True).count()
+            pending_users = User.query.filter_by(active=False).count()
+        else:
+            total_team_members = User.query.filter_by(sede_id=current_user.sede_id, active=True).count()
+            pending_users = User.query.filter_by(sede_id=current_user.sede_id, active=False).count()
+        
+        team_management_data = {
+            'total_members': total_team_members,
+            'pending_users': pending_users,
+            'recent_additions': User.query.order_by(User.id.desc()).limit(3).all()
+        }
+
     return render_template('dashboard.html', 
                          stats=stats, 
                          team_stats=team_stats,
@@ -196,7 +266,10 @@ def dashboard():
                          current_time=current_time,
                          user_status=user_status,
                          today_events=today_events,
-                         today_work_hours=today_work_hours)
+                         today_work_hours=today_work_hours,
+                         daily_attendance_data=daily_attendance_data,
+                         shifts_coverage_alerts=shifts_coverage_alerts,
+                         team_management_data=team_management_data)
 
 @app.route('/dashboard_team')
 @login_required
