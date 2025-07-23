@@ -442,11 +442,14 @@ function updateShiftUser(shiftId, newUserId, shiftElement, modal) {
     });
 }
 
-// Event listener per i pulsanti di modifica
-$(document).on('click', '.edit-shift-btn', function(e) {
-    e.stopPropagation();
-    var shiftElement = $(this).closest('.editable-shift');
-    editShift(shiftElement);
+// Event listener principale per i click su edit
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('edit-shift-btn')) {
+        e.stopPropagation();
+        console.log('Edit button clicked');
+        var shiftElement = $(e.target).closest('.editable-shift');
+        editShift(shiftElement);
+    }
 });
 
 // Validazione form prima dell'invio
