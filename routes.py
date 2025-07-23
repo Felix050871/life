@@ -6050,6 +6050,7 @@ def presidio_coverage():
                 start_date=form.start_date.data,
                 end_date=form.end_date.data,
                 description=form.description.data,
+                sede_id=form.sede_id.data,
                 created_by=current_user.id
             )
             db.session.add(template)
@@ -6083,6 +6084,7 @@ def presidio_coverage_edit(template_id):
         form.start_date.data = current_template.start_date
         form.end_date.data = current_template.end_date
         form.description.data = current_template.description
+        form.sede_id.data = current_template.sede_id
     
     if request.method == 'POST':
         action = request.form.get('action', 'update')
@@ -6092,6 +6094,7 @@ def presidio_coverage_edit(template_id):
             current_template.start_date = form.start_date.data
             current_template.end_date = form.end_date.data
             current_template.description = form.description.data
+            current_template.sede_id = form.sede_id.data
             db.session.commit()
             flash(f'Template "{current_template.name}" aggiornato con successo', 'success')
             return redirect(url_for('presidio_coverage_edit', template_id=template_id))

@@ -822,6 +822,9 @@ class PresidioCoverageTemplateForm(FlaskForm):
         Length(max=100, message='Il nome non può superare 100 caratteri')
     ])
     
+    sede_id = SelectField('Sede Turni', coerce=lambda x: int(x) if x and x != '' and x != 'None' else None, 
+                         validators=[DataRequired(message='Seleziona una sede abilitata per i turni')])
+    
     start_date = DateField('Data Inizio Validità', validators=[
         DataRequired(message='La data di inizio validità è obbligatoria')
     ])
@@ -835,6 +838,14 @@ class PresidioCoverageTemplateForm(FlaskForm):
     ], render_kw={'rows': 3, 'placeholder': 'Descrizione opzionale del template'})
     
     submit = SubmitField('Salva Template')
+    
+    def __init__(self, *args, **kwargs):
+        super(PresidioCoverageTemplateForm, self).__init__(*args, **kwargs)
+        
+        # Popola solo le sedi abilitate per i turni
+        from models import Sede
+        sedi_turni = Sede.query.filter_by(active=True, tipologia='Turni').order_by(Sede.name).all()
+        self.sede_id.choices = [('', 'Seleziona una sede...')] + [(s.id, s.name) for s in sedi_turni]
 
     def validate_end_date(self, end_date):
         """Verifica che la data di fine sia successiva alla data di inizio"""

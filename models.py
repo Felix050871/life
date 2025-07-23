@@ -991,6 +991,7 @@ class PresidioCoverageTemplate(db.Model):
     start_date = db.Column(db.Date, nullable=False)   # Data inizio validità
     end_date = db.Column(db.Date, nullable=False)     # Data fine validità
     description = db.Column(db.String(200))           # Descrizione opzionale
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede associata
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
@@ -998,6 +999,7 @@ class PresidioCoverageTemplate(db.Model):
 
     # Relazioni
     creator = db.relationship('User', backref='presidio_coverage_templates')
+    sede = db.relationship('Sede', backref='presidio_templates')
     coverages = db.relationship('PresidioCoverage', backref='template', lazy='dynamic', cascade='all, delete-orphan')
 
     def get_period_display(self):

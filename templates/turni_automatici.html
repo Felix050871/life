@@ -104,8 +104,9 @@
                             <option value="{{ template.id }}" 
                                     data-start="{{ template.start_date.strftime('%d/%m/%Y') }}"
                                     data-end="{{ template.end_date.strftime('%d/%m/%Y') }}"
-                                    data-period="{{ template.get_period_display() }}">
-                                {{ template.name }} - {{ template.get_period_display() }}
+                                    data-period="{{ template.get_period_display() }}"
+                                    data-sede="{{ template.sede.name if template.sede else 'Nessuna sede' }}">
+                                {{ template.name }} - {{ template.sede.name if template.sede else 'Nessuna sede' }} - {{ template.get_period_display() }}
                             </option>
                             {% endfor %}
                         </select>

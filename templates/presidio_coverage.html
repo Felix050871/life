@@ -92,6 +92,11 @@
                         <div class="template-period">
                             <i class="fa fa-calendar me-1"></i>{{ template.get_period_display() }}
                         </div>
+                        {% if template.sede %}
+                        <div class="template-sede">
+                            <i class="fa fa-building me-1"></i>{{ template.sede.name }}
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <div class="quick-actions">
@@ -159,6 +164,11 @@
                     <div>
                         <h5 class="template-title">{{ current_template.name }}</h5>
                         <div class="template-period">{{ current_template.get_period_display() }}</div>
+                        {% if current_template.sede %}
+                        <div class="template-sede">
+                            <i class="fa fa-building me-1"></i>{{ current_template.sede.name }}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -186,6 +196,15 @@
                         {{ form.name.label(class="form-label") }}
                         {{ form.name(class="form-control") }}
                         {% for error in form.name.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.sede_id.label(class="form-label") }}
+                        {{ form.sede_id(class="form-select") }}
+                        <small class="form-text text-muted">{{ current_template.sede.name if current_template and current_template.sede else 'Nessuna sede associata' }}</small>
+                        {% for error in form.sede_id.errors %}
                         <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                     </div>
@@ -413,6 +432,14 @@
                         {{ form.name.label(class="form-label") }}
                         {{ form.name(class="form-control", required=True) }}
                         {% for error in form.name.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.sede_id.label(class="form-label") }}
+                        {{ form.sede_id(class="form-select", required=True) }}
+                        {% for error in form.sede_id.errors %}
                         <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                     </div>
