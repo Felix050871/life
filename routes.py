@@ -5975,7 +5975,7 @@ def view_turni_for_period():
 # NUOVO SISTEMA PRESIDIO - PACCHETTO COMPLETO
 # =====================================
 
-@app.route('/presidio_coverage')
+@app.route('/presidio_coverage', methods=['GET', 'POST'])
 @login_required
 def presidio_coverage():
     """Pagina principale per gestione copertura presidio - Sistema completo"""
