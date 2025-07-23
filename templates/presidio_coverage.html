@@ -199,71 +199,6 @@
         </div>
         
         <div class="col-md-8">
-            <!-- Coperture esistenti del template -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Coperture del Template</h5>
-                </div>
-                <div class="card-body">
-                    {% set coverages_by_day = {} %}
-                    {% for coverage in current_template.coverages.filter_by(is_active=True).order_by('day_of_week', 'start_time') %}
-                        {% if coverage.day_of_week not in coverages_by_day %}
-                            {% set _ = coverages_by_day.update({coverage.day_of_week: []}) %}
-                        {% endif %}
-                        {% set _ = coverages_by_day[coverage.day_of_week].append(coverage) %}
-                    {% endfor %}
-                    
-                    {% if coverages_by_day %}
-                    {% for day_num in range(7) %}
-                        {% if day_num in coverages_by_day %}
-                        <div class="coverage-day">
-                            <div class="coverage-day-header">
-                                <h6 class="day-name">{{ coverages_by_day[day_num][0].get_day_name() }}</h6>
-                                <small class="text-muted">{{ coverages_by_day[day_num]|length }} coperture</small>
-                            </div>
-                            
-                            <div class="coverage-slots">
-                                {% for coverage in coverages_by_day[day_num] %}
-                                <div class="coverage-slot time-slot">
-                                    <div>
-                                        <span class="time-range">{{ coverage.get_time_range() }}</span>
-                                        {% if coverage.get_break_range() %}
-                                        <div class="break-slot mt-2">
-                                            <small class="break-range">Pausa: {{ coverage.get_break_range() }}</small>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    <div>
-                                        <div class="roles-required">
-                                            <i class="fa fa-users me-1"></i>{{ coverage.get_required_roles()|join(', ') }}
-                                        </div>
-                                        {% if coverage.description %}
-                                        <small class="text-muted">{{ coverage.description }}</small>
-                                        {% endif %}
-                                    </div>
-                                    <div>
-                                        <form method="POST" action="{{ url_for('delete_presidio_coverage', coverage_id=coverage.id) }}" 
-                                              style="display: inline;" onsubmit="return confirmDelete('Elimina questa copertura?')">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina copertura">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                    {% else %}
-                    <div class="alert alert-info">
-                        <i class="fa fa-info-circle me-2"></i>
-                        Nessuna copertura definita per questo template. Usa il form sottostante per aggiungerne.
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            
             <!-- Form aggiungi nuova copertura -->
             <div class="coverage-form mt-4">
                 <h5 class="form-section-title">Aggiungi Nuova Copertura</h5>
@@ -362,6 +297,87 @@
                     </div>
                 </form>
             </div>
+            
+            <!-- Coperture esistenti del template -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fa fa-calendar-check me-2"></i>Coperture Definite</h5>
+                    <span class="badge bg-primary">{{ current_template.coverages.filter_by(is_active=True).count() }} coperture</span>
+                </div>
+                <div class="card-body">
+                    {% set coverages_by_day = {} %}
+                    {% for coverage in current_template.coverages.filter_by(is_active=True).order_by('day_of_week', 'start_time') %}
+                        {% if coverage.day_of_week not in coverages_by_day %}
+                            {% set _ = coverages_by_day.update({coverage.day_of_week: []}) %}
+                        {% endif %}
+                        {% set _ = coverages_by_day[coverage.day_of_week].append(coverage) %}
+                    {% endfor %}
+                    
+                    {% if coverages_by_day %}
+                    <div class="coverage-summary">
+                        {% for day_num in range(7) %}
+                            {% if day_num in coverages_by_day %}
+                            <div class="coverage-day-card">
+                                <div class="coverage-day-header">
+                                    <h6 class="day-name mb-0">
+                                        <i class="fa fa-calendar-day me-2"></i>{{ coverages_by_day[day_num][0].get_day_name() }}
+                                    </h6>
+                                    <span class="badge bg-secondary">{{ coverages_by_day[day_num]|length }} turni</span>
+                                </div>
+                                
+                                <div class="coverage-slots">
+                                    {% for coverage in coverages_by_day[day_num] %}
+                                    <div class="coverage-slot-improved">
+                                        <div class="slot-info">
+                                            <div class="time-display">
+                                                <i class="fa fa-clock me-1"></i>
+                                                <strong>{{ coverage.get_time_range() }}</strong>
+                                            </div>
+                                            {% if coverage.get_break_range() %}
+                                            <div class="break-display">
+                                                <i class="fa fa-coffee me-1"></i>
+                                                <small>Pausa: {{ coverage.get_break_range() }}</small>
+                                            </div>
+                                            {% endif %}
+                                            <div class="roles-display">
+                                                <i class="fa fa-users me-1"></i>
+                                                <span class="role-tags">
+                                                    {% for role in coverage.get_required_roles() %}
+                                                    <span class="badge bg-info me-1">{{ role }}</span>
+                                                    {% endfor %}
+                                                </span>
+                                            </div>
+                                            {% if coverage.description %}
+                                            <div class="description-display">
+                                                <i class="fa fa-info-circle me-1"></i>
+                                                <small class="text-muted">{{ coverage.description }}</small>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="slot-actions">
+                                            <form method="POST" action="{{ url_for('delete_presidio_coverage', coverage_id=coverage.id) }}" 
+                                                  style="display: inline;" onsubmit="return confirmDelete('Elimina questa copertura?')">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina copertura">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info text-center">
+                        <i class="fa fa-info-circle fa-2x mb-2"></i>
+                        <h6>Nessuna copertura definita</h6>
+                        <p class="mb-0">Usa il form sopra per aggiungere le prime coperture a questo template.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -431,6 +447,70 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Miglioramenti visualizzazione coperture */
+.coverage-day-card {
+    background: var(--bs-light);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.coverage-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.coverage-slot-improved {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: white;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.slot-info {
+    flex: 1;
+}
+
+.time-display {
+    color: var(--bs-primary);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.break-display {
+    color: var(--bs-warning);
+    margin-bottom: 0.25rem;
+}
+
+.roles-display {
+    margin-bottom: 0.25rem;
+}
+
+.role-tags .badge {
+    font-size: 0.7rem;
+}
+
+.description-display {
+    color: var(--bs-secondary);
+}
+
+.slot-actions {
+    margin-left: 1rem;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}

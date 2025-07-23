@@ -6105,24 +6105,6 @@ def presidio_coverage_edit(template_id):
             error_count = 0
             
             for day_of_week in coverage_form.days_of_week.data:
-                # Verifica sovrapposizioni esistenti
-                existing = PresidioCoverage.query.filter(
-                    PresidioCoverage.template_id == template_id,
-                    PresidioCoverage.day_of_week == day_of_week,
-                    PresidioCoverage.is_active == True
-                ).all()
-                
-                # Controlla sovrapposizioni orarie
-                overlaps = False
-                for existing_coverage in existing:
-                    if not (coverage_form.end_time.data <= existing_coverage.start_time or 
-                           coverage_form.start_time.data >= existing_coverage.end_time):
-                        overlaps = True
-                        break
-                
-                if overlaps:
-                    error_count += 1
-                    continue
                 
                 # Crea nuova copertura
                 new_coverage = PresidioCoverage(
