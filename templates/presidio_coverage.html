@@ -319,8 +319,15 @@
                 </form>
             </div>
             
-            <!-- Coperture esistenti del template -->
-            <div class="card mt-4">
+
+        </div>
+    </div>
+    
+    <!-- Coperture esistenti del template - Sezione separata per utilizzare tutta la larghezza -->
+    {% if current_template %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fa fa-calendar-check me-2"></i>Coperture Definite</h5>
                     <span class="badge bg-primary">{{ current_template.coverages.filter_by(is_active=True).count() }} coperture</span>
@@ -407,6 +414,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
     {% endif %}
 </div>
 
