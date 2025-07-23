@@ -106,18 +106,30 @@ def api_get_users_by_role():
     # Trova il template per ottenere la sede
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
     
-    # Trova tutti gli utenti con il ruolo specificato e abilitati per la sede del template
-    users = User.query.filter_by(role=role, is_active=True).all()
+    # Trova tutti gli utenti con il ruolo specificato e attivi
+    users = User.query.filter_by(role=role, active=True).all()
+    
+    print(f"API Debug: Found {len(users)} users with role '{role}' and active=True")
     
     # Filtra gli utenti abilitati per la sede del template
     available_users = []
     for user in users:
-        if user.all_sedi or user.sede == template.sede:
+        user_sede_name = user.sede.name if user.sede else "None" 
+        template_sede_name = template.sede.name if template.sede else "None"
+        print(f"API Debug: User {user.username} - sede: {user_sede_name}, template sede: {template_sede_name}, all_sedi: {user.all_sedi}")
+        
+        # Utente abilitato se: ha all_sedi=True OR sede coincide OR entrambi hanno sede=None
+        if user.all_sedi or user.sede == template.sede or (user.sede is None and template.sede is None):
             available_users.append({
                 'id': user.id,
                 'username': user.username,
                 'full_name': user.get_full_name()
             })
+            print(f"API Debug: User {user.username} ADDED to available list")
+        else:
+            print(f"API Debug: User {user.username} EXCLUDED (sede mismatch)")
+    
+    print(f"API Debug: Returning {len(available_users)} available users")
     
     return jsonify(available_users)
     
