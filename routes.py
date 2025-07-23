@@ -1363,7 +1363,10 @@ def get_shifts_for_template_api(template_id):
                 shifts_data = []
                 for shift in day_shifts:
                     shifts_data.append({
+                        'id': shift.id,
                         'user': shift.user.get_full_name(),
+                        'user_id': shift.user.id,
+                        'role': shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'Senza ruolo'),
                         'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
                     })
                 
