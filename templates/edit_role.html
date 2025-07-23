@@ -320,7 +320,10 @@
                                             {{ form.can_manage_reports() }}
                                             {{ form.can_manage_reports.label(class="form-check-label text-white") }}
                                         </div>
-
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_statistics() }}
+                                            {{ form.can_view_statistics.label(class="form-check-label text-white") }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -339,86 +342,6 @@
                                         <div class="form-check mb-2">
                                             {{ form.can_view_messages() }}
                                             {{ form.can_view_messages.label(class="form-check-label text-white") }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Nuova sezione: Widget Dashboard -->
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <h5 class="text-white"><i class="fas fa-home me-2"></i>Widget Dashboard</h5>
-                                <p class="text-muted small">Controllo granulare dei widget visibili nella home page dashboard</p>
-                            </div>
-
-                            <!-- Widget Statistiche Team -->
-                            <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-chart-bar me-1"></i>Statistiche</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="form-check mb-2">
-                                            {{ form.can_view_team_stats_widget() }}
-                                            {{ form.can_view_team_stats_widget.label(class="form-check-label text-white") }}
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            {{ form.can_view_daily_attendance_widget() }}
-                                            {{ form.can_view_daily_attendance_widget.label(class="form-check-label text-white") }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Widget Presenze -->
-                            <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-user-clock me-1"></i>Presenze</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="form-check mb-2">
-                                            {{ form.can_view_my_attendance_widget() }}
-                                            {{ form.can_view_my_attendance_widget.label(class="form-check-label text-white") }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Widget Gestione -->
-                            <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-users-cog me-1"></i>Gestione</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="form-check mb-2">
-                                            {{ form.can_view_team_management_widget() }}
-                                            {{ form.can_view_team_management_widget.label(class="form-check-label text-white") }}
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            {{ form.can_view_leave_requests_widget() }}
-                                            {{ form.can_view_leave_requests_widget.label(class="form-check-label text-white") }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Widget Turni e Reperibilità -->
-                            <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-calendar-check me-1"></i>Turni</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="form-check mb-2">
-                                            {{ form.can_view_shifts_coverage_widget() }}
-                                            {{ form.can_view_shifts_coverage_widget.label(class="form-check-label text-white") }}
-                                        </div>
-                                        <div class="form-check mb-2">
-                                            {{ form.can_view_reperibilita_widget() }}
-                                            {{ form.can_view_reperibilita_widget.label(class="form-check-label text-white") }}
                                         </div>
                                     </div>
                                 </div>

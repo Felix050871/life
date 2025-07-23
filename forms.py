@@ -671,19 +671,11 @@ class RoleForm(FlaskForm):
     # Report e statistiche
     can_view_reports = BooleanField('Visualizzare Report')
     can_manage_reports = BooleanField('Gestire Report')
+    can_view_statistics = BooleanField('Visualizzare Statistiche')
     
     # Messaggi
     can_send_messages = BooleanField('Inviare Messaggi')
     can_view_messages = BooleanField('Visualizzare Messaggi')
-    
-    # Widget Dashboard - Controllo granulare widget home page
-    can_view_team_stats_widget = BooleanField('Widget Statistiche Team')
-    can_view_my_attendance_widget = BooleanField('Widget Presenze Personali')
-    can_view_team_management_widget = BooleanField('Widget Gestione Team')
-    can_view_leave_requests_widget = BooleanField('Widget Richieste Ferie')
-    can_view_daily_attendance_widget = BooleanField('Widget Presenze Giornaliere')
-    can_view_shifts_coverage_widget = BooleanField('Widget Coperture Turni')
-    can_view_reperibilita_widget = BooleanField('Widget Reperibilità')
     
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
@@ -757,19 +749,11 @@ class RoleForm(FlaskForm):
             # Report e statistiche
             'can_view_reports': self.can_view_reports.data,
             'can_manage_reports': self.can_manage_reports.data,
+            'can_view_statistics': self.can_view_statistics.data,
             
             # Messaggi
             'can_send_messages': self.can_send_messages.data,
-            'can_view_messages': self.can_view_messages.data,
-            
-            # Widget Dashboard
-            'can_view_team_stats_widget': self.can_view_team_stats_widget.data,
-            'can_view_my_attendance_widget': self.can_view_my_attendance_widget.data,
-            'can_view_team_management_widget': self.can_view_team_management_widget.data,
-            'can_view_leave_requests_widget': self.can_view_leave_requests_widget.data,
-            'can_view_daily_attendance_widget': self.can_view_daily_attendance_widget.data,
-            'can_view_shifts_coverage_widget': self.can_view_shifts_coverage_widget.data,
-            'can_view_reperibilita_widget': self.can_view_reperibilita_widget.data
+            'can_view_messages': self.can_view_messages.data
         }
     
     def populate_permissions(self, permissions_dict):
@@ -800,8 +784,6 @@ class RoleForm(FlaskForm):
         # Reperibilità
         self.can_manage_reperibilita.data = permissions_dict.get('can_manage_reperibilita', False)
         self.can_view_reperibilita.data = permissions_dict.get('can_view_reperibilita', False)
-        self.can_manage_coverage.data = permissions_dict.get('can_manage_coverage', False)
-        self.can_view_coverage.data = permissions_dict.get('can_view_coverage', False)
         
         # Gestione presenze
         self.can_manage_attendance.data = permissions_dict.get('can_manage_attendance', False)
@@ -829,20 +811,11 @@ class RoleForm(FlaskForm):
         # Report e statistiche
         self.can_view_reports.data = permissions_dict.get('can_view_reports', False)
         self.can_manage_reports.data = permissions_dict.get('can_manage_reports', False)
-
+        self.can_view_statistics.data = permissions_dict.get('can_view_statistics', False)
         
         # Messaggi
         self.can_send_messages.data = permissions_dict.get('can_send_messages', False)
         self.can_view_messages.data = permissions_dict.get('can_view_messages', False)
-        
-        # Widget Dashboard
-        self.can_view_team_stats_widget.data = permissions_dict.get('can_view_team_stats_widget', False)
-        self.can_view_my_attendance_widget.data = permissions_dict.get('can_view_my_attendance_widget', False)
-        self.can_view_team_management_widget.data = permissions_dict.get('can_view_team_management_widget', False)
-        self.can_view_leave_requests_widget.data = permissions_dict.get('can_view_leave_requests_widget', False)
-        self.can_view_daily_attendance_widget.data = permissions_dict.get('can_view_daily_attendance_widget', False)
-        self.can_view_shifts_coverage_widget.data = permissions_dict.get('can_view_shifts_coverage_widget', False)
-        self.can_view_reperibilita_widget.data = permissions_dict.get('can_view_reperibilita_widget', False)
 
 
 # Form del pacchetto presidio integrati
