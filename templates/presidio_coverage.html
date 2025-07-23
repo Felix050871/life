@@ -1,180 +1,483 @@
 {% extends "base.html" %}
 
-{% block title %}Copertura Presidio - Gestione Presenze{% endblock %}
+{% block title %}Gestione Coperture Presidio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="fas fa-shield-alt me-2"></i>Copertura Presidio</h1>
-    <a href="{{ url_for('create_presidio_coverage') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i>Nuova Copertura
-    </a>
-</div>
+<div class="presidio-container">
+    <!-- Header della pagina -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fa fa-shield-alt me-2"></i>Gestione Coperture Presidio</h2>
+            <p class="text-muted mb-0">Sistema completo per la gestione delle coperture presidio basato su template</p>
+        </div>
+        <div class="quick-actions">
+            {% if not current_template %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTemplateModal">
+                <i class="fa fa-plus me-1"></i>Nuovo Template
+            </button>
+            {% endif %}
+            <a href="{{ url_for('view_presidi') }}" class="btn btn-info">
+                <i class="fa fa-eye me-1"></i>Vista Sola Lettura
+            </a>
+        </div>
+    </div>
 
-<!-- Lista Presidi Configurati -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-list me-2"></i>Presidi Configurati
-                </h5>
+    <!-- Filtri ricerca -->
+    {% if not current_template %}
+    <div class="search-filters">
+        <form method="GET" id="presidio-search-form">
+            <input type="hidden" name="search" value="1">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="template_name" class="form-label">Nome Template</label>
+                    <input type="text" class="form-control" id="template_name" name="template_name" 
+                           value="{{ request.args.get('template_name', '') }}" 
+                           placeholder="Cerca per nome">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="date_from" class="form-label">Data Da</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" 
+                           value="{{ request.args.get('date_from', '') }}">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="date_to" class="form-label">Data A</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" 
+                           value="{{ request.args.get('date_to', '') }}">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="is_active" class="form-label">Stato</label>
+                    <select class="form-select" id="is_active" name="is_active">
+                        <option value="">Tutti</option>
+                        <option value="true" {% if request.args.get('is_active') == 'true' %}selected{% endif %}>Attivo</option>
+                        <option value="false" {% if request.args.get('is_active') == 'false' %}selected{% endif %}>Inattivo</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-search"></i> Cerca
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="reset-filters">
+                            <i class="fa fa-times"></i> Reset
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                {% if presidio_groups %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Periodo Validità</th>
-                                    <th>Coperture</th>
-                                    <th>Creato da</th>
-                                    <th>Data Creazione</th>
-                                    <th>Azioni</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for period_key, presidio in presidio_groups.items() %}
-                                    <tr>
-                                        <td>
-                                            <span class="badge bg-primary">
-                                                {{ presidio.start_date.strftime('%d/%m/%Y') }} - {{ presidio.end_date.strftime('%d/%m/%Y') }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="small">
-                                                <strong>{{ presidio.coverages|length }} coperture</strong><br>
-                                                {% set days = [] %}
-                                                {% for coverage in presidio.coverages %}
-                                                    {% set day_name = coverage.get_day_name() %}
-                                                    {% if day_name not in days %}
-                                                        {% set _ = days.append(day_name) %}
-                                                    {% endif %}
-                                                {% endfor %}
-                                                <span class="text-muted">{{ days|join(', ') }}</span>
-                                            </div>
-                                        </td>
-                                        <td>{{ presidio.created_by }}</td>
-                                        <td>{{ presidio.created_at.strftime('%d/%m/%Y') }}</td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ url_for('view_presidio_detail', period_key=period_key) }}" 
-                                                   class="btn btn-outline-info" title="Visualizza Dettaglio">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <a href="{{ url_for('replica_presidio', period_key=period_key) }}" 
-                                                   class="btn btn-outline-success" title="Replica Presidio">
-                                                    <i class="fas fa-copy"></i>
-                                                </a>
-                                                <a href="{{ url_for('edit_presidio_coverage', coverage_id=presidio.coverages[0].id) }}" 
-                                                   class="btn btn-outline-primary" title="Modifica">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-outline-danger" 
-                                                        title="Elimina Presidio" 
-                                                        onclick="deletePresidio('{{ period_key }}', '{{ presidio.start_date.strftime('%d/%m/%Y') }} - {{ presidio.end_date.strftime('%d/%m/%Y') }}')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Lista template esistenti -->
+    {% if not current_template %}
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Template di Copertura Esistenti ({{ templates|length }})</h4>
+            
+            {% if templates %}
+            {% for template in templates %}
+            <div class="presidio-template-card">
+                <div class="template-header">
+                    <div>
+                        <h5 class="template-title">{{ template.name }}</h5>
+                        <div class="template-period">
+                            <i class="fa fa-calendar me-1"></i>{{ template.get_period_display() }}
+                        </div>
                     </div>
-                {% else %}
-                    <div class="text-center py-3">
-                        <i class="fas fa-info-circle text-muted me-2"></i>
-                        <span class="text-muted">Nessun presidio configurato</span>
+                    
+                    <div class="quick-actions">
+                        <a href="{{ url_for('presidio_detail', template_id=template.id) }}" 
+                           class="action-btn btn-view" title="Visualizza dettagli">
+                            <i class="fa fa-eye"></i>
+                        </a>
+                        <a href="{{ url_for('presidio_coverage_edit', template_id=template.id) }}" 
+                           class="action-btn btn-edit" title="Modifica template">
+                            <i class="fa fa-edit"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('delete_presidio_template', template_id=template.id) }}" 
+                              style="display: inline;" onsubmit="return confirmDelete('Sei sicuro di voler eliminare questo template?')">
+                            <button type="submit" class="action-btn btn-delete" title="Elimina template">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </form>
                     </div>
+                </div>
+                
+                <div class="template-stats">
+                    <div class="stat-item">
+                        <i class="fa fa-clock"></i>
+                        <span>{{ "%.1f"|format(template.get_total_hours_per_week()) }}h/settimana</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-calendar-day"></i>
+                        <span>{{ template.get_covered_days_count() }} giorni coperti</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-users"></i>
+                        <span>{{ template.get_involved_roles()|length }} ruoli coinvolti</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-list"></i>
+                        <span>{{ template.coverages.count() }} coperture</span>
+                    </div>
+                </div>
+                
+                {% if template.description %}
+                <div class="template-description">
+                    <i class="fa fa-info-circle me-1"></i>{{ template.description }}
+                </div>
                 {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle me-2"></i>
+                Nessun template di copertura trovato. Crea il primo template per iniziare.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Vista modifica template -->
+    {% if current_template %}
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Informazioni template -->
+            <div class="presidio-template-card">
+                <div class="template-header">
+                    <div>
+                        <h5 class="template-title">{{ current_template.name }}</h5>
+                        <div class="template-period">{{ current_template.get_period_display() }}</div>
+                    </div>
+                </div>
+                
+                <div class="template-stats">
+                    <div class="stat-item">
+                        <i class="fa fa-clock"></i>
+                        <span>{{ "%.1f"|format(current_template.get_total_hours_per_week()) }}h/settimana</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-calendar-day"></i>
+                        <span>{{ current_template.get_covered_days_count() }} giorni</span>
+                    </div>
+                </div>
+
+                {% if current_template.description %}
+                <p class="mb-3"><strong>Descrizione:</strong> {{ current_template.description }}</p>
+                {% endif %}
+                
+                <!-- Form modifica template -->
+                <form method="POST" class="needs-validation" novalidate>
+                    <input type="hidden" name="action" value="update">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control") }}
+                        {% for error in form.name.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            {{ form.start_date.label(class="form-label") }}
+                            {{ form.start_date(class="form-control") }}
+                            {% for error in form.start_date.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-6">
+                            {{ form.end_date.label(class="form-label") }}
+                            {{ form.end_date(class="form-control") }}
+                            {% for error in form.end_date.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control") }}
+                        {% for error in form.description.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save me-1"></i>Aggiorna Template
+                        </button>
+                        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left me-1"></i>Torna alla Lista
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <!-- Coperture esistenti del template -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Coperture del Template</h5>
+                </div>
+                <div class="card-body">
+                    {% set coverages_by_day = {} %}
+                    {% for coverage in current_template.coverages.filter_by(is_active=True).order_by('day_of_week', 'start_time') %}
+                        {% if coverage.day_of_week not in coverages_by_day %}
+                            {% set _ = coverages_by_day.update({coverage.day_of_week: []}) %}
+                        {% endif %}
+                        {% set _ = coverages_by_day[coverage.day_of_week].append(coverage) %}
+                    {% endfor %}
+                    
+                    {% if coverages_by_day %}
+                    {% for day_num in range(7) %}
+                        {% if day_num in coverages_by_day %}
+                        <div class="coverage-day">
+                            <div class="coverage-day-header">
+                                <h6 class="day-name">{{ coverages_by_day[day_num][0].get_day_name() }}</h6>
+                                <small class="text-muted">{{ coverages_by_day[day_num]|length }} coperture</small>
+                            </div>
+                            
+                            <div class="coverage-slots">
+                                {% for coverage in coverages_by_day[day_num] %}
+                                <div class="coverage-slot time-slot">
+                                    <div>
+                                        <span class="time-range">{{ coverage.get_time_range() }}</span>
+                                        {% if coverage.get_break_range() %}
+                                        <div class="break-slot mt-2">
+                                            <small class="break-range">Pausa: {{ coverage.get_break_range() }}</small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="roles-required">
+                                            <i class="fa fa-users me-1"></i>{{ coverage.get_required_roles()|join(', ') }}
+                                        </div>
+                                        {% if coverage.description %}
+                                        <small class="text-muted">{{ coverage.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <form method="POST" action="{{ url_for('delete_presidio_coverage', coverage_id=coverage.id) }}" 
+                                              style="display: inline;" onsubmit="return confirmDelete('Elimina questa copertura?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina copertura">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle me-2"></i>
+                        Nessuna copertura definita per questo template. Usa il form sottostante per aggiungerne.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Form aggiungi nuova copertura -->
+            <div class="coverage-form mt-4">
+                <h5 class="form-section-title">Aggiungi Nuova Copertura</h5>
+                
+                <form method="POST" class="needs-validation" novalidate>
+                    <input type="hidden" name="action" value="add_coverage">
+                    {{ coverage_form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-section">
+                                <h6 class="form-section-title">Giorni e Orari</h6>
+                                
+                                <div class="mb-3">
+                                    {{ coverage_form.days_of_week.label(class="form-label") }}
+                                    {{ coverage_form.days_of_week(class="form-select") }}
+                                    {% for error in coverage_form.days_of_week.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        {{ coverage_form.start_time.label(class="form-label") }}
+                                        {{ coverage_form.start_time(class="form-control") }}
+                                        {% for error in coverage_form.start_time.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-6">
+                                        {{ coverage_form.end_time.label(class="form-label") }}
+                                        {{ coverage_form.end_time(class="form-control") }}
+                                        {% for error in coverage_form.end_time.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-section">
+                                <h6 class="form-section-title">Ruoli e Risorse</h6>
+                                
+                                <div class="mb-3">
+                                    {{ coverage_form.required_roles.label(class="form-label") }}
+                                    {{ coverage_form.required_roles(class="form-select") }}
+                                    {% for error in coverage_form.required_roles.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ coverage_form.role_count.label(class="form-label") }}
+                                    {{ coverage_form.role_count(class="form-control") }}
+                                    {% for error in coverage_form.role_count.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pause opzionali -->
+                    <div class="form-section">
+                        <h6 class="form-section-title">Pause (Opzionale)</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                {{ coverage_form.break_start.label(class="form-label") }}
+                                {{ coverage_form.break_start(class="form-control") }}
+                            </div>
+                            <div class="col-6">
+                                {{ coverage_form.break_end.label(class="form-label") }}
+                                {{ coverage_form.break_end(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Descrizione e stato -->
+                    <div class="form-section">
+                        <div class="mb-3">
+                            {{ coverage_form.description.label(class="form-label") }}
+                            {{ coverage_form.description(class="form-control") }}
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            {{ coverage_form.is_active(class="form-check-input") }}
+                            {{ coverage_form.is_active.label(class="form-check-label") }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-grip">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-plus me-1"></i>Aggiungi Copertura
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card border-info">
-            <div class="card-header bg-info text-white">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-info-circle me-2"></i>Informazioni
-                </h6>
+<!-- Modal nuovo template -->
+<div class="modal fade" id="newTemplateModal" tabindex="-1" aria-labelledby="newTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newTemplateModalLabel">Nuovo Template Copertura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="card-body">
-                <ul class="mb-0">
-                    <li>Le coperture presidio definiscono quando ogni ruolo deve essere presente</li>
-                    <li>È possibile creare sovrapposizioni di orari e ruoli per garantire continuità</li>
-                    <li>Le coperture vengono utilizzate per generare automaticamente le turnazioni</li>
-                    <li>Solo utenti con permessi di gestione turni possono modificare le coperture</li>
-                </ul>
-            </div>
+            <form method="POST" class="needs-validation" novalidate>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="create">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control", required=True) }}
+                        {% for error in form.name.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            {{ form.start_date.label(class="form-label") }}
+                            {{ form.start_date(class="form-control", required=True) }}
+                            {% for error in form.start_date.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-6">
+                            {{ form.end_date.label(class="form-label") }}
+                            {{ form.end_date(class="form-control", required=True) }}
+                            {% for error in form.end_date.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control") }}
+                        {% for error in form.description.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-save me-1"></i>Crea Template
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="{{ url_for('static', filename='js/presidio_scripts.js') }}"></script>
 <script>
-function deletePresidio(periodKey, periodDisplay) {
-    showCustomConfirm(`Sei sicuro di voler eliminare il presidio ${periodDisplay}?\n\nQuesta azione eliminerà tutte le coperture associate a questo periodo.`, function() {
-        // Crea un form nascosto per inviare la richiesta POST
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `{{ url_for('delete_entire_presidio', period_key='PERIOD_KEY') }}`.replace('PERIOD_KEY', periodKey);
-        
-        // Aggiungi il CSRF token
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = 'csrf_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        form.appendChild(csrfToken);
-        
-        // Aggiungi al documento e invia
-        document.body.appendChild(form);
-        form.submit();
-    });
+// Conferma eliminazione
+function confirmDelete(message) {
+    return confirm(message || 'Sei sicuro di voler eliminare questo elemento?');
 }
 
-function showCustomConfirm(message, onConfirm) {
-    // Crea modal se non esiste
-    let modal = document.getElementById('customConfirmModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.innerHTML = `
-            <div class="modal fade" id="customConfirmModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Conferma</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body" id="customConfirmBody">
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                            <button type="button" class="btn btn-primary" id="customConfirmOk">Conferma</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal = document.getElementById('customConfirmModal');
+// Reset filtri
+document.addEventListener('DOMContentLoaded', function() {
+    const resetBtn = document.getElementById('reset-filters');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            const form = document.getElementById('presidio-search-form');
+            const inputs = form.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                if (input.name !== 'search') {
+                    input.value = '';
+                }
+            });
+            form.submit();
+        });
     }
-    
-    // Aggiorna messaggio
-    document.getElementById('customConfirmBody').textContent = message;
-    
-    // Gestisci conferma
-    const okBtn = document.getElementById('customConfirmOk');
-    okBtn.onclick = function() {
-        const modalInstance = bootstrap.Modal.getInstance(modal);
-        modalInstance.hide();
-        if (onConfirm) onConfirm();
-    };
-    
-    // Mostra modal
-    new bootstrap.Modal(modal).show();
-}
+});
 </script>
 {% endblock %}

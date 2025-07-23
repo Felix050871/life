@@ -1,184 +1,230 @@
 {% extends "base.html" %}
 
-{% block title %}Dettaglio Presidio - Gestione Presenze{% endblock %}
+{% block title %}Dettagli Template Presidio - {{ template.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
+{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>
-        <i class="fas fa-shield-alt me-2"></i>Dettaglio Presidio
-        <small class="text-muted">{{ start_date.strftime('%d/%m/%Y') }} - {{ end_date.strftime('%d/%m/%Y') }}</small>
-    </h1>
-    <div>
-        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left me-1"></i>Torna alla Lista
-        </a>
-        <a href="{{ url_for('edit_presidio_coverage', coverage_id=coverage_by_day[coverage_by_day.keys()|list|first][0].id) }}" 
-           class="btn btn-primary">
-            <i class="fas fa-edit me-1"></i>Modifica Presidio
-        </a>
+<div class="presidio-container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fa fa-shield-alt me-2"></i>{{ template.name }}</h2>
+            <p class="text-muted mb-0">{{ template.get_period_display() }}</p>
+        </div>
+        <div class="quick-actions">
+            <a href="{{ url_for('presidio_coverage_edit', template_id=template.id) }}" class="btn btn-primary">
+                <i class="fa fa-edit me-1"></i>Modifica
+            </a>
+            <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
+                <i class="fa fa-arrow-left me-1"></i>Torna alla Lista
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-calendar-week me-2"></i>Coperture Settimanali
-                </h5>
+    <!-- Informazioni template -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="presidio-template-card">
+                <div class="template-stats">
+                    <div class="stat-item">
+                        <i class="fa fa-clock"></i>
+                        <span>{{ "%.1f"|format(template.get_total_hours_per_week()) }} ore/settimana</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-calendar-day"></i>
+                        <span>{{ template.get_covered_days_count() }} giorni coperti</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-users"></i>
+                        <span>{{ template.get_involved_roles()|length }} ruoli coinvolti</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-list"></i>
+                        <span>{{ template.coverages.count() }} coperture totali</span>
+                    </div>
+                </div>
+                
+                {% if template.description %}
+                <div class="mt-3">
+                    <strong>Descrizione:</strong> {{ template.description }}
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <strong>Ruoli coinvolti:</strong>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        {% for role in template.get_involved_roles() %}
+                        <span class="badge bg-primary">{{ role }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                {% if coverage_by_day %}
-                    {% for day_num in range(7) %}
-                        {% set day_name = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'][day_num] %}
-                        <div class="row mb-4">
-                            <div class="col-md-2">
-                                <h6 class="text-primary fw-bold">{{ day_name }}</h6>
-                            </div>
-                            <div class="col-md-10">
-                                {% if day_num in coverage_by_day %}
-                                    {% for coverage in coverage_by_day[day_num] %}
-                                        <div class="card mb-2 border-start border-primary border-3">
-                                            <div class="card-body py-2">
-                                                <div class="row align-items-center">
-                                                    <div class="col-md-3">
-                                                        <span class="badge bg-secondary">
-                                                            {{ coverage.get_time_range() }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <span class="badge bg-info">
-                                                            {{ coverage.get_required_roles_display() }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        {% if coverage.description %}
-                                                            <small class="text-muted">{{ coverage.description }}</small>
-                                                        {% else %}
-                                                            <small class="text-muted">Nessuna descrizione</small>
-                                                        {% endif %}
-                                                    </div>
-                                                    <div class="col-md-2 text-end">
-                                                        <div class="btn-group btn-group-sm">
-                                                            <a href="{{ url_for('edit_presidio_coverage', coverage_id=coverage.id) }}" 
-                                                               class="btn btn-outline-primary btn-sm">
-                                                                <i class="fas fa-edit"></i>
-                                                            </a>
-                                                            <form method="POST" action="{{ url_for('delete_presidio_coverage', coverage_id=coverage.id) }}" 
-                                                                  class="d-inline confirm-form" data-message="Sei sicuro di voler eliminare questa copertura?">
-                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                                                <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                                    <i class="fas fa-trash"></i>
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Informazioni Template</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Creato da:</strong> {{ template.created_by_user.full_name if template.created_by_user else 'N/A' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Data creazione:</strong> {{ template.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Ultima modifica:</strong> {{ template.updated_at.strftime('%d/%m/%Y %H:%M') if template.updated_at else 'Mai' }}
+                    </div>
+                    <div>
+                        <strong>Stato:</strong>
+                        <span class="badge {% if template.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if template.is_active %}Attivo{% else %}Inattivo{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dettagli coperture per giorno -->
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Dettaglio Coperture per Giorno</h4>
+            
+            {% if coverages_by_day %}
+            {% for day_num in range(7) %}
+                {% if day_num in coverages_by_day %}
+                {% set day_name = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'][day_num] %}
+                <div class="coverage-day mb-4">
+                    <div class="coverage-day-header">
+                        <h5 class="day-name">{{ day_name }}</h5>
+                        <div class="d-flex align-items-center gap-3">
+                            <small class="text-muted">{{ coverages_by_day[day_num]|length }} coperture</small>
+                            <small class="text-muted">
+                                Totale: {{ "%.1f"|format(coverages_by_day[day_num]|sum(attribute='get_duration_hours')|float) }}h
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="coverage-slots">
+                        {% for coverage in coverages_by_day[day_num] %}
+                        <div class="coverage-slot time-slot">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="time-range">{{ coverage.get_time_range() }}</span>
+                                    <span class="badge bg-info">{{ "%.1f"|format(coverage.get_duration_hours()) }}h</span>
+                                </div>
+                                
+                                <!-- Informazioni sui ruoli -->
+                                <div class="roles-required mb-2">
+                                    <i class="fa fa-users me-1"></i>
+                                    <strong>Ruoli richiesti:</strong>
+                                    {% for role in coverage.get_required_roles() %}
+                                    <span class="badge bg-primary me-1">{{ role }}</span>
                                     {% endfor %}
-                                {% else %}
-                                    <div class="text-muted">
-                                        <i class="fas fa-info-circle me-1"></i>Nessuna copertura configurata
-                                    </div>
+                                    <span class="text-muted">({{ coverage.role_count }} persone)</span>
+                                </div>
+                                
+                                <!-- Pause se presenti -->
+                                {% if coverage.get_break_range() %}
+                                <div class="break-slot">
+                                    <small class="break-range">
+                                        <i class="fa fa-coffee me-1"></i>Pausa: {{ coverage.get_break_range() }}
+                                        ({{ "%.1f"|format(coverage.get_effective_work_hours()) }}h effettive)
+                                    </small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Descrizione se presente -->
+                                {% if coverage.description %}
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fa fa-info-circle me-1"></i>{{ coverage.description }}
+                                    </small>
+                                </div>
                                 {% endif %}
                             </div>
                         </div>
-                        {% if not loop.last %}<hr>{% endif %}
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted">Nessuna Copertura Configurata</h4>
-                        <p class="text-muted">Non ci sono coperture configurate per questo periodo.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card border-info">
-            <div class="card-header bg-info text-white">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-info-circle me-2"></i>Informazioni Presidio
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Periodo di Validità:</strong> {{ start_date.strftime('%d/%m/%Y') }} - {{ end_date.strftime('%d/%m/%Y') }}</p>
-                        <p><strong>Numero Coperture:</strong> {{ coverage_by_day.values()|list|length }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        {% if coverage_by_day %}
-                            {% set sample_coverage = coverage_by_day[coverage_by_day.keys()|list|first][0] %}
-                            <p><strong>Creato da:</strong> {{ sample_coverage.creator.get_full_name() }}</p>
-                            <p><strong>Data Creazione:</strong> {{ sample_coverage.created_at.strftime('%d/%m/%Y alle %H:%M') }}</p>
-                        {% endif %}
+                        {% endfor %}
                     </div>
                 </div>
+                {% endif %}
+            {% endfor %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle me-2"></i>
+                Nessuna copertura definita per questo template.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Riepilogo settimanale -->
+    {% if coverages_by_day %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4 class="mb-3">Riepilogo Settimanale</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Giorno</th>
+                            <th>Coperture</th>
+                            <th>Ore Totali</th>
+                            <th>Ore Effettive</th>
+                            <th>Ruoli Coinvolti</th>
+                            <th>Persone Richieste</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day_num in range(7) %}
+                        {% set day_name = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'][day_num] %}
+                        <tr>
+                            <td>{{ day_name }}</td>
+                            {% if day_num in coverages_by_day %}
+                            <td>{{ coverages_by_day[day_num]|length }}</td>
+                            <td>{{ "%.1f"|format(coverages_by_day[day_num]|sum(attribute='get_duration_hours')|float) }}h</td>
+                            <td>{{ "%.1f"|format(coverages_by_day[day_num]|sum(attribute='get_effective_work_hours')|float) }}h</td>
+                            <td>
+                                {% set day_roles = [] %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                    {% for role in coverage.get_required_roles() %}
+                                        {% if role not in day_roles %}
+                                            {% set _ = day_roles.append(role) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ day_roles|length }}
+                            </td>
+                            <td>{{ coverages_by_day[day_num]|sum(attribute='role_count') }}</td>
+                            {% else %}
+                            <td colspan="5" class="text-muted text-center">Nessuna copertura</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-info">
+                            <th>Totale Settimana</th>
+                            <th>{{ template.coverages.count() }}</th>
+                            <th>{{ "%.1f"|format(template.get_total_hours_per_week()) }}h</th>
+                            <th>{{ "%.1f"|format(template.get_total_effective_hours_per_week()) }}h</th>
+                            <th>{{ template.get_involved_roles()|length }}</th>
+                            <th>{{ template.get_total_people_required() }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script>
-// Gestione modal di conferma personalizzato per evitare "una pagina incorporata"
-document.addEventListener('DOMContentLoaded', function() {
-    // Intercetta tutti i form con class="confirm-form"
-    document.querySelectorAll('.confirm-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const message = this.dataset.message || 'Sei sicuro di voler procedere?';
-            showCustomConfirm(message, () => {
-                this.submit();
-            });
-        });
-    });
-});
-
-function showCustomConfirm(message, onConfirm) {
-    let modal = document.getElementById('customConfirmModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.innerHTML = `
-            <div class="modal fade" id="customConfirmModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Conferma</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body" id="customConfirmBody">
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                            <button type="button" class="btn btn-primary" id="customConfirmOk">Conferma</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal = document.getElementById('customConfirmModal');
-    }
-    
-    document.getElementById('customConfirmBody').textContent = message;
-    
-    const okBtn = document.getElementById('customConfirmOk');
-    okBtn.onclick = function() {
-        const modalInstance = bootstrap.Modal.getInstance(modal);
-        modalInstance.hide();
-        if (onConfirm) onConfirm();
-    };
-    
-    new bootstrap.Modal(modal).show();
-}
-</script>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/presidio_scripts.js') }}"></script>
 {% endblock %}

@@ -6,12 +6,13 @@ import re
 import qrcode
 from io import BytesIO, StringIO
 import base64
+import json
 from defusedcsv import csv
 from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from sqlalchemy.orm import joinedload
-from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, italian_now
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm
+from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions
 
 # Define require_login decorator
@@ -6011,4 +6012,311 @@ def view_turni_for_period():
                          accessible_sedi=accessible_sedi,
                          total_turni=len(turni_periodo),
                          today=date.today())
+
+
+# =====================================
+# NUOVO SISTEMA PRESIDIO - PACCHETTO COMPLETO
+# =====================================
+
+@app.route('/presidio_coverage')
+@login_required
+def presidio_coverage():
+    """Pagina principale per gestione copertura presidio - Sistema completo"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per gestire coperture presidio', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Ottieni tutti i template di copertura presidio ordinati per data creazione
+    templates = get_active_presidio_templates()
+    
+    # Form per nuovo template
+    form = PresidioCoverageTemplateForm()
+    search_form = PresidioCoverageSearchForm()
+    current_template = None
+    
+    # Applica filtri di ricerca se presenti
+    if request.args.get('search'):
+        query = PresidioCoverageTemplate.query.filter_by(is_active=True)
+        
+        template_name = request.args.get('template_name')
+        if template_name:
+            query = query.filter(PresidioCoverageTemplate.name.ilike(f"%{template_name}%"))
+        
+        date_from = request.args.get('date_from')
+        if date_from:
+            try:
+                date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(PresidioCoverageTemplate.start_date >= date_from)
+            except ValueError:
+                pass
+        
+        date_to = request.args.get('date_to')
+        if date_to:
+            try:
+                date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(PresidioCoverageTemplate.end_date <= date_to)
+            except ValueError:
+                pass
+        
+        is_active = request.args.get('is_active')
+        if is_active:
+            active_bool = is_active == 'true'
+            query = query.filter(PresidioCoverageTemplate.is_active == active_bool)
+        
+        templates = query.order_by(PresidioCoverageTemplate.created_at.desc()).all()
+    
+    # Gestisci creazione/modifica template
+    if request.method == 'POST':
+        action = request.form.get('action', 'create')
+        
+        if action == 'create' and form.validate_on_submit():
+            template = PresidioCoverageTemplate(
+                name=form.name.data,
+                start_date=form.start_date.data,
+                end_date=form.end_date.data,
+                description=form.description.data,
+                created_by=current_user.id
+            )
+            db.session.add(template)
+            db.session.commit()
+            flash(f'Template "{template.name}" creato con successo', 'success')
+            return redirect(url_for('presidio_coverage_edit', template_id=template.id))
+    
+    return render_template('presidio_coverage.html', 
+                         templates=templates,
+                         form=form,
+                         search_form=search_form,
+                         current_template=current_template)
+
+@app.route('/presidio_coverage_edit/<int:template_id>', methods=['GET', 'POST'])
+@login_required
+def presidio_coverage_edit(template_id):
+    """Modifica template esistente - Sistema completo"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per gestire coperture presidio', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    current_template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    templates = get_active_presidio_templates()
+    
+    # Pre-popola form con dati template
+    form = PresidioCoverageTemplateForm()
+    coverage_form = PresidioCoverageForm()
+    
+    if request.method == 'GET':
+        form.name.data = current_template.name
+        form.start_date.data = current_template.start_date
+        form.end_date.data = current_template.end_date
+        form.description.data = current_template.description
+    
+    if request.method == 'POST':
+        action = request.form.get('action', 'update')
+        
+        if action == 'update' and form.validate_on_submit():
+            current_template.name = form.name.data
+            current_template.start_date = form.start_date.data
+            current_template.end_date = form.end_date.data
+            current_template.description = form.description.data
+            db.session.commit()
+            flash(f'Template "{current_template.name}" aggiornato con successo', 'success')
+            return redirect(url_for('presidio_coverage_edit', template_id=template_id))
+        
+        elif action == 'add_coverage' and coverage_form.validate_on_submit():
+            # Aggiungi nuove coperture per i giorni selezionati
+            success_count = 0
+            error_count = 0
+            
+            for day_of_week in coverage_form.days_of_week.data:
+                # Verifica sovrapposizioni esistenti
+                existing = PresidioCoverage.query.filter(
+                    PresidioCoverage.template_id == template_id,
+                    PresidioCoverage.day_of_week == day_of_week,
+                    PresidioCoverage.is_active == True
+                ).all()
+                
+                # Controlla sovrapposizioni orarie
+                overlaps = False
+                for existing_coverage in existing:
+                    if not (coverage_form.end_time.data <= existing_coverage.start_time or 
+                           coverage_form.start_time.data >= existing_coverage.end_time):
+                        overlaps = True
+                        break
+                
+                if overlaps:
+                    error_count += 1
+                    continue
+                
+                # Crea nuova copertura
+                new_coverage = PresidioCoverage(
+                    template_id=template_id,
+                    day_of_week=day_of_week,
+                    start_time=coverage_form.start_time.data,
+                    end_time=coverage_form.end_time.data,
+                    required_roles=json.dumps(coverage_form.required_roles.data),
+                    role_count=coverage_form.role_count.data,
+                    description=coverage_form.description.data,
+                    is_active=coverage_form.is_active.data,
+                    created_by=current_user.id
+                )
+                
+                # Gestione pause opzionali
+                if coverage_form.break_start.data and coverage_form.break_end.data:
+                    try:
+                        new_coverage.break_start = datetime.strptime(coverage_form.break_start.data, '%H:%M').time()
+                        new_coverage.break_end = datetime.strptime(coverage_form.break_end.data, '%H:%M').time()
+                    except ValueError:
+                        pass  # Ignora errori di parsing per campi opzionali
+                
+                db.session.add(new_coverage)
+                success_count += 1
+            
+            db.session.commit()
+            
+            if success_count > 0:
+                flash(f'{success_count} coperture aggiunte con successo', 'success')
+            if error_count > 0:
+                flash(f'{error_count} coperture non aggiunte per sovrapposizioni orarie', 'warning')
+            
+            return redirect(url_for('presidio_coverage_edit', template_id=template_id))
+    
+    return render_template('presidio_coverage.html', 
+                         templates=templates,
+                         form=form,
+                         coverage_form=coverage_form,
+                         current_template=current_template)
+
+@app.route('/presidio_detail/<int:template_id>')
+@login_required
+def presidio_detail(template_id):
+    """Visualizza dettagli di un template di copertura presidio"""
+    if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
+        flash('Non hai i permessi per visualizzare le coperture presidio', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    
+    # Organizza le coperture per giorno della settimana
+    coverages_by_day = {}
+    for coverage in template.coverages.filter_by(is_active=True).order_by(PresidioCoverage.start_time):
+        day = coverage.day_of_week
+        if day not in coverages_by_day:
+            coverages_by_day[day] = []
+        coverages_by_day[day].append(coverage)
+    
+    return render_template('presidio_detail.html', 
+                         template=template,
+                         coverages_by_day=coverages_by_day)
+
+@app.route('/view_presidi')
+@login_required
+def view_presidi():
+    """Visualizzazione sola lettura dei presidi configurati"""
+    if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
+        flash('Non hai i permessi per visualizzare i presidi', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    templates = get_active_presidio_templates()
+    
+    return render_template('view_presidi.html', templates=templates)
+
+@app.route('/api/presidio_coverage/<int:template_id>')
+@login_required
+def api_presidio_coverage_new(template_id):
+    """API per ottenere dettagli copertura presidio - Sistema completo"""
+    if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
+        return jsonify({'success': False, 'error': 'Permessi insufficienti'})
+    
+    template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    
+    coverages = []
+    for coverage in template.coverages.filter_by(is_active=True).order_by(
+        PresidioCoverage.day_of_week, PresidioCoverage.start_time
+    ):
+        coverage_data = {
+            'id': coverage.id,
+            'day_of_week': coverage.day_of_week,
+            'day_name': coverage.get_day_name(),
+            'start_time': coverage.start_time.strftime('%H:%M'),
+            'end_time': coverage.end_time.strftime('%H:%M'),
+            'time_range': coverage.get_time_range(),
+            'required_roles': coverage.get_required_roles(),
+            'role_count': coverage.role_count,
+            'description': coverage.description,
+            'duration_hours': coverage.get_duration_hours()
+        }
+        
+        # Aggiungi info pause se presenti
+        if coverage.break_start and coverage.break_end:
+            coverage_data['break_start'] = coverage.break_start.strftime('%H:%M')
+            coverage_data['break_end'] = coverage.break_end.strftime('%H:%M')
+            coverage_data['break_range'] = coverage.get_break_range()
+            coverage_data['effective_work_hours'] = coverage.get_effective_work_hours()
+        
+        coverages.append(coverage_data)
+    
+    return jsonify({
+        'success': True,
+        'template': {
+            'id': template.id,
+            'name': template.name,
+            'start_date': template.start_date.strftime('%Y-%m-%d'),
+            'end_date': template.end_date.strftime('%Y-%m-%d'),
+            'period_display': template.get_period_display(),
+            'description': template.description,
+            'total_hours_per_week': template.get_total_hours_per_week(),
+            'covered_days_count': template.get_covered_days_count(),
+            'involved_roles': template.get_involved_roles()
+        },
+        'coverages': coverages
+    })
+
+@app.route('/delete_presidio_template/<int:template_id>', methods=['POST'])
+@login_required
+def delete_presidio_template(template_id):
+    """Elimina template di copertura presidio"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per eliminare template presidio', 'danger')
+        return redirect(url_for('presidio_coverage'))
+    
+    template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    
+    # Controllo di sicurezza: solo il creatore o admin può eliminare
+    if template.created_by != current_user.id and not current_user.has_role('Amministratore'):
+        flash('Puoi eliminare solo template che hai creato', 'danger')
+        return redirect(url_for('presidio_coverage'))
+    
+    template_name = template.name
+    
+    # Disattiva invece di eliminare per preservare riferimenti
+    template.is_active = False
+    for coverage in template.coverages:
+        coverage.is_active = False
+    
+    db.session.commit()
+    flash(f'Template "{template_name}" eliminato con successo', 'success')
+    
+    return redirect(url_for('presidio_coverage'))
+
+@app.route('/delete_presidio_coverage/<int:coverage_id>', methods=['POST'])
+@login_required
+def delete_presidio_coverage(coverage_id):
+    """Elimina singola copertura presidio"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per eliminare coperture presidio', 'danger')
+        return redirect(url_for('presidio_coverage'))
+    
+    coverage = PresidioCoverage.query.get_or_404(coverage_id)
+    template_id = coverage.template_id
+    
+    # Controllo di sicurezza
+    if coverage.created_by != current_user.id and not current_user.has_role('Amministratore'):
+        flash('Puoi eliminare solo coperture che hai creato', 'danger')
+        return redirect(url_for('presidio_coverage_edit', template_id=template_id))
+    
+    # Disattiva invece di eliminare
+    coverage.is_active = False
+    db.session.commit()
+    
+    flash('Copertura eliminata con successo', 'success')
+    return redirect(url_for('presidio_coverage_edit', template_id=template_id))
 

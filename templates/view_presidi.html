@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Visualizzazione Presidi{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="presidio-container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fa fa-eye me-2"></i>Visualizzazione Presidi</h2>
+            <p class="text-muted mb-0">Vista sola lettura di tutti i presidi configurati</p>
+        </div>
+        <div class="quick-actions">
+            {% if current_user.can_manage_shifts() %}
+            <a href="{{ url_for('presidio_coverage') }}" class="btn btn-primary">
+                <i class="fa fa-edit me-1"></i>Gestione Completa
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Lista template -->
+    <div class="row">
+        <div class="col-12">
+            {% if templates %}
+            <div class="mb-3">
+                <h4>Template di Presidio Attivi ({{ templates|length }})</h4>
+            </div>
+            
+            {% for template in templates %}
+            <div class="presidio-template-card mb-4">
+                <!-- Header template -->
+                <div class="template-header">
+                    <div>
+                        <h5 class="template-title">{{ template.name }}</h5>
+                        <div class="template-period">
+                            <i class="fa fa-calendar me-1"></i>{{ template.get_period_display() }}
+                        </div>
+                    </div>
+                    <div class="quick-actions">
+                        <a href="{{ url_for('presidio_detail', template_id=template.id) }}" 
+                           class="action-btn btn-view" title="Visualizza dettagli completi">
+                            <i class="fa fa-eye"></i> Dettagli
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Statistiche template -->
+                <div class="template-stats">
+                    <div class="stat-item">
+                        <i class="fa fa-clock"></i>
+                        <span>{{ "%.1f"|format(template.get_total_hours_per_week()) }}h/settimana</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-calendar-day"></i>
+                        <span>{{ template.get_covered_days_count() }} giorni coperti</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-users"></i>
+                        <span>{{ template.get_involved_roles()|length }} ruoli</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-list"></i>
+                        <span>{{ template.coverages.count() }} coperture</span>
+                    </div>
+                </div>
+                
+                <!-- Descrizione se presente -->
+                {% if template.description %}
+                <div class="template-description mb-3">
+                    <i class="fa fa-info-circle me-1"></i>{{ template.description }}
+                </div>
+                {% endif %}
+                
+                <!-- Anteprima coperture per giorno -->
+                <div class="coverage-preview">
+                    <h6 class="mb-3">Coperture per Giorno:</h6>
+                    
+                    {% set coverages_by_day = {} %}
+                    {% for coverage in template.coverages.filter_by(is_active=True).order_by('day_of_week', 'start_time') %}
+                        {% if coverage.day_of_week not in coverages_by_day %}
+                            {% set _ = coverages_by_day.update({coverage.day_of_week: []}) %}
+                        {% endif %}
+                        {% set _ = coverages_by_day[coverage.day_of_week].append(coverage) %}
+                    {% endfor %}
+                    
+                    {% if coverages_by_day %}
+                    <div class="row">
+                        {% for day_num in range(7) %}
+                        {% set day_name = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'][day_num] %}
+                        <div class="col-md-1 col-sm-2 col-3 mb-2">
+                            <div class="text-center">
+                                <div class="fw-bold">{{ day_name }}</div>
+                                {% if day_num in coverages_by_day %}
+                                <div class="badge bg-success">{{ coverages_by_day[day_num]|length }}</div>
+                                <div class="small text-muted">
+                                    {{ "%.1f"|format(coverages_by_day[day_num]|sum(attribute='get_duration_hours')|float) }}h
+                                </div>
+                                {% else %}
+                                <div class="badge bg-light text-muted">0</div>
+                                <div class="small text-muted">-</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Dettaglio orari per giorni con coperture -->
+                    <div class="mt-3">
+                        {% for day_num in range(7) %}
+                        {% if day_num in coverages_by_day %}
+                        {% set day_name = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'][day_num] %}
+                        <div class="coverage-day-compact mb-2">
+                            <strong>{{ day_name }}:</strong>
+                            {% for coverage in coverages_by_day[day_num] %}
+                            <span class="time-slot-compact">
+                                {{ coverage.get_time_range() }}
+                                {% if coverage.get_required_roles() %}
+                                ({{ coverage.get_required_roles()|join(', ') }})
+                                {% endif %}
+                            </span>
+                            {% if not loop.last %} | {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fa fa-exclamation-triangle me-1"></i>
+                        Nessuna copertura definita per questo template.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Ruoli coinvolti -->
+                <div class="mt-3">
+                    <strong>Ruoli coinvolti:</strong>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        {% for role in template.get_involved_roles() %}
+                        <span class="badge bg-primary">{{ role }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle me-2"></i>
+                Nessun template di presidio configurato al momento.
+                {% if current_user.can_manage_shifts() %}
+                <a href="{{ url_for('presidio_coverage') }}" class="alert-link">Vai alla gestione completa</a> per crearne uno.
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Riepilogo globale -->
+    {% if templates %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Riepilogo Globale Presidi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="h4 text-primary">{{ templates|length }}</div>
+                            <div class="text-muted">Template Attivi</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-success">{{ templates|sum(attribute='coverages.count')|int }}</div>
+                            <div class="text-muted">Coperture Totali</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-info">{{ "%.1f"|format(templates|sum(attribute='get_total_hours_per_week')|float) }}</div>
+                            <div class="text-muted">Ore Totali/Settimana</div>
+                        </div>
+                        <div class="col-md-3">
+                            {% set all_roles = [] %}
+                            {% for template in templates %}
+                                {% for role in template.get_involved_roles() %}
+                                    {% if role not in all_roles %}
+                                        {% set _ = all_roles.append(role) %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                            <div class="h4 text-warning">{{ all_roles|length }}</div>
+                            <div class="text-muted">Ruoli Coinvolti</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/presidio_scripts.js') }}"></script>
+<style>
+/* Stili aggiuntivi per la vista compatta */
+.coverage-day-compact {
+    padding: 0.5rem;
+    background: var(--bs-light);
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.time-slot-compact {
+    background: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin: 0 0.25rem;
+    display: inline-block;
+    border: 1px solid var(--bs-border-color);
+}
+
+.coverage-preview .badge {
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}

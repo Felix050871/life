@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, SelectMultipleField, FloatField, DateField, TimeField, TextAreaField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SelectField, SelectMultipleField, FloatField, DateField, TimeField, TextAreaField, SubmitField, BooleanField, IntegerField
 from wtforms.validators import DataRequired, Email, Length, NumberRange, ValidationError, EqualTo, Optional
 from models import User, Sede, UserRole
 
@@ -812,3 +812,178 @@ class RoleForm(FlaskForm):
         # Messaggi
         self.can_send_messages.data = permissions_dict.get('can_send_messages', False)
         self.can_view_messages.data = permissions_dict.get('can_view_messages', False)
+
+
+# Form del pacchetto presidio integrati
+class PresidioCoverageTemplateForm(FlaskForm):
+    """Form per creare/modificare il template di copertura presidio"""
+    name = StringField('Nome Template', validators=[
+        DataRequired(message='Il nome del template è obbligatorio'), 
+        Length(max=100, message='Il nome non può superare 100 caratteri')
+    ])
+    
+    start_date = DateField('Data Inizio Validità', validators=[
+        DataRequired(message='La data di inizio validità è obbligatoria')
+    ])
+    
+    end_date = DateField('Data Fine Validità', validators=[
+        DataRequired(message='La data di fine validità è obbligatoria')
+    ])
+    
+    description = TextAreaField('Descrizione', validators=[
+        Length(max=200, message='La descrizione non può superare 200 caratteri')
+    ], render_kw={'rows': 3, 'placeholder': 'Descrizione opzionale del template'})
+    
+    submit = SubmitField('Salva Template')
+
+    def validate_end_date(self, end_date):
+        """Verifica che la data di fine sia successiva alla data di inizio"""
+        if end_date.data and self.start_date.data:
+            if end_date.data < self.start_date.data:
+                raise ValidationError('La data di fine validità deve essere successiva alla data di inizio')
+            
+            # Verifica che non sia troppo nel passato
+            from datetime import date
+            if end_date.data < date.today():
+                raise ValidationError('La data di fine validità non può essere nel passato')
+
+    def validate_start_date(self, start_date):
+        """Verifica che la data di inizio non sia troppo nel passato"""
+        if start_date.data:
+            from datetime import date, timedelta
+            # Permetti massimo 30 giorni nel passato
+            min_date = date.today() - timedelta(days=30)
+            if start_date.data < min_date:
+                raise ValidationError('La data di inizio non può essere più di 30 giorni nel passato')
+
+class PresidioCoverageForm(FlaskForm):
+    """Form per aggiungere/modificare singole coperture presidio"""
+    days_of_week = SelectMultipleField('Giorni della Settimana', choices=[
+        (0, 'Lunedì'),
+        (1, 'Martedì'),
+        (2, 'Mercoledì'),
+        (3, 'Giovedì'),
+        (4, 'Venerdì'),
+        (5, 'Sabato'),
+        (6, 'Domenica')
+    ], coerce=int, validators=[
+        DataRequired(message='Seleziona almeno un giorno della settimana')
+    ], render_kw={
+        'class': 'form-select', 
+        'size': '7', 
+        'multiple': True,
+        'data-placeholder': 'Seleziona uno o più giorni'
+    })
+    
+    start_time = TimeField('Ora Inizio', validators=[
+        DataRequired(message='L\'ora di inizio è obbligatoria')
+    ])
+    
+    end_time = TimeField('Ora Fine', validators=[
+        DataRequired(message='L\'ora di fine è obbligatoria')
+    ])
+    
+    required_roles = SelectMultipleField('Ruoli Richiesti', choices=[
+        ('Amministratore', 'Amministratore'),
+        ('Responsabile', 'Responsabile'),
+        ('Supervisore', 'Supervisore'),
+        ('Operatore', 'Operatore'),
+        ('Ospite', 'Ospite')
+    ], validators=[
+        DataRequired(message='Seleziona almeno un ruolo richiesto')
+    ], render_kw={
+        'class': 'form-select',
+        'multiple': True,
+        'data-placeholder': 'Seleziona uno o più ruoli'
+    })
+    
+    role_count = IntegerField('Numero Persone per Ruolo', validators=[
+        DataRequired(message='Il numero di persone è obbligatorio'),
+        NumberRange(min=1, max=10, message='Il numero deve essere tra 1 e 10')
+    ], default=1, render_kw={
+        'class': 'form-control',
+        'min': 1,
+        'max': 10
+    })
+    
+    # Campi per la pausa - stringhe per permettere valori vuoti
+    break_start = StringField('Ora Inizio Pausa', render_kw={
+        'type': 'time', 
+        'placeholder': 'Opzionale',
+        'class': 'form-control'
+    })
+    
+    break_end = StringField('Ora Fine Pausa', render_kw={
+        'type': 'time', 
+        'placeholder': 'Opzionale',
+        'class': 'form-control'
+    })
+    
+    description = StringField('Descrizione', validators=[
+        Length(max=200, message='La descrizione non può superare 200 caratteri')
+    ], render_kw={
+        'class': 'form-control',
+        'placeholder': 'Descrizione opzionale della copertura'
+    })
+    
+    is_active = BooleanField('Attiva', default=True)
+    
+    # Pulsanti di azione
+    submit = SubmitField('Salva Copertura')
+
+    def validate_end_time(self, end_time):
+        """Verifica che l'ora di fine sia successiva all'ora di inizio"""
+        if end_time.data and self.start_time.data:
+            if end_time.data <= self.start_time.data:
+                raise ValidationError('L\'ora di fine deve essere successiva all\'ora di inizio')
+            
+            # Verifica che non sia più di 24 ore (turni molto lunghi)
+            from datetime import datetime, timedelta
+            start_dt = datetime.combine(datetime.today(), self.start_time.data)
+            end_dt = datetime.combine(datetime.today(), end_time.data)
+            
+            # Se end_time è prima di start_time, assume sia il giorno dopo
+            if end_dt <= start_dt:
+                end_dt += timedelta(days=1)
+            
+            duration = (end_dt - start_dt).total_seconds() / 3600
+            if duration > 16:  # Massimo 16 ore consecutive
+                raise ValidationError('La copertura non può durare più di 16 ore consecutive')
+
+class PresidioCoverageSearchForm(FlaskForm):
+    """Form per ricerca e filtri delle coperture presidio"""
+    template_name = StringField('Nome Template', render_kw={
+        'placeholder': 'Cerca per nome template',
+        'class': 'form-control'
+    })
+    
+    date_from = DateField('Data Da', render_kw={
+        'class': 'form-control'
+    })
+    
+    date_to = DateField('Data A', render_kw={
+        'class': 'form-control'
+    })
+    
+    day_of_week = SelectField('Giorno Settimana', choices=[
+        ('', 'Tutti i giorni'),
+        (0, 'Lunedì'),
+        (1, 'Martedì'),
+        (2, 'Mercoledì'),
+        (3, 'Giovedì'),
+        (4, 'Venerdì'),
+        (5, 'Sabato'),
+        (6, 'Domenica')
+    ], coerce=lambda x: int(x) if x else None, render_kw={
+        'class': 'form-select'
+    })
+    
+    is_active = SelectField('Stato', choices=[
+        ('', 'Tutti'),
+        ('true', 'Attivo'),
+        ('false', 'Inattivo')
+    ], render_kw={
+        'class': 'form-select'
+    })
+    
+    submit = SubmitField('Cerca')

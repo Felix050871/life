@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Copertura Presidio - {{ super() }}{% endblock %}
+
+{% block head %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<style>
+.coverage-day-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+}
+
+.coverage-day-header {
+    background-color: #f8f9fa;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+}
+
+.coverage-time-slot {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.coverage-time-slot:last-child {
+    border-bottom: none;
+}
+
+.role-badge {
+    margin: 0.125rem;
+}
+
+.time-range {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #495057;
+}
+
+.template-info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.template-info-card .card-body {
+    padding: 1.5rem;
+}
+
+.invalid-feedback {
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-shield-alt me-2"></i>Gestione Copertura Presidio</h2>
+        <p class="text-muted">Definisci quando ogni ruolo deve essere presente per garantire la copertura del presidio</p>
+    </div>
+    <div class="col-auto">
+        {% if current_template %}
+        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-plus me-1"></i>Nuovo Template
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Template Info (when editing) -->
+{% if current_template %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card template-info-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="card-title mb-1">
+                            <i class="fas fa-edit me-2"></i>Modifica Template: {{ current_template.name }}
+                        </h5>
+                        <p class="card-text mb-0">
+                            <i class="fas fa-calendar me-1"></i>
+                            Periodo: {{ current_template.start_date.strftime('%d/%m/%Y') }} - {{ current_template.end_date.strftime('%d/%m/%Y') }}
+                        </p>
+                        {% if current_template.description %}
+                        <p class="card-text mb-0">
+                            <i class="fas fa-info-circle me-1"></i>{{ current_template.description }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <small class="opacity-75">
+                            Creato da {{ current_template.creator.get_full_name() }}<br>
+                            il {{ current_template.created_at.strftime('%d/%m/%Y alle %H:%M') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Template Creation/Edit Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>
+                    <i class="fas fa-{{ 'edit' if current_template else 'plus' }} me-2"></i>
+                    {{ 'Modifica Template' if current_template else 'Nuovo Template di Copertura' }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('presidio_coverage', template_id=current_template.id if current_template else none) }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control") }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.start_date.label(class="form-label") }}
+                                {{ form.start_date(class="form-control") }}
+                                {% if form.start_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.start_date.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.end_date.label(class="form-label") }}
+                                {{ form.end_date(class="form-control") }}
+                                {% if form.end_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.end_date.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="2") }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Coverage Configuration -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="mb-3">
+                                <i class="fas fa-clock me-2"></i>Configurazione Copertura
+                                <small class="text-muted ms-2">Definisci gli orari e i ruoli richiesti per ogni giorno</small>
+                            </h6>
+                            
+                            <!-- Days of Week Tabs -->
+                            <ul class="nav nav-tabs" id="dayTabs" role="tablist">
+                                {% set days = [
+                                    (0, 'Lunedì'),
+                                    (1, 'Martedì'), 
+                                    (2, 'Mercoledì'),
+                                    (3, 'Giovedì'),
+                                    (4, 'Venerdì'),
+                                    (5, 'Sabato'),
+                                    (6, 'Domenica')
+                                ] %}
+                                {% for day_num, day_name in days %}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link {{ 'active' if day_num == 0 else '' }}" 
+                                            id="day-{{ day_num }}-tab" 
+                                            data-bs-toggle="tab" 
+                                            data-bs-target="#day-{{ day_num }}" 
+                                            type="button" role="tab">
+                                        {{ day_name }}
+                                        <span class="badge bg-secondary ms-1" id="day-{{ day_num }}-count">0</span>
+                                    </button>
+                                </li>
+                                {% endfor %}
+                            </ul>
+
+                            <!-- Tab Content -->
+                            <div class="tab-content border border-top-0 p-3" id="dayTabContent">
+                                {% for day_num, day_name in days %}
+                                <div class="tab-pane fade {{ 'show active' if day_num == 0 else '' }}" 
+                                     id="day-{{ day_num }}" 
+                                     role="tabpanel">
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="mb-0">Copertura {{ day_name }}</h6>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="addTimeSlot({{ day_num }})">
+                                            <i class="fas fa-plus me-1"></i>Aggiungi Fascia Oraria
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="day-{{ day_num }}-slots" class="time-slots-container">
+                                        <!-- Time slots will be added here dynamically -->
+                                    </div>
+                                    
+                                    {% if day_num == 0 %}
+                                    <div class="alert alert-info mt-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Suggerimento:</strong> Aggiungi fasce orarie per definire quando ogni ruolo deve essere presente. 
+                                        Puoi sovrapporre più fasce orarie se necessario.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>Annulla
+                                </a>
+                                {% if current_template %}
+                                <button type="submit" name="action" value="update" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Salva Modifiche
+                                </button>
+                                <button type="submit" name="action" value="duplicate" class="btn btn-info">
+                                    <i class="fas fa-copy me-1"></i>Salva come Nuovo
+                                </button>
+                                {% else %}
+                                <button type="submit" name="action" value="create" class="btn btn-success">
+                                    <i class="fas fa-save me-1"></i>Crea Template
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Existing Templates -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>Template Esistenti</h5>
+                {% if templates %}
+                <span class="badge bg-info">{{ templates|length }} template</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if templates %}
+                <div class="table-responsive">
+                    <table class="table table-striped" id="templatesTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nome Template</th>
+                                <th>Periodo</th>
+                                <th>Descrizione</th>
+                                <th>Coperture</th>
+                                <th>Creato da</th>
+                                <th>Data Creazione</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                            <tr>
+                                <td><strong>{{ template.name }}</strong></td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ template.start_date.strftime('%d/%m/%Y') }} - {{ template.end_date.strftime('%d/%m/%Y') }}
+                                    </span>
+                                </td>
+                                <td>{{ template.description or 'Nessuna descrizione' }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ template.coverages|length }} fasce</span>
+                                </td>
+                                <td>{{ template.creator.get_full_name() }}</td>
+                                <td>{{ template.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    {% if template.is_active %}
+                                    <span class="badge bg-success">Attivo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inattivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('presidio_detail', template_id=template.id) }}" 
+                                           class="btn btn-sm btn-outline-info" title="Visualizza dettagli">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('presidio_coverage', template_id=template.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="Modifica">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if template.is_active %}
+                                        <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                onclick="toggleTemplateStatus({{ template.id }}, false)" title="Disattiva">
+                                            <i class="fas fa-pause"></i>
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn btn-sm btn-outline-success" 
+                                                onclick="toggleTemplateStatus({{ template.id }}, true)" title="Attiva">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete({{ template.id }}, '{{ template.name }}')" title="Elimina">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun Template Configurato</h5>
+                    <p class="text-muted">Crea il primo template di copertura presidio per iniziare</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden template for time slots -->
+<div id="time-slot-template" style="display: none;">
+    <div class="time-slot card mb-2">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-2">
+                    <label class="form-label">Ora Inizio</label>
+                    <input type="time" class="form-control start-time" name="start_time[]" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Ora Fine</label>
+                    <input type="time" class="form-control end-time" name="end_time[]" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Ruoli Richiesti</label>
+                    <select class="form-select required-roles" name="required_roles[]" multiple required>
+                        <option value="Admin">Admin</option>
+                        <option value="Project Manager">Project Manager</option>
+                        <option value="Redattore">Redattore</option>
+                        <option value="Sviluppatore">Sviluppatore</option>
+                        <option value="Operatore">Operatore</option>
+                        <option value="Ente">Ente</option>
+                    </select>
+                    <small class="text-muted">Tieni premuto Ctrl/Cmd per selezionare più ruoli</small>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeTimeSlot(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" class="day-of-week" name="day_of_week[]" value="">
+        </div>
+    </div>
+</div>
+{% endblock %}
