@@ -95,6 +95,7 @@
             <div class="card-body">
                 {% if presidio_templates %}
                 <form method="POST" action="{{ url_for('genera_turni_da_template') }}" class="row g-3 align-items-end">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="col-md-8">
                         <label for="template_id" class="form-label">Seleziona Template Presidio</label>
                         <select class="form-select" name="template_id" id="template_id" required>
