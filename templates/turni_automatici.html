@@ -344,7 +344,14 @@ function editShift(shiftElement) {
     var shiftId = shiftElement.data('shift-id');
     var currentUserId = shiftElement.data('user-id');
     var role = shiftElement.data('role');
-    var templateId = $('#template-select').val();
+    var templateId = $('#template-select').val() || $('#template_id').val();
+    
+    console.log('Template ID found:', templateId);
+    console.log('Shift data:', {
+        shiftId: shiftId,
+        currentUserId: currentUserId, 
+        role: role
+    });
     
     if (!templateId) {
         alert('Seleziona prima un template.');
