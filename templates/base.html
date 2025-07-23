@@ -89,7 +89,7 @@
                             {% endif %}
                             {% if current_user.can_manage_shifts() or current_user.can_view_shifts() %}
                             <li><a class="dropdown-item" href="{{ url_for('turni_automatici') }}">
-                                <i class="fas fa-magic me-1"></i>Turni Automatici
+                                <i class="fas fa-cogs me-1"></i>Gestione Turni
                             </a></li>
                             {% endif %}
                             {% if current_user.can_view_shifts() %}
