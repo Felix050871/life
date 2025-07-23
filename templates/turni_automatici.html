@@ -148,12 +148,19 @@
                 </h6>
                 <span class="badge bg-secondary">{{ turni_per_settimana|length }} settimane</span>
             </div>
-            <div class="card-body">
-                {% if selected_template and turni_per_settimana %}
-                <div class="alert alert-info mb-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Turni generati per il template: <strong>{{ selected_template.name }}</strong>
-                    ({{ selected_template.get_period_display() }})
+            <div class="card-body" id="shifts-content">
+                <div class="text-center py-5" id="no-template-message">
+                    <i class="fas fa-hand-point-up fa-3x text-info mb-3"></i>
+                    <h5 class="text-info">Seleziona un template</h5>
+                    <p class="text-muted">Seleziona un template presidio sopra per visualizzare i turni esistenti.</p>
+                </div>
+                
+                <div id="template-shifts" style="display: none;">
+                    <div class="alert alert-info mb-3" id="template-alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span id="template-name-display"></span>
+                    </div>
+                    <div id="weeks-container"></div>
                 </div>
                 {% for settimana_key, turni_settimana in turni_per_settimana.items() %}
                 {% set stats = settimane_stats[settimana_key] %}
@@ -281,6 +288,7 @@ function showTemplateInfo() {
     if (templateId && selectedOption) {
         var period = selectedOption.getAttribute('data-period');
         var sede = selectedOption.getAttribute('data-sede');
+        var templateName = selectedOption.text;
         
         // Mostra informazioni template
         periodDisplay.innerHTML = '<strong>Periodo:</strong> ' + period + ' | <strong>Sede:</strong> ' + sede;
@@ -289,12 +297,92 @@ function showTemplateInfo() {
         // Abilita pulsante generazione
         generateBtn.disabled = false;
         generateBtn.className = 'btn btn-success w-100';
+        
+        // Carica turni esistenti per il template
+        loadShiftsForTemplate(templateId, templateName);
     } else {
         // Nascondi informazioni e disabilita pulsante
         templateInfo.style.display = 'none';
         generateBtn.disabled = true;
         generateBtn.className = 'btn btn-secondary w-100';
+        
+        // Nascondi turni
+        document.getElementById('no-template-message').style.display = 'block';
+        document.getElementById('template-shifts').style.display = 'none';
     }
+}
+
+function loadShiftsForTemplate(templateId, templateName) {
+    // Mostra loading
+    document.getElementById('no-template-message').style.display = 'none';
+    document.getElementById('template-shifts').style.display = 'block';
+    document.getElementById('template-name-display').innerHTML = 'Caricamento turni per: <strong>' + templateName + '</strong>...';
+    document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
+    
+    // Richiesta AJAX per caricare i turni
+    fetch('/api/get_shifts_for_template/' + templateId)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong> (' + data.period + ')';
+            
+            if (data.weeks && data.weeks.length > 0) {
+                var weeksHtml = '';
+                data.weeks.forEach(function(week) {
+                    weeksHtml += createWeekHtml(week);
+                });
+                document.getElementById('weeks-container').innerHTML = weeksHtml;
+            } else {
+                document.getElementById('weeks-container').innerHTML = 
+                    '<div class="text-center py-5">' +
+                    '<i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>' +
+                    '<h5 class="text-muted">Nessun turno presente</h5>' +
+                    '<p class="text-muted">Non ci sono turni generati per questo template.</p>' +
+                    '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Errore nel caricamento turni:', error);
+            document.getElementById('weeks-container').innerHTML = 
+                '<div class="alert alert-danger">Errore nel caricamento dei turni. Riprova.</div>';
+        });
+}
+
+function createWeekHtml(week) {
+    var weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+    var html = '<div class="week-card">' +
+               '<div class="week-header d-flex justify-content-between align-items-center">' +
+               '<div><strong style="color: #2c3e50;">' + week.start + ' - ' + week.end + '</strong></div>' +
+               '<div class="d-flex gap-3">' +
+               '<span class="badge bg-primary">' + week.shift_count + ' turni</span>' +
+               '<span class="badge bg-info">' + week.unique_users + ' persone</span>' +
+               '<span class="badge bg-success">' + week.total_hours.toFixed(1) + 'h</span>' +
+               '</div></div>' +
+               '<div class="row g-0">';
+    
+    for (var i = 0; i < 7; i++) {
+        html += '<div class="col shift-day">' +
+                '<div class="text-center">' +
+                '<small class="text-muted">' + weekdays[i] + '</small>' +
+                '<div><small style="color: #2c3e50; font-weight: 500;">' + week.days[i].date + '</small></div>' +
+                '</div>';
+        
+        if (week.days[i].shifts && week.days[i].shifts.length > 0) {
+            week.days[i].shifts.forEach(function(shift) {
+                html += '<div class="shift-item" title="' + shift.user + ' - ' + shift.time + ' (Automatico)" style="position: relative;">' +
+                        '<div class="fw-bold">' + (shift.user.length > 12 ? shift.user.substring(0, 12) + '...' : shift.user) + '</div>' +
+                        '<small>' + shift.time + '</small>' +
+                        '<i class="fas fa-lock" style="position: absolute; top: 2px; right: 4px; font-size: 10px; opacity: 0.7;" title="Turno automatico non modificabile"></i>' +
+                        '</div>';
+            });
+        } else {
+            html += '<div class="text-center text-muted"><small>-</small></div>';
+        }
+        
+        html += '</div>';
+    }
+    
+    html += '</div></div>';
+    return html;
 }
 
 // Validazione form prima dell'invio

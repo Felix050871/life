@@ -1312,6 +1312,84 @@ def turni_automatici():
                          timedelta=timedelta,
                          can_manage_shifts=current_user.can_manage_shifts())
 
+@app.route('/api/get_shifts_for_template/<int:template_id>')
+@login_required
+def get_shifts_for_template_api(template_id):
+    """API per ottenere turni di un template specifico"""
+    try:
+        from models import PresidioCoverageTemplate
+        from collections import defaultdict
+        from datetime import timedelta, date
+        
+        template = PresidioCoverageTemplate.query.get_or_404(template_id)
+        
+        # Ottieni turni del template
+        accessible_sedi = current_user.get_turni_sedi()
+        if accessible_sedi:
+            shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
+                User.sede_id.in_([sede.id for sede in accessible_sedi]),
+                Shift.date >= template.start_date,
+                Shift.date <= template.end_date,
+                Shift.shift_type == 'presidio'
+            ).order_by(Shift.date.asc(), Shift.start_time.asc()).all()
+        else:
+            shifts = []
+        
+        # Raggruppa per settimana
+        weeks_data = []
+        turni_per_settimana = defaultdict(list)
+        
+        for shift in shifts:
+            settimana_inizio = shift.date - timedelta(days=shift.date.weekday())
+            settimana_key = settimana_inizio.strftime('%Y-%m-%d')
+            turni_per_settimana[settimana_key].append(shift)
+        
+        # Crea struttura dati per JSON
+        for settimana_key in sorted(turni_per_settimana.keys()):
+            settimana_inizio = date.fromisoformat(settimana_key)
+            settimana_fine = settimana_inizio + timedelta(days=6)
+            turni_settimana = turni_per_settimana[settimana_key]
+            
+            # Statistiche settimana
+            total_hours = sum(shift.get_duration_hours() for shift in turni_settimana)
+            unique_users = len(set(shift.user_id for shift in turni_settimana))
+            
+            # Giorni della settimana
+            days = []
+            for day_num in range(7):
+                day_date = settimana_inizio + timedelta(days=day_num)
+                day_shifts = [shift for shift in turni_settimana if shift.date == day_date]
+                
+                shifts_data = []
+                for shift in day_shifts:
+                    shifts_data.append({
+                        'user': shift.user.get_full_name(),
+                        'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
+                    })
+                
+                days.append({
+                    'date': day_date.strftime('%d/%m'),
+                    'shifts': shifts_data
+                })
+            
+            weeks_data.append({
+                'start': settimana_inizio.strftime('%d/%m/%Y'),
+                'end': settimana_fine.strftime('%d/%m/%Y'),
+                'shift_count': len(turni_settimana),
+                'unique_users': unique_users,
+                'total_hours': total_hours,
+                'days': days
+            })
+        
+        return jsonify({
+            'success': True,
+            'period': template.get_period_display(),
+            'weeks': weeks_data
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/visualizza_turni')
 @login_required
 def visualizza_turni():
