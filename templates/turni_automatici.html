@@ -373,13 +373,17 @@ function editShift(shiftElement) {
         return;
     }
     
+    // Trova la data del turno dal DOM
+    var shiftDate = getShiftDateFromElement(shiftElement);
+    
     // Carica utenti disponibili per questo ruolo
     $.ajax({
         url: '/api/get_users_by_role',
         method: 'GET',
         data: {
             role: role,
-            template_id: templateId
+            template_id: templateId,
+            shift_date: shiftDate
         },
         success: function(users) {
             console.log('Users received:', users);
@@ -420,7 +424,7 @@ function showUserSelectionModal(shiftId, currentUserId, users, shiftElement) {
     var select = modal.find('#new-user-select');
     users.forEach(function(user) {
         var selected = user.id == currentUserId ? 'selected' : '';
-        select.append('<option value="' + user.id + '" ' + selected + '>' + user.username + '</option>');
+        select.append('<option value="' + user.id + '" ' + selected + '>' + user.full_name + '</option>');
     });
     
     modal.find('#save-shift-change').click(function() {
@@ -498,5 +502,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Funzione helper per estrarre la data del turno dall'elemento DOM
+function getShiftDateFromElement(shiftElement) {
+    // Trova la data dal titolo del giorno nella colonna
+    var dayColumn = shiftElement.closest('.shift-day');
+    if (dayColumn) {
+        var dateText = dayColumn.find('small:last').text(); // Es: "02/09"
+        if (dateText) {
+            // Assume anno corrente e converte in formato YYYY-MM-DD
+            var currentYear = new Date().getFullYear();
+            var parts = dateText.split('/');
+            if (parts.length === 2) {
+                var day = parts[0].padStart(2, '0');
+                var month = parts[1].padStart(2, '0');
+                return currentYear + '-' + month + '-' + day;
+            }
+        }
+    }
+    return null;
+}
 </script>
 {% endblock %}

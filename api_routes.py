@@ -92,8 +92,9 @@ def api_get_shifts_for_template(template_id):
 def api_get_users_by_role():
     role = request.args.get('role')
     template_id = request.args.get('template_id')
+    shift_date = request.args.get('shift_date')  # Data del turno da modificare
     
-    print(f"API Debug: role='{role}', template_id='{template_id}'")
+    print(f"API Debug: role='{role}', template_id='{template_id}', shift_date='{shift_date}'")
     
     # Debug aggiuntivo per verificare il filtro
     if not role or role == 'undefined':
@@ -139,6 +140,29 @@ def api_get_users_by_role():
             print(f"API Debug: User {user.username} EXCLUDED (sede mismatch)")
     
     print(f"API Debug: Returning {len(available_users)} available users")
+    
+    # Se è specificata una data, filtra gli utenti già impegnati quel giorno
+    if shift_date:
+        try:
+            from datetime import datetime
+            date_obj = datetime.strptime(shift_date, '%Y-%m-%d').date()
+            
+            # Trova tutti i turni per quella data
+            busy_users = db.session.query(Shift.user_id).filter(
+                Shift.date == date_obj
+            ).distinct().all()
+            busy_user_ids = [user_id[0] for user_id in busy_users]
+            
+            print(f"API Debug: Users busy on {shift_date}: {busy_user_ids}")
+            
+            # Filtra gli utenti già impegnati
+            final_users = [user for user in available_users if user['id'] not in busy_user_ids]
+            
+            print(f"API Debug: After filtering busy users: {len(final_users)} available")
+            return jsonify(final_users)
+            
+        except Exception as e:
+            print(f"API Debug: Error filtering by date: {e}")
     
     return jsonify(available_users)
     
