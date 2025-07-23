@@ -31,22 +31,25 @@
 }
 
 .week-card {
-    border: 1px solid #e3e6f0;
+    border: 1px solid #444;
     border-radius: 8px;
     margin-bottom: 20px;
-    background: #fff;
+    background: #2c3e50;
+    color: #ffffff;
 }
 
 .week-header {
-    background: #f8f9fc;
+    background: #34495e;
     padding: 12px 16px;
-    border-bottom: 1px solid #e3e6f0;
+    border-bottom: 1px solid #555;
+    color: #ffffff;
 }
 
 .shift-day {
-    border-right: 1px solid #e3e6f0;
+    border-right: 1px solid #555;
     padding: 8px;
     min-height: 120px;
+    background: #3a4a5c;
 }
 
 .shift-day:last-child {
@@ -54,14 +57,24 @@
 }
 
 .shift-item {
-    background: #e7f3ff;
-    border: 1px solid #b3d9ff;
+    background: #17a2b8;
+    border: 1px solid #138496;
     border-radius: 4px;
     padding: 4px 6px;
     margin: 2px 0;
     font-size: 11px;
     line-height: 1.2;
-    opacity: 0.9;
+    color: #ffffff;
+    font-weight: 500;
+    opacity: 1;
+}
+
+.shift-day .text-center small {
+    color: #ffffff !important;
+}
+
+.shift-day .text-muted {
+    color: #adb5bd !important;
 }
 </style>
 {% endblock %}
@@ -253,7 +266,7 @@ function createWeekHtml(week) {
     var weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
     var html = '<div class="week-card">' +
                '<div class="week-header d-flex justify-content-between align-items-center">' +
-               '<div><strong style="color: #2c3e50;">' + week.start + ' - ' + week.end + '</strong></div>' +
+               '<div><strong style="color: #ffffff;">' + week.start + ' - ' + week.end + '</strong></div>' +
                '<div class="d-flex gap-3">' +
                '<span class="badge bg-primary">' + week.shift_count + ' turni</span>' +
                '<span class="badge bg-info">' + week.unique_users + ' persone</span>' +
@@ -264,20 +277,20 @@ function createWeekHtml(week) {
     for (var i = 0; i < 7; i++) {
         html += '<div class="col shift-day">' +
                 '<div class="text-center">' +
-                '<small class="text-muted">' + weekdays[i] + '</small>' +
-                '<div><small style="color: #2c3e50; font-weight: 500;">' + week.days[i].date + '</small></div>' +
+                '<small style="color: #adb5bd;">' + weekdays[i] + '</small>' +
+                '<div><small style="color: #ffffff; font-weight: 500;">' + week.days[i].date + '</small></div>' +
                 '</div>';
         
         if (week.days[i].shifts && week.days[i].shifts.length > 0) {
             week.days[i].shifts.forEach(function(shift) {
-                html += '<div class="shift-item" title="' + shift.user + ' - ' + shift.time + ' (Solo lettura)" style="position: relative; opacity: 0.9;">' +
+                html += '<div class="shift-item" title="' + shift.user + ' - ' + shift.time + ' (Solo lettura)" style="position: relative;">' +
                         '<div class="fw-bold">' + (shift.user.length > 12 ? shift.user.substring(0, 12) + '...' : shift.user) + '</div>' +
                         '<small>' + shift.time + '</small>' +
-                        '<i class="fas fa-eye" style="position: absolute; top: 2px; right: 4px; font-size: 10px; opacity: 0.7;" title="Solo visualizzazione"></i>' +
+                        '<i class="fas fa-eye" style="position: absolute; top: 2px; right: 4px; font-size: 10px; opacity: 0.7; color: #ffffff;" title="Solo visualizzazione"></i>' +
                         '</div>';
             });
         } else {
-            html += '<div class="text-center text-muted"><small>-</small></div>';
+            html += '<div class="text-center" style="color: #adb5bd;"><small>-</small></div>';
         }
         
         html += '</div>';
