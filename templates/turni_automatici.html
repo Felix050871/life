@@ -171,7 +171,7 @@
                                 <small class="text-muted">{{ weekdays[day_num] }}</small>
                             </div>
                             {% set day_date = stats.inizio + timedelta(days=day_num) %}
-                            {% set day_shifts = turni_settimana | selectattr('date', 'equalto', day_date.date()) | list %}
+                            {% set day_shifts = turni_settimana | selectattr('date', 'equalto', day_date) | list %}
                             
                             {% if day_shifts %}
                                 {% for shift in day_shifts %}

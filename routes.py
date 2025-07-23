@@ -1283,6 +1283,7 @@ def turni_automatici():
                          users_by_role=dict(users_by_role),
                          shifts=shifts,
                          today=date.today(),
+                         timedelta=timedelta,
                          can_manage_shifts=current_user.can_manage_shifts())
 
 @app.route('/genera_turni_da_template', methods=['POST'])
