@@ -464,8 +464,11 @@ function updateShiftUser(shiftId, newUserId, shiftElement, modal) {
                 shiftElement.attr('title', displayName + ' - ' + shiftElement.find('small').text());
                 modal.modal('hide');
                 
-                // Ricarica i turni per aggiornare le statistiche
-                loadShiftsForTemplate();
+                // Ricarica i turni per aggiornare le statistiche  
+                var templateId = $('#template-select').val() || $('#template_id').val();
+                var templateName = $('#template-select option:selected').text() || $('#template_id option:selected').text();
+                console.log('Reloading shifts with templateId:', templateId, 'templateName:', templateName);
+                loadShiftsForTemplate(templateId, templateName);
             } else {
                 alert('Errore nell\'aggiornamento: ' + response.message);
             }
@@ -561,5 +564,8 @@ function getShiftDateFromElement(shiftElement) {
     console.log('Debug: no date found, returning null');
     return null;
 }
+
+// Rimuovi i debug console.log dopo aver verificato che tutto funziona
+// console.log può essere rimosso per pulire i log in produzione
 </script>
 {% endblock %}
