@@ -5553,56 +5553,13 @@ def mark_message_read(message_id):
 @app.route("/manage_coverage")
 @login_required
 def manage_coverage():
-    """Gestione Coperture - Prima funzionalità del menu Turni"""
-    if not current_user.can_access_coverage_menu():
-        flash("Non hai i permessi per accedere a questa sezione", "danger")
+    """Gestione Coperture - Sistema completo basato su template"""
+    if not current_user.can_manage_coverage():
+        flash("Non hai i permessi per gestire le coperture", "danger")
         return redirect(url_for("dashboard"))
     
-    # Import necessari
-    from models import Sede, PresidioCoverage
-    
-    # Ottieni le sedi accessibili per utente
-    if current_user.all_sedi:
-        # Utenti multi-sede vedono tutte le sedi turni
-        accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
-    elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
-        # Utenti sede-specifici vedono solo la loro sede se supporta turni
-        accessible_sedi = [current_user.sede_obj]
-    else:
-        accessible_sedi = []
-        flash("Nessuna sede con modalità turni accessibile", "warning")
-        return redirect(url_for("dashboard"))
-    
-    # Ottieni template unici di copertura presidio (raggruppate per periodo)
-    from collections import defaultdict
-    
-    # Ottieni tutte le coperture presidio attive
-    all_coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.is_active == True
-    ).order_by(PresidioCoverage.start_date.desc()).all()
-    
-    # Raggruppa per template (stesso periodo)
-    coverage_templates = defaultdict(list)
-    for coverage in all_coverages:
-        period_key = f"{coverage.start_date.strftime('%Y%m%d')}-{coverage.end_date.strftime('%Y%m%d')}"
-        coverage_templates[period_key].append(coverage)
-    
-    # Crea lista template con il primo elemento di ogni gruppo come rappresentante
-    coverage_list = []
-    for period_key, coverages in coverage_templates.items():
-        # Usa la prima copertura come rappresentante del template
-        template = coverages[0]
-        # Aggiungi info sul numero di coperture in questo template
-        template.template_coverage_count = len(coverages)
-        coverage_list.append(template)
-    
-    # Ordina per data di inizio decrescente
-    coverage_list.sort(key=lambda x: x.start_date, reverse=True)
-    
-    return render_template("manage_coverage.html",
-                         coverage_list=coverage_list,
-                         accessible_sedi=accessible_sedi,
-                         can_manage=current_user.can_manage_coverage())
+    # Reindirizza alla nuova pagina del sistema presidio completo
+    return redirect(url_for('presidio_coverage'))
 
 @app.route("/view_presidio_coverage/<period_key>")
 @login_required
