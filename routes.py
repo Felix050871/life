@@ -119,8 +119,28 @@ def dashboard():
     recent_interventions = []
     current_time = italian_now().time()
     if current_user.can_view_reperibilita():
-        # Show active reperibilità templates
-        upcoming_reperibilita_shifts = ReperibilitaTemplate.query.order_by(ReperibilitaTemplate.start_date.desc()).all()
+        # Show active reperibilità coverage grouped by period
+        upcoming_reperibilita_shifts = db.session.query(ReperibilitaCoverage)\
+            .filter(ReperibilitaCoverage.is_active == True)\
+            .order_by(ReperibilitaCoverage.start_date.desc())\
+            .all()
+        
+        # Group by period (start_date, end_date) to avoid duplicates
+        coverage_periods = {}
+        for coverage in upcoming_reperibilita_shifts:
+            period_key = (coverage.start_date, coverage.end_date)
+            if period_key not in coverage_periods:
+                coverage_periods[period_key] = {
+                    'start_date': coverage.start_date,
+                    'end_date': coverage.end_date,
+                    'description': coverage.description,
+                    'sedi_names': coverage.get_sedi_names(),
+                    'coverage_count': 0
+                }
+            coverage_periods[period_key]['coverage_count'] += 1
+        
+        # Convert to list for template
+        upcoming_reperibilita_shifts = list(coverage_periods.values())
         
         # Get active intervention for this user
         active_intervention = ReperibilitaIntervention.query.filter_by(

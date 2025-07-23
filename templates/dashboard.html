@@ -322,15 +322,15 @@
                 {% endif %}
                 
                 {% if upcoming_reperibilita_shifts %}
-                <h6 class="small text-muted">Template Reperibilità:</h6>
-                {% for template in upcoming_reperibilita_shifts[:4] %}
+                <h6 class="small text-muted">Coperture Reperibilità Attive:</h6>
+                {% for coverage_period in upcoming_reperibilita_shifts[:3] %}
                 <div class="border-bottom pb-2 mb-2">
                     <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">{{ template.name }}</span>
-                        <span class="badge bg-warning text-dark">Attivo</span>
+                        <span class="fw-bold">{{ coverage_period['start_date'].strftime('%d/%m') }} - {{ coverage_period['end_date'].strftime('%d/%m') }}</span>
+                        <span class="badge bg-warning text-dark">{{ coverage_period['coverage_count'] }} coperture</span>
                     </div>
                     <small class="text-muted">
-                        {{ template.start_date.strftime('%d/%m/%Y') }} - {{ template.end_date.strftime('%d/%m/%Y') }}
+                        {{ coverage_period['sedi_names'] }}
                     </small>
                 </div>
                 {% endfor %}
