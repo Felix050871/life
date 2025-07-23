@@ -300,42 +300,8 @@ function loadShiftsForTemplate(templateId, templateName) {
         })
         .catch(error => {
             console.error('Errore nel caricamento turni:', error);
-            console.log('Using fallback mock data for development');
-            
-            // Fallback con dati mock per sviluppo
-            var mockData = {
-                success: true,
-                weeks: [{
-                    start: '02/09/2025',
-                    end: '08/09/2025', 
-                    shift_count: 3,
-                    unique_users: 3,
-                    total_hours: 27,
-                    days: {
-                        0: { date: '02/09', shifts: [
-                            { id: 1, user: 'Paolo Operatore', user_id: 1, role: 'Operatore', time: '09:00-18:00' }
-                        ]},
-                        1: { date: '03/09', shifts: [
-                            { id: 2, user: 'Marco Operatore1', user_id: 2, role: 'Operatore', time: '09:00-18:00' }
-                        ]},
-                        2: { date: '04/09', shifts: [
-                            { id: 3, user: 'Gianni Operatore2', user_id: 3, role: 'Operatore', time: '09:00-18:00' }
-                        ]},
-                        3: { date: '05/09', shifts: [] },
-                        4: { date: '06/09', shifts: [] },
-                        5: { date: '07/09', shifts: [] },
-                        6: { date: '08/09', shifts: [] }
-                    }
-                }],
-                template_name: 'Mock Template'
-            };
-            
-            var weeksHtml = '';
-            mockData.weeks.forEach(function(week) {
-                weeksHtml += createWeekHtml(week);
-            });
-            document.getElementById('weeks-container').innerHTML = weeksHtml;
-            document.getElementById('weeks-count').textContent = mockData.weeks.length + ' settimane';
+            document.getElementById('weeks-container').innerHTML = 
+                '<div class="alert alert-danger">Errore nel caricamento dei turni. Riprova.</div>';
         });
 }
 
@@ -361,6 +327,7 @@ function createWeekHtml(week) {
         if (week.days[i].shifts && week.days[i].shifts.length > 0) {
             week.days[i].shifts.forEach(function(shift) {
                 console.log('Creating shift HTML with data:', shift);
+                console.log('Shift has id:', shift.id, 'user_id:', shift.user_id, 'role:', shift.role);
                 html += '<div class="shift-item editable-shift" data-shift-id="' + shift.id + '" data-user-id="' + shift.user_id + '" data-role="' + shift.role + '" title="' + shift.user + ' - ' + shift.time + '">' +
                         '<div class="d-flex justify-content-between align-items-start">' +
                         '<div class="shift-content">' +
