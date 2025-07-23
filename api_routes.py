@@ -7,10 +7,12 @@ from models import User, Shift, PresidioCoverageTemplate
 @app.route('/api/get_shifts_for_template/<int:template_id>')
 @login_required
 def api_get_shifts_for_template(template_id):
-    print(f"=== API get_shifts_for_template called with template_id={template_id} ===")
+    print(f"*** ROUTE CHIAMATA: /api/get_shifts_for_template/{template_id} ***", flush=True)
+    print(f"=== API get_shifts_for_template called with template_id={template_id} ===", flush=True)
     
     # Trova il template
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    print(f"Template found: {template.name}, period: {template.start_date} to {template.end_date}", flush=True)
     
     # Ottieni tutti i turni nel periodo del template
     shifts = Shift.query.filter(
