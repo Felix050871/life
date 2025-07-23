@@ -48,10 +48,10 @@ def api_get_shifts_for_template():
             'id': shift.id,
             'user': shift.user.username,
             'user_id': shift.user.id,
-            'role': shift.user.role.name if shift.user.role else 'Senza ruolo',
+            'role': shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'Senza ruolo'),
             'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
         }
-        print(f"API Debug - Shift {shift.id}: user={shift.user.username}, role={shift.user.role.name if shift.user.role else 'None'}")
+        print(f"API Debug - Shift {shift.id}: user={shift.user.username}, role={shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'None')}")
         print(f"API Debug - Full shift data: {shift_data}")  # Debug temporaneo
         weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
         
