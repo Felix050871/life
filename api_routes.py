@@ -73,6 +73,8 @@ def api_get_users_by_role():
     role = request.args.get('role')
     template_id = request.args.get('template_id')
     
+    print(f"API Debug: role='{role}', template_id='{template_id}'")
+    
     if not role or not template_id:
         return jsonify({'error': 'Role e Template ID richiesti'}), 400
     
