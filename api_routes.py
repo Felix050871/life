@@ -36,13 +36,15 @@ def api_get_shifts_for_template():
             }
         
         day_index = shift.shift_date.weekday()
-        weeks_data[week_key]['days'][day_index]['shifts'].append({
+        shift_data = {
             'id': shift.id,
             'user': shift.user.username,
             'user_id': shift.user.id,
             'role': shift.user.role,
             'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
-        })
+        }
+        print(f"API Debug - Shift data: {shift_data}")  # Debug temporaneo
+        weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
         
         weeks_data[week_key]['shift_count'] += 1
         weeks_data[week_key]['unique_users'].add(shift.user.username)
