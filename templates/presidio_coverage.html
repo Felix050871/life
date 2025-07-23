@@ -6,64 +6,24 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <style>
-/* Miglioramenti visualizzazione coperture */
-.coverage-day-card {
-    background: var(--bs-light);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    padding: 1rem;
+/* Tabella coperture migliorata */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
-.coverage-day-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--bs-border-color);
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
 }
 
-.coverage-slot-improved {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    background: white;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 6px;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
+.table-hover tbody tr:hover {
+    background-color: var(--bs-light);
 }
 
-.slot-info {
-    flex: 1;
-}
-
-.time-display {
-    color: var(--bs-primary);
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-}
-
-.break-display {
-    color: var(--bs-warning);
-    margin-bottom: 0.25rem;
-}
-
-.roles-display {
-    margin-bottom: 0.25rem;
-}
-
-.role-tags .badge {
-    font-size: 0.7rem;
-}
-
-.description-display {
-    color: var(--bs-secondary);
-}
-
-.slot-actions {
-    margin-left: 1rem;
+.badge {
+    font-size: 0.75rem;
 }
 </style>
 {% endblock %}
@@ -375,60 +335,66 @@
                     {% endfor %}
                     
                     {% if coverages_by_day %}
-                    <div class="coverage-summary">
-                        {% for day_num in range(7) %}
-                            {% if day_num in coverages_by_day %}
-                            <div class="coverage-day-card">
-                                <div class="coverage-day-header">
-                                    <h6 class="day-name mb-0">
-                                        <i class="fa fa-calendar-day me-2"></i>{{ coverages_by_day[day_num][0].get_day_name() }}
-                                    </h6>
-                                    <span class="badge bg-secondary">{{ coverages_by_day[day_num]|length }} turni</span>
-                                </div>
-                                
-                                <div class="coverage-slots">
-                                    {% for coverage in coverages_by_day[day_num] %}
-                                    <div class="coverage-slot-improved">
-                                        <div class="slot-info">
-                                            <div class="time-display">
-                                                <i class="fa fa-clock me-1"></i>
-                                                <strong>{{ coverage.get_time_range() }}</strong>
-                                            </div>
-                                            {% if coverage.get_break_range() %}
-                                            <div class="break-display">
-                                                <i class="fa fa-coffee me-1"></i>
-                                                <small>Pausa: {{ coverage.get_break_range() }}</small>
-                                            </div>
-                                            {% endif %}
-                                            <div class="roles-display">
-                                                <i class="fa fa-users me-1"></i>
-                                                <span class="role-tags">
-                                                    {% for role in coverage.get_required_roles() %}
-                                                    <span class="badge bg-info me-1">{{ role }}</span>
-                                                    {% endfor %}
-                                                </span>
-                                            </div>
-                                            {% if coverage.description %}
-                                            <div class="description-display">
-                                                <i class="fa fa-info-circle me-1"></i>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 12%;">Giorno</th>
+                                    <th style="width: 18%;">Orario Turno</th>
+                                    <th style="width: 15%;">Pausa</th>
+                                    <th style="width: 25%;">Ruoli Richiesti</th>
+                                    <th style="width: 10%;">Quantità</th>
+                                    <th style="width: 15%;">Descrizione</th>
+                                    <th style="width: 5%;">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day_num in range(7) %}
+                                    {% if day_num in coverages_by_day %}
+                                        {% for coverage in coverages_by_day[day_num] %}
+                                        <tr>
+                                            <td>
+                                                <strong class="text-primary">{{ coverage.get_day_name() }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="fw-bold">{{ coverage.get_time_range() }}</span>
+                                            </td>
+                                            <td>
+                                                {% if coverage.get_break_range() %}
+                                                <span class="text-warning">{{ coverage.get_break_range() }}</span>
+                                                {% else %}
+                                                <span class="text-muted">Nessuna</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% for role in coverage.get_required_roles() %}
+                                                <span class="badge bg-info me-1">{{ role }}</span>
+                                                {% endfor %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">{{ coverage.role_count or 1 }} persone</span>
+                                            </td>
+                                            <td>
+                                                {% if coverage.description %}
                                                 <small class="text-muted">{{ coverage.description }}</small>
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                        <div class="slot-actions">
-                                            <form method="POST" action="{{ url_for('delete_presidio_coverage', coverage_id=coverage.id) }}" 
-                                                  style="display: inline;" onsubmit="return confirmDelete('Elimina questa copertura?')">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina copertura">
-                                                    <i class="fa fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endif %}
-                        {% endfor %}
+                                                {% else %}
+                                                <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <form method="POST" action="{{ url_for('delete_presidio_coverage', coverage_id=coverage.id) }}" 
+                                                      style="display: inline;" onsubmit="return confirm('Elimina questa copertura?')">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina copertura">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                     {% else %}
                     <div class="alert alert-info text-center">
