@@ -800,6 +800,8 @@ class RoleForm(FlaskForm):
         # Reperibilità
         self.can_manage_reperibilita.data = permissions_dict.get('can_manage_reperibilita', False)
         self.can_view_reperibilita.data = permissions_dict.get('can_view_reperibilita', False)
+        self.can_manage_coverage.data = permissions_dict.get('can_manage_coverage', False)
+        self.can_view_coverage.data = permissions_dict.get('can_view_coverage', False)
         
         # Gestione presenze
         self.can_manage_attendance.data = permissions_dict.get('can_manage_attendance', False)
@@ -827,11 +829,20 @@ class RoleForm(FlaskForm):
         # Report e statistiche
         self.can_view_reports.data = permissions_dict.get('can_view_reports', False)
         self.can_manage_reports.data = permissions_dict.get('can_manage_reports', False)
-        self.can_view_statistics.data = permissions_dict.get('can_view_statistics', False)
+
         
         # Messaggi
         self.can_send_messages.data = permissions_dict.get('can_send_messages', False)
         self.can_view_messages.data = permissions_dict.get('can_view_messages', False)
+        
+        # Widget Dashboard
+        self.can_view_team_stats_widget.data = permissions_dict.get('can_view_team_stats_widget', False)
+        self.can_view_my_attendance_widget.data = permissions_dict.get('can_view_my_attendance_widget', False)
+        self.can_view_team_management_widget.data = permissions_dict.get('can_view_team_management_widget', False)
+        self.can_view_leave_requests_widget.data = permissions_dict.get('can_view_leave_requests_widget', False)
+        self.can_view_daily_attendance_widget.data = permissions_dict.get('can_view_daily_attendance_widget', False)
+        self.can_view_shifts_coverage_widget.data = permissions_dict.get('can_view_shifts_coverage_widget', False)
+        self.can_view_reperibilita_widget.data = permissions_dict.get('can_view_reperibilita_widget', False)
 
 
 # Form del pacchetto presidio integrati
