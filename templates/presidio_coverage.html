@@ -181,7 +181,7 @@
     <!-- Header della pagina -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2><i class="fa fa-shield-alt me-2"></i>Gestione Coperture Presidio</h2>
+            <h2 style="color: #007bff !important; font-weight: 800 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.2) !important; border: 3px solid #007bff !important; padding: 1rem 1.5rem !important; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important; border-radius: 0.5rem !important; margin-bottom: 2rem !important;"><i class="fa fa-shield-alt me-2"></i>Gestione Coperture Presidio</h2>
             <p class="text-muted mb-0">Sistema completo per la gestione delle coperture presidio basato su template</p>
         </div>
         <div class="quick-actions">
@@ -202,7 +202,7 @@
     {% if not current_template %}
     <div class="row">
         <div class="col-12">
-            <h4 class="mb-3">Template di Copertura Esistenti ({{ templates|length }})</h4>
+            <h4 style="color: #495057 !important; font-weight: 700 !important; background: #f8f9fa !important; padding: 0.75rem 1rem !important; border-left: 5px solid #007bff !important; border-radius: 0.375rem !important; margin-bottom: 1.5rem !important;" class="mb-3">Template di Copertura Esistenti ({{ templates|length }})</h4>
             
             {% if templates %}
             {% for template in templates %}
@@ -475,10 +475,10 @@
     {% if current_template %}
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fa fa-calendar-check me-2"></i>Coperture Definite</h5>
-                    <span class="badge bg-primary">{{ current_template.coverages.filter_by(is_active=True).count() }} coperture</span>
+            <div class="card" style="border: 3px solid #007bff !important; border-radius: 1rem !important; box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important; margin-bottom: 2rem !important;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important; color: white !important; border-bottom: 3px solid #0056b3 !important; font-weight: 800 !important; font-size: 1.2rem !important; padding: 1.25rem 1.5rem !important; border-radius: 1rem 1rem 0 0 !important;">
+                    <h5 class="mb-0" style="font-weight: 800 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important; margin: 0 !important; font-size: 1.1rem !important;"><i class="fa fa-calendar-check me-2"></i>Coperture Definite</h5>
+                    <span class="badge bg-primary" style="background: rgba(255,255,255,0.3) !important; color: white !important; border: 2px solid rgba(255,255,255,0.5) !important; font-weight: 700 !important; padding: 0.5rem 1rem !important;">{{ current_template.coverages.filter_by(is_active=True).count() }} coperture</span>
                 </div>
                 <div class="card-body">
                     {% set coverages_by_day = {} %}
@@ -491,16 +491,16 @@
                     
                     {% if coverages_by_day %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" style="border: 3px solid #6c757d !important; border-radius: 0.5rem !important; overflow: hidden !important;">
                             <thead class="table-dark">
                                 <tr>
-                                    <th style="width: 12%;">Giorno</th>
-                                    <th style="width: 18%;">Orario Turno</th>
-                                    <th style="width: 15%;">Pausa</th>
-                                    <th style="width: 25%;">Ruoli Richiesti</th>
-                                    <th style="width: 10%;">Quantità</th>
-                                    <th style="width: 15%;">Descrizione</th>
-                                    <th style="width: 5%;">Azioni</th>
+                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 12%;">Giorno</th>
+                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 18%;">Orario Turno</th>
+                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 15%;">Pausa</th>
+                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 25%;">Ruoli Richiesti</th>
+                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 10%;">Quantità</th>
+                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 15%;">Descrizione</th>
+                                    <th style="background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important; color: white !important; font-weight: 800 !important; font-size: 1rem !important; border: none !important; padding: 1rem !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; width: 5%;">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody>
