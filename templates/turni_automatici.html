@@ -318,6 +318,7 @@ function createWeekHtml(week) {
         
         if (week.days[i].shifts && week.days[i].shifts.length > 0) {
             week.days[i].shifts.forEach(function(shift) {
+                console.log('Creating shift HTML with data:', shift);
                 html += '<div class="shift-item editable-shift" data-shift-id="' + shift.id + '" data-user-id="' + shift.user_id + '" data-role="' + shift.role + '" title="' + shift.user + ' - ' + shift.time + '">' +
                         '<div class="d-flex justify-content-between align-items-start">' +
                         '<div class="shift-content">' +
