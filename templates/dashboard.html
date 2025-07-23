@@ -546,6 +546,11 @@
                         <p class="mb-0">Nessuna presenza registrata oggi</p>
                     </div>
                 {% endif %}
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{{ url_for('attendance', view='team') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list-ul me-1"></i>Dettagli Completi
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -752,62 +757,6 @@
     </div>
 </div>
 {% endif %}
-{% endif %}
-
-<!-- Recent Leave Requests -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-umbrella-beach me-2"></i>Richieste Ferie/Permessi Recenti</h5>
-            </div>
-            <div class="card-body">
-                {% if recent_leaves %}
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Periodo</th>
-                                <th>Tipo</th>
-                                <th>Stato</th>
-                                <th>Data Richiesta</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for leave in recent_leaves %}
-                            <tr>
-                                <td>{{ leave.start_date.strftime('%d/%m/%Y') }} - {{ leave.end_date.strftime('%d/%m/%Y') }}</td>
-                                <td>{{ leave.leave_type }}</td>
-                                <td>
-                                    {% if leave.status == 'Approved' %}
-                                    <span class="badge bg-success">Approvata</span>
-                                    {% elif leave.status == 'Rejected' %}
-                                    <span class="badge bg-danger">Rifiutata</span>
-                                    {% else %}
-                                    <span class="badge bg-warning">In Attesa</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ leave.created_at.strftime('%d/%m/%Y') }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted">Nessuna richiesta recente</p>
-                {% endif %}
-                
-                {% if current_user.can_request_leave() or current_user.can_approve_leave() %}
-                <div class="text-center mt-3">
-                    <a href="{{ url_for('leave_requests') }}" class="btn btn-warning">
-                        <i class="fas fa-umbrella-beach me-1"></i>Gestisci Ferie/Permessi
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
 {% endif %}
 
 <!-- Modal per iniziare intervento -->
