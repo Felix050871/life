@@ -3356,9 +3356,10 @@ def reperibilita_replica(period_key):
 @app.route('/reperibilita_shifts/generate', methods=['GET', 'POST'])
 @require_login
 def generate_reperibilita_shifts():
-    """Genera turnazioni reperibilità (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Genera turnazioni reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per generare turni di reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from forms import ReperibilitaTemplateForm
     from models import ReperibilitaTemplate, ReperibilitaShift
@@ -3439,9 +3440,10 @@ def generate_reperibilita_shifts():
 @app.route('/reperibilita_shifts/regenerate/<int:template_id>', methods=['GET'])
 @require_login
 def regenerate_reperibilita_template(template_id):
-    """Rigenera turni reperibilità da template esistente (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Rigenera turni reperibilità da template esistente"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per rigenerare turni di reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from models import ReperibilitaTemplate, ReperibilitaShift
     from utils import generate_reperibilita_shifts
@@ -3574,9 +3576,10 @@ def end_intervention():
 @app.route('/reperibilita_template/delete/<template_id>')
 @require_login
 def delete_reperibilita_template(template_id):
-    """Elimina un template reperibilità e tutti i suoi turni (solo PM e Admin)"""
-    if not (current_user.role in ['Admin', 'Management']):
-        return redirect(url_for('not_found_error'))
+    """Elimina un template reperibilità e tutti i suoi turni"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per eliminare template di reperibilità', 'danger')
+        return redirect(url_for('dashboard'))
     
     from models import ReperibilitaTemplate, ReperibilitaShift
     
