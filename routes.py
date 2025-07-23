@@ -1224,49 +1224,73 @@ def turni_automatici():
         PresidioCoverageTemplate.start_date.desc()
     ).all()
     
-    # Ottieni turni esistenti raggruppati per settimana
-    from collections import defaultdict
-    from datetime import timedelta, date
-    
-    accessible_sedi = current_user.get_turni_sedi()
-    if accessible_sedi:
-        shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
-            User.sede_id.in_([sede.id for sede in accessible_sedi])
-        ).order_by(Shift.date.desc(), Shift.start_time).all()
-    else:
-        shifts = []
-    
-    # Raggruppa turni per settimana
-    turni_per_settimana = defaultdict(list)
+    # Ottieni template selezionato se presente
+    template_id = request.args.get('template_id')
+    selected_template = None
+    turni_per_settimana = {}
     settimane_stats = {}
+    shifts = []
     
-    for shift in shifts:
-        # Calcola inizio settimana (lunedì)
-        settimana_inizio = shift.date - timedelta(days=shift.date.weekday())
-        settimana_fine = settimana_inizio + timedelta(days=6)
-        settimana_key = settimana_inizio.strftime('%Y-%m-%d')
-        
-        turni_per_settimana[settimana_key].append(shift)
-        
-        # Calcola statistiche settimana
-        if settimana_key not in settimane_stats:
-            settimane_stats[settimana_key] = {
-                'inizio': settimana_inizio,
-                'fine': settimana_fine,
-                'total_hours': 0,
-                'unique_users': set(),
-                'shift_count': 0
-            }
-        
-        settimane_stats[settimana_key]['total_hours'] += shift.get_duration_hours()
-        settimane_stats[settimana_key]['unique_users'].add(shift.user_id)
-        settimane_stats[settimana_key]['shift_count'] += 1
-    
-    # Converti set in count
-    for stats in settimane_stats.values():
-        stats['unique_users'] = len(stats['unique_users'])
+    if template_id:
+        try:
+            template_id = int(template_id)
+            selected_template = PresidioCoverageTemplate.query.get(template_id)
+            
+            if selected_template:
+                # Ottieni turni del template selezionato
+                from collections import defaultdict
+                from datetime import timedelta, date
+                
+                # Filtra turni per il periodo del template
+                accessible_sedi = current_user.get_turni_sedi()
+                if accessible_sedi:
+                    shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
+                        User.sede_id.in_([sede.id for sede in accessible_sedi]),
+                        Shift.date >= selected_template.start_date,
+                        Shift.date <= selected_template.end_date,
+                        Shift.shift_type == 'presidio'
+                    ).order_by(Shift.date.asc(), Shift.start_time.asc()).all()  # Ordine crescente
+                else:
+                    shifts = []
+                
+                # Raggruppa turni per settimana
+                turni_per_settimana = defaultdict(list)
+                settimane_stats = {}
+                
+                for shift in shifts:
+                    # Calcola inizio settimana (lunedì)
+                    settimana_inizio = shift.date - timedelta(days=shift.date.weekday())
+                    settimana_fine = settimana_inizio + timedelta(days=6)
+                    settimana_key = settimana_inizio.strftime('%Y-%m-%d')
+                    
+                    turni_per_settimana[settimana_key].append(shift)
+                    
+                    # Calcola statistiche settimana
+                    if settimana_key not in settimane_stats:
+                        settimane_stats[settimana_key] = {
+                            'inizio': settimana_inizio,
+                            'fine': settimana_fine,
+                            'total_hours': 0,
+                            'unique_users': set(),
+                            'shift_count': 0
+                        }
+                    
+                    settimane_stats[settimana_key]['total_hours'] += shift.get_duration_hours()
+                    settimane_stats[settimana_key]['unique_users'].add(shift.user_id)
+                    settimane_stats[settimana_key]['shift_count'] += 1
+                
+                # Converti set in count e ordina per data
+                for stats in settimane_stats.values():
+                    stats['unique_users'] = len(stats['unique_users'])
+                
+                # Ordina settimane per data crescente
+                settimane_stats = dict(sorted(settimane_stats.items(), key=lambda x: x[1]['inizio']))
+                turni_per_settimana = dict(sorted(turni_per_settimana.items(), key=lambda x: x[0]))
+        except (ValueError, TypeError):
+            pass
     
     # Ottieni utenti disponibili per creazione turni raggruppati per ruolo
+    from collections import defaultdict
     users_by_role = defaultdict(list)
     available_users = User.query.filter(
         User.active.is_(True)
@@ -1278,13 +1302,114 @@ def turni_automatici():
     
     return render_template('turni_automatici.html', 
                          presidio_templates=presidio_templates,
-                         turni_per_settimana=dict(turni_per_settimana),
+                         selected_template=selected_template,
+                         turni_per_settimana=turni_per_settimana,
                          settimane_stats=settimane_stats,
                          users_by_role=dict(users_by_role),
                          shifts=shifts,
                          today=date.today(),
                          timedelta=timedelta,
                          can_manage_shifts=current_user.can_manage_shifts())
+
+@app.route('/visualizza_turni')
+@login_required
+def visualizza_turni():
+    """Visualizza turni - Solo visualizzazione senza generazione"""
+    if not current_user.can_view_shifts():
+        flash('Non hai i permessi per visualizzare i turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Ottieni template presidio attivi
+    from models import PresidioCoverageTemplate
+    presidio_templates = PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(
+        PresidioCoverageTemplate.start_date.desc()
+    ).all()
+    
+    # Ottieni template selezionato se presente
+    template_id = request.args.get('template_id')
+    selected_template = None
+    turni_per_settimana = {}
+    settimane_stats = {}
+    shifts = []
+    
+    if template_id:
+        try:
+            template_id = int(template_id)
+            selected_template = PresidioCoverageTemplate.query.get(template_id)
+            
+            if selected_template:
+                # Ottieni turni del template selezionato
+                from collections import defaultdict
+                from datetime import timedelta, date
+                
+                # Filtra turni per il periodo del template
+                accessible_sedi = current_user.get_turni_sedi()
+                if accessible_sedi:
+                    shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
+                        User.sede_id.in_([sede.id for sede in accessible_sedi]),
+                        Shift.date >= selected_template.start_date,
+                        Shift.date <= selected_template.end_date,
+                        Shift.shift_type == 'presidio'
+                    ).order_by(Shift.date.asc(), Shift.start_time.asc()).all()  # Ordine crescente
+                else:
+                    shifts = []
+                
+                # Raggruppa turni per settimana
+                turni_per_settimana = defaultdict(list)
+                settimane_stats = {}
+                
+                for shift in shifts:
+                    # Calcola inizio settimana (lunedì)
+                    settimana_inizio = shift.date - timedelta(days=shift.date.weekday())
+                    settimana_fine = settimana_inizio + timedelta(days=6)
+                    settimana_key = settimana_inizio.strftime('%Y-%m-%d')
+                    
+                    turni_per_settimana[settimana_key].append(shift)
+                    
+                    # Calcola statistiche settimana
+                    if settimana_key not in settimane_stats:
+                        settimane_stats[settimana_key] = {
+                            'inizio': settimana_inizio,
+                            'fine': settimana_fine,
+                            'total_hours': 0,
+                            'unique_users': set(),
+                            'shift_count': 0
+                        }
+                    
+                    settimane_stats[settimana_key]['total_hours'] += shift.get_duration_hours()
+                    settimane_stats[settimana_key]['unique_users'].add(shift.user_id)
+                    settimane_stats[settimana_key]['shift_count'] += 1
+                
+                # Converti set in count e ordina per data
+                for stats in settimane_stats.values():
+                    stats['unique_users'] = len(stats['unique_users'])
+                
+                # Ordina settimane per data crescente
+                settimane_stats = dict(sorted(settimane_stats.items(), key=lambda x: x[1]['inizio']))
+                turni_per_settimana = dict(sorted(turni_per_settimana.items(), key=lambda x: x[0]))
+        except (ValueError, TypeError):
+            pass
+    
+    # Ottieni utenti disponibili per statistiche
+    from collections import defaultdict  
+    users_by_role = defaultdict(list)
+    available_users = User.query.filter(
+        User.active.is_(True)
+    ).all()
+    
+    for user in available_users:
+        if hasattr(user, 'role') and user.role:
+            users_by_role[user.role].append(user)
+    
+    return render_template('visualizza_turni.html', 
+                         presidio_templates=presidio_templates,
+                         selected_template=selected_template,
+                         turni_per_settimana=turni_per_settimana,
+                         settimane_stats=settimane_stats,
+                         users_by_role=dict(users_by_role),
+                         shifts=shifts,
+                         today=date.today(),
+                         timedelta=timedelta)
 
 @app.route('/genera_turni_da_template', methods=['POST'])
 @login_required
