@@ -6170,91 +6170,253 @@ def presidio_detail(template_id):
 @login_required
 def view_presidi():
     """Visualizzazione sola lettura dei presidi configurati"""
-    if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
-        flash('Non hai i permessi per visualizzare i presidi', 'danger')
+    if not current_user.can_view_shifts():
+        flash('Non hai i permessi per visualizzare i presidi', 'warning')
         return redirect(url_for('dashboard'))
     
-    templates = get_active_presidio_templates()
-    
+    templates = PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
     return render_template('view_presidi.html', templates=templates)
 
 @app.route('/api/presidio_coverage/<int:template_id>')
 @login_required
-def api_presidio_coverage_new(template_id):
-    """API per ottenere dettagli copertura presidio - Sistema completo"""
-    if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
-        return jsonify({'success': False, 'error': 'Permessi insufficienti'})
-    
+def api_presidio_coverage(template_id):
+    """API per ottenere dettagli copertura presidio"""
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
     
     coverages = []
-    for coverage in template.coverages.filter_by(is_active=True).order_by(
-        PresidioCoverage.day_of_week, PresidioCoverage.start_time
-    ):
-        coverage_data = {
+    for coverage in template.coverages.filter_by(is_active=True):
+        coverages.append({
             'id': coverage.id,
             'day_of_week': coverage.day_of_week,
-            'day_name': coverage.get_day_name(),
             'start_time': coverage.start_time.strftime('%H:%M'),
             'end_time': coverage.end_time.strftime('%H:%M'),
-            'time_range': coverage.get_time_range(),
             'required_roles': coverage.get_required_roles(),
-            'role_count': coverage.role_count,
-            'description': coverage.description,
-            'duration_hours': coverage.get_duration_hours()
-        }
-        
-        # Aggiungi info pause se presenti
-        if coverage.break_start and coverage.break_end:
-            coverage_data['break_start'] = coverage.break_start.strftime('%H:%M')
-            coverage_data['break_end'] = coverage.break_end.strftime('%H:%M')
-            coverage_data['break_range'] = coverage.get_break_range()
-            coverage_data['effective_work_hours'] = coverage.get_effective_work_hours()
-        
-        coverages.append(coverage_data)
+            'role_count': coverage.role_count
+        })
     
     return jsonify({
         'success': True,
-        'template': {
-            'id': template.id,
-            'name': template.name,
-            'start_date': template.start_date.strftime('%Y-%m-%d'),
-            'end_date': template.end_date.strftime('%Y-%m-%d'),
-            'period_display': template.get_period_display(),
-            'description': template.description,
-            'total_hours_per_week': template.get_total_hours_per_week(),
-            'covered_days_count': template.get_covered_days_count(),
-            'involved_roles': template.get_involved_roles()
-        },
+        'template_name': template.name,
+        'start_date': template.start_date.strftime('%Y-%m-%d'),
+        'end_date': template.end_date.strftime('%Y-%m-%d'),
+        'period': template.get_period_display(),
         'coverages': coverages
     })
 
-@app.route('/delete_presidio_template/<int:template_id>', methods=['POST'])
+@app.route('/presidio_coverage/toggle_status/<int:template_id>', methods=['POST'])
+@login_required
+def toggle_presidio_template_status(template_id):
+    """Attiva/disattiva template presidio"""
+    if not current_user.can_manage_shifts():
+        return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
+    
+    template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    new_status = request.json.get('is_active', not template.is_active)
+    
+    template.is_active = new_status
+    template.updated_at = italian_now()
+    
+    # Aggiorna anche tutte le coperture associate
+    for coverage in template.coverages:
+        coverage.is_active = new_status
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True, 
+        'message': f'Template {"attivato" if new_status else "disattivato"} con successo'
+    })
+
+@app.route('/presidio_coverage/delete/<int:template_id>', methods=['POST'])
 @login_required
 def delete_presidio_template(template_id):
-    """Elimina template di copertura presidio"""
+    """Elimina template presidio (soft delete)"""
     if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per eliminare template presidio', 'danger')
-        return redirect(url_for('presidio_coverage'))
+        return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
     
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
     
-    # Controllo di sicurezza: solo il creatore o admin può eliminare
-    if template.created_by != current_user.id and not current_user.has_role('Amministratore'):
-        flash('Puoi eliminare solo template che hai creato', 'danger')
-        return redirect(url_for('presidio_coverage'))
-    
-    template_name = template.name
-    
-    # Disattiva invece di eliminare per preservare riferimenti
+    # Soft delete del template e di tutte le coperture
     template.is_active = False
+    coverages_count = 0
     for coverage in template.coverages:
         coverage.is_active = False
+        coverages_count += 1
     
     db.session.commit()
-    flash(f'Template "{template_name}" eliminato con successo', 'success')
     
-    return redirect(url_for('presidio_coverage'))
+    return jsonify({
+        'success': True,
+        'message': f'Template "{template.name}" eliminato ({coverages_count} coperture)'
+    })
+
+@app.route('/presidio_coverage/duplicate/<int:template_id>', methods=['POST'])
+@login_required
+def duplicate_presidio_template(template_id):
+    """Duplica template presidio con tutte le coperture"""
+    if not current_user.can_manage_shifts():
+        return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
+    
+    source_template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    
+    # Crea nuovo template
+    new_template = PresidioCoverageTemplate(
+        name=f"{source_template.name} (Copia)",
+        start_date=source_template.start_date,
+        end_date=source_template.end_date,
+        description=f"Copia di: {source_template.description}" if source_template.description else None,
+        created_by=current_user.id
+    )
+    db.session.add(new_template)
+    db.session.flush()  # Per ottenere l'ID
+    
+    # Duplica tutte le coperture
+    coverages_count = 0
+    for coverage in source_template.coverages.filter_by(is_active=True):
+        new_coverage = PresidioCoverage(
+            template_id=new_template.id,
+            day_of_week=coverage.day_of_week,
+            start_time=coverage.start_time,
+            end_time=coverage.end_time,
+            required_roles=coverage.required_roles,
+            role_count=coverage.role_count,
+            description=coverage.description,
+            sede_id=coverage.sede_id,
+            shift_type=coverage.shift_type
+        )
+        db.session.add(new_coverage)
+        coverages_count += 1
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'Template duplicato come "{new_template.name}" ({coverages_count} coperture)',
+        'new_template_id': new_template.id
+    })
+
+# ============ FUNZIONI UTILITÀ PRESIDIO ============
+
+def get_presidio_coverage_for_period(start_date, end_date):
+    """Ottieni coperture presidio valide per un periodo"""
+    templates = PresidioCoverageTemplate.query.filter(
+        PresidioCoverageTemplate.is_active == True,
+        PresidioCoverageTemplate.start_date <= end_date,
+        PresidioCoverageTemplate.end_date >= start_date
+    ).all()
+    
+    all_coverages = []
+    for template in templates:
+        for coverage in template.coverages.filter_by(is_active=True):
+            all_coverages.append(coverage)
+    
+    return all_coverages
+
+def get_required_roles_for_day_time(day_of_week, time_slot):
+    """Ottieni ruoli richiesti per un giorno e orario specifico"""
+    from datetime import datetime, time
+    if isinstance(time_slot, str):
+        time_slot = datetime.strptime(time_slot, '%H:%M').time()
+    
+    coverages = PresidioCoverage.query.filter(
+        PresidioCoverage.is_active == True,
+        PresidioCoverage.day_of_week == day_of_week,
+        PresidioCoverage.start_time <= time_slot,
+        PresidioCoverage.end_time > time_slot
+    ).all()
+    
+    required_roles = set()
+    for coverage in coverages:
+        required_roles.update(coverage.get_required_roles())
+    
+    return list(required_roles)
+
+def get_active_presidio_templates():
+    """Ottieni tutti i template presidio attivi ordinati per data"""
+    return PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(
+        PresidioCoverageTemplate.start_date.desc()
+    ).all()
+
+def create_presidio_shift_from_template(template, target_week_start, users_by_role):
+    """
+    Crea turni presidio da template per una settimana specifica
+    Args:
+        template: PresidioCoverageTemplate
+        target_week_start: data inizio settimana (date)
+        users_by_role: dict {role_name: [User objects]}
+    Returns:
+        dict con risultati creazione turni
+    """
+    from datetime import timedelta
+    
+    created_shifts = []
+    errors = []
+    
+    for coverage in template.coverages.filter_by(is_active=True):
+        # Calcola la data specifica per il giorno della settimana
+        target_date = target_week_start + timedelta(days=coverage.day_of_week)
+        
+        # Ottieni utenti disponibili per i ruoli richiesti
+        required_roles = coverage.get_required_roles()
+        available_users = []
+        
+        for role in required_roles:
+            if role in users_by_role:
+                available_users.extend(users_by_role[role])
+        
+        if len(available_users) < coverage.role_count:
+            errors.append(f"Utenti insufficienti per {coverage.get_day_name()} {coverage.get_time_range()}: richiesti {coverage.role_count}, disponibili {len(available_users)}")
+            continue
+        
+        # Seleziona utenti per il turno (semplice: primi N disponibili)
+        selected_users = available_users[:coverage.role_count]
+        
+        # Crea turni per ogni utente selezionato
+        for user in selected_users:
+            # Verifica sovrapposizioni esistenti
+            existing_shift = Shift.query.filter(
+                Shift.user_id == user.id,
+                Shift.date == target_date,
+                Shift.start_time < coverage.end_time,
+                Shift.end_time > coverage.start_time
+            ).first()
+            
+            if existing_shift:
+                errors.append(f"Sovrapposizione per {user.get_full_name()} il {target_date.strftime('%d/%m/%Y')}")
+                continue
+            
+            # Crea il turno
+            shift = Shift(
+                user_id=user.id,
+                date=target_date,
+                start_time=coverage.start_time,
+                end_time=coverage.end_time,
+                type='presidio',
+                sede_id=user.sede_id,
+                description=f"Presidio: {template.name} - {coverage.description or ''}"
+            )
+            
+            db.session.add(shift)
+            created_shifts.append(shift)
+    
+    try:
+        db.session.commit()
+        return {
+            'success': True,
+            'created_count': len(created_shifts),
+            'errors': errors,
+            'shifts': created_shifts
+        }
+    except Exception as e:
+        db.session.rollback()
+        return {
+            'success': False,
+            'error': str(e),
+            'created_count': 0,
+            'errors': errors + [f"Errore database: {str(e)}"]
+        }
+
+
 
 @app.route('/delete_presidio_coverage/<int:coverage_id>', methods=['POST'])
 @login_required
