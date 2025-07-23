@@ -6113,6 +6113,8 @@ def presidio_coverage_edit(template_id):
                     role_count=coverage_form.role_count.data,
                     description=coverage_form.description.data,
                     is_active=coverage_form.is_active.data,
+                    start_date=current_template.start_date,
+                    end_date=current_template.end_date,
                     created_by=current_user.id
                 )
                 
