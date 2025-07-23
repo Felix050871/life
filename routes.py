@@ -3092,11 +3092,9 @@ def reperibilita_shifts():
     # Get current template list for generation (legacy - ora usiamo coperture) 
     templates = []  # Svuotato perché ora usiamo le coperture invece dei template
     
-    # Parametri di visualizzazione
-    if current_user.role in ['Admin', 'Management', 'Staff']:
+    # Parametri di visualizzazione basati sui permessi granulari
+    if current_user.can_manage_reperibilita() or current_user.can_view_all_attendance():
         view_mode = request.args.get('view', 'all')
-    elif current_user.role == 'Ente':
-        view_mode = 'all'  # Ente vede sempre tutti
     else:
         view_mode = 'personal'  # Utenti normali vedono solo i propri
     
@@ -3150,7 +3148,7 @@ def reperibilita_shifts():
     # Get active intervention for current user
     active_intervention = None
     current_time = italian_now().time()
-    if current_user.role in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
+    if current_user.can_view_interventions():
         active_intervention = ReperibilitaIntervention.query.filter_by(
             user_id=current_user.id,
             end_datetime=None
