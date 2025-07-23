@@ -5,6 +5,67 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<style>
+/* Miglioramenti visualizzazione coperture */
+.coverage-day-card {
+    background: var(--bs-light);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.coverage-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.coverage-slot-improved {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: white;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.slot-info {
+    flex: 1;
+}
+
+.time-display {
+    color: var(--bs-primary);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.break-display {
+    color: var(--bs-warning);
+    margin-bottom: 0.25rem;
+}
+
+.roles-display {
+    margin-bottom: 0.25rem;
+}
+
+.role-tags .badge {
+    font-size: 0.7rem;
+}
+
+.description-display {
+    color: var(--bs-secondary);
+}
+
+.slot-actions {
+    margin-left: 1rem;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -447,70 +508,6 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-/* Miglioramenti visualizzazione coperture */
-.coverage-day-card {
-    background: var(--bs-light);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    padding: 1rem;
-}
-
-.coverage-day-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--bs-border-color);
-}
-
-.coverage-slot-improved {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    background: white;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 6px;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
-.slot-info {
-    flex: 1;
-}
-
-.time-display {
-    color: var(--bs-primary);
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-}
-
-.break-display {
-    color: var(--bs-warning);
-    margin-bottom: 0.25rem;
-}
-
-.roles-display {
-    margin-bottom: 0.25rem;
-}
-
-.role-tags .badge {
-    font-size: 0.7rem;
-}
-
-.description-display {
-    color: var(--bs-secondary);
-}
-
-.slot-actions {
-    margin-left: 1rem;
-}
-</style>
 {% endblock %}
 
 {% block extra_js %}
