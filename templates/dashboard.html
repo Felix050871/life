@@ -612,7 +612,7 @@
 </div>
 
 <!-- Reperibilità Section for authorized users -->
-{% if current_user.role in ['Management', 'Operatore', 'Redattore', 'Sviluppatore'] %}
+{% if current_user.can_view_reperibilita_widget() %}
 <div class="row">
     <!-- Reperibilità Shifts -->
     <div class="col-md-6 mb-4">
@@ -1274,5 +1274,6 @@ function showConfirmModal(title, message, onConfirm) {
         </div>
     </div>
 </div>
+{% endif %}
 
 {% endblock %}
