@@ -191,8 +191,10 @@ def api_update_shift_user():
     if not current_user.can_manage_shifts():
         return jsonify({'error': 'Non autorizzato'}), 403
     
-    shift_id = request.form.get('shift_id')
+    shift_id = request.form.get('shift_id') 
     new_user_id = request.form.get('user_id')
+    
+    print(f"API Debug: update_shift_user called - shift_id={shift_id}, user_id={new_user_id}")
     
     if not shift_id or not new_user_id:
         return jsonify({'error': 'Parametri mancanti'}), 400
@@ -221,6 +223,7 @@ def api_update_shift_user():
         'success': True,
         'user': {
             'id': new_user.id,
-            'username': new_user.username
+            'username': new_user.username,
+            'full_name': new_user.get_full_name()
         }
     })

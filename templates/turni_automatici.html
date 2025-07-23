@@ -451,15 +451,17 @@ function updateShiftUser(shiftId, newUserId, shiftElement, modal) {
         method: 'POST',
         data: {
             shift_id: shiftId,
-            user_id: newUserId
+            user_id: newUserId,
+            csrf_token: $('meta[name=csrf-token]').attr('content')
         },
         success: function(response) {
             if (response.success) {
-                // Aggiorna l'interfaccia
-                shiftElement.find('.shift-user').text(response.user.username.length > 12 ? 
-                    response.user.username.substring(0, 12) + '...' : response.user.username);
+                // Aggiorna l'interfaccia con nome completo
+                var displayName = response.user.full_name || response.user.username;
+                shiftElement.find('.shift-user').text(displayName.length > 12 ? 
+                    displayName.substring(0, 12) + '...' : displayName);
                 shiftElement.data('user-id', newUserId);
-                shiftElement.attr('title', response.user.username + ' - ' + shiftElement.find('small').text());
+                shiftElement.attr('title', displayName + ' - ' + shiftElement.find('small').text());
                 modal.modal('hide');
                 
                 // Ricarica i turni per aggiornare le statistiche
