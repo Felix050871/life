@@ -71,7 +71,7 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <strong>Creato da:</strong> {{ template.created_by_user.full_name if template.created_by_user else 'N/A' }}
+                        <strong>Creato da:</strong> {{ template.creator.full_name if template.creator else 'N/A' }}
                     </div>
                     <div class="mb-2">
                         <strong>Data creazione:</strong> {{ template.created_at.strftime('%d/%m/%Y %H:%M') }}
@@ -216,7 +216,13 @@
                                 {% endfor %}
                                 {{ day_roles|length }}
                             </td>
-                            <td>{{ coverages_by_day[day_num]|sum(attribute='role_count') }}</td>
+                            <td>
+                                {% set day_people_count = 0 %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                  {% set day_people_count = day_people_count + coverage.role_count %}
+                                {% endfor %}
+                                {{ day_people_count }}
+                            </td>
                             {% else %}
                             <td colspan="5" class="text-muted text-center">Nessuna copertura</td>
                             {% endif %}
@@ -227,10 +233,38 @@
                         <tr class="table-info">
                             <th>Totale Settimana</th>
                             <th>{{ template.coverages.count() }}</th>
-                            <th>{{ "%.1f"|format(template.get_total_hours_per_week()) }}h</th>
-                            <th>{{ "%.1f"|format(template.get_total_effective_hours_per_week()) }}h</th>
-                            <th>{{ template.get_involved_roles()|length }}</th>
-                            <th>{{ template.get_total_people_required() }}</th>
+                            <th>
+                                {% set week_total_hours = 0 %}
+                                {% for coverage in template.coverages %}
+                                  {% set week_total_hours = week_total_hours + coverage.get_duration_hours() %}
+                                {% endfor %}
+                                {{ "%.1f"|format(week_total_hours) }}h
+                            </th>
+                            <th>
+                                {% set week_effective_hours = 0 %}
+                                {% for coverage in template.coverages %}
+                                  {% set week_effective_hours = week_effective_hours + coverage.get_effective_work_hours() %}
+                                {% endfor %}
+                                {{ "%.1f"|format(week_effective_hours) }}h
+                            </th>
+                            <th>
+                                {% set all_roles = [] %}
+                                {% for coverage in template.coverages %}
+                                    {% for role in coverage.get_required_roles() %}
+                                        {% if role not in all_roles %}
+                                            {% set _ = all_roles.append(role) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ all_roles|length }}
+                            </th>
+                            <th>
+                                {% set total_people = 0 %}
+                                {% for coverage in template.coverages %}
+                                  {% set total_people = total_people + coverage.role_count %}
+                                {% endfor %}
+                                {{ total_people }}
+                            </th>
                         </tr>
                     </tfoot>
                 </table>

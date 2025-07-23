@@ -994,6 +994,7 @@ class PresidioCoverageTemplate(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
 
     # Relazioni
     creator = db.relationship('User', backref='presidio_coverage_templates')
