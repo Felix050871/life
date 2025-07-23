@@ -1300,7 +1300,7 @@ def turni_automatici():
         if hasattr(user, 'role') and user.role:
             users_by_role[user.role].append(user)
     
-    from datetime import date
+    from datetime import date, timedelta
     return render_template('turni_automatici.html', 
                          presidio_templates=presidio_templates,
                          selected_template=selected_template,
@@ -1402,7 +1402,7 @@ def visualizza_turni():
         if hasattr(user, 'role') and user.role:
             users_by_role[user.role].append(user)
     
-    from datetime import date
+    from datetime import date, timedelta
     return render_template('visualizza_turni.html', 
                          presidio_templates=presidio_templates,
                          selected_template=selected_template,
