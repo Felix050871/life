@@ -4,12 +4,10 @@ from datetime import datetime, timedelta
 from app import app, db
 from models import User, Shift, PresidioCoverageTemplate
 
-@app.route('/api/get_shifts_for_template')
+@app.route('/api/get_shifts_for_template/<int:template_id>')
 @login_required
-def api_get_shifts_for_template():
-    template_id = request.args.get('template_id')
-    if not template_id:
-        return jsonify({'error': 'Template ID richiesto'}), 400
+def api_get_shifts_for_template(template_id):
+    print(f"=== API get_shifts_for_template called with template_id={template_id} ===")
     
     # Trova il template
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
@@ -74,8 +72,10 @@ def api_get_shifts_for_template():
     sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
     
     return jsonify({
+        'success': True,
         'weeks': [week_data for _, week_data in sorted_weeks],
-        'template_name': template.name
+        'template_name': template.name,
+        'period': template.get_period_display()
     })
 
 @app.route('/api/get_users_by_role')
