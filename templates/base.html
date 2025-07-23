@@ -75,26 +75,26 @@
                     </li>
                     {% endif %}
 
-                    <!-- TURNI -->
+                    <!-- TURNI AUTOMATICI -->
                     {% if current_user.can_access_shifts_menu() and ((current_user.sede_obj and current_user.sede_obj.is_turni_mode()) or current_user.all_sedi) %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-calendar-alt me-1"></i>Turni
                         </a>
                         <ul class="dropdown-menu">
-                            {% if current_user.can_access_coverage_menu() %}
-                            <li><a class="dropdown-item" href="{{ url_for('manage_coverage') }}">
-                                <i class="fas fa-shield-alt me-1"></i>Gestione Coperture
+                            {% if current_user.can_manage_shifts() %}
+                            <li><a class="dropdown-item" href="{{ url_for('presidio_coverage') }}">
+                                <i class="fas fa-shield-alt me-1"></i>Gestione Template Presidio
                             </a></li>
                             {% endif %}
-                            {% if current_user.can_manage_shifts() %}
-                            <li><a class="dropdown-item" href="{{ url_for('manage_turni') }}">
-                                <i class="fas fa-cog me-1"></i>Gestione Turni
+                            {% if current_user.can_manage_shifts() or current_user.can_view_shifts() %}
+                            <li><a class="dropdown-item" href="{{ url_for('turni_automatici') }}">
+                                <i class="fas fa-magic me-1"></i>Turni Automatici
                             </a></li>
                             {% endif %}
                             {% if current_user.can_view_shifts() %}
-                            <li><a class="dropdown-item" href="{{ url_for('view_coverage_templates') }}">
-                                <i class="fas fa-eye me-1"></i>Visualizza Turni
+                            <li><a class="dropdown-item" href="{{ url_for('view_presidi') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizza Presidi
                             </a></li>
                             {% endif %}
                         </ul>

@@ -1210,166 +1210,185 @@ def attendance():
                          view_mode=view_mode,
                          show_team_data=show_team_data)
 
-@app.route('/shifts')
+@app.route('/turni_automatici')
 @login_required
-def shifts():
-    # Se l'utente accede tramite il link "Visualizza Turni" dal menu,
-    # mostra solo la visualizzazione senza gestione
-    view_only = request.args.get('view_only', 'false').lower() == 'true'
-    if current_user.can_manage_shifts() and not view_only:
-        # Managers see template management interface
-        shift_form = ShiftForm()
-        template_form = ShiftTemplateForm()
-        
-        # Populate user choices for shift form
-        workers = User.query.filter(
-            User.role.in_(['Redattore', 'Sviluppatore', 'Operatore']),
-            User.active.is_(True)
-        ).all()
-        shift_form.user_id.choices = [(u.id, u.get_full_name()) for u in workers]
-        
-        # Get existing shift templates
-        shift_templates = ShiftTemplate.query.order_by(ShiftTemplate.created_at.desc()).all()
-        
-        # Check if user has access to turni sedi
-        user_sede = current_user.sede_obj if current_user.sede_obj else None
-        sedi_turni_accessible = current_user.get_turni_sedi()
-        sede_supports_turni = len(sedi_turni_accessible) > 0
-        has_turni_access = sede_supports_turni
-        
-        # Carica anche i turni esistenti per i manager
-        accessible_sedi = current_user.get_turni_sedi()
-        if accessible_sedi:
-            shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
-                User.sede_id.in_([sede.id for sede in accessible_sedi])
-            ).order_by(Shift.date.desc(), Shift.start_time).all()
-        else:
-            shifts = []
-        
-        # Calcola statistiche
-        total_hours = sum(shift.get_duration_hours() for shift in shifts)
-        future_shifts = len([s for s in shifts if s.date >= date.today()])
-        unique_users = len(set(shift.user_id for shift in shifts))
-        
-        # Helper per giorni della settimana in italiano
-        def get_italian_weekday(date_obj):
-            giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
-            return giorni[date_obj.weekday()]
-        
-        return render_template('shifts.html', 
-                             shift_form=shift_form,
-                             template_form=template_form,
-                             shift_templates=shift_templates,
-                             can_manage=True,
-                             selected_template=None,
-                             shifts=shifts,
-                             today=date.today(),
-                             total_hours=round(total_hours, 1),
-                             future_shifts=future_shifts,
-                             unique_users=unique_users,
-                             view_mode='all',
-                             user_sede=user_sede,
-                             sede_supports_turni=sede_supports_turni,
-                             has_turni_access=has_turni_access,
-                             get_italian_weekday=get_italian_weekday)
+def turni_automatici():
+    """Sistema nuovo: Creazione automatica turni da template presidio"""
+    if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
+        flash('Non hai i permessi per accedere ai turni', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Ottieni template presidio attivi per creazione turni
+    from models import PresidioCoverageTemplate
+    presidio_templates = PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(
+        PresidioCoverageTemplate.start_date.desc()
+    ).all()
+    
+    # Ottieni turni esistenti raggruppati per settimana
+    from collections import defaultdict
+    from datetime import timedelta, date
+    
+    accessible_sedi = current_user.get_turni_sedi()
+    if accessible_sedi:
+        shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
+            User.sede_id.in_([sede.id for sede in accessible_sedi])
+        ).order_by(Shift.date.desc(), Shift.start_time).all()
     else:
-        # Parametri di visualizzazione per utenti con solo permesso view
-        if current_user.can_view_shifts() and current_user.all_sedi:
-            # Utenti multi-sede con permesso view vedono tutti i turni
-            view_mode = request.args.get('view', 'all')
-        else:
-            # Altri utenti vedono solo i propri turni
-            view_mode = 'personal'
+        shifts = []
+    
+    # Raggruppa turni per settimana
+    turni_per_settimana = defaultdict(list)
+    settimane_stats = {}
+    
+    for shift in shifts:
+        # Calcola inizio settimana (lunedì)
+        settimana_inizio = shift.date - timedelta(days=shift.date.weekday())
+        settimana_fine = settimana_inizio + timedelta(days=6)
+        settimana_key = settimana_inizio.strftime('%Y-%m-%d')
         
-        if view_mode == 'personal':
-            # Show only personal shifts
-            shifts = Shift.query.filter(Shift.user_id == current_user.id).order_by(
-                Shift.date.desc(), Shift.start_time
-            ).all()
+        turni_per_settimana[settimana_key].append(shift)
+        
+        # Calcola statistiche settimana
+        if settimana_key not in settimane_stats:
+            settimane_stats[settimana_key] = {
+                'inizio': settimana_inizio,
+                'fine': settimana_fine,
+                'total_hours': 0,
+                'unique_users': set(),
+                'shift_count': 0
+            }
+        
+        settimane_stats[settimana_key]['total_hours'] += shift.get_duration_hours()
+        settimane_stats[settimana_key]['unique_users'].add(shift.user_id)
+        settimane_stats[settimana_key]['shift_count'] += 1
+    
+    # Converti set in count
+    for stats in settimane_stats.values():
+        stats['unique_users'] = len(stats['unique_users'])
+    
+    # Ottieni utenti disponibili per creazione turni raggruppati per ruolo
+    users_by_role = defaultdict(list)
+    available_users = User.query.filter(
+        User.active.is_(True)
+    ).all()
+    
+    for user in available_users:
+        if hasattr(user, 'role') and user.role:
+            users_by_role[user.role].append(user)
+    
+    return render_template('turni_automatici.html', 
+                         presidio_templates=presidio_templates,
+                         turni_per_settimana=dict(turni_per_settimana),
+                         settimane_stats=settimane_stats,
+                         users_by_role=dict(users_by_role),
+                         shifts=shifts,
+                         today=date.today(),
+                         can_manage_shifts=current_user.can_manage_shifts())
+
+@app.route('/genera_turni_da_template', methods=['POST'])
+@login_required
+def genera_turni_da_template():
+    """Genera turni automaticamente da template presidio"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per creare turni', 'danger')
+        return redirect(url_for('turni_automatici'))
+    
+    template_id = request.form.get('template_id')
+    start_date_str = request.form.get('start_date')
+    end_date_str = request.form.get('end_date')
+    
+    if not all([template_id, start_date_str, end_date_str]):
+        flash('Parametri mancanti per la generazione turni', 'danger')
+        return redirect(url_for('turni_automatici'))
+    
+    try:
+        from datetime import datetime, timedelta
+        from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User
+        import json
+        import random
+        
+        # Ottieni template
+        template = PresidioCoverageTemplate.query.get_or_404(template_id)
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Ottieni coperture del template
+        coverages = PresidioCoverage.query.filter_by(
+            template_id=template_id,
+            is_active=True
+        ).all()
+        
+        if not coverages:
+            flash('Il template selezionato non ha coperture configurate', 'warning')
+            return redirect(url_for('turni_automatici'))
+        
+        turni_creati = 0
+        current_date = start_date
+        
+        while current_date <= end_date:
+            # Ottieni giorno della settimana (0 = lunedì)
+            day_of_week = current_date.weekday()
             
-            # Check for leave requests that overlap with each shift
-            for shift in shifts:
-                leave_request = LeaveRequest.query.filter(
-                    LeaveRequest.user_id == shift.user_id,
-                    LeaveRequest.start_date <= shift.date,
-                    LeaveRequest.end_date >= shift.date,
-                    LeaveRequest.status.in_(['Pending', 'Approved'])
-                ).first()
+            # Trova coperture per questo giorno
+            day_coverages = [c for c in coverages if c.day_of_week == day_of_week]
+            
+            for coverage in day_coverages:
+                try:
+                    # Parsing ruoli richiesti
+                    required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+                    
+                    # Trova utenti disponibili per questi ruoli
+                    available_users = User.query.filter(
+                        User.active.is_(True),
+                        User.role.in_(required_roles)
+                    ).all()
+                    
+                    if not available_users:
+                        continue
+                    
+                    # Seleziona utenti per la copertura (max role_count)
+                    selected_users = random.sample(
+                        available_users, 
+                        min(coverage.role_count, len(available_users))
+                    )
+                    
+                    # Crea turni per ogni utente selezionato
+                    for user in selected_users:
+                        # Controlla se esiste già un turno per questo utente in questa data/ora
+                        existing_shift = Shift.query.filter_by(
+                            user_id=user.id,
+                            date=current_date,
+                            start_time=coverage.start_time
+                        ).first()
+                        
+                        if not existing_shift:
+                            new_shift = Shift(
+                                user_id=user.id,
+                                date=current_date,
+                                start_time=coverage.start_time,
+                                end_time=coverage.end_time,
+                                break_start=coverage.break_start,
+                                break_end=coverage.break_end,
+                                notes=f'Generato da template: {template.name}',
+                                created_by=current_user.id,
+                                created_at=datetime.utcnow()
+                            )
+                            db.session.add(new_shift)
+                            turni_creati += 1
                 
-                shift.has_leave_request = leave_request is not None
-                shift.leave_request = leave_request
+                except json.JSONDecodeError:
+                    continue
             
-            total_hours = sum(shift.get_duration_hours() for shift in shifts)
-            future_shifts = len([s for s in shifts if s.date >= date.today()])
-            unique_users = 1
-            
-            # Helper per giorni della settimana in italiano
-            def get_italian_weekday(date_obj):
-                giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
-                return giorni[date_obj.weekday()]
-            
-            # Check if user has access to turni sedi
-            user_sede = current_user.sede_obj if current_user.sede_obj else None
-            sedi_turni_accessible = current_user.get_turni_sedi()
-            sede_supports_turni = len(sedi_turni_accessible) > 0
-            has_turni_access = sede_supports_turni
-            
-            return render_template('shifts.html',
-                                 shifts=shifts,
-                                 today=date.today(),
-                                 total_hours=round(total_hours, 1),
-                                 future_shifts=future_shifts,
-                                 unique_users=unique_users,
-                                 can_manage=False,
-                                 view_mode=view_mode,
-                                 selected_template=None,
-                                 shift_templates=[],
-                                 user_sede=user_sede,
-                                 sede_supports_turni=sede_supports_turni,
-                                 has_turni_access=has_turni_access,
-                                 get_italian_weekday=get_italian_weekday)
-        else:
-            # Show all shifts for multi-sede users
-            accessible_sedi = current_user.get_turni_sedi()
-            if accessible_sedi:
-                shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
-                    User.sede_id.in_([sede.id for sede in accessible_sedi])
-                ).order_by(Shift.date.desc(), Shift.start_time).all()
-            else:
-                shifts = []
-            
-            # Calcola statistiche per tutti i turni
-            total_hours = sum(shift.get_duration_hours() for shift in shifts)
-            future_shifts = len([s for s in shifts if s.date >= date.today()])
-            unique_users = len(set(shift.user_id for shift in shifts))
-            
-            shift_templates = ShiftTemplate.query.order_by(ShiftTemplate.created_at.desc()).all()
-            
-            # Helper per giorni della settimana in italiano
-            def get_italian_weekday(date_obj):
-                giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
-                return giorni[date_obj.weekday()]
-            
-            # Check if user has access to turni sedi
-            user_sede = current_user.sede_obj if current_user.sede_obj else None
-            sedi_turni_accessible = current_user.get_turni_sedi()
-            sede_supports_turni = len(sedi_turni_accessible) > 0
-            has_turni_access = sede_supports_turni
-            
-            return render_template('shifts.html', 
-                                 shift_templates=shift_templates,
-                                 today=date.today(),
-                                 can_manage=False,
-                                 view_mode=view_mode,
-                                 selected_template=None,
-                                 shifts=shifts,
-                                 total_hours=round(total_hours, 1),
-                                 future_shifts=future_shifts,
-                                 unique_users=unique_users,
-                                 user_sede=user_sede,
-                                 sede_supports_turni=sede_supports_turni,
-                                 has_turni_access=has_turni_access,
-                                 get_italian_weekday=get_italian_weekday)
+            current_date += timedelta(days=1)
+        
+        db.session.commit()
+        flash(f'Creati {turni_creati} turni dal template "{template.name}"', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante la generazione turni: {str(e)}', 'danger')
+    
+    return redirect(url_for('turni_automatici'))
 
 @app.route('/create_shift', methods=['POST'])
 @login_required

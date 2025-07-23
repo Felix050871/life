@@ -1,230 +1,255 @@
 {% extends "base.html" %}
 
-{% block title %}Visualizzazione Presidi{% endblock %}
+{% block title %}Visualizza Presidi - {{ super() }}{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
+{% block head %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<style>
+.coverage-day-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+}
+
+.coverage-day-header {
+    background-color: #6c757d;
+    color: white;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+    border-top-left-radius: 0.375rem;
+    border-top-right-radius: 0.375rem;
+}
+
+.coverage-time-slot {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    background-color: white;
+}
+
+.coverage-time-slot:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+.role-badge {
+    margin: 0.125rem;
+}
+
+.time-range {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #495057;
+    font-size: 1.1em;
+}
+
+.template-info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.template-info-card .card-body {
+    padding: 1.5rem;
+}
+
+.no-coverage-day {
+    padding: 0.75rem 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    border: 1px dashed #dee2e6;
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="presidio-container">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fa fa-eye me-2"></i>Visualizzazione Presidi</h2>
-            <p class="text-muted mb-0">Vista sola lettura di tutti i presidi configurati</p>
-        </div>
-        <div class="quick-actions">
-            {% if current_user.can_manage_shifts() %}
-            <a href="{{ url_for('presidio_coverage') }}" class="btn btn-primary">
-                <i class="fa fa-edit me-1"></i>Gestione Completa
-            </a>
-            {% endif %}
-        </div>
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-eye me-2"></i>Visualizza Presidi</h2>
+        <p class="text-muted">Visualizza i template di copertura presidio configurati</p>
     </div>
+</div>
 
-    <!-- Lista template -->
-    <div class="row">
-        <div class="col-12">
-            {% if templates %}
-            <div class="mb-3">
-                <h4>Template di Presidio Attivi ({{ templates|length }})</h4>
+<!-- Templates Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>Template di Copertura Presidio</h5>
+                {% if templates %}
+                <span class="badge bg-info">{{ templates|length }} template</span>
+                {% endif %}
             </div>
-            
-            {% for template in templates %}
-            <div class="presidio-template-card mb-4">
-                <!-- Header template -->
-                <div class="template-header">
-                    <div>
-                        <h5 class="template-title">{{ template.name }}</h5>
-                        <div class="template-period">
-                            <i class="fa fa-calendar me-1"></i>{{ template.get_period_display() }}
-                        </div>
-                    </div>
-                    <div class="quick-actions">
-                        <a href="{{ url_for('presidio_detail', template_id=template.id) }}" 
-                           class="action-btn btn-view" title="Visualizza dettagli completi">
-                            <i class="fa fa-eye"></i> Dettagli
-                        </a>
-                    </div>
+            <div class="card-body">
+                {% if templates %}
+                <div class="table-responsive">
+                    <table class="table table-striped" id="templatesTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nome Template</th>
+                                <th>Periodo</th>
+                                <th>Descrizione</th>
+                                <th>Coperture</th>
+                                <th>Creato da</th>
+                                <th>Data Creazione</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                            <tr>
+                                <td><strong>{{ template.name }}</strong></td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ template.start_date.strftime('%d/%m/%Y') }} - {{ template.end_date.strftime('%d/%m/%Y') }}
+                                    </span>
+                                </td>
+                                <td>{{ template.description or 'Nessuna descrizione' }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ template.coverages.count() }} fasce</span>
+                                </td>
+                                <td>{{ template.creator.get_full_name() }}</td>
+                                <td>{{ template.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    {% if template.is_active %}
+                                    <span class="badge bg-success">Attivo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inattivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('presidio_detail', template_id=template.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i> Dettagli
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                
-                <!-- Statistiche template -->
-                <div class="template-stats">
-                    <div class="stat-item">
-                        <i class="fa fa-clock"></i>
-                        <span>{{ "%.1f"|format(template.get_total_hours_per_week()) }}h/settimana</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fa fa-calendar-day"></i>
-                        <span>{{ template.get_covered_days_count() }} giorni coperti</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fa fa-users"></i>
-                        <span>{{ template.get_involved_roles()|length }} ruoli</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fa fa-list"></i>
-                        <span>{{ template.coverages.count() }} coperture</span>
-                    </div>
-                </div>
-                
-                <!-- Descrizione se presente -->
-                {% if template.description %}
-                <div class="template-description mb-3">
-                    <i class="fa fa-info-circle me-1"></i>{{ template.description }}
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun template presidio configurato</h5>
+                    <p class="text-muted">Non sono presenti template di copertura presidio nel sistema.</p>
                 </div>
                 {% endif %}
-                
-                <!-- Anteprima coperture per giorno -->
-                <div class="coverage-preview">
-                    <h6 class="mb-3">Coperture per Giorno:</h6>
-                    
-                    {% set coverages_by_day = {} %}
-                    {% for coverage in template.coverages.filter_by(is_active=True).order_by('day_of_week', 'start_time') %}
-                        {% if coverage.day_of_week not in coverages_by_day %}
-                            {% set _ = coverages_by_day.update({coverage.day_of_week: []}) %}
-                        {% endif %}
-                        {% set _ = coverages_by_day[coverage.day_of_week].append(coverage) %}
-                    {% endfor %}
-                    
-                    {% if coverages_by_day %}
-                    <div class="row">
-                        {% for day_num in range(7) %}
-                        {% set day_name = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'][day_num] %}
-                        <div class="col-md-1 col-sm-2 col-3 mb-2">
-                            <div class="text-center">
-                                <div class="fw-bold">{{ day_name }}</div>
-                                {% if day_num in coverages_by_day %}
-                                <div class="badge bg-success">{{ coverages_by_day[day_num]|length }}</div>
-                                <div class="small text-muted">
-                                    {{ "%.1f"|format(coverages_by_day[day_num]|sum(attribute='get_duration_hours')|float) }}h
-                                </div>
-                                {% else %}
-                                <div class="badge bg-light text-muted">0</div>
-                                <div class="small text-muted">-</div>
-                                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Details Modal for each template -->
+{% for template in templates %}
+<div class="modal fade" id="templateModal{{ template.id }}" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header template-info-card">
+                <h5 class="modal-title">
+                    <i class="fas fa-clipboard-list me-2"></i>{{ template.name }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card template-info-card">
+                            <div class="card-body">
+                                <h6><i class="fas fa-info-circle me-2"></i>Informazioni Template</h6>
+                                <hr class="text-white-50">
+                                <p><strong>Periodo:</strong> {{ template.get_period_display() }}</p>
+                                <p><strong>Descrizione:</strong> {{ template.description or 'Nessuna descrizione' }}</p>
+                                <p><strong>Creato da:</strong> {{ template.creator.get_full_name() }}</p>
+                                <p><strong>Data creazione:</strong> {{ template.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
-                    
-                    <!-- Dettaglio orari per giorni con coperture -->
-                    <div class="mt-3">
-                        {% for day_num in range(7) %}
-                        {% if day_num in coverages_by_day %}
-                        {% set day_name = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'][day_num] %}
-                        <div class="coverage-day-compact mb-2">
-                            <strong>{{ day_name }}:</strong>
-                            {% for coverage in coverages_by_day[day_num] %}
-                            <span class="time-slot-compact">
-                                {{ coverage.get_time_range() }}
-                                {% if coverage.get_required_roles() %}
-                                ({{ coverage.get_required_roles()|join(', ') }})
-                                {% endif %}
-                            </span>
-                            {% if not loop.last %} | {% endif %}
-                            {% endfor %}
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6><i class="fas fa-chart-bar me-2"></i>Statistiche Copertura</h6>
+                                <hr>
+                                <p><strong>Fasce orarie:</strong> {{ template.coverages.count() }}</p>
+                                <p><strong>Ore totali/settimana:</strong> {{ "%.1f"|format(template.get_total_hours_per_week()) }}h</p>
+                                <p><strong>Giorni coperti:</strong> {{ template.get_covered_days_count() }}/7</p>
+                                <p><strong>Ruoli coinvolti:</strong> {{ template.get_involved_roles()|length }}</p>
+                            </div>
                         </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="alert alert-warning">
-                        <i class="fa fa-exclamation-triangle me-1"></i>
-                        Nessuna copertura definita per questo template.
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Ruoli coinvolti -->
-                <div class="mt-3">
-                    <strong>Ruoli coinvolti:</strong>
-                    <div class="d-flex flex-wrap gap-1 mt-1">
-                        {% for role in template.get_involved_roles() %}
-                        <span class="badge bg-primary">{{ role }}</span>
-                        {% endfor %}
                     </div>
                 </div>
-            </div>
-            {% endfor %}
-            {% else %}
-            <div class="alert alert-info">
-                <i class="fa fa-info-circle me-2"></i>
-                Nessun template di presidio configurato al momento.
-                {% if current_user.can_manage_shifts() %}
-                <a href="{{ url_for('presidio_coverage') }}" class="alert-link">Vai alla gestione completa</a> per crearne uno.
-                {% endif %}
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    
-    <!-- Riepilogo globale -->
-    {% if templates %}
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Riepilogo Globale Presidi</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <div class="h4 text-primary">{{ templates|length }}</div>
-                            <div class="text-muted">Template Attivi</div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="h4 text-success">{{ templates|sum(attribute='coverages.count')|int }}</div>
-                            <div class="text-muted">Coperture Totali</div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="h4 text-info">{{ "%.1f"|format(templates|sum(attribute='get_total_hours_per_week')|float) }}</div>
-                            <div class="text-muted">Ore Totali/Settimana</div>
-                        </div>
-                        <div class="col-md-3">
-                            {% set all_roles = [] %}
-                            {% for template in templates %}
-                                {% for role in template.get_involved_roles() %}
-                                    {% if role not in all_roles %}
-                                        {% set _ = all_roles.append(role) %}
+
+                <!-- Coperture per giorno -->
+                <h6><i class="fas fa-calendar-week me-2"></i>Coperture per Giorno</h6>
+                <div class="row">
+                    {% set weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'] %}
+                    {% for day_num in range(7) %}
+                    <div class="col-lg-6 mb-3">
+                        <div class="coverage-day-card">
+                            <div class="coverage-day-header">
+                                {{ weekdays[day_num] }}
+                            </div>
+                            {% set day_coverages = template.coverages.filter_by(day_of_week=day_num, is_active=True).all() %}
+                            {% if day_coverages %}
+                                {% for coverage in day_coverages %}
+                                <div class="coverage-time-slot">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="time-range">{{ coverage.get_time_range() }}</span>
+                                        <span class="badge bg-primary">{{ coverage.role_count }} persone</span>
+                                    </div>
+                                    <div class="mt-2">
+                                        {% for role in coverage.get_required_roles() %}
+                                        <span class="badge bg-secondary role-badge">{{ role }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% if coverage.description %}
+                                    <small class="text-muted d-block mt-1">{{ coverage.description }}</small>
                                     {% endif %}
+                                </div>
                                 {% endfor %}
-                            {% endfor %}
-                            <div class="h4 text-warning">{{ all_roles|length }}</div>
-                            <div class="text-muted">Ruoli Coinvolti</div>
+                            {% else %}
+                                <div class="no-coverage-day">
+                                    <i class="fas fa-times-circle me-1"></i>Nessuna copertura
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
+                    {% if loop.index % 2 == 0 %}
+                    </div><div class="row">
+                    {% endif %}
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
+{% endfor %}
 {% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/presidio_scripts.js') }}"></script>
-<style>
-/* Stili aggiuntivi per la vista compatta */
-.coverage-day-compact {
-    padding: 0.5rem;
-    background: var(--bs-light);
-    border-radius: 0.25rem;
-    font-size: 0.9rem;
-}
+{% block scripts %}
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-.time-slot-compact {
-    background: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    margin: 0 0.25rem;
-    display: inline-block;
-    border: 1px solid var(--bs-border-color);
-}
-
-.coverage-preview .badge {
-    font-size: 0.8rem;
-}
-</style>
+<script>
+$(document).ready(function() {
+    $('#templatesTable').DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/Italian.json"
+        },
+        "order": [[ 5, "desc" ]], // Ordina per data creazione
+        "pageLength": 10,
+        "responsive": true
+    });
+});
+</script>
 {% endblock %}
