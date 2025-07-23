@@ -341,9 +341,9 @@ function createWeekHtml(week) {
 
 // Funzione per modificare un turno
 function editShift(shiftElement) {
-    var shiftId = shiftElement.data('shift-id');
-    var currentUserId = shiftElement.data('user-id');
-    var role = shiftElement.data('role');
+    var shiftId = shiftElement.attr('data-shift-id');
+    var currentUserId = shiftElement.attr('data-user-id');
+    var role = shiftElement.attr('data-role');
     var templateId = $('#template-select').val() || $('#template_id').val();
     
     console.log('Template ID found:', templateId);
@@ -351,6 +351,11 @@ function editShift(shiftElement) {
         shiftId: shiftId,
         currentUserId: currentUserId, 
         role: role
+    });
+    console.log('Element attributes:', {
+        'data-shift-id': shiftElement.attr('data-shift-id'),
+        'data-user-id': shiftElement.attr('data-user-id'),
+        'data-role': shiftElement.attr('data-role')
     });
     
     if (!templateId) {
