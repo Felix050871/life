@@ -105,7 +105,11 @@
                         <div class="d-flex align-items-center gap-3">
                             <small class="text-muted">{{ coverages_by_day[day_num]|length }} coperture</small>
                             <small class="text-muted">
-                                Totale: {{ "%.1f"|format(coverages_by_day[day_num]|sum(attribute='get_duration_hours')|float) }}h
+                                {% set total_hours = 0 %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                  {% set total_hours = total_hours + coverage.get_duration_hours() %}
+                                {% endfor %}
+                                Totale: {{ "%.1f"|format(total_hours) }}h
                             </small>
                         </div>
                     </div>
