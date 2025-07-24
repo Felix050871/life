@@ -462,9 +462,7 @@ class User(UserMixin, db.Model):
         """Verifica se l'utente può visualizzare le presenze di tutti gli utenti"""
         return self.can_manage_attendance()
     
-    def can_view_sede_attendance(self):
-        """Verifica se l'utente può visualizzare le presenze della propria sede"""
-        return self.can_view_attendance()
+
     
     def can_view_all_reperibilita(self):
         """Verifica se l'utente può visualizzare tutte le reperibilità"""
