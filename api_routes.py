@@ -83,6 +83,13 @@ def api_get_shifts_for_template(template_id):
                 
                 # Aggiungi ruoli mancanti per ogni giorno
                 for day_index in range(7):
+                    if day_index in required_roles_map:
+                        for time_slot, required_roles in required_roles_map[day_index].items():
+                            for required_role in required_roles:
+                                weeks_data[week_key]['days'][day_index]['missing_roles'].append({
+                                    'role': required_role,
+                                    'time_slot': time_slot
+                                })
                     day_data = weeks_data[week_key]['days'][day_index]
                     if day_index in required_roles_map:
                         for time_slot, required_roles in required_roles_map[day_index].items():
@@ -129,8 +136,6 @@ def api_get_shifts_for_template(template_id):
             'role': shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'Senza ruolo'),
             'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
         }
-        print(f"API Debug - Shift {shift.id}: user={shift.user.username}, role={shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'None')}")
-        print(f"API Debug - Full shift data: {shift_data}")  # Debug temporaneo
         weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
         
         weeks_data[week_key]['shift_count'] += 1
@@ -154,23 +159,27 @@ def api_get_shifts_for_template(template_id):
             day_data['missing_roles'] = []
             
             if day_index in required_roles_map:
-                print(f"=== PROCESSING DAY {day_index} ===")
                 for time_slot, required_roles in required_roles_map[day_index].items():
                     # Ottieni i ruoli presenti nei turni esistenti per questa fascia oraria
                     existing_roles = []
                     for shift in day_data['shifts']:
-                        if shift['time'] == time_slot:
+                        # Controlla se i turni si sovrappongono con la fascia oraria richiesta
+                        shift_times = shift['time'].split('-')
+                        shift_start = shift_times[0]
+                        shift_end = shift_times[1]
+                        slot_times = time_slot.split('-')
+                        slot_start = slot_times[0]
+                        slot_end = slot_times[1]
+                        
+                        # Se c'è sovrapposizione oraria, aggiungi il ruolo
+                        if shift_start <= slot_end and shift_end >= slot_start:
                             existing_roles.append(shift['role'])
                     
-                    print(f"Time slot {time_slot} on day {day_index}: required={required_roles}, existing={existing_roles}")
-                    
-                    # Identifica ruoli richiesti ma mancanti - FORZA AGGIUNTA per test
+                    # Identifica ruoli richiesti ma mancanti
                     for required_role in required_roles:
                         role_count = existing_roles.count(required_role)
-                        print(f"Role {required_role} in time slot {time_slot}: count={role_count}")
                         
                         if role_count == 0:
-                            print(f"*** ADDING MISSING ROLE: {required_role} for time slot {time_slot} ***")
                             day_data['missing_roles'].append({
                                 'role': required_role,
                                 'time_slot': time_slot
@@ -188,20 +197,7 @@ def api_get_shifts_for_template(template_id):
         'period': template.get_period_display()
     }
     
-    # Debug dei missing_roles per verificare se vengono popolati
-    total_missing_roles = 0
-    for i, week in enumerate(response_data['weeks']):
-        for day_idx, day in week['days'].items():
-            if day.get('missing_roles'):
-                total_missing_roles += len(day['missing_roles'])
-                print(f"Week {i}, Day {day_idx} has missing roles: {day['missing_roles']}")
-    
-    print(f"=== TOTAL MISSING ROLES FOUND: {total_missing_roles} ===")
-    
-    # Debug della prima settimana per verificare i campi
-    if response_data['weeks'] and response_data['weeks'][0]['days'][0]['shifts']:
-        first_shift = response_data['weeks'][0]['days'][0]['shifts'][0]
-        print(f"=== First shift in response: {first_shift} ===")
+
     
     return jsonify(response_data)
 
