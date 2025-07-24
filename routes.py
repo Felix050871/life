@@ -4869,8 +4869,7 @@ def process_generate_turni_from_coverage():
     confirm_overwrite = 'confirm_overwrite' in request.form
     
     # Debug parametri ricevuti
-    print(f"DEBUG: sede_id={sede_id}, coverage_period_id='{coverage_period_id}'")
-    print(f"DEBUG: form data: {dict(request.form)}")
+
     
     if not sede_id or not coverage_period_id or coverage_period_id.strip() == '':
         flash(f'Dati mancanti per la generazione turni (sede_id: {sede_id}, coverage_period_id: \'{coverage_period_id}\')', 'danger')
@@ -5751,11 +5750,7 @@ def edit_role(role_id):
     
     form = RoleForm(original_name=role.name, widget_only=is_admin_widget_only)
     
-    print(f"DEBUG: is_admin_widget_only: {is_admin_widget_only}, role.name: {role.name}")
-    print(f"DEBUG: Form submitted: {request.method == 'POST'}")
-    print(f"DEBUG: Form validation passed: {form.validate_on_submit()}")
-    if request.method == 'POST':
-        print(f"DEBUG: Form errors: {form.errors}")
+
     
     if form.validate_on_submit():
         if is_admin_widget_only:
@@ -5770,11 +5765,8 @@ def edit_role(role_id):
                 'can_view_shifts_coverage_widget': form.can_view_shifts_coverage_widget.data,
                 'can_view_reperibilita_widget': form.can_view_reperibilita_widget.data
             }
-            print(f"DEBUG: Widget permissions from form: {widget_permissions}")
             existing_permissions.update(widget_permissions)
-            print(f"DEBUG: Updated permissions: {existing_permissions}")
             role.permissions = existing_permissions
-            print(f"DEBUG: Role permissions after assignment: {role.permissions}")
         else:
             # Per altri utenti autorizzati, aggiorna tutti i permessi
             role.name = form.name.data
@@ -5784,7 +5776,7 @@ def edit_role(role_id):
             role.active = form.is_active.data
         
         db.session.commit()
-        print(f"DEBUG: After commit, role permissions: {role.permissions}")
+
         
         flash(f'Ruolo "{role.display_name}" modificato con successo', 'success')
         return redirect(url_for('manage_roles'))

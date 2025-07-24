@@ -1561,34 +1561,6 @@ class InternalMessage(db.Model):
         return self.sender.get_full_name() if self.sender else 'Sistema'
 
 
-class PasswordResetToken(db.Model):
-    """Token per reset password"""
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    token = db.Column(db.String(100), nullable=False, unique=True)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=italian_now)
-    
-    # Relationships
-    user = db.relationship('User', backref='password_reset_tokens')
-    
-    @property
-    def is_expired(self):
-        """Controlla se il token è scaduto"""
-        from datetime import datetime
-        # Confronta entrambi in UTC per evitare problemi timezone
-        now_utc = datetime.utcnow()
-        return now_utc > self.expires_at
-    
-    @property
-    def is_valid(self):
-        """Controlla se il token è valido (non usato e non scaduto)"""
-        return not self.used and not self.is_expired
-    
-    def __repr__(self):
-        return f'<PasswordResetToken {self.token[:8]}... for {self.user.username if self.user else "Unknown"}>'
-
 
 class Sede(db.Model):
     """Modello per le sedi aziendali"""

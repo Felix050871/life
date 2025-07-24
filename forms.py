@@ -40,23 +40,11 @@ class UserForm(FlaskForm):
         try:
             ruoli_attivi = UserRole.query.filter_by(active=True).all()
             self.role.choices = [(role.name, role.display_name) for role in ruoli_attivi]
-            # Fallback ai ruoli legacy se non ci sono ruoli personalizzati
+            # Se non ci sono ruoli personalizzati, inizializza con lista vuota
             if not self.role.choices:
-                self.role.choices = [
-                    ('Admin', 'Admin'),
-                    ('Project Manager', 'Project Manager'),
-                    ('Redattore', 'Redattore'),
-                    ('Sviluppatore', 'Sviluppatore'),
-                    ('Operatore', 'Operatore')
-                ]
+                self.role.choices = []
         except:
-            self.role.choices = [
-                ('Admin', 'Admin'),
-                ('Project Manager', 'Project Manager'),
-                ('Redattore', 'Redattore'),
-                ('Sviluppatore', 'Sviluppatore'),
-                ('Operatore', 'Operatore')
-            ]
+            self.role.choices = []
         
         # Set password validators based on mode
         if not is_edit:
