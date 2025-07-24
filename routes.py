@@ -273,6 +273,7 @@ def dashboard():
                          team_stats=team_stats,
                          today_attendance=today_attendance,
                          upcoming_shifts=upcoming_shifts,
+                         team_management_data=team_management_data,
                          upcoming_reperibilita_shifts=upcoming_reperibilita_shifts,
                          active_intervention=active_intervention,
                          active_general_intervention=active_general_intervention,
@@ -286,8 +287,7 @@ def dashboard():
                          today_events=today_events,
                          today_work_hours=today_work_hours,
                          daily_attendance_data=daily_attendance_data,
-                         shifts_coverage_alerts=shifts_coverage_alerts,
-                         team_management_data=team_management_data)
+                         shifts_coverage_alerts=shifts_coverage_alerts)
 
 @app.route('/dashboard_team')
 @login_required
