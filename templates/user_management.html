@@ -131,8 +131,6 @@
                         <thead>
                             <tr>
                                 <th>Utente</th>
-                                <th>Ruolo</th>
-                                <th>Sedi</th>
                                 <th>Contatto</th>
                                 <th>Ruolo</th>
                                 <th>Sedi</th>
@@ -190,10 +188,10 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.role in ['Management', 'Redattore', 'Sviluppatore', 'Operatore'] %}
+                                    {% if user.role in ['Responsabile', 'Operatore'] %}
                                     <span class="badge bg-light text-dark">{{ user.part_time_percentage }}%</span>
                                     {% else %}
-                                    <span class="text-muted">--</span>
+                                    <span class="text-muted">N/A</span>
                                     {% endif %}
                                 </td>
                                 <td>

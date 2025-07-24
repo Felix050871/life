@@ -94,6 +94,8 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 24, 2025: **Widget Statistiche Team Corretto** - Risolto bug visualizzazione ruoli nel widget: ora mostra TUTTI i ruoli attivi incluso "Ospite" con 0 utenti, corretti import UserRole e logica inizializzazione contatori
+- July 24, 2025: **Tabella Utenti Corretta** - Risolti errori visualizzazione colonne in user_management.html: rimossi header duplicati, corretta logica visualizzazione ruolo e percentuale part-time per ruoli appropriati (Responsabile/Operatore)
 - July 24, 2025: **Sistema Reset Password Ripristinato e Completato** - Ripristinata tabella password_reset_token e implementato sistema completo gestione reset password: route forgot_password e reset_password funzionanti, generazione token sicuri con scadenza 1 ora, template dedicati con validazione form, link "Password dimenticata?" nella pagina login, sistema pronto per integrazione email
 - July 24, 2025: **Pulizia Completa Progetto Completata** - Rimossi completamente tutti i file obsoleti di migrazione/setup (16 file), puliti form legacy con riferimenti ruoli hardcoded, eliminati statement di debug temporanei, pulizia codice duplicato in forms.py, progetto ottimizzato con solo file essenziali attivi
 - July 24, 2025: **Permessi Widget per Amministratore Abilitati** - L'amministratore ora può modificare solo i permessi Widget di tutti i ruoli: rimossa protezione completa dal ruolo Amministratore, aggiunta logica condizionale per permettere modifica Widget-only, nascosti campi nome/descrizione/stato per amministratore, badge "Widget Only" per identificazione, sistema sicuro che mantiene altri permessi intatti
