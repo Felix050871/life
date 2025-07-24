@@ -114,12 +114,7 @@
                                 {% endfor %}
                             </select>
                             
-                            <div id="template-info" class="mt-2" style="display: none;">
-                                <div class="alert mb-0" style="background: linear-gradient(45deg, #1a1a1a, #2c2c2c) !important; border: 3px solid #ffc107 !important; color: #ffffff !important; font-weight: 700 !important; border-radius: 12px !important; padding: 15px !important; box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3) !important;">
-                                    <i class="fas fa-info-circle me-2" style="color: #ffc107 !important; font-size: 1.2em !important;"></i>
-                                    <span id="period-display" style="color: #ffffff !important; font-size: 1.1em !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;"></span>
-                                </div>
-                            </div>
+
                         </div>
                         <div class="col-md-4">
                             <button type="submit" class="btn btn-success w-100" disabled id="generate-btn">
@@ -181,17 +176,9 @@ function showTemplateInfo() {
     var selectedOption = document.getElementById('template_id').selectedOptions[0];
     var templateId = document.getElementById('template_id').value;
     var generateBtn = document.getElementById('generate-btn');
-    var templateInfo = document.getElementById('template-info');
-    var periodDisplay = document.getElementById('period-display');
     
     if (templateId && selectedOption) {
-        var period = selectedOption.getAttribute('data-period');
-        var sede = selectedOption.getAttribute('data-sede');
         var templateName = selectedOption.text;
-        
-        // Mostra informazioni template
-        periodDisplay.innerHTML = '<strong>Periodo:</strong> ' + period + ' | <strong>Sede:</strong> ' + sede;
-        templateInfo.style.display = 'block';
         
         // Abilita pulsante generazione
         generateBtn.disabled = false;
@@ -200,8 +187,7 @@ function showTemplateInfo() {
         // Carica turni esistenti per il template
         loadShiftsForTemplate(templateId, templateName);
     } else {
-        // Nascondi informazioni e disabilita pulsante
-        templateInfo.style.display = 'none';
+        // Disabilita pulsante
         generateBtn.disabled = true;
         generateBtn.className = 'btn btn-secondary w-100';
         
