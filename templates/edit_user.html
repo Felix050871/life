@@ -188,15 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function togglePartTimeField() {
-        const selectedRole = roleSelect.value;
-        const showPartTime = ['Responsabile', 'Operatore'].includes(selectedRole);
-        
-        if (showPartTime) {
-            partTimeGroup.style.display = 'block';
-        } else {
-            partTimeGroup.style.display = 'none';
-            document.querySelector('input[name="part_time_percentage"]').value = '100.0';
-        }
+        // Campo % Lavoro sempre visibile per tutti i ruoli
+        // Nessuna azione necessaria, campo sempre visibile
     }
     
     // Event listeners

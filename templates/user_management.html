@@ -75,7 +75,7 @@
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-4 mb-3" id="partTimeGroupNew">
+                        <div class="col-md-4 mb-3">
                             {{ form.part_time_percentage.label(class="form-label") }}
                             <div class="input-group">
                                 {{ form.part_time_percentage(class="form-control") }}
@@ -202,11 +202,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if user.role in ['Responsabile', 'Operatore'] %}
                                     <span class="badge bg-light text-dark">{{ user.part_time_percentage }}%</span>
-                                    {% else %}
-                                    <span class="text-muted">N/A</span>
-                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if user.active %}
@@ -322,32 +318,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function togglePartTimeField() {
-        const selectedRole = roleSelect.value;
-        const showPartTime = ['Responsabile', 'Operatore'].includes(selectedRole);
-        
-        if (showPartTime) {
-            partTimeGroup.style.display = 'block';
-        } else {
-            partTimeGroup.style.display = 'none';
-        }
+        // Campo % Lavoro sempre visibile per tutti i ruoli
+        // Nessuna azione necessaria, campo sempre visibile
     }
     
     function togglePartTimeFieldNew() {
-        const roleSelectNew = document.getElementById('roleSelectNew');
-        const partTimeGroupNew = document.getElementById('partTimeGroupNew');
-        if (roleSelectNew && partTimeGroupNew) {
-            const selectedRole = roleSelectNew.value;
-            const showPartTime = ['Responsabile', 'Operatore'].includes(selectedRole);
-            
-            if (showPartTime) {
-                partTimeGroupNew.style.display = 'block';
-            } else {
-                partTimeGroupNew.style.display = 'none';
-                // Reset value to 100% when hidden
-                const partTimeInput = partTimeGroupNew.querySelector('input[name="part_time_percentage"]');
-                if (partTimeInput) partTimeInput.value = '100.0';
-            }
-        }
+        // Campo % Lavoro sempre visibile per tutti i ruoli
+        // Nessuna azione necessaria, campo sempre visibile
     }
     
     // Event listeners
