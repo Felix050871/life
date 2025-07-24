@@ -32,7 +32,7 @@ def api_get_shifts_for_template(template_id):
     
     # Mappa i ruoli richiesti per ogni giorno della settimana e fascia oraria
     required_roles_map = {}
-    print(f"Processing {len(coverages)} coverages for required roles mapping")
+    print(f"*** PROCESSING {len(coverages)} COVERAGES ***", file=sys.stderr, flush=True)
     for coverage in coverages:
         try:
             # Usa il metodo del modello per ottenere i ruoli
@@ -47,9 +47,9 @@ def api_get_shifts_for_template(template_id):
             
             day = coverage.day_of_week  # Usa solo il giorno specifico della copertura
             
-            print(f"Coverage ID {coverage.id}: day_of_week={day}, time={coverage.start_time}-{coverage.end_time}")
-            print(f"  Raw required_roles field: {coverage.required_roles}")
-            print(f"  Parsed required_roles: {required_roles}")
+            print(f"Coverage ID {coverage.id}: day_of_week={day}, time={coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
+            print(f"  Raw required_roles field: {coverage.required_roles}", file=sys.stderr, flush=True)
+            print(f"  Parsed required_roles: {required_roles}", file=sys.stderr, flush=True)
             
             if day not in required_roles_map:
                 required_roles_map[day] = {}
