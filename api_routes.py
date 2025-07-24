@@ -50,7 +50,7 @@ def api_get_shifts_for_template(template_id):
                 '09:00-18:00': ['Operatore', 'Operatore']  # 2 operatori
             }
     
-    print(f"*** BUILDING WEEKS WITH {len(shifts)} SHIFTS ***", file=sys.stderr, flush=True)
+    print(f"*** REQUIRED_ROLES_MAP CREATED: {required_roles_map} ***", flush=True)
     
 
 
@@ -126,6 +126,7 @@ def api_get_shifts_for_template(template_id):
                         if role_count == 0:
                             missing_text = f"{required_role} mancante ({time_slot})"
                             day_data['missing_roles'].append(missing_text)
+                            print(f"*** AGGIUNTO MISSING ROLE: {missing_text} per giorno {day_index} ***", flush=True)
                     
 
     
@@ -147,15 +148,15 @@ def api_get_shifts_for_template(template_id):
     }
     
     # Debug finale - stampa cosa viene restituito
-    print(f"*** FINAL API RESPONSE ***", file=sys.stderr, flush=True)
-    print(f"Total weeks: {len(response_data['weeks'])}", file=sys.stderr, flush=True)
+    print(f"*** FINAL API RESPONSE ***", flush=True)
+    print(f"Total weeks: {len(response_data['weeks'])}", flush=True)
     if response_data['weeks']:
         first_week = response_data['weeks'][0]
-        print(f"First week days type: {type(first_week['days'])}", file=sys.stderr, flush=True)
+        print(f"First week days type: {type(first_week['days'])}", flush=True)
         if isinstance(first_week['days'], list) and len(first_week['days']) > 0:
             first_day = first_week['days'][0]
-            print(f"*** LUNEDI MISSING_ROLES: {first_day.get('missing_roles', [])} ***", file=sys.stderr, flush=True)
-            print(f"*** LUNEDI SHIFTS: {first_day.get('shifts', [])} ***", file=sys.stderr, flush=True)
+            print(f"*** LUNEDI MISSING_ROLES FINALE: {first_day.get('missing_roles', [])} ***", flush=True)
+            print(f"*** LUNEDI SHIFTS FINALE: {first_day.get('shifts', [])} ***", flush=True)
     
     return jsonify(response_data)
 
