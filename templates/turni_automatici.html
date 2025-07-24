@@ -243,80 +243,83 @@ function loadShiftsForTemplate(templateId, templateName) {
             
             console.log('*** BYPASSING AJAX API - CALCULATING MISSING_ROLES IN FRONTEND ***');
             
-            // SOLUZIONE FINALE: CALCOLA MISSING_ROLES DIRETTAMENTE NEL FRONTEND
-            if (templateId == '3') {
-                console.log('*** APPLYING TEMPLATE 3 MISSING_ROLES LOGIC ***');
+            // SOLUZIONE FINALE: CALCOLA MISSING_ROLES DINAMICAMENTE DAL DATABASE
+            console.log('*** LOADING COVERAGE REQUIREMENTS FROM DATABASE ***');
+            
+            // Carica le coperture richieste dal database per questo template
+            fetch('/api/get_coverage_requirements/' + templateId, {
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(coverageData => {
+                console.log('Coverage requirements loaded:', coverageData);
                 
-                // Per ogni settimana, forza missing_roles sui giorni feriali (lun-ven)
-                if (data.weeks) {
+                // Calcola missing_roles dinamicamente per tutti i template
+                if (data.weeks && coverageData.success) {
                     data.weeks.forEach(function(week) {
                         if (week.days && Array.isArray(week.days)) {
-                            for (var dayIndex = 0; dayIndex < 5; dayIndex++) { // Solo lun-ven
+                            for (var dayIndex = 0; dayIndex < 7; dayIndex++) {
                                 if (week.days[dayIndex]) {
                                     var dayData = week.days[dayIndex];
                                     
-                                    // Verifica se ci sono Responsabili nei turni esistenti
-                                    var hasResponsabile09_15 = false;
-                                    var hasResponsabile09_16 = false;
-                                    
-                                    if (dayData.shifts) {
-                                        dayData.shifts.forEach(function(shift) {
-                                            if (shift.role === 'Responsabile') {
-                                                var shiftTime = shift.time;
-                                                // Controlla se copre 09:00-15:00
-                                                if (shiftTime.includes('09:00') && (shiftTime.includes('15:00') || shiftTime.includes('16:') || shiftTime.includes('17:') || shiftTime.includes('18:'))) {
-                                                    hasResponsabile09_15 = true;
-                                                }
-                                                // Controlla se copre 09:15-16:15
-                                                if ((shiftTime.includes('09:') || shiftTime.includes('08:')) && shiftTime.includes('16:')) {
-                                                    hasResponsabile09_16 = true;
-                                                }
-                                            }
-                                        });
-                                    }
-                                    
-                                    // Inizializza missing_roles se non esiste
+                                    // Inizializza missing_roles
                                     if (!dayData.missing_roles) {
                                         dayData.missing_roles = [];
                                     }
                                     
-                                    // Aggiungi missing_roles per Responsabili mancanti
-                                    if (!hasResponsabile09_15) {
-                                        if (!dayData.missing_roles.includes('Responsabile mancante (09:00-15:00)')) {
-                                            dayData.missing_roles.push('Responsabile mancante (09:00-15:00)');
-                                        }
-                                    }
-                                    if (!hasResponsabile09_16) {
-                                        if (!dayData.missing_roles.includes('Responsabile mancante (09:15-16:15)')) {
-                                            dayData.missing_roles.push('Responsabile mancante (09:15-16:15)');
-                                        }
-                                    }
+                                    // Trova coperture richieste per questo giorno
+                                    var dayCoverages = coverageData.coverages.filter(function(cov) {
+                                        return cov.day_of_week === dayIndex;
+                                    });
                                     
-                                    console.log('Day', dayIndex, 'missing_roles:', dayData.missing_roles);
+                                    // Per ogni copertura richiesta, verifica se è soddisfatta
+                                    dayCoverages.forEach(function(coverage) {
+                                        coverage.required_roles.forEach(function(requiredRole) {
+                                            // Conta quanti turni di questo ruolo coprono la fascia oraria
+                                            var roleCount = 0;
+                                            
+                                            if (dayData.shifts) {
+                                                dayData.shifts.forEach(function(shift) {
+                                                    if (shift.role === requiredRole) {
+                                                        // Verifica sovrapposizione oraria
+                                                        var shiftTimes = shift.time.split('-');
+                                                        var shiftStart = shiftTimes[0];
+                                                        var shiftEnd = shiftTimes[1];
+                                                        
+                                                        if (shiftStart <= coverage.end_time && shiftEnd >= coverage.start_time) {
+                                                            roleCount++;
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                            
+                                            // Se il ruolo è insufficiente, aggiungi a missing_roles
+                                            if (roleCount < coverage.role_count) {
+                                                var missingText = requiredRole + ' mancante (' + coverage.start_time + '-' + coverage.end_time + ')';
+                                                if (!dayData.missing_roles.includes(missingText)) {
+                                                    dayData.missing_roles.push(missingText);
+                                                }
+                                            }
+                                        });
+                                    });
+                                    
+                                    console.log('Day', dayIndex, 'dynamic missing_roles:', dayData.missing_roles);
                                 }
                             }
                         }
                     });
                 }
-            }
-            
-            document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong> (' + data.period + ')';
-            document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';
-            
-            if (data.weeks && data.weeks.length > 0) {
-                var weeksHtml = '';
-                data.weeks.forEach(function(week) {
-                    weeksHtml += createWeekHtml(week);
-                });
-                document.getElementById('weeks-container').innerHTML = weeksHtml;
-            } else {
-                document.getElementById('weeks-container').innerHTML = 
-                    '<div class="text-center py-5">' +
-                    '<i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>' +
-                    '<h5 class="text-muted">Nessun turno presente</h5>' +
-                    '<p class="text-muted">Non ci sono turni generati per questo template.</p>' +
-                    '</div>';
-            }
+                
+                // Ora renderizza con i missing_roles calcolati dinamicamente
+                renderWeeksWithMissingRoles(data, templateName);
+            })
+            .catch(error => {
+                console.log('Coverage loading failed, using data without missing_roles calculation');
+                renderWeeksWithMissingRoles(data, templateName);
+            });
         })
         .catch(error => {
             console.error('=== API ERROR ===');
@@ -324,6 +327,27 @@ function loadShiftsForTemplate(templateId, templateName) {
             document.getElementById('weeks-container').innerHTML = 
                 '<div class="alert alert-danger">Errore nel caricamento dei turni: ' + error.message + '. Problema di autenticazione - ricarica la pagina.</div>';
         });
+}
+
+function renderWeeksWithMissingRoles(data, templateName) {
+            
+    document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong> (' + data.period + ')';
+    document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';
+    
+    if (data.weeks && data.weeks.length > 0) {
+        var weeksHtml = '';
+        data.weeks.forEach(function(week) {
+            weeksHtml += createWeekHtml(week);
+        });
+        document.getElementById('weeks-container').innerHTML = weeksHtml;
+    } else {
+        document.getElementById('weeks-container').innerHTML = 
+            '<div class="text-center py-5">' +
+            '<i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>' +
+            '<h5 class="text-muted">Nessun turno presente</h5>' +
+            '<p class="text-muted">Non ci sono turni generati per questo template.</p>' +
+            '</div>';
+    }
 }
 
 function createWeekHtml(week) {

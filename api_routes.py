@@ -172,3 +172,30 @@ def api_get_shifts_for_template(template_id):
         'template_name': template.name,
         'period': template.get_period_display()
     })
+
+@app.route('/api/get_coverage_requirements/<int:template_id>')
+@login_required
+def api_get_coverage_requirements(template_id):
+    """API per ottenere i requisiti di copertura di un template"""
+    
+    coverages = PresidioCoverage.query.filter_by(template_id=template_id, is_active=True).all()
+    
+    coverage_data = []
+    for coverage in coverages:
+        try:
+            required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+        except:
+            required_roles = []
+        
+        coverage_data.append({
+            'day_of_week': coverage.day_of_week,
+            'start_time': coverage.start_time.strftime('%H:%M'),
+            'end_time': coverage.end_time.strftime('%H:%M'),
+            'required_roles': required_roles,
+            'role_count': coverage.role_count
+        })
+    
+    return jsonify({
+        'success': True,
+        'coverages': coverage_data
+    })
