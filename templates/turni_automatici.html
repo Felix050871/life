@@ -101,7 +101,7 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="col-md-8">
                             <label for="template_id" class="form-label">Seleziona Template Presidio</label>
-                            <select class="form-select" name="template_id" id="template_id" required onchange="showTemplateInfo()">
+                            <select class="form-select" name="template_id" id="template_id" required onchange="console.log('Template selection changed'); showTemplateInfo()">
                                 <option value="">-- Seleziona Template --</option>
                                 {% for template in presidio_templates %}
                                 <option value="{{ template.id }}" 
@@ -185,6 +185,7 @@ function showTemplateInfo() {
         generateBtn.className = 'btn btn-success w-100';
         
         // Carica turni esistenti per il template
+        console.log('About to call loadShiftsForTemplate with templateId:', templateId);
         loadShiftsForTemplate(templateId, templateName);
     } else {
         // Disabilita pulsante
