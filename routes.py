@@ -1654,23 +1654,29 @@ def genera_turni_da_template():
             try:
                 required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
                 
-                # Trova utenti disponibili per questi ruoli - solo con orario "Turni"
-                from models import WorkSchedule
-                available_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id).filter(
-                    User.active.is_(True),
-                    User.role.in_(required_roles),
-                    WorkSchedule.name == 'Turni'
-                ).all()
-                
-                if len(available_users) < coverage.role_count:
-                    day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
-                    warning_msg = f"{day_names[coverage.day_of_week]} {coverage.start_time}-{coverage.end_time}: richiesti {coverage.role_count} utenti {'/'.join(required_roles)}, disponibili solo {len(available_users)}"
-                    insufficient_coverage_warnings.append(warning_msg)
+                # Controlla la disponibilità per ogni ruolo richiesto separatamente
+                for role in required_roles:
+                    from models import WorkSchedule
+                    available_users_for_role = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id).filter(
+                        User.active.is_(True),
+                        User.role == role,  # Controlla ogni ruolo singolarmente
+                        WorkSchedule.name == 'Turni'
+                    ).all()
+                    
+                    if len(available_users_for_role) == 0:
+                        day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+                        warning_msg = f"{day_names[coverage.day_of_week]} {coverage.start_time}-{coverage.end_time}: NESSUN utente disponibile per ruolo '{role}'"
+                        insufficient_coverage_warnings.append(warning_msg)
+                    elif len(available_users_for_role) < coverage.role_count:
+                        day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+                        warning_msg = f"{day_names[coverage.day_of_week]} {coverage.start_time}-{coverage.end_time}: ruolo '{role}' richiede {coverage.role_count} utenti, disponibili solo {len(available_users_for_role)}"
+                        insufficient_coverage_warnings.append(warning_msg)
+                        
             except json.JSONDecodeError:
                 continue
         
         if insufficient_coverage_warnings:
-            flash('ATTENZIONE - Copertura insufficiente per:', 'warning')
+            flash('ATTENZIONE - Problemi di copertura rilevati:', 'warning')
             for warning in insufficient_coverage_warnings:
                 flash(f'• {warning}', 'warning')
         
