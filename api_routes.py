@@ -9,8 +9,11 @@ import json
 @login_required  
 def api_get_shifts_for_template(template_id):
     import sys
-    print(f"*** ROUTE CHIAMATA: /api/get_shifts_for_template/{template_id} ***", file=sys.stderr, flush=True)
-    print(f"=== API get_shifts_for_template called with template_id={template_id} ===", file=sys.stderr, flush=True)
+    # Scrivi log direttamente in un file per debug
+    with open('/tmp/api_debug.log', 'a') as f:
+        f.write(f"*** ROUTE CHIAMATA: /api/get_shifts_for_template/{template_id} ***\n")
+        f.write(f"=== API get_shifts_for_template called with template_id={template_id} ===\n")
+        f.flush()
     
     # Trova il template
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
@@ -32,7 +35,9 @@ def api_get_shifts_for_template(template_id):
     
     # Mappa i ruoli richiesti per ogni giorno della settimana e fascia oraria
     required_roles_map = {}
-    print(f"*** PROCESSING {len(coverages)} COVERAGES ***", file=sys.stderr, flush=True)
+    with open('/tmp/api_debug.log', 'a') as f:
+        f.write(f"*** PROCESSING {len(coverages)} COVERAGES ***\n")
+        f.flush()
     for coverage in coverages:
         try:
             # Usa il metodo del modello per ottenere i ruoli
@@ -47,9 +52,11 @@ def api_get_shifts_for_template(template_id):
             
             day = coverage.day_of_week  # Usa solo il giorno specifico della copertura
             
-            print(f"Coverage ID {coverage.id}: day_of_week={day}, time={coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
-            print(f"  Raw required_roles field: {coverage.required_roles}", file=sys.stderr, flush=True)
-            print(f"  Parsed required_roles: {required_roles}", file=sys.stderr, flush=True)
+            with open('/tmp/api_debug.log', 'a') as f:
+                f.write(f"Coverage ID {coverage.id}: day_of_week={day}, time={coverage.start_time}-{coverage.end_time}\n")
+                f.write(f"  Raw required_roles field: {coverage.required_roles}\n")
+                f.write(f"  Parsed required_roles: {required_roles}\n")
+                f.flush()
             
             if day not in required_roles_map:
                 required_roles_map[day] = {}
