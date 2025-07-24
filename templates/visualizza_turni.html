@@ -109,7 +109,7 @@
                                         data-end="{{ template.end_date.strftime('%d/%m/%Y') }}"
                                         data-period="{{ template.get_period_display() }}"
                                         data-sede="{{ template.sede.name if template.sede else 'N/D' }}">
-                                    {{ template.name }}
+                                    {{ template.name }} - {{ template.sede.name if template.sede else 'N/D' }}
                                 </option>
                                 {% endfor %}
                             </select>
