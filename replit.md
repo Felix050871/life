@@ -96,7 +96,7 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
-- July 24, 2025: **Modale Conferma Eliminata e Turni Scoperti Evidenziati** - Rimossa modale doppia conferma dalla pagina turni_automatici (confermazione ora solo nella pagina successiva se necessario), aggiunta evidenziazione rossa "SCOPERTO" per giorni senza turni nelle visualizzazioni turni_automatici e visualizza_turni
+- July 24, 2025: **Database Template Presidio Pulito** - Eliminati tutti i template presidio esistenti per consentire creazione di nuovi template di test per verificare sistema evidenziazione ruoli mancanti, database presidio completamente resettato
 - July 24, 2025: **Div Template Selezionato Rimosso Definitivamente** - Eliminata sezione "Template Selezionato" problematica anche dalla pagina confirm_regenerate_shifts.html, interfaccia completamente pulita senza elementi invisibili
 - July 24, 2025: **Errori CSRF e Visibilità Template Risolti** - Corretto errore "CSRF token missing" aggiungendo csrf_token() nei form eliminazione coperture presidio, rimosso div template selezionato problematico e semplificata interfaccia per migliore usabilità
 - July 24, 2025: **Colonna Sede Aggiunta a View Presidi** - Aggiunta colonna "Sede" nella tabella template copertura presidio in view_presidi.html, mostra nome sede specifica o "Tutte le sedi" se template globale, migliore identificazione template per sede con badge colorati
