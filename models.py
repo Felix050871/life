@@ -80,6 +80,7 @@ class UserRole(db.Model):
             'can_manage_attendance': 'Gestire Presenze',
             'can_view_attendance': 'Visualizzare Presenze',
             'can_access_attendance': 'Accedere alle Presenze',
+            'can_view_sede_attendance': 'Visualizzare Presenze Sede',
             
             # Gestione ferie/permessi
             'can_manage_leave': 'Gestire Ferie/Permessi',

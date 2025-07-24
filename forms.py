@@ -667,6 +667,7 @@ class RoleForm(FlaskForm):
     can_manage_attendance = BooleanField('Gestire Presenze')
     can_view_attendance = BooleanField('Visualizzare Presenze')
     can_access_attendance = BooleanField('Accedere alle Presenze', default=True)
+    can_view_sede_attendance = BooleanField('Visualizzare Presenze Sede')
     
     # Gestione ferie/permessi
     can_manage_leave = BooleanField('Gestire Ferie/Permessi')
@@ -764,6 +765,7 @@ class RoleForm(FlaskForm):
             'can_manage_attendance': self.can_manage_attendance.data,
             'can_view_attendance': self.can_view_attendance.data,
             'can_access_attendance': self.can_access_attendance.data,
+            'can_view_sede_attendance': self.can_view_sede_attendance.data,
             
             # Gestione ferie/permessi
             'can_manage_leave': self.can_manage_leave.data,
@@ -835,6 +837,7 @@ class RoleForm(FlaskForm):
         self.can_manage_attendance.data = permissions_dict.get('can_manage_attendance', False)
         self.can_view_attendance.data = permissions_dict.get('can_view_attendance', False)
         self.can_access_attendance.data = permissions_dict.get('can_access_attendance', True)
+        self.can_view_sede_attendance.data = permissions_dict.get('can_view_sede_attendance', False)
         
         # Gestione ferie/permessi
         self.can_manage_leave.data = permissions_dict.get('can_manage_leave', False)
