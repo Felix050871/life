@@ -5734,9 +5734,15 @@ def edit_role(role_id):
     role = UserRole.query.get_or_404(role_id)
     
     # Verifica che non sia un ruolo di sistema protetto
-    protected_roles = ['Admin', 'Amministratore']
+    # L'amministratore può modificare solo i widget del ruolo Amministratore
+    protected_roles = ['Admin']
     if role.name in protected_roles:
         flash(f'Il ruolo "{role.display_name}" è protetto e non può essere modificato', 'danger')
+        return redirect(url_for('manage_roles'))
+    
+    # Se è il ruolo Amministratore e l'utente corrente non è amministratore, blocca
+    if role.name == 'Amministratore' and not current_user.has_role('Amministratore'):
+        flash(f'Solo un amministratore può modificare il ruolo "{role.display_name}"', 'danger')
         return redirect(url_for('manage_roles'))
     
     # Determina se l'utente corrente è amministratore e può modificare solo widget

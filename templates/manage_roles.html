@@ -35,8 +35,10 @@
                                 <tr {% if not role.active %}class="table-secondary"{% endif %}>
                                     <td>
                                         <strong>{{ role.name }}</strong>
-                                        {% if role.name in ['Admin', 'Amministratore'] %}
+                                        {% if role.name == 'Admin' %}
                                         <span class="badge bg-warning ms-1">Protetto</span>
+                                        {% elif role.name == 'Amministratore' %}
+                                        <span class="badge bg-info ms-1">Widget Only</span>
                                         {% endif %}
                                     </td>
                                     <td>{{ role.display_name }}</td>
@@ -71,15 +73,17 @@
                                     <td>
                                         {% if current_user.can_manage_roles() %}
                                         <div class="btn-group btn-group-sm">
-                                            {% if role.name in ['Admin', 'Amministratore'] %}
+                                            {% if role.name == 'Admin' %}
                                             <button class="btn btn-outline-secondary" disabled title="Ruolo protetto dal sistema">
                                                 <i class="fas fa-lock"></i>
                                             </button>
-                                            <button class="btn btn-outline-secondary" disabled title="Ruolo protetto dal sistema">
-                                                <i class="fas fa-shield-alt"></i>
-                                            </button>
-                                            <button class="btn btn-outline-secondary" disabled title="Ruolo protetto dal sistema">
-                                                <i class="fas fa-shield-alt"></i>
+                                            {% elif role.name == 'Amministratore' and current_user.has_role('Amministratore') %}
+                                            <a href="{{ url_for('edit_role', role_id=role.id) }}" class="btn btn-outline-primary" title="Modifica solo Widget">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% elif role.name == 'Amministratore' %}
+                                            <button class="btn btn-outline-secondary" disabled title="Solo amministratori possono modificare questo ruolo">
+                                                <i class="fas fa-lock"></i>
                                             </button>
                                             {% else %}
                                             <a href="{{ url_for('edit_role', role_id=role.id) }}" 
