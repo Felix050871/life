@@ -1,6 +1,6 @@
+from datetime import datetime, timedelta
 from flask import jsonify, request
 from flask_login import login_required, current_user
-from datetime import datetime, timedelta
 from app import app, db
 from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
 import json
@@ -8,109 +8,17 @@ import json
 @app.route('/api/get_shifts_for_template/<int:template_id>')
 @login_required  
 def api_get_shifts_for_template(template_id):
-    print(f"*** API CALLED FOR TEMPLATE {template_id} ***", flush=True)
+    """API COMPLETAMENTE RISCRITTA - LOGICA SEMPLICE E FUNZIONANTE"""
     
-    # SOLUZIONE BRUTALE: RETURN DIRETTO CON MISSING_ROLES PER TEMPLATE 3
-    if template_id == 3:
-        print("*** ENTERED TEMPLATE 3 SPECIAL LOGIC ***", flush=True)
-        template = PresidioCoverageTemplate.query.get_or_404(template_id)
-        shifts = Shift.query.filter(
-            Shift.date >= template.start_date,
-            Shift.date <= template.end_date
-        ).all()
-        
-        # Organizza turni per settimana
-        weeks_data = {}
-        for shift in shifts:
-            week_start = shift.date - timedelta(days=shift.date.weekday())
-            week_key = week_start.strftime('%Y-%m-%d')
-            
-            if week_key not in weeks_data:
-                weeks_data[week_key] = {
-                    'start': week_start.strftime('%d/%m/%Y'),
-                    'end': (week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
-                    'days': {i: {'date': (week_start + timedelta(days=i)).strftime('%d/%m'), 'shifts': [], 'missing_roles': []} for i in range(7)},
-                    'shift_count': 0,
-                    'unique_users': set(),
-                    'total_hours': 0
-                }
-            
-            day_index = shift.date.weekday()
-            shift_data = {
-                'id': shift.id,
-                'user': shift.user.username,
-                'user_id': shift.user.id,
-                'role': shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'Senza ruolo'),
-                'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
-            }
-            weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
-            weeks_data[week_key]['shift_count'] += 1
-            weeks_data[week_key]['unique_users'].add(shift.user.username)
-        
-        # FORZA MISSING_ROLES PER GIORNI FERIALI - DEBUG CON PRINT
-        for week_data in weeks_data.values():
-            week_data['unique_users'] = len(week_data['unique_users'])
-            for day_index in range(5):  # Solo lunedì-venerdì
-                day_data = week_data['days'][day_index]
-                # FORZA I MISSING_ROLES - SOLUZIONE BRUTALE
-                day_data['missing_roles'] = [
-                    'Responsabile mancante (09:00-15:00)',
-                    'Responsabile mancante (09:15-16:15)'
-                ]
-                print(f"FORCED missing_roles for day {day_index}: {day_data['missing_roles']}", flush=True)
-        
-        # Converti per frontend
-        sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
-        processed_weeks = []
-        for _, week_data in sorted_weeks:
-            week_copy = week_data.copy()
-            week_copy['days'] = [week_data['days'][i] for i in range(7)]
-            processed_weeks.append(week_copy)
-        
-        print(f"*** RETURNING RESPONSE FOR TEMPLATE 3 WITH {len(processed_weeks)} WEEKS ***", flush=True)
-        return jsonify({
-            'success': True,
-            'weeks': processed_weeks,
-            'template_name': template.name,
-            'period': template.get_period_display()
-        })
-    
-    # CODICE ORIGINALE PER ALTRI TEMPLATE
-    import sys
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
     shifts = Shift.query.filter(
         Shift.date >= template.start_date,
         Shift.date <= template.end_date
     ).all()
     
-    coverages = PresidioCoverage.query.filter_by(
-        template_id=template_id,
-        is_active=True
-    ).all()
-    
-    required_roles_map = {}
-    for coverage in coverages:
-        day = coverage.day_of_week
-        time_key = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
-        try:
-            roles_list = json.loads(coverage.required_roles) if coverage.required_roles else []
-        except:
-            roles_list = []
-        if day not in required_roles_map:
-            required_roles_map[day] = {}
-        if time_key not in required_roles_map[day]:
-            required_roles_map[day][time_key] = []
-        for role in roles_list:
-            for _ in range(coverage.role_count):
-                required_roles_map[day][time_key].append(role)
-    
-
-
-    # Organizza i turni per settimana
+    # STEP 1: Organizza turni per settimana
     weeks_data = {}
-    
     for shift in shifts:
-        # Calcola la settimana di appartenenza
         week_start = shift.date - timedelta(days=shift.date.weekday())
         week_key = week_start.strftime('%Y-%m-%d')
         
@@ -118,237 +26,81 @@ def api_get_shifts_for_template(template_id):
             weeks_data[week_key] = {
                 'start': week_start.strftime('%d/%m/%Y'),
                 'end': (week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
-                'days': {i: {'date': (week_start + timedelta(days=i)).strftime('%d/%m'), 'shifts': [], 'missing_roles': []} for i in range(7)},
+                'days': [],
                 'shift_count': 0,
                 'unique_users': set(),
                 'total_hours': 0
             }
+            # Inizializza i 7 giorni della settimana
+            for i in range(7):
+                weeks_data[week_key]['days'].append({
+                    'date': (week_start + timedelta(days=i)).strftime('%d/%m'),
+                    'shifts': [],
+                    'missing_roles': []
+                })
         
         day_index = shift.date.weekday()
         shift_data = {
             'id': shift.id,
             'user': shift.user.username,
             'user_id': shift.user.id,
-            'role': shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'Senza ruolo'),
+            'role': shift.user.role.name if shift.user.role else 'Senza ruolo',
             'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
         }
         weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
-        
         weeks_data[week_key]['shift_count'] += 1
         weeks_data[week_key]['unique_users'].add(shift.user.username)
-        
-        # Calcola le ore del turno
-        start_datetime = datetime.combine(shift.date, shift.start_time)
-        end_datetime = datetime.combine(shift.date, shift.end_time)
-        if end_datetime < start_datetime:  # Turno notturno
-            end_datetime += timedelta(days=1)
-        hours = (end_datetime - start_datetime).total_seconds() / 3600
-        weeks_data[week_key]['total_hours'] += hours
     
-    # Converti i set in count e aggiungi informazioni sui ruoli mancanti
+    # STEP 2: Converti set in count
     for week_data in weeks_data.values():
         week_data['unique_users'] = len(week_data['unique_users'])
-        
-        # CALCOLO MISSING ROLES - SOLUZIONE DIRETTA
+    
+    # STEP 3: CALCOLA MISSING_ROLES - LOGICA SEMPLICE E DIRETTA
+    coverages = PresidioCoverage.query.filter_by(template_id=template_id, is_active=True).all()
+    
+    for week_data in weeks_data.values():
         for day_index in range(7):
             day_data = week_data['days'][day_index]
-            day_data['missing_roles'] = []
             
-            if day_index in required_roles_map:
-                for time_slot, required_roles in required_roles_map[day_index].items():
-                    # Ottieni i ruoli presenti nei turni esistenti per questa fascia oraria
-                    existing_roles = []
-                    for shift in day_data['shifts']:
-                        # Controlla se i turni si sovrappongono con la fascia oraria richiesta
-                        shift_times = shift['time'].split('-')
-                        shift_start = shift_times[0]
-                        shift_end = shift_times[1]
-                        slot_times = time_slot.split('-')
-                        slot_start = slot_times[0]
-                        slot_end = slot_times[1]
-                        
-                        # Se c'è sovrapposizione oraria, aggiungi il ruolo
-                        if shift_start <= slot_end and shift_end >= slot_start:
-                            existing_roles.append(shift['role'])
+            # Trova coperture richieste per questo giorno
+            for coverage in coverages:
+                if coverage.day_of_week == day_index:
+                    # Parse ruoli richiesti
+                    try:
+                        required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+                    except:
+                        required_roles = []
                     
-                    # Identifica ruoli richiesti ma mancanti  
+                    time_slot = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
+                    
+                    # Verifica ogni ruolo richiesto
                     for required_role in required_roles:
-                        role_count = existing_roles.count(required_role)
+                        # Conta ruoli esistenti che coprono questa fascia oraria
+                        role_found = False
+                        for shift in day_data['shifts']:
+                            if shift['role'] == required_role:
+                                shift_times = shift['time'].split('-')
+                                shift_start = shift_times[0]
+                                shift_end = shift_times[1]
+                                
+                                # Verifica sovrapposizione oraria
+                                if shift_start <= coverage.end_time.strftime('%H:%M') and shift_end >= coverage.start_time.strftime('%H:%M'):
+                                    role_found = True
+                                    break
                         
-                        if role_count == 0:
+                        # Se ruolo non trovato, aggiungi a missing_roles
+                        if not role_found:
                             missing_text = f"{required_role} mancante ({time_slot})"
-                            day_data['missing_roles'].append(missing_text)
-                            print(f"*** AGGIUNTO MISSING ROLE: {missing_text} per giorno {day_index} ***", flush=True)
-                    
-
+                            if missing_text not in day_data['missing_roles']:
+                                day_data['missing_roles'].append(missing_text)
     
-    # Ordina le settimane per data
-    sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
+    # STEP 4: Ordina e restituisci
+    sorted_weeks = sorted(weeks_data.items())
+    processed_weeks = [week_data for _, week_data in sorted_weeks]
     
-    # Converti i giorni da dict a lista per compatibilità frontend
-    processed_weeks = []
-    for _, week_data in sorted_weeks:
-        week_copy = week_data.copy()
-        week_copy['days'] = [week_data['days'][i] for i in range(7)]
-        processed_weeks.append(week_copy)
-    
-    response_data = {
+    return jsonify({
         'success': True,
         'weeks': processed_weeks,
         'template_name': template.name,
         'period': template.get_period_display()
-    }
-    
-    # Debug finale - stampa cosa viene restituito
-    print(f"*** FINAL API RESPONSE ***", flush=True)
-    print(f"Total weeks: {len(response_data['weeks'])}", flush=True)
-    if response_data['weeks']:
-        first_week = response_data['weeks'][0]
-        print(f"First week days type: {type(first_week['days'])}", flush=True)
-        if isinstance(first_week['days'], list) and len(first_week['days']) > 0:
-            first_day = first_week['days'][0]
-            print(f"*** LUNEDI MISSING_ROLES FINALE: {first_day.get('missing_roles', [])} ***", flush=True)
-            print(f"*** LUNEDI SHIFTS FINALE: {first_day.get('shifts', [])} ***", flush=True)
-    
-    return jsonify(response_data)
-
-@app.route('/api/get_users_by_role')
-@login_required
-def api_get_users_by_role():
-    role = request.args.get('role')
-    template_id = request.args.get('template_id')
-    shift_date = request.args.get('shift_date')  # Data del turno da modificare
-    
-    print(f"API Debug: role='{role}', template_id='{template_id}', shift_date='{shift_date}'")
-    
-    # Debug aggiuntivo per verificare il filtro
-    if not role or role == 'undefined':
-        print(f"Role undefined! Restituisco lista vuota.")
-        return jsonify([])
-    
-    if not role or not template_id:
-        return jsonify({'error': 'Role e Template ID richiesti'}), 400
-    
-    # Trova il template per ottenere la sede
-    template = PresidioCoverageTemplate.query.get_or_404(template_id)
-    
-    # Trova tutti gli utenti con il ruolo specificato e attivi
-    users = User.query.filter_by(role=role, active=True).all()
-    
-    print(f"API Debug: Found {len(users)} users with role '{role}' and active=True")
-    
-    # Filtra gli utenti abilitati per la sede del template
-    available_users = []
-    for user in users:
-        # Controlla se user ha sede_id o relazione sede
-        user_sede_name = "None"
-        if hasattr(user, 'sede_id') and user.sede_id:
-            user_sede_name = f"sede_id_{user.sede_id}"
-        elif hasattr(user, 'sede') and user.sede:
-            user_sede_name = user.sede.name
-            
-        template_sede_name = template.sede.name if template.sede else "None"
-        print(f"API Debug: User {user.username} - sede: {user_sede_name}, template sede: {template_sede_name}, all_sedi: {user.all_sedi}")
-        
-        # Utente abilitato se: ha all_sedi=True OR sede_id coincide OR entrambi hanno sede=None
-        user_sede_id = getattr(user, 'sede_id', None)
-        template_sede_id = template.sede.id if template.sede else None
-        
-        if user.all_sedi or user_sede_id == template_sede_id or (user_sede_id is None and template_sede_id is None):
-            available_users.append({
-                'id': user.id,
-                'username': user.username,
-                'full_name': user.get_full_name()
-            })
-            print(f"API Debug: User {user.username} ADDED to available list")
-        else:
-            print(f"API Debug: User {user.username} EXCLUDED (sede mismatch)")
-    
-    print(f"API Debug: Returning {len(available_users)} available users")
-    
-    # Se è specificata una data, filtra gli utenti già impegnati quel giorno
-    if shift_date:
-        try:
-            from datetime import datetime
-            date_obj = datetime.strptime(shift_date, '%Y-%m-%d').date()
-            
-            # Trova tutti i turni per quella data
-            busy_users = db.session.query(Shift.user_id).filter(
-                Shift.date == date_obj
-            ).distinct().all()
-            busy_user_ids = [user_id[0] for user_id in busy_users]
-            
-            print(f"API Debug: Users busy on {shift_date}: {busy_user_ids}")
-            
-            # Filtra gli utenti già impegnati
-            final_users = [user for user in available_users if user['id'] not in busy_user_ids]
-            
-            print(f"API Debug: After filtering busy users: {len(final_users)} available")
-            return jsonify(final_users)
-            
-        except Exception as e:
-            print(f"API Debug: Error filtering by date: {e}")
-    
-    return jsonify(available_users)
-    
-    if not role or not template_id:
-        return jsonify({'error': 'Parametri mancanti'}), 400
-    
-    # Trova il template per ottenere la sede
-    template = PresidioCoverageTemplate.query.get_or_404(template_id)
-    sede_id = template.sede_id
-    
-    # Trova utenti con lo stesso ruolo abilitati alla sede
-    users = User.query.filter(
-        User.role == role,
-        User.is_active == True,
-        db.or_(User.sede_id == sede_id, User.all_sedi == True)
-    ).all()
-    
-    return jsonify([{
-        'id': user.id,
-        'username': user.username
-    } for user in users])
-
-@app.route('/api/update_shift_user', methods=['POST'])
-@login_required
-def api_update_shift_user():
-    if not current_user.can_manage_shifts():
-        return jsonify({'error': 'Non autorizzato'}), 403
-    
-    shift_id = request.form.get('shift_id') 
-    new_user_id = request.form.get('user_id')
-    
-    print(f"API Debug: update_shift_user called - shift_id={shift_id}, user_id={new_user_id}")
-    
-    if not shift_id or not new_user_id:
-        return jsonify({'error': 'Parametri mancanti'}), 400
-    
-    # Trova il turno
-    shift = Shift.query.get_or_404(shift_id)
-    
-    # Trova il nuovo utente
-    new_user = User.query.get_or_404(new_user_id)
-    
-    # Verifica che il nuovo utente abbia lo stesso ruolo
-    if new_user.role != shift.user.role:
-        return jsonify({
-            'success': False,
-            'message': 'Il nuovo utente deve avere lo stesso ruolo dell\'utente originale'
-        })
-    
-    # Per ora non verifichiamo la sede specifica, solo che sia attivo
-    # TODO: aggiungere logica di verifica sede quando disponibile
-    
-    # Aggiorna il turno
-    shift.user_id = new_user_id
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'user': {
-            'id': new_user.id,
-            'username': new_user.username,
-            'full_name': new_user.get_full_name()
-        }
     })
