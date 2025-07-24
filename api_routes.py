@@ -184,9 +184,16 @@ def api_get_shifts_for_template(template_id):
     # Ordina le settimane per data
     sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
     
+    # Converti i giorni da dict a lista per compatibilità frontend
+    processed_weeks = []
+    for _, week_data in sorted_weeks:
+        week_copy = week_data.copy()
+        week_copy['days'] = [week_data['days'][i] for i in range(7)]
+        processed_weeks.append(week_copy)
+    
     response_data = {
         'success': True,
-        'weeks': [week_data for _, week_data in sorted_weeks],
+        'weeks': processed_weeks,
         'template_name': template.name,
         'period': template.get_period_display()
     }
@@ -196,10 +203,14 @@ def api_get_shifts_for_template(template_id):
     print(f"Total weeks: {len(response_data['weeks'])}", file=sys.stderr, flush=True)
     if response_data['weeks']:
         first_week = response_data['weeks'][0]
-        print(f"First week days keys: {list(first_week['days'].keys())}", file=sys.stderr, flush=True)
-        first_day = first_week['days']['0']
-        print(f"First day missing_roles: {first_day.get('missing_roles', [])}", file=sys.stderr, flush=True)
-        print(f"First day shifts count: {len(first_day.get('shifts', []))}", file=sys.stderr, flush=True)
+        print(f"First week days type: {type(first_week['days'])}", file=sys.stderr, flush=True)
+        print(f"First week days structure: {first_week['days']}", file=sys.stderr, flush=True)
+        if isinstance(first_week['days'], dict):
+            first_day = first_week['days']['0']
+            print(f"First day missing_roles: {first_day.get('missing_roles', [])}", file=sys.stderr, flush=True)
+        elif isinstance(first_week['days'], list):
+            first_day = first_week['days'][0]
+            print(f"First day missing_roles: {first_day.get('missing_roles', [])}", file=sys.stderr, flush=True)
     
     return jsonify(response_data)
 
