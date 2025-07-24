@@ -13,6 +13,7 @@
                     <form method="POST">
                         {{ form.hidden_tag() }}
                         
+                        {% if not is_admin_widget_only %}
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -49,11 +50,22 @@
                                 </div>
                             {% endif %}
                         </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Come amministratore, puoi modificare solo i permessi dei Widget per questo ruolo.
+                        </div>
+                        {% endif %}
 
                         <hr>
                         <h5><i class="fas fa-shield-alt me-2"></i>Permessi</h5>
+                        {% if is_admin_widget_only %}
+                        <p class="text-muted small">Modifica solo i permessi Widget per questo ruolo:</p>
+                        {% else %}
                         <p class="text-muted small">Modifica i permessi per questo ruolo:</p>
+                        {% endif %}
 
+                        {% if not is_admin_widget_only %}
                         <div class="row">
                             <!-- Dashboard e Sistema Base -->
                             <div class="col-lg-4 col-md-6 mb-3">
@@ -348,25 +360,25 @@
                             </div>
                         </div>
 
-                        <!-- Dashboard Widget Permissions -->
+                        {% endif %}
+
+                        <!-- Dashboard Widget Permissions - Sempre visibili per tutti -->
                         <div class="row">
                             <div class="col-12 mb-3">
-                                <div class="card bg-primary text-white">
-                                    <div class="card-header py-2" style="background-color: #0d6efd !important;">
-                                        <h5 class="mb-0 text-white"><i class="fas fa-tachometer-alt me-2"></i>Widget Dashboard</h5>
-                                        <small>Controllo completo della visibilità dei widget nella dashboard principale</small>
+                                <div class="card bg-primary text-white h-100" style="background-color: #0d6efd !important;">
+                                    <div class="card-header py-2" style="background-color: #0056b3 !important;">
+                                        <h6 class="mb-0 text-white"><i class="fas fa-tachometer-alt me-1"></i>Widget Dashboard</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <!-- Widget Colonna Sinistra -->
                                             <div class="col-md-6">
-                                                <h6 class="text-white"><i class="fas fa-chart-line me-1"></i>Widget Statistiche</h6>
+                                                <h6 class="text-white"><i class="fas fa-chart-bar me-1"></i>Widget Statistiche</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_team_stats_widget() }}
                                                     {{ form.can_view_team_stats_widget.label(class="form-check-label text-white") }}
                                                 </div>
                                                 
-                                                <h6 class="text-white mt-3"><i class="fas fa-users me-1"></i>Widget Gestione</h6>
+                                                <h6 class="text-white"><i class="fas fa-users me-1"></i>Widget Gestione</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_team_management_widget() }}
                                                     {{ form.can_view_team_management_widget.label(class="form-check-label text-white") }}
@@ -383,7 +395,6 @@
                                                 </div>
                                             </div>
                                             
-                                            <!-- Widget Colonna Destra -->
                                             <div class="col-md-6">
                                                 <h6 class="text-white"><i class="fas fa-umbrella-beach me-1"></i>Widget Ferie/Permessi</h6>
                                                 <div class="form-check mb-2">
@@ -409,6 +420,7 @@
                             </div>
                         </div>
 
+                        {% if not is_admin_widget_only %}
                         <hr>
                         <div class="mb-3">
                             <div class="form-check">
@@ -416,6 +428,7 @@
                                 {{ form.is_active.label(class="form-check-label") }}
                             </div>
                         </div>
+                        {% endif %}
 
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('manage_roles') }}" class="btn btn-secondary">

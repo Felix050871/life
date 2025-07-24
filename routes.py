@@ -5739,18 +5739,37 @@ def edit_role(role_id):
         flash(f'Il ruolo "{role.display_name}" è protetto e non può essere modificato', 'danger')
         return redirect(url_for('manage_roles'))
     
+    # Determina se l'utente corrente è amministratore e può modificare solo widget
+    is_admin_widget_only = current_user.has_role('Amministratore')
+    
     form = RoleForm(original_name=role.name)
     
     if form.validate_on_submit():
-        role.name = form.name.data
-        role.display_name = form.display_name.data
-        role.description = form.description.data
-        role.permissions = form.get_permissions_dict()
-        role.active = form.is_active.data
+        if is_admin_widget_only:
+            # Per l'amministratore, aggiorna solo i permessi widget
+            existing_permissions = role.permissions.copy()
+            widget_permissions = {
+                'can_view_team_stats_widget': form.can_view_team_stats_widget.data,
+                'can_view_my_attendance_widget': form.can_view_my_attendance_widget.data,
+                'can_view_team_management_widget': form.can_view_team_management_widget.data,
+                'can_view_leave_requests_widget': form.can_view_leave_requests_widget.data,
+                'can_view_daily_attendance_widget': form.can_view_daily_attendance_widget.data,
+                'can_view_shifts_coverage_widget': form.can_view_shifts_coverage_widget.data,
+                'can_view_reperibilita_widget': form.can_view_reperibilita_widget.data
+            }
+            existing_permissions.update(widget_permissions)
+            role.permissions = existing_permissions
+        else:
+            # Per altri utenti autorizzati, aggiorna tutti i permessi
+            role.name = form.name.data
+            role.display_name = form.display_name.data
+            role.description = form.description.data
+            role.permissions = form.get_permissions_dict()
+            role.active = form.is_active.data
         
         db.session.commit()
         
-        flash(f'Ruolo "{form.display_name.data}" modificato con successo', 'success')
+        flash(f'Ruolo "{role.display_name}" modificato con successo', 'success')
         return redirect(url_for('manage_roles'))
     
     # Popola il form con i dati esistenti
@@ -5760,7 +5779,7 @@ def edit_role(role_id):
     form.is_active.data = role.active
     form.populate_permissions(role.permissions)
     
-    return render_template('edit_role.html', form=form, role=role)
+    return render_template('edit_role.html', form=form, role=role, is_admin_widget_only=is_admin_widget_only)
 
 
 @app.route('/admin/roles/toggle/<int:role_id>')
