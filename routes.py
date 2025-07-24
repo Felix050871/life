@@ -1635,10 +1635,12 @@ def genera_turni_da_template():
                     # Parsing ruoli richiesti
                     required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
                     
-                    # Trova utenti disponibili per questi ruoli
-                    available_users = User.query.filter(
+                    # Trova utenti disponibili per questi ruoli - solo con orario "Turni"
+                    from models import WorkSchedule
+                    available_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
                         User.active.is_(True),
-                        User.role.in_(required_roles)
+                        User.role.in_(required_roles),
+                        WorkSchedule.name == 'Turni'  # Solo utenti con orario speciale "Turni"
                     ).all()
                     
                     if not available_users:
