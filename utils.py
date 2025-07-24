@@ -838,10 +838,10 @@ def get_team_statistics(start_date=None, end_date=None):
         team_avg_resolution_time = sum(team_resolution_times) / len(team_resolution_times) if team_resolution_times else 0
         
         # Calculate role-based statistics - show ALL active roles, even with 0 users
-        from models import Role
+        from models import UserRole
         
         # Get all active roles first
-        active_roles = Role.query.filter_by(is_active=True).all()
+        active_roles = UserRole.query.filter_by(active=True).all()
         
         # Initialize all roles with 0 count
         role_stats = {}
