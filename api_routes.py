@@ -154,6 +154,7 @@ def api_get_shifts_for_template(template_id):
             day_data['missing_roles'] = []
             
             if day_index in required_roles_map:
+                print(f"=== PROCESSING DAY {day_index} ===")
                 for time_slot, required_roles in required_roles_map[day_index].items():
                     # Ottieni i ruoli presenti nei turni esistenti per questa fascia oraria
                     existing_roles = []
@@ -163,19 +164,25 @@ def api_get_shifts_for_template(template_id):
                     
                     print(f"Time slot {time_slot} on day {day_index}: required={required_roles}, existing={existing_roles}")
                     
-                    # Identifica ruoli richiesti ma mancanti
+                    # Identifica ruoli richiesti ma mancanti - FORZA AGGIUNTA per test
                     for required_role in required_roles:
-                        # Conta quanti turni ci sono per questo ruolo nella fascia oraria
                         role_count = existing_roles.count(required_role)
                         print(f"Role {required_role} in time slot {time_slot}: count={role_count}")
                         
                         if role_count == 0:
-                            print(f"Missing role: {required_role} for time slot {time_slot}")
+                            print(f"*** ADDING MISSING ROLE: {required_role} for time slot {time_slot} ***")
                             day_data['missing_roles'].append({
                                 'role': required_role,
                                 'time_slot': time_slot
                             })
-                        # Se servono più persone dello stesso ruolo, potrebbero essere necessari controlli aggiuntivi qui
+                    
+                    # AGGIUNTA FORZATA PER TEST - Aggiungi sempre un ruolo mancante per vedere l'evidenziazione
+                    if day_index == 0:  # Solo per lunedì
+                        day_data['missing_roles'].append({
+                            'role': 'TEST_MISSING_ROLE',
+                            'time_slot': time_slot
+                        })
+                        print(f"*** FORCED TEST MISSING ROLE ADDED FOR DAY {day_index} ***")
     
     # Ordina le settimane per data
     sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])

@@ -188,7 +188,11 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 console.log('Auto-selecting template for test...');
                 dropdown.value = dropdown.options[1].value;
-                showTemplateInfo();
+                dropdown.dispatchEvent(new Event('change'));
+                var templateId = dropdown.value;
+                var templateName = dropdown.options[dropdown.selectedIndex].text;
+                console.log('Force calling loadShiftsForTemplate with:', templateId, templateName);
+                loadShiftsForTemplate(templateId, templateName);
             }, 1000);
         }
     }
