@@ -40,6 +40,16 @@ class UserForm(FlaskForm):
         # Inizializza choices degli orari (verrà popolato dinamicamente via JavaScript)
         self.work_schedule.choices = [(-1, 'Nessun orario specifico')]
         
+        # Se in modalità edit e c'è un work_schedule_id, aggiungi l'orario corrente alle scelte
+        if is_edit and hasattr(kwargs.get('obj'), 'work_schedule_id') and kwargs.get('obj').work_schedule_id:
+            try:
+                from models import WorkSchedule
+                current_schedule = WorkSchedule.query.get(kwargs.get('obj').work_schedule_id)
+                if current_schedule:
+                    self.work_schedule.choices.append((current_schedule.id, f"{current_schedule.name} ({current_schedule.start_time.strftime('%H:%M') if current_schedule.start_time else ''}-{current_schedule.end_time.strftime('%H:%M') if current_schedule.end_time else ''})"))
+            except:
+                pass
+        
         # Popola le scelte dei ruoli dinamicamente
         try:
             ruoli_attivi = UserRole.query.filter_by(active=True).all()

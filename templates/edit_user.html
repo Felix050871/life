@@ -129,7 +129,7 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            <div class="col-md-6 mb-3" id="workScheduleGroup" style="display: none;">
+                            <div class="col-md-6 mb-3" id="workScheduleGroup" style="{% if user.work_schedule_id %}display: block;{% else %}display: none;{% endif %}">
                                 {{ form.work_schedule.label(class="form-label") }}
                                 {{ form.work_schedule(class="form-select", id="workScheduleSelect") }}
                                 <small class="text-muted">Orario specifico per questa sede</small>
@@ -271,7 +271,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Carica inizialmente gli orari se c'è già una sede selezionata
         if (sedeSelect.value > 0) {
-            updateWorkSchedules();
+            setTimeout(() => {
+                updateWorkSchedules();
+            }, 100); // Piccolo delay per permettere al DOM di essere pronto
         }
     }
 });

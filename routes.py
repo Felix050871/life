@@ -2186,6 +2186,11 @@ def edit_user(user_id):
         if user.sede_id:
             form.sede.data = user.sede_id
         if user.work_schedule_id:
+            # Aggiungi l'orario corrente alle scelte se non già presente
+            if user.work_schedule:
+                schedule_choice = (user.work_schedule.id, f"{user.work_schedule.name} ({user.work_schedule.start_time.strftime('%H:%M') if user.work_schedule.start_time else ''}-{user.work_schedule.end_time.strftime('%H:%M') if user.work_schedule.end_time else ''})")
+                if schedule_choice not in form.work_schedule.choices:
+                    form.work_schedule.choices.append(schedule_choice)
             form.work_schedule.data = user.work_schedule_id
     
     if form.validate_on_submit():
