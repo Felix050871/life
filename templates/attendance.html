@@ -19,7 +19,7 @@
                         {% endif %}
                     </h5>
                     
-                    {% if current_user.can_view_attendance() and not current_user.all_sedi %}
+                    {% if current_user.can_view_sede_attendance() and not current_user.all_sedi %}
                     <div class="btn-group" role="group">
                         <a href="{{ url_for('attendance') }}" class="btn {% if not show_team_data %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
                             <i class="fas fa-user me-1"></i>Le Mie
@@ -34,7 +34,7 @@
                 <div class="card-body">
                     <!-- Date Filter Form -->
                     <form method="GET" action="{{ url_for('attendance') }}" class="row g-3 mb-4">
-                        {% if current_user.role == 'Management' or current_user.can_view_attendance() %}
+                        {% if current_user.role == 'Management' or current_user.can_view_sede_attendance() %}
                         <input type="hidden" name="view" value="{{ view_mode }}">
                         {% endif %}
                         <div class="col-md-3">
