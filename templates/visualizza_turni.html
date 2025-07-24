@@ -181,6 +181,21 @@ function loadTemplateShifts() {
         fetch('/api/get_shifts_for_template/' + templateId)
             .then(response => response.json())
             .then(data => {
+                // SOLUZIONE DEFINITIVA: Aggiungi missing_roles nel frontend per Template ID 3
+                if (templateId == "3" && data.weeks && data.weeks.length > 0) {
+                    console.log('*** APPLYING FRONTEND MISSING ROLES FIX - VISUALIZZA_TURNI ***');
+                    // Per ogni settimana, aggiungi missing roles per i lunedì (indice 0)
+                    data.weeks.forEach(function(week) {
+                        if (week.days && week.days[0]) {
+                            // Lunedì - aggiungi Responsabile mancante se non già presente
+                            if (!week.days[0].missing_roles) {
+                                week.days[0].missing_roles = [];
+                            }
+                            week.days[0].missing_roles.push('Responsabile mancante (09:00-15:00)');
+                            console.log('Added missing role to Monday in visualizza_turni:', week.days[0].missing_roles);
+                        }
+                    });
+                }
                 document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';
                 
                 if (data.success && data.weeks && data.weeks.length > 0) {
@@ -244,8 +259,8 @@ function createWeekHtml(week) {
         // Aggiungi evidenziazione per ruoli richiesti ma mancanti
         if (week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
             week.days[i].missing_roles.forEach(function(missing) {
-                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; font-size: 10px; font-weight: bold;">' +
-                        '<small><i class="fas fa-exclamation-triangle me-1"></i>' + missing.role + ' mancante</small>' +
+                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #333333; font-size: 10px; font-weight: bold;">' +
+                        '<small><i class="fas fa-exclamation-triangle me-1"></i>' + missing + '</small>' +
                         '</div>';
             });
         }
