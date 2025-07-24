@@ -1169,8 +1169,8 @@ def attendance():
             italy_tz = ZoneInfo('Europe/Rome')
             utc_tz = ZoneInfo('UTC')
             
-            # Calcola indicatori di ENTRATA
-            if hasattr(record, 'clock_in') and record.clock_in:
+            # Calcola indicatori di ENTRATA solo se l'utente ha un orario che richiede controlli
+            if hasattr(record, 'clock_in') and record.clock_in and record.user.should_check_attendance_timing():
                 # Crea l'orario di inizio turno in timezone italiana
                 shift_start_datetime = datetime.combine(record.date, shift.start_time)
                 shift_start_datetime = shift_start_datetime.replace(tzinfo=italy_tz)
@@ -1193,8 +1193,8 @@ def attendance():
                 else:
                     record.shift_status = 'normale'
             
-            # Calcola indicatori di USCITA
-            if hasattr(record, 'clock_out') and record.clock_out:
+            # Calcola indicatori di USCITA solo se l'utente ha un orario che richiede controlli
+            if hasattr(record, 'clock_out') and record.clock_out and record.user.should_check_attendance_timing():
                 # Crea l'orario di fine turno in timezone italiana
                 shift_end_datetime = datetime.combine(record.date, shift.end_time)
                 shift_end_datetime = shift_end_datetime.replace(tzinfo=italy_tz)
@@ -5427,21 +5427,37 @@ def api_sede_work_schedules(sede_id):
         sede = Sede.query.get_or_404(sede_id)
         work_schedules = WorkSchedule.query.filter_by(sede_id=sede_id, active=True).all()
         
+        # Se la sede supporta modalità turni e non ha ancora l'orario 'Turni', crealo
+        if sede.is_turni_mode() and not sede.has_turni_schedule():
+            turni_schedule = sede.get_or_create_turni_schedule()
+            work_schedules.append(turni_schedule)
+        
         schedules_data = []
         for schedule in work_schedules:
-            schedules_data.append({
-                'id': schedule.id,
-                'name': schedule.name,
-                'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
-                'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
-                'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0
-            })
+            # Visualizzazione speciale per orario "Turni"
+            if schedule.is_turni_schedule():
+                schedules_data.append({
+                    'id': schedule.id,
+                    'name': schedule.name,
+                    'start_time': 'Flessibile',
+                    'end_time': 'Flessibile',
+                    'days_count': 7
+                })
+            else:
+                schedules_data.append({
+                    'id': schedule.id,
+                    'name': schedule.name,
+                    'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
+                    'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
+                    'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0
+                })
         
         return jsonify({
             'success': True,
             'work_schedules': schedules_data,
             'sede_name': sede.name,
-            'has_schedules': len(schedules_data) > 0
+            'has_schedules': len(schedules_data) > 0,
+            'is_turni_mode': sede.is_turni_mode()
         })
     except Exception as e:
         return jsonify({

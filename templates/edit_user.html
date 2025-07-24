@@ -132,7 +132,7 @@
                             <div class="col-md-6 mb-3" id="workScheduleGroup" style="{% if user.work_schedule_id %}display: block;{% else %}display: none;{% endif %}">
                                 {{ form.work_schedule.label(class="form-label") }}
                                 {{ form.work_schedule(class="form-select", id="workScheduleSelect") }}
-                                <small class="text-muted">Orario specifico per modalità ORARIA, lascia vuoto per modalità TURNI</small>
+                                <small class="text-muted">Seleziona "Turni" per modalità turnazioni, orario specifico per modalità ORARIA, o "Nessun orario" per accesso senza controlli</small>
                                 {% if form.work_schedule.errors %}
                                     <div class="text-danger">
                                         {% for error in form.work_schedule.errors %}
@@ -229,11 +229,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     const currentValue = workScheduleSelect.value;
                     
                     // Popola il select con gli orari disponibili
-                    workScheduleSelect.innerHTML = '<option value="-1">Nessun orario specifico</option>';
+                    workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
                     data.work_schedules.forEach(schedule => {
                         const option = document.createElement('option');
                         option.value = schedule.id;
-                        option.textContent = `${schedule.name} (${schedule.start_time}-${schedule.end_time})`;
+                        if (schedule.name === 'Turni') {
+                            option.textContent = `${schedule.name} (Modalità Turnazioni)`;
+                        } else {
+                            option.textContent = `${schedule.name} (${schedule.start_time}-${schedule.end_time})`;
+                        }
                         workScheduleSelect.appendChild(option);
                     });
                     

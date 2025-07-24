@@ -441,6 +441,18 @@ class User(UserMixin, db.Model):
         """Ottieni il nome della sede associata all'utente"""
         return self.sede_obj.name if self.sede_obj else "Nessuna sede"
     
+    def should_check_attendance_timing(self):
+        """Determina se il sistema deve controllare ritardi/anticipi per questo utente"""
+        # Gli utenti senza orario assegnato (work_schedule_id è None) o con orario 'Turni'
+        # possono registrare presenze ma non verranno controllati per ritardi/anticipi
+        if self.work_schedule_id is None:
+            return False
+        
+        if self.work_schedule and self.work_schedule.is_turni_schedule():
+            return False
+            
+        return True
+    
     def can_view_all_attendance(self):
         """Verifica se l'utente può visualizzare le presenze di tutti gli utenti"""
         return self.can_manage_attendance()
@@ -1613,6 +1625,35 @@ class Sede(db.Model):
         """Restituisce gli orari di lavoro attivi per questa sede"""
         return self.work_schedules.filter_by(active=True).all()
     
+    def has_turni_schedule(self):
+        """Verifica se la sede ha un orario di tipo 'Turni'"""
+        return self.work_schedules.filter_by(name='Turni', active=True).first() is not None
+    
+    def get_or_create_turni_schedule(self):
+        """Ottiene o crea l'orario di tipo 'Turni' per questa sede"""
+        from datetime import time
+        turni_schedule = self.work_schedules.filter_by(name='Turni', active=True).first()
+        
+        if not turni_schedule and self.is_turni_mode():
+            # Crea automaticamente l'orario 'Turni' per sedi con modalità turni
+            turni_schedule = WorkSchedule(
+                sede_id=self.id,
+                name='Turni',
+                start_time_min=time(0, 0),    # 00:00
+                start_time_max=time(23, 59),  # 23:59
+                end_time_min=time(0, 0),      # 00:00  
+                end_time_max=time(23, 59),    # 23:59
+                start_time=time(0, 0),        # Compatibilità
+                end_time=time(23, 59),        # Compatibilità
+                days_of_week=[0, 1, 2, 3, 4, 5, 6],  # Tutti i giorni
+                description='Orario flessibile per turnazioni',
+                active=True
+            )
+            db.session.add(turni_schedule)
+            db.session.commit()
+        
+        return turni_schedule
+    
     def is_turni_mode(self):
         """Restituisce True se la sede opera con modalità turni"""
         return self.tipologia == 'Turni'
@@ -1690,6 +1731,10 @@ class WorkSchedule(db.Model):
         if self.end_time_min == self.end_time_max:
             return self.end_time_min.strftime('%H:%M')
         return f"{self.end_time_min.strftime('%H:%M')} - {self.end_time_max.strftime('%H:%M')}"
+    
+    def is_turni_schedule(self):
+        """Verifica se questo è un orario di tipo 'Turni'"""
+        return self.name == 'Turni'
     
     @property
     def duration_display(self):

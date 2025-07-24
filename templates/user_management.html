@@ -367,11 +367,15 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success && data.has_schedules) {
                     // Popola il select con gli orari disponibili
-                    workScheduleSelect.innerHTML = '<option value="-1">Nessun orario specifico</option>';
+                    workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
                     data.work_schedules.forEach(schedule => {
                         const option = document.createElement('option');
                         option.value = schedule.id;
-                        option.textContent = `${schedule.name} (${schedule.start_time}-${schedule.end_time})`;
+                        if (schedule.name === 'Turni') {
+                            option.textContent = `${schedule.name} (Modalità Turnazioni)`;
+                        } else {
+                            option.textContent = `${schedule.name} (${schedule.start_time}-${schedule.end_time})`;
+                        }
                         workScheduleSelect.appendChild(option);
                     });
                     workScheduleGroup.style.display = 'block';
