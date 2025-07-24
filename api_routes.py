@@ -6,10 +6,11 @@ from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
 import json
 
 @app.route('/api/get_shifts_for_template/<int:template_id>')
-@login_required
+@login_required  
 def api_get_shifts_for_template(template_id):
-    print(f"*** ROUTE CHIAMATA: /api/get_shifts_for_template/{template_id} ***", flush=True)
-    print(f"=== API get_shifts_for_template called with template_id={template_id} ===", flush=True)
+    import sys
+    print(f"*** ROUTE CHIAMATA: /api/get_shifts_for_template/{template_id} ***", file=sys.stderr, flush=True)
+    print(f"=== API get_shifts_for_template called with template_id={template_id} ===", file=sys.stderr, flush=True)
     
     # Trova il template
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
@@ -60,7 +61,7 @@ def api_get_shifts_for_template(template_id):
             print(f"Error processing coverage {coverage.id}: {e}")
             continue
     
-    print(f"Final required_roles_map: {required_roles_map}")
+    print(f"Final required_roles_map: {required_roles_map}", file=sys.stderr, flush=True)
     
     if len(shifts) == 0:
         print(f"No shifts found in period {template.start_date} to {template.end_date}")
@@ -191,14 +192,14 @@ def api_get_shifts_for_template(template_id):
     }
     
     # Debug finale - stampa cosa viene restituito
-    print(f"*** FINAL API RESPONSE ***")
-    print(f"Total weeks: {len(response_data['weeks'])}")
+    print(f"*** FINAL API RESPONSE ***", file=sys.stderr, flush=True)
+    print(f"Total weeks: {len(response_data['weeks'])}", file=sys.stderr, flush=True)
     if response_data['weeks']:
         first_week = response_data['weeks'][0]
-        print(f"First week days keys: {list(first_week['days'].keys())}")
+        print(f"First week days keys: {list(first_week['days'].keys())}", file=sys.stderr, flush=True)
         first_day = first_week['days']['0']
-        print(f"First day missing_roles: {first_day.get('missing_roles', [])}")
-        print(f"First day shifts count: {len(first_day.get('shifts', []))}")
+        print(f"First day missing_roles: {first_day.get('missing_roles', [])}", file=sys.stderr, flush=True)
+        print(f"First day shifts count: {len(first_day.get('shifts', []))}", file=sys.stderr, flush=True)
     
     return jsonify(response_data)
 

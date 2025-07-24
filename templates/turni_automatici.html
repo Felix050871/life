@@ -205,6 +205,9 @@ function showTemplateInfo() {
 }
 
 function loadShiftsForTemplate(templateId, templateName) {
+    console.log('=== loadShiftsForTemplate CALLED ===');
+    console.log('templateId:', templateId, 'templateName:', templateName);
+    
     // Mostra loading
     document.getElementById('no-template-message').style.display = 'none';
     document.getElementById('template-shifts').style.display = 'block';
@@ -212,14 +215,23 @@ function loadShiftsForTemplate(templateId, templateName) {
     document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
     
     // Richiesta AJAX per caricare i turni
+    console.log('Calling API:', '/api/get_shifts_for_template/' + templateId);
     fetch('/api/get_shifts_for_template/' + templateId)
         .then(response => {
+            console.log('API Response status:', response.status);
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
             return response.json();
         })
         .then(data => {
+            console.log('=== API DATA RECEIVED ===');
+            console.log('Full data:', data);
+            console.log('Weeks count:', data.weeks ? data.weeks.length : 0);
+            if (data.weeks && data.weeks[0]) {
+                console.log('First week days:', data.weeks[0].days);
+                console.log('Monday missing_roles:', data.weeks[0].days['0'].missing_roles);
+            }
             
             document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong> (' + data.period + ')';
             document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';
@@ -240,9 +252,10 @@ function loadShiftsForTemplate(templateId, templateName) {
             }
         })
         .catch(error => {
-            console.error('Errore nel caricamento turni:', error);
+            console.error('=== API ERROR ===');
+            console.error('Error details:', error);
             document.getElementById('weeks-container').innerHTML = 
-                '<div class="alert alert-danger">Errore nel caricamento dei turni. Riprova.</div>';
+                '<div class="alert alert-danger">Errore nel caricamento dei turni: ' + error.message + '</div>';
         });
 }
 
