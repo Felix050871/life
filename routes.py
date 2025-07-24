@@ -1594,6 +1594,7 @@ def genera_turni_da_template():
         return redirect(url_for('turni_automatici'))
     
     template_id = request.form.get('template_id')
+    force_regenerate = request.form.get('force_regenerate') == 'true'
     
     if not template_id:
         flash('Seleziona un template per la generazione turni', 'danger')
