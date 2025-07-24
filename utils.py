@@ -837,15 +837,23 @@ def get_team_statistics(start_date=None, end_date=None):
         
         team_avg_resolution_time = sum(team_resolution_times) / len(team_resolution_times) if team_resolution_times else 0
         
-        # Calculate role-based statistics
-        role_stats = {}
-        all_active_users = User.query.filter(User.active.is_(True)).all()
+        # Calculate role-based statistics - show ALL active roles, even with 0 users
+        from models import Role
         
+        # Get all active roles first
+        active_roles = Role.query.filter_by(is_active=True).all()
+        
+        # Initialize all roles with 0 count
+        role_stats = {}
+        for role in active_roles:
+            role_stats[role.name] = 0
+        
+        # Count users by role
+        all_active_users = User.query.filter(User.active.is_(True)).all()
         for user in all_active_users:
-            role = user.role
-            if role not in role_stats:
-                role_stats[role] = 0
-            role_stats[role] += 1
+            # Only count if the role is active
+            if user.role in role_stats:
+                role_stats[user.role] += 1
         
         # Creo un oggetto con attributi per compatibilità template dashboard
         class TeamStats:
