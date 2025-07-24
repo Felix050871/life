@@ -1095,13 +1095,23 @@ def attendance():
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
             ).all()
-        elif view_mode == 'sede' and current_user.sede_id:
-            # Responsabili con permessi vedono solo utenti della propria sede
-            team_users = User.query.filter(
-                User.sede_id == current_user.sede_id,
-                User.active.is_(True),
-                ~User.role.in_(['Admin', 'Staff'])
-            ).all()
+        elif view_mode == 'sede':
+            # Utenti con permessi visualizzazione sede
+            if current_user.all_sedi:
+                # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
+                team_users = User.query.filter(
+                    User.active.is_(True),
+                    ~User.role.in_(['Admin', 'Staff'])
+                ).all()
+            elif current_user.sede_id:
+                # Utenti sede-specifica vedono solo utenti della propria sede
+                team_users = User.query.filter(
+                    User.sede_id == current_user.sede_id,
+                    User.active.is_(True),
+                    ~User.role.in_(['Admin', 'Staff'])
+                ).all()
+            else:
+                team_users = []
         else:
             # PM e Ente vedono solo utenti operativi (esclusi Admin e Staff)
             team_users = User.query.filter(
@@ -1289,9 +1299,24 @@ def attendance():
     
     records.sort(key=sort_key, reverse=True)
     
+    # Organizza i record per sede per utenti multi-sede in modalità team
+    records_by_sede = {}
+    if show_team_data and current_user.all_sedi and view_mode == 'sede':
+        from collections import defaultdict
+        records_by_sede = defaultdict(list)
+        
+        for record in records:
+            if hasattr(record, 'user') and record.user:
+                sede_name = record.user.sede_obj.name if record.user.sede_obj else 'Nessuna Sede'
+                records_by_sede[sede_name].append(record)
+        
+        # Ordina le sedi alfabeticamente
+        records_by_sede = dict(sorted(records_by_sede.items()))
+    
     return render_template('attendance.html', 
                          form=form, 
                          records=records,
+                         records_by_sede=records_by_sede,
                          today_date=date.today(),
                          start_date=start_date.strftime('%Y-%m-%d'),
                          end_date=end_date.strftime('%Y-%m-%d'),
@@ -1299,7 +1324,8 @@ def attendance():
                          today_events=today_events,
                          today_work_hours=today_work_hours,
                          view_mode=view_mode,
-                         show_team_data=show_team_data)
+                         show_team_data=show_team_data,
+                         is_multi_sede=current_user.all_sedi)
 
 @app.route('/turni_automatici')
 @login_required

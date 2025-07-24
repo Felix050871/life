@@ -78,40 +78,46 @@
                     </div>
                 </form>
                 {% if records %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                {% if show_team_data %}<th>Utente</th>{% endif %}
-                                <th>Entrata</th>
-                                <th>Pausa</th>
-                                <th>Uscita</th>
-                                <th>Ore Lavorate</th>
-                                <th>Note</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in records %}
-                            <tr {% if record.shift_status == 'assente' %}class="table-danger bg-danger bg-opacity-25"{% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}class="table-info bg-info bg-opacity-10"{% endif %}>
-                                <td>
-                                    {{ record.date.strftime('%d/%m/%Y') }}
-                                    {% if record.shift_status == 'assente' %}
-                                    <i class="fas fa-exclamation-circle text-danger ms-2" title="Nessuna presenza e nessuna comunicazione di ferie/permessi/malattia"></i>
-                                    {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
-                                    <i class="fas fa-calendar-alt text-info ms-2" title="{{ record.shift_status|title }}"></i>
-                                    {% endif %}
-                                </td>
-                                {% if show_team_data %}
-                                <td>
-                                    {% if record.user %}
-                                    <span class="text-primary">{{ record.user.get_full_name() }}</span>
-                                    <small class="text-muted d-block">{{ record.user.role }}</small>
-                                    {% else %}
-                                    <span class="text-muted">--</span>
-                                    {% endif %}
-                                </td>
-                                {% endif %}
+                <!-- Visualizzazione organizzata per sede per utenti multi-sede -->
+                {% if is_multi_sede and view_mode == 'sede' and records_by_sede %}
+                    {% for sede_name, sede_records in records_by_sede.items() %}
+                    <div class="mb-4">
+                        <h6 class="text-primary border-bottom pb-2">
+                            <i class="fas fa-building me-2"></i>{{ sede_name }}
+                            <span class="badge bg-secondary ms-2">{{ sede_records|length }} presenze</span>
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Utente</th>
+                                        <th>Entrata</th>
+                                        <th>Pausa</th>
+                                        <th>Uscita</th>
+                                        <th>Ore Lavorate</th>
+                                        <th>Note</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in sede_records %}
+                                    <tr {% if record.shift_status == 'assente' %}class="table-danger bg-danger bg-opacity-25"{% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}class="table-info bg-info bg-opacity-10"{% endif %}>
+                                        <td>
+                                            {{ record.date.strftime('%d/%m/%Y') }}
+                                            {% if record.shift_status == 'assente' %}
+                                            <i class="fas fa-exclamation-circle text-danger ms-2" title="Nessuna presenza"></i>
+                                            {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
+                                            <i class="fas fa-calendar-alt text-info ms-2" title="{{ record.shift_status|title }}"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.user %}
+                                            <span class="text-primary">{{ record.user.get_full_name() }}</span>
+                                            <small class="text-muted d-block">{{ record.user.role }}</small>
+                                            {% else %}
+                                            <span class="text-muted">--</span>
+                                            {% endif %}
+                                        </td>
                                 <td>
                                     {% if record.shift_status == 'assente' %}
                                     <span class="text-danger fw-bold">Nessuna presenza</span>
@@ -188,10 +194,133 @@
                                     {% endif %}
                                 </td>
                             </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                             {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                        {% else %}
+                        <!-- Visualizzazione standard (utenti sede-specifica o visualizzazione normale) -->
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        {% if show_team_data %}<th>Utente</th>{% endif %}
+                                        <th>Entrata</th>
+                                        <th>Pausa</th>
+                                        <th>Uscita</th>
+                                        <th>Ore Lavorate</th>
+                                        <th>Note</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in records %}
+                                    <tr {% if record.shift_status == 'assente' %}class="table-danger bg-danger bg-opacity-25"{% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}class="table-info bg-info bg-opacity-10"{% endif %}>
+                                        <td>
+                                            {{ record.date.strftime('%d/%m/%Y') }}
+                                            {% if record.shift_status == 'assente' %}
+                                            <i class="fas fa-exclamation-circle text-danger ms-2" title="Nessuna presenza e nessuna comunicazione di ferie/permessi/malattia"></i>
+                                            {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
+                                            <i class="fas fa-calendar-alt text-info ms-2" title="{{ record.shift_status|title }}"></i>
+                                            {% endif %}
+                                        </td>
+                                        {% if show_team_data %}
+                                        <td>
+                                            {% if record.user %}
+                                            <span class="text-primary">{{ record.user.get_full_name() }}</span>
+                                            <small class="text-muted d-block">{{ record.user.role }}
+                                                {% if record.user.sede_obj %}
+                                                - <i class="fas fa-building me-1"></i>{{ record.user.sede_obj.name }}
+                                                {% endif %}
+                                            </small>
+                                            {% else %}
+                                            <span class="text-muted">--</span>
+                                            {% endif %}
+                                        </td>
+                                        {% endif %}
+                                        <td>
+                                            {% if record.shift_status == 'assente' %}
+                                            <span class="text-danger fw-bold">Nessuna presenza</span>
+                                            {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
+                                            <span class="text-info fw-bold">{{ record.shift_status|title }}</span>
+                                            {% elif record.clock_in %}
+                                            {% set indicators = record.get_attendance_indicators() %}
+                                            <span style="{% if indicators.entry == 'ritardo' %}color: #dc3545 !important;{% elif indicators.entry == 'anticipo' %}color: #0dcaf0 !important;{% else %}color: white !important;{% endif %}">
+                                                {{ record.clock_in|format_time_italian }}
+                                                {% if indicators.entry == 'ritardo' %}
+                                                <i class="fas fa-exclamation-triangle text-danger ms-1" title="Entrata in ritardo"></i>
+                                                {% elif indicators.entry == 'anticipo' %}
+                                                <i class="fas fa-thumbs-up text-info ms-1" title="Entrata in anticipo"></i>
+                                                {% endif %}
+                                            </span>
+                                            {% else %}
+                                            <span class="text-muted">--:--</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.shift_status == 'assente' %}
+                                            <span class="text-danger fw-bold">--</span>
+                                            {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
+                                            <span class="text-info">--</span>
+                                            {% elif record.break_start and record.break_end %}
+                                            <span class="text-warning">{{ record.break_start|format_time_italian }}</span> - 
+                                            <span class="text-info">{{ record.break_end|format_time_italian }}</span>
+                                            {% elif record.break_start %}
+                                            <span class="text-warning">{{ record.break_start|format_time_italian }}</span> - 
+                                            <span class="text-muted">--:--</span>
+                                            {% else %}
+                                            <span class="text-muted">--:--</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.shift_status == 'assente' %}
+                                            <span class="text-danger fw-bold">Nessuna presenza</span>
+                                            {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
+                                            <span class="text-info">--</span>
+                                            {% elif record.clock_out %}
+                                            {% set indicators = record.get_attendance_indicators() %}
+                                            <span style="{% if indicators.exit == 'anticipo' %}color: #ffc107 !important;{% elif indicators.exit == 'straordinario' %}color: #0dcaf0 !important;{% else %}color: white !important;{% endif %}">
+                                                {{ record.clock_out|format_time_italian }}
+                                                {% if indicators.exit == 'anticipo' %}
+                                                <i class="fas fa-exclamation-triangle text-warning ms-1" title="Uscita anticipata"></i>
+                                                {% elif indicators.exit == 'straordinario' %}
+                                                <i class="fas fa-thumbs-up text-info ms-1" title="Straordinario"></i>
+                                                {% endif %}
+                                            </span>
+                                            {% else %}
+                                            <span class="text-muted">--:--</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.shift_status == 'assente' %}
+                                            <span class="badge bg-danger">Nessuna presenza</span>
+                                            {% elif record.shift_status == 'ferie' %}
+                                            <span class="badge bg-success">Ferie</span>
+                                            {% elif record.shift_status == 'permesso' %}
+                                            <span class="badge bg-warning">Permesso</span>
+                                            {% elif record.shift_status == 'malattia' %}
+                                            <span class="badge bg-info">Malattia</span>
+                                            {% elif record.clock_in and record.clock_out %}
+                                            <span class="badge bg-primary">{{ format_hours(record.get_work_hours()) }}</span>
+                                            {% else %}
+                                            <span class="text-muted">--</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.notes %}
+                                            <small>{{ record.notes[:50] }}{% if record.notes|length > 50 %}...{% endif %}</small>
+                                            {% else %}
+                                            <span class="text-muted">--</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
                 
                 <!-- Legenda indicatori -->
                 {% if records %}
