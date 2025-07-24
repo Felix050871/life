@@ -1232,13 +1232,18 @@ def attendance():
     # Aggiungi record per le giornate con ferie/permessi/malattie approvate
     leave_records = []
     
-    # Determina l'utente per cui cercare le richieste di ferie
-    target_user_id = current_user.id if not show_team_data else None
+    # Determina gli utenti per cui cercare le richieste di ferie
+    if show_team_data:
+        # Per vista team, cerca ferie di tutti gli utenti del team
+        target_user_ids = [user.id for user in team_users]
+    else:
+        # Per vista personale, solo l'utente corrente
+        target_user_ids = [current_user.id]
     
-    if target_user_id:
-        # Cerca richieste di ferie approvate nel periodo
+    if target_user_ids:
+        # Cerca richieste di ferie approvate nel periodo per tutti gli utenti target
         approved_leaves = LeaveRequest.query.filter(
-            LeaveRequest.user_id == target_user_id,
+            LeaveRequest.user_id.in_(target_user_ids),
             LeaveRequest.status == 'Approved',
             LeaveRequest.start_date <= end_date,
             LeaveRequest.end_date >= start_date
@@ -1247,8 +1252,11 @@ def attendance():
         for leave in approved_leaves:
             current_date = max(leave.start_date, start_date)
             while current_date <= min(leave.end_date, end_date):
-                # Verifica se esiste già un record di presenza per questa data
-                existing_record = any(r.date == current_date for r in event_records + old_records)
+                # Verifica se esiste già un record di presenza per questa data e utente
+                existing_record = any(
+                    r.date == current_date and getattr(r, 'user_id', None) == leave.user_id 
+                    for r in event_records + old_records
+                )
                 
                 if not existing_record:
                     # Crea un record per la giornata di ferie/permesso/malattia
@@ -1277,7 +1285,7 @@ def attendance():
                         date=current_date,
                         leave_type=leave.leave_type,
                         reason=leave.reason,
-                        user_id=target_user_id
+                        user_id=leave.user_id
                     ))
                 
                 current_date += timedelta(days=1)
