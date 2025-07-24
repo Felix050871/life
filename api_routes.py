@@ -34,10 +34,21 @@ def api_get_shifts_for_template(template_id):
     print(f"Processing {len(coverages)} coverages for required roles mapping")
     for coverage in coverages:
         try:
-            required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+            # Usa il metodo del modello per ottenere i ruoli
+            required_roles = coverage.get_required_roles_list() if hasattr(coverage, 'get_required_roles_list') else []
+            if not required_roles:
+                # Fallback al parsing JSON diretto
+                required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+            
+            # Se è un dict (formato {"Operatore": 2}), estrai solo le chiavi (nomi ruoli)  
+            if isinstance(required_roles, dict):
+                required_roles = list(required_roles.keys())
+            
             day = coverage.day_of_week  # Usa solo il giorno specifico della copertura
             
-            print(f"Coverage: day_of_week={day}, time={coverage.start_time}-{coverage.end_time}, roles={required_roles}")
+            print(f"Coverage ID {coverage.id}: day_of_week={day}, time={coverage.start_time}-{coverage.end_time}")
+            print(f"  Raw required_roles field: {coverage.required_roles}")
+            print(f"  Parsed required_roles: {required_roles}")
             
             if day not in required_roles_map:
                 required_roles_map[day] = {}
@@ -150,9 +161,12 @@ def api_get_shifts_for_template(template_id):
                         if shift['time'] == time_slot:
                             existing_roles.append(shift['role'])
                     
+                    print(f"Time slot {time_slot} on day {day_index}: required={required_roles}, existing={existing_roles}")
+                    
                     # Identifica ruoli richiesti ma mancanti
                     for required_role in required_roles:
                         if required_role not in existing_roles:
+                            print(f"Missing role: {required_role} for time slot {time_slot}")
                             day_data['missing_roles'].append({
                                 'role': required_role,
                                 'time_slot': time_slot
@@ -167,6 +181,12 @@ def api_get_shifts_for_template(template_id):
         'template_name': template.name,
         'period': template.get_period_display()
     }
+    
+    # Debug dei missing_roles per verificare se vengono popolati
+    for i, week in enumerate(response_data['weeks']):
+        for day_idx, day in week['days'].items():
+            if day.get('missing_roles'):
+                print(f"Week {i}, Day {day_idx} has missing roles: {day['missing_roles']}")
     
     # Debug della prima settimana per verificare i campi
     if response_data['weeks'] and response_data['weeks'][0]['days'][0]['shifts']:
