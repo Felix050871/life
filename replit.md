@@ -96,6 +96,7 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 24, 2025: **Errori CSRF e Visibilità Template Risolti** - Corretto errore "CSRF token missing" aggiungendo csrf_token() nei form eliminazione coperture presidio, migliorata drasticamente visibilità template selezionato con gradiente nero, bordo dorato luminoso e ombra per massimo contrasto
 - July 24, 2025: **Colonna Sede Aggiunta a View Presidi** - Aggiunta colonna "Sede" nella tabella template copertura presidio in view_presidi.html, mostra nome sede specifica o "Tutte le sedi" se template globale, migliore identificazione template per sede con badge colorati
 - July 24, 2025: **Visibilità Template e Controllo Coperture Perfezionati** - Applicato contrasto estremo (nero/bianco) per template selezionato garantendo visibilità massima, migliorato controllo coperture per verificare ogni ruolo singolarmente inclusi Supervisore/Responsabile mancanti, sistema avvisi ora completamente accurato e template chiaramente leggibile
 - July 24, 2025: **Sistema Rigenerazione Turni con Avvisi Completato** - Implementato sistema completo di conferma rigenerazione che protegge turni passati, migliorata visibilità template selezionato con contrasti corretti, aggiunto controllo preventivo disponibilità utenti con avvisi specifici per coperture insufficienti per giorno/orario, sistema ora genera turni anche con utenti limitati e informa l'amministratore delle carenze
