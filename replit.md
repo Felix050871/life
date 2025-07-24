@@ -96,6 +96,8 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 24, 2025: **Sistema Presidio Coverage UI Completato** - Trasformata pagina presidio_coverage in tabella pulita con azioni Modifica-Cancella, rimosso pulsante "Vista Sola Lettura" e azione "Visualizza", pagina presidio_detail ora puramente read-only senza pulsante modifica, interfaccia completamente unificata e professionale
+- July 24, 2025: **Sistema Doppia Segnalazione Ruoli Confermato** - Confermata logica corretta per giorni scoperti: ruoli specifici mancanti ("Supervisore mancante 10:00-17:00") + etichetta generale "SCOPERTO" quando nessun turno è assegnato, fornisce informazioni sia dettagliate che panoramiche per migliore gestione coperture
 - July 24, 2025: **Sistema Evidenziazione Missing Roles COMPLETATO SU ENTRAMBE LE PAGINE** - Implementata logica dinamica missing_roles su turni_automatici.html E visualizza_turni.html: sistema legge coperture presidio dal database, calcola dinamicamente ruoli mancanti per sovrapposizione oraria, evidenziazione gialla funzionante per tutti i template, sistema completamente dinamico e unificato tra le due pagine
 - July 24, 2025: **Database Template Presidio Pulito** - Eliminati tutti i template presidio esistenti per consentire creazione di nuovi template di test per verificare sistema evidenziazione ruoli mancanti, database presidio completamente resettato
 - July 24, 2025: **Div Template Selezionato Rimosso Definitivamente** - Eliminata sezione "Template Selezionato" problematica anche dalla pagina confirm_regenerate_shifts.html, interfaccia completamente pulita senza elementi invisibili
