@@ -1001,6 +1001,14 @@ def break_end():
 @login_required
 def attendance():
     # Controllo permessi di accesso alle presenze
+    view_mode = request.args.get('view', 'personal')
+    
+    # Controllo specifico per vista sede
+    if view_mode == 'sede' and not current_user.can_view_sede_attendance():
+        flash('Non hai i permessi per visualizzare le presenze della sede.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Controllo generale per accesso alle presenze
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per accedere alla gestione presenze.', 'danger')
         return redirect(url_for('dashboard'))
