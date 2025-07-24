@@ -18,7 +18,7 @@ class UserForm(FlaskForm):
     last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
     sede = SelectField('Sede', coerce=int, validators=[])
     all_sedi = BooleanField('Accesso a tutte le sedi', default=False)
-    work_schedule = SelectField('Orario di Lavoro', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()])
+    work_schedule = SelectField('Orario di Lavoro', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
     is_active = BooleanField('Attivo', default=True)
