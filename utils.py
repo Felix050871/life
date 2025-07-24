@@ -220,10 +220,10 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     if not coverage_configs:
         return False, "Nessuna copertura presidio valida per il periodo selezionato. Configura prima i requisiti di copertura per le date richieste."
     
-    # Get all eligible users (excluding Admin and Ente, and only those with "Turni" work schedule)
+    # Get all eligible users (excluding administrators, and only those with "Turni" work schedule)
     all_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
         User.active == True,
-        ~User.role.in_(['Admin', 'Ente']),
+        User.role != 'Amministratore',
         WorkSchedule.name == 'Turni'
     ).all()
     
@@ -545,10 +545,10 @@ def generate_reperibilita_shifts_from_coverage(coverage_period, start_date, end_
     if not coverages:
         return 0, ["Nessuna copertura trovata per il periodo selezionato"]
     
-    # Ottieni utenti attivi escludendo Admin e Ente, solo quelli con orario "Turni"
+    # Ottieni utenti attivi escludendo amministratori, solo quelli con orario "Turni"
     all_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
         User.active == True,
-        ~User.role.in_(['Admin', 'Ente']),
+        User.role != 'Amministratore',
         WorkSchedule.name == 'Turni'
     ).all()
     
@@ -1054,10 +1054,10 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
     from datetime import timedelta
     from collections import defaultdict
     
-    # Get all users grouped by role (excluding Admin and Ente, and only those with "Turni" work schedule)
+    # Get all users grouped by role (excluding administrators, and only those with "Turni" work schedule)
     all_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
         User.active == True,
-        ~User.role.in_(['Admin', 'Ente']),
+        User.role != 'Amministratore',
         WorkSchedule.name == 'Turni'
     ).all()
     
@@ -1161,7 +1161,7 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
             if not available_users:
                 fallback_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
                     User.active == True,
-                    ~User.role.in_(['Admin', 'Ente']),
+                    User.role != 'Amministratore',
                     WorkSchedule.name == 'Turni'
                 ).all()
                 

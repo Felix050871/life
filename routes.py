@@ -1699,8 +1699,9 @@ def create_shift():
     
     form = ShiftForm()
     # Solo utenti con orario "Turni" possono essere assegnati ai turni
+    # Escludi solo ruoli amministrativi (Amministratore)
     workers = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
-        User.role.in_(['Redattore', 'Sviluppatore', 'Operatore']),
+        User.role != 'Amministratore',
         User.active.is_(True),
         WorkSchedule.name == 'Turni'
     ).all()
@@ -1921,8 +1922,9 @@ def view_template(template_id):
         template_form = ShiftTemplateForm()
         
         # Populate user choices for shift form - solo utenti con orario "Turni"
+        # Escludi solo ruoli amministrativi (Amministratore)
         workers = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
-            User.role.in_(['Redattore', 'Sviluppatore', 'Operatore']),
+            User.role != 'Amministratore',
             User.active.is_(True),
             WorkSchedule.name == 'Turni'
         ).all()
@@ -5400,15 +5402,15 @@ def get_sede_users(sede_id):
     sede = Sede.query.get_or_404(sede_id)
     
     # Verifica che l'utente possa accedere a questa sede
-    if current_user.role != 'Admin' and (not current_user.sede_obj or current_user.sede_obj.id != sede_id):
+    if current_user.role != 'Amministratore' and not current_user.all_sedi and (not current_user.sede_obj or current_user.sede_obj.id != sede_id):
         return jsonify({'error': 'Non autorizzato'}), 403
     
-    # Ottieni utenti attivi della sede (esclusi Admin e Staff)
+    # Ottieni utenti attivi della sede (esclusi Amministratore)
     users = User.query.filter_by(
         sede_id=sede_id, 
         active=True
     ).filter(
-        User.role.notin_(['Admin', 'Staff'])
+        User.role != 'Amministratore'
     ).order_by(User.first_name, User.last_name).all()
     
     users_data = []
