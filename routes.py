@@ -1280,7 +1280,11 @@ def attendance():
                                 self.clock_out = leave_request.end_time if hasattr(leave_request, 'end_time') and leave_request.end_time else None
                             else:
                                 # Per ferie e malattie usa orari standard di lavoro dell'utente
-                                user_schedule = self.user.get_work_schedule()
+                                from models import WorkSchedule
+                                user_schedule = None
+                                if self.user.work_schedule_id:
+                                    user_schedule = WorkSchedule.query.get(self.user.work_schedule_id)
+                                
                                 if user_schedule:
                                     # Usa orari standard del turno
                                     self.clock_in = user_schedule.start_time_min
