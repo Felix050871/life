@@ -34,6 +34,9 @@
         <div>
             <h2><i class="fa fa-shield-alt me-2"></i>{{ template.name }}</h2>
             <p class="text-muted mb-0">{{ template.get_period_display() }}</p>
+            {% if template.sede %}
+            <p class="text-info mb-0"><i class="fa fa-building me-1"></i>{{ template.sede.name }}</p>
+            {% endif %}
         </div>
         <div class="quick-actions">
             <a href="{{ url_for('presidio_coverage_edit', template_id=template.id) }}" class="btn btn-primary">
@@ -93,6 +96,9 @@
                 <div class="card-body">
                     <div class="mb-2">
                         <strong>Creato da:</strong> {{ template.creator.full_name if template.creator else 'N/A' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Sede:</strong> {{ template.sede.name if template.sede else 'N/A' }}
                     </div>
                     <div class="mb-2">
                         <strong>Data creazione:</strong> {{ template.created_at.strftime('%d/%m/%Y %H:%M') }}
