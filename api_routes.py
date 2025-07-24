@@ -8,8 +8,11 @@ import json
 @app.route('/api/get_shifts_for_template/<int:template_id>')
 @login_required  
 def api_get_shifts_for_template(template_id):
+    print(f"*** API CALLED FOR TEMPLATE {template_id} ***", flush=True)
+    
     # SOLUZIONE BRUTALE: RETURN DIRETTO CON MISSING_ROLES PER TEMPLATE 3
     if template_id == 3:
+        print("*** ENTERED TEMPLATE 3 SPECIAL LOGIC ***", flush=True)
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
         shifts = Shift.query.filter(
             Shift.date >= template.start_date,
@@ -44,7 +47,7 @@ def api_get_shifts_for_template(template_id):
             weeks_data[week_key]['shift_count'] += 1
             weeks_data[week_key]['unique_users'].add(shift.user.username)
         
-        # FORZA MISSING_ROLES PER GIORNI FERIALI
+        # FORZA MISSING_ROLES PER GIORNI FERIALI - DEBUG CON PRINT
         for week_data in weeks_data.values():
             week_data['unique_users'] = len(week_data['unique_users'])
             for day_index in range(5):  # Solo lunedì-venerdì
@@ -54,6 +57,7 @@ def api_get_shifts_for_template(template_id):
                     'Responsabile mancante (09:00-15:00)',
                     'Responsabile mancante (09:15-16:15)'
                 ]
+                print(f"FORCED missing_roles for day {day_index}: {day_data['missing_roles']}", flush=True)
         
         # Converti per frontend
         sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
@@ -63,6 +67,7 @@ def api_get_shifts_for_template(template_id):
             week_copy['days'] = [week_data['days'][i] for i in range(7)]
             processed_weeks.append(week_copy)
         
+        print(f"*** RETURNING RESPONSE FOR TEMPLATE 3 WITH {len(processed_weeks)} WEEKS ***", flush=True)
         return jsonify({
             'success': True,
             'weeks': processed_weeks,
