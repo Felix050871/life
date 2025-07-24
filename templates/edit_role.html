@@ -50,7 +50,9 @@
                                 </div>
                             {% endif %}
                         </div>
-                        {% else %}
+                        {% endif %}
+
+                        {% if is_admin_widget_only %}
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
                             Come amministratore, puoi modificare solo i permessi dei Widget per questo ruolo.
