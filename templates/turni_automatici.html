@@ -214,11 +214,19 @@ function loadShiftsForTemplate(templateId, templateName) {
     document.getElementById('template-name-display').innerHTML = 'Caricamento turni per: <strong>' + templateName + '</strong>...';
     document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
     
-    // Richiesta AJAX per caricare i turni
+    // Richiesta AJAX per caricare i turni con credentials
     console.log('Calling API:', '/api/get_shifts_for_template/' + templateId);
-    fetch('/api/get_shifts_for_template/' + templateId)
+    fetch('/api/get_shifts_for_template/' + templateId, {
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
         .then(response => {
             console.log('API Response status:', response.status);
+            if (response.status === 302) {
+                throw new Error('Sessione scaduta - ricarica la pagina');
+            }
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
@@ -255,7 +263,7 @@ function loadShiftsForTemplate(templateId, templateName) {
             console.error('=== API ERROR ===');
             console.error('Error details:', error);
             document.getElementById('weeks-container').innerHTML = 
-                '<div class="alert alert-danger">Errore nel caricamento dei turni: ' + error.message + '</div>';
+                '<div class="alert alert-danger">Errore nel caricamento dei turni: ' + error.message + '. Problema di autenticazione - ricarica la pagina.</div>';
         });
 }
 

@@ -9,11 +9,8 @@ import json
 @login_required  
 def api_get_shifts_for_template(template_id):
     import sys
-    # Scrivi log direttamente in un file per debug
-    with open('/tmp/api_debug.log', 'a') as f:
-        f.write(f"*** ROUTE CHIAMATA: /api/get_shifts_for_template/{template_id} ***\n")
-        f.write(f"=== API get_shifts_for_template called with template_id={template_id} ===\n")
-        f.flush()
+    # Log funzionante per verificare che la route viene chiamata
+    print(f"*** API ROUTE CHIAMATA: template_id={template_id} ***", flush=True)
     
     # Trova il template
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
