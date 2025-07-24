@@ -41,14 +41,17 @@ class UserForm(FlaskForm):
         self.work_schedule.choices = [(-1, 'Nessun orario specifico')]
         
         # Se in modalità edit e c'è un work_schedule_id, aggiungi l'orario corrente alle scelte
-        if is_edit and hasattr(kwargs.get('obj'), 'work_schedule_id') and kwargs.get('obj').work_schedule_id:
+        obj = kwargs.get('obj')
+        if is_edit and obj and hasattr(obj, 'work_schedule_id') and obj.work_schedule_id:
             try:
                 from models import WorkSchedule
-                current_schedule = WorkSchedule.query.get(kwargs.get('obj').work_schedule_id)
+                current_schedule = WorkSchedule.query.get(obj.work_schedule_id)
                 if current_schedule:
-                    self.work_schedule.choices.append((current_schedule.id, f"{current_schedule.name} ({current_schedule.start_time.strftime('%H:%M') if current_schedule.start_time else ''}-{current_schedule.end_time.strftime('%H:%M') if current_schedule.end_time else ''})"))
-            except:
-                pass
+                    schedule_choice = (current_schedule.id, f"{current_schedule.name} ({current_schedule.start_time.strftime('%H:%M') if current_schedule.start_time else ''}-{current_schedule.end_time.strftime('%H:%M') if current_schedule.end_time else ''})")
+                    if schedule_choice not in self.work_schedule.choices:
+                        self.work_schedule.choices.append(schedule_choice)
+            except Exception as e:
+                print(f"Errore nel caricamento work_schedule: {e}")
         
         # Popola le scelte dei ruoli dinamicamente
         try:
@@ -87,7 +90,7 @@ class UserForm(FlaskForm):
     
     def validate_work_schedule(self, work_schedule):
         # Il work_schedule è opzionale, ma se selezionato deve essere valido
-        if work_schedule.data and work_schedule.data > 0:
+        if work_schedule.data and work_schedule.data != -1 and work_schedule.data > 0:
             # Verifica che esista un orario con quell'ID
             from models import WorkSchedule
             schedule = WorkSchedule.query.get(work_schedule.data)
