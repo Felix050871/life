@@ -171,12 +171,8 @@
                                             <td>
                                                 {% if record.shift_status == 'assente' %}
                                                 <span class="badge bg-danger">Nessuna presenza</span>
-                                                {% elif record.shift_status == 'ferie' %}
-                                                <span class="badge bg-success">Ferie</span>
-                                                {% elif record.shift_status == 'permesso' %}
-                                                <span class="badge bg-warning">Permesso</span>
-                                                {% elif record.shift_status == 'malattia' %}
-                                                <span class="badge bg-info">Malattia</span>
+                                                {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
+                                                <span class="text-muted">--</span>
                                                 {% elif record.clock_in and record.clock_out %}
                                                 <span class="badge bg-primary">{{ format_hours(record.get_work_hours()) }}</span>
                                                 {% else %}
@@ -184,7 +180,22 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if record.notes %}
+                                                {% if record.shift_status == 'ferie' %}
+                                                <span class="badge" style="background-color: #28a745;">Ferie</span>
+                                                {% if record.notes and 'Ferie:' in record.notes %}
+                                                <small class="d-block mt-1">{{ record.notes.replace('Ferie:', '').strip()[:50] }}{% if record.notes.replace('Ferie:', '').strip()|length > 50 %}...{% endif %}</small>
+                                                {% endif %}
+                                                {% elif record.shift_status == 'permesso' %}
+                                                <span class="badge" style="background-color: #6f42c1;">Permesso</span>
+                                                {% if record.notes and 'Permesso:' in record.notes %}
+                                                <small class="d-block mt-1">{{ record.notes.replace('Permesso:', '').strip()[:50] }}{% if record.notes.replace('Permesso:', '').strip()|length > 50 %}...{% endif %}</small>
+                                                {% endif %}
+                                                {% elif record.shift_status == 'malattia' %}
+                                                <span class="badge" style="background-color: #fd7e14;">Malattia</span>
+                                                {% if record.notes and 'Malattia:' in record.notes %}
+                                                <small class="d-block mt-1">{{ record.notes.replace('Malattia:', '').strip()[:50] }}{% if record.notes.replace('Malattia:', '').strip()|length > 50 %}...{% endif %}</small>
+                                                {% endif %}
+                                                {% elif record.notes %}
                                                 <small>{{ record.notes[:50] }}{% if record.notes|length > 50 %}...{% endif %}</small>
                                                 {% else %}
                                                 <span class="text-muted">--</span>
@@ -322,12 +333,8 @@
                                     <td>
                                         {% if record.shift_status == 'assente' %}
                                         <span class="badge bg-danger">Nessuna presenza</span>
-                                        {% elif record.shift_status == 'ferie' %}
-                                        <span class="badge bg-success">Ferie</span>
-                                        {% elif record.shift_status == 'permesso' %}
-                                        <span class="badge bg-warning">Permesso</span>
-                                        {% elif record.shift_status == 'malattia' %}
-                                        <span class="badge bg-info">Malattia</span>
+                                        {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
+                                        <span class="text-muted">--</span>
                                         {% elif record.clock_in and record.clock_out %}
                                         <span class="badge bg-primary">{{ format_hours(record.get_work_hours()) }}</span>
                                         {% else %}
@@ -335,7 +342,22 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if record.notes %}
+                                        {% if record.shift_status == 'ferie' %}
+                                        <span class="badge" style="background-color: #28a745;">Ferie</span>
+                                        {% if record.notes and 'Ferie:' in record.notes %}
+                                        <small class="d-block mt-1">{{ record.notes.replace('Ferie:', '').strip()[:50] }}{% if record.notes.replace('Ferie:', '').strip()|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                        {% elif record.shift_status == 'permesso' %}
+                                        <span class="badge" style="background-color: #6f42c1;">Permesso</span>
+                                        {% if record.notes and 'Permesso:' in record.notes %}
+                                        <small class="d-block mt-1">{{ record.notes.replace('Permesso:', '').strip()[:50] }}{% if record.notes.replace('Permesso:', '').strip()|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                        {% elif record.shift_status == 'malattia' %}
+                                        <span class="badge" style="background-color: #fd7e14;">Malattia</span>
+                                        {% if record.notes and 'Malattia:' in record.notes %}
+                                        <small class="d-block mt-1">{{ record.notes.replace('Malattia:', '').strip()[:50] }}{% if record.notes.replace('Malattia:', '').strip()|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                        {% elif record.notes %}
                                         <small>{{ record.notes[:50] }}{% if record.notes|length > 50 %}...{% endif %}</small>
                                         {% else %}
                                         <span class="text-muted">--</span>

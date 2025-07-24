@@ -1275,9 +1275,20 @@ def attendance():
                             
                             # Determina orari in base al tipo di assenza
                             if leave_type.lower() == 'permesso' and hasattr(leave_request, 'start_time') and leave_request.start_time:
-                                # Per i permessi usa gli orari specifici della richiesta
-                                self.clock_in = leave_request.start_time
-                                self.clock_out = leave_request.end_time if hasattr(leave_request, 'end_time') and leave_request.end_time else None
+                                # Per i permessi usa gli orari specifici della richiesta - converti in datetime
+                                from datetime import datetime
+                                if isinstance(leave_request.start_time, datetime):
+                                    self.clock_in = leave_request.start_time
+                                else:
+                                    self.clock_in = datetime.combine(self.date, leave_request.start_time)
+                                
+                                if hasattr(leave_request, 'end_time') and leave_request.end_time:
+                                    if isinstance(leave_request.end_time, datetime):
+                                        self.clock_out = leave_request.end_time
+                                    else:
+                                        self.clock_out = datetime.combine(self.date, leave_request.end_time)
+                                else:
+                                    self.clock_out = None
                             else:
                                 # Per ferie e malattie usa orari standard di lavoro dell'utente
                                 from models import WorkSchedule
