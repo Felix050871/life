@@ -30,10 +30,10 @@ def api_get_shifts_for_template(template_id):
         is_active=True
     ).all()
     
-    print("*** USING DYNAMIC MISSING ROLES CALCULATION ***", file=sys.stderr, flush=True)
-    print(f"*** FOUND {len(coverages)} COVERAGES FOR TEMPLATE {template_id} ***", file=sys.stderr, flush=True)
+    print("=== DEBUGGER API ROUTE ===", flush=True)
+    print(f"=== COVERAGES FOUND: {len(coverages)} ===", flush=True)
     for cov in coverages:
-        print(f"*** COVERAGE {cov.id}: day={cov.day_of_week}, time={cov.start_time}-{cov.end_time}, roles={cov.required_roles} ***", file=sys.stderr, flush=True)
+        print(f"=== COV {cov.id}: day={cov.day_of_week}, time={cov.start_time}-{cov.end_time}, roles={cov.required_roles} ===", flush=True)
 
     # NUOVA LOGICA: Mappa semplificata dei ruoli richiesti per giorno/ora
     required_roles_map = {}
@@ -112,13 +112,19 @@ def api_get_shifts_for_template(template_id):
     for week_data in weeks_data.values():
         week_data['unique_users'] = len(week_data['unique_users'])
         
-        # Per ogni giorno della settimana, verifica se ci sono ruoli richiesti ma non coperti
+        # CALCOLO MISSING ROLES - DEBUG INTENSIVO
+        print(f"=== PROCESSING WEEK: {week_data['start']} - {week_data['end']} ===", flush=True)
         for day_index in range(7):
             day_data = week_data['days'][day_index]
             day_data['missing_roles'] = []
             
+            print(f"=== DAY {day_index} PROCESSING ===", flush=True)
+            print(f"=== REQUIRED_ROLES_MAP HAS DAY {day_index}: {day_index in required_roles_map} ===", flush=True)
+            
             if day_index in required_roles_map:
+                print(f"=== DAY {day_index} REQUIREMENTS: {required_roles_map[day_index]} ===", flush=True)
                 for time_slot, required_roles in required_roles_map[day_index].items():
+                    print(f"=== CHECKING SLOT {time_slot} FOR ROLES {required_roles} ===", flush=True)
                     # Ottieni i ruoli presenti nei turni esistenti per questa fascia oraria
                     existing_roles = []
                     for shift in day_data['shifts']:
@@ -134,14 +140,19 @@ def api_get_shifts_for_template(template_id):
                         if shift_start <= slot_end and shift_end >= slot_start:
                             existing_roles.append(shift['role'])
                     
+                    print(f"=== EXISTING ROLES FOR {time_slot}: {existing_roles} ===", flush=True)
+                    
                     # Identifica ruoli richiesti ma mancanti  
                     for required_role in required_roles:
                         role_count = existing_roles.count(required_role)
-                        print(f"DEBUG RUOLI - Giorno {day_index}, slot {time_slot}: required={required_role}, existing={existing_roles}, count={role_count}", file=sys.stderr, flush=True)
+                        print(f"=== ROLE {required_role} COUNT: {role_count} ===", flush=True)
                         
                         if role_count == 0:
-                            print(f"*** AGGIUNTO RUOLO MANCANTE: {required_role} per {time_slot} ***", file=sys.stderr, flush=True)
-                            day_data['missing_roles'].append(f"{required_role} mancante ({time_slot})")
+                            missing_text = f"{required_role} mancante ({time_slot})"
+                            day_data['missing_roles'].append(missing_text)
+                            print(f"=== ADDED MISSING ROLE: {missing_text} ===", flush=True)
+            
+            print(f"=== DAY {day_index} FINAL MISSING_ROLES: {day_data['missing_roles']} ===", flush=True)
                     
 
     
