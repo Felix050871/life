@@ -90,14 +90,7 @@ def api_get_shifts_for_template(template_id):
                                     'role': required_role,
                                     'time_slot': time_slot
                                 })
-                    day_data = weeks_data[week_key]['days'][day_index]
-                    if day_index in required_roles_map:
-                        for time_slot, required_roles in required_roles_map[day_index].items():
-                            for required_role in required_roles:
-                                day_data['missing_roles'].append({
-                                    'role': required_role,
-                                    'time_slot': time_slot
-                                })
+
             
             current_date += timedelta(days=1)
         
@@ -122,7 +115,7 @@ def api_get_shifts_for_template(template_id):
             weeks_data[week_key] = {
                 'start': week_start.strftime('%d/%m/%Y'),
                 'end': (week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
-                'days': {i: {'date': (week_start + timedelta(days=i)).strftime('%d/%m'), 'shifts': []} for i in range(7)},
+                'days': {i: {'date': (week_start + timedelta(days=i)).strftime('%d/%m'), 'shifts': [], 'missing_roles': []} for i in range(7)},
                 'shift_count': 0,
                 'unique_users': set(),
                 'total_hours': 0
@@ -197,7 +190,15 @@ def api_get_shifts_for_template(template_id):
         'period': template.get_period_display()
     }
     
-
+    # Debug finale - stampa cosa viene restituito
+    print(f"*** FINAL API RESPONSE ***")
+    print(f"Total weeks: {len(response_data['weeks'])}")
+    if response_data['weeks']:
+        first_week = response_data['weeks'][0]
+        print(f"First week days keys: {list(first_week['days'].keys())}")
+        first_day = first_week['days']['0']
+        print(f"First day missing_roles: {first_day.get('missing_roles', [])}")
+        print(f"First day shifts count: {len(first_day.get('shifts', []))}")
     
     return jsonify(response_data)
 
