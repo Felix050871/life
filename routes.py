@@ -1054,8 +1054,8 @@ def attendance():
         # Ente e Staff vedono sempre e solo dati team
         show_team_data = True
         view_mode = 'team'
-    elif current_user.can_view_attendance() and view_mode == 'sede':
-        # Utenti con permesso "Visualizzare Presenze" possono vedere presenze della propria sede
+    elif current_user.can_view_sede_attendance() and view_mode == 'sede':
+        # Utenti con permesso "Visualizzare Presenze Sede" possono vedere presenze della propria sede
         show_team_data = True
         view_mode = 'sede'
     else:

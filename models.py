@@ -259,6 +259,10 @@ class User(UserMixin, db.Model):
     def can_access_attendance(self):
         return self.has_permission('can_access_attendance')
     
+    def can_view_sede_attendance(self):
+        """Visualizzare presenze della sede - permesso specifico"""
+        return self.has_permission('can_view_sede_attendance')
+    
     # === FERIE/PERMESSI ===
     def can_manage_leave(self):
         return self.has_permission('can_manage_leave')
@@ -382,7 +386,7 @@ class User(UserMixin, db.Model):
     
     def can_access_attendance_menu(self):
         """Accesso al menu Presenze"""
-        return self.can_manage_attendance() or self.can_view_attendance() or self.can_access_attendance()
+        return self.can_manage_attendance() or self.can_view_attendance() or self.can_access_attendance() or self.can_view_sede_attendance()
     
     def can_access_leave_menu(self):
         """Accesso al menu Ferie/Permessi"""
