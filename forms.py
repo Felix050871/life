@@ -611,8 +611,8 @@ class WorkScheduleForm(FlaskForm):
 
 class RoleForm(FlaskForm):
     """Form per gestire i ruoli dinamici"""
-    name = StringField('Nome Ruolo (Codice)', validators=[DataRequired(), Length(max=50)])
-    display_name = StringField('Nome Visualizzato', validators=[DataRequired(), Length(max=100)])
+    name = StringField('Nome Ruolo (Codice)', validators=[Length(max=50)])
+    display_name = StringField('Nome Visualizzato', validators=[Length(max=100)])
     description = TextAreaField('Descrizione', validators=[Length(max=500)])
     
     # Permessi come checkboxes - Sistema completo di permessi granulari
@@ -689,12 +689,22 @@ class RoleForm(FlaskForm):
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
     
-    def __init__(self, original_name=None, *args, **kwargs):
+    def __init__(self, original_name=None, widget_only=False, *args, **kwargs):
         super(RoleForm, self).__init__(*args, **kwargs)
         self.original_name = original_name
+        self.widget_only = widget_only
+        
+        # Se è widget_only, rimuovi i validator richiesti
+        if not widget_only:
+            self.name.validators = [DataRequired(), Length(max=50)]
+            self.display_name.validators = [DataRequired(), Length(max=100)]
     
     def validate_name(self, name):
         """Valida che il nome del ruolo sia unico"""
+        # Salta la validazione se è in modalità widget_only
+        if self.widget_only:
+            return
+            
         if name.data != self.original_name:
             role = UserRole.query.filter_by(name=name.data).first()
             if role:

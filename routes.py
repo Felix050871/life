@@ -5749,7 +5749,7 @@ def edit_role(role_id):
     # Solo quando l'amministratore modifica il proprio ruolo o altri ruoli
     is_admin_widget_only = current_user.has_role('Amministratore')
     
-    form = RoleForm(original_name=role.name)
+    form = RoleForm(original_name=role.name, widget_only=is_admin_widget_only)
     
     print(f"DEBUG: Form submitted: {request.method == 'POST'}")
     print(f"DEBUG: Form validation passed: {form.validate_on_submit()}")
