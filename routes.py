@@ -5746,11 +5746,12 @@ def edit_role(role_id):
         return redirect(url_for('manage_roles'))
     
     # Determina se l'utente corrente è amministratore e può modificare solo widget
-    # Solo quando l'amministratore modifica il proprio ruolo o altri ruoli
-    is_admin_widget_only = current_user.has_role('Amministratore')
+    # Solo quando l'amministratore modifica il ruolo "Amministratore"
+    is_admin_widget_only = current_user.has_role('Amministratore') and role.name == 'Amministratore'
     
     form = RoleForm(original_name=role.name, widget_only=is_admin_widget_only)
     
+    print(f"DEBUG: is_admin_widget_only: {is_admin_widget_only}, role.name: {role.name}")
     print(f"DEBUG: Form submitted: {request.method == 'POST'}")
     print(f"DEBUG: Form validation passed: {form.validate_on_submit()}")
     if request.method == 'POST':
