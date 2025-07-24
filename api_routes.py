@@ -62,6 +62,8 @@ def api_get_shifts_for_template(template_id):
             continue
     
     print(f"Final required_roles_map: {required_roles_map}", file=sys.stderr, flush=True)
+    print(f"CRITICAL DEBUG - Template {template_id} coperture trovate: {len(coverages)}", file=sys.stderr, flush=True)
+    print(f"CRITICAL DEBUG - Shift trovati nel periodo: {len(shifts)}", file=sys.stderr, flush=True)
     
     if len(shifts) == 0:
         print(f"No shifts found in period {template.start_date} to {template.end_date}")
@@ -169,11 +171,13 @@ def api_get_shifts_for_template(template_id):
                         if shift_start <= slot_end and shift_end >= slot_start:
                             existing_roles.append(shift['role'])
                     
-                    # Identifica ruoli richiesti ma mancanti
+                    # Identifica ruoli richiesti ma mancanti  
                     for required_role in required_roles:
                         role_count = existing_roles.count(required_role)
+                        print(f"DEBUG RUOLI - Giorno {day_index}, slot {time_slot}: required={required_role}, existing={existing_roles}, count={role_count}", file=sys.stderr, flush=True)
                         
                         if role_count == 0:
+                            print(f"*** AGGIUNTO RUOLO MANCANTE: {required_role} per {time_slot} ***", file=sys.stderr, flush=True)
                             day_data['missing_roles'].append({
                                 'role': required_role,
                                 'time_slot': time_slot
@@ -204,13 +208,10 @@ def api_get_shifts_for_template(template_id):
     if response_data['weeks']:
         first_week = response_data['weeks'][0]
         print(f"First week days type: {type(first_week['days'])}", file=sys.stderr, flush=True)
-        print(f"First week days structure: {first_week['days']}", file=sys.stderr, flush=True)
-        if isinstance(first_week['days'], dict):
-            first_day = first_week['days']['0']
-            print(f"First day missing_roles: {first_day.get('missing_roles', [])}", file=sys.stderr, flush=True)
-        elif isinstance(first_week['days'], list):
+        if isinstance(first_week['days'], list) and len(first_week['days']) > 0:
             first_day = first_week['days'][0]
-            print(f"First day missing_roles: {first_day.get('missing_roles', [])}", file=sys.stderr, flush=True)
+            print(f"*** LUNEDI MISSING_ROLES: {first_day.get('missing_roles', [])} ***", file=sys.stderr, flush=True)
+            print(f"*** LUNEDI SHIFTS: {first_day.get('shifts', [])} ***", file=sys.stderr, flush=True)
     
     return jsonify(response_data)
 
