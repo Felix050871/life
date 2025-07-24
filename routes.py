@@ -1281,19 +1281,19 @@ def attendance():
                             else:
                                 # Per ferie e malattie usa orari standard di lavoro dell'utente
                                 from models import WorkSchedule
+                                from datetime import datetime, time
                                 user_schedule = None
                                 if self.user.work_schedule_id:
                                     user_schedule = WorkSchedule.query.get(self.user.work_schedule_id)
                                 
                                 if user_schedule:
-                                    # Usa orari standard del turno
-                                    self.clock_in = user_schedule.start_time_min
-                                    self.clock_out = user_schedule.end_time_max
+                                    # Usa orari standard del turno - converti time in datetime per la data corrente
+                                    self.clock_in = datetime.combine(self.date, user_schedule.start_time_min)
+                                    self.clock_out = datetime.combine(self.date, user_schedule.end_time_max)
                                 else:
-                                    # Fallback a orari generici 9-17
-                                    from datetime import time
-                                    self.clock_in = time(9, 0)
-                                    self.clock_out = time(17, 0)
+                                    # Fallback a orari generici 9-17 - converti in datetime
+                                    self.clock_in = datetime.combine(self.date, time(9, 0))
+                                    self.clock_out = datetime.combine(self.date, time(17, 0))
                         
                         def get_work_hours(self):
                             return 0  # Nessuna ora lavorata durante ferie/permessi
