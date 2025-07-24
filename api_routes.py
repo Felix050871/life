@@ -55,44 +55,58 @@ def api_get_shifts_for_template(template_id):
     for week_data in weeks_data.values():
         week_data['unique_users'] = len(week_data['unique_users'])
     
-    # STEP 3: CALCOLA MISSING_ROLES - LOGICA SEMPLICE E DIRETTA
+    # STEP 3: CALCOLA MISSING_ROLES - CON DEBUG COMPLETO
     coverages = PresidioCoverage.query.filter_by(template_id=template_id, is_active=True).all()
+    print(f"[DEBUG] Found {len(coverages)} coverages for template {template_id}")
+    
+    for coverage in coverages:
+        print(f"[DEBUG] Coverage {coverage.id}: day={coverage.day_of_week}, time={coverage.start_time}-{coverage.end_time}, roles={coverage.required_roles}")
     
     for week_data in weeks_data.values():
         for day_index in range(7):
             day_data = week_data['days'][day_index]
+            print(f"[DEBUG] Processing day {day_index} with {len(day_data['shifts'])} shifts")
             
             # Trova coperture richieste per questo giorno
-            for coverage in coverages:
-                if coverage.day_of_week == day_index:
-                    # Parse ruoli richiesti
-                    try:
-                        required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
-                    except:
-                        required_roles = []
+            day_coverages = [c for c in coverages if c.day_of_week == day_index]
+            print(f"[DEBUG] Day {day_index} has {len(day_coverages)} coverages")
+            
+            for coverage in day_coverages:
+                # Parse ruoli richiesti
+                try:
+                    required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+                    print(f"[DEBUG] Coverage requires roles: {required_roles}")
+                except Exception as e:
+                    print(f"[DEBUG] Error parsing roles: {e}")
+                    required_roles = []
+                
+                time_slot = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
+                
+                # Verifica ogni ruolo richiesto
+                for required_role in required_roles:
+                    print(f"[DEBUG] Looking for role '{required_role}' in time slot {time_slot}")
                     
-                    time_slot = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
+                    # Conta ruoli esistenti che coprono questa fascia oraria
+                    role_found = False
+                    for shift in day_data['shifts']:
+                        print(f"[DEBUG] Checking shift: {shift['role']} at {shift['time']}")
+                        if shift['role'] == required_role:
+                            shift_times = shift['time'].split('-')
+                            shift_start = shift_times[0]
+                            shift_end = shift_times[1]
+                            
+                            # Verifica sovrapposizione oraria
+                            if shift_start <= coverage.end_time.strftime('%H:%M') and shift_end >= coverage.start_time.strftime('%H:%M'):
+                                print(f"[DEBUG] Role {required_role} found - overlap detected")
+                                role_found = True
+                                break
                     
-                    # Verifica ogni ruolo richiesto
-                    for required_role in required_roles:
-                        # Conta ruoli esistenti che coprono questa fascia oraria
-                        role_found = False
-                        for shift in day_data['shifts']:
-                            if shift['role'] == required_role:
-                                shift_times = shift['time'].split('-')
-                                shift_start = shift_times[0]
-                                shift_end = shift_times[1]
-                                
-                                # Verifica sovrapposizione oraria
-                                if shift_start <= coverage.end_time.strftime('%H:%M') and shift_end >= coverage.start_time.strftime('%H:%M'):
-                                    role_found = True
-                                    break
-                        
-                        # Se ruolo non trovato, aggiungi a missing_roles
-                        if not role_found:
-                            missing_text = f"{required_role} mancante ({time_slot})"
-                            if missing_text not in day_data['missing_roles']:
-                                day_data['missing_roles'].append(missing_text)
+                    # Se ruolo non trovato, aggiungi a missing_roles
+                    if not role_found:
+                        missing_text = f"{required_role} mancante ({time_slot})"
+                        if missing_text not in day_data['missing_roles']:
+                            day_data['missing_roles'].append(missing_text)
+                            print(f"[DEBUG] ADDED MISSING ROLE: {missing_text}")
     
     # STEP 4: Ordina e restituisci
     sorted_weeks = sorted(weeks_data.items())
