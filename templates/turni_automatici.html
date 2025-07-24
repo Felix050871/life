@@ -101,7 +101,7 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="col-md-8">
                             <label for="template_id" class="form-label">Seleziona Template Presidio</label>
-                            <select class="form-select" name="template_id" id="template_id" required onchange="console.log('Template selection changed'); showTemplateInfo()">
+                            <select class="form-select" name="template_id" id="template_id" required onchange="console.log('Template selection changed, value:', this.value); showTemplateInfo()">
                                 <option value="">-- Seleziona Template --</option>
                                 {% for template in presidio_templates %}
                                 <option value="{{ template.id }}" 
@@ -172,7 +172,21 @@
 
 {% block scripts %}
 <script>
+// Debug: verifica se il template dropdown esiste
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, checking template dropdown...');
+    var dropdown = document.getElementById('template_id');
+    console.log('Template dropdown element:', dropdown);
+    if (dropdown) {
+        console.log('Template options:', dropdown.options.length);
+        for (var i = 0; i < dropdown.options.length; i++) {
+            console.log('Option', i, ':', dropdown.options[i].value, dropdown.options[i].text);
+        }
+    }
+});
+
 function showTemplateInfo() {
+    console.log('showTemplateInfo() called!');
     var selectedOption = document.getElementById('template_id').selectedOptions[0];
     var templateId = document.getElementById('template_id').value;
     var generateBtn = document.getElementById('generate-btn');
