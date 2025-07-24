@@ -1301,22 +1301,34 @@ def attendance():
     
     # Organizza i record per sede per utenti multi-sede in modalità team
     records_by_sede = {}
+    all_sedi_list = []
     if show_team_data and current_user.all_sedi and view_mode == 'sede':
         from collections import defaultdict
-        records_by_sede = defaultdict(list)
+        from models import Sede
         
+        # Ottieni tutte le sedi attive
+        all_sedi_list = Sede.query.filter_by(active=True).order_by(Sede.name).all()
+        records_by_sede = {sede.name: [] for sede in all_sedi_list}
+        
+        # Aggiungi anche una categoria per utenti senza sede
+        records_by_sede['Nessuna Sede'] = []
+        
+        # Distribuisci i record per sede
         for record in records:
             if hasattr(record, 'user') and record.user:
                 sede_name = record.user.sede_obj.name if record.user.sede_obj else 'Nessuna Sede'
-                records_by_sede[sede_name].append(record)
+                if sede_name in records_by_sede:
+                    records_by_sede[sede_name].append(record)
         
-        # Ordina le sedi alfabeticamente
-        records_by_sede = dict(sorted(records_by_sede.items()))
+        # Rimuovi "Nessuna Sede" se vuota
+        if not records_by_sede['Nessuna Sede']:
+            del records_by_sede['Nessuna Sede']
     
     return render_template('attendance.html', 
                          form=form, 
                          records=records,
                          records_by_sede=records_by_sede,
+                         all_sedi_list=all_sedi_list,
                          today_date=date.today(),
                          start_date=start_date.strftime('%Y-%m-%d'),
                          end_date=end_date.strftime('%Y-%m-%d'),
