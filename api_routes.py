@@ -176,13 +176,7 @@ def api_get_shifts_for_template(template_id):
                                 'time_slot': time_slot
                             })
                     
-                    # AGGIUNTA FORZATA PER TEST - Aggiungi sempre un ruolo mancante per vedere l'evidenziazione
-                    if day_index == 0:  # Solo per lunedì
-                        day_data['missing_roles'].append({
-                            'role': 'TEST_MISSING_ROLE',
-                            'time_slot': time_slot
-                        })
-                        print(f"*** FORCED TEST MISSING ROLE ADDED FOR DAY {day_index} ***")
+
     
     # Ordina le settimane per data
     sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])

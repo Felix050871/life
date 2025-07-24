@@ -101,7 +101,7 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="col-md-8">
                             <label for="template_id" class="form-label">Seleziona Template Presidio</label>
-                            <select class="form-select" name="template_id" id="template_id" required onchange="console.log('Template selection changed, value:', this.value); showTemplateInfo()">
+                            <select class="form-select" name="template_id" id="template_id" required onchange="showTemplateInfo()">
                                 <option value="">-- Seleziona Template --</option>
                                 {% for template in presidio_templates %}
                                 <option value="{{ template.id }}" 
@@ -172,39 +172,18 @@
 
 {% block scripts %}
 <script>
-// Debug: verifica se il template dropdown esiste
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, checking template dropdown...');
-    var dropdown = document.getElementById('template_id');
-    console.log('Template dropdown element:', dropdown);
-    if (dropdown) {
-        console.log('Template options:', dropdown.options.length);
-        for (var i = 0; i < dropdown.options.length; i++) {
-            console.log('Option', i, ':', dropdown.options[i].value, dropdown.options[i].text);
-        }
-        
-        // Auto-carica il primo template disponibile per test
-        if (dropdown.options.length > 1) {
-            setTimeout(function() {
-                console.log('Auto-selecting template for test...');
-                dropdown.value = dropdown.options[1].value;
-                dropdown.dispatchEvent(new Event('change'));
-                var templateId = dropdown.value;
-                var templateName = dropdown.options[dropdown.selectedIndex].text;
-                console.log('Force calling loadShiftsForTemplate with:', templateId, templateName);
-                loadShiftsForTemplate(templateId, templateName);
-            }, 1000);
-        }
-    }
+    // Nascondi la sezione turni all'avvio
+    document.getElementById('no-template-message').style.display = 'block';
+    document.getElementById('template-shifts').style.display = 'none';
 });
 
 function showTemplateInfo() {
-    console.log('showTemplateInfo() called!');
-    var selectedOption = document.getElementById('template_id').selectedOptions[0];
     var templateId = document.getElementById('template_id').value;
     var generateBtn = document.getElementById('generate-btn');
     
-    if (templateId && selectedOption) {
+    if (templateId) {
+        var selectedOption = document.getElementById('template_id').selectedOptions[0];
         var templateName = selectedOption.text;
         
         // Abilita pulsante generazione
@@ -212,7 +191,6 @@ function showTemplateInfo() {
         generateBtn.className = 'btn btn-success w-100';
         
         // Carica turni esistenti per il template
-        console.log('About to call loadShiftsForTemplate with templateId:', templateId);
         loadShiftsForTemplate(templateId, templateName);
     } else {
         // Disabilita pulsante
@@ -234,20 +212,14 @@ function loadShiftsForTemplate(templateId, templateName) {
     document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
     
     // Richiesta AJAX per caricare i turni
-    console.log('Fetching shifts for template:', templateId);
     fetch('/api/get_shifts_for_template/' + templateId)
         .then(response => {
-            console.log('Fetch response status:', response.status);
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
             return response.json();
         })
         .then(data => {
-            console.log('API Response data:', data);
-            console.log('First week data:', data.weeks && data.weeks[0] ? data.weeks[0] : 'No weeks');
-            console.log('First day missing roles:', data.weeks && data.weeks[0] && data.weeks[0].days ? data.weeks[0].days[0].missing_roles : 'No day data');
-            console.log('Days structure:', data.weeks && data.weeks[0] ? Object.keys(data.weeks[0].days) : 'No days structure');
             
             document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong> (' + data.period + ')';
             document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';
@@ -295,8 +267,6 @@ function createWeekHtml(week) {
         
         if (week.days[i].shifts && week.days[i].shifts.length > 0) {
             week.days[i].shifts.forEach(function(shift) {
-                console.log('Creating shift HTML with data:', shift);
-                console.log('Shift has id:', shift.id, 'user_id:', shift.user_id, 'role:', shift.role);
                 html += '<div class="shift-item editable-shift" data-shift-id="' + shift.id + '" data-user-id="' + shift.user_id + '" data-role="' + shift.role + '" title="' + shift.user + ' - ' + shift.time + '">' +
                         '<div class="d-flex justify-content-between align-items-start">' +
                         '<div class="shift-content">' +
@@ -310,11 +280,9 @@ function createWeekHtml(week) {
         }
         
         // Aggiungi evidenziazione per ruoli richiesti ma mancanti  
-        console.log('Checking missing roles for day', i, ':', week.days[i].missing_roles);
         if (week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
-            console.log('Adding missing role indicators for day', i);
             week.days[i].missing_roles.forEach(function(missing) {
-                html += '<div class="text-center p-1 rounded mt-1" style="background-color: rgba(255, 193, 7, 0.8); border: 1px solid rgba(255, 193, 7, 1); color: #000; font-size: 10px; font-weight: bold;">' +
+                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; font-size: 10px; font-weight: bold;">' +
                         '<small><i class="fas fa-exclamation-triangle me-1"></i>' + missing.role + ' mancante</small>' +
                         '</div>';
             });
