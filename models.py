@@ -128,12 +128,14 @@ class User(UserMixin, db.Model):
     last_name = db.Column(db.String(100), nullable=False)
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede principale (legacy)
     all_sedi = db.Column(db.Boolean, default=False)  # True se l'utente può accedere a tutte le sedi
+    work_schedule_id = db.Column(db.Integer, db.ForeignKey('work_schedule.id'), nullable=True)  # Orario di lavoro specifico
     active = db.Column(db.Boolean, default=True)  # Renamed to avoid UserMixin conflict
     part_time_percentage = db.Column(db.Float, default=100.0)  # Percentuale di lavoro: 100% = tempo pieno, 50% = metà tempo, ecc.
     created_at = db.Column(db.DateTime, default=italian_now)
     
-    # Relationship con Sede
+    # Relationship con Sede e WorkSchedule
     sede_obj = db.relationship('Sede', backref='users')
+    work_schedule = db.relationship('WorkSchedule', backref='assigned_users')
     
     # La relazione con AttendanceEvent è già definita tramite backref in AttendanceEvent.user
     

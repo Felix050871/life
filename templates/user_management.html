@@ -105,6 +105,21 @@
                                 </div>
                             {% endif %}
                         </div>
+                        <div class="col-md-6 mb-3" id="workScheduleGroupNew" style="display: none;">
+                            {{ form.work_schedule.label(class="form-label") }}
+                            {{ form.work_schedule(class="form-select", id="workScheduleSelectNew") }}
+                            <small class="text-muted">Orario specifico per questa sede</small>
+                            {% if form.work_schedule.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.work_schedule.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <div class="form-check mb-3">
                                 {{ form.all_sedi(class="form-check-input", id="allSediCheckNew") }}
@@ -115,9 +130,9 @@
                                 {{ form.is_active(class="form-check-input") }}
                                 {{ form.is_active.label(class="form-check-label") }}
                             </div>
-                            <div class="text-end">
-                                {{ form.submit(class="btn btn-primary") }}
-                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3 text-end">
+                            {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </div>
                 </form>
@@ -148,6 +163,7 @@
                                 <th>Contatto</th>
                                 <th>Ruolo</th>
                                 <th>Sedi</th>
+                                <th>Orario</th>
                                 <th>% Lavoro</th>
                                 <th>Stato</th>
                                 <th>Registrato</th>
@@ -199,6 +215,15 @@
                                         <span class="badge bg-secondary">{{ user.sede_obj.name }}</span>
                                     {% else %}
                                         <span class="text-muted">Nessuna sede</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.work_schedule %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-clock me-1"></i>{{ user.work_schedule.name }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">Nessun orario</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -312,9 +337,52 @@ document.addEventListener('DOMContentLoaded', function() {
         if (allSediCheck && allSediCheck.checked) {
             sedeSelect.disabled = true;
             sedeSelect.value = -1; // Imposta su "Seleziona una sede"
+            const workScheduleGroupNew = document.getElementById('workScheduleGroupNew');
+            if (workScheduleGroupNew) {
+                workScheduleGroupNew.style.display = 'none';
+            }
         } else {
             sedeSelect.disabled = false;
+            updateWorkSchedulesNew();
         }
+    }
+    
+    function updateWorkSchedulesNew() {
+        const sedeSelect = document.getElementById('sedeSelectNew');
+        const workScheduleGroup = document.getElementById('workScheduleGroupNew');
+        const workScheduleSelect = document.getElementById('workScheduleSelectNew');
+        
+        if (!sedeSelect || !workScheduleGroup || !workScheduleSelect) return;
+        
+        const sedeId = sedeSelect.value;
+        
+        if (sedeId <= 0) {
+            workScheduleGroup.style.display = 'none';
+            return;
+        }
+        
+        // Chiamata API per ottenere gli orari della sede
+        fetch(`/api/sede/${sedeId}/work_schedules`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.has_schedules) {
+                    // Popola il select con gli orari disponibili
+                    workScheduleSelect.innerHTML = '<option value="-1">Nessun orario specifico</option>';
+                    data.work_schedules.forEach(schedule => {
+                        const option = document.createElement('option');
+                        option.value = schedule.id;
+                        option.textContent = `${schedule.name} (${schedule.start_time}-${schedule.end_time})`;
+                        workScheduleSelect.appendChild(option);
+                    });
+                    workScheduleGroup.style.display = 'block';
+                } else {
+                    workScheduleGroup.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento orari:', error);
+                workScheduleGroup.style.display = 'none';
+            });
     }
     
     function togglePartTimeField() {
@@ -342,6 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (allSediCheck && sedeSelect) {
         allSediCheck.addEventListener('change', toggleSedeSelect);
+        sedeSelect.addEventListener('change', updateWorkSchedulesNew);
         toggleSedeSelect(); // Chiamata iniziale
     }
     

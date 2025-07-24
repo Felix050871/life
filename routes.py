@@ -2142,6 +2142,7 @@ def new_user():
             last_name=form.last_name.data,
             all_sedi=form.all_sedi.data,
             sede_id=form.sede.data if not form.all_sedi.data else None,
+            work_schedule_id=form.work_schedule.data if form.work_schedule.data and form.work_schedule.data > 0 else None,
             part_time_percentage=form.get_part_time_percentage_as_float(),
             active=form.is_active.data
         )
@@ -2184,6 +2185,8 @@ def edit_user(user_id):
         form.all_sedi.data = user.all_sedi
         if user.sede_id:
             form.sede.data = user.sede_id
+        if user.work_schedule_id:
+            form.work_schedule.data = user.work_schedule_id
     
     if form.validate_on_submit():
         # Impedisce la disattivazione dell'amministratore
@@ -2198,6 +2201,7 @@ def edit_user(user_id):
         user.last_name = form.last_name.data
         user.all_sedi = form.all_sedi.data
         user.sede_id = form.sede.data if not form.all_sedi.data else None
+        user.work_schedule_id = form.work_schedule.data if form.work_schedule.data and form.work_schedule.data > 0 else None
         user.part_time_percentage = form.get_part_time_percentage_as_float()
         user.active = form.is_active.data
         
@@ -5405,6 +5409,36 @@ def get_sede_users(sede_id):
         })
     
     return jsonify(users_data)
+
+@app.route('/api/sede/<int:sede_id>/work_schedules')
+@login_required
+def api_sede_work_schedules(sede_id):
+    """API per ottenere gli orari di lavoro di una sede"""
+    try:
+        sede = Sede.query.get_or_404(sede_id)
+        work_schedules = WorkSchedule.query.filter_by(sede_id=sede_id, active=True).all()
+        
+        schedules_data = []
+        for schedule in work_schedules:
+            schedules_data.append({
+                'id': schedule.id,
+                'name': schedule.name,
+                'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
+                'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
+                'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0
+            })
+        
+        return jsonify({
+            'success': True,
+            'work_schedules': schedules_data,
+            'sede_name': sede.name,
+            'has_schedules': len(schedules_data) > 0
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/roles')
 @login_required  

@@ -94,6 +94,7 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 24, 2025: **Sistema Selezione Orari Utente Implementato** - Aggiunto campo work_schedule_id al modello User, implementata selezione dinamica orari basata su sede nel form utenti, creata route API /api/sede/<id>/work_schedules, JavaScript per popolamento dinamico dropdown orari, validazione form per coerenza sede-orario, tabella utenti aggiornata con colonna orario
 - July 24, 2025: **Errore 500 Template Sede Risolto** - Corretto errore TypeError nel template edit_sede.html: sostituito sede.work_schedules|length con sede.work_schedules.count() per gestire correttamente relazioni SQLAlchemy AppenderQuery
 - July 24, 2025: **Form Utenti Sistemati Completamente** - Rimosso checkbox duplicato "Accesso a tutte le sedi" dal form modifica utente, campo "% Lavoro" ora presente e sempre visibile per TUTTI i ruoli (incluso Redattore) sia nel form creazione che modifica, rimossi controlli hardcoded che limitavano il campo solo a Responsabile/Operatore
 - July 24, 2025: **Widget Statistiche Team Corretto** - Risolto bug visualizzazione ruoli nel widget: ora mostra TUTTI i ruoli attivi incluso "Ospite" con 0 utenti, corretti import UserRole e logica inizializzazione contatori

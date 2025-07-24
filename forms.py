@@ -18,6 +18,7 @@ class UserForm(FlaskForm):
     last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
     sede = SelectField('Sede', coerce=int, validators=[])
     all_sedi = BooleanField('Accesso a tutte le sedi', default=False)
+    work_schedule = SelectField('Orario di Lavoro', coerce=int, validators=[])
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
     is_active = BooleanField('Attivo', default=True)
@@ -35,6 +36,9 @@ class UserForm(FlaskForm):
             self.sede.choices = [(-1, 'Seleziona una sede')] + [(sede.id, sede.name) for sede in sedi_attive]
         except:
             self.sede.choices = [(-1, 'Seleziona una sede')]
+        
+        # Inizializza choices degli orari (verrà popolato dinamicamente via JavaScript)
+        self.work_schedule.choices = [(-1, 'Nessun orario specifico')]
         
         # Popola le scelte dei ruoli dinamicamente
         try:
@@ -70,6 +74,19 @@ class UserForm(FlaskForm):
         # Se all_sedi è True, non è necessaria una sede specifica
         if self.all_sedi.data:
             return
+    
+    def validate_work_schedule(self, work_schedule):
+        # Il work_schedule è opzionale, ma se selezionato deve essere valido
+        if work_schedule.data and work_schedule.data > 0:
+            # Verifica che esista un orario con quell'ID
+            from models import WorkSchedule
+            schedule = WorkSchedule.query.get(work_schedule.data)
+            if not schedule:
+                raise ValidationError('Orario di lavoro selezionato non valido.')
+            # Se c'è una sede selezionata, verifica che l'orario appartenga a quella sede
+            if self.sede.data and self.sede.data > 0:
+                if schedule.sede_id != self.sede.data:
+                    raise ValidationError('L\'orario di lavoro deve appartenere alla sede selezionata.')
     
     def validate_password(self, password):
         # For new users, password is required
