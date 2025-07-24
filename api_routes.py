@@ -31,6 +31,9 @@ def api_get_shifts_for_template(template_id):
     ).all()
     
     print("*** USING DYNAMIC MISSING ROLES CALCULATION ***", file=sys.stderr, flush=True)
+    print(f"*** FOUND {len(coverages)} COVERAGES FOR TEMPLATE {template_id} ***", file=sys.stderr, flush=True)
+    for cov in coverages:
+        print(f"*** COVERAGE {cov.id}: day={cov.day_of_week}, time={cov.start_time}-{cov.end_time}, roles={cov.required_roles} ***", file=sys.stderr, flush=True)
 
     # NUOVA LOGICA: Mappa semplificata dei ruoli richiesti per giorno/ora
     required_roles_map = {}
@@ -62,44 +65,7 @@ def api_get_shifts_for_template(template_id):
     print(f"CRITICAL DEBUG - Template {template_id} coperture trovate: {len(coverages)}", file=sys.stderr, flush=True)
     print(f"CRITICAL DEBUG - Shift trovati nel periodo: {len(shifts)}", file=sys.stderr, flush=True)
     
-    if len(shifts) == 0:
-        print(f"No shifts found in period {template.start_date} to {template.end_date}")
-        # Anche senza turni, crea le settimane con informazioni sui ruoli mancanti
-        weeks_data = {}
-        current_date = template.start_date
-        while current_date <= template.end_date:
-            week_start = current_date - timedelta(days=current_date.weekday())
-            week_key = week_start.strftime('%Y-%m-%d')
-            
-            if week_key not in weeks_data:
-                weeks_data[week_key] = {
-                    'start': week_start.strftime('%d/%m/%Y'),
-                    'end': (week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
-                    'days': {i: {'date': (week_start + timedelta(days=i)).strftime('%d/%m'), 'shifts': [], 'missing_roles': []} for i in range(7)},
-                    'shift_count': 0,
-                    'unique_users': 0,
-                    'total_hours': 0
-                }
-                
-                # Aggiungi ruoli mancanti per ogni giorno
-                for day_index in range(7):
-                    if day_index in required_roles_map:
-                        for time_slot, required_roles in required_roles_map[day_index].items():
-                            for required_role in required_roles:
-                                weeks_data[week_key]['days'][day_index]['missing_roles'].append({
-                                    'role': required_role,
-                                    'time_slot': time_slot
-                                })
-
-            
-            current_date += timedelta(days=1)
-        
-        sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
-        return jsonify({
-            'success': True,
-            'weeks': [week_data for _, week_data in sorted_weeks],
-            'template_name': template.name
-        })
+    print(f"*** BUILDING WEEKS WITH {len(shifts)} SHIFTS ***", file=sys.stderr, flush=True)
     
 
 
