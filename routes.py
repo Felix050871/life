@@ -1643,10 +1643,6 @@ def genera_turni_da_template():
                         WorkSchedule.name == 'Turni'  # Solo utenti con orario speciale "Turni"
                     ).all()
                     
-                    # Debug: log utenti selezionati
-                    print(f"FILTRO TURNI - Ruoli richiesti: {required_roles}")
-                    print(f"FILTRO TURNI - Utenti eligibili trovati: {[f'{u.first_name} {u.last_name} (ID:{u.id}, Ruolo:{u.role}, Orario:{u.work_schedule.name if u.work_schedule else None})' for u in available_users]}")
-                    
                     if not available_users:
                         continue
                     
