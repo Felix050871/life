@@ -31,18 +31,25 @@ def api_get_shifts_for_template(template_id):
     
     # Mappa i ruoli richiesti per ogni giorno della settimana e fascia oraria
     required_roles_map = {}
+    print(f"Processing {len(coverages)} coverages for required roles mapping")
     for coverage in coverages:
         try:
             required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
-            for day in range(7):  # 0=lunedì, 6=domenica
-                if day not in required_roles_map:
-                    required_roles_map[day] = {}
-                time_key = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
-                if time_key not in required_roles_map[day]:
-                    required_roles_map[day][time_key] = []
-                required_roles_map[day][time_key].extend(required_roles)
-        except (json.JSONDecodeError, AttributeError):
+            day = coverage.day_of_week  # Usa solo il giorno specifico della copertura
+            
+            print(f"Coverage: day_of_week={day}, time={coverage.start_time}-{coverage.end_time}, roles={required_roles}")
+            
+            if day not in required_roles_map:
+                required_roles_map[day] = {}
+            time_key = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
+            if time_key not in required_roles_map[day]:
+                required_roles_map[day][time_key] = []
+            required_roles_map[day][time_key].extend(required_roles)
+        except (json.JSONDecodeError, AttributeError) as e:
+            print(f"Error processing coverage {coverage.id}: {e}")
             continue
+    
+    print(f"Final required_roles_map: {required_roles_map}")
     
     if len(shifts) == 0:
         print(f"No shifts found in period {template.start_date} to {template.end_date}")
