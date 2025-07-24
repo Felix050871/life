@@ -39,44 +39,77 @@
                         </a>
                     </li>
 
-                    <!-- RUOLI (ordine menu admin) -->
-                    {% if current_user.can_access_roles_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manage_roles') }}">
+                    <!-- RUOLI - Solo se ha almeno un permesso ruoli -->
+                    {% set has_roles_permission = current_user.can_manage_roles() or current_user.can_view_roles() %}
+                    {% if has_roles_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if current_user.can_manage_roles() and current_user.can_view_roles() %}dropdown-toggle{% endif %}" href="{% if current_user.can_manage_roles() %}{{ url_for('manage_roles') }}{% elif current_user.can_view_roles() %}{{ url_for('manage_roles') }}{% endif %}" {% if current_user.can_manage_roles() and current_user.can_view_roles() %}role="button" data-bs-toggle="dropdown"{% endif %}>
                             <i class="fas fa-users-gear me-1"></i>Ruoli
                         </a>
+                        {% if current_user.can_manage_roles() and current_user.can_view_roles() %}
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('manage_roles') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Ruoli
+                            </a></li>
+                        </ul>
+                        {% endif %}
                     </li>
                     {% endif %}
 
-                    <!-- UTENTI -->
-                    {% if current_user.can_access_users_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('user_management') }}">
+                    <!-- UTENTI - Solo se ha almeno un permesso utenti -->
+                    {% set has_users_permission = current_user.can_manage_users() or current_user.can_view_users() %}
+                    {% if has_users_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if current_user.can_manage_users() and current_user.can_view_users() %}dropdown-toggle{% endif %}" href="{% if current_user.can_manage_users() %}{{ url_for('user_management') }}{% elif current_user.can_view_users() %}{{ url_for('user_management') }}{% endif %}" {% if current_user.can_manage_users() and current_user.can_view_users() %}role="button" data-bs-toggle="dropdown"{% endif %}>
                             <i class="fas fa-users me-1"></i>Utenti
                         </a>
+                        {% if current_user.can_manage_users() and current_user.can_view_users() %}
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('user_management') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Utenti
+                            </a></li>
+                        </ul>
+                        {% endif %}
                     </li>
                     {% endif %}
 
-                    <!-- SEDI -->
-                    {% if current_user.can_access_sedi_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manage_sedi') }}">
+                    <!-- SEDI - Solo se ha almeno un permesso sedi -->
+                    {% set has_sedi_permission = current_user.can_manage_sedi() or current_user.can_view_sedi() %}
+                    {% if has_sedi_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if current_user.can_manage_sedi() and current_user.can_view_sedi() %}dropdown-toggle{% endif %}" href="{% if current_user.can_manage_sedi() %}{{ url_for('manage_sedi') }}{% elif current_user.can_view_sedi() %}{{ url_for('manage_sedi') }}{% endif %}" {% if current_user.can_manage_sedi() and current_user.can_view_sedi() %}role="button" data-bs-toggle="dropdown"{% endif %}>
                             <i class="fas fa-building me-1"></i>Sedi
                         </a>
+                        {% if current_user.can_manage_sedi() and current_user.can_view_sedi() %}
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('manage_sedi') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Sedi
+                            </a></li>
+                        </ul>
+                        {% endif %}
                     </li>
                     {% endif %}
 
-                    <!-- ORARI -->
-                    {% if current_user.can_access_schedules_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manage_work_schedules') }}">
+                    <!-- ORARI - Solo se ha almeno un permesso orari -->
+                    {% set has_schedules_permission = current_user.can_manage_schedules() or current_user.can_view_schedules() %}
+                    {% if has_schedules_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if current_user.can_manage_schedules() and current_user.can_view_schedules() %}dropdown-toggle{% endif %}" href="{% if current_user.can_manage_schedules() %}{{ url_for('manage_work_schedules') }}{% elif current_user.can_view_schedules() %}{{ url_for('manage_work_schedules') }}{% endif %}" {% if current_user.can_manage_schedules() and current_user.can_view_schedules() %}role="button" data-bs-toggle="dropdown"{% endif %}>
                             <i class="fas fa-clock me-1"></i>Orari
                         </a>
+                        {% if current_user.can_manage_schedules() and current_user.can_view_schedules() %}
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('manage_work_schedules') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Orari
+                            </a></li>
+                        </ul>
+                        {% endif %}
                     </li>
                     {% endif %}
 
-                    <!-- TURNI AUTOMATICI -->
-                    {% if current_user.can_access_shifts_menu() and ((current_user.sede_obj and current_user.sede_obj.is_turni_mode()) or current_user.all_sedi) %}
+                    <!-- TURNI - Solo se ha almeno un permesso turni E sede supporta turni -->
+                    {% set has_shifts_permission = current_user.can_manage_shifts() or current_user.can_view_shifts() %}
+                    {% if has_shifts_permission and ((current_user.sede_obj and current_user.sede_obj.is_turni_mode()) or current_user.all_sedi) %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-calendar-alt me-1"></i>Turni
@@ -84,126 +117,213 @@
                         <ul class="dropdown-menu">
                             {% if current_user.can_manage_shifts() %}
                             <li><a class="dropdown-item" href="{{ url_for('presidio_coverage') }}">
-                                <i class="fas fa-shield-alt me-1"></i>Gestione Presidi
+                                <i class="fas fa-cog me-1"></i>Gestire Turni
                             </a></li>
-                            {% endif %}
-                            {% if current_user.can_view_shifts() %}
-                            <li><a class="dropdown-item" href="{{ url_for('view_presidi') }}">
-                                <i class="fas fa-binoculars me-1"></i>Visualizza Presidi
-                            </a></li>
-                            {% endif %}
-                            {% if current_user.can_manage_shifts() or current_user.can_view_shifts() %}
                             <li><a class="dropdown-item" href="{{ url_for('turni_automatici') }}">
                                 <i class="fas fa-cogs me-1"></i>Gestione Turni
                             </a></li>
                             {% endif %}
                             {% if current_user.can_view_shifts() %}
+                            <li><a class="dropdown-item" href="{{ url_for('view_presidi') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizzare Turni
+                            </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('visualizza_turni') }}">
-                                <i class="fas fa-eye me-1"></i>Visualizza Turni
+                                <i class="fas fa-list me-1"></i>Lista Turni
                             </a></li>
                             {% endif %}
                         </ul>
                     </li>
                     {% endif %}
 
-                    <!-- REPERIBILITÀ -->
-                    {% if current_user.can_access_reperibilita_menu() %}
+                    <!-- REPERIBILITÀ - Solo se ha almeno un permesso reperibilità -->
+                    {% set has_reperibilita_permission = current_user.can_manage_reperibilita() or current_user.can_view_reperibilita() or current_user.can_manage_coverage() or current_user.can_view_coverage() or current_user.can_manage_interventions() or current_user.can_view_interventions() %}
+                    {% if has_reperibilita_permission %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-phone-alt me-1"></i>Reperibilità
                         </a>
                         <ul class="dropdown-menu">
-                            {% if current_user.can_manage_coverage() %}
-                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_coverage') }}">
-                                <i class="fas fa-layer-group me-1"></i>Gestione Coperture
-                            </a></li>
-                            {% endif %}
-                            
                             {% if current_user.can_manage_reperibilita() %}
                             <li><a class="dropdown-item" href="{{ url_for('generate_reperibilita_shifts') }}">
-                                <i class="fas fa-magic me-1"></i>Genera Turni
+                                <i class="fas fa-cog me-1"></i>Gestire Reperibilità
                             </a></li>
                             {% endif %}
-                            
                             {% if current_user.can_view_reperibilita() %}
                             <li><a class="dropdown-item" href="{{ url_for('reperibilita_shifts') }}">
-                                <i class="fas fa-calendar-alt me-1"></i>Visualizza Turni
+                                <i class="fas fa-eye me-1"></i>Visualizzare Reperibilità
                             </a></li>
                             {% endif %}
-                            
+                            {% if current_user.can_manage_coverage() %}
+                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_coverage') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Coperture Reperibilità
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_view_coverage() %}
+                            <li><a class="dropdown-item" href="{{ url_for('reperibilita_coverage') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizzare Coperture Reperibilità
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_manage_interventions() %}
+                            <li><a class="dropdown-item" href="{{ url_for('my_interventions') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Interventi
+                            </a></li>
+                            {% endif %}
                             {% if current_user.can_view_interventions() %}
                             <li><a class="dropdown-item" href="{{ url_for('my_interventions') }}">
-                                <i class="fas fa-tools me-1"></i>I Miei Interventi
+                                <i class="fas fa-eye me-1"></i>Visualizzare Interventi
                             </a></li>
                             {% endif %}
                         </ul>
                     </li>
                     {% endif %}
 
-                    <!-- PRESENZE -->
-                    {% if current_user.can_access_attendance_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('attendance') }}">
+                    <!-- PRESENZE - Solo se ha almeno un permesso presenze -->
+                    {% set has_attendance_permission = current_user.can_manage_attendance() or current_user.can_view_attendance() or current_user.can_access_attendance() %}
+                    {% if has_attendance_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-clock me-1"></i>Presenze
                         </a>
+                        <ul class="dropdown-menu">
+                            {% if current_user.can_manage_attendance() %}
+                            <li><a class="dropdown-item" href="{{ url_for('attendance') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Presenze
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_view_attendance() %}
+                            <li><a class="dropdown-item" href="{{ url_for('attendance') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizzare Presenze
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_access_attendance() %}
+                            <li><a class="dropdown-item" href="{{ url_for('attendance') }}">
+                                <i class="fas fa-clock me-1"></i>Accedere alle Presenze
+                            </a></li>
+                            {% endif %}
+                        </ul>
                     </li>
                     {% endif %}
 
-                    <!-- FERIE/PERMESSI -->
-                    {% if current_user.can_access_leave_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('leave_requests') }}">
+                    <!-- FERIE/PERMESSI - Solo se ha almeno un permesso ferie -->
+                    {% set has_leave_permission = current_user.can_manage_leave() or current_user.can_approve_leave() or current_user.can_request_leave() or current_user.can_view_leave() %}
+                    {% if has_leave_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-umbrella-beach me-1"></i>Ferie/Permessi
                         </a>
+                        <ul class="dropdown-menu">
+                            {% if current_user.can_manage_leave() %}
+                            <li><a class="dropdown-item" href="{{ url_for('leave_requests') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Ferie/Permessi
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_approve_leave() %}
+                            <li><a class="dropdown-item" href="{{ url_for('leave_requests') }}">
+                                <i class="fas fa-check me-1"></i>Approvare Ferie/Permessi
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_request_leave() %}
+                            <li><a class="dropdown-item" href="{{ url_for('leave_requests') }}">
+                                <i class="fas fa-plus me-1"></i>Richiedere Ferie/Permessi
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_view_leave() %}
+                            <li><a class="dropdown-item" href="{{ url_for('leave_requests') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizzare Ferie/Permessi
+                            </a></li>
+                            {% endif %}
+                        </ul>
                     </li>
                     {% endif %}
 
-                    <!-- INTERVENTI -->
-                    {% if current_user.can_access_interventions_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('my_interventions') }}">
-                            <i class="fas fa-tools me-1"></i>Interventi
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    <!-- FESTIVITÀ -->
-                    {% if current_user.can_access_holidays_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('holidays') }}">
+                    <!-- FESTIVITÀ - Solo se ha almeno un permesso festività -->
+                    {% set has_holidays_permission = current_user.can_manage_holidays() or current_user.can_view_holidays() %}
+                    {% if has_holidays_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if current_user.can_manage_holidays() and current_user.can_view_holidays() %}dropdown-toggle{% endif %}" href="{{ url_for('holidays') }}" {% if current_user.can_manage_holidays() and current_user.can_view_holidays() %}role="button" data-bs-toggle="dropdown"{% endif %}>
                             <i class="fas fa-calendar-day me-1"></i>Festività
                         </a>
+                        {% if current_user.can_manage_holidays() and current_user.can_view_holidays() %}
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('holidays') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Festività
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('holidays') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizzare Festività
+                            </a></li>
+                        </ul>
+                        {% endif %}
                     </li>
                     {% endif %}
 
-                    <!-- GESTIONE QR -->
-                    {% if current_user.can_access_qr_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_generate_qr_codes') }}">
-                            <i class="fas fa-qrcode me-1"></i>Gestione QR
+                    <!-- QR - Solo se ha almeno un permesso QR -->
+                    {% set has_qr_permission = current_user.can_manage_qr() or current_user.can_view_qr() %}
+                    {% if has_qr_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if current_user.can_manage_qr() and current_user.can_view_qr() %}dropdown-toggle{% endif %}" href="{{ url_for('admin_generate_qr_codes') }}" {% if current_user.can_manage_qr() and current_user.can_view_qr() %}role="button" data-bs-toggle="dropdown"{% endif %}>
+                            <i class="fas fa-qrcode me-1"></i>QR
                         </a>
+                        {% if current_user.can_manage_qr() and current_user.can_view_qr() %}
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('admin_generate_qr_codes') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire QR
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_generate_qr_codes') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizzare QR
+                            </a></li>
+                        </ul>
+                        {% endif %}
                     </li>
                     {% endif %}
 
-                    <!-- STATISTICHE -->
-                    {% if current_user.can_access_reports_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('reports') }}">
-                            <i class="fas fa-chart-bar me-1"></i>Statistiche
+                    <!-- REPORT/STATISTICHE - Solo se ha almeno un permesso report -->
+                    {% set has_reports_permission = current_user.can_view_reports() or current_user.can_manage_reports() or current_user.can_view_statistics() %}
+                    {% if has_reports_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-chart-bar me-1"></i>Report
                         </a>
+                        <ul class="dropdown-menu">
+                            {% if current_user.can_view_reports() %}
+                            <li><a class="dropdown-item" href="{{ url_for('reports') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizzare Report
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_manage_reports() %}
+                            <li><a class="dropdown-item" href="{{ url_for('reports') }}">
+                                <i class="fas fa-cog me-1"></i>Gestire Report
+                            </a></li>
+                            {% endif %}
+                            {% if current_user.can_view_statistics() %}
+                            <li><a class="dropdown-item" href="{{ url_for('reports') }}">
+                                <i class="fas fa-chart-line me-1"></i>Visualizzare Statistiche
+                            </a></li>
+                            {% endif %}
+                        </ul>
                     </li>
                     {% endif %}
 
-                    <!-- MESSAGGI -->
-                    {% if current_user.can_access_messages_menu() %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('internal_messages') }}">
+                    <!-- MESSAGGI - Solo se ha almeno un permesso messaggi -->
+                    {% set has_messages_permission = current_user.can_send_messages() or current_user.can_view_messages() %}
+                    {% if has_messages_permission %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link {% if current_user.can_send_messages() and current_user.can_view_messages() %}dropdown-toggle{% endif %}" href="{{ url_for('internal_messages') }}" {% if current_user.can_send_messages() and current_user.can_view_messages() %}role="button" data-bs-toggle="dropdown"{% endif %}>
                             <i class="fas fa-envelope me-1"></i>Messaggi
                             {% set unread_count = current_user.received_messages|selectattr('is_read', 'equalto', False)|list|length %}
                             {% if unread_count > 0 %}
                                 <span class="badge bg-danger ms-1">{{ unread_count }}</span>
                             {% endif %}
                         </a>
+                        {% if current_user.can_send_messages() and current_user.can_view_messages() %}
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
+                                <i class="fas fa-paper-plane me-1"></i>Inviare Messaggi
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
+                                <i class="fas fa-eye me-1"></i>Visualizzare Messaggi
+                            </a></li>
+                        </ul>
+                        {% endif %}
                     </li>
                     {% endif %}
                 </ul>
