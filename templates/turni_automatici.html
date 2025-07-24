@@ -280,6 +280,15 @@ function createWeekHtml(week) {
             html += '<div class="text-center p-2 rounded" style="background-color: rgba(220, 53, 69, 0.2); border: 1px solid rgba(220, 53, 69, 0.4); color: #dc3545;"><small><i class="fas fa-exclamation-triangle me-1"></i>SCOPERTO</small></div>';
         }
         
+        // Aggiungi evidenziazione per ruoli richiesti ma mancanti
+        if (week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
+            week.days[i].missing_roles.forEach(function(missing) {
+                html += '<div class="text-center p-1 rounded mt-1" style="background-color: rgba(255, 193, 7, 0.2); border: 1px solid rgba(255, 193, 7, 0.4); color: #856404; font-size: 10px;">' +
+                        '<small><i class="fas fa-user-slash me-1"></i>' + missing.role + ' mancante</small>' +
+                        '</div>';
+            });
+        }
+        
         html += '</div>';
     }
     

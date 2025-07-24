@@ -2,7 +2,8 @@ from flask import jsonify, request
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from app import app, db
-from models import User, Shift, PresidioCoverageTemplate
+from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
+import json
 
 @app.route('/api/get_shifts_for_template/<int:template_id>')
 @login_required
@@ -21,10 +22,69 @@ def api_get_shifts_for_template(template_id):
     ).all()
     
     print(f"API Debug: Found {len(shifts)} shifts for template {template_id}")
+    
+    # Ottieni le coperture richieste per il template per identificare ruoli mancanti
+    coverages = PresidioCoverage.query.filter_by(
+        template_id=template_id,
+        is_active=True
+    ).all()
+    
+    # Mappa i ruoli richiesti per ogni giorno della settimana e fascia oraria
+    required_roles_map = {}
+    for coverage in coverages:
+        try:
+            required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+            for day in range(7):  # 0=lunedì, 6=domenica
+                if day not in required_roles_map:
+                    required_roles_map[day] = {}
+                time_key = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
+                if time_key not in required_roles_map[day]:
+                    required_roles_map[day][time_key] = []
+                required_roles_map[day][time_key].extend(required_roles)
+        except (json.JSONDecodeError, AttributeError):
+            continue
+    
     if len(shifts) == 0:
         print(f"No shifts found in period {template.start_date} to {template.end_date}")
-        return jsonify({'weeks': [], 'template_name': template.name})
+        # Anche senza turni, crea le settimane con informazioni sui ruoli mancanti
+        weeks_data = {}
+        current_date = template.start_date
+        while current_date <= template.end_date:
+            week_start = current_date - timedelta(days=current_date.weekday())
+            week_key = week_start.strftime('%Y-%m-%d')
+            
+            if week_key not in weeks_data:
+                weeks_data[week_key] = {
+                    'start': week_start.strftime('%d/%m/%Y'),
+                    'end': (week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
+                    'days': {i: {'date': (week_start + timedelta(days=i)).strftime('%d/%m'), 'shifts': [], 'missing_roles': []} for i in range(7)},
+                    'shift_count': 0,
+                    'unique_users': 0,
+                    'total_hours': 0
+                }
+                
+                # Aggiungi ruoli mancanti per ogni giorno
+                for day_index in range(7):
+                    day_data = weeks_data[week_key]['days'][day_index]
+                    if day_index in required_roles_map:
+                        for time_slot, required_roles in required_roles_map[day_index].items():
+                            for required_role in required_roles:
+                                day_data['missing_roles'].append({
+                                    'role': required_role,
+                                    'time_slot': time_slot
+                                })
+            
+            current_date += timedelta(days=1)
+        
+        sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
+        return jsonify({
+            'success': True,
+            'weeks': [week_data for _, week_data in sorted_weeks],
+            'template_name': template.name
+        })
     
+
+
     # Organizza i turni per settimana
     weeks_data = {}
     
@@ -66,9 +126,30 @@ def api_get_shifts_for_template(template_id):
         hours = (end_datetime - start_datetime).total_seconds() / 3600
         weeks_data[week_key]['total_hours'] += hours
     
-    # Converti i set in count
+    # Converti i set in count e aggiungi informazioni sui ruoli mancanti
     for week_data in weeks_data.values():
         week_data['unique_users'] = len(week_data['unique_users'])
+        
+        # Per ogni giorno della settimana, verifica se ci sono ruoli richiesti ma non coperti
+        for day_index in range(7):
+            day_data = week_data['days'][day_index]
+            day_data['missing_roles'] = []
+            
+            if day_index in required_roles_map:
+                for time_slot, required_roles in required_roles_map[day_index].items():
+                    # Ottieni i ruoli presenti nei turni esistenti per questa fascia oraria
+                    existing_roles = []
+                    for shift in day_data['shifts']:
+                        if shift['time'] == time_slot:
+                            existing_roles.append(shift['role'])
+                    
+                    # Identifica ruoli richiesti ma mancanti
+                    for required_role in required_roles:
+                        if required_role not in existing_roles:
+                            day_data['missing_roles'].append({
+                                'role': required_role,
+                                'time_slot': time_slot
+                            })
     
     # Ordina le settimane per data
     sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
