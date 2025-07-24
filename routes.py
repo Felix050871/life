@@ -1698,9 +1698,11 @@ def create_shift():
         return redirect(url_for('manage_turni'))
     
     form = ShiftForm()
-    workers = User.query.filter(
+    # Solo utenti con orario "Turni" possono essere assegnati ai turni
+    workers = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
         User.role.in_(['Redattore', 'Sviluppatore', 'Operatore']),
-        User.active.is_(True)
+        User.active.is_(True),
+        WorkSchedule.name == 'Turni'
     ).all()
     form.user_id.choices = [(u.id, u.get_full_name()) for u in workers]
     
@@ -1918,10 +1920,11 @@ def view_template(template_id):
         shift_form = ShiftForm()
         template_form = ShiftTemplateForm()
         
-        # Populate user choices for shift form
-        workers = User.query.filter(
+        # Populate user choices for shift form - solo utenti con orario "Turni"
+        workers = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
             User.role.in_(['Redattore', 'Sviluppatore', 'Operatore']),
-            User.active.is_(True)
+            User.active.is_(True),
+            WorkSchedule.name == 'Turni'
         ).all()
         shift_form.user_id.choices = [(u.id, u.get_full_name()) for u in workers]
         

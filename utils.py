@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta, time
-from models import User, LeaveRequest, AttendanceEvent, PresidioCoverage, Shift, italian_now
+from models import User, LeaveRequest, AttendanceEvent, PresidioCoverage, Shift, WorkSchedule, italian_now
 from app import db
 import random
 import json
@@ -220,8 +220,13 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     if not coverage_configs:
         return False, "Nessuna copertura presidio valida per il periodo selezionato. Configura prima i requisiti di copertura per le date richieste."
     
-    # Get all eligible users (excluding Admin and Ente)
-    all_users = User.query.filter_by(active=True).filter(~User.role.in_(['Admin', 'Ente'])).all()
+    # Get all eligible users (excluding Admin and Ente, and only those with "Turni" work schedule)
+    all_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+        User.active == True,
+        ~User.role.in_(['Admin', 'Ente']),
+        WorkSchedule.name == 'Turni'
+    ).all()
+    
     users_by_role = {}
     for user in all_users:
         if user.role not in users_by_role:
@@ -517,7 +522,7 @@ def generate_reperibilita_shifts_from_coverage(coverage_period, start_date, end_
     """
     Genera turni di reperibilità basati su una copertura esistente selezionata
     """
-    from models import User, ReperibilitaCoverage, ReperibilitaShift, LeaveRequest
+    from models import User, ReperibilitaCoverage, ReperibilitaShift, LeaveRequest, WorkSchedule
     from app import db
     from datetime import timedelta
     from collections import defaultdict
@@ -540,8 +545,13 @@ def generate_reperibilita_shifts_from_coverage(coverage_period, start_date, end_
     if not coverages:
         return 0, ["Nessuna copertura trovata per il periodo selezionato"]
     
-    # Ottieni utenti attivi escludendo Admin e Ente
-    all_users = User.query.filter_by(active=True).filter(~User.role.in_(['Admin', 'Ente'])).all()
+    # Ottieni utenti attivi escludendo Admin e Ente, solo quelli con orario "Turni"
+    all_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+        User.active == True,
+        ~User.role.in_(['Admin', 'Ente']),
+        WorkSchedule.name == 'Turni'
+    ).all()
+    
     users_by_role = defaultdict(list)
     for user in all_users:
         users_by_role[user.role].append(user)
@@ -1038,14 +1048,19 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
     """
     Genera turni di reperibilità basati sulle coperture definite
     """
-    from models import User, ReperibilitaCoverage, ReperibilitaShift, LeaveRequest
+    from models import User, ReperibilitaCoverage, ReperibilitaShift, LeaveRequest, WorkSchedule
     from app import db
     import json
     from datetime import timedelta
     from collections import defaultdict
     
-    # Get all users grouped by role (excluding Admin and Ente)
-    all_users = User.query.filter_by(active=True).filter(~User.role.in_(['Admin', 'Ente'])).all()
+    # Get all users grouped by role (excluding Admin and Ente, and only those with "Turni" work schedule)
+    all_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+        User.active == True,
+        ~User.role.in_(['Admin', 'Ente']),
+        WorkSchedule.name == 'Turni'
+    ).all()
+    
     users_by_role = defaultdict(list)
     for user in all_users:
         users_by_role[user.role].append(user)
@@ -1142,10 +1157,16 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
                 if user.id not in user_leave_dates or current_date not in user_leave_dates[user.id]
             ]
             
-            # If no users available from required roles, expand to all active users to ensure coverage
+            # If no users available from required roles, expand to all active users with "Turni" schedule to ensure coverage
             if not available_users:
+                fallback_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+                    User.active == True,
+                    ~User.role.in_(['Admin', 'Ente']),
+                    WorkSchedule.name == 'Turni'
+                ).all()
+                
                 available_users = [
-                    user for user in all_users 
+                    user for user in fallback_users 
                     if user.id not in user_leave_dates or current_date not in user_leave_dates[user.id]
                 ]
             
