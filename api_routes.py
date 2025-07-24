@@ -165,12 +165,17 @@ def api_get_shifts_for_template(template_id):
                     
                     # Identifica ruoli richiesti ma mancanti
                     for required_role in required_roles:
-                        if required_role not in existing_roles:
+                        # Conta quanti turni ci sono per questo ruolo nella fascia oraria
+                        role_count = existing_roles.count(required_role)
+                        print(f"Role {required_role} in time slot {time_slot}: count={role_count}")
+                        
+                        if role_count == 0:
                             print(f"Missing role: {required_role} for time slot {time_slot}")
                             day_data['missing_roles'].append({
                                 'role': required_role,
                                 'time_slot': time_slot
                             })
+                        # Se servono più persone dello stesso ruolo, potrebbero essere necessari controlli aggiuntivi qui
     
     # Ordina le settimane per data
     sorted_weeks = sorted(weeks_data.items(), key=lambda x: x[0])
