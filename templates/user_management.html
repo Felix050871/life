@@ -66,15 +66,29 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             {{ form.role.label(class="form-label") }}
-                            {{ form.role(class="form-select", id="role") }}
+                            {{ form.role(class="form-select", id="roleSelectNew") }}
+                            {% if form.role.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.role.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3" id="partTimeGroupNew">
                             {{ form.part_time_percentage.label(class="form-label") }}
                             <div class="input-group">
                                 {{ form.part_time_percentage(class="form-control") }}
                                 <span class="input-group-text">%</span>
                             </div>
                             <small class="text-muted">Es: 100, 75,5, 50 (usa virgola per decimali)</small>
+                            {% if form.part_time_percentage.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.part_time_percentage.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -318,10 +332,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    function togglePartTimeFieldNew() {
+        const roleSelectNew = document.getElementById('roleSelectNew');
+        const partTimeGroupNew = document.getElementById('partTimeGroupNew');
+        if (roleSelectNew && partTimeGroupNew) {
+            const selectedRole = roleSelectNew.value;
+            const showPartTime = ['Responsabile', 'Operatore'].includes(selectedRole);
+            
+            if (showPartTime) {
+                partTimeGroupNew.style.display = 'block';
+            } else {
+                partTimeGroupNew.style.display = 'none';
+                // Reset value to 100% when hidden
+                const partTimeInput = partTimeGroupNew.querySelector('input[name="part_time_percentage"]');
+                if (partTimeInput) partTimeInput.value = '100.0';
+            }
+        }
+    }
+    
     // Event listeners
     if (roleSelect) {
         roleSelect.addEventListener('change', togglePartTimeField);
         togglePartTimeField(); // Initial call
+    }
+    
+    // Event listener for new user form
+    const roleSelectNew = document.getElementById('roleSelectNew');
+    if (roleSelectNew) {
+        roleSelectNew.addEventListener('change', togglePartTimeFieldNew);
+        togglePartTimeFieldNew(); // Initial call
     }
     
     if (allSediCheck && sedeSelect) {

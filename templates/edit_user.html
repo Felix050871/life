@@ -139,11 +139,6 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">&nbsp;</label>
-                                <div class="form-check mb-2">
-                                    {{ form.all_sedi(class="form-check-input", id="allSediCheck") }}
-                                    {{ form.all_sedi.label(class="form-check-label") }}
-                                </div>
-                                <small class="text-muted mb-3 d-block">Se abilitato, può accedere a tutte le sedi</small>
                                 <div class="form-check">
                                     {% if user.role == 'Amministratore' %}
                                         {{ form.is_active(class="form-check-input", disabled=true, checked=true) }}
