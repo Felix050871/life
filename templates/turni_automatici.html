@@ -217,6 +217,10 @@ function loadShiftsForTemplate(templateId, templateName) {
         })
         .then(data => {
             console.log('API Response data:', data);
+            console.log('First week data:', data.weeks && data.weeks[0] ? data.weeks[0] : 'No weeks');
+            console.log('First day missing roles:', data.weeks && data.weeks[0] && data.weeks[0].days ? data.weeks[0].days[0].missing_roles : 'No day data');
+            console.log('Days structure:', data.weeks && data.weeks[0] ? Object.keys(data.weeks[0].days) : 'No days structure');
+            
             document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong> (' + data.period + ')';
             document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';
             
@@ -278,10 +282,12 @@ function createWeekHtml(week) {
         }
         
         // Aggiungi evidenziazione per ruoli richiesti ma mancanti  
+        console.log('Checking missing roles for day', i, ':', week.days[i].missing_roles);
         if (week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
+            console.log('Adding missing role indicators for day', i);
             week.days[i].missing_roles.forEach(function(missing) {
-                html += '<div class="text-center p-1 rounded mt-1" style="background-color: rgba(255, 193, 7, 0.2); border: 1px solid rgba(255, 193, 7, 0.4); color: #856404; font-size: 10px;">' +
-                        '<small><i class="fas fa-user-slash me-1"></i>' + missing.role + ' mancante</small>' +
+                html += '<div class="text-center p-1 rounded mt-1" style="background-color: rgba(255, 193, 7, 0.8); border: 1px solid rgba(255, 193, 7, 1); color: #000; font-size: 10px; font-weight: bold;">' +
+                        '<small><i class="fas fa-exclamation-triangle me-1"></i>' + missing.role + ' mancante</small>' +
                         '</div>';
             });
         }
