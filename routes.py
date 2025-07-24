@@ -1648,6 +1648,32 @@ def genera_turni_da_template():
             db.session.commit()
             flash(f'Cancellati {deleted_shifts} turni esistenti per rigenerazione', 'info')
         
+        # Controllo preventivo della disponibilità di utenti per tutti i ruoli richiesti
+        insufficient_coverage_warnings = []
+        for coverage in coverages:
+            try:
+                required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+                
+                # Trova utenti disponibili per questi ruoli - solo con orario "Turni"
+                from models import WorkSchedule
+                available_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id).filter(
+                    User.active.is_(True),
+                    User.role.in_(required_roles),
+                    WorkSchedule.name == 'Turni'
+                ).all()
+                
+                if len(available_users) < coverage.role_count:
+                    day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+                    warning_msg = f"{day_names[coverage.day_of_week]} {coverage.start_time}-{coverage.end_time}: richiesti {coverage.role_count} utenti {'/'.join(required_roles)}, disponibili solo {len(available_users)}"
+                    insufficient_coverage_warnings.append(warning_msg)
+            except json.JSONDecodeError:
+                continue
+        
+        if insufficient_coverage_warnings:
+            flash('ATTENZIONE - Copertura insufficiente per:', 'warning')
+            for warning in insufficient_coverage_warnings:
+                flash(f'• {warning}', 'warning')
+        
         turni_creati = 0
         current_date = start_date
         
@@ -1671,14 +1697,17 @@ def genera_turni_da_template():
                         WorkSchedule.name == 'Turni'  # Solo utenti con orario speciale "Turni"
                     ).all()
                     
-                    if not available_users:
+                    if len(available_users) < coverage.role_count:
+                        # Usa tutti gli utenti disponibili se insufficienti
+                        selected_users = available_users
+                    else:
+                        # Seleziona casualmente il numero richiesto
+                        selected_users = random.sample(available_users, coverage.role_count)
+                    
+                    if not selected_users:
                         continue
                     
-                    # Seleziona utenti per la copertura (max role_count)
-                    selected_users = random.sample(
-                        available_users, 
-                        min(coverage.role_count, len(available_users))
-                    )
+
                     
                     # Crea turni per ogni utente selezionato
                     for user in selected_users:
