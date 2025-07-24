@@ -1261,10 +1261,8 @@ def attendance():
                 if not existing_record:
                     # Crea un record per la giornata di ferie/permesso/malattia
                     class LeaveRecord:
-                        def __init__(self, date, leave_type, reason, user_id):
+                        def __init__(self, date, leave_type, reason, user_id, leave_request):
                             self.date = date
-                            self.clock_in = None
-                            self.clock_out = None
                             self.break_start = None
                             self.break_end = None
                             self.notes = f"{leave_type}: {reason}" if reason else leave_type
@@ -1274,6 +1272,24 @@ def attendance():
                             self.exit_status = 'normale'
                             self.leave_type = leave_type
                             self.leave_reason = reason
+                            
+                            # Determina orari in base al tipo di assenza
+                            if leave_type.lower() == 'permesso' and hasattr(leave_request, 'start_time') and leave_request.start_time:
+                                # Per i permessi usa gli orari specifici della richiesta
+                                self.clock_in = leave_request.start_time
+                                self.clock_out = leave_request.end_time if hasattr(leave_request, 'end_time') and leave_request.end_time else None
+                            else:
+                                # Per ferie e malattie usa orari standard di lavoro dell'utente
+                                user_schedule = self.user.get_work_schedule()
+                                if user_schedule:
+                                    # Usa orari standard del turno
+                                    self.clock_in = user_schedule.start_time_min
+                                    self.clock_out = user_schedule.end_time_max
+                                else:
+                                    # Fallback a orari generici 9-17
+                                    from datetime import time
+                                    self.clock_in = time(9, 0)
+                                    self.clock_out = time(17, 0)
                         
                         def get_work_hours(self):
                             return 0  # Nessuna ora lavorata durante ferie/permessi
@@ -1285,7 +1301,8 @@ def attendance():
                         date=current_date,
                         leave_type=leave.leave_type,
                         reason=leave.reason,
-                        user_id=leave.user_id
+                        user_id=leave.user_id,
+                        leave_request=leave
                     ))
                 
                 current_date += timedelta(days=1)
