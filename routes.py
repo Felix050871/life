@@ -1275,18 +1275,31 @@ def attendance():
                             
                             # Determina orari in base al tipo di assenza
                             if leave_type.lower() == 'permesso' and hasattr(leave_request, 'start_time') and leave_request.start_time:
-                                # Per i permessi usa gli orari specifici della richiesta - converti in datetime
+                                # Per i permessi usa gli orari specifici della richiesta - converti in datetime italiano
                                 from datetime import datetime
+                                from zoneinfo import ZoneInfo
+                                
                                 if isinstance(leave_request.start_time, datetime):
-                                    self.clock_in = leave_request.start_time
+                                    # Se è già datetime, assicurati che sia in fuso italiano
+                                    if leave_request.start_time.tzinfo is None:
+                                        # Assumi UTC se non ha timezone
+                                        utc_time = leave_request.start_time.replace(tzinfo=ZoneInfo('UTC'))
+                                        self.clock_in = utc_time.astimezone(ZoneInfo('Europe/Rome'))
+                                    else:
+                                        self.clock_in = leave_request.start_time.astimezone(ZoneInfo('Europe/Rome'))
                                 else:
-                                    self.clock_in = datetime.combine(self.date, leave_request.start_time)
+                                    # Se è time, combinalo con la data corrente in fuso italiano
+                                    self.clock_in = datetime.combine(self.date, leave_request.start_time, ZoneInfo('Europe/Rome'))
                                 
                                 if hasattr(leave_request, 'end_time') and leave_request.end_time:
                                     if isinstance(leave_request.end_time, datetime):
-                                        self.clock_out = leave_request.end_time
+                                        if leave_request.end_time.tzinfo is None:
+                                            utc_time = leave_request.end_time.replace(tzinfo=ZoneInfo('UTC'))
+                                            self.clock_out = utc_time.astimezone(ZoneInfo('Europe/Rome'))
+                                        else:
+                                            self.clock_out = leave_request.end_time.astimezone(ZoneInfo('Europe/Rome'))
                                     else:
-                                        self.clock_out = datetime.combine(self.date, leave_request.end_time)
+                                        self.clock_out = datetime.combine(self.date, leave_request.end_time, ZoneInfo('Europe/Rome'))
                                 else:
                                     self.clock_out = None
                             else:
@@ -1298,13 +1311,15 @@ def attendance():
                                     user_schedule = WorkSchedule.query.get(self.user.work_schedule_id)
                                 
                                 if user_schedule:
-                                    # Usa orari standard del turno - converti time in datetime per la data corrente
-                                    self.clock_in = datetime.combine(self.date, user_schedule.start_time_min)
-                                    self.clock_out = datetime.combine(self.date, user_schedule.end_time_max)
+                                    # Usa orari standard del turno - converti time in datetime italiano
+                                    from zoneinfo import ZoneInfo
+                                    self.clock_in = datetime.combine(self.date, user_schedule.start_time_min, ZoneInfo('Europe/Rome'))
+                                    self.clock_out = datetime.combine(self.date, user_schedule.end_time_max, ZoneInfo('Europe/Rome'))
                                 else:
-                                    # Fallback a orari generici 9-17 - converti in datetime
-                                    self.clock_in = datetime.combine(self.date, time(9, 0))
-                                    self.clock_out = datetime.combine(self.date, time(17, 0))
+                                    # Fallback a orari generici 9-17 - converti in datetime italiano
+                                    from zoneinfo import ZoneInfo
+                                    self.clock_in = datetime.combine(self.date, time(9, 0), ZoneInfo('Europe/Rome'))
+                                    self.clock_out = datetime.combine(self.date, time(17, 0), ZoneInfo('Europe/Rome'))
                         
                         def get_work_hours(self):
                             return 0  # Nessuna ora lavorata durante ferie/permessi
