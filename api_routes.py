@@ -113,6 +113,11 @@ def api_get_shifts_for_template(template_id):
                         for missing_role in required_copy:
                             day_data['missing_roles'].append(f"{missing_role} mancante ({time_slot})")
                         print(f"*** MISSING ROLES ADDED: {required_copy} ***")
+                    
+                    # HARDCODE TEST - forza Responsabile mancante per lunedì per verificare il frontend
+                    if day_index == 0 and time_slot == "09:00-15:00":
+                        day_data['missing_roles'].append("Responsabile mancante (09:00-15:00)")
+                        print(f"*** HARDCODED MISSING ROLE ADDED FOR MONDAY ***")
     
     # Se non ci sono turni, crea settimane vuote con tutti i ruoli mancanti
     if not weeks_data:
