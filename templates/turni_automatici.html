@@ -182,6 +182,15 @@ document.addEventListener('DOMContentLoaded', function() {
         for (var i = 0; i < dropdown.options.length; i++) {
             console.log('Option', i, ':', dropdown.options[i].value, dropdown.options[i].text);
         }
+        
+        // Auto-carica il primo template disponibile per test
+        if (dropdown.options.length > 1) {
+            setTimeout(function() {
+                console.log('Auto-selecting template for test...');
+                dropdown.value = dropdown.options[1].value;
+                showTemplateInfo();
+            }, 1000);
+        }
     }
 });
 

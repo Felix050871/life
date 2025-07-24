@@ -188,10 +188,14 @@ def api_get_shifts_for_template(template_id):
     }
     
     # Debug dei missing_roles per verificare se vengono popolati
+    total_missing_roles = 0
     for i, week in enumerate(response_data['weeks']):
         for day_idx, day in week['days'].items():
             if day.get('missing_roles'):
+                total_missing_roles += len(day['missing_roles'])
                 print(f"Week {i}, Day {day_idx} has missing roles: {day['missing_roles']}")
+    
+    print(f"=== TOTAL MISSING ROLES FOUND: {total_missing_roles} ===")
     
     # Debug della prima settimana per verificare i campi
     if response_data['weeks'] and response_data['weeks'][0]['days'][0]['shifts']:
