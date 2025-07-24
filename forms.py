@@ -18,7 +18,7 @@ class UserForm(FlaskForm):
     last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
     sede = SelectField('Sede', coerce=int, validators=[])
     all_sedi = BooleanField('Accesso a tutte le sedi', default=False)
-    work_schedule = SelectField('Orario di Lavoro', coerce=int, validators=[])
+    work_schedule = SelectField('Orario di Lavoro', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()])
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
     is_active = BooleanField('Attivo', default=True)
@@ -38,7 +38,7 @@ class UserForm(FlaskForm):
             self.sede.choices = [(-1, 'Seleziona una sede')]
         
         # Inizializza choices degli orari (verrà popolato dinamicamente via JavaScript)
-        self.work_schedule.choices = [(-1, 'Nessun orario specifico')]
+        self.work_schedule.choices = [('', 'Nessun orario specifico')]
         
         # Se in modalità edit e c'è un work_schedule_id, aggiungi l'orario corrente alle scelte
         obj = kwargs.get('obj')
@@ -90,7 +90,7 @@ class UserForm(FlaskForm):
     
     def validate_work_schedule(self, work_schedule):
         # Il work_schedule è opzionale, ma se selezionato deve essere valido
-        if work_schedule.data and work_schedule.data != -1 and work_schedule.data > 0:
+        if work_schedule.data and work_schedule.data is not None:
             # Verifica che esista un orario con quell'ID
             from models import WorkSchedule
             schedule = WorkSchedule.query.get(work_schedule.data)

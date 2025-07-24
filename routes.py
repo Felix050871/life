@@ -2142,7 +2142,7 @@ def new_user():
             last_name=form.last_name.data,
             all_sedi=form.all_sedi.data,
             sede_id=form.sede.data if not form.all_sedi.data else None,
-            work_schedule_id=form.work_schedule.data if form.work_schedule.data and form.work_schedule.data != -1 and form.work_schedule.data > 0 else None,
+            work_schedule_id=form.work_schedule.data,
             part_time_percentage=form.get_part_time_percentage_as_float(),
             active=form.is_active.data
         )
@@ -2185,6 +2185,7 @@ def edit_user(user_id):
         form.all_sedi.data = user.all_sedi
         if user.sede_id:
             form.sede.data = user.sede_id
+        
         if user.work_schedule_id:
             # Aggiungi l'orario corrente alle scelte se non già presente
             if user.work_schedule:
@@ -2194,7 +2195,7 @@ def edit_user(user_id):
             form.work_schedule.data = user.work_schedule_id
         else:
             # Se non ha un orario, imposta il valore di default
-            form.work_schedule.data = -1
+            form.work_schedule.data = ''
     
     if form.validate_on_submit():
         # Impedisce la disattivazione dell'amministratore
@@ -2209,7 +2210,7 @@ def edit_user(user_id):
         user.last_name = form.last_name.data
         user.all_sedi = form.all_sedi.data
         user.sede_id = form.sede.data if not form.all_sedi.data else None
-        user.work_schedule_id = form.work_schedule.data if form.work_schedule.data and form.work_schedule.data != -1 and form.work_schedule.data > 0 else None
+        user.work_schedule_id = form.work_schedule.data
         user.part_time_percentage = form.get_part_time_percentage_as_float()
         user.active = form.is_active.data
         
