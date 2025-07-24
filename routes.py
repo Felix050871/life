@@ -4693,9 +4693,9 @@ def qr_page(action):
 @app.route('/admin/qr_codes')
 @require_login
 def admin_generate_qr_codes():
-    """Gestione codici QR"""
-    if not (current_user.can_manage_qr() or current_user.can_view_qr()):
-        flash('Non hai i permessi per accedere ai codici QR', 'danger')
+    """Gestione codici QR - Solo per chi può gestire"""
+    if not current_user.can_manage_qr():
+        flash('Non hai i permessi per gestire i codici QR', 'danger')
         return redirect(url_for('dashboard'))
     
     from utils import qr_codes_exist, get_qr_code_urls
@@ -4716,7 +4716,38 @@ def admin_generate_qr_codes():
     return render_template('admin_qr_codes.html', 
                          qr_urls=qr_urls,
                          qr_exist=qr_exist,
-                         static_qr_urls=static_qr_urls)
+                         static_qr_urls=static_qr_urls,
+                         can_manage=True)
+
+
+@app.route('/view/qr_codes')
+@require_login
+def view_qr_codes():
+    """Visualizzazione codici QR - Solo per chi può visualizzare"""
+    if not current_user.can_view_qr():
+        flash('Non hai i permessi per visualizzare i codici QR', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    from utils import qr_codes_exist, get_qr_code_urls
+    
+    # Verifica se i QR code statici esistono
+    qr_exist = qr_codes_exist()
+    
+    # Genera URL completi per i QR codes
+    base_url = request.url_root.rstrip('/')
+    qr_urls = {
+        'entrata': f"{base_url}/qr_login/entrata",
+        'uscita': f"{base_url}/qr_login/uscita"
+    }
+    
+    # Se esistono, ottieni gli URL per visualizzarli
+    static_qr_urls = get_qr_code_urls() if qr_exist else None
+    
+    return render_template('view_qr_codes.html', 
+                         qr_urls=qr_urls,
+                         qr_exist=qr_exist,
+                         static_qr_urls=static_qr_urls,
+                         can_manage=False)
 
 @app.route('/admin/generate_static_qr')
 @require_login  

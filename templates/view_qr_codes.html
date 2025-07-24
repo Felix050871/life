@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Visualizza QR Codes{% endblock %}
+
+{% block head %}
+<style>
+.qr-card {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.qr-code {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background: white;
+    display: inline-block;
+    margin: 20px 0;
+}
+
+.action-icon {
+    font-size: 2rem;
+    margin-bottom: 15px;
+}
+
+.action-icon.entrata {
+    color: #28a745;
+}
+
+.action-icon.uscita {
+    color: #dc3545;
+}
+
+@media print {
+    .no-print { display: none; }
+    body { background: white; }
+    .container { max-width: none; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-qrcode me-2"></i>Visualizza Codici QR</h2>
+        <p class="text-muted">Visualizza i codici QR per l'accesso rapido alle presenze</p>
+        
+        <!-- Stato QR Code -->
+        <div class="alert alert-info mb-4">
+            {% if qr_exist %}
+                <i class="fas fa-check-circle me-2"></i>QR code statici disponibili e pronti per l'uso
+            {% else %}
+                <i class="fas fa-exclamation-triangle me-2"></i>QR code statici non ancora generati
+                <small class="d-block mt-1 text-muted">Contatta l'amministratore per generare i QR code</small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- QR CODES per Entrata e Uscita -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="qr-card">
+            <div class="action-icon entrata">
+                <i class="fas fa-sign-in-alt"></i>
+            </div>
+            <h4 class="text-success">QR Code Entrata</h4>
+            <div class="qr-code">
+                <img id="qrcode-entrata" src="" alt="QR Code Entrata" style="width: 200px; height: 200px;">
+            </div>
+            <p style="color: #666;">Per registrazione rapida entrata</p>
+            <div class="mt-3">
+                <a href="{{ url_for('qr_page', action='entrata') }}" class="btn btn-success me-2" target="_blank">
+                    <i class="fas fa-external-link-alt me-1"></i>Visualizza Pagina
+                </a>
+                <button onclick="printQR('entrata')" class="btn btn-outline-primary">
+                    <i class="fas fa-print me-1"></i>Stampa
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="qr-card">
+            <div class="action-icon uscita">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+            <h4 class="text-danger">QR Code Uscita</h4>
+            <div class="qr-code">
+                <img id="qrcode-uscita" src="" alt="QR Code Uscita" style="width: 200px; height: 200px;">
+            </div>
+            <p style="color: #666;">Per registrazione rapida uscita</p>
+            <div class="mt-3">
+                <a href="{{ url_for('qr_page', action='uscita') }}" class="btn btn-danger me-2" target="_blank">
+                    <i class="fas fa-external-link-alt me-1"></i>Visualizza Pagina
+                </a>
+                <button onclick="printQR('uscita')" class="btn btn-outline-primary">
+                    <i class="fas fa-print me-1"></i>Stampa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Istruzioni per l'uso -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Come usare i QR Code</h5>
+            </div>
+            <div class="card-body">
+                <ol>
+                    <li><strong>Scansiona il QR Code</strong> con un dispositivo mobile</li>
+                    <li><strong>Effettua il login</strong> con le tue credenziali</li>
+                    <li><strong>Conferma la registrazione</strong> di entrata o uscita</li>
+                    <li>Il sistema registrerà automaticamente l'evento con timestamp</li>
+                </ol>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Importante:</strong> Ogni QR code richiede autenticazione per ragioni di sicurezza. 
+                    Non è possibile registrare presenze senza credenziali valide.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if qr_exist and static_qr_urls %}
+        // Usa i QR code statici se disponibili
+        document.getElementById('qrcode-entrata').src = '{{ static_qr_urls.entrata }}';
+        document.getElementById('qrcode-uscita').src = '{{ static_qr_urls.uscita }}';
+    {% else %}
+        // Genera QR code dinamicamente solo per visualizzazione
+        generateQRCodeImage('{{ qr_urls.entrata }}', 'qrcode-entrata');
+        generateQRCodeImage('{{ qr_urls.uscita }}', 'qrcode-uscita');
+    {% endif %}
+});
+
+function generateQRCodeImage(url, elementId) {
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+    const img = document.getElementById(elementId);
+    
+    img.onload = function() {
+        img.style.display = 'block';
+    };
+    
+    img.onerror = function() {
+        img.style.display = 'none';
+        img.parentNode.innerHTML = '<p class="text-danger">Errore nel caricamento del QR code</p>';
+    };
+    
+    img.src = qrApiUrl;
+}
+
+function printQR(action) {
+    // Apri la pagina dedicata del QR in una nuova finestra e stampa
+    const url = action === 'entrata' ? '{{ url_for("qr_page", action="entrata") }}' : '{{ url_for("qr_page", action="uscita") }}';
+    const win = window.open(url, '_blank');
+    win.onload = function() {
+        win.print();
+    };
+}
+</script>
+{% endblock %}
