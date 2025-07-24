@@ -1620,6 +1620,33 @@ def genera_turni_da_template():
             flash('Il template selezionato non ha coperture configurate', 'warning')
             return redirect(url_for('turni_automatici'))
         
+        # Controlla se esistono già turni per questo template nel periodo futuro
+        from datetime import date
+        today = date.today()
+        future_start_date = max(start_date, today)
+        
+        existing_shifts = Shift.query.filter(
+            Shift.date >= future_start_date,
+            Shift.date <= end_date
+        ).count()
+        
+        if existing_shifts > 0 and not force_regenerate:
+            # Mostra conferma rigenerazione
+            return render_template('confirm_regenerate_shifts.html',
+                                 template=template,
+                                 existing_shifts=existing_shifts,
+                                 start_date=future_start_date,
+                                 end_date=end_date)
+        
+        # Se force_regenerate è True, cancella i turni esistenti futuri
+        if force_regenerate and existing_shifts > 0:
+            deleted_shifts = Shift.query.filter(
+                Shift.date >= future_start_date,
+                Shift.date <= end_date
+            ).delete()
+            db.session.commit()
+            flash(f'Cancellati {deleted_shifts} turni esistenti per rigenerazione', 'info')
+        
         turni_creati = 0
         current_date = start_date
         
