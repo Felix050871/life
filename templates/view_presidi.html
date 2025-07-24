@@ -65,6 +65,7 @@
                                 <th>Nome Template</th>
                                 <th>Periodo</th>
                                 <th>Descrizione</th>
+                                <th>Sede</th>
                                 <th>Coperture</th>
                                 <th>Creato da</th>
                                 <th>Data Creazione</th>
@@ -82,6 +83,13 @@
                                     </span>
                                 </td>
                                 <td>{{ template.description or 'Nessuna descrizione' }}</td>
+                                <td>
+                                    {% if template.sede %}
+                                    <span class="badge bg-primary">{{ template.sede.name }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Tutte le sedi</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <span class="badge bg-secondary">{{ template.coverages.count() }} fasce</span>
                                 </td>
