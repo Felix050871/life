@@ -319,8 +319,8 @@ function createWeekHtml(week) {
         // Aggiungi evidenziazione per ruoli richiesti ma mancanti  
         if (week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
             week.days[i].missing_roles.forEach(function(missing) {
-                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #333333; font-size: 10px; font-weight: bold;">' +
-                        '<small><i class="fas fa-exclamation-triangle me-1"></i>' + missing + '</small>' +
+                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #333333 !important; font-size: 10px; font-weight: bold;">' +
+                        '<small style="color: #333333 !important;"><i class="fas fa-exclamation-triangle me-1" style="color: #333333 !important;"></i>' + missing + '</small>' +
                         '</div>';
             });
         }
