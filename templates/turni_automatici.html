@@ -241,21 +241,7 @@ function loadShiftsForTemplate(templateId, templateName) {
                 console.log('Monday missing_roles:', data.weeks[0].days['0'].missing_roles);
             }
             
-            // SOLUZIONE DEFINITIVA: Aggiungi missing_roles nel frontend per Template ID 3
-            if (templateId == "3" && data.weeks && data.weeks.length > 0) {
-                console.log('*** APPLYING FRONTEND MISSING ROLES FIX ***');
-                // Per ogni settimana, aggiungi missing roles per i lunedì (indice 0)
-                data.weeks.forEach(function(week) {
-                    if (week.days && week.days[0]) {
-                        // Lunedì - aggiungi Responsabile mancante se non già presente
-                        if (!week.days[0].missing_roles) {
-                            week.days[0].missing_roles = [];
-                        }
-                        week.days[0].missing_roles.push('Responsabile mancante (09:00-15:00)');
-                        console.log('Added missing role to Monday:', week.days[0].missing_roles);
-                    }
-                });
-            }
+            console.log('*** REMOVED HARDCODE - USING DYNAMIC API MISSING_ROLES ***');
             
             document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong> (' + data.period + ')';
             document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';

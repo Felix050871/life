@@ -199,10 +199,7 @@ def api_get_shifts_for_template(template_id):
                         
                         if role_count == 0:
                             print(f"*** AGGIUNTO RUOLO MANCANTE: {required_role} per {time_slot} ***", file=sys.stderr, flush=True)
-                            day_data['missing_roles'].append({
-                                'role': required_role,
-                                'time_slot': time_slot
-                            })
+                            day_data['missing_roles'].append(f"{required_role} mancante ({time_slot})")
                     
 
     
