@@ -44,9 +44,11 @@ The application uses SQLAlchemy models with the following key entities:
   - **Operatore**: Standard operational access to core functions
   - **Ospite**: Limited access for external users
 - **Admin-configurable permissions**: Each role's permissions can be dynamically managed
+- **Advanced work schedule assignment**: Users can be assigned specific work schedules for ORARIA mode sedes or left unassigned for TURNI mode participation
+- **Multi-sede support**: Users with all_sedi access don't require specific work schedule assignment
 - User creation, modification, and deactivation capabilities
 - Part-time percentage tracking for specific roles
-- Secure password hashing with Werkzeug
+- Secure password hashing with Werkzezeug
 
 ### Attendance Tracking
 - Clock-in/out functionality with timestamp recording
@@ -94,7 +96,7 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
-- July 24, 2025: **Errore "Not a valid choice" Work Schedule Risolto** - Disabilitata validazione choices per campo work_schedule nel form utenti, implementata coerce function personalizzata per gestire valori vuoti, corretta gestione NULL/None nel database, sistema ora accetta sia utenti con orario che senza orario assegnato
+- July 24, 2025: **Sistema Orari Utente Completato e Funzionante** - Sistema completo di assegnazione orari per sedi con doppia modalità (TURNI/ORARIA): utenti sede specifica possono scegliere orario per modalità ORARIA o lasciare vuoto per modalità TURNI, utenti multi-sede non necessitano orario, errore "Not a valid choice" risolto con validazione choices disabilitata
 - July 24, 2025: **Sistema Selezione Orari Utente Implementato** - Aggiunto campo work_schedule_id al modello User, implementata selezione dinamica orari basata su sede nel form utenti, creata route API /api/sede/<id>/work_schedules, JavaScript per popolamento dinamico dropdown orari, validazione form per coerenza sede-orario, tabella utenti aggiornata con colonna orario
 - July 24, 2025: **Errore 500 Template Sede Risolto** - Corretto errore TypeError nel template edit_sede.html: sostituito sede.work_schedules|length con sede.work_schedules.count() per gestire correttamente relazioni SQLAlchemy AppenderQuery
 - July 24, 2025: **Form Utenti Sistemati Completamente** - Rimosso checkbox duplicato "Accesso a tutte le sedi" dal form modifica utente, campo "% Lavoro" ora presente e sempre visibile per TUTTI i ruoli (incluso Redattore) sia nel form creazione che modifica, rimossi controlli hardcoded che limitavano il campo solo a Responsabile/Operatore
