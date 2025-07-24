@@ -5751,6 +5751,11 @@ def edit_role(role_id):
     
     form = RoleForm(original_name=role.name)
     
+    print(f"DEBUG: Form submitted: {request.method == 'POST'}")
+    print(f"DEBUG: Form validation passed: {form.validate_on_submit()}")
+    if request.method == 'POST':
+        print(f"DEBUG: Form errors: {form.errors}")
+    
     if form.validate_on_submit():
         if is_admin_widget_only:
             # Per l'amministratore, aggiorna solo i permessi widget
