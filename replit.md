@@ -94,6 +94,7 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 24, 2025: **Errore 500 Template Sede Risolto** - Corretto errore TypeError nel template edit_sede.html: sostituito sede.work_schedules|length con sede.work_schedules.count() per gestire correttamente relazioni SQLAlchemy AppenderQuery
 - July 24, 2025: **Form Utenti Sistemati Completamente** - Rimosso checkbox duplicato "Accesso a tutte le sedi" dal form modifica utente, campo "% Lavoro" ora presente e sempre visibile per TUTTI i ruoli (incluso Redattore) sia nel form creazione che modifica, rimossi controlli hardcoded che limitavano il campo solo a Responsabile/Operatore
 - July 24, 2025: **Widget Statistiche Team Corretto** - Risolto bug visualizzazione ruoli nel widget: ora mostra TUTTI i ruoli attivi incluso "Ospite" con 0 utenti, corretti import UserRole e logica inizializzazione contatori
 - July 24, 2025: **Tabella Utenti Corretta** - Risolti errori visualizzazione colonne in user_management.html: rimossi header duplicati, corretta logica visualizzazione ruolo e percentuale part-time per ruoli appropriati (Responsabile/Operatore)

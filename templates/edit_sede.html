@@ -93,15 +93,15 @@
                                 </div>
                                 <div class="col-md-6">
                                     <p class="mb-1"><strong>Orari di Lavoro:</strong> 
-                                        <span class="badge bg-success">{{ sede.work_schedules|length }}</span>
+                                        <span class="badge bg-success">{{ sede.work_schedules.count() }}</span>
                                     </p>
                                     {% if sede.work_schedules %}
                                     <ul class="list-unstyled ms-3">
                                         {% for schedule in sede.work_schedules[:5] %}
                                         <li><small>• {{ schedule.name }} ({{ schedule.start_time.strftime('%H:%M') }}-{{ schedule.end_time.strftime('%H:%M') }})</small></li>
                                         {% endfor %}
-                                        {% if sede.work_schedules|length > 5 %}
-                                        <li><small>• ... e altri {{ sede.work_schedules|length - 5 }}</small></li>
+                                        {% if sede.work_schedules.count() > 5 %}
+                                        <li><small>• ... e altri {{ sede.work_schedules.count() - 5 }}</small></li>
                                         {% endif %}
                                     </ul>
                                     {% endif %}
