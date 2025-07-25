@@ -795,18 +795,18 @@ def clock_in():
     try:
         db.session.add(event)
         db.session.commit()
-        app.logger.error(f"CLOCK_IN: Event created successfully at {now}")
-        flash('Entrata registrata alle {}'.format(now.strftime('%H:%M')), 'success')
+        app.logger.info(f"CLOCK_IN: Event created successfully at {now}")
+        return jsonify({
+            'success': True, 
+            'message': f'Entrata registrata alle {now.strftime("%H:%M")}'
+        })
     except Exception as e:
         app.logger.error(f"CLOCK_IN: Database commit failed: {e}")
         db.session.rollback()
-        flash('Errore nel salvare l\'entrata', 'danger')
-    
-    # Redirect PM to ente_home, altri utenti alla dashboard
-    if current_user.role == 'Management':
-        return redirect(url_for('ente_home'))
-    else:
-        return redirect(url_for('dashboard'))
+        return jsonify({
+            'success': False, 
+            'message': 'Errore nel salvare l\'entrata'
+        }), 500
 
 @app.route('/check_shift_before_clock_out', methods=['POST'])
 @login_required  
@@ -832,19 +832,19 @@ def check_shift_before_clock_out():
 @login_required
 def clock_out():
     if not current_user.can_access_attendance():
-        flash('Non hai i permessi per registrare presenze.', 'danger')
-        return redirect(url_for('manage_turni'))
+        return jsonify({
+            'success': False, 
+            'message': 'Non hai i permessi per registrare presenze.'
+        }), 403
         
     # Verifica se può fare clock-out
     if not AttendanceEvent.can_perform_action(current_user.id, 'clock_out'):
         status, _ = AttendanceEvent.get_user_status(current_user.id)
         if status == 'out':
-            flash('Non sei presente. Devi prima registrare l\'entrata.', 'warning')
-        # Redirect PM to ente_home, altri utenti alla dashboard
-        if current_user.role == 'Management':
-            return redirect(url_for('ente_home'))
-        else:
-            return redirect(url_for('dashboard'))
+            return jsonify({
+                'success': False, 
+                'message': 'Non sei presente. Devi prima registrare l\'entrata.'
+            }), 400
     
     # Verifica se ha già registrato una presenza completa (entrata+uscita) oggi
     from zoneinfo import ZoneInfo
@@ -862,11 +862,10 @@ def clock_out():
     
     # Blocca se ha già una presenza completa (entrata+uscita) oggi
     if len(clock_ins) > 0 and len(clock_outs) > 0 and len(clock_ins) == len(clock_outs):
-        flash('Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.', 'warning')
-        if current_user.role == 'Management':
-            return redirect(url_for('ente_home'))
-        else:
-            return redirect(url_for('dashboard'))
+        return jsonify({
+            'success': False, 
+            'message': 'Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.'
+        }), 400
     
     # Usa l'orario italiano invece di UTC
     from zoneinfo import ZoneInfo
@@ -894,36 +893,39 @@ def clock_out():
     try:
         db.session.add(event)
         db.session.commit()
-        flash('Uscita registrata alle {}'.format(now.strftime('%H:%M')), 'success')
+        return jsonify({
+            'success': True, 
+            'message': f'Uscita registrata alle {now.strftime("%H:%M")}'
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Errore nel salvare l\'uscita', 'danger')
-    
-    # Redirect PM to ente_home, altri utenti alla dashboard
-    if current_user.role == 'Management':
-        return redirect(url_for('ente_home'))
-    else:
-        return redirect(url_for('dashboard'))
+        return jsonify({
+            'success': False, 
+            'message': 'Errore nel salvare l\'uscita'
+        }), 500
 
 @app.route('/break_start', methods=['POST'])
 @login_required
 def break_start():
     if not current_user.can_access_attendance():
-        flash('Non hai i permessi per registrare presenze.', 'danger')
-        return redirect(url_for('manage_turni'))
+        return jsonify({
+            'success': False, 
+            'message': 'Non hai i permessi per registrare presenze.'
+        }), 403
         
     # Verifica se può iniziare la pausa
     if not AttendanceEvent.can_perform_action(current_user.id, 'break_start'):
         status, _ = AttendanceEvent.get_user_status(current_user.id)
         if status == 'out':
-            flash('Non sei presente. Devi prima registrare l\'entrata.', 'warning')
+            return jsonify({
+                'success': False, 
+                'message': 'Non sei presente. Devi prima registrare l\'entrata.'
+            }), 400
         elif status == 'break':
-            flash('Sei già in pausa.', 'warning')
-        # Redirect PM to ente_home, altri utenti alla dashboard
-        if current_user.role == 'Management':
-            return redirect(url_for('ente_home'))
-        else:
-            return redirect(url_for('dashboard'))
+            return jsonify({
+                'success': False, 
+                'message': 'Sei già in pausa.'
+            }), 400
     
     # Usa l'orario italiano invece di UTC
     from zoneinfo import ZoneInfo
@@ -940,36 +942,39 @@ def break_start():
     try:
         db.session.add(event)
         db.session.commit()
-        flash('Pausa iniziata alle {}'.format(now.strftime('%H:%M')), 'info')
+        return jsonify({
+            'success': True, 
+            'message': f'Pausa iniziata alle {now.strftime("%H:%M")}'
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Errore nel salvare l\'inizio pausa', 'danger')
-    
-    # Redirect PM to ente_home, altri utenti alla dashboard
-    if current_user.role == 'Management':
-        return redirect(url_for('ente_home'))
-    else:
-        return redirect(url_for('dashboard'))
+        return jsonify({
+            'success': False, 
+            'message': 'Errore nel salvare l\'inizio pausa'
+        }), 500
 
 @app.route('/break_end', methods=['POST'])
 @login_required
 def break_end():
     if not current_user.can_access_attendance():
-        flash('Non hai i permessi per registrare presenze.', 'danger')
-        return redirect(url_for('manage_turni'))
+        return jsonify({
+            'success': False, 
+            'message': 'Non hai i permessi per registrare presenze.'
+        }), 403
         
     # Verifica se può terminare la pausa
     if not AttendanceEvent.can_perform_action(current_user.id, 'break_end'):
         status, _ = AttendanceEvent.get_user_status(current_user.id)
         if status == 'out':
-            flash('Non sei presente.', 'warning')
+            return jsonify({
+                'success': False, 
+                'message': 'Non sei presente.'
+            }), 400
         elif status == 'in':
-            flash('Non sei in pausa.', 'warning')
-        # Redirect PM to ente_home, altri utenti alla dashboard
-        if current_user.role == 'Management':
-            return redirect(url_for('ente_home'))
-        else:
-            return redirect(url_for('dashboard'))
+            return jsonify({
+                'success': False, 
+                'message': 'Non sei in pausa.'
+            }), 400
     
     # Usa l'orario italiano invece di UTC
     from zoneinfo import ZoneInfo
@@ -986,16 +991,16 @@ def break_end():
     try:
         db.session.add(event)
         db.session.commit()
-        flash('Pausa terminata alle {}'.format(now.strftime('%H:%M')), 'info')
+        return jsonify({
+            'success': True, 
+            'message': f'Pausa terminata alle {now.strftime("%H:%M")}'
+        })
     except Exception as e:
         db.session.rollback()
-        flash('Errore nel salvare la fine pausa', 'danger')
-    
-    # Redirect PM to ente_home, altri utenti alla dashboard
-    if current_user.role == 'Management':
-        return redirect(url_for('ente_home'))
-    else:
-        return redirect(url_for('dashboard'))
+        return jsonify({
+            'success': False, 
+            'message': 'Errore nel salvare la fine pausa'
+        }), 500
 
 @app.route('/attendance', methods=['GET', 'POST'])
 @login_required

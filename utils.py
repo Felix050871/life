@@ -930,7 +930,9 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
     from datetime import datetime, time, timedelta
     
     if not check_datetime:
-        check_datetime = datetime.now()
+        from zoneinfo import ZoneInfo
+        italy_tz = ZoneInfo('Europe/Rome')
+        check_datetime = datetime.now(italy_tz)
     
     check_date = check_datetime.date()
     check_time = check_datetime.time()
