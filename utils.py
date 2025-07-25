@@ -1282,22 +1282,21 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
     recipients = []
     
     if action_type in ['created', 'cancelled']:
-        # Richieste create o cancellate: notifica Management della stessa sede e tutti gli Staff
-        if leave_request.user.sede_id:
-            # Management della stessa sede
-            management_users = User.query.filter(
-                User.role == 'Management',
-                User.sede_id == leave_request.user.sede_id,
-                User.active == True
-            ).all()
-            recipients.extend(management_users)
+        # Trova tutti gli utenti che possono approvare richieste
+        # Filtra per sede: stesso sede_id o all_sedi=True
+        all_users = User.query.filter_by(active=True).all()
         
-        # Tutti gli Staff (supervisione globale)
-        staff_users = User.query.filter(
-            User.role == 'Staff',
-            User.active == True
-        ).all()
-        recipients.extend(staff_users)
+        for user in all_users:
+            # Controlla se l'utente può approvare richieste
+            if hasattr(user, 'can_approve_leave') and user.can_approve_leave():
+                # Controlla appartenenza sede
+                if (user.all_sedi or  # Accesso a tutte le sedi
+                    (user.sede_id and leave_request.user.sede_id and 
+                     user.sede_id == leave_request.user.sede_id)):  # Stessa sede
+                    recipients.append(user)
+                    logger.info(f"Added approver {user.username} (sede: {user.sede_id}, all_sedi: {user.all_sedi}) for leave request from {leave_request.user.username}")
+        
+        logger.info(f"Found {len(recipients)} eligible approvers for leave request from user {leave_request.user.username} (sede: {leave_request.user.sede_id})")
     
     # Rimuovi duplicati e l'utente richiedente se presente
     recipients = list(set(recipients))
