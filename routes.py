@@ -728,26 +728,10 @@ def clock_in():
                 'message': 'Sei in pausa. Devi prima terminare la pausa.'
             }), 400
     
-    # Verifica se ha già registrato una presenza completa (entrata+uscita) oggi
+    # Usa l'orario italiano invece di UTC
     from zoneinfo import ZoneInfo
     italy_tz = ZoneInfo('Europe/Rome')
     today = datetime.now(italy_tz).date()
-    
-    existing_events = AttendanceEvent.query.filter(
-        AttendanceEvent.user_id == current_user.id,
-        AttendanceEvent.date == today
-    ).all()
-    
-    # Conta entrate e uscite complete
-    clock_ins = [e for e in existing_events if e.event_type == 'clock_in']
-    clock_outs = [e for e in existing_events if e.event_type == 'clock_out']
-    
-    # Blocca se ha già una presenza completa (entrata+uscita) oggi
-    if len(clock_ins) > 0 and len(clock_outs) > 0 and len(clock_ins) == len(clock_outs):
-        return jsonify({
-            'success': False, 
-            'message': 'Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.'
-        }), 400
     
     # Verifica se ha richieste ferie/permessi/malattia approvate per oggi
     from models import LeaveRequest
@@ -846,27 +830,6 @@ def clock_out():
                 'success': False, 
                 'message': 'Non sei presente. Devi prima registrare l\'entrata.'
             }), 400
-    
-    # Verifica se ha già registrato una presenza completa (entrata+uscita) oggi
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    today = datetime.now(italy_tz).date()
-    
-    existing_events = AttendanceEvent.query.filter(
-        AttendanceEvent.user_id == current_user.id,
-        AttendanceEvent.date == today
-    ).all()
-    
-    # Conta entrate e uscite complete
-    clock_ins = [e for e in existing_events if e.event_type == 'clock_in']
-    clock_outs = [e for e in existing_events if e.event_type == 'clock_out']
-    
-    # Blocca se ha già una presenza completa (entrata+uscita) oggi
-    if len(clock_ins) > 0 and len(clock_outs) > 0 and len(clock_ins) == len(clock_outs):
-        return jsonify({
-            'success': False, 
-            'message': 'Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.'
-        }), 400
     
     # Usa l'orario italiano invece di UTC
     from zoneinfo import ZoneInfo
