@@ -168,6 +168,18 @@ class User(UserMixin, db.Model):
             return self.sede_obj.name
         return "Nessuna sede"
     
+    @classmethod
+    def get_visible_users_query(cls, current_user):
+        """Restituisce una query degli utenti visibili per l'utente corrente.
+        Applica automaticamente il filtro per sede se l'utente non è multi-sede."""
+        query = cls.query
+        
+        if not current_user.all_sedi and current_user.sede_id:
+            # Utenti sede-specifici vedono solo utenti della loro sede
+            query = query.filter_by(sede_id=current_user.sede_id)
+        
+        return query
+    
     def get_role_obj(self):
         """Ottieni l'oggetto UserRole associato"""
         return UserRole.query.filter_by(name=self.role).first()
