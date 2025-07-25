@@ -284,7 +284,7 @@ def dashboard():
         my_shifts = Shift.query.filter_by(user_id=current_user.id).filter(Shift.date >= today_dt).order_by(Shift.date.asc()).limit(5).all()
     
     if current_user.can_view_my_reperibilita_widget():
-        my_reperibilita = ReperibilitaShift.query.filter_by(user_id=current_user.id).order_by(ReperibilitaShift.start_date.desc()).limit(5).all()
+        my_reperibilita = ReperibilitaShift.query.filter_by(user_id=current_user.id).order_by(ReperibilitaShift.date.desc()).limit(5).all()
 
     return render_template('dashboard.html', 
                          stats=stats, 
