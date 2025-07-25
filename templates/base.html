@@ -266,12 +266,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_holidays() %}
-                        <li><a href="{{ url_for('manage_holidays') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('holidays') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Festività
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_holidays() %}
-                        <li><a href="{{ url_for('manage_holidays') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('holidays') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Festività
                         </a></li>
                         {% endif %}
@@ -283,7 +283,7 @@
                 {% set has_qr_permission = current_user.can_manage_qr() %}
                 {% if has_qr_permission %}
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('qr_management') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('admin_generate_qr_codes') }}" class="sidebar-nav-link">
                         <i class="fas fa-qrcode"></i>
                         <span>Gestione QR</span>
                     </a>
