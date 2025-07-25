@@ -258,14 +258,17 @@ def dashboard():
         if current_user.all_sedi:
             total_team_members = User.query.filter_by(active=True).count()
             pending_users = User.query.filter_by(active=False).count()
+            recent_additions = User.query.order_by(User.id.desc()).limit(3).all()
         else:
             total_team_members = User.query.filter_by(sede_id=current_user.sede_id, active=True).count()
             pending_users = User.query.filter_by(sede_id=current_user.sede_id, active=False).count()
+            recent_additions = User.query.filter_by(sede_id=current_user.sede_id).order_by(User.id.desc()).limit(3).all()
         
         team_management_data = {
             'total_members': total_team_members,
             'pending_users': pending_users,
-            'recent_additions': User.query.order_by(User.id.desc()).limit(3).all()
+            'recent_additions': recent_additions,
+            'is_multi_sede': current_user.all_sedi
         }
 
     # Ottieni dati per i nuovi widget personali
@@ -2357,9 +2360,29 @@ def user_management():
         flash('Non hai i permessi per accedere alla gestione utenti', 'danger')
         return redirect(url_for('dashboard'))
     
-    users = User.query.options(joinedload(User.sede_obj)).order_by(User.created_at.desc()).all()
+    # Gestisci filtro per sede
+    sede_filter = request.args.get('sede_filter')
+    users_query = User.query.options(joinedload(User.sede_obj))
+    
+    if sede_filter:
+        try:
+            sede_id = int(sede_filter)
+            users_query = users_query.filter_by(sede_id=sede_id)
+        except ValueError:
+            pass  # Ignora filtro non valido
+    
+    users = users_query.order_by(User.created_at.desc()).all()
     form = UserForm(is_edit=False)
-    return render_template('user_management.html', users=users, form=form)
+    
+    # Ottieni nome sede per il titolo se filtrato
+    sede_name = None
+    if sede_filter:
+        from models import Sede
+        sede_obj = Sede.query.get(sede_filter)
+        sede_name = sede_obj.name if sede_obj else None
+    
+    return render_template('user_management.html', users=users, form=form, 
+                         sede_filter=sede_filter, sede_name=sede_name)
 
 
 
