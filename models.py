@@ -392,9 +392,7 @@ class User(UserMixin, db.Model):
         
         return []
     
-    def can_access_reperibilita_menu(self):
-        """Accesso al menu Reperibilità"""
-        return self.can_access_reperibilita()
+
     
     def can_access_coverage_menu(self):
         """Accesso al menu Gestione Coperture"""
@@ -508,14 +506,7 @@ class User(UserMixin, db.Model):
             return last_attendance.date
         return None
     
-    def get_accessible_sedi(self):
-        """Restituisce le sedi accessibili dall'utente"""
-        from models import Sede
-        if self.all_sedi:
-            return Sede.query.filter_by(active=True).all()
-        elif self.sede_obj:
-            return [self.sede_obj]
-        return []
+
 
 
 class AttendanceEvent(db.Model):
@@ -1666,19 +1657,18 @@ class Sede(db.Model):
         
         if not turni_schedule and self.is_turni_mode():
             # Crea automaticamente l'orario 'Turni' per sedi con modalità turni
-            turni_schedule = WorkSchedule(
-                sede_id=self.id,
-                name='Turni',
-                start_time_min=time(0, 0),    # 00:00
-                start_time_max=time(23, 59),  # 23:59
-                end_time_min=time(0, 0),      # 00:00  
-                end_time_max=time(23, 59),    # 23:59
-                start_time=time(0, 0),        # Compatibilità
-                end_time=time(23, 59),        # Compatibilità
-                days_of_week=[0, 1, 2, 3, 4, 5, 6],  # Tutti i giorni
-                description='Orario flessibile per turnazioni',
-                active=True
-            )
+            turni_schedule = WorkSchedule()
+            turni_schedule.sede_id = self.id
+            turni_schedule.name = 'Turni'
+            turni_schedule.start_time_min = time(0, 0)    # 00:00
+            turni_schedule.start_time_max = time(23, 59)  # 23:59
+            turni_schedule.end_time_min = time(0, 0)      # 00:00  
+            turni_schedule.end_time_max = time(23, 59)    # 23:59
+            turni_schedule.start_time = time(0, 0)        # Compatibilità
+            turni_schedule.end_time = time(23, 59)        # Compatibilità
+            turni_schedule.days_of_week = [0, 1, 2, 3, 4, 5, 6]  # Tutti i giorni
+            turni_schedule.description = 'Orario flessibile per turnazioni'
+            turni_schedule.active = True
             db.session.add(turni_schedule)
             db.session.commit()
         
@@ -1778,7 +1768,7 @@ class WorkSchedule(db.Model):
         if not self.days_of_week:
             return 'Nessun giorno'
         
-        selected_days = [days_names[day] for day in self.days_of_week if 0 <= day < 7]
+        selected_days = [days_names[day] for day in self.days_of_week if day is not None and 0 <= day < 7]
         
         # Controlla pattern comuni
         if self.days_of_week == [0, 1, 2, 3, 4]:
