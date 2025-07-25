@@ -14,7 +14,7 @@
 <div class="row">
     <!-- Widget: Le Mie Presenze (Gestione Entrata/Uscita/Pausa) -->
     {% if current_user.can_view_my_attendance_widget() %}
-    <div class="col-md-8 mb-4">
+    <div class="col-12 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <h5><i class="fas fa-calendar-day me-2"></i>Le Mie Presenze</h5>
@@ -66,6 +66,12 @@
                     {% endif %}
                 </div>
                 
+                <!-- Current Time Display -->
+                <div class="alert alert-secondary p-2 mb-3">
+                    <i class="fas fa-clock me-1"></i>
+                    <span id="current-time"></span>
+                </div>
+                
                 <!-- Action Buttons -->
                 <div class="row mb-3">
                     <div class="col-6 col-md-3 mb-2">
@@ -112,12 +118,6 @@
                         </button>
                         {% endif %}
                     </div>
-                </div>
-                
-                <!-- Current Time Display -->
-                <div class="alert alert-secondary p-2">
-                    <i class="fas fa-clock me-1"></i>
-                    <span id="current-time"></span>
                 </div>
             </div>
         </div>
