@@ -2157,15 +2157,40 @@ def create_leave_request():
         end_date = form.start_date.data if form.leave_type.data == 'Permesso' else form.end_date.data
         
         # Check for overlapping requests
-        overlapping = LeaveRequest.query.filter(
-            LeaveRequest.user_id == current_user.id,
-            LeaveRequest.status.in_(['Pending', 'Approved']),
-            LeaveRequest.start_date <= end_date,
-            LeaveRequest.end_date >= form.start_date.data
-        ).first()
+        overlapping = None
+        
+        if form.leave_type.data == 'Permesso':
+            # Per i permessi, controlla sovrapposizione oraria nella stessa giornata
+            existing_requests = LeaveRequest.query.filter(
+                LeaveRequest.user_id == current_user.id,
+                LeaveRequest.status.in_(['Pending', 'Approved']),
+                LeaveRequest.start_date == form.start_date.data,  # Stessa giornata
+                LeaveRequest.leave_type == 'Permesso'  # Solo altri permessi
+            ).all()
+            
+            # Controlla sovrapposizione oraria
+            for existing in existing_requests:
+                if (existing.start_time and existing.end_time and 
+                    form.start_time.data and form.end_time.data):
+                    # Verifica sovrapposizione oraria
+                    if not (form.end_time.data <= existing.start_time or 
+                           form.start_time.data >= existing.end_time):
+                        overlapping = existing
+                        break
+        else:
+            # Per ferie e malattie, mantieni il controllo di date come prima
+            overlapping = LeaveRequest.query.filter(
+                LeaveRequest.user_id == current_user.id,
+                LeaveRequest.status.in_(['Pending', 'Approved']),
+                LeaveRequest.start_date <= end_date,
+                LeaveRequest.end_date >= form.start_date.data
+            ).first()
         
         if overlapping:
-            flash('Hai già una richiesta sovrapposta in questo periodo', 'warning')
+            if form.leave_type.data == 'Permesso':
+                flash(f'Hai già un permesso sovrapposto dalle {overlapping.start_time.strftime("%H:%M")} alle {overlapping.end_time.strftime("%H:%M")} in questa giornata', 'warning')
+            else:
+                flash('Hai già una richiesta sovrapposta in questo periodo', 'warning')
         else:
             leave_request = LeaveRequest(
                 user_id=current_user.id,
