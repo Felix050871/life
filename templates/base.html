@@ -26,7 +26,23 @@
                 </button>
             </div>
             
+            <!-- Project Title -->
+            <div class="sidebar-project-title px-3 py-2 border-bottom">
+                <h6 class="text-center text-muted mb-0">
+                    <i class="fas fa-briefcase me-2"></i>Workly Platform
+                </h6>
+            </div>
+            
             <ul class="sidebar-nav">
+                <!-- DASHBOARD -->
+                {% if current_user.can_access_dashboard() %}
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('dashboard') }}" class="sidebar-nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                {% endif %}
                 <!-- RUOLI - Solo se ha almeno un permesso ruoli -->
                 {% set has_roles_permission = current_user.can_manage_roles() or current_user.can_view_roles() %}
                 {% if has_roles_permission %}
