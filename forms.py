@@ -178,8 +178,9 @@ class LeaveRequestForm(FlaskForm):
             
             # Se è oggi, controlla che l'orario non sia nel passato
             if self.start_date.data == date.today():
-                # Combina data e ora per il confronto
+                # Combina data e ora per il confronto con timezone
                 start_datetime = datetime.combine(self.start_date.data, start_time.data)
+                start_datetime = start_datetime.replace(tzinfo=italy_tz)
                 if start_datetime < now:
                     raise ValidationError('Non puoi richiedere un permesso per un orario già trascorso.')
     
@@ -200,6 +201,7 @@ class LeaveRequestForm(FlaskForm):
                 # Se è oggi, controlla che l'orario di fine non sia nel passato
                 if self.start_date.data == date.today():
                     end_datetime = datetime.combine(self.start_date.data, end_time.data)
+                    end_datetime = end_datetime.replace(tzinfo=italy_tz)
                     if end_datetime < now:
                         raise ValidationError('Non puoi richiedere un permesso che termina in un orario già trascorso.')
     
