@@ -707,8 +707,10 @@ def check_shift_before_clock_in():
 @login_required  
 def clock_in():
     if not current_user.can_access_attendance():
-        flash('Non hai i permessi per registrare presenze.', 'danger')
-        return redirect(url_for('manage_turni'))
+        return jsonify({
+            'success': False, 
+            'message': 'Non hai i permessi per registrare presenze.'
+        }), 403
         
     app.logger.error(f"CLOCK_IN: User {current_user.id} attempting clock-in")
     
@@ -716,14 +718,15 @@ def clock_in():
     if not AttendanceEvent.can_perform_action(current_user.id, 'clock_in'):
         status, _ = AttendanceEvent.get_user_status(current_user.id)
         if status == 'in':
-            flash('Sei già presente. Devi prima registrare l\'uscita.', 'warning')
+            return jsonify({
+                'success': False, 
+                'message': 'Sei già presente. Devi prima registrare l\'uscita.'
+            }), 400
         elif status == 'break':
-            flash('Sei in pausa. Devi prima terminare la pausa.', 'warning')
-        # Redirect PM to ente_home, altri utenti alla dashboard
-        if current_user.role == 'Management':
-            return redirect(url_for('ente_home'))
-        else:
-            return redirect(url_for('dashboard'))
+            return jsonify({
+                'success': False, 
+                'message': 'Sei in pausa. Devi prima terminare la pausa.'
+            }), 400
     
     # Verifica se ha già registrato una presenza completa (entrata+uscita) oggi
     from zoneinfo import ZoneInfo
@@ -741,11 +744,10 @@ def clock_in():
     
     # Blocca se ha già una presenza completa (entrata+uscita) oggi
     if len(clock_ins) > 0 and len(clock_outs) > 0 and len(clock_ins) == len(clock_outs):
-        flash('Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.', 'warning')
-        if current_user.role == 'Management':
-            return redirect(url_for('ente_home'))
-        else:
-            return redirect(url_for('dashboard'))
+        return jsonify({
+            'success': False, 
+            'message': 'Hai già registrato una presenza completa oggi. Non puoi registrare più entrate/uscite nella stessa giornata.'
+        }), 400
     
     # Verifica se ha richieste ferie/permessi/malattia approvate per oggi
     from models import LeaveRequest
@@ -763,11 +765,10 @@ def clock_in():
             'Malattia': 'malattia'
         }.get(approved_leave.leave_type, approved_leave.leave_type.lower())
         
-        flash(f'Hai una richiesta di {leave_type_display} approvata per oggi ({approved_leave.start_date.strftime("%d/%m/%Y")} - {approved_leave.end_date.strftime("%d/%m/%Y")}). Devi prima cancellare la richiesta di {leave_type_display} se vuoi registrare la presenza.', 'warning')
-        if current_user.role == 'Management':
-            return redirect(url_for('ente_home'))
-        else:
-            return redirect(url_for('dashboard'))
+        return jsonify({
+            'success': False, 
+            'message': f'Hai una richiesta di {leave_type_display} approvata per oggi ({approved_leave.start_date.strftime("%d/%m/%Y")} - {approved_leave.end_date.strftime("%d/%m/%Y")}). Devi prima cancellare la richiesta di {leave_type_display} se vuoi registrare la presenza.'
+        }), 400
     
     # Usa l'orario italiano invece di UTC
     from zoneinfo import ZoneInfo
