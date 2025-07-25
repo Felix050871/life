@@ -135,42 +135,81 @@
                 {% if my_leave_requests %}
                 <div class="table-responsive">
                     <table class="table table-sm">
-                        <thead>
+                        <thead class="table-dark">
                             <tr>
+                                <th>Periodo</th>
+                                <th>Durata</th>
                                 <th>Tipo</th>
-                                <th>Dal</th>
-                                <th>Al</th>
+                                <th>Motivo</th>
                                 <th>Stato</th>
-                                <th>Richiesta</th>
+                                <th>Data Richiesta</th>
+                                <th>Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for request in my_leave_requests %}
-                            <tr>
+                            <tr class="{% if request.status == 'Pending' %}table-warning{% endif %}">
                                 <td>
-                                    <span class="badge 
-                                        {% if request.leave_type == 'Ferie' %}bg-success
-                                        {% elif request.leave_type == 'Permesso' %}bg-warning text-dark
-                                        {% elif request.leave_type == 'Malattia' %}bg-danger
-                                        {% endif %}">
-                                        {{ request.leave_type }}
-                                    </span>
+                                    <strong>{{ request.start_date.strftime('%d/%m/%Y') }}</strong>
+                                    {% if request.leave_type == 'Permesso' and request.is_time_based() %}
+                                        <br><small class="text-muted">{{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}</small>
+                                    {% elif request.start_date != request.end_date %}
+                                        <br><strong>{{ request.end_date.strftime('%d/%m/%Y') }}</strong>
+                                    {% endif %}
                                 </td>
-                                <td>{{ request.start_date.strftime('%d/%m/%Y') }}</td>
-                                <td>{{ request.end_date.strftime('%d/%m/%Y') }}</td>
                                 <td>
-                                    <span class="badge 
-                                        {% if request.status == 'Pending' %}bg-secondary
-                                        {% elif request.status == 'Approved' %}bg-success
-                                        {% elif request.status == 'Rejected' %}bg-danger
-                                        {% endif %}">
-                                        {% if request.status == 'Pending' %}In Attesa
-                                        {% elif request.status == 'Approved' %}Approvata
-                                        {% elif request.status == 'Rejected' %}Rifiutata
+                                    {% if request.leave_type == 'Permesso' and request.is_time_based() %}
+                                        <span class="badge bg-info">{{ request.get_duration_display() }}</span>
+                                    {% else %}
+                                        <span class="badge bg-info">
+                                            {{ (request.end_date - request.start_date).days + 1 }} giorni
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.leave_type == 'Permesso' %}
+                                        <span class="badge bg-info">Permesso</span>
+                                    {% elif request.leave_type == 'Ferie' %}
+                                        <span class="badge bg-success">Ferie</span>
+                                    {% elif request.leave_type == 'Malattia' %}
+                                        <span class="badge bg-warning text-dark">Malattia</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.reason %}
+                                        {{ request.reason[:30] }}{% if request.reason|length > 30 %}...{% endif %}
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.status == 'Approved' %}
+                                        <span class="badge bg-success">Approvata</span>
+                                        {% if request.approved_by_user %}
+                                            <br><small class="text-muted">da {{ request.approved_by_user.get_full_name() }}</small>
                                         {% endif %}
-                                    </span>
+                                    {% elif request.status == 'Rejected' %}
+                                        <span class="badge bg-danger">Rifiutata</span>
+                                        {% if request.approved_by_user %}
+                                            <br><small class="text-muted">da {{ request.approved_by_user.get_full_name() }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">In Attesa</span>
+                                    {% endif %}
                                 </td>
-                                <td><small>{{ request.created_at.strftime('%d/%m/%Y') }}</small></td>
+                                <td>
+                                    {{ request.created_at.strftime('%d/%m/%Y') }}<br>
+                                    <small class="text-muted">Resp: {{ request.created_at.strftime('%d/%m/%Y') }}</small>
+                                </td>
+                                <td>
+                                    {% if request.status == 'Pending' %}
+                                        <button class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-times"></i> Cancella
+                                        </button>
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -182,6 +221,12 @@
                     <p>Nessuna richiesta di ferie/permessi/malattie presente</p>
                 </div>
                 {% endif %}
+                
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{{ url_for('leave_requests') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Visualizza Tutte
+                    </a>
+                </div>
             </div>
         </div>
     </div>
