@@ -36,6 +36,14 @@
             </div>
             
             <ul class="sidebar-nav">
+                <!-- HOME -->
+                <li class="sidebar-nav-item">
+                    <a href="{% if current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('index') }}{% endif %}" class="sidebar-nav-link">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+                
                 <!-- DASHBOARD -->
                 {% if current_user.can_access_dashboard() %}
                 <li class="sidebar-nav-item">
@@ -316,6 +324,29 @@
                         <i class="fas fa-chart-bar"></i>
                         <span>Statistiche</span>
                     </a>
+                </li>
+                {% endif %}
+                
+                <!-- MESSAGGI - Solo se ha almeno un permesso messaggi -->
+                {% if current_user.can_send_messages() or current_user.can_view_messages() %}
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-envelope"></i>
+                        <span>Messaggi</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        {% if current_user.can_send_messages() %}
+                        <li><a href="{{ url_for('internal_messages') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-paper-plane"></i>Invia Messaggio
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_messages() %}
+                        <li><a href="{{ url_for('internal_messages') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-inbox"></i>Visualizza Messaggi
+                        </a></li>
+                        {% endif %}
+                    </ul>
                 </li>
                 {% endif %}
             </ul>

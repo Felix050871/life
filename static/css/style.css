@@ -523,6 +523,17 @@ footer {
     height: 50px;
     z-index: 999;
     padding: 0.5rem 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.top-user-bar .btn-outline-light {
+    border-color: rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.9);
+}
+
+.top-user-bar .btn-outline-light:hover {
+    background-color: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.5);
 }
 
 /* Footer */
