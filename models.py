@@ -112,6 +112,9 @@ class UserRole(db.Model):
             # Dashboard Widget Permissions
             'can_view_team_stats_widget': 'Widget Statistiche Team',
             'can_view_my_attendance_widget': 'Widget Le Mie Presenze',
+            'can_view_my_leave_requests_widget': 'Widget Le Mie Richieste',
+            'can_view_my_shifts_widget': 'Widget I Miei Turni', 
+            'can_view_my_reperibilita_widget': 'Widget La Mia Reperibilità',
             'can_view_team_management_widget': 'Widget Gestione Team',
             'can_view_leave_requests_widget': 'Widget Ferie/Permessi',
             'can_view_daily_attendance_widget': 'Widget Presenze per Sede',
@@ -441,6 +444,18 @@ class User(UserMixin, db.Model):
     def can_view_reperibilita_widget(self):
         """Widget reperibilità (personali e/o team)"""
         return self.has_permission('can_view_reperibilita_widget')
+    
+    def can_view_my_leave_requests_widget(self):
+        """Widget richieste ferie/permessi/malattie personali"""
+        return self.has_permission('can_view_my_leave_requests_widget')
+    
+    def can_view_my_shifts_widget(self):
+        """Widget turni personali"""
+        return self.has_permission('can_view_my_shifts_widget')
+    
+    def can_view_my_reperibilita_widget(self):
+        """Widget reperibilità personali"""
+        return self.has_permission('can_view_my_reperibilita_widget')
     
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""

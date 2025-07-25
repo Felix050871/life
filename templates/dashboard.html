@@ -124,6 +124,153 @@
     </div>
     {% endif %}
 
+    <!-- Widget: Le Mie Richieste Ferie/Permessi/Malattie -->
+    {% if current_user.can_view_my_leave_requests_widget() %}
+    <div class="col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-check me-2"></i>Le Mie Richieste Ferie/Permessi/Malattie</h5>
+            </div>
+            <div class="card-body">
+                {% if my_leave_requests %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Dal</th>
+                                <th>Al</th>
+                                <th>Stato</th>
+                                <th>Richiesta</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in my_leave_requests %}
+                            <tr>
+                                <td>
+                                    <span class="badge 
+                                        {% if request.leave_type == 'Ferie' %}bg-success
+                                        {% elif request.leave_type == 'Permesso' %}bg-warning text-dark
+                                        {% elif request.leave_type == 'Malattia' %}bg-danger
+                                        {% endif %}">
+                                        {{ request.leave_type }}
+                                    </span>
+                                </td>
+                                <td>{{ request.start_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ request.end_date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if request.status == 'Pending' %}bg-secondary
+                                        {% elif request.status == 'Approved' %}bg-success
+                                        {% elif request.status == 'Rejected' %}bg-danger
+                                        {% endif %}">
+                                        {% if request.status == 'Pending' %}In Attesa
+                                        {% elif request.status == 'Approved' %}Approvata
+                                        {% elif request.status == 'Rejected' %}Rifiutata
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td><small>{{ request.created_at.strftime('%d/%m/%Y') }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-calendar-times fa-2x mb-3"></i>
+                    <p>Nessuna richiesta di ferie/permessi/malattie presente</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Widget: I Miei Turni -->
+    {% if current_user.can_view_my_shifts_widget() %}
+    <div class="col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>I Miei Turni</h5>
+            </div>
+            <div class="card-body">
+                {% if my_shifts %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Orario</th>
+                                <th>Ruolo</th>
+                                <th>Sede</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shift in my_shifts %}
+                            <tr>
+                                <td>{{ shift.date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}</td>
+                                <td><span class="badge bg-primary">{{ shift.role_required or 'N/A' }}</span></td>
+                                <td>{{ shift.sede.name if shift.sede else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-clock fa-2x mb-3"></i>
+                    <p>Nessun turno assegnato per i prossimi giorni</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Widget: La Mia Reperibilità -->
+    {% if current_user.can_view_my_reperibilita_widget() %}
+    <div class="col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-phone me-2"></i>La Mia Reperibilità</h5>
+            </div>
+            <div class="card-body">
+                {% if my_reperibilita %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Dal</th>
+                                <th>Al</th>
+                                <th>Orario</th>
+                                <th>Sede</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reperibilita in my_reperibilita %}
+                            <tr>
+                                <td>{{ reperibilita.start_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ reperibilita.end_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ reperibilita.start_time.strftime('%H:%M') }} - {{ reperibilita.end_time.strftime('%H:%M') }}</td>
+                                <td>{{ reperibilita.sede.name if reperibilita.sede else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-phone fa-2x mb-3"></i>
+                    <p>Nessuna reperibilità assegnata</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Widget: Team Stats -->
     {% if current_user.can_view_team_stats_widget() and team_stats %}
     <div class="col-md-6 col-lg-4 mb-4">

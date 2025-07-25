@@ -268,6 +268,24 @@ def dashboard():
             'recent_additions': User.query.order_by(User.id.desc()).limit(3).all()
         }
 
+    # Ottieni dati per i nuovi widget personali
+    my_leave_requests = []
+    my_shifts = []
+    my_reperibilita = []
+    
+    if current_user.can_view_my_leave_requests_widget():
+        my_leave_requests = LeaveRequest.query.filter_by(user_id=current_user.id).order_by(LeaveRequest.created_at.desc()).limit(5).all()
+    
+    if current_user.can_view_my_shifts_widget():
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        italy_tz = ZoneInfo('Europe/Rome')
+        today_dt = datetime.now(italy_tz).date()
+        my_shifts = Shift.query.filter_by(user_id=current_user.id).filter(Shift.date >= today_dt).order_by(Shift.date.asc()).limit(5).all()
+    
+    if current_user.can_view_my_reperibilita_widget():
+        my_reperibilita = ReperibilitaShift.query.filter_by(user_id=current_user.id).order_by(ReperibilitaShift.start_date.desc()).limit(5).all()
+
     return render_template('dashboard.html', 
                          stats=stats, 
                          team_stats=team_stats,
@@ -287,7 +305,11 @@ def dashboard():
                          today_events=today_events,
                          today_work_hours=today_work_hours,
                          daily_attendance_data=daily_attendance_data,
-                         shifts_coverage_alerts=shifts_coverage_alerts)
+                         shifts_coverage_alerts=shifts_coverage_alerts,
+                         my_leave_requests=my_leave_requests,
+                         my_shifts=my_shifts,
+                         my_reperibilita=my_reperibilita,
+                         format_hours=format_hours)
 
 @app.route('/dashboard_team')
 @login_required
