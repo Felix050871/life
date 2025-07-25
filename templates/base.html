@@ -328,12 +328,12 @@
                                 </a>
                                 <ul class="dropdown-menu">
                                     {% if current_user.can_send_messages() %}
-                                    <li><a class="dropdown-item" href="{{ url_for('send_message') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
                                         <i class="fas fa-paper-plane me-1"></i>Invia Messaggio
                                     </a></li>
                                     {% endif %}
                                     {% if current_user.can_receive_messages() %}
-                                    <li><a class="dropdown-item" href="{{ url_for('view_messages') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
                                         <i class="fas fa-inbox me-1"></i>Visualizza Messaggi
                                     </a></li>
                                     {% endif %}
