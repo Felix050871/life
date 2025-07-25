@@ -18,7 +18,7 @@
         <!-- Sidebar -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <a href="{% if current_user.role == 'Ente' %}{{ url_for('ente_home') }}{% elif current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('shifts') }}{% endif %}" class="brand">
+                <a href="{% if current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('index') }}{% endif %}" class="brand">
                     <i class="fas fa-briefcase me-2"></i><span>Workly</span>
                 </a>
                 <button class="sidebar-toggle" onclick="toggleSidebar()">
@@ -321,7 +321,7 @@
                             </li>
                             
                             <!-- MESSAGGI -->
-                            {% if current_user.can_send_messages() or current_user.can_receive_messages() %}
+                            {% if current_user.can_send_messages() or current_user.can_view_messages() %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                     <i class="fas fa-envelope me-1"></i>Messaggi
@@ -332,7 +332,7 @@
                                         <i class="fas fa-paper-plane me-1"></i>Invia Messaggio
                                     </a></li>
                                     {% endif %}
-                                    {% if current_user.can_receive_messages() %}
+                                    {% if current_user.can_view_messages() %}
                                     <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
                                         <i class="fas fa-inbox me-1"></i>Visualizza Messaggi
                                     </a></li>
