@@ -442,14 +442,59 @@ document.addEventListener('DOMContentLoaded', function() {
             // Copia automaticamente la data di inizio in quella di fine
             const startDateInput = document.querySelector('input[name="start_date"]');
             const endDateInputHidden = document.querySelector('input[name="end_date"]');
+            const startTimeInput = document.querySelector('input[name="start_time"]');
+            const endTimeInput = document.querySelector('input[name="end_time"]');
             
             if (startDateInput && endDateInputHidden) {
                 startDateInput.addEventListener('change', function() {
                     if (leaveTypeSelect.value === 'Permesso') {
                         endDateInputHidden.value = startDateInput.value;
+                        validateRetrospectiveTime(); // Rivalidazione dopo cambio data
                     }
                 });
             }
+            
+            // Validazione per orari retroattivi
+            function validateRetrospectiveTime() {
+                const selectedDate = startDateInput.value;
+                const selectedStartTime = startTimeInput.value;
+                const selectedEndTime = endTimeInput.value;
+                
+                if (selectedDate && selectedStartTime) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const now = new Date();
+                    
+                    // Se è oggi, controlla che gli orari non siano nel passato
+                    if (selectedDate === today) {
+                        const currentTime = now.toTimeString().split(' ')[0].slice(0, 5); // HH:MM
+                        
+                        if (selectedStartTime < currentTime) {
+                            startTimeInput.setCustomValidity('Non puoi selezionare un orario già trascorso');
+                            startTimeInput.reportValidity();
+                            return false;
+                        } else {
+                            startTimeInput.setCustomValidity('');
+                        }
+                        
+                        if (selectedEndTime && selectedEndTime < currentTime) {
+                            endTimeInput.setCustomValidity('Non puoi selezionare un orario già trascorso');
+                            endTimeInput.reportValidity();
+                            return false;
+                        } else if (endTimeInput) {
+                            endTimeInput.setCustomValidity('');
+                        }
+                    } else {
+                        // Non è oggi, rimuovi eventuali messaggi di errore
+                        startTimeInput.setCustomValidity('');
+                        if (endTimeInput) endTimeInput.setCustomValidity('');
+                    }
+                }
+                return true;
+            }
+            
+            // Aggiungi event listeners per validazione real-time
+            if (startTimeInput) startTimeInput.addEventListener('change', validateRetrospectiveTime);
+            if (endTimeInput) endTimeInput.addEventListener('change', validateRetrospectiveTime);
         }
     }
     

@@ -167,6 +167,21 @@ class LeaveRequestForm(FlaskForm):
     def validate_start_time(self, start_time):
         if self.leave_type.data == 'Permesso' and not start_time.data:
             raise ValidationError('L\'ora di inizio è richiesta per i permessi.')
+        
+        # Validazione per orari retroattivi nella stessa giornata
+        if (self.leave_type.data == 'Permesso' and start_time.data and 
+            self.start_date.data):
+            from datetime import date, datetime
+            from zoneinfo import ZoneInfo
+            italy_tz = ZoneInfo('Europe/Rome')
+            now = datetime.now(italy_tz)
+            
+            # Se è oggi, controlla che l'orario non sia nel passato
+            if self.start_date.data == date.today():
+                # Combina data e ora per il confronto
+                start_datetime = datetime.combine(self.start_date.data, start_time.data)
+                if start_datetime < now:
+                    raise ValidationError('Non puoi richiedere un permesso per un orario già trascorso.')
     
     def validate_end_time(self, end_time):
         if self.leave_type.data == 'Permesso':
@@ -174,6 +189,19 @@ class LeaveRequestForm(FlaskForm):
                 raise ValidationError('L\'ora di fine è richiesta per i permessi.')
             if self.start_time.data and end_time.data <= self.start_time.data:
                 raise ValidationError('L\'ora di fine deve essere successiva all\'ora di inizio.')
+            
+            # Validazione per orari retroattivi nella stessa giornata
+            if (end_time.data and self.start_date.data):
+                from datetime import date, datetime
+                from zoneinfo import ZoneInfo
+                italy_tz = ZoneInfo('Europe/Rome')
+                now = datetime.now(italy_tz)
+                
+                # Se è oggi, controlla che l'orario di fine non sia nel passato
+                if self.start_date.data == date.today():
+                    end_datetime = datetime.combine(self.start_date.data, end_time.data)
+                    if end_datetime < now:
+                        raise ValidationError('Non puoi richiedere un permesso che termina in un orario già trascorso.')
     
     def validate_end_date_for_permission(self, end_date):
         if self.leave_type.data == 'Permesso' and end_date.data and end_date.data != self.start_date.data:
