@@ -706,7 +706,7 @@ class RoleForm(FlaskForm):
     can_view_shifts_coverage_widget = BooleanField('Widget Coperture Turni')
     can_view_my_shifts_widget = BooleanField('Widget I Miei Turni')
     can_view_reperibilita_widget = BooleanField('Widget Reperibilità')
-    can_view_my_reperibilita_widget = BooleanField('Widget La Mia Reperibilità')
+    can_view_my_reperibilita_widget = BooleanField('Widget Le Mie Reperibilità')
     
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')

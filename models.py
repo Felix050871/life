@@ -115,7 +115,7 @@ class UserRole(db.Model):
             'can_view_team_management_widget': 'Widget Gestione Team',
             'can_view_my_leave_requests_widget': 'Widget Le Mie Richieste',
             'can_view_my_shifts_widget': 'Widget I Miei Turni', 
-            'can_view_my_reperibilita_widget': 'Widget La Mia Reperibilità',
+            'can_view_my_reperibilita_widget': 'Widget Le Mie Reperibilità',
             'can_view_leave_requests_widget': 'Widget Ferie/Permessi',
             'can_view_daily_attendance_widget': 'Widget Presenze per Sede',
             'can_view_shifts_coverage_widget': 'Widget Coperture Turni',
