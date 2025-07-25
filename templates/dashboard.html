@@ -357,23 +357,69 @@
                 <h5><i class="fas fa-users me-2"></i>Gestione Team</h5>
             </div>
             <div class="card-body">
+                <!-- Statistiche Team -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 mb-0 text-primary">{{ team_management_data.total_members }}</div>
+                            <small class="text-muted">Membri Attivi</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 mb-0 text-warning">{{ team_management_data.pending_users }}</div>
+                            <small class="text-muted">Utenti Disattivati</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Azioni Disponibili -->
                 <div class="d-grid gap-2">
                     {% if current_user.can_manage_users() %}
                     <a href="{{ url_for('user_management') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-user-plus me-1"></i>Gestisci Utenti
                     </a>
+                    {% elif current_user.can_view_users() %}
+                    <a href="{{ url_for('user_management') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-users me-1"></i>Visualizza Utenti
+                    </a>
                     {% endif %}
+                    
                     {% if current_user.can_manage_roles() %}
                     <a href="{{ url_for('manage_roles') }}" class="btn btn-secondary btn-sm">
                         <i class="fas fa-user-cog me-1"></i>Gestisci Ruoli
                     </a>
+                    {% elif current_user.can_view_roles() %}
+                    <a href="{{ url_for('manage_roles') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Visualizza Ruoli
+                    </a>
                     {% endif %}
+                    
                     {% if current_user.can_manage_sedi() %}
                     <a href="{{ url_for('manage_sedi') }}" class="btn btn-info btn-sm">
                         <i class="fas fa-building me-1"></i>Gestisci Sedi
                     </a>
+                    {% elif current_user.can_view_sedi() %}
+                    <a href="{{ url_for('manage_sedi') }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-building me-1"></i>Visualizza Sedi
+                    </a>
                     {% endif %}
                 </div>
+                
+                <!-- Aggiunte Recenti -->
+                {% if team_management_data.recent_additions %}
+                <div class="mt-3">
+                    <h6 class="text-muted mb-2">Aggiunte Recenti</h6>
+                    {% for user in team_management_data.recent_additions %}
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <small>{{ user.get_full_name() }}</small>
+                        <span class="badge bg-{{ 'success' if user.active else 'secondary' }}">
+                            {{ 'Attivo' if user.active else 'Disattivato' }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
