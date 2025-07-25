@@ -2271,7 +2271,13 @@ def delete_leave(request_id):
     db.session.delete(leave_request)
     db.session.commit()
     flash('Richiesta cancellata con successo', 'success')
-    return redirect(url_for('leave_requests'))
+    
+    # Determina dove reindirizzare in base al referer
+    referer = request.headers.get('Referer', '')
+    if 'dashboard' in referer or referer.endswith('/'):
+        return redirect(url_for('dashboard'))
+    else:
+        return redirect(url_for('leave_requests'))
 
 @app.route('/users')
 @login_required
