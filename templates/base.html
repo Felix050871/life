@@ -441,7 +441,7 @@
     
     <!-- Non-authenticated layout (login page) -->
     {% if not current_user.is_authenticated %}
-    <div class="d-flex justify-content-center align-items-center min-vh-100">
+    <div class="d-flex flex-column justify-content-center align-items-center min-vh-100">
         <div class="col-md-4">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
