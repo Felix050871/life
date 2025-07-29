@@ -105,3 +105,19 @@ def get_permission_display(permission_name):
     from models import UserRole
     permissions_map = UserRole.get_available_permissions()
     return permissions_map.get(permission_name, permission_name)
+
+# Context processor per conteggio messaggi non letti
+@app.context_processor
+def inject_unread_messages_count():
+    """Rende disponibile il conteggio dei messaggi non letti in tutti i template"""
+    from flask_login import current_user
+    
+    if current_user.is_authenticated and (current_user.can_send_messages() or current_user.can_view_messages()):
+        from models import InternalMessage
+        unread_count = InternalMessage.query.filter_by(
+            recipient_id=current_user.id,
+            is_read=False
+        ).count()
+        return dict(unread_messages_count=unread_count)
+    
+    return dict(unread_messages_count=0)

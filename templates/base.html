@@ -343,8 +343,14 @@
                             <!-- MESSAGGI -->
                             {% if current_user.can_send_messages() or current_user.can_view_messages() %}
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown">
                                     <i class="fas fa-envelope me-1"></i>Messaggi
+                                    {% if unread_messages_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {{ unread_messages_count }}
+                                        <span class="visually-hidden">messaggi non letti</span>
+                                    </span>
+                                    {% endif %}
                                 </a>
                                 <ul class="dropdown-menu">
                                     {% if current_user.can_send_messages() %}
