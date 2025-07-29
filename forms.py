@@ -153,7 +153,7 @@ class LeaveTypeForm(FlaskForm):
                 raise ValidationError('Esiste già una tipologia con questo nome.')
 
 class LeaveRequestForm(FlaskForm):
-    leave_type_id = SelectField('Tipo Richiesta', coerce=int, validators=[DataRequired()])
+    leave_type_id = SelectField('Tipo Richiesta', coerce=lambda x: int(x) if x and x != '' else None, validators=[DataRequired()])
     
     # Campi per date (sempre presenti)
     start_date = DateField('Data Inizio', validators=[DataRequired()])
@@ -172,9 +172,9 @@ class LeaveRequestForm(FlaskForm):
         try:
             from models import LeaveType
             active_types = LeaveType.query.filter_by(is_active=True).order_by(LeaveType.name).all()
-            self.leave_type_id.choices = [('', 'Seleziona tipo richiesta')] + [(t.id, t.name) for t in active_types]
+            self.leave_type_id.choices = [(None, 'Seleziona tipo richiesta')] + [(t.id, t.name) for t in active_types]
         except:
-            self.leave_type_id.choices = [('', 'Seleziona tipo richiesta')]
+            self.leave_type_id.choices = [(None, 'Seleziona tipo richiesta')]
     
     def validate_start_date(self, field):
         from datetime import date
