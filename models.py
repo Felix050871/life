@@ -110,6 +110,12 @@ class UserRole(db.Model):
             'can_send_messages': 'Inviare Messaggi',
             'can_view_messages': 'Visualizzare Messaggi',
             
+            # Note spese
+            'can_manage_expense_reports': 'Gestire Note Spese',
+            'can_view_expense_reports': 'Visualizzare Note Spese',
+            'can_approve_expense_reports': 'Approvare Note Spese',
+            'can_create_expense_reports': 'Creare Note Spese',
+            
             # Dashboard Widget Permissions
             'can_view_team_stats_widget': 'Widget Statistiche Team',
             'can_view_my_attendance_widget': 'Widget Le Mie Presenze',
@@ -430,6 +436,11 @@ class User(UserMixin, db.Model):
     def can_access_messages_menu(self):
         """Accesso al menu Messaggi"""
         return self.can_send_messages() or self.can_view_messages()
+    
+    def can_access_expense_reports_menu(self):
+        """Accesso al menu Note Spese"""
+        return (self.can_manage_expense_reports() or self.can_view_expense_reports() or 
+                self.can_approve_expense_reports() or self.can_create_expense_reports())
     
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):
@@ -1666,6 +1677,157 @@ class PasswordResetToken(db.Model):
         # Confronta entrambi in UTC per evitare problemi timezone
         now_utc = datetime.utcnow()
         return now_utc > self.expires_at
+
+
+class ExpenseCategory(db.Model):
+    """Categorie per le note spese"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.String(255))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    creator = db.relationship('User', backref='created_expense_categories')
+    
+    def __repr__(self):
+        return f'<ExpenseCategory {self.name}>'
+
+
+class ExpenseReport(db.Model):
+    """Note spese dei dipendenti"""
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    expense_date = db.Column(db.Date, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('expense_category.id'), nullable=False)
+    receipt_filename = db.Column(db.String(255))  # Nome file allegato
+    status = db.Column(db.String(20), default='pending', nullable=False)  # pending, approved, rejected
+    
+    # Approvazione
+    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    approval_comment = db.Column(db.Text)
+    
+    # Metadati
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    employee = db.relationship('User', foreign_keys=[employee_id], backref='expense_reports')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_expense_reports')
+    category = db.relationship('ExpenseCategory', backref='expense_reports')
+    
+    def __repr__(self):
+        return f'<ExpenseReport {self.description[:30]}... - €{self.amount}>'
+    
+    @property
+    def status_display(self):
+        """Mostra lo stato in italiano"""
+        status_map = {
+            'pending': 'In Attesa',
+            'approved': 'Approvata',
+            'rejected': 'Rifiutata'
+        }
+        return status_map.get(self.status, self.status)
+    
+    @property
+    def status_color(self):
+        """Restituisce il colore Bootstrap per lo stato"""
+        color_map = {
+            'pending': 'warning',
+            'approved': 'success',
+            'rejected': 'danger'
+        }
+        return color_map.get(self.status, 'secondary')
+    
+    def can_be_edited(self):
+        """Verifica se la nota spese può essere modificata"""
+        return self.status == 'pending'
+    
+    def can_be_approved_by(self, user):
+        """Verifica se l'utente può approvare questa nota spese"""
+        if not user.can_approve_expense_reports():
+            return False
+            
+        # Controllo sede: stesso sede o accesso globale
+        if user.all_sedi:
+            return True
+        
+        return user.sede_id == self.employee.sede_id
+    
+    def approve(self, approver, comment=None):
+        """Approva la nota spese"""
+        self.status = 'approved'
+        self.approved_by = approver.id
+        self.approved_at = italian_now()
+        self.approval_comment = comment
+        
+        # Invia notifica automatica al dipendente
+        self._send_status_notification()
+    
+    def reject(self, approver, comment=None):
+        """Rifiuta la nota spese"""
+        self.status = 'rejected'
+        self.approved_by = approver.id
+        self.approved_at = italian_now()
+        self.approval_comment = comment
+        
+        # Invia notifica automatica al dipendente
+        self._send_status_notification()
+    
+    def _send_status_notification(self):
+        """Invia notifica automatica di cambio stato al dipendente"""
+        if self.status == 'approved':
+            title = "Nota Spese Approvata"
+            message = f"La tua nota spese del {self.expense_date.strftime('%d/%m/%Y')} per €{self.amount} è stata approvata."
+            message_type = 'success'
+        else:
+            title = "Nota Spese Rifiutata"
+            message = f"La tua nota spese del {self.expense_date.strftime('%d/%m/%Y')} per €{self.amount} è stata rifiutata."
+            message_type = 'danger'
+        
+        if self.approval_comment:
+            message += f"\n\nCommento: {self.approval_comment}"
+        
+        # Crea messaggio interno
+        notification = InternalMessage(
+            recipient_id=self.employee_id,
+            sender_id=self.approved_by,
+            title=title,
+            message=message,
+            message_type=message_type
+        )
+        
+        db.session.add(notification)
+    
+    @classmethod
+    def get_monthly_total(cls, employee_id, year, month, status='approved'):
+        """Calcola il totale mensile delle note spese per un dipendente"""
+        from sqlalchemy import extract, func
+        
+        result = db.session.query(func.sum(cls.amount)).filter(
+            cls.employee_id == employee_id,
+            cls.status == status,
+            extract('year', cls.expense_date) == year,
+            extract('month', cls.expense_date) == month
+        ).scalar()
+        
+        return result or 0
+    
+    @classmethod
+    def get_yearly_total(cls, employee_id, year, status='approved'):
+        """Calcola il totale annuale delle note spese per un dipendente"""
+        from sqlalchemy import extract, func
+        
+        result = db.session.query(func.sum(cls.amount)).filter(
+            cls.employee_id == employee_id,
+            cls.status == status,
+            extract('year', cls.expense_date) == year
+        ).scalar()
+        
+        return result or 0
     
     @property
     def is_valid(self):

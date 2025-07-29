@@ -7253,6 +7253,323 @@ def delete_presidio_coverage(coverage_id):
     return redirect(url_for('presidio_coverage_edit', template_id=template_id))
 
 
+# ============================================================================
+# NOTE SPESE ROUTES
+# ============================================================================
+
+@app.route('/expenses')
+@login_required
+def expense_reports():
+    """Visualizza elenco note spese"""
+    if not current_user.can_access_expense_reports_menu():
+        flash('Non hai i permessi per accedere alle note spese', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    from models import ExpenseReport, ExpenseCategory
+    from forms import ExpenseFilterForm
+    
+    filter_form = ExpenseFilterForm(current_user=current_user)
+    
+    # Query base
+    query = ExpenseReport.query
+    
+    # Se l'utente non può vedere tutte le note spese, mostra solo le sue
+    if not (current_user.can_view_expense_reports() or current_user.can_approve_expense_reports()):
+        query = query.filter(ExpenseReport.employee_id == current_user.id)
+    elif not current_user.all_sedi and current_user.sede_id:
+        # Filtra per sede se non ha accesso globale
+        from models import User
+        sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+        sede_user_ids = [u.id for u in sede_users]
+        query = query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+    
+    # Applica filtri se presenti
+    if filter_form.validate_on_submit():
+        if filter_form.employee_id.data:
+            query = query.filter(ExpenseReport.employee_id == filter_form.employee_id.data)
+        if filter_form.category_id.data:
+            query = query.filter(ExpenseReport.category_id == filter_form.category_id.data)
+        if filter_form.status.data:
+            query = query.filter(ExpenseReport.status == filter_form.status.data)
+        if filter_form.date_from.data:
+            query = query.filter(ExpenseReport.expense_date >= filter_form.date_from.data)
+        if filter_form.date_to.data:
+            query = query.filter(ExpenseReport.expense_date <= filter_form.date_to.data)
+    
+    # Ordina per data più recente
+    expenses = query.order_by(ExpenseReport.expense_date.desc(), ExpenseReport.created_at.desc()).all()
+    
+    return render_template('expense_reports.html', 
+                         expenses=expenses, 
+                         filter_form=filter_form)
+
+
+@app.route('/expenses/create', methods=['GET', 'POST'])
+@login_required
+def create_expense_report():
+    """Crea nuova nota spese"""
+    if not current_user.can_create_expense_reports():
+        flash('Non hai i permessi per creare note spese', 'danger')
+        return redirect(url_for('expense_reports'))
+    
+    from models import ExpenseReport, ExpenseCategory
+    from forms import ExpenseReportForm
+    import os
+    from werkzeug.utils import secure_filename
+    
+    form = ExpenseReportForm()
+    
+    if form.validate_on_submit():
+        # Gestione upload file
+        receipt_filename = None
+        if form.receipt_file.data:
+            file = form.receipt_file.data
+            filename = secure_filename(file.filename)
+            
+            # Crea nome file unico
+            import uuid
+            file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+            unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+            
+            # Crea directory uploads se non esiste
+            upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'expenses')
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            file_path = os.path.join(upload_dir, unique_filename)
+            file.save(file_path)
+            receipt_filename = unique_filename
+        
+        # Crea nota spese
+        expense = ExpenseReport(
+            employee_id=current_user.id,
+            expense_date=form.expense_date.data,
+            description=form.description.data,
+            amount=form.amount.data,
+            category_id=form.category_id.data,
+            receipt_filename=receipt_filename
+        )
+        
+        db.session.add(expense)
+        db.session.commit()
+        
+        flash('Nota spese creata con successo', 'success')
+        return redirect(url_for('expense_reports'))
+    
+    return render_template('create_expense_report.html', form=form)
+
+
+@app.route('/expenses/edit/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def edit_expense_report(expense_id):
+    """Modifica nota spese esistente"""
+    from models import ExpenseReport
+    from forms import ExpenseReportForm
+    import os
+    from werkzeug.utils import secure_filename
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    
+    # Verifica permessi
+    if expense.employee_id != current_user.id and not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per modificare questa nota spese', 'danger')
+        return redirect(url_for('expense_reports'))
+    
+    # Verifica se modificabile
+    if not expense.can_be_edited():
+        flash('Questa nota spese non può più essere modificata', 'warning')
+        return redirect(url_for('expense_reports'))
+    
+    form = ExpenseReportForm()
+    
+    if form.validate_on_submit():
+        # Gestione upload file
+        if form.receipt_file.data:
+            # Elimina vecchio file se esiste
+            if expense.receipt_filename:
+                old_file_path = os.path.join(app.root_path, 'static', 'uploads', 'expenses', expense.receipt_filename)
+                if os.path.exists(old_file_path):
+                    os.remove(old_file_path)
+            
+            file = form.receipt_file.data
+            filename = secure_filename(file.filename)
+            
+            # Crea nome file unico
+            import uuid
+            file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+            unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+            
+            # Crea directory uploads se non esiste
+            upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'expenses')
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            file_path = os.path.join(upload_dir, unique_filename)
+            file.save(file_path)
+            expense.receipt_filename = unique_filename
+        
+        # Aggiorna dati
+        expense.expense_date = form.expense_date.data
+        expense.description = form.description.data
+        expense.amount = form.amount.data
+        expense.category_id = form.category_id.data
+        
+        db.session.commit()
+        flash('Nota spese aggiornata con successo', 'success')
+        return redirect(url_for('expense_reports'))
+    
+    # Precompila form con dati esistenti
+    form.expense_date.data = expense.expense_date
+    form.description.data = expense.description
+    form.amount.data = expense.amount
+    form.category_id.data = expense.category_id
+    
+    return render_template('edit_expense_report.html', form=form, expense=expense)
+
+
+@app.route('/expenses/approve/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def approve_expense_report(expense_id):
+    """Approva/rifiuta nota spese"""
+    from models import ExpenseReport
+    from forms import ExpenseApprovalForm
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    
+    # Verifica permessi
+    if not expense.can_be_approved_by(current_user):
+        flash('Non hai i permessi per approvare questa nota spese', 'danger')
+        return redirect(url_for('expense_reports'))
+    
+    if expense.status != 'pending':
+        flash('Questa nota spese è già stata processata', 'warning')
+        return redirect(url_for('expense_reports'))
+    
+    form = ExpenseApprovalForm()
+    
+    if form.validate_on_submit():
+        if form.action.data == 'approve':
+            expense.approve(current_user, form.comment.data)
+            flash('Nota spese approvata con successo', 'success')
+        else:
+            expense.reject(current_user, form.comment.data)
+            flash('Nota spese rifiutata', 'info')
+        
+        db.session.commit()
+        return redirect(url_for('expense_reports'))
+    
+    return render_template('approve_expense_report.html', form=form, expense=expense)
+
+
+@app.route('/expenses/download/<int:expense_id>')
+@login_required
+def download_expense_receipt(expense_id):
+    """Download ricevuta allegata"""
+    from models import ExpenseReport
+    from flask import send_file
+    import os
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    
+    # Verifica permessi
+    if (expense.employee_id != current_user.id and 
+        not current_user.can_view_expense_reports() and 
+        not current_user.can_approve_expense_reports()):
+        flash('Non hai i permessi per scaricare questo documento', 'danger')
+        return redirect(url_for('expense_reports'))
+    
+    if not expense.receipt_filename:
+        flash('Nessun documento allegato a questa nota spese', 'warning')
+        return redirect(url_for('expense_reports'))
+    
+    file_path = os.path.join(app.root_path, 'static', 'uploads', 'expenses', expense.receipt_filename)
+    
+    if not os.path.exists(file_path):
+        flash('File non trovato', 'danger')
+        return redirect(url_for('expense_reports'))
+    
+    return send_file(file_path, as_attachment=True, 
+                    download_name=f"ricevuta_{expense.id}_{expense.expense_date.strftime('%Y%m%d')}.{expense.receipt_filename.split('.')[-1]}")
+
+
+@app.route('/expenses/categories')
+@login_required
+def expense_categories():
+    """Gestisci categorie note spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per gestire le categorie', 'danger')
+        return redirect(url_for('expense_reports'))
+    
+    from models import ExpenseCategory
+    categories = ExpenseCategory.query.order_by(ExpenseCategory.name).all()
+    
+    return render_template('expense_categories.html', categories=categories)
+
+
+@app.route('/expenses/categories/create', methods=['GET', 'POST'])
+@login_required
+def create_expense_category():
+    """Crea nuova categoria"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per creare categorie', 'danger')
+        return redirect(url_for('expense_reports'))
+    
+    from models import ExpenseCategory
+    from forms import ExpenseCategoryForm
+    
+    form = ExpenseCategoryForm()
+    
+    if form.validate_on_submit():
+        category = ExpenseCategory(
+            name=form.name.data,
+            description=form.description.data,
+            is_active=form.is_active.data,
+            created_by=current_user.id
+        )
+        
+        db.session.add(category)
+        
+        try:
+            db.session.commit()
+            flash('Categoria creata con successo', 'success')
+            return redirect(url_for('expense_categories'))
+        except:
+            db.session.rollback()
+            flash('Errore: categoria già esistente', 'danger')
+    
+    return render_template('create_expense_category.html', form=form)
+
+
+@app.route('/expenses/delete/<int:expense_id>', methods=['POST'])
+@login_required
+def delete_expense_report(expense_id):
+    """Elimina nota spese"""
+    from models import ExpenseReport
+    import os
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    
+    # Verifica permessi
+    if expense.employee_id != current_user.id and not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per eliminare questa nota spese', 'danger')
+        return redirect(url_for('expense_reports'))
+    
+    # Solo note in attesa possono essere eliminate
+    if expense.status != 'pending':
+        flash('Solo le note spese in attesa possono essere eliminate', 'warning')
+        return redirect(url_for('expense_reports'))
+    
+    # Elimina file allegato se esiste
+    if expense.receipt_filename:
+        file_path = os.path.join(app.root_path, 'static', 'uploads', 'expenses', expense.receipt_filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    
+    db.session.delete(expense)
+    db.session.commit()
+    
+    flash('Nota spese eliminata con successo', 'success')
+    return redirect(url_for('expense_reports'))
+
+
 
 
 

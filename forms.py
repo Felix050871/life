@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, SelectMultipleField, FloatField, DateField, TimeField, TextAreaField, SubmitField, BooleanField, IntegerField
-from wtforms.validators import DataRequired, Email, Length, NumberRange, ValidationError, EqualTo, Optional
+from wtforms import StringField, PasswordField, SelectField, SelectMultipleField, FloatField, DateField, TimeField, TextAreaField, SubmitField, BooleanField, IntegerField, DecimalField, ValidationError
+from wtforms.validators import DataRequired, Email, Length, NumberRange, EqualTo, Optional
 from models import User, Sede, UserRole
+from flask_wtf.file import FileField, FileAllowed
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
@@ -575,6 +576,89 @@ class SendMessageForm(FlaskForm):
                 self.recipient_ids.choices = [(0, 'Nessun utente disponibile')]
 
 
+class ExpenseCategoryForm(FlaskForm):
+    """Form per gestire le categorie di spesa"""
+    name = StringField('Nome Categoria', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Descrizione', validators=[Length(max=255)])
+    is_active = BooleanField('Attiva', default=True)
+    submit = SubmitField('Salva Categoria')
+
+
+class ExpenseReportForm(FlaskForm):
+    """Form per creare/modificare note spese"""
+    expense_date = DateField('Data Spesa', validators=[DataRequired()])
+    description = TextAreaField('Descrizione', validators=[DataRequired(), Length(max=500)])
+    amount = DecimalField('Importo (€)', validators=[DataRequired(), NumberRange(min=0.01, max=99999.99)], places=2)
+    category_id = SelectField('Categoria', coerce=int, validators=[DataRequired()])
+    receipt_file = FileField('Ricevuta/Documento', validators=[
+        FileAllowed(['pdf', 'jpg', 'jpeg', 'png'], 'Solo file PDF o immagini!')
+    ])
+    submit = SubmitField('Salva Nota Spese')
+    
+    def __init__(self, *args, **kwargs):
+        super(ExpenseReportForm, self).__init__(*args, **kwargs)
+        # Popola le categorie attive
+        from models import ExpenseCategory
+        categories = ExpenseCategory.query.filter_by(is_active=True).order_by(ExpenseCategory.name).all()
+        self.category_id.choices = [(cat.id, cat.name) for cat in categories]
+        
+        if not self.category_id.choices:
+            self.category_id.choices = [(0, 'Nessuna categoria disponibile')]
+
+
+class ExpenseApprovalForm(FlaskForm):
+    """Form per approvare/rifiutare note spese"""
+    action = SelectField('Azione', choices=[
+        ('approve', 'Approva'),
+        ('reject', 'Rifiuta')
+    ], validators=[DataRequired()])
+    comment = TextAreaField('Commento', validators=[Length(max=500)])
+    submit = SubmitField('Conferma')
+
+
+class ExpenseFilterForm(FlaskForm):
+    """Form per filtrare le note spese"""
+    employee_id = SelectField('Dipendente', coerce=int, validators=[Optional()])
+    category_id = SelectField('Categoria', coerce=int, validators=[Optional()])
+    status = SelectField('Stato', choices=[
+        ('', 'Tutti'),
+        ('pending', 'In Attesa'),
+        ('approved', 'Approvate'),
+        ('rejected', 'Rifiutate')
+    ], validators=[Optional()])
+    date_from = DateField('Da Data', validators=[Optional()])
+    date_to = DateField('A Data', validators=[Optional()])
+    submit = SubmitField('Filtra')
+    reset = SubmitField('Reset')
+    
+    def __init__(self, current_user=None, *args, **kwargs):
+        super(ExpenseFilterForm, self).__init__(*args, **kwargs)
+        
+        # Popola dipendenti (solo se l'utente può vedere altri dipendenti)
+        if current_user and (current_user.can_view_expense_reports() or current_user.can_approve_expense_reports()):
+            from models import User
+            
+            users_query = User.query.filter(User.active == True)
+            
+            # Filtra per sede se necessario
+            if not current_user.all_sedi and current_user.sede_id:
+                users_query = users_query.filter(User.sede_id == current_user.sede_id)
+            
+            employees = users_query.order_by(User.first_name, User.last_name).all()
+            self.employee_id.choices = [('', 'Tutti i dipendenti')] + [
+                (emp.id, emp.get_full_name()) for emp in employees
+            ]
+        else:
+            self.employee_id.choices = [('', 'Tutti i dipendenti')]
+        
+        # Popola categorie
+        from models import ExpenseCategory
+        categories = ExpenseCategory.query.filter_by(is_active=True).order_by(ExpenseCategory.name).all()
+        self.category_id.choices = [('', 'Tutte le categorie')] + [
+            (cat.id, cat.name) for cat in categories
+        ]
+
+
 class SedeForm(FlaskForm):
     """Form per gestire le sedi aziendali"""
     name = StringField('Nome Sede', validators=[DataRequired(), Length(max=100)])
@@ -761,6 +845,12 @@ class RoleForm(FlaskForm):
     can_send_messages = BooleanField('Inviare Messaggi')
     can_view_messages = BooleanField('Visualizzare Messaggi')
     
+    # Note spese
+    can_manage_expense_reports = BooleanField('Gestire Note Spese')
+    can_view_expense_reports = BooleanField('Visualizzare Note Spese')
+    can_approve_expense_reports = BooleanField('Approvare Note Spese')
+    can_create_expense_reports = BooleanField('Creare Note Spese')
+    
     # Dashboard Widget Permissions
     can_view_team_stats_widget = BooleanField('Widget Statistiche Team')
     can_view_my_attendance_widget = BooleanField('Widget Le Mie Presenze')
@@ -862,6 +952,12 @@ class RoleForm(FlaskForm):
             'can_send_messages': self.can_send_messages.data,
             'can_view_messages': self.can_view_messages.data,
             
+            # Note spese
+            'can_manage_expense_reports': self.can_manage_expense_reports.data,
+            'can_view_expense_reports': self.can_view_expense_reports.data,
+            'can_approve_expense_reports': self.can_approve_expense_reports.data,
+            'can_create_expense_reports': self.can_create_expense_reports.data,
+            
             # Dashboard Widget Permissions
             'can_view_team_stats_widget': self.can_view_team_stats_widget.data,
             'can_view_my_attendance_widget': self.can_view_my_attendance_widget.data,
@@ -936,6 +1032,12 @@ class RoleForm(FlaskForm):
         # Messaggi
         self.can_send_messages.data = permissions_dict.get('can_send_messages', False)
         self.can_view_messages.data = permissions_dict.get('can_view_messages', False)
+        
+        # Note spese
+        self.can_manage_expense_reports.data = permissions_dict.get('can_manage_expense_reports', False)
+        self.can_view_expense_reports.data = permissions_dict.get('can_view_expense_reports', False)
+        self.can_approve_expense_reports.data = permissions_dict.get('can_approve_expense_reports', False)
+        self.can_create_expense_reports.data = permissions_dict.get('can_create_expense_reports', False)
         
         # Dashboard Widget Permissions
         self.can_view_team_stats_widget.data = permissions_dict.get('can_view_team_stats_widget', False)

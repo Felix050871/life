@@ -366,6 +366,33 @@
                                 </ul>
                             </li>
                             {% endif %}
+                            
+                            <!-- NOTE SPESE -->
+                            {% if current_user.can_access_expense_reports_menu() %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-receipt me-1"></i>Note Spese
+                                </a>
+                                <ul class="dropdown-menu">
+                                    {% if current_user.can_create_expense_reports() %}
+                                    <li><a class="dropdown-item" href="{{ url_for('create_expense_report') }}">
+                                        <i class="fas fa-plus me-1"></i>Crea Nota Spese
+                                    </a></li>
+                                    {% endif %}
+                                    {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() or current_user.can_create_expense_reports() %}
+                                    <li><a class="dropdown-item" href="{{ url_for('expense_reports') }}">
+                                        <i class="fas fa-list me-1"></i>Visualizza Note Spese
+                                    </a></li>
+                                    {% endif %}
+                                    {% if current_user.can_manage_expense_reports() %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('expense_categories') }}">
+                                        <i class="fas fa-tags me-1"></i>Gestisci Categorie
+                                    </a></li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                            {% endif %}
                         </ul>
                     </nav>
                     
