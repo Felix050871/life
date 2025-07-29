@@ -2125,39 +2125,43 @@ def leave_types():
     leave_types = LeaveType.query.order_by(LeaveType.name).all()
     return render_template('leave_types.html', leave_types=leave_types)
 
-@app.route('/leave_types/add', methods=['POST'])
+@app.route('/leave_types/add', methods=['GET', 'POST'])
 @login_required
-def add_leave_type():
+def add_leave_type_page():
     if not current_user.can_manage_leave_types():
         flash('Non hai i permessi per aggiungere tipologie di permesso', 'danger')
         return redirect(url_for('leave_types'))
     
-    try:
-        name = request.form.get('name')
-        description = request.form.get('description')
-        requires_approval = 'requires_approval' in request.form
-        is_active = 'is_active' in request.form
-        
-        # Verifica duplicati
-        if LeaveType.query.filter_by(name=name).first():
-            flash('Esiste già una tipologia con questo nome', 'warning')
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            description = request.form.get('description')
+            requires_approval = 'requires_approval' in request.form
+            is_active = 'is_active' in request.form
+            
+            # Verifica duplicati
+            if LeaveType.query.filter_by(name=name).first():
+                flash('Esiste già una tipologia con questo nome', 'warning')
+                return render_template('add_leave_type.html')
+            
+            leave_type = LeaveType(
+                name=name,
+                description=description,
+                requires_approval=requires_approval,
+                is_active=is_active
+            )
+            
+            db.session.add(leave_type)
+            db.session.commit()
+            flash(f'Tipologia "{name}" creata con successo', 'success')
             return redirect(url_for('leave_types'))
-        
-        leave_type = LeaveType(
-            name=name,
-            description=description,
-            requires_approval=requires_approval,
-            is_active=is_active
-        )
-        
-        db.session.add(leave_type)
-        db.session.commit()
-        flash(f'Tipologia "{name}" creata con successo', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Errore nella creazione della tipologia', 'danger')
+        except Exception as e:
+            db.session.rollback()
+            flash('Errore nella creazione della tipologia', 'danger')
+            return render_template('add_leave_type.html')
     
-    return redirect(url_for('leave_types'))
+    # GET request - mostra form di creazione
+    return render_template('add_leave_type.html')
 
 @app.route('/leave_types/<int:id>/edit', methods=['GET', 'POST'])
 @login_required

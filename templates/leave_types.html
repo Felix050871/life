@@ -8,9 +8,9 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-list-alt me-2"></i>Gestione Tipologie Permessi</h2>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLeaveTypeModal">
+                <a href="{{ url_for('add_leave_type_page') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>Nuova Tipologia
-                </button>
+                </a>
             </div>
 
             <!-- Tabella tipologie permessi -->
@@ -102,55 +102,7 @@
     </div>
 </div>
 
-<!-- Modal per aggiungere tipologia -->
-<div class="modal fade" id="addLeaveTypeModal" tabindex="-1" aria-labelledby="addLeaveTypeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('add_leave_type') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addLeaveTypeModalLabel">
-                        <i class="fas fa-plus me-2"></i>Nuova Tipologia di Permesso
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="add_name" class="form-label">Nome Tipologia *</label>
-                        <input type="text" class="form-control" id="add_name" name="name" required maxlength="100">
-                    </div>
-                    <div class="mb-3">
-                        <label for="add_description" class="form-label">Descrizione</label>
-                        <textarea class="form-control" id="add_description" name="description" rows="3" maxlength="500"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="add_requires_approval" name="requires_approval" checked>
-                            <label class="form-check-label" for="add_requires_approval">
-                                Richiede Autorizzazione
-                            </label>
-                            <small class="form-text text-muted d-block">
-                                Se deselezionato, le richieste di questo tipo saranno approvate automaticamente
-                            </small>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="add_is_active" name="is_active" checked>
-                            <label class="form-check-label" for="add_is_active">
-                                Tipologia Attiva
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="submit" class="btn btn-primary">Salva Tipologia</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+
 
 
 {% endblock %}

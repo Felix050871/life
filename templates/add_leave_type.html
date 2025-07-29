@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova Tipologia - Workly{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-plus me-2"></i>Nuova Tipologia di Permesso
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nome Tipologia *</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               required maxlength="100" placeholder="Es: Permesso straordinario">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="3" maxlength="500" placeholder="Descrizione dettagliata della tipologia..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="requires_approval" 
+                                   name="requires_approval" checked>
+                            <label class="form-check-label" for="requires_approval">
+                                Richiede Autorizzazione
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                Se deselezionato, le richieste di questo tipo saranno approvate automaticamente
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" 
+                                   name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                Tipologia Attiva
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Crea Tipologia
+                        </button>
+                        <a href="{{ url_for('leave_types') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Annulla
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
