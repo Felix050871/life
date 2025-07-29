@@ -77,8 +77,8 @@
                                             {% if leave_type.leave_requests.count() == 0 %}
                                             <form method="POST" action="{{ url_for('delete_leave_type', id=leave_type.id) }}" 
                                                   class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa tipologia?')">
-                                                {{ csrf_token() }}
-                                                <button type="submit" class="btn btn-outline-danger">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <button type="submit" class="btn btn-outline-danger" title="Elimina tipologia">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -112,7 +112,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('add_leave_type') }}">
-                {{ csrf_token() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-header">
                     <h5 class="modal-title" id="addLeaveTypeModalLabel">
                         <i class="fas fa-plus me-2"></i>Nuova Tipologia di Permesso
@@ -162,7 +162,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" id="editLeaveTypeForm">
-                {{ csrf_token() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-header">
                     <h5 class="modal-title" id="editLeaveTypeModalLabel">
                         <i class="fas fa-edit me-2"></i>Modifica Tipologia di Permesso
