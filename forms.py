@@ -848,6 +848,7 @@ class RoleForm(FlaskForm):
     # Note spese
     can_manage_expense_reports = BooleanField('Gestire Note Spese')
     can_view_expense_reports = BooleanField('Visualizzare Note Spese')
+    can_view_my_expense_reports = BooleanField('Visualizzare Le Mie Note Spese')
     can_approve_expense_reports = BooleanField('Approvare Note Spese')
     can_create_expense_reports = BooleanField('Creare Note Spese')
     
@@ -956,6 +957,7 @@ class RoleForm(FlaskForm):
             # Note spese
             'can_manage_expense_reports': self.can_manage_expense_reports.data,
             'can_view_expense_reports': self.can_view_expense_reports.data,
+            'can_view_my_expense_reports': self.can_view_my_expense_reports.data,
             'can_approve_expense_reports': self.can_approve_expense_reports.data,
             'can_create_expense_reports': self.can_create_expense_reports.data,
             
@@ -1038,6 +1040,7 @@ class RoleForm(FlaskForm):
         # Note spese
         self.can_manage_expense_reports.data = permissions_dict.get('can_manage_expense_reports', False)
         self.can_view_expense_reports.data = permissions_dict.get('can_view_expense_reports', False)
+        self.can_view_my_expense_reports.data = permissions_dict.get('can_view_my_expense_reports', False)
         self.can_approve_expense_reports.data = permissions_dict.get('can_approve_expense_reports', False)
         self.can_create_expense_reports.data = permissions_dict.get('can_create_expense_reports', False)
         

@@ -506,6 +506,10 @@ class User(UserMixin, db.Model):
         """Widget note spese (personali e/o team)"""
         return self.has_permission('can_view_expense_reports_widget')
     
+    def can_view_my_expense_reports_widget(self):
+        """Widget le mie note spese personali"""
+        return self.has_permission('can_view_my_expense_reports')
+    
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""
         return self.sede_obj.name if self.sede_obj else "Nessuna sede"

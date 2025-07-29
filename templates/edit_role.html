@@ -280,6 +280,10 @@
                                             {{ form.can_view_expense_reports.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
+                                            {{ form.can_view_my_expense_reports() }}
+                                            {{ form.can_view_my_expense_reports.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
                                             {{ form.can_approve_expense_reports() }}
                                             {{ form.can_approve_expense_reports.label(class="form-check-label") }}
                                         </div>
@@ -463,6 +467,10 @@
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_expense_reports_widget() }}
                                                     {{ form.can_view_expense_reports_widget.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_view_my_expense_reports() }}
+                                                    {{ form.can_view_my_expense_reports.label(class="form-check-label text-muted small") }} (Widget Le Mie Note Spese)
                                                 </div>
                                             </div>
                                         </div>
