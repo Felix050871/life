@@ -261,6 +261,33 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Note Spese -->
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
+                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
+                                        <h6 class="mb-0 text-white"><i class="fas fa-receipt me-1"></i>Note Spese</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_expense_reports() }}
+                                            {{ form.can_manage_expense_reports.label(class="form-check-label text-white") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_expense_reports() }}
+                                            {{ form.can_view_expense_reports.label(class="form-check-label text-white") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_approve_expense_reports() }}
+                                            {{ form.can_approve_expense_reports.label(class="form-check-label text-white") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_create_expense_reports() }}
+                                            {{ form.can_create_expense_reports.label(class="form-check-label text-white") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="row">
