@@ -521,7 +521,7 @@ footer {
     left: 280px; /* Next to sidebar */
     right: 0;
     height: 50px;
-    z-index: 998; /* Sotto al contenuto per permettere scroll */
+    z-index: 1000; /* Sopra al contenuto per rimanere visibile */
     padding: 0.5rem 0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
@@ -644,15 +644,15 @@ footer {
 
 .content-wrapper {
     margin-left: 280px;
-    margin-top: 110px; /* Space for project title bar + navbar */
+    margin-top: 60px; /* Solo titolo, navbar si sovrappone */
     flex: 1;
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
-    min-height: calc(100vh - 110px);
+    min-height: calc(100vh - 60px);
     background: var(--bs-body-bg);
     position: relative;
-    z-index: 999; /* Sopra alla navbar per permettere scroll */
+    z-index: 1;
 }
 
 .content-wrapper.sidebar-collapsed {
@@ -669,7 +669,7 @@ footer {
 }
 
 .main-content {
-    padding: 0 2rem 2rem 2rem; /* Nessun padding superiore */
+    padding: 50px 2rem 2rem 2rem; /* Padding superiore = altezza navbar */
     flex: 1;
     background: var(--bs-body-bg);
     position: relative;
@@ -692,12 +692,12 @@ footer {
     
     .content-wrapper {
         margin-left: 0;
-        margin-top: 110px; /* Keep both bars space */
+        margin-top: 60px; /* Solo titolo */
     }
     
     .content-wrapper.sidebar-collapsed {
         margin-left: 0;
-        margin-top: 110px; /* Keep both bars space */
+        margin-top: 60px; /* Solo titolo */
     }
 }
 
