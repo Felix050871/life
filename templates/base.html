@@ -346,8 +346,8 @@
                                 <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown">
                                     <i class="fas fa-envelope me-1"></i>Messaggi
                                     {% if unread_messages_count > 0 %}
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                        {{ unread_messages_count }}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.2em 0.4em; margin-left: -0.5rem;">
+                                        {{ unread_messages_count if unread_messages_count < 100 else '99+' }}
                                         <span class="visually-hidden">messaggi non letti</span>
                                     </span>
                                     {% endif %}
