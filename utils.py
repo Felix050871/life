@@ -54,16 +54,20 @@ def generate_static_qr_codes():
     Restituisce True se la generazione è riuscita, False altrimenti
     """
     try:
-        # Crea la cartella se non esiste
-        qr_dir = os.path.join('static', 'qr')
+        # Ottieni configurazione per paths
+        from config import get_config
+        config = get_config()
+        qr_dir = config.STATIC_QR_DIR
         os.makedirs(qr_dir, exist_ok=True)
         
         # Ottieni l'URL base dal contesto della richiesta corrente
         if request:
             base_url = request.url_root.rstrip('/')
         else:
-            # Fallback se non c'è contesto di richiesta
-            base_url = 'http://localhost:5000'
+            # Fallback se non c'è contesto di richiesta - usa configurazione centralizzata
+            from config import get_config
+            config = get_config()
+            base_url = config.BASE_URL
         
         # URL per entrata e uscita
         urls = {
@@ -71,13 +75,17 @@ def generate_static_qr_codes():
             'uscita': f"{base_url}/attendance/quick/uscita"
         }
         
+        # Ottieni configurazione QR centralizzata
+        from config import get_config
+        config = get_config()
+        
         # Genera i QR code
         for action, url in urls.items():
             qr = qrcode.QRCode(
-                version=1,
+                version=config.QR_CODE_VERSION,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
+                box_size=config.QR_CODE_BOX_SIZE,
+                border=config.QR_CODE_BORDER,
             )
             qr.add_data(url)
             qr.make(fit=True)
@@ -100,7 +108,9 @@ def qr_codes_exist():
     """
     Verifica se i QR code statici esistono
     """
-    qr_dir = os.path.join('static', 'qr')
+    from config import get_config
+    config = get_config()
+    qr_dir = config.STATIC_QR_DIR
     entrata_path = os.path.join(qr_dir, 'qr_entrata.png')
     uscita_path = os.path.join(qr_dir, 'qr_uscita.png')
     
@@ -788,8 +798,10 @@ def get_team_statistics(start_date=None, end_date=None):
         end_date = date.today()
     
     try:
-        # Active users (excluding Admin and Ente)
-        active_users = User.query.filter(User.active.is_(True)).filter(~User.role.in_(['Admin', 'Ente'])).count()
+        # Active users (excluding protected/administrative roles)
+        from config import get_config
+        config = get_config()
+        active_users = User.query.filter(User.active.is_(True)).filter(~User.role.in_(config.EXCLUDED_ROLES_FROM_REPORTS)).count()
         
         # Simplified total hours calculation - just count events
         from models import AttendanceEvent

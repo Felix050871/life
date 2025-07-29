@@ -130,14 +130,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 // Usa API esterna
                 const qrUrl = '{{ qr_url }}';
-                const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`;
+                const qrApiUrl = `{{ config.QR_CODE_API_URL }}?size={{ config.QR_CODE_SIZE }}&data=${encodeURIComponent(qrUrl)}`;
                 qrCodeElement.src = qrApiUrl;
             }
         })
         .catch(() => {
             // Fallback su API esterna
             const qrUrl = '{{ qr_url }}';
-            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`;
+            const qrApiUrl = `{{ config.QR_CODE_API_URL }}?size={{ config.QR_CODE_SIZE }}&data=${encodeURIComponent(qrUrl)}`;
             qrCodeElement.src = qrApiUrl;
         });
     

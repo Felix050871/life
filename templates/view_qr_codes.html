@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function generateQRCodeImage(url, elementId) {
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+    const qrApiUrl = `{{ config.QR_CODE_API_URL }}?size={{ config.QR_CODE_SIZE }}&data=${encodeURIComponent(url)}`;
     const img = document.getElementById(elementId);
     
     img.onload = function() {

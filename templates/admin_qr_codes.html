@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         Object.keys(qrUrls).forEach(action => {
             const element = document.getElementById('qrcode-' + action);
-            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrls[action])}`;
+            const qrApiUrl = `{{ config.QR_CODE_API_URL }}?size={{ config.QR_CODE_SIZE }}&data=${encodeURIComponent(qrUrls[action])}`;
             
             element.src = qrApiUrl;
             element.onerror = function() {

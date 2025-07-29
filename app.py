@@ -6,9 +6,14 @@ from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+from config import get_config
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Get configuration based on environment
+config_class = get_config()
+
+# Configure logging with centralized configuration
+logging.basicConfig(level=getattr(logging, config_class.LOG_LEVEL), 
+                   format=config_class.LOG_FORMAT)
 
 class Base(DeclarativeBase):
     pass
@@ -17,17 +22,18 @@ db = SQLAlchemy(model_class=Base)
 
 # Create the app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET")
+app.config.from_object(config_class)
+app.secret_key = app.config['SECRET_KEY']
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
 
-# Configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+# Configure the database using centralized configuration
+app.config["SQLALCHEMY_DATABASE_URI"] = app.config['DATABASE_URL']
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
+    "pool_recycle": app.config['DATABASE_POOL_RECYCLE'],
+    "pool_pre_ping": app.config['DATABASE_POOL_PRE_PING'],
 }
 
 # Initialize the app with the extension

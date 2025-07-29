@@ -10,10 +10,17 @@ import json
 from defusedcsv import csv
 from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
+from config import get_config
 from sqlalchemy.orm import joinedload
 from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day
 from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions
+
+# Inject configuration into all templates
+@app.context_processor
+def inject_config():
+    config = get_config()
+    return dict(config=config)
 
 # Define require_login decorator
 def require_login(f):
