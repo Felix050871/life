@@ -64,16 +64,11 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" class="btn btn-outline-primary" 
-                                                    data-id="{{ leave_type.id }}"
-                                                    data-name="{{ leave_type.name }}"
-                                                    data-description="{{ leave_type.description or '' }}"
-                                                    data-requires-approval="{{ leave_type.requires_approval }}"
-                                                    data-is-active="{{ leave_type.is_active }}"
-                                                    onclick="editLeaveTypeFromData(this)"
-                                                    data-bs-toggle="modal" data-bs-target="#editLeaveTypeModal">
+                                            <a href="{{ url_for('edit_leave_type_page', id=leave_type.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Modifica tipologia">
                                                 <i class="fas fa-edit"></i>
-                                            </button>
+                                            </a>
                                             {% if leave_type.leave_requests.count() == 0 %}
                                             <form method="POST" action="{{ url_for('delete_leave_type', id=leave_type.id) }}" 
                                                   class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa tipologia?')">
@@ -157,77 +152,5 @@
     </div>
 </div>
 
-<!-- Modal per modificare tipologia -->
-<div class="modal fade" id="editLeaveTypeModal" tabindex="-1" role="dialog" aria-labelledby="editLeaveTypeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content bg-dark border-secondary">
-            <form method="POST" id="editLeaveTypeForm">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-light" id="editLeaveTypeModalLabel">
-                        <i class="fas fa-edit me-2"></i>Modifica Tipologia di Permesso
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="edit_name" class="form-label text-light">Nome Tipologia *</label>
-                        <input type="text" class="form-control bg-dark text-light border-secondary" id="edit_name" name="name" required maxlength="100">
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit_description" class="form-label text-light">Descrizione</label>
-                        <textarea class="form-control bg-dark text-light border-secondary" id="edit_description" name="description" rows="3" maxlength="500"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="edit_requires_approval" name="requires_approval">
-                            <label class="form-check-label text-light" for="edit_requires_approval">
-                                Richiede Autorizzazione
-                            </label>
-                            <small class="form-text text-muted d-block">
-                                Se deselezionato, le richieste di questo tipo saranno approvate automaticamente
-                            </small>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
-                            <label class="form-check-label text-light" for="edit_is_active">
-                                Tipologia Attiva
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="submit" class="btn btn-primary">Salva Modifiche</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
-<script>
-function editLeaveTypeFromData(button) {
-    const id = button.getAttribute('data-id');
-    const name = button.getAttribute('data-name');
-    const description = button.getAttribute('data-description') || '';
-    const requiresApproval = button.getAttribute('data-requires-approval');
-    const isActive = button.getAttribute('data-is-active');
-    
-    console.log('Edit data:', {id, name, description, requiresApproval, isActive});
-    
-    // Gestione corretta dei valori booleani da Python
-    const requiresApprovalBool = requiresApproval === 'True' || requiresApproval === 'true';
-    const isActiveBool = isActive === 'True' || isActive === 'true';
-    
-    document.getElementById('editLeaveTypeForm').action = `/leave_types/${id}/edit`;
-    document.getElementById('edit_name').value = name;
-    document.getElementById('edit_description').value = description;
-    document.getElementById('edit_requires_approval').checked = requiresApprovalBool;
-    document.getElementById('edit_is_active').checked = isActiveBool;
-    
-    console.log('Modal populated successfully');
-}
-</script>
 {% endblock %}

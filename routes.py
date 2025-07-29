@@ -2159,37 +2159,41 @@ def add_leave_type():
     
     return redirect(url_for('leave_types'))
 
-@app.route('/leave_types/<int:id>/edit', methods=['POST'])
+@app.route('/leave_types/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
-def edit_leave_type(id):
+def edit_leave_type_page(id):
     if not current_user.can_manage_leave_types():
         flash('Non hai i permessi per modificare tipologie di permesso', 'danger')
         return redirect(url_for('leave_types'))
     
     leave_type = LeaveType.query.get_or_404(id)
     
-    try:
-        name = request.form.get('name')
-        
-        # Verifica duplicati (escludendo il record corrente)
-        existing = LeaveType.query.filter(LeaveType.name == name, LeaveType.id != id).first()
-        if existing:
-            flash('Esiste già una tipologia con questo nome', 'warning')
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            
+            # Verifica duplicati (escludendo il record corrente)
+            existing = LeaveType.query.filter(LeaveType.name == name, LeaveType.id != id).first()
+            if existing:
+                flash('Esiste già una tipologia con questo nome', 'warning')
+                return render_template('edit_leave_type.html', leave_type=leave_type)
+            
+            leave_type.name = name
+            leave_type.description = request.form.get('description')
+            leave_type.requires_approval = 'requires_approval' in request.form
+            leave_type.is_active = 'is_active' in request.form
+            leave_type.updated_at = italian_now()
+            
+            db.session.commit()
+            flash(f'Tipologia "{name}" aggiornata con successo', 'success')
             return redirect(url_for('leave_types'))
-        
-        leave_type.name = name
-        leave_type.description = request.form.get('description')
-        leave_type.requires_approval = 'requires_approval' in request.form
-        leave_type.is_active = 'is_active' in request.form
-        leave_type.updated_at = italian_now()
-        
-        db.session.commit()
-        flash(f'Tipologia "{name}" aggiornata con successo', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Errore nell\'aggiornamento della tipologia', 'danger')
+        except Exception as e:
+            db.session.rollback()
+            flash('Errore nell\'aggiornamento della tipologia', 'danger')
+            return render_template('edit_leave_type.html', leave_type=leave_type)
     
-    return redirect(url_for('leave_types'))
+    # GET request - mostra form di modifica
+    return render_template('edit_leave_type.html', leave_type=leave_type)
 
 @app.route('/leave_types/<int:id>/delete', methods=['POST'])
 @login_required
