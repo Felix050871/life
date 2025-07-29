@@ -2254,15 +2254,16 @@ def leave_requests():
                          can_approve=can_approve,
                          today=date.today())
 
-@app.route('/create_leave_request', methods=['POST'])
+@app.route('/create_leave_request', methods=['GET', 'POST'])
 @login_required
-def create_leave_request():
+def create_leave_request_page():
     if not current_user.can_request_leave():
         flash('Non hai i permessi per richiedere ferie/permessi', 'danger')
         return redirect(url_for('leave_requests'))
     
     form = LeaveRequestForm()
-    if form.validate_on_submit():
+    
+    if request.method == 'POST' and form.validate_on_submit():
         # Ottieni la tipologia di permesso selezionata
         leave_type = LeaveType.query.get(form.leave_type_id.data)
         if not leave_type or not leave_type.is_active:
@@ -2344,12 +2345,17 @@ def create_leave_request():
             else:
                 duration = leave_request.get_duration_display()
                 flash(f'Richiesta di {leave_type.name.lower()} inviata con successo ({duration})', 'success')
+            return redirect(url_for('leave_requests'))
     else:
+        # Errori di validazione
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f'{field}: {error}', 'danger')
     
-    return redirect(url_for('leave_requests'))
+    # GET request - mostra form di creazione
+    return render_template('create_leave_request.html', 
+                         form=form,
+                         today=date.today())
 
 @app.route('/approve_leave/<int:request_id>')
 @login_required

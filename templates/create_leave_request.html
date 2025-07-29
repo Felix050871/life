@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova Richiesta - Workly{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-plus me-2"></i>Nuova Richiesta Ferie/Permesso
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Tipo di richiesta -->
+                    <div class="mb-3">
+                        {{ form.leave_type_id.label(class="form-label") }}
+                        {{ form.leave_type_id(class="form-select", id="leave_type") }}
+                        {% if form.leave_type_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.leave_type_id.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Campi per date -->
+                    <div id="date_fields" class="row" style="display: none;">
+                        <div class="col-md-6 mb-3">
+                            {{ form.start_date.label(class="form-label") }}
+                            {{ form.start_date(class="form-control", min=today.strftime('%Y-%m-%d')) }}
+                            {% if form.start_date.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.start_date.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3" id="end_date_field">
+                            {{ form.end_date.label(class="form-label") }}
+                            {{ form.end_date(class="form-control", min=today.strftime('%Y-%m-%d')) }}
+                            {% if form.end_date.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.end_date.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Campi per orari (solo per permessi) -->
+                    <div id="time_fields" class="row" style="display: none;">
+                        <div class="col-md-6 mb-3">
+                            {{ form.start_time.label(class="form-label") }}
+                            {{ form.start_time(class="form-control") }}
+                            {% if form.start_time.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.start_time.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.end_time.label(class="form-label") }}
+                            {{ form.end_time(class="form-control") }}
+                            {% if form.end_time.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.end_time.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Campo motivo -->
+                    <div id="reason_field" class="mb-3" style="display: none;">
+                        {{ form.reason.label(class="form-label") }}
+                        {{ form.reason(class="form-control", rows="3", placeholder="Motivo della richiesta (opzionale)") }}
+                        {% if form.reason.errors %}
+                            <div class="text-danger">
+                                {% for error in form.reason.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Pulsanti -->
+                    <div id="submit_button" class="d-flex gap-2" style="display: none;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i>Invia Richiesta
+                        </button>
+                        <a href="{{ url_for('leave_requests') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Annulla
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const leaveTypeSelect = document.getElementById('leave_type');
+    const dateFields = document.getElementById('date_fields');
+    const timeFields = document.getElementById('time_fields');
+    const reasonField = document.getElementById('reason_field');
+    const submitButton = document.getElementById('submit_button');
+    const endDateField = document.getElementById('end_date_field');
+    
+    leaveTypeSelect.addEventListener('change', function() {
+        const selectedValue = this.value;
+        
+        if (selectedValue && selectedValue !== '') {
+            // Mostra tutti i campi di base
+            dateFields.style.display = 'flex';
+            reasonField.style.display = 'block';
+            submitButton.style.display = 'flex';
+            
+            // Logica specifica per tipo di permesso
+            const selectedText = this.options[this.selectedIndex].text.toLowerCase();
+            
+            if (selectedText.includes('permesso') && !selectedText.includes('ferie')) {
+                // Per i permessi, mostra anche i campi orario e nascondi data fine
+                timeFields.style.display = 'flex';
+                endDateField.style.display = 'none';
+            } else {
+                // Per ferie e malattie, nascondi orari e mostra data fine
+                timeFields.style.display = 'none';
+                endDateField.style.display = 'block';
+            }
+        } else {
+            // Nascondi tutti i campi se nessuna selezione
+            dateFields.style.display = 'none';
+            timeFields.style.display = 'none';
+            reasonField.style.display = 'none';
+            submitButton.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}
