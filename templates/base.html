@@ -245,7 +245,7 @@
                 {% endif %}
 
                 <!-- FERIE/PERMESSI/MALATTIE - Solo se ha almeno un permesso leave -->
-                {% set has_leave_permission = current_user.can_manage_leave() or current_user.can_view_leave() or current_user.can_request_leave() %}
+                {% set has_leave_permission = current_user.can_manage_leave() or current_user.can_view_leave() or current_user.can_request_leave() or current_user.can_manage_leave_types() %}
                 {% if has_leave_permission %}
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
