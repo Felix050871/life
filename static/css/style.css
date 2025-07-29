@@ -140,13 +140,27 @@ body {
     color: white;
 }
 
-/* MAIN CONTENT - Light Theme */
-.main-content {
+/* CONTENT WRAPPER */
+.content-wrapper {
     flex: 1;
     margin-left: 280px;
-    padding: 2rem;
-    background-color: #f8f9fa;
     min-height: calc(100vh - 60px);
+    background-color: #f8f9fa;
+}
+
+/* MAIN CONTENT - Light Theme */
+.main-content {
+    padding: 1rem;
+    min-height: calc(100vh - 60px);
+}
+
+.main-content .container-fluid {
+    padding: 0;
+}
+
+.content-area {
+    margin-top: 0;
+    padding-top: 0;
 }
 
 /* Enhanced card styling - Light Theme */
@@ -293,6 +307,13 @@ body {
     color: #6c757d !important;
 }
 
+/* Footer styling */
+.app-footer {
+    background-color: white;
+    border-top: 1px solid #dee2e6;
+    margin-top: auto;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .sidebar {
@@ -307,8 +328,11 @@ body {
         display: block;
     }
     
-    .main-content {
+    .content-wrapper {
         margin-left: 0;
+    }
+    
+    .main-content {
         padding: 1rem;
     }
     
