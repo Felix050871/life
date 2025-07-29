@@ -259,6 +259,11 @@
                             <i class="fas fa-plus"></i>Richiedi Ferie/Permessi
                         </a></li>
                         {% endif %}
+                        {% if current_user.can_manage_leave_types() %}
+                        <li><a href="{{ url_for('leave_types') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-list-alt"></i>Gestire Tipologie
+                        </a></li>
+                        {% endif %}
                         {% if current_user.can_manage_leave() %}
                         <li><a href="{{ url_for('leave_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-check"></i>Approva Richieste

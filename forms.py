@@ -133,13 +133,27 @@ class AttendanceForm(FlaskForm):
     notes = TextAreaField('Note')
     submit = SubmitField('Registra')
 
+class LeaveTypeForm(FlaskForm):
+    """Form per la gestione delle tipologie di permesso"""
+    name = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Descrizione', validators=[Length(max=500)])
+    requires_approval = BooleanField('Richiede Autorizzazione', default=True)
+    is_active = BooleanField('Attiva', default=True)
+    submit = SubmitField('Salva Tipologia')
+    
+    def __init__(self, original_name=None, *args, **kwargs):
+        super(LeaveTypeForm, self).__init__(*args, **kwargs)
+        self.original_name = original_name
+    
+    def validate_name(self, name):
+        if name.data != self.original_name:
+            from models import LeaveType
+            existing_type = LeaveType.query.filter_by(name=name.data).first()
+            if existing_type:
+                raise ValidationError('Esiste già una tipologia con questo nome.')
+
 class LeaveRequestForm(FlaskForm):
-    leave_type = SelectField('Tipo Richiesta', choices=[
-        ('', 'Seleziona tipo richiesta'),
-        ('Ferie', 'Ferie'),
-        ('Permesso', 'Permesso'),
-        ('Malattia', 'Malattia')
-    ], validators=[DataRequired()])
+    leave_type_id = SelectField('Tipo Richiesta', coerce=int, validators=[DataRequired()])
     
     # Campi per date (sempre presenti)
     start_date = DateField('Data Inizio', validators=[DataRequired()])
@@ -152,6 +166,16 @@ class LeaveRequestForm(FlaskForm):
     reason = TextAreaField('Motivo', validators=[Length(max=500)])
     submit = SubmitField('Invia Richiesta')
     
+    def __init__(self, *args, **kwargs):
+        super(LeaveRequestForm, self).__init__(*args, **kwargs)
+        # Popola le scelte delle tipologie di permesso attive
+        try:
+            from models import LeaveType
+            active_types = LeaveType.query.filter_by(is_active=True).order_by(LeaveType.name).all()
+            self.leave_type_id.choices = [('', 'Seleziona tipo richiesta')] + [(t.id, t.name) for t in active_types]
+        except:
+            self.leave_type_id.choices = [('', 'Seleziona tipo richiesta')]
+    
     def validate_start_date(self, field):
         from datetime import date
         if field.data and field.data < date.today():
@@ -161,53 +185,21 @@ class LeaveRequestForm(FlaskForm):
         from datetime import date
         if end_date.data and end_date.data < date.today():
             raise ValidationError('La data di fine non può essere nel passato.')
-        if self.leave_type.data in ['Ferie', 'Malattia'] and end_date.data and end_date.data < self.start_date.data:
+        if end_date.data and end_date.data < self.start_date.data:
             raise ValidationError('La data di fine deve essere successiva alla data di inizio.')
     
     def validate_start_time(self, start_time):
-        if self.leave_type.data == 'Permesso' and not start_time.data:
-            raise ValidationError('L\'ora di inizio è richiesta per i permessi.')
-        
-        # Validazione per orari retroattivi nella stessa giornata
-        if (self.leave_type.data == 'Permesso' and start_time.data and 
-            self.start_date.data):
-            from datetime import date, datetime
-            from zoneinfo import ZoneInfo
-            italy_tz = ZoneInfo('Europe/Rome')
-            now = datetime.now(italy_tz)
-            
-            # Se è oggi, controlla che l'orario non sia nel passato
-            if self.start_date.data == date.today():
-                # Combina data e ora per il confronto con timezone
-                start_datetime = datetime.combine(self.start_date.data, start_time.data)
-                start_datetime = start_datetime.replace(tzinfo=italy_tz)
-                if start_datetime < now:
-                    raise ValidationError('Non puoi richiedere un permesso per un orario già trascorso.')
-    
-    def validate_end_time(self, end_time):
-        if self.leave_type.data == 'Permesso':
-            if not end_time.data:
-                raise ValidationError('L\'ora di fine è richiesta per i permessi.')
-            if self.start_time.data and end_time.data <= self.start_time.data:
+        # Validazione orari se necessaria per la tipologia selezionata
+        if self.start_time.data and self.end_time.data:
+            if self.end_time.data <= self.start_time.data:
                 raise ValidationError('L\'ora di fine deve essere successiva all\'ora di inizio.')
-            
-            # Validazione per orari retroattivi nella stessa giornata
-            if (end_time.data and self.start_date.data):
-                from datetime import date, datetime
-                from zoneinfo import ZoneInfo
-                italy_tz = ZoneInfo('Europe/Rome')
-                now = datetime.now(italy_tz)
                 
-                # Se è oggi, controlla che l'orario di fine non sia nel passato
-                if self.start_date.data == date.today():
-                    end_datetime = datetime.combine(self.start_date.data, end_time.data)
-                    end_datetime = end_datetime.replace(tzinfo=italy_tz)
-                    if end_datetime < now:
-                        raise ValidationError('Non puoi richiedere un permesso che termina in un orario già trascorso.')
-    
-    def validate_end_date_for_permission(self, end_date):
-        if self.leave_type.data == 'Permesso' and end_date.data and end_date.data != self.start_date.data:
-            raise ValidationError('I permessi devono essere richiesti per una sola giornata.')
+    def get_selected_leave_type(self):
+        """Restituisce l'oggetto LeaveType selezionato"""
+        if self.leave_type_id.data:
+            from models import LeaveType
+            return LeaveType.query.get(self.leave_type_id.data)
+        return None
 
 class ShiftForm(FlaskForm):
     user_id = SelectField('Utente', coerce=int, validators=[DataRequired()])

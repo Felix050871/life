@@ -11,8 +11,8 @@ from defusedcsv import csv
 from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from sqlalchemy.orm import joinedload
-from models import User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm
+from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions
 
 # Define require_login decorator
@@ -2114,6 +2114,108 @@ def view_template(template_id):
                          can_manage=can_manage,
                          view_mode=view_mode)
 
+# Route per gestione tipologie permessi
+@app.route('/leave_types')
+@login_required
+def leave_types():
+    if not current_user.can_manage_leave_types():
+        flash('Non hai i permessi per gestire le tipologie di permesso', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    leave_types = LeaveType.query.order_by(LeaveType.name).all()
+    return render_template('leave_types.html', leave_types=leave_types)
+
+@app.route('/leave_types/add', methods=['POST'])
+@login_required
+def add_leave_type():
+    if not current_user.can_manage_leave_types():
+        flash('Non hai i permessi per aggiungere tipologie di permesso', 'danger')
+        return redirect(url_for('leave_types'))
+    
+    try:
+        name = request.form.get('name')
+        description = request.form.get('description')
+        requires_approval = 'requires_approval' in request.form
+        is_active = 'is_active' in request.form
+        
+        # Verifica duplicati
+        if LeaveType.query.filter_by(name=name).first():
+            flash('Esiste già una tipologia con questo nome', 'warning')
+            return redirect(url_for('leave_types'))
+        
+        leave_type = LeaveType(
+            name=name,
+            description=description,
+            requires_approval=requires_approval,
+            is_active=is_active
+        )
+        
+        db.session.add(leave_type)
+        db.session.commit()
+        flash(f'Tipologia "{name}" creata con successo', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore nella creazione della tipologia', 'danger')
+    
+    return redirect(url_for('leave_types'))
+
+@app.route('/leave_types/<int:id>/edit', methods=['POST'])
+@login_required
+def edit_leave_type(id):
+    if not current_user.can_manage_leave_types():
+        flash('Non hai i permessi per modificare tipologie di permesso', 'danger')
+        return redirect(url_for('leave_types'))
+    
+    leave_type = LeaveType.query.get_or_404(id)
+    
+    try:
+        name = request.form.get('name')
+        
+        # Verifica duplicati (escludendo il record corrente)
+        existing = LeaveType.query.filter(LeaveType.name == name, LeaveType.id != id).first()
+        if existing:
+            flash('Esiste già una tipologia con questo nome', 'warning')
+            return redirect(url_for('leave_types'))
+        
+        leave_type.name = name
+        leave_type.description = request.form.get('description')
+        leave_type.requires_approval = 'requires_approval' in request.form
+        leave_type.is_active = 'is_active' in request.form
+        leave_type.updated_at = italian_now()
+        
+        db.session.commit()
+        flash(f'Tipologia "{name}" aggiornata con successo', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore nell\'aggiornamento della tipologia', 'danger')
+    
+    return redirect(url_for('leave_types'))
+
+@app.route('/leave_types/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_leave_type(id):
+    if not current_user.can_manage_leave_types():
+        flash('Non hai i permessi per eliminare tipologie di permesso', 'danger')
+        return redirect(url_for('leave_types'))
+    
+    leave_type = LeaveType.query.get_or_404(id)
+    
+    # Verifica che non ci siano richieste associate
+    if leave_type.leave_requests.count() > 0:
+        flash('Non è possibile eliminare una tipologia con richieste associate', 'warning')
+        return redirect(url_for('leave_types'))
+    
+    try:
+        name = leave_type.name
+        db.session.delete(leave_type)
+        db.session.commit()
+        flash(f'Tipologia "{name}" eliminata con successo', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore nell\'eliminazione della tipologia', 'danger')
+    
+    return redirect(url_for('leave_types'))
+
 @app.route('/leave_requests')
 @login_required
 def leave_requests():
@@ -2153,32 +2255,37 @@ def create_leave_request():
     
     form = LeaveRequestForm()
     if form.validate_on_submit():
-        # Per permessi, imposta automaticamente end_date = start_date
-        end_date = form.start_date.data if form.leave_type.data == 'Permesso' else form.end_date.data
+        # Ottieni la tipologia di permesso selezionata
+        leave_type = LeaveType.query.get(form.leave_type_id.data)
+        if not leave_type or not leave_type.is_active:
+            flash('Tipologia di permesso non valida', 'danger')
+            return redirect(url_for('leave_requests'))
+        
+        # Determina la data di fine in base al tipo
+        end_date = form.end_date.data if form.end_date.data else form.start_date.data
         
         # Check for overlapping requests
         overlapping = None
         
-        if form.leave_type.data == 'Permesso':
-            # Per i permessi, controlla sovrapposizione oraria nella stessa giornata
+        # Controlla sovrapposizioni esistenti
+        if form.start_time.data and form.end_time.data:
+            # Per permessi orari, controlla sovrapposizione oraria nella stessa giornata
             existing_requests = LeaveRequest.query.filter(
                 LeaveRequest.user_id == current_user.id,
                 LeaveRequest.status.in_(['Pending', 'Approved']),
                 LeaveRequest.start_date == form.start_date.data,  # Stessa giornata
-                LeaveRequest.leave_type == 'Permesso'  # Solo altri permessi
+                LeaveRequest.start_time.isnot(None),  # Solo permessi orari
+                LeaveRequest.end_time.isnot(None)
             ).all()
             
             # Controlla sovrapposizione oraria
             for existing in existing_requests:
-                if (existing.start_time and existing.end_time and 
-                    form.start_time.data and form.end_time.data):
-                    # Verifica sovrapposizione oraria
-                    if not (form.end_time.data <= existing.start_time or 
-                           form.start_time.data >= existing.end_time):
-                        overlapping = existing
-                        break
+                if not (form.end_time.data <= existing.start_time or 
+                       form.start_time.data >= existing.end_time):
+                    overlapping = existing
+                    break
         else:
-            # Per ferie e malattie, mantieni il controllo di date come prima
+            # Per ferie e permessi giornalieri, controllo sovrapposizioni per date
             overlapping = LeaveRequest.query.filter(
                 LeaveRequest.user_id == current_user.id,
                 LeaveRequest.status.in_(['Pending', 'Approved']),
@@ -2187,29 +2294,30 @@ def create_leave_request():
             ).first()
         
         if overlapping:
-            if form.leave_type.data == 'Permesso':
+            if overlapping.start_time and overlapping.end_time:
                 flash(f'Hai già un permesso sovrapposto dalle {overlapping.start_time.strftime("%H:%M")} alle {overlapping.end_time.strftime("%H:%M")} in questa giornata', 'warning')
             else:
                 flash('Hai già una richiesta sovrapposta in questo periodo', 'warning')
         else:
             leave_request = LeaveRequest(
                 user_id=current_user.id,
+                leave_type_id=leave_type.id,
                 start_date=form.start_date.data,
                 end_date=end_date,
-                leave_type=form.leave_type.data,
-                reason=form.reason.data
+                reason=form.reason.data,
+                leave_type=leave_type.name  # Manteniamo per retrocompatibilità
             )
             
-            # Auto-approve sick leave and manager requests, set others as pending
-            if form.leave_type.data == 'Malattia' or current_user.can_approve_leave():
+            # Auto-approva se la tipologia non richiede autorizzazione o se l'utente può auto-approvarsi
+            if not leave_type.requires_approval or current_user.can_approve_leave():
                 leave_request.status = 'Approved'
                 leave_request.approved_by = current_user.id  # Self-approved
-                leave_request.approved_at = datetime.now()
+                leave_request.approved_at = italian_now()
             else:
                 leave_request.status = 'Pending'
             
-            # Aggiungi orari per i permessi
-            if form.leave_type.data == 'Permesso':
+            # Aggiungi orari se specificati
+            if form.start_time.data and form.end_time.data:
                 leave_request.start_time = form.start_time.data
                 leave_request.end_time = form.end_time.data
             
@@ -2221,15 +2329,13 @@ def create_leave_request():
             send_leave_request_message(leave_request, 'created', current_user)
             
             # Messaggio di successo personalizzato
-            if form.leave_type.data == 'Malattia':
-                flash('Richiesta di malattia approvata automaticamente', 'success')
+            if not leave_type.requires_approval:
+                flash(f'Richiesta di {leave_type.name.lower()} approvata automaticamente', 'success')
             elif current_user.can_approve_leave():
-                flash(f'Richiesta di {form.leave_type.data.lower()} approvata automaticamente', 'success')
-            elif form.leave_type.data == 'Permesso':
-                duration = leave_request.get_duration_display()
-                flash(f'Richiesta di permesso inviata con successo ({duration})', 'success')
+                flash(f'Richiesta di {leave_type.name.lower()} approvata automaticamente', 'success')
             else:
-                flash('Richiesta inviata con successo', 'success')
+                duration = leave_request.get_duration_display()
+                flash(f'Richiesta di {leave_type.name.lower()} inviata con successo ({duration})', 'success')
     else:
         for field, errors in form.errors.items():
             for error in errors:

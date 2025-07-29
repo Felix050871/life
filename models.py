@@ -84,6 +84,7 @@ class UserRole(db.Model):
             
             # Gestione ferie/permessi
             'can_manage_leave': 'Gestire Ferie/Permessi',
+            'can_manage_leave_types': 'Gestire Tipologie Permessi',
             'can_approve_leave': 'Approvare Ferie/Permessi',
             'can_request_leave': 'Richiedere Ferie/Permessi',
             'can_view_leave': 'Visualizzare Ferie/Permessi',
@@ -285,6 +286,10 @@ class User(UserMixin, db.Model):
     
     def can_approve_leave(self):
         return self.has_permission('can_approve_leave')
+    
+    def can_manage_leave_types(self):
+        """Può gestire le tipologie di permesso"""
+        return self.has_permission('can_manage_leave_types')
     
     def can_request_leave(self):
         return self.has_permission('can_request_leave')
@@ -995,12 +1000,43 @@ class AttendanceEvent(db.Model):
         
         return issues
 
+class LeaveType(db.Model):
+    """Modello per la gestione delle tipologie di permesso configurabili dall'amministratore"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    requires_approval = db.Column(db.Boolean, default=True)  # Se richiede autorizzazione
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relazione con le richieste di permesso
+    leave_requests = db.relationship('LeaveRequest', backref='leave_type_ref', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<LeaveType {self.name}>'
+    
+    @classmethod
+    def get_default_types(cls):
+        """Restituisce le tipologie di permesso predefinite per l'inizializzazione"""
+        return [
+            {'name': 'Ferie', 'description': 'Giorni di ferie annuali', 'requires_approval': True},
+            {'name': 'Permesso retribuito', 'description': 'Permesso retribuito per necessità personali', 'requires_approval': True},
+            {'name': 'Permesso non retribuito', 'description': 'Permesso non retribuito per necessità personali', 'requires_approval': True},
+            {'name': 'Permesso per malattia del dipendente', 'description': 'Assenza per malattia del dipendente', 'requires_approval': False},
+            {'name': 'Permesso per assistenza a familiari (104)', 'description': 'Permesso ex legge 104 per assistenza familiari', 'requires_approval': True},
+            {'name': 'Permesso per studio', 'description': 'Permesso per motivi di studio', 'requires_approval': True},
+            {'name': 'Permesso per partecipazione a corsi di formazione', 'description': 'Permesso per formazione volontaria', 'requires_approval': True},
+            {'name': 'Permesso per partecipazione a corsi di formazione obbligatori', 'description': 'Permesso per formazione obbligatoria aziendale', 'requires_approval': False}
+        ]
+
 class LeaveRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    leave_type_id = db.Column(db.Integer, db.ForeignKey('leave_type.id'), nullable=True)  # Riferimento alla tipologia (nullable per migrazione)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
-    leave_type = db.Column(db.String(50), nullable=False)  # Ferie, Permesso, Malattia
+    leave_type = db.Column(db.String(50), nullable=True)  # Manteniamo per retrocompatibilità, sarà deprecato
     reason = db.Column(db.Text)
     status = db.Column(db.String(20), default='Pending')  # Pending, Approved, Rejected
     approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -1036,6 +1072,20 @@ class LeaveRequest(db.Model):
             else:
                 days = (self.end_date - self.start_date).days + 1
                 return f"{days} giorni"
+    
+    def get_leave_type_name(self):
+        """Restituisce il nome della tipologia di permesso"""
+        if self.leave_type_ref:
+            return self.leave_type_ref.name
+        # Fallback per retrocompatibilità
+        return self.leave_type or 'Tipo non specificato'
+    
+    def requires_approval(self):
+        """Verifica se il permesso richiede approvazione"""
+        if self.leave_type_ref:
+            return self.leave_type_ref.requires_approval
+        # Fallback: malattia non richiede approvazione, resto sì
+        return self.leave_type != 'Malattia' if self.leave_type else True
 
 class Shift(db.Model):
     id = db.Column(db.Integer, primary_key=True)
