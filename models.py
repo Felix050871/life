@@ -123,6 +123,7 @@ class UserRole(db.Model):
             'can_view_my_leave_requests_widget': 'Widget Le Mie Richieste',
             'can_view_my_shifts_widget': 'Widget I Miei Turni', 
             'can_view_my_reperibilita_widget': 'Widget Le Mie Reperibilità',
+            'can_view_expense_reports_widget': 'Widget Note Spese',
             'can_view_leave_requests_widget': 'Widget Ferie/Permessi',
             'can_view_daily_attendance_widget': 'Widget Presenze per Sede',
             'can_view_shifts_coverage_widget': 'Widget Coperture Turni',
@@ -495,6 +496,10 @@ class User(UserMixin, db.Model):
     def can_view_my_reperibilita_widget(self):
         """Widget reperibilità personali"""
         return self.has_permission('can_view_my_reperibilita_widget')
+    
+    def can_view_expense_reports_widget(self):
+        """Widget note spese (personali e/o team)"""
+        return self.has_permission('can_view_expense_reports_widget')
     
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""

@@ -592,6 +592,96 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Widget: Note Spese -->
+    {% if current_user.can_view_expense_reports_widget() and expense_reports_data %}
+    <div class="col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-receipt me-2"></i>Note Spese</h5>
+                <small class="text-muted">Panoramica note spese</small>
+            </div>
+            <div class="card-body">
+                <!-- Statistiche principali -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h3 mb-0 text-primary">{{ expense_reports_data.total_expenses }}</div>
+                            <small class="text-muted">Totale Note</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h3 mb-0 text-warning">{{ expense_reports_data.pending_expenses }}</div>
+                            <small class="text-muted">In Attesa</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h3 mb-0 text-success">{{ expense_reports_data.approved_expenses }}</div>
+                            <small class="text-muted">Approvate</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h3 mb-0 text-info">€{{ "%.2f"|format(expense_reports_data.monthly_total) }}</div>
+                            <small class="text-muted">Totale Mese</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note spese recenti -->
+                {% if expense_reports_data.recent_expenses %}
+                <h6 class="border-bottom pb-2 mb-3">Note Spese Recenti</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() %}
+                                <th>Dipendente</th>
+                                {% endif %}
+                                <th>Descrizione</th>
+                                <th>Importo</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expense_reports_data.recent_expenses %}
+                            <tr>
+                                <td>{{ expense.expense_date.strftime('%d/%m') }}</td>
+                                {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() %}
+                                <td>{{ expense.employee.get_full_name() }}</td>
+                                {% endif %}
+                                <td>
+                                    {{ expense.description[:30] }}{% if expense.description|length > 30 %}...{% endif %}
+                                </td>
+                                <td>€{{ "%.2f"|format(expense.amount) }}</td>
+                                <td>
+                                    {% if expense.status == 'pending' %}
+                                        <span class="badge bg-warning">In Attesa</span>
+                                    {% elif expense.status == 'approved' %}
+                                        <span class="badge bg-success">Approvata</span>
+                                    {% elif expense.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rifiutata</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{{ url_for('expense_reports') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list me-1"></i>Visualizza Tutte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
@@ -770,6 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
     </div>
+
 </div>
 
 {% endblock %}

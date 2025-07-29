@@ -862,6 +862,7 @@ class RoleForm(FlaskForm):
     can_view_my_shifts_widget = BooleanField('Widget I Miei Turni')
     can_view_reperibilita_widget = BooleanField('Widget Reperibilità')
     can_view_my_reperibilita_widget = BooleanField('Widget Le Mie Reperibilità')
+    can_view_expense_reports_widget = BooleanField('Widget Note Spese')
     
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
@@ -968,7 +969,8 @@ class RoleForm(FlaskForm):
             'can_view_shifts_coverage_widget': self.can_view_shifts_coverage_widget.data,
             'can_view_my_shifts_widget': self.can_view_my_shifts_widget.data,
             'can_view_reperibilita_widget': self.can_view_reperibilita_widget.data,
-            'can_view_my_reperibilita_widget': self.can_view_my_reperibilita_widget.data
+            'can_view_my_reperibilita_widget': self.can_view_my_reperibilita_widget.data,
+            'can_view_expense_reports_widget': self.can_view_expense_reports_widget.data
         }
     
     def populate_permissions(self, permissions_dict):
@@ -1050,6 +1052,7 @@ class RoleForm(FlaskForm):
         self.can_view_my_shifts_widget.data = permissions_dict.get('can_view_my_shifts_widget', False)
         self.can_view_reperibilita_widget.data = permissions_dict.get('can_view_reperibilita_widget', False)
         self.can_view_my_reperibilita_widget.data = permissions_dict.get('can_view_my_reperibilita_widget', False)
+        self.can_view_expense_reports_widget.data = permissions_dict.get('can_view_expense_reports_widget', False)
 
 
 # Form del pacchetto presidio integrati

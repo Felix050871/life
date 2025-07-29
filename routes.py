@@ -285,6 +285,55 @@ def dashboard():
     
     if current_user.can_view_my_reperibilita_widget():
         my_reperibilita = ReperibilitaShift.query.filter_by(user_id=current_user.id).order_by(ReperibilitaShift.date.desc()).limit(5).all()
+    
+    # Widget Note Spese
+    expense_reports_data = None
+    if current_user.can_view_expense_reports_widget():
+        from models import ExpenseReport
+        
+        # Query base per le note spese
+        expense_query = ExpenseReport.query
+        
+        # Se l'utente non può vedere tutte le note spese, mostra solo le sue
+        if not (current_user.can_view_expense_reports() or current_user.can_approve_expense_reports()):
+            expense_query = expense_query.filter(ExpenseReport.employee_id == current_user.id)
+        elif not current_user.all_sedi and current_user.sede_id:
+            # Filtra per sede se non ha accesso globale
+            sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+            sede_user_ids = [u.id for u in sede_users]
+            expense_query = expense_query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        
+        # Statistiche note spese
+        total_expenses = expense_query.count()
+        pending_expenses = expense_query.filter(ExpenseReport.status == 'pending').count()
+        approved_expenses = expense_query.filter(ExpenseReport.status == 'approved').count()
+        rejected_expenses = expense_query.filter(ExpenseReport.status == 'rejected').count()
+        
+        # Note spese recenti (ultime 5)
+        recent_expenses = expense_query.order_by(ExpenseReport.expense_date.desc()).limit(5).all()
+        
+        # Total importo note spese approvate del mese corrente
+        current_month_start = date.today().replace(day=1)
+        monthly_total_query = db.session.query(db.func.sum(ExpenseReport.amount)).filter(
+            ExpenseReport.status == 'approved',
+            ExpenseReport.expense_date >= current_month_start
+        )
+        
+        if not current_user.all_sedi and current_user.sede_id:
+            sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+            sede_user_ids = [u.id for u in sede_users]
+            monthly_total_query = monthly_total_query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        
+        monthly_total = monthly_total_query.scalar() or 0
+        
+        expense_reports_data = {
+            'total_expenses': total_expenses,
+            'pending_expenses': pending_expenses,
+            'approved_expenses': approved_expenses,
+            'rejected_expenses': rejected_expenses,
+            'recent_expenses': recent_expenses,
+            'monthly_total': monthly_total
+        }
 
     return render_template('dashboard.html', 
                          stats=stats, 
@@ -309,6 +358,7 @@ def dashboard():
                          my_leave_requests=my_leave_requests,
                          my_shifts=my_shifts,
                          my_reperibilita=my_reperibilita,
+                         expense_reports_data=expense_reports_data,
                          format_hours=format_hours)
 
 @app.route('/dashboard_team')
