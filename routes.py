@@ -2370,6 +2370,11 @@ def approve_leave(request_id):
     leave_request.approved_at = datetime.utcnow()
     
     db.session.commit()
+    
+    # Invia messaggio di approvazione all'utente richiedente
+    from utils import send_leave_request_message
+    send_leave_request_message(leave_request, 'approved', current_user)
+    
     flash('Richiesta approvata', 'success')
     return redirect(url_for('leave_requests'))
 
@@ -2386,6 +2391,11 @@ def reject_leave(request_id):
     leave_request.approved_at = datetime.utcnow()
     
     db.session.commit()
+    
+    # Invia messaggio di rifiuto all'utente richiedente
+    from utils import send_leave_request_message
+    send_leave_request_message(leave_request, 'rejected', current_user)
+    
     flash('Richiesta rifiutata', 'warning')
     return redirect(url_for('leave_requests'))
 

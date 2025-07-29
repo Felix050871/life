@@ -1278,7 +1278,7 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
     
     logger = logging.getLogger(__name__)
     
-    # Determina i destinatari in base ai ruoli e alla sede
+    # Determina i destinatari in base al tipo di azione
     recipients = []
     
     if action_type in ['created', 'cancelled']:
@@ -1297,11 +1297,15 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
                     logger.info(f"Added approver {user.username} (sede: {user.sede_id}, all_sedi: {user.all_sedi}) for leave request from {leave_request.user.username}")
         
         logger.info(f"Found {len(recipients)} eligible approvers for leave request from user {leave_request.user.username} (sede: {leave_request.user.sede_id})")
-    
-    # Rimuovi duplicati e l'utente richiedente se presente
-    recipients = list(set(recipients))
-    if leave_request.user in recipients:
-        recipients.remove(leave_request.user)
+        
+        # Rimuovi duplicati e l'utente richiedente se presente
+        recipients = list(set(recipients))
+        if leave_request.user in recipients:
+            recipients.remove(leave_request.user)
+            
+    elif action_type in ['approved', 'rejected']:
+        # Per approvazioni e rifiuti, invia messaggio solo all'utente richiedente
+        recipients = [leave_request.user]
     
     # Determina titolo e messaggio in base all'azione
     if action_type == 'created':
@@ -1315,6 +1319,20 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
         title = f"Richiesta {leave_request.leave_type.lower()} cancellata"
         message = f"{leave_request.user.get_full_name()} ha cancellato la sua richiesta di {leave_request.leave_type.lower()} ({leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')})"
         msg_type = 'warning'
+    
+    elif action_type == 'approved':
+        title = f"Richiesta {leave_request.leave_type.lower()} approvata"
+        message = f"La tua richiesta di {leave_request.leave_type.lower()} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')} è stata approvata"
+        if sender_user:
+            message += f" da {sender_user.get_full_name()}"
+        msg_type = 'success'
+    
+    elif action_type == 'rejected':
+        title = f"Richiesta {leave_request.leave_type.lower()} rifiutata"
+        message = f"La tua richiesta di {leave_request.leave_type.lower()} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')} è stata rifiutata"
+        if sender_user:
+            message += f" da {sender_user.get_full_name()}"
+        msg_type = 'danger'
     
     # Crea i messaggi per tutti i destinatari
     for recipient in recipients:
