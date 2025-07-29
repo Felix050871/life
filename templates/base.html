@@ -278,6 +278,35 @@
                 </li>
                 {% endif %}
 
+                <!-- NOTE SPESE - Solo se ha almeno un permesso note spese -->
+                {% set has_expense_permission = current_user.can_access_expense_reports_menu() %}
+                {% if has_expense_permission %}
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-receipt"></i>
+                        <span>Note Spese</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        {% if current_user.can_create_expense_reports() %}
+                        <li><a href="{{ url_for('create_expense_report') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-plus"></i>Crea Nota Spese
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() or current_user.can_create_expense_reports() %}
+                        <li><a href="{{ url_for('expense_reports') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-list"></i>Visualizza Note Spese
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_manage_expense_reports() %}
+                        <li><a href="{{ url_for('expense_categories') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-tags"></i>Gestisci Categorie
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
                 <!-- FESTIVITÀ - Solo se ha almeno un permesso festività -->
                 {% set has_holidays_permission = current_user.can_manage_holidays() or current_user.can_view_holidays() %}
                 {% if has_holidays_permission %}
@@ -313,34 +342,7 @@
                 </li>
                 {% endif %}
 
-                <!-- NOTE SPESE - Solo se ha almeno un permesso note spese -->
-                {% set has_expense_permission = current_user.can_access_expense_reports_menu() %}
-                {% if has_expense_permission %}
-                <li class="sidebar-nav-item">
-                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-receipt"></i>
-                        <span>Note Spese</span>
-                        <i class="fas fa-chevron-right dropdown-arrow"></i>
-                    </a>
-                    <ul class="sidebar-submenu">
-                        {% if current_user.can_create_expense_reports() %}
-                        <li><a href="{{ url_for('create_expense_report') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-plus"></i>Crea Nota Spese
-                        </a></li>
-                        {% endif %}
-                        {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() or current_user.can_create_expense_reports() %}
-                        <li><a href="{{ url_for('expense_reports') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-list"></i>Visualizza Note Spese
-                        </a></li>
-                        {% endif %}
-                        {% if current_user.can_manage_expense_reports() %}
-                        <li><a href="{{ url_for('expense_categories') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-tags"></i>Gestisci Categorie
-                        </a></li>
-                        {% endif %}
-                    </ul>
-                </li>
-                {% endif %}
+
 
                 <!-- STATISTICHE/REPORT - Solo se ha almeno un permesso report -->
                 {% set has_reports_permission = current_user.can_view_reports() %}
