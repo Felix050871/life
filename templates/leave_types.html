@@ -65,7 +65,12 @@
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
                                             <button type="button" class="btn btn-outline-primary" 
-                                                    onclick="editLeaveType('{{ leave_type.id }}', '{{ leave_type.name }}', '{{ leave_type.description or '' }}', {{ leave_type.requires_approval|lower }}, {{ leave_type.is_active|lower }})"
+                                                    data-id="{{ leave_type.id }}"
+                                                    data-name="{{ leave_type.name }}"
+                                                    data-description="{{ leave_type.description or '' }}"
+                                                    data-requires-approval="{{ leave_type.requires_approval }}"
+                                                    data-is-active="{{ leave_type.is_active }}"
+                                                    onclick="editLeaveTypeFromData(this)"
                                                     data-bs-toggle="modal" data-bs-target="#editLeaveTypeModal">
                                                 <i class="fas fa-edit"></i>
                                             </button>
@@ -203,7 +208,13 @@
 </div>
 
 <script>
-function editLeaveType(id, name, description, requiresApproval, isActive) {
+function editLeaveTypeFromData(button) {
+    const id = button.getAttribute('data-id');
+    const name = button.getAttribute('data-name');
+    const description = button.getAttribute('data-description') || '';
+    const requiresApproval = button.getAttribute('data-requires-approval') === 'True';
+    const isActive = button.getAttribute('data-is-active') === 'True';
+    
     document.getElementById('editLeaveTypeForm').action = `/leave_types/${id}/edit`;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_description').value = description;
