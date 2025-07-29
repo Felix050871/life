@@ -344,6 +344,19 @@ class User(UserMixin, db.Model):
     def can_view_messages(self):
         return self.has_permission('can_view_messages')
     
+    # === NOTE SPESE ===
+    def can_manage_expense_reports(self):
+        return self.has_permission('can_manage_expense_reports')
+    
+    def can_view_expense_reports(self):
+        return self.has_permission('can_view_expense_reports')
+    
+    def can_approve_expense_reports(self):
+        return self.has_permission('can_approve_expense_reports')
+    
+    def can_create_expense_reports(self):
+        return self.has_permission('can_create_expense_reports')
+    
     def can_access_turni(self):
         """Verifica se l'utente può accedere alla gestione turni"""
         return self.has_permission('can_manage_shifts') or self.has_permission('can_view_shifts')
