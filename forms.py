@@ -618,8 +618,8 @@ class ExpenseApprovalForm(FlaskForm):
 
 class ExpenseFilterForm(FlaskForm):
     """Form per filtrare le note spese"""
-    employee_id = SelectField('Dipendente', coerce=int, validators=[Optional()])
-    category_id = SelectField('Categoria', coerce=int, validators=[Optional()])
+    employee_id = SelectField('Dipendente', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()])
+    category_id = SelectField('Categoria', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()])
     status = SelectField('Stato', choices=[
         ('', 'Tutti'),
         ('pending', 'In Attesa'),
