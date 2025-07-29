@@ -452,9 +452,9 @@ footer {
     background: var(--bs-dark);
     border-right: 1px solid var(--bs-border-color);
     position: fixed;
-    top: 110px; /* Space for project title bar + navbar */
+    top: 90px; /* Space for title (40px) + navbar (50px) */
     left: 0;
-    height: calc(100vh - 110px);
+    height: calc(100vh - 90px);
     overflow-y: auto;
     z-index: 900; /* Sotto alla navbar */
     transition: all 0.3s ease;
@@ -497,19 +497,23 @@ footer {
 .project-title-bar {
     background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
     color: white;
-    padding: 0.75rem 0;
+    padding: 0.5rem 0; /* Ridotto padding per eliminare spazio */
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1001;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    height: 40px; /* Altezza fissa ridotta */
 }
 
 .project-title-bar h5 {
     font-weight: 600;
     letter-spacing: 0.5px;
     text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    margin: 0; /* Rimuove margine per ridurre altezza */
+    font-size: 1.1rem; /* Leggermente più piccolo */
+    line-height: 1.2; /* Ridotta altezza riga */
 }
 
 /* Top Navigation Bar */
@@ -517,7 +521,7 @@ footer {
     background: var(--bs-dark);
     border-bottom: 1px solid var(--bs-border-color);
     position: fixed;
-    top: 60px; /* Below project title */
+    top: 40px; /* Subito sotto il titolo ridotto */
     left: 0; /* A tutta larghezza */
     right: 0;
     width: 100%;
@@ -645,12 +649,12 @@ footer {
 
 .content-wrapper {
     margin-left: 280px;
-    margin-top: 110px; /* Titolo + navbar */
+    margin-top: 90px; /* Titolo (40px) + navbar (50px) */
     flex: 1;
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
-    min-height: calc(100vh - 110px);
+    min-height: calc(100vh - 90px);
     background: var(--bs-body-bg);
     position: relative;
     z-index: 1;
@@ -693,12 +697,12 @@ footer {
     
     .content-wrapper {
         margin-left: 0;
-        margin-top: 110px; /* Titolo + navbar */
+        margin-top: 90px; /* Titolo ridotto + navbar */
     }
     
     .content-wrapper.sidebar-collapsed {
         margin-left: 0;
-        margin-top: 110px; /* Titolo + navbar */
+        margin-top: 90px; /* Titolo ridotto + navbar */
     }
 }
 
