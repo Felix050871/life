@@ -532,6 +532,49 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField('Imposta Nuova Password')
 
 
+class SendMessageForm(FlaskForm):
+    """Form per inviare messaggi interni"""
+    recipient_id = SelectField('Destinatario', coerce=int, validators=[DataRequired()])
+    title = StringField('Oggetto', validators=[DataRequired(), Length(max=200)])
+    message = TextAreaField('Messaggio', validators=[DataRequired()])
+    message_type = SelectField('Tipo Messaggio', 
+                              choices=[
+                                  ('info', 'Informativo'),
+                                  ('success', 'Successo'),
+                                  ('warning', 'Attenzione'),
+                                  ('danger', 'Urgente')
+                              ],
+                              default='info',
+                              validators=[DataRequired()])
+    submit = SubmitField('Invia Messaggio')
+    
+    def __init__(self, current_user=None, *args, **kwargs):
+        super(SendMessageForm, self).__init__(*args, **kwargs)
+        
+        if current_user:
+            # Seleziona utenti disponibili per l'invio messaggi
+            # Stessa sede o accesso globale
+            users_query = User.query.filter(
+                User.active == True,
+                User.id != current_user.id  # Escludi se stesso
+            )
+            
+            if not current_user.all_sedi and current_user.sede_id:
+                # Utente sede-specifico: solo utenti della stessa sede
+                users_query = users_query.filter(User.sede_id == current_user.sede_id)
+            
+            # Se l'utente ha accesso a tutte le sedi, può inviare a tutti
+            available_users = users_query.order_by(User.first_name, User.last_name).all()
+            
+            self.recipient_id.choices = [
+                (user.id, f"{user.get_full_name()} ({user.role})")
+                for user in available_users
+            ]
+            
+            if not self.recipient_id.choices:
+                self.recipient_id.choices = [(0, 'Nessun utente disponibile')]
+
+
 class SedeForm(FlaskForm):
     """Form per gestire le sedi aziendali"""
     name = StringField('Nome Sede', validators=[DataRequired(), Length(max=100)])

@@ -6308,6 +6308,54 @@ def mark_message_read(message_id):
     
     return redirect(url_for('internal_messages'))
 
+@app.route('/send_message', methods=['GET', 'POST'])
+@login_required
+def send_message():
+    """Invia un nuovo messaggio interno"""
+    if not current_user.can_send_messages():
+        flash('Non hai i permessi per inviare messaggi', 'danger')
+        return redirect(url_for('internal_messages'))
+    
+    from forms import SendMessageForm
+    from models import InternalMessage
+    
+    form = SendMessageForm(current_user=current_user)
+    
+    if form.validate_on_submit():
+        # Verifica che il destinatario sia valido e accessibile
+        recipient = User.query.get(form.recipient_id.data)
+        if not recipient or not recipient.active:
+            flash('Destinatario non valido', 'danger')
+            return render_template('send_message.html', form=form)
+        
+        # Verifica permessi sede
+        can_send = False
+        if current_user.all_sedi:
+            can_send = True
+        elif current_user.sede_id and recipient.sede_id == current_user.sede_id:
+            can_send = True
+        
+        if not can_send:
+            flash('Non puoi inviare messaggi a questo utente', 'danger')
+            return render_template('send_message.html', form=form)
+        
+        # Crea e salva il messaggio
+        message = InternalMessage(
+            recipient_id=form.recipient_id.data,
+            sender_id=current_user.id,
+            title=form.title.data,
+            message=form.message.data,
+            message_type=form.message_type.data
+        )
+        
+        db.session.add(message)
+        db.session.commit()
+        
+        flash(f'Messaggio inviato con successo a {recipient.get_full_name()}', 'success')
+        return redirect(url_for('internal_messages'))
+    
+    return render_template('send_message.html', form=form)
+
 
 # =====================================
 # NUOVO SISTEMA TURNI - 3 FUNZIONALITÀ
