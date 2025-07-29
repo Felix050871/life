@@ -624,12 +624,8 @@
                     </div>
                     <div class="col-md-3">
                         <div class="text-center">
-                            {% if expense_reports_data.monthly_total is defined %}
-                            <div style="font-size: 2rem; font-weight: bold; color: #ffffff; background-color: #dc3545; padding: 8px; border-radius: 4px; margin-bottom: 0; display: inline-block; border: 2px solid #ffffff;">€{{ "%.2f"|format(expense_reports_data.monthly_total) }}</div>
-                            {% else %}
-                            <div style="font-size: 2rem; font-weight: bold; color: #ffffff; background-color: #dc3545; padding: 8px; border-radius: 4px; margin-bottom: 0; display: inline-block; border: 2px solid #ffffff;">€0.00</div>
-                            {% endif %}
-                            <small class="text-muted">Totale Mese</small>
+                            <div class="h3 mb-0" style="color: #212529 !important; font-weight: bold;">€{{ "%.2f"|format(expense_reports_data.monthly_total if expense_reports_data.monthly_total else 0) }}</div>
+                            <small style="color: #6c757d !important;">Totale Mese</small>
                         </div>
                     </div>
                 </div>
