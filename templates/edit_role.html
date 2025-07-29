@@ -2,7 +2,7 @@
 {% block title %}Modifica Ruolo - Workly{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid mt-4 pb-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="card">
@@ -71,14 +71,14 @@
                         <div class="row">
                             <!-- Dashboard e Sistema Base -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-home me-1"></i>Dashboard</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-primary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-home me-1"></i>Dashboard</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_access_dashboard() }}
-                                            {{ form.can_access_dashboard.label(class="form-check-label text-white") }}
+                                            {{ form.can_access_dashboard.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -86,18 +86,18 @@
 
                             <!-- Gestione Ruoli -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-user-shield me-1"></i>Ruoli</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-user-shield me-1"></i>Ruoli</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_roles() }}
-                                            {{ form.can_manage_roles.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_roles.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_roles() }}
-                                            {{ form.can_view_roles.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_roles.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -105,18 +105,18 @@
 
                             <!-- Gestione Utenti -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-users me-1"></i>Utenti</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-users me-1"></i>Utenti</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_users() }}
-                                            {{ form.can_manage_users.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_users.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_users() }}
-                                            {{ form.can_view_users.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_users.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -124,18 +124,18 @@
 
                             <!-- Gestione Sedi -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-building me-1"></i>Sedi</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-building me-1"></i>Sedi</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_sedi() }}
-                                            {{ form.can_manage_sedi.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_sedi.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_sedi() }}
-                                            {{ form.can_view_sedi.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_sedi.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -143,18 +143,18 @@
 
                             <!-- Gestione Orari -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-clock me-1"></i>Orari</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-clock me-1"></i>Orari</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_schedules() }}
-                                            {{ form.can_manage_schedules.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_schedules.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_schedules() }}
-                                            {{ form.can_view_schedules.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_schedules.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -162,18 +162,18 @@
 
                             <!-- Gestione Turni -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-calendar-alt me-1"></i>Turni</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-calendar-alt me-1"></i>Turni</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_shifts() }}
-                                            {{ form.can_manage_shifts.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_shifts.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_shifts() }}
-                                            {{ form.can_view_shifts.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_shifts.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -183,26 +183,26 @@
                         <div class="row">
                             <!-- Reperibilità -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-phone me-1"></i>Reperibilità</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-phone me-1"></i>Reperibilità</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_reperibilita() }}
-                                            {{ form.can_manage_reperibilita.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_reperibilita.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_reperibilita() }}
-                                            {{ form.can_view_reperibilita.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_reperibilita.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_coverage() }}
-                                            {{ form.can_manage_coverage.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_coverage.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_coverage() }}
-                                            {{ form.can_view_coverage.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_coverage.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -210,26 +210,26 @@
 
                             <!-- Gestione Presenze -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-user-check me-1"></i>Presenze</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-user-check me-1"></i>Presenze</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_attendance() }}
-                                            {{ form.can_manage_attendance.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_attendance.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_attendance() }}
-                                            {{ form.can_view_attendance.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_attendance.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_access_attendance() }}
-                                            {{ form.can_access_attendance.label(class="form-check-label text-white") }}
+                                            {{ form.can_access_attendance.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_sede_attendance() }}
-                                            {{ form.can_view_sede_attendance.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_sede_attendance.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -237,26 +237,26 @@
 
                             <!-- Ferie/Permessi -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-umbrella-beach me-1"></i>Ferie</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-umbrella-beach me-1"></i>Ferie</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_leave() }}
-                                            {{ form.can_manage_leave.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_leave.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_approve_leave() }}
-                                            {{ form.can_approve_leave.label(class="form-check-label text-white") }}
+                                            {{ form.can_approve_leave.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_request_leave() }}
-                                            {{ form.can_request_leave.label(class="form-check-label text-white") }}
+                                            {{ form.can_request_leave.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_leave() }}
-                                            {{ form.can_view_leave.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_leave.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -266,26 +266,26 @@
                         <div class="row">
                             <!-- Note Spese -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-receipt me-1"></i>Note Spese</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-receipt me-1"></i>Note Spese</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_expense_reports() }}
-                                            {{ form.can_manage_expense_reports.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_expense_reports.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_expense_reports() }}
-                                            {{ form.can_view_expense_reports.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_expense_reports.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_approve_expense_reports() }}
-                                            {{ form.can_approve_expense_reports.label(class="form-check-label text-white") }}
+                                            {{ form.can_approve_expense_reports.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_create_expense_reports() }}
-                                            {{ form.can_create_expense_reports.label(class="form-check-label text-white") }}
+                                            {{ form.can_create_expense_reports.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -293,18 +293,18 @@
 
                             <!-- Interventi -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-tools me-1"></i>Interventi</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-tools me-1"></i>Interventi</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_interventions() }}
-                                            {{ form.can_manage_interventions.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_interventions.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_interventions() }}
-                                            {{ form.can_view_interventions.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_interventions.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -312,18 +312,18 @@
 
                             <!-- Festività -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-calendar-day me-1"></i>Festività</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-calendar-day me-1"></i>Festività</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_holidays() }}
-                                            {{ form.can_manage_holidays.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_holidays.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_holidays() }}
-                                            {{ form.can_view_holidays.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_holidays.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -333,18 +333,18 @@
                         <div class="row">
                             <!-- Gestione QR -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-qrcode me-1"></i>QR Code</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-qrcode me-1"></i>QR Code</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_qr() }}
-                                            {{ form.can_manage_qr.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_qr.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_qr() }}
-                                            {{ form.can_view_qr.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_qr.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -352,22 +352,22 @@
 
                             <!-- Report e Statistiche -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-chart-bar me-1"></i>Report</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-chart-bar me-1"></i>Report</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_view_reports() }}
-                                            {{ form.can_view_reports.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_reports.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_reports() }}
-                                            {{ form.can_manage_reports.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_reports.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_statistics() }}
-                                            {{ form.can_view_statistics.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_statistics.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -375,18 +375,18 @@
 
                             <!-- Messaggi -->
                             <div class="col-lg-4 col-md-6 mb-3">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-envelope me-1"></i>Messaggi</h6>
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0 "><i class="fas fa-envelope me-1"></i>Messaggi</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_send_messages() }}
-                                            {{ form.can_send_messages.label(class="form-check-label text-white") }}
+                                            {{ form.can_send_messages.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_messages() }}
-                                            {{ form.can_view_messages.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_messages.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -400,69 +400,69 @@
                             <div class="col-12 mb-3">
                                 <div class="card bg-primary text-white h-100" style="background-color: #0d6efd !important;">
                                     <div class="card-header py-2" style="background-color: #0056b3 !important;">
-                                        <h6 class="mb-0 text-white"><i class="fas fa-tachometer-alt me-1"></i>Widget Dashboard</h6>
+                                        <h6 class="mb-0 "><i class="fas fa-tachometer-alt me-1"></i>Widget Dashboard</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <h6 class="text-white"><i class="fas fa-chart-bar me-1"></i>Widget Statistiche</h6>
+                                                <h6 class=""><i class="fas fa-chart-bar me-1"></i>Widget Statistiche</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_team_stats_widget() }}
-                                                    {{ form.can_view_team_stats_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_team_stats_widget.label(class="form-check-label") }}
                                                 </div>
                                                 
-                                                <h6 class="text-white"><i class="fas fa-users me-1"></i>Widget Gestione</h6>
+                                                <h6 class=""><i class="fas fa-users me-1"></i>Widget Gestione</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_team_management_widget() }}
-                                                    {{ form.can_view_team_management_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_team_management_widget.label(class="form-check-label") }}
                                                 </div>
                                                 
                                                 <h6 class="text-white mt-3"><i class="fas fa-clock me-1"></i>Widget Presenze</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_my_attendance_widget() }}
-                                                    {{ form.can_view_my_attendance_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_my_attendance_widget.label(class="form-check-label") }}
                                                 </div>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_daily_attendance_widget() }}
-                                                    {{ form.can_view_daily_attendance_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_daily_attendance_widget.label(class="form-check-label") }}
                                                 </div>
                                             </div>
                                             
                                             <div class="col-md-6">
-                                                <h6 class="text-white"><i class="fas fa-umbrella-beach me-1"></i>Widget Ferie/Permessi</h6>
+                                                <h6 class=""><i class="fas fa-umbrella-beach me-1"></i>Widget Ferie/Permessi</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_leave_requests_widget() }}
-                                                    {{ form.can_view_leave_requests_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_leave_requests_widget.label(class="form-check-label") }}
                                                 </div>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_my_leave_requests_widget() }}
-                                                    {{ form.can_view_my_leave_requests_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_my_leave_requests_widget.label(class="form-check-label") }}
                                                 </div>
                                                 
                                                 <h6 class="text-white mt-3"><i class="fas fa-calendar-check me-1"></i>Widget Turni</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_shifts_coverage_widget() }}
-                                                    {{ form.can_view_shifts_coverage_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_shifts_coverage_widget.label(class="form-check-label") }}
                                                 </div>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_my_shifts_widget() }}
-                                                    {{ form.can_view_my_shifts_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_my_shifts_widget.label(class="form-check-label") }}
                                                 </div>
                                                 
                                                 <h6 class="text-white mt-3"><i class="fas fa-phone-alt me-1"></i>Widget Reperibilità</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_reperibilita_widget() }}
-                                                    {{ form.can_view_reperibilita_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_reperibilita_widget.label(class="form-check-label") }}
                                                 </div>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_my_reperibilita_widget() }}
-                                                    {{ form.can_view_my_reperibilita_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_my_reperibilita_widget.label(class="form-check-label") }}
                                                 </div>
                                                 
                                                 <h6 class="text-white mt-3"><i class="fas fa-receipt me-1"></i>Widget Note Spese</h6>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_expense_reports_widget() }}
-                                                    {{ form.can_view_expense_reports_widget.label(class="form-check-label text-white") }}
+                                                    {{ form.can_view_expense_reports_widget.label(class="form-check-label") }}
                                                 </div>
                                             </div>
                                         </div>
