@@ -534,7 +534,7 @@ class ResetPasswordForm(FlaskForm):
 
 class SendMessageForm(FlaskForm):
     """Form per inviare messaggi interni"""
-    recipient_id = SelectField('Destinatario', coerce=int, validators=[DataRequired()])
+    recipient_ids = SelectMultipleField('Destinatari', coerce=int, validators=[DataRequired()])
     title = StringField('Oggetto', validators=[DataRequired(), Length(max=200)])
     message = TextAreaField('Messaggio', validators=[DataRequired()])
     message_type = SelectField('Tipo Messaggio', 
@@ -566,13 +566,13 @@ class SendMessageForm(FlaskForm):
             # Se l'utente ha accesso a tutte le sedi, può inviare a tutti
             available_users = users_query.order_by(User.first_name, User.last_name).all()
             
-            self.recipient_id.choices = [
+            self.recipient_ids.choices = [
                 (user.id, f"{user.get_full_name()} ({user.role})")
                 for user in available_users
             ]
             
-            if not self.recipient_id.choices:
-                self.recipient_id.choices = [(0, 'Nessun utente disponibile')]
+            if not self.recipient_ids.choices:
+                self.recipient_ids.choices = [(0, 'Nessun utente disponibile')]
 
 
 class SedeForm(FlaskForm):

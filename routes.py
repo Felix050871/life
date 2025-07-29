@@ -6322,36 +6322,55 @@ def send_message():
     form = SendMessageForm(current_user=current_user)
     
     if form.validate_on_submit():
-        # Verifica che il destinatario sia valido e accessibile
-        recipient = User.query.get(form.recipient_id.data)
-        if not recipient or not recipient.active:
-            flash('Destinatario non valido', 'danger')
+        # Verifica che tutti i destinatari siano validi e accessibili
+        recipients = User.query.filter(
+            User.id.in_(form.recipient_ids.data),
+            User.active == True
+        ).all()
+        
+        if not recipients:
+            flash('Nessun destinatario valido selezionato', 'danger')
             return render_template('send_message.html', form=form)
         
-        # Verifica permessi sede
-        can_send = False
-        if current_user.all_sedi:
-            can_send = True
-        elif current_user.sede_id and recipient.sede_id == current_user.sede_id:
-            can_send = True
+        # Verifica permessi sede per tutti i destinatari
+        valid_recipients = []
+        for recipient in recipients:
+            can_send = False
+            if current_user.all_sedi:
+                can_send = True
+            elif current_user.sede_id and recipient.sede_id == current_user.sede_id:
+                can_send = True
+            
+            if can_send:
+                valid_recipients.append(recipient)
         
-        if not can_send:
-            flash('Non puoi inviare messaggi a questo utente', 'danger')
+        if not valid_recipients:
+            flash('Non hai i permessi per inviare messaggi ai destinatari selezionati', 'danger')
             return render_template('send_message.html', form=form)
         
-        # Crea e salva il messaggio
-        message = InternalMessage(
-            recipient_id=form.recipient_id.data,
-            sender_id=current_user.id,
-            title=form.title.data,
-            message=form.message.data,
-            message_type=form.message_type.data
-        )
+        # Crea e salva un messaggio per ogni destinatario valido
+        messages_sent = 0
+        for recipient in valid_recipients:
+            message = InternalMessage(
+                recipient_id=recipient.id,
+                sender_id=current_user.id,
+                title=form.title.data,
+                message=form.message.data,
+                message_type=form.message_type.data
+            )
+            db.session.add(message)
+            messages_sent += 1
         
-        db.session.add(message)
         db.session.commit()
         
-        flash(f'Messaggio inviato con successo a {recipient.get_full_name()}', 'success')
+        if messages_sent == 1:
+            flash(f'Messaggio inviato con successo a {valid_recipients[0].get_full_name()}', 'success')
+        else:
+            recipient_names = ', '.join([r.get_full_name() for r in valid_recipients[:3]])
+            if len(valid_recipients) > 3:
+                recipient_names += f' e altri {len(valid_recipients) - 3}'
+            flash(f'Messaggio inviato con successo a {messages_sent} destinatari: {recipient_names}', 'success')
+        
         return redirect(url_for('internal_messages'))
     
     return render_template('send_message.html', form=form)
