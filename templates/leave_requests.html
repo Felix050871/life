@@ -28,11 +28,11 @@
                     
                     <!-- Tipo di richiesta -->
                     <div class="mb-3">
-                        {{ form.leave_type.label(class="form-label") }}
-                        {{ form.leave_type(class="form-select", id="leave_type") }}
-                        {% if form.leave_type.errors %}
+                        {{ form.leave_type_id.label(class="form-label") }}
+                        {{ form.leave_type_id(class="form-select", id="leave_type") }}
+                        {% if form.leave_type_id.errors %}
                             <div class="text-danger">
-                                {% for error in form.leave_type.errors %}
+                                {% for error in form.leave_type_id.errors %}
                                     <small>{{ error }}</small>
                                 {% endfor %}
                             </div>
