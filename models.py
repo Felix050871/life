@@ -115,6 +115,7 @@ class UserRole(db.Model):
             'can_view_expense_reports': 'Visualizzare Note Spese',
             'can_approve_expense_reports': 'Approvare Note Spese',
             'can_create_expense_reports': 'Creare Note Spese',
+            'can_view_my_expense_reports': 'Visualizzare Le Mie Note Spese',
             
             # Dashboard Widget Permissions
             'can_view_team_stats_widget': 'Widget Statistiche Team',
@@ -358,6 +359,9 @@ class User(UserMixin, db.Model):
     def can_create_expense_reports(self):
         return self.has_permission('can_create_expense_reports')
     
+    def can_view_my_expense_reports(self):
+        return self.has_permission('can_view_my_expense_reports')
+    
     def can_access_turni(self):
         """Verifica se l'utente può accedere alla gestione turni"""
         return self.has_permission('can_manage_shifts') or self.has_permission('can_view_shifts')
@@ -454,7 +458,8 @@ class User(UserMixin, db.Model):
     def can_access_expense_reports_menu(self):
         """Accesso al menu Note Spese"""
         return (self.can_manage_expense_reports() or self.can_view_expense_reports() or 
-                self.can_approve_expense_reports() or self.can_create_expense_reports())
+                self.can_approve_expense_reports() or self.can_create_expense_reports() or
+                self.can_view_my_expense_reports())
     
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):

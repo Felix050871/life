@@ -340,7 +340,12 @@
                             <i class="fas fa-plus"></i>Crea Nota Spese
                         </a></li>
                         {% endif %}
-                        {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() or current_user.can_create_expense_reports() %}
+                        {% if current_user.can_view_my_expense_reports() %}
+                        <li><a href="{{ url_for('expense_reports') }}?view=my" class="sidebar-submenu-link">
+                            <i class="fas fa-user"></i>Le Mie Note Spese
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() %}
                         <li><a href="{{ url_for('expense_reports') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list"></i>Visualizza Note Spese
                         </a></li>

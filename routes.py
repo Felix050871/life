@@ -7323,15 +7323,27 @@ def expense_reports():
     # Query base
     query = ExpenseReport.query
     
-    # Se l'utente non può vedere tutte le note spese, mostra solo le sue
-    if not (current_user.can_view_expense_reports() or current_user.can_approve_expense_reports()):
+    # Check view mode from URL parameter
+    view_mode = request.args.get('view', 'all')
+    
+    # Controllo permessi per determinare cosa può vedere l'utente
+    if view_mode == 'my' or not (current_user.can_view_expense_reports() or current_user.can_approve_expense_reports()):
+        # Mostra solo le note spese dell'utente corrente
         query = query.filter(ExpenseReport.employee_id == current_user.id)
-    elif not current_user.all_sedi and current_user.sede_id:
-        # Filtra per sede se non ha accesso globale
-        from models import User
-        sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
-        sede_user_ids = [u.id for u in sede_users]
-        query = query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        page_title = "Le Mie Note Spese"
+    elif current_user.can_view_expense_reports() or current_user.can_approve_expense_reports():
+        # Utente può vedere tutte le note spese (eventualmente filtrate per sede)
+        if not current_user.all_sedi and current_user.sede_id:
+            # Filtra per sede se non ha accesso globale
+            from models import User
+            sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+            sede_user_ids = [u.id for u in sede_users]
+            query = query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        page_title = "Note Spese"
+    else:
+        # Fallback: mostra solo le proprie
+        query = query.filter(ExpenseReport.employee_id == current_user.id)
+        page_title = "Le Mie Note Spese"
     
     # Applica filtri se presenti
     if filter_form.validate_on_submit():
@@ -7351,7 +7363,9 @@ def expense_reports():
     
     return render_template('expense_reports.html', 
                          expenses=expenses, 
-                         filter_form=filter_form)
+                         filter_form=filter_form,
+                         page_title=page_title,
+                         view_mode=view_mode)
 
 
 @app.route('/expenses/create', methods=['GET', 'POST'])
