@@ -212,14 +212,22 @@ function editLeaveTypeFromData(button) {
     const id = button.getAttribute('data-id');
     const name = button.getAttribute('data-name');
     const description = button.getAttribute('data-description') || '';
-    const requiresApproval = button.getAttribute('data-requires-approval') === 'True';
-    const isActive = button.getAttribute('data-is-active') === 'True';
+    const requiresApproval = button.getAttribute('data-requires-approval');
+    const isActive = button.getAttribute('data-is-active');
+    
+    console.log('Edit data:', {id, name, description, requiresApproval, isActive});
+    
+    // Gestione corretta dei valori booleani da Python
+    const requiresApprovalBool = requiresApproval === 'True' || requiresApproval === 'true';
+    const isActiveBool = isActive === 'True' || isActive === 'true';
     
     document.getElementById('editLeaveTypeForm').action = `/leave_types/${id}/edit`;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_description').value = description;
-    document.getElementById('edit_requires_approval').checked = requiresApproval;
-    document.getElementById('edit_is_active').checked = isActive;
+    document.getElementById('edit_requires_approval').checked = requiresApprovalBool;
+    document.getElementById('edit_is_active').checked = isActiveBool;
+    
+    console.log('Modal populated successfully');
 }
 </script>
 {% endblock %}
