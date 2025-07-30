@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) {
         overlay.classList.add('d-none');
+        overlay.style.display = 'none'; // Forza anche lo style
         console.log('Dashboard team loaded - overlay hidden');
     }
     
@@ -22,6 +23,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const exportButtons = document.querySelectorAll('.export-btn');
     exportButtons.forEach(btn => btn.style.pointerEvents = 'auto');
+    
+    // Protezione aggiuntiva: nasconde overlay ogni 2 secondi se ancora visibile
+    setInterval(() => {
+        if (overlay && !overlay.classList.contains('d-none')) {
+            overlay.classList.add('d-none');
+            overlay.style.display = 'none';
+            console.log('Overlay force-hidden by interval check');
+        }
+    }, 2000);
 });
 
 // Nasconde l'overlay se viene mostrato durante la navigazione
@@ -74,7 +84,7 @@ window.addEventListener('pageshow', function(event) {
                     <!-- Export -->
                     <div class="d-flex align-items-center gap-2">
                         <a href="{{ url_for('dashboard_team', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d'), export='excel') }}" 
-                           class="btn btn-outline-success btn-sm export-btn" onclick="showLoadingExport(this)">
+                           class="btn btn-outline-success btn-sm export-btn" onclick="showLoadingExport(this); return true;" target="_blank">
                             <i class="fas fa-download me-1"></i>Esporta in Excel
                         </a>
                     </div>

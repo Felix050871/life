@@ -25,11 +25,27 @@ function showLoadingExport(element) {
     element.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generazione...';
     element.style.pointerEvents = 'none';
     
-    // Ripristina dopo 3 secondi (tempo stimato per download)
+    // Nasconde l'overlay globale se visibile durante export
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay && !overlay.classList.contains('d-none')) {
+        overlay.classList.add('d-none');
+        overlay.style.display = 'none';
+    }
+    
+    // Ripristina il pulsante molto più velocemente per export
     setTimeout(() => {
         element.innerHTML = originalContent;
         element.style.pointerEvents = 'auto';
-    }, 3000);
+        console.log('Export button restored');
+    }, 1500); // Ridotto da 3 a 1.5 secondi
+    
+    // Forza la rimozione dell'overlay anche dopo export
+    setTimeout(() => {
+        if (overlay) {
+            overlay.classList.add('d-none');
+            overlay.style.display = 'none';
+        }
+    }, 2000);
 }
 
 // Sistema ottimizzato per gestione loading overlay
