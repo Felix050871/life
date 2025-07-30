@@ -550,7 +550,97 @@
 
         console.log('Workforce Management App initialized');
     </script>
-    <!-- Sistema overlay globale completamente rimosso per eliminare problemi di persistenza -->
+    <!-- Global Loading Overlay - Solo per operazioni export -->
+    <div id="globalLoadingOverlay" class="loading-overlay d-none">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5 class="text-white">Elaborazione in corso...</h5>
+            <p class="text-white-50 mb-0">Attendere prego</p>
+        </div>
+    </div>
+
+    <!-- Global Loading Script - Ottimizzato per export -->
+    <script>
+        // Global Loading Overlay System - Solo per export
+        class LoadingManager {
+            constructor() {
+                this.overlay = document.getElementById('globalLoadingOverlay');
+                this.isShowing = false;
+                this.timeoutId = null;
+            }
+
+            show() {
+                if (!this.isShowing && this.overlay) {
+                    this.overlay.classList.remove('d-none');
+                    this.isShowing = true;
+                    // Auto-hide dopo 10 secondi per prevenire persistenza
+                    this.timeoutId = setTimeout(() => {
+                        this.hide();
+                    }, 10000);
+                }
+            }
+
+            hide() {
+                if (this.overlay) {
+                    this.overlay.classList.add('d-none');
+                    this.isShowing = false;
+                    if (this.timeoutId) {
+                        clearTimeout(this.timeoutId);
+                        this.timeoutId = null;
+                    }
+                }
+            }
+        }
+
+        // Initialize global loading manager
+        const loadingManager = new LoadingManager();
+
+        // Solo per operazioni specifiche - NON automatico
+        document.addEventListener('DOMContentLoaded', function() {
+            // Solo pulsanti export specifici
+            document.querySelectorAll('.btn[href*="export"], .export-btn, [onclick*="export"]').forEach(exportBtn => {
+                exportBtn.addEventListener('click', function(e) {
+                    // Solo per link di export (non form)
+                    if (this.tagName === 'A' && this.href.includes('export')) {
+                        setTimeout(() => {
+                            loadingManager.show();
+                        }, 100);
+                        
+                        // Nasconde automaticamente dopo 3 secondi per file download
+                        setTimeout(() => {
+                            loadingManager.hide();
+                        }, 3000);
+                    }
+                });
+            });
+
+            // Nasconde overlay se visibile al caricamento pagina
+            loadingManager.hide();
+        });
+
+        // Nasconde overlay quando pagina diventa visibile
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                loadingManager.hide();
+            }
+        });
+
+        // Nascondi overlay prima di navigare via
+        window.addEventListener('beforeunload', function() {
+            loadingManager.hide();
+        });
+
+        // Nascondi overlay anche su pagehide per sicurezza
+        window.addEventListener('pagehide', function() {
+            loadingManager.hide();
+        });
+
+        // Espone funzioni globali per controllo manuale
+        window.showLoading = () => loadingManager.show();
+        window.hideLoading = () => loadingManager.hide();
+    </script>
 
     {% block scripts %}{% endblock %}
 </body>
