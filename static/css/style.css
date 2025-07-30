@@ -134,7 +134,7 @@ body {
 .sidebar-submenu .sidebar-submenu-link {
     padding: 0.5rem 1rem 0.5rem 2.5rem !important;
     color: #6c757d !important;
-    font-size: 0.75rem !important;
+    font-size: 0.8rem !important;
     font-weight: 400;
     border-bottom: 1px solid #e9ecef;
     transition: all 0.2s ease;
@@ -145,10 +145,10 @@ body {
 
 .sidebar-submenu .sidebar-nav-link i,
 .sidebar-submenu .sidebar-submenu-link i {
-    width: 12px !important;
+    width: 14px !important;
     margin-right: 1.5rem !important;
     text-align: center;
-    font-size: 0.6rem !important;
+    font-size: 0.7rem !important;
     display: inline-block;
 }
 
