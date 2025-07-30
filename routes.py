@@ -5915,8 +5915,8 @@ def export_expense_reports_excel():
         ws.cell(row=row_idx, column=col, value=expense.description)
         col += 1
         
-        # Importo
-        ws.cell(row=row_idx, column=col, value=f"€ {expense.amount:.2f}")
+        # Importo (come numero per calcoli Excel)
+        ws.cell(row=row_idx, column=col, value=float(expense.amount))
         col += 1
         
         # Stato
