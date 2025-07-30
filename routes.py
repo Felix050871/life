@@ -555,7 +555,12 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
     # Raggruppa utenti per sede
     for user_id, data in attendance_data.items():
         user = data['user']
-        sede_name = user.sede.name if user.sede else 'Sede Non Definita'
+        if user.sede_id:
+            from models import Sede
+            sede = Sede.query.get(user.sede_id)
+            sede_name = sede.name if sede else 'Sede Non Definita'
+        else:
+            sede_name = 'Sede Non Definita'
         
         if sede_name not in sedi_data:
             sedi_data[sede_name] = {}
@@ -584,6 +589,7 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
     os.remove(zip_path)
     os.rmdir(temp_dir)
     
+    from flask import make_response
     response = make_response(zip_data)
     response.headers['Content-Type'] = 'application/zip'
     response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.zip"'
@@ -592,6 +598,8 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
 
 def generate_single_sede_csv(attendance_data, period_label, start_date, end_date, sede_name, return_content=False):
     """Genera CSV per una singola sede"""
+    from io import StringIO
+    import csv
     output = StringIO()
     writer = csv.writer(output)
     
@@ -750,6 +758,7 @@ def generate_single_sede_csv(attendance_data, period_label, start_date, end_date
         return content
     
     from datetime import datetime as dt
+    from flask import make_response
     response = make_response(content)
     response.headers['Content-Type'] = 'text/csv; charset=utf-8'
     safe_sede_name = sede_name.replace(' ', '_').replace('/', '_')
