@@ -25,27 +25,15 @@ function showLoadingExport(element) {
     element.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generazione...';
     element.style.pointerEvents = 'none';
     
-    // Nasconde l'overlay globale se visibile durante export
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay && !overlay.classList.contains('d-none')) {
-        overlay.classList.add('d-none');
-        overlay.style.display = 'none';
-    }
+    // NON mostrare l'overlay globale per l'export - solo il pulsante cambia
+    // L'export è veloce e non necessita di overlay full-screen
     
-    // Ripristina il pulsante molto più velocemente per export
+    // Ripristina il pulsante rapidamente dopo l'avvio del download
     setTimeout(() => {
         element.innerHTML = originalContent;
         element.style.pointerEvents = 'auto';
-        console.log('Export button restored');
-    }, 1500); // Ridotto da 3 a 1.5 secondi
-    
-    // Forza la rimozione dell'overlay anche dopo export
-    setTimeout(() => {
-        if (overlay) {
-            overlay.classList.add('d-none');
-            overlay.style.display = 'none';
-        }
-    }, 2000);
+        console.log('Export button restored after download started');
+    }, 800); // Ridotto a 800ms per export veloce
 }
 
 // Sistema ottimizzato per gestione loading overlay
