@@ -408,8 +408,9 @@ def dashboard_team():
         """Verifica se una data è un giorno lavorativo per l'utente"""
         # Verifica se è un giorno festivo
         holiday = Holiday.query.filter(
-            Holiday.date == check_date,
-            Holiday.active == True
+            Holiday.month == check_date.month,
+            Holiday.day == check_date.day,
+            Holiday.is_active == True
         ).first()
         if holiday:
             return False
