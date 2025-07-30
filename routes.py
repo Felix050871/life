@@ -8339,7 +8339,7 @@ def delete_presidio_coverage(coverage_id):
 # NOTE SPESE ROUTES
 # ============================================================================
 
-@app.route('/expenses')
+@app.route('/expenses', methods=['GET', 'POST'])
 @login_required
 def expense_reports():
     """Visualizza elenco note spese"""
