@@ -388,37 +388,26 @@ def dashboard_team():
     end_date_str = request.args.get('end_date')
     today = date.today()
     
-    # Debug: stampa i parametri ricevuti
-    print(f"DEBUG: start_date_str = {start_date_str}, end_date_str = {end_date_str}")
-    
     # Range di date - mantieni i valori passati o usa oggi come default
     if start_date_str and start_date_str.strip():
         try:
             start_date = datetime.strptime(start_date_str.strip(), '%Y-%m-%d').date()
-            print(f"DEBUG: Parsed start_date = {start_date}")
-        except ValueError as e:
-            print(f"DEBUG: Error parsing start_date: {e}")
+        except ValueError:
             start_date = today
     else:
-        print("DEBUG: No start_date_str provided, using today")
         start_date = today
         
     if end_date_str and end_date_str.strip():
         try:
             end_date = datetime.strptime(end_date_str.strip(), '%Y-%m-%d').date()
-            print(f"DEBUG: Parsed end_date = {end_date}")
-        except ValueError as e:
-            print(f"DEBUG: Error parsing end_date: {e}")
+        except ValueError:
             end_date = today
     else:
-        print("DEBUG: No end_date_str provided, using today")
         end_date = today
         
     # Assicurati che start_date <= end_date
     if start_date > end_date:
         start_date, end_date = end_date, start_date
-        
-    print(f"DEBUG: Final dates - start_date = {start_date}, end_date = {end_date}")
     
     # Etichetta periodo
     if start_date == end_date:
@@ -582,12 +571,11 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
             else:
                 sede_name = 'N/A'
             
-            # Determina la data (per single day sarà la stessa per tutti)
+            # Determina la data (per single day sarà la stessa per tutti)  
             if start_date:
                 data_str = start_date.strftime('%d/%m/%Y')
             else:
-                from datetime import datetime
-                data_str = datetime.now().strftime('%d/%m/%Y')
+                data_str = date.today().strftime('%d/%m/%Y')
             
             if data['leave_request']:
                 stato = f"In {data['leave_request'].leave_type}"
@@ -681,7 +669,8 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
     
     response = make_response(output.getvalue())
     response.headers['Content-Type'] = 'text/csv; charset=utf-8'
-    response.headers['Content-Disposition'] = f'attachment; filename="presenze_{period_mode}_{datetime.now().strftime("%Y%m%d")}.csv"'
+    from datetime import datetime as dt
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_{period_mode}_{dt.now().strftime("%Y%m%d")}.csv"'
     
     return response
 
