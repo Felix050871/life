@@ -609,8 +609,8 @@
                 });
             });
 
-            // Links that cause navigation (excluding anchors, modals, and export links)
-            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle]):not([href*="export"])').forEach(link => {
+            // Links that cause navigation (excluding anchors and modals)
+            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle])').forEach(link => {
                 link.addEventListener('click', function(e) {
                     const href = this.getAttribute('href');
                     // Only show loading for internal navigation
