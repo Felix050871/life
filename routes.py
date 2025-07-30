@@ -386,6 +386,8 @@ def dashboard_team():
     period_mode = request.args.get('period', 'today')
     export_format = request.args.get('export')
     date_param = request.args.get('date')
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
     
     # Data di riferimento
     if date_param:
@@ -397,7 +399,30 @@ def dashboard_team():
         reference_date = date.today()
     
     # Calcolo periodo di visualizzazione e navigazione
-    if period_mode == 'week':
+    if period_mode == 'custom' and start_date_str and end_date_str:
+        # Range personalizzato
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            if start_date > end_date:
+                start_date, end_date = end_date, start_date
+            period_label = f"Range {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
+            
+            # Navigazione per range personalizzato
+            range_days = (end_date - start_date).days + 1
+            prev_start = start_date - timedelta(days=range_days)
+            next_start = end_date + timedelta(days=1)
+            prev_date = prev_start
+            next_date = next_start
+        except ValueError:
+            # Fallback a oggi se le date non sono valide
+            period_mode = 'today'
+            start_date = end_date = reference_date
+            period_label = f"Oggi {reference_date.strftime('%d/%m/%Y')}"
+            prev_date = reference_date - timedelta(days=1)
+            next_date = reference_date + timedelta(days=1)
+            
+    elif period_mode == 'week':
         # Settimana (lunedì-domenica)
         days_until_monday = reference_date.weekday()
         start_date = reference_date - timedelta(days=days_until_monday)

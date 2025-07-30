@@ -23,6 +23,10 @@
                            class="btn {% if period_mode == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             Mese
                         </a>
+                        <button type="button" class="btn {% if period_mode == 'custom' %}btn-primary{% else %}btn-outline-primary{% endif %}" 
+                                data-bs-toggle="modal" data-bs-target="#dateRangeModal">
+                            <i class="fas fa-calendar-alt me-1"></i>Range
+                        </button>
                     </div>
                     
                     <!-- Navigazione temporale -->
@@ -278,4 +282,48 @@
         </div>
     {% endif %}
 </div>
+
+<!-- Modal per selezione range date -->
+<div class="modal fade" id="dateRangeModal" tabindex="-1" aria-labelledby="dateRangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dateRangeModalLabel">
+                    <i class="fas fa-calendar-alt me-2"></i>Seleziona Range Date
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="GET" action="{{ url_for('dashboard_team') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="start_date" class="form-label">Data Inizio</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                   value="{{ request.args.get('start_date', '') }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_date" class="form-label">Data Fine</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                   value="{{ request.args.get('end_date', '') }}" required>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Seleziona un periodo personalizzato per visualizzare le presenze del team
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Visualizza
+                    </button>
+                </div>
+                <input type="hidden" name="period" value="custom">
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
