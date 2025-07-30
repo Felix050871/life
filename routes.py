@@ -388,26 +388,37 @@ def dashboard_team():
     end_date_str = request.args.get('end_date')
     today = date.today()
     
+    # Debug: stampa i parametri ricevuti
+    print(f"DEBUG: start_date_str = {start_date_str}, end_date_str = {end_date_str}")
+    
     # Range di date - mantieni i valori passati o usa oggi come default
-    if start_date_str:
+    if start_date_str and start_date_str.strip():
         try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        except ValueError:
+            start_date = datetime.strptime(start_date_str.strip(), '%Y-%m-%d').date()
+            print(f"DEBUG: Parsed start_date = {start_date}")
+        except ValueError as e:
+            print(f"DEBUG: Error parsing start_date: {e}")
             start_date = today
     else:
+        print("DEBUG: No start_date_str provided, using today")
         start_date = today
         
-    if end_date_str:
+    if end_date_str and end_date_str.strip():
         try:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        except ValueError:
+            end_date = datetime.strptime(end_date_str.strip(), '%Y-%m-%d').date()
+            print(f"DEBUG: Parsed end_date = {end_date}")
+        except ValueError as e:
+            print(f"DEBUG: Error parsing end_date: {e}")
             end_date = today
     else:
+        print("DEBUG: No end_date_str provided, using today")
         end_date = today
         
     # Assicurati che start_date <= end_date
     if start_date > end_date:
         start_date, end_date = end_date, start_date
+        
+    print(f"DEBUG: Final dates - start_date = {start_date}, end_date = {end_date}")
     
     # Etichetta periodo
     if start_date == end_date:
