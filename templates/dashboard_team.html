@@ -314,17 +314,17 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="GET" action="{{ url_for('dashboard_team') }}" id="dateRangeForm">
+            <form method="GET" action="{{ url_for('dashboard_team') }}">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
                             <label for="start_date" class="form-label">Data Inizio</label>
-                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                            <input type="date" class="form-control" name="start_date" 
                                    value="{{ request.args.get('start_date', '') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label for="end_date" class="form-label">Data Fine</label>
-                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                            <input type="date" class="form-control" name="end_date" 
                                    value="{{ request.args.get('end_date', '') }}" required>
                         </div>
                     </div>
@@ -337,7 +337,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="submit" class="btn btn-primary" id="visualizzaBtn">
+                    <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search me-1"></i>Visualizza
                     </button>
                 </div>
@@ -347,41 +347,6 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Gestione form range personalizzato
-    const dateRangeForm = document.getElementById('dateRangeForm');
-    const startDateInput = document.getElementById('start_date');
-    const endDateInput = document.getElementById('end_date');
-    
-    if (dateRangeForm) {
-        dateRangeForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const startDate = startDateInput.value;
-            const endDate = endDateInput.value;
-            
-            if (!startDate || !endDate) {
-                alert('Seleziona entrambe le date');
-                return;
-            }
-            
-            if (startDate > endDate) {
-                alert('La data di inizio deve essere precedente alla data di fine');
-                return;
-            }
-            
-            // Costruisci URL con parametri
-            const url = new URL(window.location.origin + '{{ url_for("dashboard_team") }}');
-            url.searchParams.set('period', 'custom');
-            url.searchParams.set('start_date', startDate);
-            url.searchParams.set('end_date', endDate);
-            
-            // Reindirizza
-            window.location.href = url.toString();
-        });
-    }
-});
-</script>
+
 
 {% endblock %}
