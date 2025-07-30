@@ -219,7 +219,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-list me-2"></i>Dettaglio Interventi Generici</h5>
                 <button class="btn btn-outline-success btn-sm" onclick="exportInterventionsTable()">
-                    <i class="fas fa-download me-1"></i>Esporta CSV
+                    <i class="fas fa-download me-1"></i>Esporta in Excel
                 </button>
             </div>
             <div class="card-body">
@@ -326,7 +326,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-phone me-2"></i>Dettaglio Interventi Reperibilità</h5>
                 <button class="btn btn-outline-success btn-sm" onclick="exportReperibilitaInterventionsTable()">
-                    <i class="fas fa-download me-1"></i>Esporta CSV
+                    <i class="fas fa-download me-1"></i>Esporta in Excel
                 </button>
             </div>
             <div class="card-body">
@@ -613,8 +613,8 @@
             <div class="card-body text-center">
                 <p class="text-muted">Esporta i dati del report in diversi formati</p>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-outline-primary" onclick="exportTableToCSV()">
-                        <i class="fas fa-file-csv me-1"></i>CSV
+                    <button type="button" class="btn btn-outline-primary" onclick="exportTableToExcel()">
+                        <i class="fas fa-file-excel me-1"></i>Excel
                     </button>
                     <button type="button" class="btn btn-outline-success" onclick="window.print()">
                         <i class="fas fa-print me-1"></i>Stampa
@@ -720,108 +720,128 @@ new Chart(rolesCtx, {
     }
 });
 
-// Export general interventions table to CSV
+// Export general interventions table to Excel
 function exportInterventionsTable() {
     const table = document.getElementById('interventionsTable');
     const rows = table.querySelectorAll('tr');
-    let csv = [];
+    let data = [];
     
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const cols = row.querySelectorAll('td, th');
-        let csvRow = [];
+        let rowData = [];
         
         for (let j = 0; j < cols.length; j++) {
-            let cellText = cols[j].innerText.replace(/"/g, '""').replace(/\n/g, ' ');
-            csvRow.push('"' + cellText + '"');
+            let cellText = cols[j].innerText.replace(/\n/g, ' ').trim();
+            rowData.push(cellText);
         }
         
-        csv.push(csvRow.join(','));
+        data.push(rowData);
     }
     
-    const csvContent = csv.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
     
-    if (link.download !== undefined) {
-        const currentDate = new Date().toISOString().split('T')[0];
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `interventi_generici_${currentDate}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // Style the header row
+    if (data.length > 0) {
+        for (let col = 0; col < data[0].length; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+            if (!ws[cellAddress]) continue;
+            ws[cellAddress].s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "366092" } },
+                alignment: { horizontal: "center" }
+            };
+        }
     }
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Interventi Generici");
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `interventi_generici_${currentDate}.xlsx`);    
 }
 
-// Export reperibilità interventions table to CSV
+// Export reperibilità interventions table to Excel
 function exportReperibilitaInterventionsTable() {
     const table = document.getElementById('reperibilitaInterventionsTable');
     const rows = table.querySelectorAll('tr');
-    let csv = [];
+    let data = [];
     
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const cols = row.querySelectorAll('td, th');
-        let csvRow = [];
+        let rowData = [];
         
         for (let j = 0; j < cols.length; j++) {
-            let cellText = cols[j].innerText.replace(/"/g, '""').replace(/\n/g, ' ');
-            csvRow.push('"' + cellText + '"');
+            let cellText = cols[j].innerText.replace(/\n/g, ' ').trim();
+            rowData.push(cellText);
         }
         
-        csv.push(csvRow.join(','));
+        data.push(rowData);
     }
     
-    const csvContent = csv.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
     
-    if (link.download !== undefined) {
-        const currentDate = new Date().toISOString().split('T')[0];
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `interventi_reperibilita_${currentDate}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // Style the header row
+    if (data.length > 0) {
+        for (let col = 0; col < data[0].length; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+            if (!ws[cellAddress]) continue;
+            ws[cellAddress].s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "366092" } },
+                alignment: { horizontal: "center" }
+            };
+        }
     }
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Interventi Reperibilità");
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `interventi_reperibilita_${currentDate}.xlsx`);
 }
 
-// Export user stats table to CSV
-function exportTableToCSV() {
+// Export user stats table to Excel
+function exportTableToExcel() {
     const table = document.getElementById('userStatsTable');
     const rows = table.querySelectorAll('tr');
-    let csv = [];
+    let data = [];
     
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const cols = row.querySelectorAll('td, th');
-        let csvRow = [];
+        let rowData = [];
         
         for (let j = 0; j < cols.length; j++) {
-            let cellText = cols[j].innerText.replace(/"/g, '""').replace(/\n/g, ' ');
-            csvRow.push('"' + cellText + '"');
+            let cellText = cols[j].innerText.replace(/\n/g, ' ').trim();
+            rowData.push(cellText);
         }
         
-        csv.push(csvRow.join(','));
+        data.push(rowData);
     }
     
-    const csvContent = csv.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
     
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'report_presenze.csv');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // Style the header row
+    if (data.length > 0) {
+        for (let col = 0; col < data[0].length; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+            if (!ws[cellAddress]) continue;
+            ws[cellAddress].s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "366092" } },
+                alignment: { horizontal: "center" }
+            };
+        }
     }
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Report Presenze");
+    XLSX.writeFile(wb, 'report_presenze.xlsx');
 }
 </script>
 {% endblock %}

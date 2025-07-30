@@ -423,8 +423,8 @@
                         <button type="button" id="exportPdfBtn" class="btn btn-outline-success" title="Esporta calendario in PDF">
                             <i class="fas fa-file-pdf me-1"></i>PDF
                         </button>
-                        <button type="button" id="exportCsvBtn" class="btn btn-outline-info" title="Esporta tabella in CSV">
-                            <i class="fas fa-file-csv me-1"></i>CSV
+                        <button type="button" id="exportCsvBtn" class="btn btn-outline-info" title="Esporta tabella in Excel">
+                            <i class="fas fa-file-excel me-1"></i>Excel
                         </button>
                     </div>
                 </div>
@@ -901,7 +901,7 @@ function setupExportButtons(calendar) {
             window.open(`{{ url_for('export_shifts_pdf') }}?${params.toString()}`, '_blank');
         });
         
-        // CSV Export (for table view)
+        // Excel Export (for table view)
         exportCsvBtn.addEventListener('click', function() {
             const viewMode = getCalendarViewMode(calendar);
             const currentDate = calendar.getDate();
@@ -913,7 +913,7 @@ function setupExportButtons(calendar) {
                 my_shifts: showMyShifts.toString()
             });
             
-            window.location.href = `{{ url_for('export_shifts_csv') }}?${params.toString()}`;
+            window.location.href = `{{ url_for('export_shifts_excel') }}?${params.toString()}`;
         });
         
         // Update button visibility based on view
@@ -925,7 +925,7 @@ function setupExportButtons(calendar) {
             } else {
                 exportPdfBtn.style.display = 'none';
                 exportCsvBtn.style.display = 'inline-block';
-                exportCsvBtn.title = 'Esporta tabella in CSV';
+                exportCsvBtn.title = 'Esporta tabella in Excel';
             }
         }
         

@@ -185,8 +185,8 @@
                 <!-- Export -->
                 <div class="mt-3 text-center">
                     <div class="btn-group">
-                        <button type="button" class="btn btn-outline-success" onclick="exportToCSV()">
-                            <i class="fas fa-file-csv me-1"></i>Esporta CSV
+                        <button type="button" class="btn btn-outline-success" onclick="exportToExcel()">
+                            <i class="fas fa-file-excel me-1"></i>Esporta in Excel
                         </button>
                         <button type="button" class="btn btn-outline-danger" onclick="window.print()">
                             <i class="fas fa-print me-1"></i>Stampa
@@ -225,32 +225,42 @@
 </div>
 
 <script>
-function exportToCSV() {
-    // Semplice funzione per esportare la tabella in CSV
+function exportToExcel() {
+    // Funzione per esportare la tabella in Excel
     const table = document.querySelector('table');
     if (!table) return;
     
-    let csv = '';
+    let data = [];
     const rows = table.querySelectorAll('tr');
     
     rows.forEach(row => {
         const cols = row.querySelectorAll('td, th');
         const rowData = [];
         cols.forEach(col => {
-            rowData.push('"' + col.textContent.trim().replace(/"/g, '""') + '"');
+            rowData.push(col.textContent.trim());
         });
-        csv += rowData.join(',') + '\n';
+        data.push(rowData);
     });
     
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'turni_{{ selected_coverage.sede.name if selected_coverage and selected_coverage.sede else "copertura" }}.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Style the header row
+    if (data.length > 0) {
+        for (let col = 0; col < data[0].length; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+            if (!ws[cellAddress]) continue;
+            ws[cellAddress].s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "366092" } },
+                alignment: { horizontal: "center" }
+            };
+        }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Turni");
+    XLSX.writeFile(wb, 'turni_{{ selected_coverage.sede.name if selected_coverage and selected_coverage.sede else "copertura" }}.xlsx');
 }
 </script>
 {% endblock %}

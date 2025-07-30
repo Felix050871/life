@@ -45,9 +45,9 @@
                     
                     <!-- Export -->
                     <div class="d-flex align-items-center gap-2">
-                        <a href="{{ url_for('dashboard_team', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d'), export='csv') }}" 
+                        <a href="{{ url_for('dashboard_team', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d'), export='excel') }}" 
                            class="btn btn-outline-success btn-sm export-btn" onclick="showLoadingExport(this)">
-                            <i class="fas fa-download me-1"></i>Esporta CSV
+                            <i class="fas fa-download me-1"></i>Esporta in Excel
                         </a>
                     </div>
                 </div>

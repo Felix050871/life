@@ -528,8 +528,8 @@ def dashboard_team():
                 }
     
     # Handle export
-    if export_format == 'csv':
-        return generate_attendance_csv_export(attendance_data, 'custom', period_label, all_sedi, start_date, end_date)
+    if export_format == 'excel':
+        return generate_attendance_excel_export(attendance_data, 'custom', period_label, all_sedi, start_date, end_date)
     
     return render_template('dashboard_team.html',
                          all_users=all_users,
@@ -541,7 +541,7 @@ def dashboard_team():
                          end_date=end_date,
                          current_user=current_user)
 
-def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi, start_date=None, end_date=None):
+def generate_attendance_excel_export(attendance_data, period_mode, period_label, all_sedi, start_date=None, end_date=None):
     """Genera export Excel delle presenze con un foglio per ogni sede"""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -767,7 +767,7 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
     
     return response
 
-def generate_single_sede_csv(attendance_data, period_label, start_date, end_date, sede_name, return_content=False):
+def generate_single_sede_excel(attendance_data, period_label, start_date, end_date, sede_name, return_content=False):
     """Genera CSV per una singola sede"""
     from io import StringIO
     import csv
@@ -4798,10 +4798,10 @@ def generate_qr_codes():
         flash(f'Errore nella generazione dei codici QR: {str(e)}', 'error')
         return redirect(url_for('index'))
 
-@app.route('/shifts/export/csv')
+@app.route('/shifts/export/excel')
 @login_required
-def export_shifts_csv():
-    """Export turni in formato CSV"""
+def export_shifts_excel():
+    """Export turni in formato Excel"""
     # Parametri dalla query string
     view_mode = request.args.get('view', 'month')  # month, week, day
     show_my_shifts = request.args.get('my_shifts', 'false') == 'true'
@@ -4816,20 +4816,20 @@ def export_shifts_csv():
     if view_mode == 'day':
         start_date = current_date
         end_date = current_date
-        filename = f"turni_{current_date.strftime('%Y-%m-%d')}.csv"
+        filename = f"turni_{current_date.strftime('%Y-%m-%d')}.xlsx"
     elif view_mode == 'week':
         # Settimana (Lunedì - Domenica)
         days_since_monday = current_date.weekday()
         start_date = current_date - timedelta(days=days_since_monday)
         end_date = start_date + timedelta(days=6)
-        filename = f"turni_settimana_{start_date.strftime('%Y-%m-%d')}.csv"
+        filename = f"turni_settimana_{start_date.strftime('%Y-%m-%d')}.xlsx"
     else:  # month
         start_date = current_date.replace(day=1)
         if current_date.month == 12:
             end_date = date(current_date.year + 1, 1, 1) - timedelta(days=1)
         else:
             end_date = date(current_date.year, current_date.month + 1, 1) - timedelta(days=1)
-        filename = f"turni_{current_date.strftime('%Y-%m')}.csv"
+        filename = f"turni_{current_date.strftime('%Y-%m')}.xlsx"
     
     # Query dei turni
     shifts_query = Shift.query.filter(
@@ -4844,22 +4844,39 @@ def export_shifts_csv():
     
     shifts = shifts_query.order_by(Shift.date, Shift.start_time).all()
     
-    # Crea CSV in memoria
-    output = StringIO()
-    writer = csv.writer(output)
+    # Crea Excel in memoria usando openpyxl
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    import tempfile
+    import os
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Turni"
+    
+    # Header styling
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
     
     # Header
-    writer.writerow([
-        'Data', 'Utente', 'Ruolo', 'Orario Inizio', 'Orario Fine', 
-        'Tipo Turno', 'Durata (ore)'
-    ])
+    headers = ['Data', 'Utente', 'Ruolo', 'Orario Inizio', 'Orario Fine', 'Tipo Turno', 'Durata (ore)']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+        cell.border = thin_border
     
     # Dati
-    for shift in shifts:
+    for row_idx, shift in enumerate(shifts, 2):
         duration = (datetime.combine(date.today(), shift.end_time) - 
                    datetime.combine(date.today(), shift.start_time)).total_seconds() / 3600
         
-        writer.writerow([
+        row_data = [
             shift.date.strftime('%d/%m/%Y'),
             shift.user.get_full_name(),
             shift.user.role,
@@ -4867,12 +4884,43 @@ def export_shifts_csv():
             shift.end_time.strftime('%H:%M'),
             shift.shift_type,
             f"{duration:.1f}"
-        ])
+        ]
+        
+        for col, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.border = thin_border
+            if col in [1, 4, 5]:  # Data e Orari
+                cell.alignment = Alignment(horizontal='center')
     
-    # Crea response
-    response = make_response(output.getvalue())
-    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
-    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to temporary file
+    temp_dir = tempfile.mkdtemp()
+    excel_path = os.path.join(temp_dir, filename)
+    wb.save(excel_path)
+    
+    # Read file for response
+    with open(excel_path, 'rb') as f:
+        excel_data = f.read()
+    
+    # Cleanup
+    os.remove(excel_path)
+    os.rmdir(temp_dir)
+    
+    response = make_response(excel_data)
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     return response
 
@@ -5035,9 +5083,9 @@ def export_shifts_pdf():
 
 
 
-@app.route('/export_attendance_csv')
+@app.route('/export_attendance_excel')
 @login_required  
-def export_attendance_csv():
+def export_attendance_excel():
     """Export presenze in formato CSV"""
     from io import StringIO
     from defusedcsv import csv
@@ -5279,10 +5327,10 @@ def my_interventions():
                          start_date=start_date,
                          end_date=end_date)
 
-@app.route('/export_general_interventions_csv')
+@app.route('/export_general_interventions_excel')
 @login_required
-def export_general_interventions_csv():
-    """Export interventi generici in formato CSV"""
+def export_general_interventions_excel():
+    """Export interventi generici in formato Excel"""
     if current_user.role == 'Admin':
         flash('Accesso non autorizzato.', 'danger')
         return redirect(url_for('dashboard'))
@@ -5323,34 +5371,52 @@ def export_general_interventions_csv():
             Intervention.start_datetime <= end_datetime
         ).order_by(Intervention.start_datetime.desc()).all()
     
-    # Crea il CSV
-    import io
-    import csv
-    output = io.StringIO()
-    writer = csv.writer(output)
+    # Crea Excel in memoria usando openpyxl
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    import tempfile
+    import os
+    
+    wb = Workbook()
+    ws = wb.active  
+    ws.title = "Interventi Generici"
+    
+    # Header styling
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
     
     # Header
     if current_user.role in ['Management', 'Ente']:
-        header = ['Utente', 'Nome', 'Cognome', 'Ruolo', 'Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
-                 'Durata (minuti)', 'Priorità', 'Tipologia', 'Descrizione', 'Stato']
+        headers = ['Utente', 'Nome', 'Cognome', 'Ruolo', 'Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
+                  'Durata (minuti)', 'Priorità', 'Tipologia', 'Descrizione', 'Stato']
     else:
-        header = ['Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
-                 'Durata (minuti)', 'Priorità', 'Tipologia', 'Descrizione', 'Stato']
-    writer.writerow(header)
+        headers = ['Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
+                  'Durata (minuti)', 'Priorità', 'Tipologia', 'Descrizione', 'Stato']
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+        cell.border = thin_border
     
     # Dati
-    for intervention in general_interventions:
-        row = []
+    for row_idx, intervention in enumerate(general_interventions, 2):
+        row_data = []
         
         if current_user.role in ['Management', 'Ente']:
-            row.extend([
+            row_data.extend([
                 intervention.user.username,
                 intervention.user.first_name,
                 intervention.user.last_name,
                 intervention.user.role
             ])
         
-        row.extend([
+        row_data.extend([
             intervention.start_datetime.strftime('%d/%m/%Y'),
             intervention.start_datetime.strftime('%H:%M'),
             intervention.end_datetime.strftime('%d/%m/%Y') if intervention.end_datetime else 'In corso',
@@ -5362,22 +5428,49 @@ def export_general_interventions_csv():
             'Completato' if intervention.end_datetime else 'In corso'
         ])
         
-        writer.writerow(row)
+        for col, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.border = thin_border
+            if col <= 4 or col in [5, 7]:  # Date e orari
+                cell.alignment = Alignment(horizontal='center')
     
-    # Prepara la risposta
-    output.seek(0)
-    response = make_response(output.getvalue())
-    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
     
-    filename = f'interventi_generici_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
+    # Save to temporary file
+    temp_dir = tempfile.mkdtemp()
+    filename = f'interventi_generici_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.xlsx'
+    excel_path = os.path.join(temp_dir, filename)
+    wb.save(excel_path)
+    
+    # Read file for response
+    with open(excel_path, 'rb') as f:
+        excel_data = f.read()
+    
+    # Cleanup
+    os.remove(excel_path)
+    os.rmdir(temp_dir)
+    
+    response = make_response(excel_data)
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     return response
 
-@app.route('/export_reperibilita_interventions_csv')
+@app.route('/export_reperibilita_interventions_excel')
 @login_required
-def export_reperibilita_interventions_csv():
-    """Export interventi reperibilità in formato CSV"""
+def export_reperibilita_interventions_excel():
+    """Export interventi reperibilità in formato Excel"""
     if current_user.role == 'Admin':
         flash('Accesso non autorizzato.', 'danger')
         return redirect(url_for('dashboard'))
@@ -5418,36 +5511,54 @@ def export_reperibilita_interventions_csv():
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
     
-    # Crea il CSV
-    import io
-    import csv
-    output = io.StringIO()
-    writer = csv.writer(output)
+    # Crea Excel in memoria usando openpyxl
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    import tempfile
+    import os
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Interventi Reperibilità"
+    
+    # Header styling
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
     
     # Header
     if current_user.role in ['Management', 'Ente']:
-        header = ['Utente', 'Nome', 'Cognome', 'Ruolo', 'Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
-                 'Durata (minuti)', 'Priorità', 'Tipologia', 'Data Turno', 'Ora Inizio Turno', 'Ora Fine Turno', 
-                 'Descrizione', 'Stato']
+        headers = ['Utente', 'Nome', 'Cognome', 'Ruolo', 'Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
+                  'Durata (minuti)', 'Priorità', 'Tipologia', 'Data Turno', 'Ora Inizio Turno', 'Ora Fine Turno', 
+                  'Descrizione', 'Stato']
     else:
-        header = ['Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
-                 'Durata (minuti)', 'Priorità', 'Tipologia', 'Data Turno', 'Ora Inizio Turno', 'Ora Fine Turno', 
-                 'Descrizione', 'Stato']
-    writer.writerow(header)
+        headers = ['Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
+                  'Durata (minuti)', 'Priorità', 'Tipologia', 'Data Turno', 'Ora Inizio Turno', 'Ora Fine Turno', 
+                  'Descrizione', 'Stato']
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+        cell.border = thin_border
     
     # Dati
-    for intervention in reperibilita_interventions:
-        row = []
+    for row_idx, intervention in enumerate(reperibilita_interventions, 2):
+        row_data = []
         
         if current_user.role in ['Management', 'Ente']:
-            row.extend([
+            row_data.extend([
                 intervention.user.username,
                 intervention.user.first_name,
                 intervention.user.last_name,
                 intervention.user.role
             ])
         
-        row.extend([
+        row_data.extend([
             intervention.start_datetime.strftime('%d/%m/%Y'),
             intervention.start_datetime.strftime('%H:%M'),
             intervention.end_datetime.strftime('%d/%m/%Y') if intervention.end_datetime else 'In corso',
@@ -5462,14 +5573,41 @@ def export_reperibilita_interventions_csv():
             'Completato' if intervention.end_datetime else 'In corso'
         ])
         
-        writer.writerow(row)
+        for col, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.border = thin_border
+            if col <= 4 or col in [5, 7, 12]:  # Date e orari
+                cell.alignment = Alignment(horizontal='center')
     
-    # Prepara la risposta
-    output.seek(0)
-    response = make_response(output.getvalue())
-    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
     
-    filename = f'interventi_reperibilita_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
+    # Save to temporary file
+    temp_dir = tempfile.mkdtemp()
+    filename = f'interventi_reperibilita_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.xlsx'
+    excel_path = os.path.join(temp_dir, filename)
+    wb.save(excel_path)
+    
+    # Read file for response
+    with open(excel_path, 'rb') as f:
+        excel_data = f.read()
+    
+    # Cleanup
+    os.remove(excel_path)
+    os.rmdir(temp_dir)
+    
+    response = make_response(excel_data)
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     return response
