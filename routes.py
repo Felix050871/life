@@ -470,23 +470,34 @@ def dashboard_team():
                 'leave_request': leave_request
             }
         else:
-            # Per settimana/mese, calcola statistiche aggregate
-            total_hours = 0
-            total_days = 0
+            # Per settimana/mese, mostra dettagli giorno per giorno
+            daily_details = []
             current_date = start_date
             
             while current_date <= end_date:
                 daily_summary = AttendanceEvent.get_daily_summary(user.id, current_date)
-                if daily_summary and hasattr(daily_summary, 'total_hours') and daily_summary.total_hours > 0:
-                    total_hours += daily_summary.total_hours
-                    total_days += 1
+                status, last_event = AttendanceEvent.get_user_status(user.id, current_date)
+                
+                # Check for approved leave requests
+                leave_request = LeaveRequest.query.filter(
+                    LeaveRequest.user_id == user.id,
+                    LeaveRequest.status == 'Approved',
+                    LeaveRequest.start_date <= current_date,
+                    LeaveRequest.end_date >= current_date
+                ).first()
+                
+                daily_details.append({
+                    'date': current_date,
+                    'status': status,
+                    'daily_summary': daily_summary,
+                    'last_event': last_event,
+                    'leave_request': leave_request
+                })
                 current_date += timedelta(days=1)
             
             attendance_data[user.id] = {
                 'user': user,
-                'total_hours': total_hours,
-                'total_days': total_days,
-                'avg_hours_per_day': total_hours / total_days if total_days > 0 else 0
+                'daily_details': daily_details
             }
     
     # Handle export
@@ -552,20 +563,52 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                 note
             ])
     else:
-        writer.writerow(['Utente', 'Ruolo', 'Sede', 'Ore Totali', 'Giorni Lavorati', 'Media Ore/Giorno'])
+        writer.writerow(['Utente', 'Ruolo', 'Sede', 'Data', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
         
         for user_id, data in attendance_data.items():
             user = data['user']
             sede_name = user.sede.name if user.sede else 'N/A'
             
-            writer.writerow([
-                user.get_full_name(),
-                user.role.name if user.role else 'N/A',
-                sede_name,
-                format_hours(data['total_hours']),
-                data['total_days'],
-                format_hours(data['avg_hours_per_day'])
-            ])
+            for daily in data['daily_details']:
+                if daily['leave_request']:
+                    stato = f"In {daily['leave_request'].leave_type}"
+                    entrata = uscita = 'N/A'
+                    ore_lavorate = '0h'
+                    note = daily['leave_request'].reason or ''
+                elif daily['status'] == 'in':
+                    stato = 'Presente'
+                    entrata = daily['daily_summary'].clock_in.strftime('%H:%M') if daily['daily_summary'] and daily['daily_summary'].clock_in else 'N/A'
+                    uscita = 'In corso'
+                    ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily['daily_summary'] and daily['daily_summary'].total_hours else '0h'
+                    note = daily['last_event'].notes if daily['last_event'] and daily['last_event'].notes else ''
+                elif daily['status'] == 'out':
+                    if daily['daily_summary'] and daily['daily_summary'].clock_in:
+                        stato = 'Uscito'
+                        entrata = daily['daily_summary'].clock_in.strftime('%H:%M')
+                        uscita = daily['daily_summary'].clock_out.strftime('%H:%M') if daily['daily_summary'].clock_out else 'N/A'
+                        ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily['daily_summary'].total_hours else '0h'
+                    else:
+                        stato = 'Assente'
+                        entrata = uscita = 'N/A'
+                        ore_lavorate = '0h'
+                    note = daily['last_event'].notes if daily['last_event'] and daily['last_event'].notes else ''
+                else:
+                    stato = 'Non definito'
+                    entrata = uscita = 'N/A'
+                    ore_lavorate = '0h'
+                    note = ''
+                
+                writer.writerow([
+                    user.get_full_name(),
+                    user.role if hasattr(user, 'role') else 'N/A',
+                    sede_name,
+                    daily['date'].strftime('%d/%m/%Y'),
+                    stato,
+                    entrata,
+                    uscita,
+                    ore_lavorate,
+                    note
+                ])
     
     output.seek(0)
     

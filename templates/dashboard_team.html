@@ -77,9 +77,11 @@
                                                 <th>Ore Lavorate</th>
                                                 <th>Note</th>
                                             {% else %}
-                                                <th>Ore Totali</th>
-                                                <th>Giorni Lavorati</th>
-                                                <th>Media Ore/Giorno</th>
+                                                <th>Data</th>
+                                                <th>Stato</th>
+                                                <th>Entrata</th>
+                                                <th>Uscita</th>
+                                                <th>Ore</th>
                                             {% endif %}
                                         </tr>
                                     </thead>
@@ -164,19 +166,81 @@
                                                     {% endif %}
                                                 </td>
                                             {% else %}
-                                                <td>
-                                                    <strong>{{ "%.1f"|format(attendance.total_hours) }}h</strong>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-primary">{{ attendance.total_days }}</span>
-                                                </td>
-                                                <td>
-                                                    {% if attendance.avg_hours_per_day > 0 %}
-                                                        {{ "%.1f"|format(attendance.avg_hours_per_day) }}h
-                                                    {% else %}
-                                                        <span class="text-muted">0h</span>
-                                                    {% endif %}
-                                                </td>
+                                                {% for daily in attendance.daily_details %}
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ user.get_full_name() }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">@{{ user.username }}</small>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-secondary">{{ user.role }}</span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>{{ daily.date.strftime('%d/%m') }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">{{ daily.date.strftime('%a') }}</small>
+                                                    </td>
+                                                    <td>
+                                                        {% if daily.leave_request %}
+                                                            {% if daily.leave_request.leave_type == 'Ferie' %}
+                                                                <span class="badge bg-info">
+                                                                    <i class="fas fa-umbrella-beach me-1"></i>Ferie
+                                                                </span>
+                                                            {% elif daily.leave_request.leave_type == 'Permesso' %}
+                                                                <span class="badge bg-warning">
+                                                                    <i class="fas fa-clock me-1"></i>Permesso
+                                                                </span>
+                                                            {% elif daily.leave_request.leave_type == 'Malattia' %}
+                                                                <span class="badge bg-danger">
+                                                                    <i class="fas fa-notes-medical me-1"></i>Malattia
+                                                                </span>
+                                                            {% endif %}
+                                                        {% else %}
+                                                            {% if daily.status == 'in' %}
+                                                                <span class="badge bg-success">
+                                                                    <i class="fas fa-check-circle me-1"></i>Presente
+                                                                </span>
+                                                            {% elif daily.status == 'break' %}
+                                                                <span class="badge bg-warning">
+                                                                    <i class="fas fa-pause-circle me-1"></i>In Pausa
+                                                                </span>
+                                                            {% elif daily.status == 'out' %}
+                                                                {% if daily.daily_summary and daily.daily_summary.clock_in %}
+                                                                    <span class="badge bg-secondary">
+                                                                        <i class="fas fa-sign-out-alt me-1"></i>Uscito
+                                                                    </span>
+                                                                {% else %}
+                                                                    <span class="badge bg-light text-dark">
+                                                                        <i class="fas fa-minus-circle me-1"></i>Assente
+                                                                    </span>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if daily.daily_summary and daily.daily_summary.clock_in %}
+                                                            {{ daily.daily_summary.clock_in.strftime('%H:%M') }}
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if daily.daily_summary and daily.daily_summary.clock_out %}
+                                                            {{ daily.daily_summary.clock_out.strftime('%H:%M') }}
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if daily.daily_summary and daily.daily_summary.total_hours %}
+                                                            {{ "%.1f"|format(daily.daily_summary.total_hours) }}h
+                                                        {% else %}
+                                                            <span class="text-muted">0h</span>
+                                                        {% endif %}
+                                                    </td>
+                                                {% endfor %}
                                             {% endif %}
                                         </tr>
                                         {% endfor %}
