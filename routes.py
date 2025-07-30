@@ -5876,9 +5876,9 @@ def export_expense_reports_excel():
     
     # Definisci gli header
     if can_manage:
-        headers = ['Dipendente', 'Data Spesa', 'Categoria', 'Descrizione', 'Importo', 'Stato', 'Data Creazione', 'Approvato da', 'Data Approvazione', 'Note Approvazione']
+        headers = ['Dipendente', 'Data Spesa', 'Categoria', 'Descrizione', 'Importo', 'Stato', 'Data Creazione', 'Approvato da', 'Data Approvazione', 'Note']
     else:
-        headers = ['Data Spesa', 'Categoria', 'Descrizione', 'Importo', 'Stato', 'Data Creazione', 'Approvato da', 'Data Approvazione', 'Note Approvazione']
+        headers = ['Data Spesa', 'Categoria', 'Descrizione', 'Importo', 'Stato', 'Data Creazione', 'Approvato da', 'Data Approvazione', 'Note']
     
     # Scrive gli header
     for col, header in enumerate(headers, 1):
@@ -5940,8 +5940,8 @@ def export_expense_reports_excel():
         ws.cell(row=row_idx, column=col, value=expense.approved_at.strftime('%d/%m/%Y %H:%M') if expense.approved_at else '-')
         col += 1
         
-        # Note Approvazione
-        ws.cell(row=row_idx, column=col, value=expense.approval_notes or '-')
+        # Note (campo approval_comment del modello)
+        ws.cell(row=row_idx, column=col, value=expense.approval_comment or '-')
         col += 1
     
     # Ajusta la larghezza delle colonne
