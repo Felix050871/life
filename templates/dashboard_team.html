@@ -10,23 +10,34 @@
                 <h1 class="h3"><i class="fas fa-users me-2"></i>Dashboard Team - {{ period_label }}</h1>
                 <div class="d-flex gap-2">
                     <!-- Controlli temporali -->
-                    <div class="btn-group btn-group-sm" role="group">
-                        <a href="{{ url_for('dashboard_team', period='today', date=request.args.get('date')) }}" 
-                           class="btn {% if period_mode == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            Giorno
-                        </a>
-                        <a href="{{ url_for('dashboard_team', period='week', date=request.args.get('date')) }}" 
-                           class="btn {% if period_mode == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            Settimana
-                        </a>
-                        <a href="{{ url_for('dashboard_team', period='month', date=request.args.get('date')) }}" 
-                           class="btn {% if period_mode == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            Mese
-                        </a>
-                        <button type="button" class="btn {% if period_mode == 'custom' %}btn-primary{% else %}btn-outline-primary{% endif %}" 
-                                data-bs-toggle="modal" data-bs-target="#dateRangeModal">
-                            <i class="fas fa-calendar-alt me-1"></i>Range
-                        </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('dashboard_team', period='today', date=request.args.get('date')) }}" 
+                               class="btn {% if period_mode == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                Giorno
+                            </a>
+                            <a href="{{ url_for('dashboard_team', period='week', date=request.args.get('date')) }}" 
+                               class="btn {% if period_mode == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                Settimana
+                            </a>
+                            <a href="{{ url_for('dashboard_team', period='month', date=request.args.get('date')) }}" 
+                               class="btn {% if period_mode == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                Mese
+                            </a>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-1" style="font-size: 0.875rem;">
+                            <span class="text-muted">Range:</span>
+                            <input type="date" class="form-control form-control-sm" id="quick_start_date" 
+                                   value="{{ request.args.get('start_date', '') }}" style="width: 140px;">
+                            <span class="text-muted">-</span>
+                            <input type="date" class="form-control form-control-sm" id="quick_end_date" 
+                                   value="{{ request.args.get('end_date', '') }}" style="width: 140px;">
+                            <button type="button" class="btn btn-sm {% if period_mode == 'custom' %}btn-primary{% else %}btn-outline-primary{% endif %}" 
+                                    onclick="applyCustomRange()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Navigazione temporale -->
@@ -304,53 +315,12 @@
     {% endif %}
 </div>
 
-<!-- Modal per selezione range date -->
-<div class="modal fade" id="dateRangeModal" tabindex="-1" aria-labelledby="dateRangeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="dateRangeModalLabel">
-                    <i class="fas fa-calendar-alt me-2"></i>Seleziona Range Date
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="GET" action="{{ url_for('dashboard_team') }}">
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label for="start_date" class="form-label">Data Inizio</label>
-                            <input type="date" class="form-control" id="range_start_date" name="start_date" 
-                                   value="{{ request.args.get('start_date', '') }}" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="end_date" class="form-label">Data Fine</label>
-                            <input type="date" class="form-control" id="range_end_date" name="end_date" 
-                                   value="{{ request.args.get('end_date', '') }}" required>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Seleziona un periodo personalizzato per visualizzare le presenze del team
-                        </small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="button" class="btn btn-primary" onclick="submitDateRange()">
-                        <i class="fas fa-search me-1"></i>Visualizza
-                    </button>
-                </div>
-                <input type="hidden" name="period" value="custom">
-            </form>
-        </div>
-    </div>
-</div>
+
 
 <script>
-function submitDateRange() {
-    const startDate = document.getElementById('range_start_date').value;
-    const endDate = document.getElementById('range_end_date').value;
+function applyCustomRange() {
+    const startDate = document.getElementById('quick_start_date').value;
+    const endDate = document.getElementById('quick_end_date').value;
     
     if (!startDate || !endDate) {
         alert('Seleziona entrambe le date');
@@ -362,12 +332,8 @@ function submitDateRange() {
         return;
     }
     
-    // Costruisci URL manualmente
-    const baseUrl = window.location.origin + window.location.pathname;
-    const url = baseUrl + '?period=custom&start_date=' + startDate + '&end_date=' + endDate;
-    
-    // Reindirizza
-    window.location.href = url;
+    // Reindirizza direttamente con i parametri
+    window.location.href = '{{ url_for("dashboard_team") }}?period=custom&start_date=' + startDate + '&end_date=' + endDate;
 }
 </script>
 
