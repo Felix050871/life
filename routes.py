@@ -385,25 +385,66 @@ def dashboard_team():
     # Parametri di visualizzazione
     period_mode = request.args.get('period', 'today')
     export_format = request.args.get('export')
+    date_param = request.args.get('date')
     
-    # Calcolo periodo di visualizzazione
-    today = date.today()
+    # Data di riferimento
+    if date_param:
+        try:
+            reference_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+        except ValueError:
+            reference_date = date.today()
+    else:
+        reference_date = date.today()
     
+    # Calcolo periodo di visualizzazione e navigazione
     if period_mode == 'week':
-        # Settimana corrente (lunedì-domenica)
-        days_until_monday = today.weekday()
-        start_date = today - timedelta(days=days_until_monday)
+        # Settimana (lunedì-domenica)
+        days_until_monday = reference_date.weekday()
+        start_date = reference_date - timedelta(days=days_until_monday)
         end_date = start_date + timedelta(days=6)
         period_label = f"Settimana {start_date.strftime('%d/%m')} - {end_date.strftime('%d/%m/%Y')}"
+        
+        # Navigazione settimana
+        prev_week_start = start_date - timedelta(days=7)
+        next_week_start = start_date + timedelta(days=7)
+        prev_date = prev_week_start
+        next_date = next_week_start
+        
     elif period_mode == 'month':
-        # Mese corrente
-        start_date = today.replace(day=1)
+        # Mese
+        start_date = reference_date.replace(day=1)
         next_month = start_date.replace(month=start_date.month + 1) if start_date.month < 12 else start_date.replace(year=start_date.year + 1, month=1)
         end_date = next_month - timedelta(days=1)
         period_label = f"Mese {start_date.strftime('%B %Y')}"
+        
+        # Navigazione mese
+        if start_date.month == 1:
+            prev_month = start_date.replace(year=start_date.year - 1, month=12, day=1)
+        else:
+            prev_month = start_date.replace(month=start_date.month - 1, day=1)
+        
+        if start_date.month == 12:
+            next_month = start_date.replace(year=start_date.year + 1, month=1, day=1)
+        else:
+            next_month = start_date.replace(month=start_date.month + 1, day=1)
+            
+        prev_date = prev_month
+        next_date = next_month
+        
     else:  # today
-        start_date = end_date = today
-        period_label = f"Oggi {today.strftime('%d/%m/%Y')}"
+        start_date = end_date = reference_date
+        period_label = f"Oggi {reference_date.strftime('%d/%m/%Y')}"
+        
+        # Navigazione giorno
+        prev_date = reference_date - timedelta(days=1)
+        next_date = reference_date + timedelta(days=1)
+    
+    # Dati di navigazione
+    navigation = {
+        'prev_date': prev_date,
+        'next_date': next_date,
+        'current_period': period_label
+    }
     
     # Get attendance data for the period
     attendance_data = {}
@@ -436,8 +477,8 @@ def dashboard_team():
             
             while current_date <= end_date:
                 daily_summary = AttendanceEvent.get_daily_summary(user.id, current_date)
-                if daily_summary and daily_summary.get('total_work_hours', 0) > 0:
-                    total_hours += daily_summary['total_work_hours']
+                if daily_summary and hasattr(daily_summary, 'total_hours') and daily_summary.total_hours > 0:
+                    total_hours += daily_summary.total_hours
                     total_days += 1
                 current_date += timedelta(days=1)
             
@@ -456,11 +497,12 @@ def dashboard_team():
                          all_users=all_users,
                          all_sedi=all_sedi,
                          attendance_data=attendance_data,
-                         today=today,
+                         today=reference_date,
                          period_mode=period_mode,
                          period_label=period_label,
                          start_date=start_date,
                          end_date=end_date,
+                         navigation=navigation,
                          current_user=current_user)
 
 def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi):
