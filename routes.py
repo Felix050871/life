@@ -14,7 +14,7 @@ from config import get_config
 from sqlalchemy.orm import joinedload
 from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport
 from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm
-from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions
+from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
 
 # Inject configuration into all templates
 @app.context_processor
@@ -179,6 +179,25 @@ def dashboard():
             recent_leaves = LeaveRequest.query.filter_by(
                 user_id=current_user.id
             ).order_by(LeaveRequest.created_at.desc()).limit(3).all()
+    
+    # Get recent overtime requests for widget
+    recent_overtime_requests = []
+    my_overtime_requests = []
+    if current_user.can_view_overtime_widget():
+        if current_user.can_manage_overtime_requests() or current_user.can_approve_overtime_requests():
+            # Managers see all requests
+            recent_overtime_requests = OvertimeRequest.query.options(
+                joinedload(OvertimeRequest.employee),
+                joinedload(OvertimeRequest.overtime_type)
+            ).order_by(OvertimeRequest.created_at.desc()).limit(10).all()
+    
+    # Get my overtime requests for personal widget  
+    if current_user.can_view_my_overtime_widget():
+        my_overtime_requests = OvertimeRequest.query.filter_by(
+            employee_id=current_user.id
+        ).options(
+            joinedload(OvertimeRequest.overtime_type)
+        ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
     
     # Get weekly calendar data (Monday to Sunday)
     today = date.today()
@@ -366,6 +385,8 @@ def dashboard():
                          my_shifts=my_shifts,
                          my_reperibilita=my_reperibilita,
                          expense_reports_data=expense_reports_data,
+                         recent_overtime_requests=recent_overtime_requests,
+                         my_overtime_requests=my_overtime_requests,
                          format_hours=format_hours)
 
 @app.route('/dashboard_team')
@@ -8722,14 +8743,16 @@ def overtime_requests_management():
         flash('Non hai i permessi per visualizzare le richieste di straordinario.', 'warning')
         return redirect(url_for('dashboard'))
     
-    # Filtro per sede
+    # Filtro per sede con join esplicito per evitare ambiguità
     if current_user.all_sedi:
         requests = OvertimeRequest.query.options(
             joinedload(OvertimeRequest.employee),
             joinedload(OvertimeRequest.overtime_type)
         ).order_by(OvertimeRequest.created_at.desc()).all()
     else:
-        requests = OvertimeRequest.query.join(User).filter(
+        requests = OvertimeRequest.query.join(
+            User, OvertimeRequest.employee_id == User.id
+        ).filter(
             User.sede_id == current_user.sede_id
         ).options(
             joinedload(OvertimeRequest.employee),
@@ -8767,6 +8790,10 @@ def create_overtime_request():
         )
         db.session.add(overtime_request)
         db.session.commit()
+        
+        # Invia notifica automatica agli approvatori
+        send_overtime_request_message(overtime_request, 'created')
+        
         flash('Richiesta straordinario inviata con successo!', 'success')
         return redirect(url_for('my_overtime_requests'))
     
@@ -8802,10 +8829,14 @@ def approve_overtime_request(request_id):
     
     overtime_request.status = 'approved'
     overtime_request.approval_comment = request.form.get('approval_comment', '')
-    overtime_request.approved_by_id = current_user.id
-    overtime_request.approval_date = italian_now()
+    overtime_request.approved_by = current_user.id
+    overtime_request.approved_at = italian_now()
     
     db.session.commit()
+    
+    # Invia notifica automatica all'utente
+    send_overtime_request_message(overtime_request, 'approved')
+    
     flash('Richiesta straordinario approvata con successo!', 'success')
     return redirect(url_for('overtime_requests_management'))
 
@@ -8825,10 +8856,14 @@ def reject_overtime_request(request_id):
     
     overtime_request.status = 'rejected'
     overtime_request.approval_comment = request.form.get('approval_comment', '')
-    overtime_request.approved_by_id = current_user.id
-    overtime_request.approval_date = italian_now()
+    overtime_request.approved_by = current_user.id
+    overtime_request.approved_at = italian_now()
     
     db.session.commit()
+    
+    # Invia notifica automatica all'utente
+    send_overtime_request_message(overtime_request, 'rejected')
+    
     flash('Richiesta straordinario rifiutata.', 'info')
     return redirect(url_for('overtime_requests_management'))
 

@@ -2032,6 +2032,33 @@ class OvertimeRequest(db.Model):
         return f'<OvertimeRequest {self.employee.get_full_name()} - {self.overtime_date}>'
     
     @property
+    def hours(self):
+        """Calcola le ore di straordinario"""
+        start_datetime = datetime.combine(self.overtime_date, self.start_time)
+        end_datetime = datetime.combine(self.overtime_date, self.end_time)
+        return round((end_datetime - start_datetime).total_seconds() / 3600, 2)
+    
+    @property
+    def status_display(self):
+        """Mostra lo stato in italiano"""
+        status_map = {
+            'pending': 'In Attesa',
+            'approved': 'Approvata',
+            'rejected': 'Rifiutata'
+        }
+        return status_map.get(self.status, self.status)
+    
+    @property
+    def status_color(self):
+        """Restituisce il colore Bootstrap per lo stato"""
+        color_map = {
+            'pending': 'warning',
+            'approved': 'success',
+            'rejected': 'danger'
+        }
+        return color_map.get(self.status, 'secondary')
+    
+    @property
     def status_display(self):
         """Mostra lo stato in italiano"""
         status_map = {

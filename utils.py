@@ -1378,3 +1378,99 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
     except Exception as e:
         logger.error(f"Error sending leave request messages: {e}")
         db.session.rollback()
+
+
+def send_overtime_request_message(overtime_request, action_type, sender_user=None):
+    """Invia messaggi automatici per le richieste di straordinario
+    
+    Args:
+        overtime_request: Oggetto OvertimeRequest
+        action_type: 'created', 'cancelled', 'approved', 'rejected'  
+        sender_user: Utente che ha eseguito l'azione (per cancelled è l'utente stesso)
+    """
+    from models import InternalMessage, User
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Determina i destinatari in base al tipo di azione
+        recipients = []
+        
+        if action_type in ['created', 'cancelled']:
+            # Trova tutti gli utenti che possono approvare richieste straordinari
+            # Filtra per sede: stesso sede_id o all_sedi=True
+            all_users = User.query.filter_by(active=True).all()
+            
+            for user in all_users:
+                # Controlla se l'utente può approvare richieste
+                if hasattr(user, 'can_approve_overtime_requests') and user.can_approve_overtime_requests():
+                    # Controlla appartenenza sede
+                    if (user.all_sedi or  # Accesso a tutte le sedi
+                        (user.sede_id and overtime_request.employee.sede_id and 
+                         user.sede_id == overtime_request.employee.sede_id)):  # Stessa sede
+                        recipients.append(user)
+                        logger.info(f"Added overtime approver {user.username} (sede: {user.sede_id}, all_sedi: {user.all_sedi}) for overtime request from user {overtime_request.employee.username}")
+            
+            logger.info(f"Found {len(recipients)} eligible approvers for overtime request from user {overtime_request.employee.username} (sede: {overtime_request.employee.sede_id})")
+            
+            # Rimuovi duplicati e l'utente richiedente se presente
+            recipients = list(set(recipients))
+            if overtime_request.employee in recipients:
+                recipients.remove(overtime_request.employee)
+                
+        elif action_type in ['approved', 'rejected']:
+            # Per approvazioni e rifiuti, invia messaggio solo all'utente richiedente
+            recipients = [overtime_request.employee]
+        
+        # Determina titolo e messaggio in base all'azione
+        if action_type == 'created':
+            title = f"Nuova richiesta straordinario"
+            message = f"{overtime_request.employee.get_full_name()} ha richiesto straordinario per il {overtime_request.overtime_date.strftime('%d/%m/%Y')} dalle {overtime_request.start_time.strftime('%H:%M')} alle {overtime_request.end_time.strftime('%H:%M')}"
+            if overtime_request.motivation:
+                message += f"\nMotivazione: {overtime_request.motivation}"
+            message += f"\nTipologia: {overtime_request.overtime_type.name}"
+            msg_type = 'info'
+            
+        elif action_type == 'cancelled':
+            title = f"Richiesta straordinario cancellata"
+            message = f"{overtime_request.employee.get_full_name()} ha cancellato la sua richiesta di straordinario del {overtime_request.overtime_date.strftime('%d/%m/%Y')}"
+            msg_type = 'warning'
+        
+        elif action_type == 'approved':
+            title = f"Richiesta straordinario approvata"
+            message = f"La tua richiesta di straordinario del {overtime_request.overtime_date.strftime('%d/%m/%Y')} è stata approvata"
+            if overtime_request.approval_comment:
+                message += f"\nCommento: {overtime_request.approval_comment}"
+            msg_type = 'success'
+            
+        elif action_type == 'rejected':
+            title = f"Richiesta straordinario rifiutata"
+            message = f"La tua richiesta di straordinario del {overtime_request.overtime_date.strftime('%d/%m/%Y')} è stata rifiutata"
+            if overtime_request.approval_comment:
+                message += f"\nCommento: {overtime_request.approval_comment}"
+            msg_type = 'danger'
+        
+        # Crea i messaggi per tutti i destinatari
+        for recipient in recipients:
+            internal_msg = InternalMessage(
+                recipient_id=recipient.id,
+                sender_id=sender_user.id if sender_user else overtime_request.employee.id,
+                title=title,
+                message=message,
+                message_type=msg_type
+            )
+            db.session.add(internal_msg)
+    
+        try:
+            db.session.commit()
+            logger.info(f"Sent {len(recipients)} messages for overtime request {action_type}")
+        except Exception as e:
+            logger.error(f"Error sending overtime request messages: {e}")
+            db.session.rollback()
+    
+    except Exception as e:
+        logger.error(f"Error in send_overtime_request_message: {e}")
+        print(f"Error in send_overtime_request_message: {e}")  # Per debug
+        import traceback
+        traceback.print_exc()
