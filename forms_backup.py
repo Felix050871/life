@@ -1395,9 +1395,6 @@ class OvertimeFilterForm(FlaskForm):
         self.user_id.choices = [('', 'Tutti gli utenti')] + [(u.id, f"{u.username} ({u.full_name})") for u in users]
         
         # Popola le tipologie straordinari
-        try:
-            from models import OvertimeType
-            overtime_types = OvertimeType.query.filter_by(active=True).order_by(OvertimeType.name).all()
-            self.overtime_type_id.choices = [('', 'Tutte le tipologie')] + [(ot.id, ot.name) for ot in overtime_types]
-        except:
-            self.overtime_type_id.choices = [('', 'Tutte le tipologie')]
+        from models import OvertimeType
+        overtime_types = OvertimeType.query.filter_by(active=True).order_by(OvertimeType.name).all()
+        self.overtime_type_id.choices = [('', 'Tutte le tipologie')] + [(ot.id, ot.name) for ot in overtime_types]
