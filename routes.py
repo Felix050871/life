@@ -418,7 +418,7 @@ def dashboard_team():
             # Fallback a oggi se le date non sono valide
             period_mode = 'today'
             start_date = end_date = reference_date
-            period_label = f"Oggi {reference_date.strftime('%d/%m/%Y')}"
+            period_label = f"Giorno {reference_date.strftime('%d/%m/%Y')}"
             prev_date = reference_date - timedelta(days=1)
             next_date = reference_date + timedelta(days=1)
             
@@ -458,7 +458,7 @@ def dashboard_team():
         
     else:  # today
         start_date = end_date = reference_date
-        period_label = f"Oggi {reference_date.strftime('%d/%m/%Y')}"
+        period_label = f"Giorno {reference_date.strftime('%d/%m/%Y')}"
         
         # Navigazione giorno
         prev_date = reference_date - timedelta(days=1)
