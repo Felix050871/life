@@ -5,58 +5,27 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='dashboard_loading.js') }}"></script>
 <script>
-// Nasconde l'overlay quando la pagina è completamente caricata
+// Sistema semplificato senza overlay - solo feedback su pulsanti
 document.addEventListener('DOMContentLoaded', function() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.classList.add('d-none');
-        overlay.style.display = 'none'; // Forza anche lo style
-        console.log('Dashboard team loaded - overlay hidden');
-    }
+    console.log('Dashboard team caricata senza overlay');
     
-    // Riabilita i controlli quando la pagina è caricata
+    // Gestione form con feedback solo sul pulsante
+    const form = document.getElementById('customRangeForm');
     const submitButton = document.getElementById('customSearchBtn');
-    if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.innerHTML = '<i class="fas fa-search me-1"></i>Visualizza';
-    }
     
-    const exportButtons = document.querySelectorAll('.export-btn');
-    exportButtons.forEach(btn => btn.style.pointerEvents = 'auto');
-    
-    // Protezione aggiuntiva: nasconde overlay ogni 3 secondi se ancora visibile (ridotta frequenza)
-    setInterval(() => {
-        if (overlay && !overlay.classList.contains('d-none')) {
-            overlay.classList.add('d-none');
-            overlay.style.display = 'none';
-            console.log('Overlay force-hidden by interval check');
-        }
-    }, 3000);
-});
-
-// Nasconde l'overlay se viene mostrato durante la navigazione
-window.addEventListener('pageshow', function(event) {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.classList.add('d-none');
+    if (form && submitButton) {
+        form.addEventListener('submit', function() {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricamento...';
+            console.log('Form submission with button feedback only');
+        });
     }
 });
 </script>
 {% endblock %}
 
 {% block content %}
-<!-- Loading Overlay -->
-<div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background: rgba(0,0,0,0.7); z-index: 9999;">
-    <div class="d-flex justify-content-center align-items-center h-100">
-        <div class="text-center text-white">
-            <div class="spinner-border mb-3" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Caricamento...</span>
-            </div>
-            <h4>Elaborazione in corso...</h4>
-            <p class="mb-0">Attendere prego, operazione in corso</p>
-        </div>
-    </div>
-</div>
+<!-- Overlay rimosso completamente per eliminare problemi di persistenza -->
 
 <div class="container-fluid">
     <div class="row">
@@ -68,7 +37,7 @@ window.addEventListener('pageshow', function(event) {
                     <!-- Controlli temporali semplificati -->
                     <div class="d-flex align-items-center gap-3">
                         <!-- Solo range personalizzato -->
-                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-2" id="customRangeForm" onsubmit="showLoadingForm(this); return true;">
+                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-2" id="customRangeForm">
                             <label class="form-label mb-0 text-muted">Periodo:</label>
                             <input type="date" class="form-control form-control-sm" name="start_date" 
                                    value="{{ start_date.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
