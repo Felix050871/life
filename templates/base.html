@@ -599,9 +599,15 @@
 
         // Auto-attach to forms and buttons that cause navigation/submission
         document.addEventListener('DOMContentLoaded', function() {
-            // Form submissions
+            // Form submissions (excluding forms inside modals for cancel actions)
             document.querySelectorAll('form').forEach(form => {
                 form.addEventListener('submit', function(e) {
+                    // Check if the form is being submitted by a modal dismiss button
+                    const activeElement = document.activeElement;
+                    if (activeElement && activeElement.hasAttribute('data-bs-dismiss')) {
+                        return; // Don't show overlay for modal dismiss actions
+                    }
+                    
                     // Delay slightly to allow form processing
                     setTimeout(() => {
                         loadingManager.show();
@@ -609,8 +615,8 @@
                 });
             });
 
-            // Links that cause navigation (excluding anchors, modals, and export links)
-            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle]):not([href*="export"])').forEach(link => {
+            // Links that cause navigation (excluding anchors, modals, export links, and modal dismiss buttons)
+            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle]):not([href*="export"]):not([data-bs-dismiss])').forEach(link => {
                 link.addEventListener('click', function(e) {
                     const href = this.getAttribute('href');
                     // Only show loading for internal navigation
@@ -620,6 +626,23 @@
                         }, 100);
                     }
                 });
+            });
+
+            // Disable overlay for all modal dismiss buttons (Annulla, Close)
+            document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(dismissBtn => {
+                dismissBtn.addEventListener('click', function(e) {
+                    // Never show loading overlay for modal dismiss actions
+                    e.stopPropagation();
+                });
+            });
+
+            // Also disable overlay for buttons with "Annulla" text (backup protection)
+            document.querySelectorAll('button').forEach(btn => {
+                if (btn.textContent.trim().toLowerCase().includes('annulla')) {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+                }
             });
 
             // Export buttons - Solo feedback sul pulsante senza overlay
