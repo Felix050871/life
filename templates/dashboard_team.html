@@ -31,22 +31,43 @@
                     
                     <!-- Navigazione temporale -->
                     <div class="d-flex align-items-center">
-                        <a href="{{ url_for('dashboard_team', period=period_mode, date=navigation.prev_date.strftime('%Y-%m-%d')) }}" 
-                           class="btn btn-outline-primary btn-sm me-2">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
+                        {% if period_mode == 'custom' %}
+                            <a href="{{ url_for('dashboard_team', period='custom', start_date=navigation.prev_start_date, end_date=navigation.prev_end_date) }}" 
+                               class="btn btn-outline-primary btn-sm me-2">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('dashboard_team', period=period_mode, date=navigation.prev_date.strftime('%Y-%m-%d')) }}" 
+                               class="btn btn-outline-primary btn-sm me-2">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% endif %}
                         <span class="px-3 text-center fw-bold small">{{ navigation.current_period }}</span>
-                        <a href="{{ url_for('dashboard_team', period=period_mode, date=navigation.next_date.strftime('%Y-%m-%d')) }}" 
-                           class="btn btn-outline-primary btn-sm me-2">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
+                        {% if period_mode == 'custom' %}
+                            <a href="{{ url_for('dashboard_team', period='custom', start_date=navigation.next_start_date, end_date=navigation.next_end_date) }}" 
+                               class="btn btn-outline-primary btn-sm me-2">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('dashboard_team', period=period_mode, date=navigation.next_date.strftime('%Y-%m-%d')) }}" 
+                               class="btn btn-outline-primary btn-sm me-2">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
                     </div>
                     
                     <!-- Export -->
-                    <a href="{{ url_for('dashboard_team', period=period_mode, date=request.args.get('date'), export='csv') }}" 
-                       class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-download me-1"></i>Esporta CSV
-                    </a>
+                    {% if period_mode == 'custom' %}
+                        <a href="{{ url_for('dashboard_team', period='custom', start_date=request.args.get('start_date'), end_date=request.args.get('end_date'), export='csv') }}" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download me-1"></i>Esporta CSV
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('dashboard_team', period=period_mode, date=request.args.get('date'), export='csv') }}" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download me-1"></i>Esporta CSV
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

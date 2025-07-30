@@ -411,7 +411,9 @@ def dashboard_team():
             # Navigazione per range personalizzato
             range_days = (end_date - start_date).days + 1
             prev_start = start_date - timedelta(days=range_days)
+            prev_end = end_date - timedelta(days=range_days)
             next_start = end_date + timedelta(days=1)
+            next_end = next_start + timedelta(days=range_days - 1)
             prev_date = prev_start
             next_date = next_start
         except ValueError:
@@ -471,11 +473,27 @@ def dashboard_team():
         'current_period': period_label
     }
     
+    # Aggiungi date specifiche per custom range
+    if period_mode == 'custom' and start_date_str and end_date_str:
+        range_days = (end_date - start_date).days + 1
+        prev_start = start_date - timedelta(days=range_days)
+        prev_end = end_date - timedelta(days=range_days)
+        next_start = end_date + timedelta(days=1)
+        next_end = next_start + timedelta(days=range_days - 1)
+        
+        navigation.update({
+            'prev_start_date': prev_start.strftime('%Y-%m-%d'),
+            'prev_end_date': prev_end.strftime('%Y-%m-%d'),
+            'next_start_date': next_start.strftime('%Y-%m-%d'),
+            'next_end_date': next_end.strftime('%Y-%m-%d')
+        })
+    
     # Get attendance data for the period
     attendance_data = {}
     
     for user in all_users:
-        if period_mode == 'today':
+        if period_mode == 'today' and start_date == end_date:
+            # Vista giornaliera singola
             status, last_event = AttendanceEvent.get_user_status(user.id, reference_date)
             daily_summary = AttendanceEvent.get_daily_summary(user.id, reference_date)
             
