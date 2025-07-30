@@ -59,11 +59,12 @@
                         </div>
 
                         <div class="mb-3">
-                            {{ form.description.label(class="form-label") }}
-                            {{ form.description(class="form-control", rows="3", placeholder="Descrizione opzionale per le nuove coperture...") }}
-                            {% for error in form.description.errors %}
+                            {{ form.role_mapping.label(class="form-label") }}
+                            {{ form.role_mapping(class="form-select") }}
+                            {% for error in form.role_mapping.errors %}
                                 <div class="text-danger small">{{ error }}</div>
                             {% endfor %}
+                            <div class="form-text">Seleziona le sostituzioni di ruoli da applicare (opzionale)</div>
                         </div>
 
                         <div class="alert alert-warning">
