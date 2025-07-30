@@ -3348,12 +3348,16 @@ def reperibilita_coverage():
     from models import ReperibilitaCoverage
     from collections import defaultdict
     
-    # Raggruppa le coperture per periodo come i presidi
+    # Raggruppa le coperture per periodo + sede per trattare duplicazioni come gruppi separati
     coverages = ReperibilitaCoverage.query.order_by(ReperibilitaCoverage.start_date.desc()).all()
     groups = defaultdict(lambda: {'coverages': [], 'start_date': None, 'end_date': None, 'creator': None, 'created_at': None})
     
     for coverage in coverages:
-        period_key = f"{coverage.start_date.strftime('%Y-%m-%d')}_{coverage.end_date.strftime('%Y-%m-%d')}"
+        # Include sede nel period_key per separare coperture duplicate con sedi diverse
+        sede_ids = sorted(coverage.get_sedi_ids_list())
+        sede_key = "_".join(map(str, sede_ids)) if sede_ids else "no_sede"
+        period_key = f"{coverage.start_date.strftime('%Y-%m-%d')}_{coverage.end_date.strftime('%Y-%m-%d')}_{sede_key}"
+        
         if not groups[period_key]['start_date']:
             groups[period_key]['start_date'] = coverage.start_date
             groups[period_key]['end_date'] = coverage.end_date
