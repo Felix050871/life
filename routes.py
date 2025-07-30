@@ -451,26 +451,60 @@ def dashboard_team():
         
         return True
     
-    # Get attendance data for the period (solo giorni lavorativi)
+    # Get attendance data for the period - OTTIMIZZATO
     attendance_data = {}
     
+    # Pre-carica tutti i dati necessari con query ottimizzate
+    user_ids = [user.id for user in all_users]
+    
+    # Query batch per richieste di congedo nel periodo
+    leave_requests = LeaveRequest.query.filter(
+        LeaveRequest.user_id.in_(user_ids),
+        LeaveRequest.status == 'Approved',
+        LeaveRequest.start_date <= end_date,
+        LeaveRequest.end_date >= start_date
+    ).all()
+    
+    # Organizza leave requests per user_id e date
+    leave_by_user_date = {}
+    for leave in leave_requests:
+        if leave.user_id not in leave_by_user_date:
+            leave_by_user_date[leave.user_id] = {}
+        
+        # Aggiungi la richiesta per ogni giorno coperto
+        current = max(leave.start_date, start_date)
+        end = min(leave.end_date, end_date)
+        while current <= end:
+            leave_by_user_date[leave.user_id][current] = leave
+            current += timedelta(days=1)
+    
+    # Query batch per eventi di presenza nel periodo
+    attendance_events = AttendanceEvent.query.filter(
+        AttendanceEvent.user_id.in_(user_ids),
+        AttendanceEvent.date >= start_date,
+        AttendanceEvent.date <= end_date
+    ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+    
+    # Organizza eventi per user_id e date
+    events_by_user_date = {}
+    for event in attendance_events:
+        if event.user_id not in events_by_user_date:
+            events_by_user_date[event.user_id] = {}
+        if event.date not in events_by_user_date[event.user_id]:
+            events_by_user_date[event.user_id][event.date] = []
+        events_by_user_date[event.user_id][event.date].append(event)
+
     for user in all_users:
         if start_date == end_date:
-            # Vista giornaliera singola - mostra sempre gli utenti se è un giorno lavorativo
+            # Vista giornaliera singola
             is_working = is_working_day(start_date, user)
+            leave_request = leave_by_user_date.get(user.id, {}).get(start_date)
             
-            # Check for approved leave requests
-            leave_request = LeaveRequest.query.filter(
-                LeaveRequest.user_id == user.id,
-                LeaveRequest.status == 'Approved',
-                LeaveRequest.start_date <= start_date,
-                LeaveRequest.end_date >= start_date
-            ).first()
-            
-            # Includi l'utente solo se è un giorno lavorativo OR ha una richiesta di congedo
             if is_working or leave_request:
-                status, last_event = AttendanceEvent.get_user_status(user.id, start_date)
-                daily_summary = AttendanceEvent.get_daily_summary(user.id, start_date)
+                # Usa dati pre-caricati invece di query separate
+                user_events = events_by_user_date.get(user.id, {}).get(start_date, [])
+                status, last_event = AttendanceEvent.calculate_status_from_events(user_events)
+                daily_summary = AttendanceEvent.calculate_summary_from_events(user_events)
                 
                 attendance_data[user.id] = {
                     'user': user,
@@ -480,33 +514,19 @@ def dashboard_team():
                     'leave_request': leave_request
                 }
         else:
-            # Per periodo multi-giorno, filtra solo i giorni non lavorativi
+            # Periodo multi-giorno ottimizzato
             daily_details = []
             current_date = start_date
             
-            while current_date <= end_date:
-                # Non visualizzare date future
-                if current_date > date.today():
-                    current_date += timedelta(days=1)
-                    continue
-                
-                # Verifica se è un giorno lavorativo per questo utente
+            while current_date <= min(end_date, date.today()):
                 is_working = is_working_day(current_date, user)
+                leave_request = leave_by_user_date.get(user.id, {}).get(current_date)
                 
-                # Check for approved leave requests
-                leave_request = LeaveRequest.query.filter(
-                    LeaveRequest.user_id == user.id,
-                    LeaveRequest.status == 'Approved',
-                    LeaveRequest.start_date <= current_date,
-                    LeaveRequest.end_date >= current_date
-                ).first()
-                
-                # Solo se è un giorno lavorativo O ha una richiesta di congedo, includi il giorno
                 if is_working or leave_request:
-                    daily_summary = AttendanceEvent.get_daily_summary(user.id, current_date)
-                    status, last_event = AttendanceEvent.get_user_status(user.id, current_date)
+                    user_events = events_by_user_date.get(user.id, {}).get(current_date, [])
+                    status, last_event = AttendanceEvent.calculate_status_from_events(user_events)
+                    daily_summary = AttendanceEvent.calculate_summary_from_events(user_events)
                     
-                    # Se non ci sono eventi e non ci sono richieste di congedo, forza status a 'out'
                     if not daily_summary and not leave_request and not last_event:
                         status = 'out'
                     
@@ -520,13 +540,12 @@ def dashboard_team():
                 
                 current_date += timedelta(days=1)
             
-            # Aggiungi l'utente solo se ha giorni lavorativi
             if daily_details:
                 attendance_data[user.id] = {
                     'user': user,
                     'daily_details': daily_details
                 }
-    
+                
     # Handle export
     if export_format == 'excel':
         return generate_attendance_excel_export(attendance_data, 'custom', period_label, all_sedi, start_date, end_date)

@@ -853,6 +853,64 @@ class AttendanceEvent(db.Model):
         return sorted(summaries, key=lambda x: x.date, reverse=True)
     
     @staticmethod
+    def calculate_status_from_events(events_list):
+        """Calcola lo stato dell'utente da una lista di eventi pre-caricati"""
+        if not events_list:
+            return 'out', None
+        
+        status = 'out'
+        last_event = None
+        
+        for event in events_list:
+            if event.event_type == 'clock_in':
+                status = 'in'
+            elif event.event_type == 'clock_out':
+                status = 'out'
+            elif event.event_type == 'break_start':
+                status = 'break'
+            elif event.event_type == 'break_end':
+                status = 'in'
+            last_event = event
+        
+        return status, last_event
+    
+    @staticmethod 
+    def calculate_summary_from_events(events_list):
+        """Crea summary da lista di eventi pre-caricati"""
+        if not events_list:
+            return None
+        
+        first_clock_in = None
+        last_clock_out = None
+        first_break_start = None
+        last_break_end = None
+        
+        for event in events_list:
+            if event.event_type == 'clock_in' and first_clock_in is None:
+                first_clock_in = convert_to_italian_time(event.timestamp)
+            elif event.event_type == 'clock_out':
+                last_clock_out = convert_to_italian_time(event.timestamp)
+            elif event.event_type == 'break_start' and first_break_start is None:
+                first_break_start = convert_to_italian_time(event.timestamp)
+            elif event.event_type == 'break_end':
+                last_break_end = convert_to_italian_time(event.timestamp)
+        
+        if not first_clock_in:
+            return None
+            
+        # Usa la classe DailySummary definita sopra
+        return type('DailySummary', (), {
+            'date': events_list[0].date,
+            'clock_in': first_clock_in,
+            'clock_out': last_clock_out,
+            'break_start': first_break_start,
+            'break_end': last_break_end,
+            'user_id': events_list[0].user_id,
+            'notes': events_list[-1].notes if events_list and events_list[-1].notes else None,
+            'total_hours': (last_clock_out - first_clock_in).total_seconds() / 3600 if first_clock_in and last_clock_out else 0.0
+        })()
+    
+    @staticmethod
     def get_events_as_records(user_id, start_date, end_date):
         """Converte gli eventi in UN SOLO record per giorno per evitare duplicati"""
         events = AttendanceEvent.query.filter(
