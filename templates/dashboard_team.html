@@ -87,18 +87,18 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for user in sede_users %}
-                                        {% set attendance = attendance_data[user.id] %}
-                                        <tr>
-                                            <td>
-                                                <strong>{{ user.get_full_name() }}</strong>
-                                                <br>
-                                                <small class="text-muted">@{{ user.username }}</small>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-secondary">{{ user.role }}</span>
-                                            </td>
-                                            {% if period_mode == 'today' %}
+                                        {% if period_mode == 'today' %}
+                                            {% for user in sede_users %}
+                                            {% set attendance = attendance_data[user.id] %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ user.get_full_name() }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">@{{ user.username }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-secondary">{{ user.role }}</span>
+                                                </td>
                                                 <td>
                                                     {% if attendance.leave_request %}
                                                         {% if attendance.leave_request.leave_type == 'Ferie' %}
@@ -166,9 +166,12 @@
                                                         <span class="text-muted">-</span>
                                                     {% endif %}
                                                 </td>
-                                            {% else %}
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            {% for user in sede_users %}
+                                            {% set attendance = attendance_data[user.id] %}
                                                 {% for daily in attendance.daily_details %}
-                                                </tr>
                                                 <tr>
                                                     <td>
                                                         <strong>{{ daily.date.strftime('%d/%m') }}</strong>
@@ -238,10 +241,10 @@
                                                             <span class="text-muted">0h</span>
                                                         {% endif %}
                                                     </td>
+                                                </tr>
                                                 {% endfor %}
-                                            {% endif %}
-                                        </tr>
-                                        {% endfor %}
+                                            {% endfor %}
+                                        {% endif %}
                                     </tbody>
                                 </table>
                             </div>
