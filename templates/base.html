@@ -609,8 +609,8 @@
                 });
             });
 
-            // Links that cause navigation (excluding anchors and modals)
-            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle])').forEach(link => {
+            // Links that cause navigation (excluding anchors, modals, and export links)
+            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle]):not([href*="export"])').forEach(link => {
                 link.addEventListener('click', function(e) {
                     const href = this.getAttribute('href');
                     // Only show loading for internal navigation
@@ -619,6 +619,26 @@
                             loadingManager.show();
                         }, 100);
                     }
+                });
+            });
+
+            // Export buttons - Solo feedback sul pulsante senza overlay
+            document.querySelectorAll('a[href*="export"], .export-btn').forEach(exportBtn => {
+                exportBtn.addEventListener('click', function(e) {
+                    // Cambia il testo del pulsante per indicare generazione in corso
+                    const originalHTML = this.innerHTML;
+                    const originalClass = this.className;
+                    
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generazione in corso...';
+                    this.classList.add('disabled');
+                    this.style.pointerEvents = 'none';
+                    
+                    // Ripristina dopo 5 secondi (tempo ragionevole per download)
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                        this.className = originalClass;
+                        this.style.pointerEvents = 'auto';
+                    }, 5000);
                 });
             });
 
