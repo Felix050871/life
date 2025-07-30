@@ -68,9 +68,9 @@
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th>Utente</th>
-                                            <th>Ruolo</th>
                                             {% if period_mode == 'today' %}
+                                                <th>Utente</th>
+                                                <th>Ruolo</th>
                                                 <th>Stato</th>
                                                 <th>Entrata</th>
                                                 <th>Uscita</th>
@@ -169,14 +169,19 @@
                                             </tr>
                                             {% endfor %}
                                         {% else %}
+                                            {% set all_daily_entries = [] %}
                                             {% for user in sede_users %}
-                                            {% set attendance = attendance_data[user.id] %}
+                                                {% set attendance = attendance_data[user.id] %}
                                                 {% for daily in attendance.daily_details %}
+                                                    {% set _ = all_daily_entries.append((daily.date, user, daily)) %}
+                                                {% endfor %}
+                                            {% endfor %}
+                                            {% for date, user, daily in all_daily_entries|sort(attribute='0') %}
                                                 <tr>
                                                     <td>
-                                                        <strong>{{ daily.date.strftime('%d/%m') }}</strong>
+                                                        <strong>{{ date.strftime('%d/%m') }}</strong>
                                                         <br>
-                                                        <small class="text-muted">{{ daily.date.strftime('%a') }}</small>
+                                                        <small class="text-muted">{{ date.strftime('%a') }}</small>
                                                     </td>
                                                     <td>
                                                         <strong>{{ user.get_full_name() }}</strong>
@@ -242,7 +247,6 @@
                                                         {% endif %}
                                                     </td>
                                                 </tr>
-                                                {% endfor %}
                                             {% endfor %}
                                         {% endif %}
                                     </tbody>
