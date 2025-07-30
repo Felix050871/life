@@ -432,10 +432,14 @@ class ReperibilitaTemplateForm(FlaskForm):
                 ReperibilitaCoverage.end_date >= date.today()
             ).all()
             
-            # Crea un dizionario raggruppato per periodo
+            # Crea un dizionario raggruppato per periodo + sede per separare duplicazioni
             periods = {}
             for coverage in coverages:
-                period_key = f"{coverage.start_date.strftime('%Y-%m-%d')}__{coverage.end_date.strftime('%Y-%m-%d')}"
+                # Include sede nel period_key per separare coperture duplicate con sedi diverse
+                sede_ids = sorted(coverage.get_sedi_ids_list())
+                sede_key = "_".join(map(str, sede_ids)) if sede_ids else "no_sede"
+                period_key = f"{coverage.start_date.strftime('%Y-%m-%d')}__{coverage.end_date.strftime('%Y-%m-%d')}__{sede_key}"
+                
                 if period_key not in periods:
                     periods[period_key] = {
                         'start_date': coverage.start_date,
