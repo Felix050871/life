@@ -492,10 +492,13 @@ def dashboard_team():
                 ).first()
                 
                 # Sempre aggiungere la data, anche se l'utente era assente
-                # Status sarà 'out' se non ci sono eventi di presenza
+                # Se non ci sono eventi e non ci sono richieste di congedo, forza status a 'out'
+                if not daily_summary and not leave_request and not last_event:
+                    status = 'out'
+                
                 daily_details.append({
                     'date': current_date,
-                    'status': status if daily_summary or leave_request else 'out',
+                    'status': status,
                     'daily_summary': daily_summary,
                     'last_event': last_event,
                     'leave_request': leave_request
