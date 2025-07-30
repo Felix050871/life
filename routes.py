@@ -13,7 +13,7 @@ from app import app, db, csrf
 from config import get_config
 from sqlalchemy.orm import joinedload
 from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions
 
 # Inject configuration into all templates
