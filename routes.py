@@ -5855,18 +5855,25 @@ def export_expense_reports_excel():
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from openpyxl.utils import get_column_letter
-    from models import ExpenseReport, ExpenseCategory
+    from models import ExpenseReport, ExpenseCategory, User
+    from sqlalchemy.orm import joinedload
     
     # Determina se l'utente può vedere tutte le note spese o solo le proprie
     can_manage = current_user.can_manage_expense_reports() or current_user.can_approve_expense_reports()
     
     if can_manage:
         # Admin può vedere tutte le note spese
-        expenses = ExpenseReport.query.order_by(ExpenseReport.expense_date.desc()).all()
+        expenses = ExpenseReport.query.options(
+            joinedload(ExpenseReport.employee),
+            joinedload(ExpenseReport.category)
+        ).order_by(ExpenseReport.expense_date.desc()).all()
         filename = f"note_spese_{date.today().strftime('%Y%m%d')}.xlsx"
     else:
         # Utente normale vede solo le proprie
-        expenses = ExpenseReport.query.filter_by(employee_id=current_user.id).order_by(ExpenseReport.expense_date.desc()).all()
+        expenses = ExpenseReport.query.filter_by(employee_id=current_user.id).options(
+            joinedload(ExpenseReport.employee),
+            joinedload(ExpenseReport.category)
+        ).order_by(ExpenseReport.expense_date.desc()).all()
         filename = f"mie_note_spese_{date.today().strftime('%Y%m%d')}.xlsx"
     
     # Crea il workbook
@@ -5933,7 +5940,8 @@ def export_expense_reports_excel():
         col += 1
         
         # Approvato da
-        ws.cell(row=row_idx, column=col, value=expense.approved_by.get_full_name() if expense.approved_by else '-')
+        approved_by_user = User.query.get(expense.approved_by) if expense.approved_by else None
+        ws.cell(row=row_idx, column=col, value=approved_by_user.get_full_name() if approved_by_user else '-')
         col += 1
         
         # Data Approvazione
