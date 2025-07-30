@@ -548,6 +548,107 @@
 
         console.log('Workforce Management App initialized');
     </script>
+    <!-- Global Loading Overlay -->
+    <div id="globalLoadingOverlay" class="loading-overlay d-none">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5 class="text-white">Elaborazione in corso...</h5>
+            <p class="text-white-50 mb-0">Attendere prego</p>
+        </div>
+    </div>
+
+    <!-- Global Loading Script -->
+    <script>
+        // Global Loading Overlay System
+        class LoadingManager {
+            constructor() {
+                this.overlay = document.getElementById('globalLoadingOverlay');
+                this.isShowing = false;
+                this.timeoutId = null;
+            }
+
+            show() {
+                if (!this.isShowing) {
+                    this.overlay.classList.remove('d-none');
+                    this.isShowing = true;
+                    // Auto-hide dopo 30 secondi come fallback
+                    this.timeoutId = setTimeout(() => {
+                        this.hide();
+                    }, 30000);
+                }
+            }
+
+            hide() {
+                if (this.isShowing) {
+                    this.overlay.classList.add('d-none');
+                    this.isShowing = false;
+                    if (this.timeoutId) {
+                        clearTimeout(this.timeoutId);
+                        this.timeoutId = null;
+                    }
+                }
+            }
+        }
+
+        // Initialize global loading manager
+        const loadingManager = new LoadingManager();
+
+        // Auto-attach to forms and buttons that cause navigation/submission
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form submissions
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    // Delay slightly to allow form processing
+                    setTimeout(() => {
+                        loadingManager.show();
+                    }, 100);
+                });
+            });
+
+            // Links that cause navigation (excluding anchors and modals)
+            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle])').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    // Only show loading for internal navigation
+                    if (href && !href.startsWith('http') && !href.startsWith('mailto') && !href.startsWith('tel')) {
+                        setTimeout(() => {
+                            loadingManager.show();
+                        }, 100);
+                    }
+                });
+            });
+
+            // Export buttons and other heavy operations
+            document.querySelectorAll('[data-loading="true"], .btn[href*="export"], button[type="submit"]').forEach(element => {
+                element.addEventListener('click', function(e) {
+                    setTimeout(() => {
+                        loadingManager.show();
+                    }, 100);
+                });
+            });
+
+            // Hide loading on page load (in case of back navigation)
+            loadingManager.hide();
+        });
+
+        // Hide loading on page visibility change or beforeunload
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                loadingManager.hide();
+            }
+        });
+
+        window.addEventListener('beforeunload', function() {
+            loadingManager.hide();
+        });
+
+        // Expose globally for manual control
+        window.showLoading = () => loadingManager.show();
+        window.hideLoading = () => loadingManager.hide();
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
