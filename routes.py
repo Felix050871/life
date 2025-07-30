@@ -8714,7 +8714,7 @@ def create_overtime_type():
 
 @app.route('/overtime_requests')
 @login_required
-def overtime_requests():
+def overtime_requests_management():
     """Visualizzazione richieste straordinari"""
     if not current_user.can_view_overtime_requests():
         flash('Non hai i permessi per visualizzare le richieste di straordinario.', 'warning')
@@ -8734,7 +8734,9 @@ def overtime_requests():
             joinedload(OvertimeRequest.overtime_type)
         ).order_by(OvertimeRequest.created_at.desc()).all()
     
-    return render_template('overtime_requests.html', requests=requests)
+    # Crea form per filtri
+    form = OvertimeFilterForm()
+    return render_template('overtime_requests.html', requests=requests, form=form)
 
 @app.route('/overtime_requests/create', methods=['GET', 'POST'])
 @login_required  
@@ -8782,35 +8784,149 @@ def my_overtime_requests():
     
     return render_template('my_overtime_requests.html', requests=requests)
 
-@app.route('/overtime_requests/<int:request_id>/approve', methods=['GET', 'POST'])
+@app.route('/overtime_requests/<int:request_id>/approve', methods=['POST'])
 @login_required
 def approve_overtime_request(request_id):
-    """Approvazione/rifiuto richiesta straordinario"""
+    """Approva richiesta straordinario"""
     if not current_user.can_approve_overtime_requests():
         flash('Non hai i permessi per approvare richieste di straordinario.', 'warning')
-        return redirect(url_for('overtime_requests'))
+        return redirect(url_for('overtime_requests_management'))
     
     overtime_request = OvertimeRequest.query.get_or_404(request_id)
     
-    # Controllo sede
     if not current_user.all_sedi and overtime_request.employee.sede_id != current_user.sede_id:
         flash('Non puoi approvare richieste di altre sedi.', 'warning')
-        return redirect(url_for('overtime_requests'))
+        return redirect(url_for('overtime_requests_management'))
     
-    form = ApproveOvertimeForm()
-    if form.validate_on_submit():
-        overtime_request.status = 'approved' if form.action.data == 'approve' else 'rejected'
-        overtime_request.approval_comment = form.comment.data
-        overtime_request.approved_by_id = current_user.id
-        overtime_request.approval_date = italian_now()
-        
-        db.session.commit()
-        
-        status_text = 'approvata' if form.action.data == 'approve' else 'rifiutata'
-        flash(f'Richiesta straordinario {status_text} con successo!', 'success')
-        return redirect(url_for('overtime_requests'))
+    overtime_request.status = 'approved'
+    overtime_request.approval_comment = request.form.get('approval_comment', '')
+    overtime_request.approved_by_id = current_user.id
+    overtime_request.approval_date = italian_now()
     
-    return render_template('approve_overtime_request.html', form=form, request=overtime_request)
+    db.session.commit()
+    flash('Richiesta straordinario approvata con successo!', 'success')
+    return redirect(url_for('overtime_requests_management'))
+
+@app.route('/overtime_requests/<int:request_id>/reject', methods=['POST'])
+@login_required
+def reject_overtime_request(request_id):
+    """Rifiuta richiesta straordinario"""
+    if not current_user.can_approve_overtime_requests():
+        flash('Non hai i permessi per rifiutare richieste di straordinario.', 'warning')
+        return redirect(url_for('overtime_requests_management'))
+    
+    overtime_request = OvertimeRequest.query.get_or_404(request_id)
+    
+    if not current_user.all_sedi and overtime_request.employee.sede_id != current_user.sede_id:
+        flash('Non puoi rifiutare richieste di altre sedi.', 'warning')
+        return redirect(url_for('overtime_requests_management'))
+    
+    overtime_request.status = 'rejected'
+    overtime_request.approval_comment = request.form.get('approval_comment', '')
+    overtime_request.approved_by_id = current_user.id
+    overtime_request.approval_date = italian_now()
+    
+    db.session.commit()
+    flash('Richiesta straordinario rifiutata.', 'info')
+    return redirect(url_for('overtime_requests_management'))
+
+@app.route('/overtime_requests/<int:request_id>/delete', methods=['POST'])
+@login_required
+def delete_overtime_request(request_id):
+    """Cancella richiesta straordinario"""
+    overtime_request = OvertimeRequest.query.get_or_404(request_id)
+    
+    # Solo il proprietario può cancellare se in stato pending
+    if overtime_request.employee_id != current_user.id:
+        flash('Non puoi cancellare richieste di altri utenti.', 'warning')
+        return redirect(url_for('my_overtime_requests'))
+    
+    if overtime_request.status != 'pending':
+        flash('Non puoi cancellare richieste già approvate o rifiutate.', 'warning')
+        return redirect(url_for('my_overtime_requests'))
+    
+    db.session.delete(overtime_request)
+    db.session.commit()
+    flash('Richiesta straordinario cancellata.', 'info')
+    return redirect(url_for('my_overtime_requests'))
+
+@app.route('/overtime_requests/export')
+@login_required
+def overtime_requests_excel():
+    """Export Excel richieste straordinari"""
+    if not current_user.can_view_overtime_requests():
+        flash('Non hai i permessi per esportare le richieste di straordinario.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    # Query con filtri sede
+    if current_user.all_sedi:
+        requests = OvertimeRequest.query.options(
+            joinedload(OvertimeRequest.employee),
+            joinedload(OvertimeRequest.overtime_type)
+        ).order_by(OvertimeRequest.created_at.desc()).all()
+    else:
+        requests = OvertimeRequest.query.join(User).filter(
+            User.sede_id == current_user.sede_id
+        ).options(
+            joinedload(OvertimeRequest.employee),
+            joinedload(OvertimeRequest.overtime_type)
+        ).order_by(OvertimeRequest.created_at.desc()).all()
+    
+    # Creazione Excel
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Richieste Straordinari"
+    
+    # Headers
+    headers = ['Utente', 'Data', 'Orario Inizio', 'Orario Fine', 'Ore', 'Tipologia', 'Moltiplicatore', 'Stato', 'Motivazione', 'Creata il']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    
+    # Dati
+    for row, req in enumerate(requests, 2):
+        ws.cell(row=row, column=1, value=req.employee.get_full_name())
+        ws.cell(row=row, column=2, value=req.overtime_date.strftime('%d/%m/%Y'))
+        ws.cell(row=row, column=3, value=req.start_time.strftime('%H:%M'))
+        ws.cell(row=row, column=4, value=req.end_time.strftime('%H:%M'))
+        ws.cell(row=row, column=5, value=f"{req.hours:.1f}")
+        ws.cell(row=row, column=6, value=req.overtime_type.name)
+        ws.cell(row=row, column=7, value=f"x{req.overtime_type.hourly_rate_multiplier:.1f}")
+        ws.cell(row=row, column=8, value=req.status.upper())
+        ws.cell(row=row, column=9, value=req.motivation[:100])
+        ws.cell(row=row, column=10, value=req.created_at.strftime('%d/%m/%Y %H:%M'))
+    
+    # Auto-adjust columns
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Salva in memoria
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    today = italian_now().strftime("%Y%m%d")
+    filename = f"richieste_straordinari_{today}.xlsx"
+    
+    response = make_response(output.read())
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
 
 
 

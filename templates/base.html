@@ -327,6 +327,40 @@
                 </li>
                 {% endif %}
 
+                <!-- STRAORDINARI - Solo se ha almeno un permesso straordinari -->
+                {% set has_overtime_permission = current_user.can_access_overtime_menu() %}
+                {% if has_overtime_permission %}
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-business-time"></i>
+                        <span>Straordinari</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        {% if current_user.can_create_overtime_requests() %}
+                        <li><a href="{{ url_for('create_overtime_request') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-plus"></i>Nuova Richiesta
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_my_overtime_requests() %}
+                        <li><a href="{{ url_for('my_overtime_requests') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-user-clock"></i>Le Mie Richieste
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_overtime_requests() or current_user.can_approve_overtime_requests() %}
+                        <li><a href="{{ url_for('overtime_requests_management') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-tasks"></i>Gestisci Richieste
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_manage_overtime_types() %}
+                        <li><a href="{{ url_for('overtime_types') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-tags"></i>Tipologie Straordinario
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
                 <!-- NOTE SPESE - Solo se ha almeno un permesso note spese -->
                 {% set has_expense_permission = current_user.can_access_expense_reports_menu() %}
                 {% if has_expense_permission %}
@@ -355,40 +389,6 @@
                         {% if current_user.can_manage_expense_reports() %}
                         <li><a href="{{ url_for('expense_categories') }}" class="sidebar-submenu-link">
                             <i class="fas fa-tags"></i>Gestisci Categorie
-                        </a></li>
-                        {% endif %}
-                    </ul>
-                </li>
-                {% endif %}
-
-                <!-- STRAORDINARI - Solo se ha almeno un permesso straordinari -->
-                {% set has_overtime_permission = current_user.can_access_overtime_menu() %}
-                {% if has_overtime_permission %}
-                <li class="sidebar-nav-item">
-                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-clock"></i>
-                        <span>Straordinari</span>
-                        <i class="fas fa-chevron-right dropdown-arrow"></i>
-                    </a>
-                    <ul class="sidebar-submenu">
-                        {% if current_user.can_create_overtime_requests() %}
-                        <li><a href="{{ url_for('create_overtime_request') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-plus"></i>Crea Richiesta
-                        </a></li>
-                        {% endif %}
-                        {% if current_user.can_view_my_overtime_requests() %}
-                        <li><a href="{{ url_for('my_overtime_requests') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-user"></i>Le Mie Richieste
-                        </a></li>
-                        {% endif %}
-                        {% if current_user.can_view_overtime_requests() or current_user.can_approve_overtime_requests() %}
-                        <li><a href="{{ url_for('overtime_requests') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-list"></i>Visualizza Richieste
-                        </a></li>
-                        {% endif %}
-                        {% if current_user.can_manage_overtime_types() %}
-                        <li><a href="{{ url_for('overtime_types') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-tags"></i>Gestisci Tipologie
                         </a></li>
                         {% endif %}
                     </ul>

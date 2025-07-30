@@ -69,7 +69,7 @@
                                     </button>
                                     {% if request.status == 'pending' %}
                                     <button type="button" class="btn btn-outline-danger" 
-                                            onclick="confirmDelete('richiesta del {{ request.overtime_date.strftime(\"%d/%m/%Y\") }}', '{{ url_for('delete_overtime_request', request_id=request.id) }}')">
+                                            onclick="confirmDelete('richiesta del {{ request.overtime_date.strftime('%d/%m/%Y') }}', '{{ url_for('delete_overtime_request', request_id=request.id) }}')">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                     {% endif %}
