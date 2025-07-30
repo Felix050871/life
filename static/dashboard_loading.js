@@ -5,13 +5,9 @@ function showLoading() {
         overlay.classList.remove('d-none');
         
         // Disabilita tutti i controlli per prevenire azioni multiple
-        const periodButtons = document.querySelectorAll('.period-btn');
-        const navButtons = document.querySelectorAll('.nav-btn');
         const customForm = document.getElementById('customRangeForm');
         const exportButtons = document.querySelectorAll('.export-btn');
         
-        periodButtons.forEach(btn => btn.style.pointerEvents = 'none');
-        navButtons.forEach(btn => btn.style.pointerEvents = 'none');
         exportButtons.forEach(btn => btn.style.pointerEvents = 'none');
         
         if (customForm) {

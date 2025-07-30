@@ -382,134 +382,72 @@ def dashboard_team():
     # Get all active sedi
     all_sedi = Sede.query.filter(Sede.active == True).all()
     
-    # Parametri di visualizzazione
-    period_mode = request.args.get('period', 'today')
+    # Parametri di visualizzazione semplificati
     export_format = request.args.get('export')
-    date_param = request.args.get('date')
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
+    today = date.today()
     
-    # Data di riferimento
-    if date_param:
-        try:
-            reference_date = datetime.strptime(date_param, '%Y-%m-%d').date()
-        except ValueError:
-            reference_date = date.today()
+    # Range di date - default oggi se non specificato
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else today
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else today
+        if start_date > end_date:
+            start_date, end_date = end_date, start_date
+    except ValueError:
+        start_date = end_date = today
+    
+    # Etichetta periodo
+    if start_date == end_date:
+        period_label = f"Giorno {start_date.strftime('%d/%m/%Y')}"
     else:
-        reference_date = date.today()
+        period_label = f"Periodo {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
     
-    # Calcolo periodo di visualizzazione e navigazione
-    if period_mode == 'custom' and start_date_str and end_date_str:
-        # Range personalizzato
-        try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            if start_date > end_date:
-                start_date, end_date = end_date, start_date
-            period_label = f"Range {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
-            
-            # Navigazione per range personalizzato
-            range_days = (end_date - start_date).days + 1
-            prev_start = start_date - timedelta(days=range_days)
-            prev_end = end_date - timedelta(days=range_days)
-            next_start = end_date + timedelta(days=1)
-            next_end = next_start + timedelta(days=range_days - 1)
-            prev_date = prev_start
-            next_date = next_start
-        except ValueError:
-            # Fallback a oggi se le date non sono valide
-            period_mode = 'today'
-            start_date = end_date = reference_date
-            period_label = f"Giorno {reference_date.strftime('%d/%m/%Y')}"
-            prev_date = reference_date - timedelta(days=1)
-            next_date = reference_date + timedelta(days=1)
-            
-    elif period_mode == 'week':
-        # Settimana (lunedì-domenica)
-        days_until_monday = reference_date.weekday()
-        start_date = reference_date - timedelta(days=days_until_monday)
-        end_date = start_date + timedelta(days=6)
-        period_label = f"Settimana {start_date.strftime('%d/%m')} - {end_date.strftime('%d/%m/%Y')}"
+    # Funzione helper per verificare se un giorno è lavorativo
+    def is_working_day(check_date, user):
+        """Verifica se una data è un giorno lavorativo per l'utente"""
+        # Verifica se è un giorno festivo
+        holiday = Holiday.query.filter(
+            Holiday.date == check_date,
+            Holiday.active == True
+        ).first()
+        if holiday:
+            return False
         
-        # Navigazione settimana
-        prev_week_start = start_date - timedelta(days=7)
-        next_week_start = start_date + timedelta(days=7)
-        prev_date = prev_week_start
-        next_date = next_week_start
-        
-    elif period_mode == 'month':
-        # Mese
-        start_date = reference_date.replace(day=1)
-        next_month = start_date.replace(month=start_date.month + 1) if start_date.month < 12 else start_date.replace(year=start_date.year + 1, month=1)
-        end_date = next_month - timedelta(days=1)
-        period_label = f"Mese {start_date.strftime('%B %Y')}"
-        
-        # Navigazione mese
-        if start_date.month == 1:
-            prev_month = start_date.replace(year=start_date.year - 1, month=12, day=1)
+        # Verifica gli orari di lavoro dell'utente
+        if user.work_schedule:
+            # Se l'utente ha un orario definito, controlla i giorni della settimana
+            if user.work_schedule.days_of_week:
+                weekday = check_date.weekday()  # 0=lunedì, 6=domenica
+                allowed_days = [int(d) for d in user.work_schedule.days_of_week.split(',')]
+                if weekday not in allowed_days:
+                    return False
         else:
-            prev_month = start_date.replace(month=start_date.month - 1, day=1)
+            # Se non ha orario definito (modalità turni), controlla solo weekend di default
+            weekday = check_date.weekday()
+            if weekday >= 5:  # sabato=5, domenica=6
+                return False
         
-        if start_date.month == 12:
-            next_month = start_date.replace(year=start_date.year + 1, month=1, day=1)
-        else:
-            next_month = start_date.replace(month=start_date.month + 1, day=1)
-            
-        prev_date = prev_month
-        next_date = next_month
-        
-    else:  # today
-        start_date = end_date = reference_date
-        period_label = f"Giorno {reference_date.strftime('%d/%m/%Y')}"
-        
-        # Navigazione giorno
-        prev_date = reference_date - timedelta(days=1)
-        next_date = reference_date + timedelta(days=1)
+        return True
     
-    # Dati di navigazione
-    navigation = {
-        'prev_date': prev_date,
-        'next_date': next_date,
-        'current_period': period_label
-    }
-    
-    # Per range personalizzato, aggiungi le date specifiche di navigazione
-    if period_mode == 'custom':
-        navigation['prev_start_date'] = prev_start.strftime('%Y-%m-%d') if 'prev_start' in locals() else None
-        navigation['prev_end_date'] = prev_end.strftime('%Y-%m-%d') if 'prev_end' in locals() else None
-        navigation['next_start_date'] = next_start.strftime('%Y-%m-%d') if 'next_start' in locals() else None
-        navigation['next_end_date'] = next_end.strftime('%Y-%m-%d') if 'next_end' in locals() else None
-    
-    # Aggiungi date specifiche per custom range
-    if period_mode == 'custom' and start_date_str and end_date_str:
-        range_days = (end_date - start_date).days + 1
-        prev_start = start_date - timedelta(days=range_days)
-        prev_end = end_date - timedelta(days=range_days)
-        next_start = end_date + timedelta(days=1)
-        next_end = next_start + timedelta(days=range_days - 1)
-        
-        navigation.update({
-            'prev_start_date': prev_start.strftime('%Y-%m-%d'),
-            'prev_end_date': prev_end.strftime('%Y-%m-%d'),
-            'next_start_date': next_start.strftime('%Y-%m-%d'),
-            'next_end_date': next_end.strftime('%Y-%m-%d')
-        })
-    
-    # Get attendance data for the period
+    # Get attendance data for the period (solo giorni lavorativi)
     attendance_data = {}
     
     for user in all_users:
-        if period_mode == 'today' and start_date == end_date:
+        if start_date == end_date:
             # Vista giornaliera singola
-            status, last_event = AttendanceEvent.get_user_status(user.id, reference_date)
-            daily_summary = AttendanceEvent.get_daily_summary(user.id, reference_date)
+            if not is_working_day(start_date, user):
+                continue  # Salta i giorni non lavorativi
+                
+            status, last_event = AttendanceEvent.get_user_status(user.id, start_date)
+            daily_summary = AttendanceEvent.get_daily_summary(user.id, start_date)
             
             # Check for approved leave requests
             leave_request = LeaveRequest.query.filter(
                 LeaveRequest.user_id == user.id,
                 LeaveRequest.status == 'Approved',
-                LeaveRequest.start_date <= reference_date,
-                LeaveRequest.end_date >= reference_date
+                LeaveRequest.start_date <= start_date,
+                LeaveRequest.end_date >= start_date
             ).first()
             
             attendance_data[user.id] = {
@@ -520,13 +458,18 @@ def dashboard_team():
                 'leave_request': leave_request
             }
         else:
-            # Per settimana/mese, mostra dettagli giorno per giorno
+            # Per periodo multi-giorno, mostra dettagli giorno per giorno (solo giorni lavorativi)
             daily_details = []
             current_date = start_date
             
             while current_date <= end_date:
                 # Non visualizzare date future
                 if current_date > date.today():
+                    current_date += timedelta(days=1)
+                    continue
+                
+                # Salta i giorni non lavorativi
+                if not is_working_day(current_date, user):
                     current_date += timedelta(days=1)
                     continue
                     
@@ -541,7 +484,6 @@ def dashboard_team():
                     LeaveRequest.end_date >= current_date
                 ).first()
                 
-                # Sempre aggiungere la data, anche se l'utente era assente
                 # Se non ci sono eventi e non ci sono richieste di congedo, forza status a 'out'
                 if not daily_summary and not leave_request and not last_event:
                     status = 'out'
@@ -555,25 +497,25 @@ def dashboard_team():
                 })
                 current_date += timedelta(days=1)
             
-            attendance_data[user.id] = {
-                'user': user,
-                'daily_details': daily_details
-            }
+            # Aggiungi solo se ci sono giorni lavorativi
+            if daily_details:
+                attendance_data[user.id] = {
+                    'user': user,
+                    'daily_details': daily_details
+                }
     
     # Handle export
     if export_format == 'csv':
-        return generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi)
+        return generate_attendance_csv_export(attendance_data, 'custom', period_label, all_sedi)
     
     return render_template('dashboard_team.html',
                          all_users=all_users,
                          all_sedi=all_sedi,
                          attendance_data=attendance_data,
-                         today=reference_date,
-                         period_mode=period_mode,
+                         today=today,
                          period_label=period_label,
                          start_date=start_date,
                          end_date=end_date,
-                         navigation=navigation,
                          current_user=current_user)
 
 def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi):
@@ -585,7 +527,12 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
     writer.writerow(['Report Presenze - ' + period_label])
     writer.writerow([])  # Riga vuota
     
-    if period_mode == 'today':
+    # Determina se è vista singola giorno dai dati
+    is_single_day = all(
+        'daily_details' not in data for data in attendance_data.values()
+    )
+    
+    if is_single_day:
         writer.writerow(['Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
         
         for user_id, data in attendance_data.items():
