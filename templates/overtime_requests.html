@@ -25,17 +25,21 @@
                         {{ form.user_id.label(class="form-label") }}
                         {{ form.user_id(class="form-select") }}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         {{ form.status.label(class="form-label") }}
                         {{ form.status(class="form-select") }}
                     </div>
                     <div class="col-md-2">
-                        {{ form.start_date.label(class="form-label") }}
-                        {{ form.start_date(class="form-control") }}
+                        {{ form.overtime_type_id.label(class="form-label") }}
+                        {{ form.overtime_type_id(class="form-select") }}
                     </div>
                     <div class="col-md-2">
-                        {{ form.end_date.label(class="form-label") }}
-                        {{ form.end_date(class="form-control") }}
+                        {{ form.date_from.label(class="form-label") }}
+                        {{ form.date_from(class="form-control") }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ form.date_to.label(class="form-label") }}
+                        {{ form.date_to(class="form-control") }}
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-2">
@@ -83,7 +87,6 @@
                             </td>
                             <td>
                                 {{ request.overtime_type.name }}
-                                <small class="text-muted">(x{{ "%.1f"|format(request.overtime_type.hourly_rate_multiplier) }})</small>
                             </td>
                             <td>
                                 {% if request.status == 'pending' %}
