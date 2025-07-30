@@ -475,7 +475,7 @@ def dashboard_team():
             current_date = start_date
             
             while current_date <= end_date:
-                # Non visualizzare date future senza dati di presenza
+                # Non visualizzare date future
                 if current_date > date.today():
                     current_date += timedelta(days=1)
                     continue
@@ -491,9 +491,11 @@ def dashboard_team():
                     LeaveRequest.end_date >= current_date
                 ).first()
                 
+                # Sempre aggiungere la data, anche se l'utente era assente
+                # Status sarà 'out' se non ci sono eventi di presenza
                 daily_details.append({
                     'date': current_date,
-                    'status': status,
+                    'status': status if daily_summary or leave_request else 'out',
                     'daily_summary': daily_summary,
                     'last_event': last_event,
                     'leave_request': leave_request
@@ -608,11 +610,12 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                         entrata = daily['daily_summary'].clock_in.strftime('%H:%M')
                         uscita = daily['daily_summary'].clock_out.strftime('%H:%M') if daily['daily_summary'].clock_out else 'N/A'
                         ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily['daily_summary'].total_hours else '0h'
+                        note = daily['last_event'].notes if daily['last_event'] and daily['last_event'].notes else ''
                     else:
                         stato = 'Assente'
                         entrata = uscita = 'N/A'
                         ore_lavorate = '0h'
-                    note = daily['last_event'].notes if daily['last_event'] and daily['last_event'].notes else ''
+                        note = 'Nessuna registrazione presenza'
                 else:
                     stato = 'Non definito'
                     entrata = uscita = 'N/A'
