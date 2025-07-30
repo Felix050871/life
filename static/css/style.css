@@ -42,13 +42,34 @@ body {
     width: 280px;
     background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
     border-right: 1px solid #dee2e6;
-    min-height: 100%;
+    height: calc(100vh - 60px);
     position: fixed;
     left: 0;
     top: 60px;
     z-index: 1000;
     transition: transform 0.3s ease;
     box-shadow: var(--shadow-sm);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 .sidebar-header {
@@ -78,7 +99,7 @@ body {
 
 .sidebar-nav {
     list-style: none;
-    padding: 0;
+    padding: 0 0 2rem 0;
     margin: 0;
 }
 
@@ -127,7 +148,7 @@ body {
 }
 
 .sidebar-submenu.show {
-    max-height: 500px;
+    max-height: 800px;
 }
 
 .sidebar-submenu .sidebar-nav-link,
