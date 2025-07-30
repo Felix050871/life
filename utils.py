@@ -101,7 +101,7 @@ def generate_static_qr_codes():
         return True
         
     except Exception as e:
-        print(f"Errore nella generazione QR code: {e}")
+        logger.error(f"Errore nella generazione QR code: {e}")
         return False
 
 def qr_codes_exist():
@@ -723,7 +723,7 @@ def get_user_statistics(user_id, start_date=None, end_date=None):
                 total_hours += daily_hours
                 days_worked += 1
         except Exception as e:
-            print(f"Error calculating daily hours for user {user_id} on {current_date}: {e}")
+            logger.error(f"Error calculating daily hours for user {user_id} on {current_date}: {e}")
             # Continue with 0 hours for this day
         current_date += timedelta(days=1)
     
@@ -757,7 +757,7 @@ def get_user_statistics(user_id, start_date=None, end_date=None):
             Intervention.start_datetime <= end_datetime
         ).all()
     except Exception as e:
-        print(f"Error loading interventions for user {user_id}: {e}")
+        logger.error(f"Error loading interventions for user {user_id}: {e}")
         interventions = []
     
     total_interventions = len(interventions)
@@ -914,7 +914,7 @@ def get_team_statistics(start_date=None, end_date=None):
         return TeamStats(active_users, role_stats, active_users, estimated_hours, pending_leaves)
         
     except Exception as e:
-        print(f"Error in get_team_statistics: {e}")
+        logger.error(f"Error in get_team_statistics: {e}")
         # Ritorna oggetto con attributi per evitare errori template
         class TeamStats:
             def __init__(self):
@@ -1471,6 +1471,5 @@ def send_overtime_request_message(overtime_request, action_type, sender_user=Non
     
     except Exception as e:
         logger.error(f"Error in send_overtime_request_message: {e}")
-        print(f"Error in send_overtime_request_message: {e}")  # Per debug
         import traceback
         traceback.print_exc()

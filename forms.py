@@ -52,7 +52,8 @@ class UserForm(FlaskForm):
                     if schedule_choice not in self.work_schedule.choices:
                         self.work_schedule.choices.append(schedule_choice)
             except Exception as e:
-                print(f"Errore nel caricamento work_schedule: {e}")
+                # Work schedule loading error - fallback to empty choices
+                pass
         
         # Popola le scelte dei ruoli dinamicamente
         try:

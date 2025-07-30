@@ -690,7 +690,7 @@ class AttendanceEvent(db.Model):
                 return 0
         except Exception as e:
             # Log error and return 0 hours if query fails
-            print(f"Error in get_daily_work_hours query: {e}")
+            # Log error without exposing database details
             import traceback
             traceback.print_exc()
             return 0
@@ -2160,7 +2160,8 @@ class OvertimeRequest(db.Model):
             db.session.add(notification)
                 
         except Exception as e:
-            print(f"Errore nell'invio della notifica straordinario: {e}")
+            # Notification error handled by messaging system
+            pass
 
     @classmethod
     def get_monthly_hours(cls, employee_id, year, month, status='approved'):

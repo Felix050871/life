@@ -1,0 +1,44 @@
+Analizza in modo approfondito tutto il codice presente nel progetto. Il tuo obiettivo è ottimizzare, pulire e migliorare la qualità del software. Segui questi passaggi rigorosamente: 
+
+🔍 1. Ricerca di valori hardcoded
+Scansiona tutto il codice (frontend, backend, configurazioni, file di ambiente) alla ricerca di:
+Costanti numeriche, stringhe, URL, percorsi, chiavi API, credenziali, indirizzi IP, port, ecc.
+Valori fissi in if, switch, for, const, let, var, ecc.
+Identifica ogni valore hardcoded e sostituiscilo con una variabile d'ambiente (es. .env) o con una costante definita in un file separato (config.js, constants.ts, settings.json).
+Per ogni valore sostituito, aggiungi un commento esplicativo.
+🧹 2. Eliminazione del codice non utilizzato o obsoleto
+Identifica e rimuovi:
+Funzioni, classi, variabili, file o blocchi di codice non richiamati da nessuna parte del progetto.
+Commenti lunghi o inutili.
+Funzioni duplicatrici o obsolete (es. vecchie implementazioni di autenticazione, gestione utenti, logica di business).
+File temporanei, test, esperimenti o prototipi non più necessari.
+Se un codice sembra potenzialmente utile ma non usato, segnala con un commento: // [TO BE REVIEWED] e spiegane il motivo.
+🔁 3. Verifica di doppie gestioni o implementazioni
+Cerca funzioni, classi o logiche duplicate che svolgono lo stesso compito in parti diverse del codice.
+Es.:
+Due funzioni diverse che fanno lo stesso controllo di validità di un'email.
+Due moduli diversi che gestiscono la stessa tipologia di dati (es. utente, pagamento, documento).
+Sostituisci le duplicazioni con una singola funzione o modulo centralizzato .
+Assicurati che tutte le chiamate al vecchio codice siano aggiornate a quella nuova .
+🔐 4. Controllo di sicurezza e best practices
+Verifica che:
+Nessun dato sensibile sia visibile nel codice (es. password, token, chiavi).
+I nomi delle variabili, funzioni e file siano chiari e descrittivi.
+Le funzioni abbiano responsabilità singole (principio SRP).
+Non ci siano loop infiniti, errori di sintassi, o gestione inadeguata degli errori.
+📂 5. Organizzazione e struttura del progetto
+Verifica che:
+I file siano organizzati in cartelle logiche (es. src/routes, src/utils, src/config, src/models, public, tests).
+Ci sia un file .gitignore adeguato (esclusione di .env, node_modules, __pycache__, ecc.).
+Il file package.json contenga solo dipendenze necessarie.
+Il progetto abbia un README.md con istruzioni per installare e avviare l’app.
+✅ 6. Output finale
+Dopo l’analisi, fornisci un report dettagliato con:
+
+Elenco dei valori hardcoded trovati e come sono stati sostituiti.
+Elenco dei file o blocchi di codice eliminati (con motivazione).
+Elenco delle funzioni o logiche duplicate rimosse o consolidate.
+Suggerimenti per miglioramenti futuri (es. migrazione a TypeScript, uso di un ORM, integrazione con un sistema di logging).
+✅ Nota : Se il progetto è grande, procedi per sezioni (es. prima analizza il backend, poi il frontend, poi i file di configurazione).
+✅ Importante : Non modificare nulla senza conferma, salvo quando si tratta di rimuovere codice non utilizzato o obsoleto. 
+

@@ -4498,9 +4498,12 @@ def generate_reperibilita_shifts():
         
         try:
             import sys
-            print(f"[DEBUG] Generazione turni per copertura: {form.coverage_period.data}", flush=True, file=sys.stderr)
-            print(f"[DEBUG] Periodo: {start_date} - {end_date}", flush=True, file=sys.stderr)
-            print(f"[DEBUG] Usa intero periodo: {form.use_full_period.data}", flush=True, file=sys.stderr)
+            # Log shift generation parameters for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug(f"Generazione turni per copertura: {form.coverage_period.data}")
+            logger.debug(f"Periodo: {start_date} - {end_date}")
+            logger.debug(f"Usa intero periodo: {form.use_full_period.data}")
             
             # Genera turni reperibilità dalla copertura selezionata
             shifts_created, warnings = generate_reperibilita_shifts_from_coverage(
@@ -4510,10 +4513,10 @@ def generate_reperibilita_shifts():
                 current_user.id
             )
             
-            print(f"[DEBUG] Risultato generazione: {shifts_created} turni, warnings: {warnings}", flush=True, file=sys.stderr)
+            logger.debug(f"Risultato generazione: {shifts_created} turni, warnings: {warnings}")
             
             db.session.commit()
-            print(f"[DEBUG] Commit completato", flush=True, file=sys.stderr)
+            logger.debug("Commit completato")
             
             # Costruisci messaggio di successo con dettagli debug
             success_msg = f'Turni reperibilità generati: {shifts_created} per il periodo {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}.'
@@ -4531,8 +4534,8 @@ def generate_reperibilita_shifts():
         except Exception as e:
             import traceback
             import sys
-            print(f"[ERROR] Errore durante generazione: {e}", flush=True, file=sys.stderr)
-            print(f"[ERROR] Traceback: {traceback.format_exc()}", flush=True, file=sys.stderr)
+            logger.error(f"Errore durante generazione: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             db.session.rollback()
             flash(f'Errore durante la generazione: {str(e)}', 'error')
 
