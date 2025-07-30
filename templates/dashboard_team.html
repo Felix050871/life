@@ -2,7 +2,24 @@
 
 {% block title %}Dashboard Team - Workly{% endblock %}
 
+{% block scripts %}
+<script src="{{ url_for('static', filename='dashboard_loading.js') }}"></script>
+{% endblock %}
+
 {% block content %}
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background: rgba(0,0,0,0.7); z-index: 9999;">
+    <div class="d-flex justify-content-center align-items-center h-100">
+        <div class="text-center text-white">
+            <div class="spinner-border mb-3" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Caricamento...</span>
+            </div>
+            <h4>Elaborazione in corso...</h4>
+            <p class="mb-0">Attendere prego, operazione in corso</p>
+        </div>
+    </div>
+</div>
+
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -12,23 +29,26 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <!-- Controlli temporali -->
                     <div class="d-flex align-items-center gap-3">
-                        <div class="btn-group btn-group-sm" role="group">
+                        <div class="btn-group btn-group-sm" role="group" id="periodButtons">
                             <a href="{{ url_for('dashboard_team', period='today', date=request.args.get('date')) }}" 
-                               class="btn {% if period_mode == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                               class="btn {% if period_mode == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %} period-btn"
+                               onclick="showLoading()">
                                 Giorno
                             </a>
                             <a href="{{ url_for('dashboard_team', period='week', date=request.args.get('date')) }}" 
-                               class="btn {% if period_mode == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                               class="btn {% if period_mode == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %} period-btn"
+                               onclick="showLoading()">
                                 Settimana
                             </a>
                             <a href="{{ url_for('dashboard_team', period='month', date=request.args.get('date')) }}" 
-                               class="btn {% if period_mode == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                               class="btn {% if period_mode == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %} period-btn"
+                               onclick="showLoading()">
                                 Mese
                             </a>
                         </div>
                         
                         <!-- Range personalizzato con form -->
-                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-1" style="font-size: 0.875rem;">
+                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-1" style="font-size: 0.875rem;" id="customRangeForm" onsubmit="showLoading()">
                             <span class="text-muted">Range:</span>
                             <input type="date" class="form-control form-control-sm" name="start_date" 
                                    value="{{ request.args.get('start_date', '') }}" style="width: 140px;" required>
@@ -36,7 +56,7 @@
                             <input type="date" class="form-control form-control-sm" name="end_date" 
                                    value="{{ request.args.get('end_date', '') }}" style="width: 140px;" required>
                             <input type="hidden" name="period" value="custom">
-                            <button type="submit" class="btn btn-sm {% if period_mode == 'custom' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <button type="submit" class="btn btn-sm {% if period_mode == 'custom' %}btn-primary{% else %}btn-outline-primary{% endif %}" id="customSearchBtn">
                                 <i class="fas fa-search"></i>
                             </button>
                         </form>
@@ -45,27 +65,27 @@
                     <!-- Navigazione e Export -->
                     <div class="d-flex align-items-center gap-2">
                         <!-- Navigazione temporale -->
-                        <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center" id="navigationButtons">
                             {% if period_mode == 'custom' %}
                                 <a href="{{ url_for('dashboard_team', period='custom', start_date=navigation.prev_start_date, end_date=navigation.prev_end_date) }}" 
-                                   class="btn btn-outline-primary btn-sm me-2">
+                                   class="btn btn-outline-primary btn-sm me-2 nav-btn" onclick="showLoading()">
                                     <i class="fas fa-chevron-left"></i>
                                 </a>
                             {% else %}
                                 <a href="{{ url_for('dashboard_team', period=period_mode, date=navigation.prev_date.strftime('%Y-%m-%d')) }}" 
-                                   class="btn btn-outline-primary btn-sm me-2">
+                                   class="btn btn-outline-primary btn-sm me-2 nav-btn" onclick="showLoading()">
                                     <i class="fas fa-chevron-left"></i>
                                 </a>
                             {% endif %}
                             <span class="px-3 text-center fw-bold small">{{ navigation.current_period }}</span>
                             {% if period_mode == 'custom' %}
                                 <a href="{{ url_for('dashboard_team', period='custom', start_date=navigation.next_start_date, end_date=navigation.next_end_date) }}" 
-                                   class="btn btn-outline-primary btn-sm me-2">
+                                   class="btn btn-outline-primary btn-sm me-2 nav-btn" onclick="showLoading()">
                                     <i class="fas fa-chevron-right"></i>
                                 </a>
                             {% else %}
                                 <a href="{{ url_for('dashboard_team', period=period_mode, date=navigation.next_date.strftime('%Y-%m-%d')) }}" 
-                                   class="btn btn-outline-primary btn-sm me-2">
+                                   class="btn btn-outline-primary btn-sm me-2 nav-btn" onclick="showLoading()">
                                     <i class="fas fa-chevron-right"></i>
                                 </a>
                             {% endif %}
@@ -74,12 +94,12 @@
                         <!-- Export -->
                         {% if period_mode == 'custom' %}
                             <a href="{{ url_for('dashboard_team', period='custom', start_date=request.args.get('start_date'), end_date=request.args.get('end_date'), export='csv') }}" 
-                               class="btn btn-outline-success btn-sm">
+                               class="btn btn-outline-success btn-sm export-btn" onclick="showLoadingExport(this)">
                                 <i class="fas fa-download me-1"></i>Esporta CSV
                             </a>
                         {% else %}
                             <a href="{{ url_for('dashboard_team', period=period_mode, date=request.args.get('date'), export='csv') }}" 
-                               class="btn btn-outline-success btn-sm">
+                               class="btn btn-outline-success btn-sm export-btn" onclick="showLoadingExport(this)">
                                 <i class="fas fa-download me-1"></i>Esporta CSV
                             </a>
                         {% endif %}
