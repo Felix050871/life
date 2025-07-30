@@ -46,7 +46,7 @@
                                         {% if role.description %}
                                         {{ role.description[:80] }}{% if role.description|length > 80 %}...{% endif %}
                                         {% else %}
-                                        <em class="text-muted">Nessuna descrizione</em>
+                                        <em class="text-secondary">Nessuna descrizione</em>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -142,7 +142,7 @@
                                 <h6 class="card-title text-white"><i class="fas fa-info-circle me-1"></i>Informazioni</h6>
                                 <ul class="list-unstyled mb-0 small text-white">
                                     <li><i class="fas fa-chevron-right me-1"></i>I ruoli dinamici permettono di personalizzare i permessi utente</li>
-                                    <li><i class="fas fa-chevron-right me-1"></i>I ruoli "Admin", "Management" e "Staff" sono protetti dal sistema</li>
+                                    <li><i class="fas fa-chevron-right me-1"></i>Il ruolo "Amministratore" può essere modificato solo dai super-admin per i permessi Widget</li>
                                     <li><i class="fas fa-chevron-right me-1"></i>Non è possibile eliminare ruoli con utenti associati</li>
                                     <li><i class="fas fa-chevron-right me-1"></i>I ruoli protetti hanno funzionalità specifiche integrate</li>
                                 </ul>

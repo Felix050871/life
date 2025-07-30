@@ -62,9 +62,15 @@
                         <hr>
                         <h5><i class="fas fa-shield-alt me-2"></i>Permessi</h5>
                         {% if is_admin_widget_only %}
-                        <p class="text-muted small">Modifica solo i permessi Widget per questo ruolo:</p>
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Modalità Widget:</strong> Puoi modificare solo i permessi Widget per questo ruolo amministrativo.
+                        </div>
                         {% else %}
-                        <p class="text-muted small">Modifica i permessi per questo ruolo:</p>
+                        <div class="alert alert-primary mb-3">
+                            <i class="fas fa-user-cog me-2"></i>
+                            <strong>Gestione Completa:</strong> Puoi configurare tutti i permessi e impostazioni per questo ruolo.
+                        </div>
                         {% endif %}
 
                         {% if not is_admin_widget_only %}
@@ -470,7 +476,7 @@
                                                 </div>
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_my_expense_reports() }}
-                                                    {{ form.can_view_my_expense_reports.label(class="form-check-label text-muted small") }} (Widget Le Mie Note Spese)
+                                                    {{ form.can_view_my_expense_reports.label(class="form-check-label text-dark small") }} (Widget Le Mie Note Spese)
                                                 </div>
                                             </div>
                                         </div>

@@ -117,7 +117,7 @@
                         {{ form.sedi.label(class="form-label") }}
                         {{ form.sedi(class="form-select", multiple=True, size="5", id="sedi-select") }}
                         <small class="text-muted" id="sedi-help">Tieni premuto Ctrl (Windows) o Cmd (Mac) per selezionare più sedi</small>
-                        <small class="text-info" id="management-help" style="display:none;">Gli utenti Staff vengono automaticamente associati a tutte le sedi</small>
+                        <small class="text-info" id="management-help" style="display:none;">Gli utenti con accesso globale vengono automaticamente associati a tutte le sedi</small>
                         {% if form.sedi.errors %}
                             <div class="text-danger">
                                 {% for error in form.sedi.errors %}
@@ -301,7 +301,7 @@ function confirmDelete(userId) {
     }
 }
 
-// Gestisce la selezione automatica delle sedi per Staff
+// Gestisce la selezione automatica delle sedi per ruoli con accesso globale
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.getElementById('role');
     const sediSelect = document.getElementById('sedi-select');
@@ -309,9 +309,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const managementHelp = document.getElementById('management-help');
     
     if (roleSelect && sediSelect) {
-        function toggleSediStaff() {
-            if (roleSelect.value === 'Staff') {
-                // Seleziona tutte le opzioni per Staff
+        function toggleSediMultiAccess() {
+            if (roleSelect.value === 'Supervisore' || roleSelect.value === 'Amministratore') {
+                // Seleziona tutte le opzioni per ruoli con accesso globale
                 for (let option of sediSelect.options) {
                     option.selected = true;
                 }
@@ -325,10 +325,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        roleSelect.addEventListener('change', toggleSediStaff);
+        roleSelect.addEventListener('change', toggleSediMultiAccess);
         
         // Esegui al caricamento della pagina
-        toggleSediStaff();
+        toggleSediMultiAccess();
     }
 });
 </script>
