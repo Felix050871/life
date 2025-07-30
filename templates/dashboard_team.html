@@ -86,10 +86,12 @@
                                             {% else %}
                                                 <th>Data</th>
                                                 <th>Utente</th>
+                                                <th>Ruolo</th>
                                                 <th>Stato</th>
                                                 <th>Entrata</th>
                                                 <th>Uscita</th>
-                                                <th>Ore</th>
+                                                <th>Ore Lavorate</th>
+                                                <th>Note</th>
                                             {% endif %}
                                         </tr>
                                     </thead>
@@ -200,6 +202,9 @@
                                                         <small class="text-muted">@{{ user.username }}</small>
                                                     </td>
                                                     <td>
+                                                        <span class="badge bg-secondary">{{ user.role }}</span>
+                                                    </td>
+                                                    <td>
                                                         {% if daily.leave_request %}
                                                             {% if daily.leave_request.leave_type == 'Ferie' %}
                                                                 <span class="badge bg-info">
@@ -259,6 +264,15 @@
                                                             {{ "%.1f"|format(daily.daily_summary.total_hours) }}h
                                                         {% else %}
                                                             <span class="text-muted">0h</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if daily.leave_request and daily.leave_request.reason %}
+                                                            <small class="text-muted">{{ daily.leave_request.reason[:50] }}{% if daily.leave_request.reason|length > 50 %}...{% endif %}</small>
+                                                        {% elif daily.last_event and daily.last_event.notes %}
+                                                            <small class="text-muted">{{ daily.last_event.notes[:50] }}{% if daily.last_event.notes|length > 50 %}...{% endif %}</small>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
                                                         {% endif %}
                                                     </td>
                                                 </tr>

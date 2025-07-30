@@ -388,14 +388,26 @@ def dashboard_team():
     end_date_str = request.args.get('end_date')
     today = date.today()
     
-    # Range di date - default oggi se non specificato
-    try:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else today
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else today
-        if start_date > end_date:
-            start_date, end_date = end_date, start_date
-    except ValueError:
-        start_date = end_date = today
+    # Range di date - mantieni i valori passati o usa oggi come default
+    if start_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            start_date = today
+    else:
+        start_date = today
+        
+    if end_date_str:
+        try:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            end_date = today
+    else:
+        end_date = today
+        
+    # Assicurati che start_date <= end_date
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
     
     # Etichetta periodo
     if start_date == end_date:
