@@ -27,19 +27,19 @@
                             </a>
                         </div>
                         
-                        <!-- Range personalizzato con link diretto -->
-                        <div class="d-flex align-items-center gap-1" style="font-size: 0.875rem;">
+                        <!-- Range personalizzato con form -->
+                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-1" style="font-size: 0.875rem;">
                             <span class="text-muted">Range:</span>
-                            <input type="date" class="form-control form-control-sm" id="custom_start" 
-                                   value="{{ request.args.get('start_date', '') }}" style="width: 140px;">
+                            <input type="date" class="form-control form-control-sm" name="start_date" 
+                                   value="{{ request.args.get('start_date', '') }}" style="width: 140px;" required>
                             <span class="text-muted">-</span>
-                            <input type="date" class="form-control form-control-sm" id="custom_end" 
-                                   value="{{ request.args.get('end_date', '') }}" style="width: 140px;">
-                            <a href="#" class="btn btn-sm {% if period_mode == 'custom' %}btn-primary{% else %}btn-outline-primary{% endif %}" 
-                               onclick="this.href='/dashboard_team?period=custom&start_date='+document.getElementById('custom_start').value+'&end_date='+document.getElementById('custom_end').value; return true;">
+                            <input type="date" class="form-control form-control-sm" name="end_date" 
+                                   value="{{ request.args.get('end_date', '') }}" style="width: 140px;" required>
+                            <input type="hidden" name="period" value="custom">
+                            <button type="submit" class="btn btn-sm {% if period_mode == 'custom' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                                 <i class="fas fa-search"></i>
-                            </a>
-                        </div>
+                            </button>
+                        </form>
                     </div>
                     
                     <!-- Navigazione e Export -->
