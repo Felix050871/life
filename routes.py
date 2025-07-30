@@ -3808,10 +3808,10 @@ def reperibilita_replica(period_key):
             # Gestisce il cambio di sede se specificato
             if form.sede_id.data:
                 # Assegna la nuova sede specificata
-                new_coverage.sedi_ids = [int(form.sede_id.data)]
+                new_coverage.set_sedi_ids_list([int(form.sede_id.data)])
             else:
                 # Mantiene le sedi originali
-                new_coverage.sedi_ids = original_coverage.sedi_ids.copy()
+                new_coverage.set_sedi_ids_list(original_coverage.get_sedi_ids_list())
             
             db.session.add(new_coverage)
             new_coverages_count += 1
