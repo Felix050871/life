@@ -556,7 +556,7 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
     )
     
     if is_single_day:
-        writer.writerow(['Data', 'Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
+        writer.writerow(['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
         
         # Per vista single day, aggiungi anche la data
         for user_id, data in attendance_data.items():
@@ -598,18 +598,17 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                 note = ''
             
             writer.writerow([
-                data_str,  # Aggiungi la data come prima colonna
-                user.get_full_name(),
-                user.role if hasattr(user, 'role') and user.role else 'N/A',
-                sede_name,
-                stato,
-                entrata,
-                uscita,
-                ore_lavorate,
-                note
+                data_str,  # Data
+                user.get_full_name(),  # Utente
+                user.role if hasattr(user, 'role') and user.role else 'N/A',  # Ruolo
+                stato,  # Stato
+                entrata,  # Entrata
+                uscita,  # Uscita
+                ore_lavorate,  # Ore Lavorate
+                note  # Note
             ])
     else:
-        writer.writerow(['Data', 'Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
+        writer.writerow(['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
         
         for user_id, data in attendance_data.items():
             user = data['user']
@@ -654,15 +653,14 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                     note = ''
                 
                 writer.writerow([
-                    daily['date'].strftime('%d/%m/%Y'),
-                    user.get_full_name(),
-                    user.role if hasattr(user, 'role') and user.role else 'N/A',
-                    sede_name,
-                    stato,
-                    entrata,
-                    uscita,
-                    ore_lavorate,
-                    note
+                    daily['date'].strftime('%d/%m/%Y'),  # Data
+                    user.get_full_name(),  # Utente  
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',  # Ruolo
+                    stato,  # Stato
+                    entrata,  # Entrata
+                    uscita,  # Uscita
+                    ore_lavorate,  # Ore Lavorate
+                    note  # Note
                 ])
     
     output.seek(0)

@@ -96,6 +96,7 @@ The application uses SQLAlchemy models with the following key entities:
 - Autoscale deployment target on Replit
 
 ## Recent Changes
+- July 30, 2025: **Dashboard Team Selezione Date e Export CSV Risolti Definitivamente** - Risolto bug critico JavaScript showLoading() che disabilitava input form impedendo invio parametri date, corretta persistenza date selezionate dopo submit form, uniformate colonne export CSV con visualizzazione (Data-Utente-Ruolo-Stato-Entrata-Uscita-Ore Lavorate-Note), rimossa colonna "Sede" da CSV per coerenza con interfaccia, fixato errore UnboundLocalError nell'export, sistema completamente funzionante per selezione periodi personalizzati e export dati
 - July 30, 2025: **Dashboard Team Interface Semplificata Completata** - Rimossi controlli navigazione temporale (Giorno/Settimana/Mese) e frecce avanti/indietro, implementato solo range date personalizzato preimpostato con data odierna, aggiunto filtraggio automatico giorni non lavorativi (weekend, festivi, giorni senza orari), corretti errori Holiday model e days_of_week format handling, sistema caricamento spinner mantenuto per operazioni lente, interfaccia ora estremamente semplificata e user-friendly
 
 ## Recent Changes
