@@ -95,9 +95,11 @@
                                         <!-- Pulsante cancella messaggio -->
                                         <form method="POST" action="{{ url_for('delete_message', message_id=message.id) }}" 
                                               style="display: inline;" 
-                                              onsubmit="return confirm('Vuoi cancellare definitivamente questo messaggio? Non sarà più possibile recuperarlo.')">
+                                              class="delete-message-form">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancella messaggio">
+                                            <button type="button" class="btn btn-outline-danger btn-sm delete-message-btn" 
+                                                    title="Cancella messaggio"
+                                                    data-message-id="{{ message.id }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -161,4 +163,80 @@
         </div>
     </div>
 </div>
+
+<!-- Modale di conferma cancellazione messaggio -->
+<div class="modal fade" id="deleteMessageModal" tabindex="-1" aria-labelledby="deleteMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteMessageModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>Conferma Cancellazione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">
+                    <i class="fas fa-trash me-2 text-danger"></i>
+                    Vuoi cancellare definitivamente questo messaggio?
+                </p>
+                <div class="alert alert-warning mt-3 mb-0">
+                    <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Attenzione:</strong> Non sarà più possibile recuperarlo dopo la cancellazione.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteMessage">
+                    <i class="fas fa-trash me-1"></i>Cancella Messaggio
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestione conferma cancellazione messaggi
+    const deleteButtons = document.querySelectorAll('.delete-message-btn');
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteMessageModal'));
+    const confirmBtn = document.getElementById('confirmDeleteMessage');
+    let currentForm = null;
+
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation(); // Previene attivazione overlay
+            
+            // Trova il form associato
+            currentForm = this.closest('.delete-message-form');
+            
+            // Mostra la modale di conferma
+            deleteModal.show();
+        });
+    });
+
+    // Gestione conferma finale
+    confirmBtn.addEventListener('click', function() {
+        if (currentForm) {
+            deleteModal.hide();
+            // Attende che la modale si chiuda prima di inviare il form
+            setTimeout(() => {
+                currentForm.submit();
+            }, 300);
+        }
+    });
+
+    // Reset al chiudere la modale
+    document.getElementById('deleteMessageModal').addEventListener('hidden.bs.modal', function() {
+        currentForm = null;
+    });
+});
+</script>
 {% endblock %}
