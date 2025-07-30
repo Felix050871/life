@@ -627,39 +627,7 @@ class ExpenseReportForm(FlaskForm):
 
 
 
-# OvertimeRequestForm è definita più avanti nel file
-    overtime_date = DateField('Data Straordinario', validators=[DataRequired()])
-    start_time = TimeField('Ora Inizio', validators=[DataRequired()])
-    end_time = TimeField('Ora Fine', validators=[DataRequired()])
-    overtime_type_id = SelectField('Tipologia Straordinario', coerce=int, validators=[DataRequired()])
-    motivation = TextAreaField('Motivazione', validators=[DataRequired(), Length(max=500)])
-    submit = SubmitField('Invia Richiesta')
-    
-    def __init__(self, *args, **kwargs):
-        super(OvertimeRequestForm, self).__init__(*args, **kwargs)
-        # Popola tipologie straordinari attive
-        from models import OvertimeType
-        types = OvertimeType.query.filter_by(active=True).order_by(OvertimeType.name).all()
-        self.overtime_type_id.choices = [(t.id, f"{t.name} (x{t.hourly_rate_multiplier})") for t in types]
-        
-        if not self.overtime_type_id.choices:
-            self.overtime_type_id.choices = [(0, 'Nessuna tipologia disponibile')]
-    
-    def validate_overtime_date(self, field):
-        from datetime import date
-        if field.data and field.data < date.today():
-            raise ValidationError('La data straordinario non può essere nel passato.')
-    
-    def validate_end_time(self, field):
-        if field.data and self.start_time.data and field.data <= self.start_time.data:
-            raise ValidationError('L\'ora di fine deve essere successiva all\'ora di inizio.')
-
-
-class ApproveOvertimeForm(FlaskForm):
-    """Form per approvare/rifiutare straordinari"""
-    action = StringField('Azione', validators=[DataRequired()])
-    comment = TextAreaField('Commento', validators=[Length(max=500)])
-    submit = SubmitField('Conferma')
+# Le classi straordinari sono definite correttamente alla fine del file
 
 
 class ExpenseApprovalForm(FlaskForm):
@@ -1338,7 +1306,7 @@ class OvertimeRequestForm(FlaskForm):
         try:
             from models import OvertimeType
             active_types = OvertimeType.query.filter_by(active=True).all()
-            self.overtime_type_id.choices = [(ot.id, f"{ot.name} (x{ot.hourly_rate_multiplier})") for ot in active_types]
+            self.overtime_type_id.choices = [(ot.id, ot.name) for ot in active_types]
             
             if not self.overtime_type_id.choices:
                 self.overtime_type_id.choices = [(0, 'Nessuna tipologia disponibile')]
