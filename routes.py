@@ -3880,8 +3880,10 @@ def generate_reperibilita_shifts():
         
         # Determina le date da usare
         if form.use_full_period.data:
-            # Usa le date della copertura
-            coverage_start, coverage_end = form.coverage_period.data.split('__')
+            # Usa le date della copertura - formato: start_date__end_date__sede_key
+            parts = form.coverage_period.data.split('__')
+            coverage_start = parts[0]
+            coverage_end = parts[1]
             start_date = datetime.strptime(coverage_start, '%Y-%m-%d').date()
             end_date = datetime.strptime(coverage_end, '%Y-%m-%d').date()
         else:

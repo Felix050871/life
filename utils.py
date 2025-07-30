@@ -538,20 +538,35 @@ def generate_reperibilita_shifts_from_coverage(coverage_period, start_date, end_
     from datetime import timedelta
     from collections import defaultdict
     
-    # Parse il period_key per ottenere le date della copertura
+    # Parse il period_key per ottenere le date della copertura - formato: start_date__end_date__sede_key
     try:
-        coverage_start, coverage_end = coverage_period.split('__')
+        parts = coverage_period.split('__')
+        coverage_start = parts[0]
+        coverage_end = parts[1]
+        sede_key = parts[2] if len(parts) > 2 else None
         coverage_start_date = datetime.strptime(coverage_start, '%Y-%m-%d').date()
         coverage_end_date = datetime.strptime(coverage_end, '%Y-%m-%d').date()
     except:
         return 0, ["Errore nel formato della copertura selezionata"]
     
-    # Ottieni tutte le coperture per il periodo selezionato
-    coverages = ReperibilitaCoverage.query.filter(
+    # Ottieni tutte le coperture per il periodo selezionato, filtrando per sede se specificata
+    query = ReperibilitaCoverage.query.filter(
         ReperibilitaCoverage.is_active == True,
         ReperibilitaCoverage.start_date == coverage_start_date,
         ReperibilitaCoverage.end_date == coverage_end_date
-    ).all()
+    )
+    
+    # Se c'è una sede specifica nel period_key, filtra per quella sede
+    if sede_key and sede_key != "no_sede":
+        sede_ids = [int(sid) for sid in sede_key.split('_')]
+        # Filtra coperture che hanno almeno una delle sedi specificate
+        coverages = []
+        for coverage in query.all():
+            coverage_sede_ids = coverage.get_sedi_ids_list()
+            if any(sid in coverage_sede_ids for sid in sede_ids):
+                coverages.append(coverage)
+    else:
+        coverages = query.all()
     
     if not coverages:
         return 0, ["Nessuna copertura trovata per il periodo selezionato"]
