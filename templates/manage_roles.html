@@ -71,7 +71,7 @@
                                         <span class="badge bg-primary">{{ user_count }}</span>
                                     </td>
                                     <td>
-                                        {% if current_user.can_manage_roles() %}
+                                        {% if current_user.can_manage_roles() and current_user.can_view_roles() %}
                                         <div class="btn-group btn-group-sm">
                                             {% if role.name == 'Admin' %}
                                             <button class="btn btn-outline-secondary" disabled title="Ruolo protetto dal sistema">
@@ -112,8 +112,10 @@
                                             {% endif %}
                                             {% endif %}
                                         </div>
+                                        {% elif current_user.can_view_roles() %}
+                                        <span class="badge bg-info">Solo visualizzazione</span>
                                         {% else %}
-                                        <span class="badge bg-secondary">Solo lettura</span>
+                                        <span class="badge bg-secondary">Accesso negato</span>
                                         {% endif %}
                                     </td>
                                 </tr>

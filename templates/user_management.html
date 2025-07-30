@@ -16,8 +16,8 @@
     </div>
 </div>
 
-<!-- Create User Form -->
-{% if current_user.can_manage_users() %}
+<!-- Create User Form - Solo per gestione, non per visualizzazione -->
+{% if current_user.can_manage_users() and current_user.can_view_users() %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
@@ -246,7 +246,7 @@
                                     <small>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else 'N/A' }}</small>
                                 </td>
                                 <td>
-                                    {% if current_user.can_manage_users() %}
+                                    {% if current_user.can_manage_users() and current_user.can_view_users() %}
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ url_for('edit_user', user_id=user.id) }}" 
                                            class="btn btn-outline-primary"
@@ -272,6 +272,8 @@
                                         </a>
                                         {% endif %}
                                     </div>
+                                    {% elif current_user.can_view_users() %}
+                                    <span class="badge bg-info">Solo visualizzazione</span>
                                     {% else %}
                                     <span class="badge bg-secondary">Solo lettura</span>
                                     {% endif %}
