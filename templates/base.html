@@ -361,6 +361,40 @@
                 </li>
                 {% endif %}
 
+                <!-- STRAORDINARI - Solo se ha almeno un permesso straordinari -->
+                {% set has_overtime_permission = current_user.can_access_overtime_menu() %}
+                {% if has_overtime_permission %}
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-clock"></i>
+                        <span>Straordinari</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        {% if current_user.can_create_overtime_requests() %}
+                        <li><a href="{{ url_for('create_overtime_request') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-plus"></i>Crea Richiesta
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_my_overtime_requests() %}
+                        <li><a href="{{ url_for('my_overtime_requests') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-user"></i>Le Mie Richieste
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_overtime_requests() or current_user.can_approve_overtime_requests() %}
+                        <li><a href="{{ url_for('overtime_requests') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-list"></i>Visualizza Richieste
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_manage_overtime_types() %}
+                        <li><a href="{{ url_for('overtime_types') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-tags"></i>Gestisci Tipologie
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
                 <!-- FESTIVITÀ - Solo se ha almeno un permesso festività -->
                 {% set has_holidays_permission = current_user.can_manage_holidays() or current_user.can_view_holidays() %}
                 {% if has_holidays_permission %}

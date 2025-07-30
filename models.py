@@ -117,6 +117,16 @@ class UserRole(db.Model):
             'can_create_expense_reports': 'Creare Note Spese',
             'can_view_my_expense_reports': 'Visualizzare Le Mie Note Spese',
             
+            # Straordinari
+            'can_create_overtime_requests': 'Creare Richieste Straordinario',
+            'can_view_overtime_requests': 'Visualizzare Richieste Straordinario',
+            'can_manage_overtime_requests': 'Gestire Richieste Straordinario',
+            'can_approve_overtime_requests': 'Approvare Richieste Straordinario',
+            'can_create_overtime_types': 'Creare Tipologie Straordinario',
+            'can_view_overtime_types': 'Visualizzare Tipologie Straordinario',
+            'can_manage_overtime_types': 'Gestire Tipologie Straordinario',
+            'can_view_my_overtime_requests': 'Visualizzare Le Mie Richieste Straordinario',
+            
             # Dashboard Widget Permissions
             'can_view_team_stats_widget': 'Widget Statistiche Team',
             'can_view_my_attendance_widget': 'Widget Le Mie Presenze',
@@ -128,7 +138,9 @@ class UserRole(db.Model):
             'can_view_leave_requests_widget': 'Widget Ferie/Permessi',
             'can_view_daily_attendance_widget': 'Widget Presenze per Sede',
             'can_view_shifts_coverage_widget': 'Widget Coperture Turni',
-            'can_view_reperibilita_widget': 'Widget Reperibilità'
+            'can_view_reperibilita_widget': 'Widget Reperibilità',
+            'can_view_my_overtime_requests_widget': 'Widget Le Mie Richieste Straordinario',
+            'can_view_overtime_management_widget': 'Widget Gestione Straordinari'
         }
 
 class User(UserMixin, db.Model):
@@ -362,6 +374,31 @@ class User(UserMixin, db.Model):
     def can_view_my_expense_reports(self):
         return self.has_permission('can_view_my_expense_reports')
     
+    # Metodi permessi straordinari
+    def can_create_overtime_requests(self):
+        return self.has_permission('can_create_overtime_requests')
+    
+    def can_view_overtime_requests(self):
+        return self.has_permission('can_view_overtime_requests')
+    
+    def can_manage_overtime_requests(self):
+        return self.has_permission('can_manage_overtime_requests')
+    
+    def can_approve_overtime_requests(self):
+        return self.has_permission('can_approve_overtime_requests')
+    
+    def can_create_overtime_types(self):
+        return self.has_permission('can_create_overtime_types')
+    
+    def can_view_overtime_types(self):
+        return self.has_permission('can_view_overtime_types')
+    
+    def can_manage_overtime_types(self):
+        return self.has_permission('can_manage_overtime_types')
+    
+    def can_view_my_overtime_requests(self):
+        return self.has_permission('can_view_my_overtime_requests')
+    
     def can_access_turni(self):
         """Verifica se l'utente può accedere alla gestione turni"""
         return self.has_permission('can_manage_shifts') or self.has_permission('can_view_shifts')
@@ -460,6 +497,12 @@ class User(UserMixin, db.Model):
         return (self.can_manage_expense_reports() or self.can_view_expense_reports() or 
                 self.can_approve_expense_reports() or self.can_create_expense_reports() or
                 self.can_view_my_expense_reports())
+    
+    def can_access_overtime_menu(self):
+        """Accesso al menu Straordinari"""
+        return (self.can_create_overtime_requests() or self.can_view_overtime_requests() or 
+                self.can_manage_overtime_requests() or self.can_approve_overtime_requests() or
+                self.can_view_my_overtime_requests())
     
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):
@@ -1932,13 +1975,165 @@ class ExpenseReport(db.Model):
         
         return result or 0
     
-    @property
-    def is_valid(self):
-        """Controlla se il token è valido (non usato e non scaduto)"""
-        return not self.used and not self.is_expired
+
+# ============================================================================
+# SISTEMA STRAORDINARI
+# ============================================================================
+
+class OvertimeType(db.Model):
+    """Tipologie di straordinario"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    hourly_rate_multiplier = db.Column(db.Float, default=1.5)  # Moltiplicatore per la paga oraria
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
     
     def __repr__(self):
-        return f'<PasswordResetToken {self.token[:8]}... for {self.user.username if self.user else "Unknown"}>'
+        return f'<OvertimeType {self.name}>'
+
+
+class OvertimeRequest(db.Model):
+    """Richieste di straordinario dei dipendenti"""
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    overtime_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    motivation = db.Column(db.Text, nullable=False)
+    overtime_type_id = db.Column(db.Integer, db.ForeignKey('overtime_type.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending', nullable=False)  # pending, approved, rejected
+    
+    # Approvazione
+    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    approval_comment = db.Column(db.Text)
+    
+    # Metadati
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    employee = db.relationship('User', foreign_keys=[employee_id], backref='overtime_requests')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_overtime_requests')
+    overtime_type = db.relationship('OvertimeType', backref='overtime_requests')
+    
+    def __repr__(self):
+        return f'<OvertimeRequest {self.employee.get_full_name()} - {self.overtime_date}>'
+    
+    @property
+    def status_display(self):
+        """Mostra lo stato in italiano"""
+        status_map = {
+            'pending': 'In Attesa',
+            'approved': 'Approvata',
+            'rejected': 'Rifiutata'
+        }
+        return status_map.get(self.status, self.status)
+    
+    @property
+    def status_color(self):
+        """Restituisce il colore Bootstrap per lo stato"""
+        color_map = {
+            'pending': 'warning',
+            'approved': 'success',
+            'rejected': 'danger'
+        }
+        return color_map.get(self.status, 'secondary')
+    
+    @property
+    def duration_hours(self):
+        """Calcola la durata in ore dello straordinario"""
+        from datetime import datetime, timedelta
+        
+        start_datetime = datetime.combine(self.overtime_date, self.start_time)
+        end_datetime = datetime.combine(self.overtime_date, self.end_time)
+        
+        # Gestisce il caso in cui il turno attraversa la mezzanotte
+        if end_datetime <= start_datetime:
+            end_datetime += timedelta(days=1)
+        
+        duration = end_datetime - start_datetime
+        return round(duration.total_seconds() / 3600, 2)
+    
+    def can_be_edited(self):
+        """Verifica se la richiesta può essere modificata"""
+        return self.status == 'pending'
+    
+    def can_be_approved_by(self, user):
+        """Verifica se l'utente può approvare questa richiesta di straordinario"""
+        if not user.can_approve_overtime_requests():
+            return False
+            
+        # Controllo sede: stesso sede o accesso globale
+        if user.all_sedi:
+            return True
+        
+        return user.sede_id == self.employee.sede_id
+    
+    def approve(self, approver, comment=None):
+        """Approva la richiesta di straordinario"""
+        self.status = 'approved'
+        self.approved_by = approver.id
+        self.approved_at = italian_now()
+        self.approval_comment = comment
+        
+        # Invia notifica automatica al dipendente
+        self._send_status_notification()
+    
+    def reject(self, approver, comment=None):
+        """Rifiuta la richiesta di straordinario"""
+        self.status = 'rejected'
+        self.approved_by = approver.id
+        self.approved_at = italian_now()
+        self.approval_comment = comment
+        
+        # Invia notifica automatica al dipendente
+        self._send_status_notification()
+    
+    def _send_status_notification(self):
+        """Invia notifica automatica del cambio di stato al dipendente"""
+        try:
+            if self.status == 'approved':
+                title = "Straordinario Approvato"
+                message = f"La tua richiesta di straordinario per il {self.overtime_date.strftime('%d/%m/%Y')} dalle {self.start_time.strftime('%H:%M')} alle {self.end_time.strftime('%H:%M')} è stata approvata."
+                message_type = 'Successo'
+            else:
+                title = "Straordinario Rifiutato"
+                message = f"La tua richiesta di straordinario per il {self.overtime_date.strftime('%d/%m/%Y')} dalle {self.start_time.strftime('%H:%M')} alle {self.end_time.strftime('%H:%M')} è stata rifiutata."
+                message_type = 'Attenzione'
+            
+            if self.approval_comment:
+                message += f"\n\nCommento: {self.approval_comment}"
+            
+            # Crea messaggio interno
+            notification = InternalMessage(
+                recipient_id=self.employee_id,
+                sender_id=self.approved_by,
+                title=title,
+                message=message,
+                message_type=message_type
+            )
+            
+            db.session.add(notification)
+                
+        except Exception as e:
+            print(f"Errore nell'invio della notifica straordinario: {e}")
+
+    @classmethod
+    def get_monthly_hours(cls, employee_id, year, month, status='approved'):
+        """Calcola il totale mensile delle ore di straordinario per un dipendente"""
+        from sqlalchemy import extract, func
+        
+        requests = db.session.query(cls).filter(
+            cls.employee_id == employee_id,
+            cls.status == status,
+            extract('year', cls.overtime_date) == year,
+            extract('month', cls.overtime_date) == month
+        ).all()
+        
+        total_hours = sum(request.duration_hours for request in requests)
+        return round(total_hours, 2)
 
 
 class Sede(db.Model):

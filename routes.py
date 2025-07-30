@@ -12,8 +12,8 @@ from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from config import get_config
 from sqlalchemy.orm import joinedload
-from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm
+from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions
 
 # Inject configuration into all templates
@@ -8672,6 +8672,145 @@ def delete_expense_report(expense_id):
     
     flash('Nota spese eliminata con successo', 'success')
     return redirect(url_for('expense_reports'))
+
+
+# ============================================================================
+# ROUTE STRAORDINARI
+# ============================================================================
+
+@app.route('/overtime_types')
+@login_required
+def overtime_types():
+    """Visualizzazione e gestione tipologie straordinari"""
+    if not current_user.can_view_overtime_types():
+        flash('Non hai i permessi per visualizzare le tipologie di straordinario.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    types = OvertimeType.query.all()
+    return render_template('overtime_types.html', types=types)
+
+@app.route('/overtime_types/create', methods=['GET', 'POST'])
+@login_required
+def create_overtime_type():
+    """Creazione nuova tipologia straordinario"""
+    if not current_user.can_create_overtime_types():
+        flash('Non hai i permessi per creare tipologie di straordinario.', 'warning')
+        return redirect(url_for('overtime_types'))
+    
+    form = OvertimeTypeForm()
+    if form.validate_on_submit():
+        overtime_type = OvertimeType(
+            name=form.name.data,
+            description=form.description.data,
+            hourly_rate_multiplier=form.hourly_rate_multiplier.data,
+            active=form.active.data
+        )
+        db.session.add(overtime_type)
+        db.session.commit()
+        flash('Tipologia straordinario creata con successo!', 'success')
+        return redirect(url_for('overtime_types'))
+    
+    return render_template('create_overtime_type.html', form=form)
+
+@app.route('/overtime_requests')
+@login_required
+def overtime_requests():
+    """Visualizzazione richieste straordinari"""
+    if not current_user.can_view_overtime_requests():
+        flash('Non hai i permessi per visualizzare le richieste di straordinario.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    # Filtro per sede
+    if current_user.all_sedi:
+        requests = OvertimeRequest.query.options(
+            joinedload(OvertimeRequest.employee),
+            joinedload(OvertimeRequest.overtime_type)
+        ).order_by(OvertimeRequest.created_at.desc()).all()
+    else:
+        requests = OvertimeRequest.query.join(User).filter(
+            User.sede_id == current_user.sede_id
+        ).options(
+            joinedload(OvertimeRequest.employee),
+            joinedload(OvertimeRequest.overtime_type)
+        ).order_by(OvertimeRequest.created_at.desc()).all()
+    
+    return render_template('overtime_requests.html', requests=requests)
+
+@app.route('/overtime_requests/create', methods=['GET', 'POST'])
+@login_required  
+def create_overtime_request():
+    """Creazione richiesta straordinario"""
+    if not current_user.can_create_overtime_requests():
+        flash('Non hai i permessi per creare richieste di straordinario.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    form = OvertimeRequestForm()
+    if form.validate_on_submit():
+        # Calcola le ore di straordinario
+        start_datetime = datetime.combine(form.overtime_date.data, form.start_time.data)
+        end_datetime = datetime.combine(form.overtime_date.data, form.end_time.data)
+        hours = (end_datetime - start_datetime).total_seconds() / 3600
+        
+        overtime_request = OvertimeRequest(
+            employee_id=current_user.id,
+            overtime_date=form.overtime_date.data,
+            start_time=form.start_time.data,
+            end_time=form.end_time.data,
+            hours=hours,
+            motivation=form.motivation.data,
+            overtime_type_id=form.overtime_type_id.data,
+            status='pending'
+        )
+        db.session.add(overtime_request)
+        db.session.commit()
+        flash('Richiesta straordinario inviata con successo!', 'success')
+        return redirect(url_for('my_overtime_requests'))
+    
+    return render_template('create_overtime_request.html', form=form)
+
+@app.route('/my_overtime_requests')
+@login_required
+def my_overtime_requests():
+    """Le mie richieste straordinari"""
+    if not current_user.can_view_my_overtime_requests():
+        flash('Non hai i permessi per visualizzare le tue richieste di straordinario.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    requests = OvertimeRequest.query.filter_by(employee_id=current_user.id).options(
+        joinedload(OvertimeRequest.overtime_type)
+    ).order_by(OvertimeRequest.created_at.desc()).all()
+    
+    return render_template('my_overtime_requests.html', requests=requests)
+
+@app.route('/overtime_requests/<int:request_id>/approve', methods=['GET', 'POST'])
+@login_required
+def approve_overtime_request(request_id):
+    """Approvazione/rifiuto richiesta straordinario"""
+    if not current_user.can_approve_overtime_requests():
+        flash('Non hai i permessi per approvare richieste di straordinario.', 'warning')
+        return redirect(url_for('overtime_requests'))
+    
+    overtime_request = OvertimeRequest.query.get_or_404(request_id)
+    
+    # Controllo sede
+    if not current_user.all_sedi and overtime_request.employee.sede_id != current_user.sede_id:
+        flash('Non puoi approvare richieste di altre sedi.', 'warning')
+        return redirect(url_for('overtime_requests'))
+    
+    form = ApproveOvertimeForm()
+    if form.validate_on_submit():
+        overtime_request.status = 'approved' if form.action.data == 'approve' else 'rejected'
+        overtime_request.approval_comment = form.comment.data
+        overtime_request.approved_by_id = current_user.id
+        overtime_request.approval_date = italian_now()
+        
+        db.session.commit()
+        
+        status_text = 'approvata' if form.action.data == 'approve' else 'rifiutata'
+        flash(f'Richiesta straordinario {status_text} con successo!', 'success')
+        return redirect(url_for('overtime_requests'))
+    
+    return render_template('approve_overtime_request.html', form=form, request=overtime_request)
 
 
 

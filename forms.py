@@ -1257,3 +1257,59 @@ class PresidioCoverageSearchForm(FlaskForm):
     })
     
     submit = SubmitField('Cerca')
+
+
+# ============================================================================
+# FORM STRAORDINARI
+# ============================================================================
+
+class OvertimeTypeForm(FlaskForm):
+    name = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Descrizione')
+    hourly_rate_multiplier = FloatField('Moltiplicatore Paga Oraria', validators=[DataRequired(), NumberRange(min=1.0, max=5.0)], default=1.5)
+    active = BooleanField('Attiva', default=True)
+    submit = SubmitField('Salva Tipologia')
+
+class OvertimeRequestForm(FlaskForm):
+    overtime_date = DateField('Data Straordinario', validators=[DataRequired()])
+    start_time = TimeField('Ora Inizio', validators=[DataRequired()])
+    end_time = TimeField('Ora Fine', validators=[DataRequired()])
+    motivation = TextAreaField('Motivazione', validators=[DataRequired(), Length(max=500)])
+    overtime_type_id = SelectField('Tipo Straordinario', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Invia Richiesta')
+    
+    def __init__(self, *args, **kwargs):
+        super(OvertimeRequestForm, self).__init__(*args, **kwargs)
+        
+        # Popola le scelte dei tipi straordinario
+        try:
+            from models import OvertimeType
+            active_types = OvertimeType.query.filter_by(active=True).all()
+            self.overtime_type_id.choices = [(ot.id, f"{ot.name} (x{ot.hourly_rate_multiplier})") for ot in active_types]
+            
+            if not self.overtime_type_id.choices:
+                self.overtime_type_id.choices = [(0, 'Nessuna tipologia disponibile')]
+        except:
+            self.overtime_type_id.choices = [(0, 'Errore nel caricamento tipologie')]
+    
+    def validate_end_time(self, field):
+        if self.start_time.data and field.data:
+            if field.data <= self.start_time.data:
+                raise ValidationError('L\'ora di fine deve essere successiva all\'ora di inizio.')
+    
+    def validate_overtime_date(self, field):
+        from datetime import date
+        if field.data and field.data < date.today():
+            raise ValidationError('Non è possibile richiedere straordinari per date passate.')
+
+class ApproveOvertimeForm(FlaskForm):
+    action = SelectField('Azione', choices=[
+        ('approve', 'Approva'),
+        ('reject', 'Rifiuta')
+    ], validators=[DataRequired()])
+    comment = TextAreaField('Commento')
+    submit = SubmitField('Conferma')
+    
+    def validate_comment(self, field):
+        if self.action.data == 'reject' and not field.data:
+            raise ValidationError('Il commento è obbligatorio quando si rifiuta una richiesta.')
