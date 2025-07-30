@@ -74,8 +74,8 @@
                         {% for request in requests %}
                         <tr>
                             <td>
-                                <strong>{{ request.user.get_full_name() }}</strong>
-                                <small class="text-muted d-block">{{ request.user.username }}</small>
+                                <strong>{{ request.employee.get_full_name() }}</strong>
+                                <small class="text-muted d-block">{{ request.employee.username }}</small>
                             </td>
                             <td>{{ request.overtime_date.strftime('%d/%m/%Y') }}</td>
                             <td>
@@ -83,7 +83,7 @@
                                 {{ request.end_time.strftime('%H:%M') }}
                             </td>
                             <td>
-                                <span class="badge bg-info">{{ "%.1f"|format(request.duration_hours) }}h</span>
+                                <span class="badge bg-info">{{ "%.1f"|format(request.hours) }}h</span>
                             </td>
                             <td>
                                 {{ request.overtime_type.name }}
@@ -141,17 +141,17 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Dettagli Richiesta - {{ request.user.get_full_name() }}</h5>
+                <h5 class="modal-title">Dettagli Richiesta - {{ request.employee.get_full_name() }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <!-- Contenuto simile al template my_overtime_requests.html -->
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Utente:</strong> {{ request.user.get_full_name() }}</p>
+                        <p><strong>Utente:</strong> {{ request.employee.get_full_name() }}</p>
                         <p><strong>Data:</strong> {{ request.overtime_date.strftime('%d/%m/%Y') }}</p>
                         <p><strong>Orario:</strong> {{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}</p>
-                        <p><strong>Ore totali:</strong> {{ "%.1f"|format(request.duration_hours) }} ore</p>
+                        <p><strong>Ore totali:</strong> {{ "%.1f"|format(request.hours) }} ore</p>
                     </div>
                     <div class="col-md-6">
                         <p><strong>Tipologia:</strong> {{ request.overtime_type.name }}</p>
@@ -188,7 +188,7 @@
             <form method="POST" action="{{ url_for('approve_overtime_request', request_id=request.id) }}">
                 {{ csrf_token() }}
                 <div class="modal-body">
-                    <p>Vuoi approvare la richiesta di straordinario di <strong>{{ request.user.get_full_name() }}</strong>?</p>
+                    <p>Vuoi approvare la richiesta di straordinario di <strong>{{ request.employee.get_full_name() }}</strong>?</p>
                     <div class="mb-3">
                         <label class="form-label">Commento (opzionale):</label>
                         <textarea name="approval_comment" class="form-control" rows="3"></textarea>
@@ -214,7 +214,7 @@
             <form method="POST" action="{{ url_for('reject_overtime_request', request_id=request.id) }}">
                 {{ csrf_token() }}
                 <div class="modal-body">
-                    <p>Vuoi rifiutare la richiesta di straordinario di <strong>{{ request.user.get_full_name() }}</strong>?</p>
+                    <p>Vuoi rifiutare la richiesta di straordinario di <strong>{{ request.employee.get_full_name() }}</strong>?</p>
                     <div class="mb-3">
                         <label class="form-label">Motivo del rifiuto:</label>
                         <textarea name="approval_comment" class="form-control" rows="3" required></textarea>

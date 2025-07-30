@@ -8792,7 +8792,7 @@ def create_overtime_request():
         db.session.commit()
         
         # Invia notifica automatica agli approvatori
-        send_overtime_request_message(overtime_request, 'created')
+        send_overtime_request_message(overtime_request, 'created', current_user)
         
         flash('Richiesta straordinario inviata con successo!', 'success')
         return redirect(url_for('my_overtime_requests'))
@@ -8835,7 +8835,7 @@ def approve_overtime_request(request_id):
     db.session.commit()
     
     # Invia notifica automatica all'utente
-    send_overtime_request_message(overtime_request, 'approved')
+    send_overtime_request_message(overtime_request, 'approved', current_user)
     
     flash('Richiesta straordinario approvata con successo!', 'success')
     return redirect(url_for('overtime_requests_management'))
@@ -8862,7 +8862,7 @@ def reject_overtime_request(request_id):
     db.session.commit()
     
     # Invia notifica automatica all'utente
-    send_overtime_request_message(overtime_request, 'rejected')
+    send_overtime_request_message(overtime_request, 'rejected', current_user)
     
     flash('Richiesta straordinario rifiutata.', 'info')
     return redirect(url_for('overtime_requests_management'))
