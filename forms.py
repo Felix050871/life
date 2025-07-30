@@ -889,6 +889,14 @@ class RoleForm(FlaskForm):
     can_view_my_reperibilita_widget = BooleanField('Widget Le Mie Reperibilità')
     can_view_expense_reports_widget = BooleanField('Widget Note Spese')
     
+    # Gestione Straordinari
+    can_manage_overtime_requests = BooleanField('Gestire Richieste Straordinari')
+    can_approve_overtime_requests = BooleanField('Approvare Richieste Straordinari')
+    can_create_overtime_requests = BooleanField('Creare Richieste Straordinari')
+    can_view_overtime_requests = BooleanField('Visualizzare Richieste Straordinari')
+    can_view_my_overtime_requests = BooleanField('Visualizzare Le Mie Richieste')
+    can_manage_overtime_types = BooleanField('Gestire Tipologie Straordinari')
+    
     # Widget Straordinari
     can_view_overtime_widget = BooleanField('Widget Straordinari')
     can_view_my_overtime_widget = BooleanField('Widget I Miei Straordinari')
@@ -1003,6 +1011,14 @@ class RoleForm(FlaskForm):
             'can_view_expense_reports_widget': self.can_view_expense_reports_widget.data,
             
             # Widget Straordinari  
+            # Gestione Straordinari
+            'can_manage_overtime_requests': self.can_manage_overtime_requests.data,
+            'can_approve_overtime_requests': self.can_approve_overtime_requests.data,
+            'can_create_overtime_requests': self.can_create_overtime_requests.data,
+            'can_view_overtime_requests': self.can_view_overtime_requests.data,
+            'can_view_my_overtime_requests': self.can_view_my_overtime_requests.data,
+            'can_manage_overtime_types': self.can_manage_overtime_types.data,
+            
             'can_view_overtime_widget': self.can_view_overtime_widget.data,
             'can_view_my_overtime_widget': self.can_view_my_overtime_widget.data
         }
@@ -1090,6 +1106,14 @@ class RoleForm(FlaskForm):
         self.can_view_expense_reports_widget.data = permissions_dict.get('can_view_expense_reports_widget', False)
         
         # Widget Straordinari
+        # Gestione Straordinari
+        self.can_manage_overtime_requests.data = permissions_dict.get('can_manage_overtime_requests', False)
+        self.can_approve_overtime_requests.data = permissions_dict.get('can_approve_overtime_requests', False)
+        self.can_create_overtime_requests.data = permissions_dict.get('can_create_overtime_requests', False)
+        self.can_view_overtime_requests.data = permissions_dict.get('can_view_overtime_requests', False)
+        self.can_view_my_overtime_requests.data = permissions_dict.get('can_view_my_overtime_requests', False)
+        self.can_manage_overtime_types.data = permissions_dict.get('can_manage_overtime_types', False)
+        
         self.can_view_overtime_widget.data = permissions_dict.get('can_view_overtime_widget', False)
         self.can_view_my_overtime_widget.data = permissions_dict.get('can_view_my_overtime_widget', False)
 
