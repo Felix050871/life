@@ -8,12 +8,14 @@ function showLoading() {
         const exportButtons = document.querySelectorAll('.export-btn');
         exportButtons.forEach(btn => btn.style.pointerEvents = 'none');
         
-        // Non disabilitare gli input del form altrimenti i dati non vengono inviati
-        const submitButton = document.getElementById('customSearchBtn');
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricamento...';
-        }
+        // Disabilita il pulsante submit solo DOPO aver permesso l'invio del form
+        setTimeout(() => {
+            const submitButton = document.getElementById('customSearchBtn');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricamento...';
+            }
+        }, 100);
     }
 }
 
@@ -37,6 +39,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (overlay && !overlay.classList.contains('d-none')) {
         overlay.classList.add('d-none');
     }
+    
+    // Auto-nasconde overlay dopo massimo 15 secondi per prevenire loop infiniti
+    setTimeout(() => {
+        if (overlay && !overlay.classList.contains('d-none')) {
+            overlay.classList.add('d-none');
+            console.log('Loading overlay auto-hidden dopo timeout');
+            // Mostra un messaggio di errore se il caricamento è troppo lento
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-warning alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Il caricamento sta impiegando più del previsto. La pagina dovrebbe aggiornarsi a breve.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container-fluid').prepend(alertDiv);
+        }
+    }, 15000);
 });
 
 // Gestisce il browser back/forward

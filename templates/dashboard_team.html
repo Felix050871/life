@@ -30,7 +30,7 @@
                     <!-- Controlli temporali semplificati -->
                     <div class="d-flex align-items-center gap-3">
                         <!-- Solo range personalizzato -->
-                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-2" id="customRangeForm" onsubmit="showLoading()">
+                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-2" id="customRangeForm" onsubmit="showLoading(); return true;">
                             <label class="form-label mb-0 text-muted">Periodo:</label>
                             <input type="date" class="form-control form-control-sm" name="start_date" 
                                    value="{{ start_date.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
