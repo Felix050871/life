@@ -109,7 +109,7 @@
                                         </a>
                                         <a href="{{ url_for('generate_turnazioni_coverage', period_key=period_key) }}" 
                                            class="btn btn-outline-success" title="Genera/Rigenera Turni"
-                                           onclick="return confirm('Procedere con la generazione/rigenerazione dei turni per questo periodo?')">
+                                           onclick="return confirm('Vuoi generare i turni per questo periodo?\n\nVerranno creati automaticamente i turni secondo le coperture configurate. Se esistono turni nel periodo, verranno sostituiti.')">
                                             <i class="fas fa-sync-alt"></i>
                                         </a>
                                         {% endif %}

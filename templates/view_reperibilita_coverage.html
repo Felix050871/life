@@ -76,7 +76,7 @@
 
 <script>
 function deleteCoverage(coverageId, coverageName) {
-    if (confirm(`Sei sicuro di voler eliminare la copertura reperibilità "${coverageName}"? Questa azione non può essere annullata.`)) {
+    if (confirm(`Vuoi eliminare la copertura reperibilità "${coverageName}"?\n\nATTENZIONE:\n• Tutti i turni di reperibilità associati verranno eliminati\n• Le assegnazioni del personale andranno perse\n• Gli interventi collegati perderanno il riferimento\n\nL'operazione NON può essere annullata.`)) {
         window.location.href = `/reperibilita_coverage/delete/${coverageId}`;
     }
 }

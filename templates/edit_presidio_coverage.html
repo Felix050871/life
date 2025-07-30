@@ -281,7 +281,7 @@ function updateRolesDisplay(coverageId) {
 }
 
 function deleteCoverageRow(coverageId) {
-    if (confirm('Sei sicuro di voler eliminare questa copertura?')) {
+    if (confirm('Vuoi eliminare definitivamente questa copertura presidio?\n\nTutti i turni generati da questa copertura verranno eliminati e le assegnazioni del personale andranno perse.')) {
         const row = document.querySelector(`tr[data-coverage-id="${coverageId}"]`);
         if (row) {
             // Aggiungi campo hidden per marcare come eliminata

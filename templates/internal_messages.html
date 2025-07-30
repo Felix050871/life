@@ -95,7 +95,7 @@
                                         <!-- Pulsante cancella messaggio -->
                                         <form method="POST" action="{{ url_for('delete_message', message_id=message.id) }}" 
                                               style="display: inline;" 
-                                              onsubmit="return confirm('Sei sicuro di voler cancellare questo messaggio?')">
+                                              onsubmit="return confirm('Vuoi cancellare definitivamente questo messaggio? Non sarà più possibile recuperarlo.')">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancella messaggio">
                                                 <i class="fas fa-trash"></i>

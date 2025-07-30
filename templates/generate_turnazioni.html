@@ -279,14 +279,14 @@ function viewGeneratedShifts(sedeId, periodId) {
 }
 
 function disableCoveragePeriod(periodId) {
-    if (confirm('Sei sicuro di voler disabilitare tutte le coperture di questo periodo?')) {
+    if (confirm('Vuoi disabilitare tutte le coperture di questo periodo?\n\nLe coperture verranno temporaneamente disattivate ma i dati non andranno persi. Potrai riattivarle in seguito.')) {
         // TODO: Implementare disabilitazione periodo
         alert(`Disabilitazione periodo ${periodId} - Funzionalità in sviluppo`);
     }
 }
 
 function deleteCoveragePeriod(periodId) {
-    if (confirm('ATTENZIONE: Questa azione eliminerà TUTTE le coperture del periodo. Continuare?')) {
+    if (confirm('ELIMINA TUTTE LE COPERTURE DEL PERIODO\n\nATTENZIONE: Operazione irreversibile!\n\n• Verranno eliminate TUTTE le coperture del periodo\n• Tutti i turni generati da queste coperture andranno persi\n• Non sarà possibile recuperare i dati\n\nSei SICURO di voler continuare?')) {
         // TODO: Implementare eliminazione periodo  
         alert(`Eliminazione periodo ${periodId} - Funzionalità in sviluppo`);
     }

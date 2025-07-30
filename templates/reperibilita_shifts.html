@@ -399,7 +399,7 @@
 
 <script>
 function deleteTemplate(templateId, templateName) {
-    if (confirm(`Sei sicuro di voler eliminare il template "${templateName}" e tutti i suoi turni? Questa azione non può essere annullata.`)) {
+    if (confirm(`Vuoi eliminare definitivamente il template "${templateName}"?\n\nATTENZIONE:\n• Tutti i turni generati da questo template verranno eliminati\n• Le assegnazioni di reperibilità andranno perse\n• Non sarà possibile recuperare i dati\n\nL'operazione NON può essere annullata.`)) {
         window.location.href = `/reperibilita_template/delete/${templateId}`;
     }
 }
@@ -417,21 +417,21 @@ function showEndInterventionModal() {
 
 // Funzione per eliminare copertura reperibilità
 function deleteCoverage(periodKey, periodName) {
-    if (confirm(`Sei sicuro di voler eliminare la copertura del periodo "${periodName}"?\n\nQuesta operazione eliminerà anche tutti i turni generati per questo periodo e non può essere annullata.`)) {
+    if (confirm(`Vuoi eliminare la copertura del periodo "${periodName}"?\n\nATTENZIONE:\n• Verranno eliminati tutti i turni di reperibilità del periodo\n• Le assegnazioni del personale andranno perse\n• Tutti gli interventi collegati perderanno il riferimento\n\nL'operazione NON può essere annullata.`)) {
         window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
     }
 }
 
 // Funzione per eliminare copertura reperibilità
 function deleteCoverage(periodKey, periodName) {
-    if (confirm('Sei sicuro di voler eliminare la copertura del periodo "' + periodName + '"?\n\nQuesta operazione eliminerà anche tutti i turni generati per questo periodo e non può essere annullata.')) {
+    if (confirm('Vuoi eliminare la copertura del periodo "' + periodName + '"?\n\nATTENZIONE:\n• Verranno eliminati tutti i turni di reperibilità del periodo\n• Le assegnazioni del personale andranno perse\n• Tutti gli interventi collegati perderanno il riferimento\n\nL\'operazione NON può essere annullata.')) {
         window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
     }
 }
 
 // Funzione per eliminare periodo turni
 function deletePeriod(periodKey, periodName) {
-    if (confirm('Sei sicuro di voler eliminare tutti i turni del periodo "' + periodName + '"?\n\nQuesta operazione non può essere annullata.')) {
+    if (confirm('Vuoi eliminare tutti i turni del periodo "' + periodName + '"?\n\nATTENZIONE:\n• Verranno eliminati TUTTI i turni di reperibilità del periodo\n• Le assegnazioni del personale andranno perse\n• Gli interventi collegati perderanno il riferimento\n\nL\'operazione NON può essere annullata.')) {
         window.location.href = '/reperibilita_coverage/delete_period/' + periodKey;
     }
 }

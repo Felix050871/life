@@ -174,7 +174,7 @@
 
 <script>
 function regenerateShifts() {
-    if (confirm('Sei sicuro di voler rigenerare tutti i turni per questo periodo? I turni esistenti da oggi in poi verranno sostituiti.')) {
+    if (confirm('Vuoi rigenerare tutti i turni per questo periodo?\n\nATTENZIONE:\n• Tutti i turni esistenti da oggi in poi verranno sostituiti\n• Le assegnazioni attuali andranno perse\n• Verranno creati nuovi turni secondo il template\n\nContinuare con la rigenerazione?')) {
         // Crea un form per inviare i dati alla route di rigenerazione
         const form = document.createElement('form');
         form.method = 'POST';
@@ -208,7 +208,7 @@ function regenerateShifts() {
 }
 
 function deleteShifts() {
-    if (confirm('ATTENZIONE: Questa azione eliminerà TUTTI i turni del periodo da oggi in poi. Continuare?')) {
+    if (confirm('ELIMINA TUTTI I TURNI DEL PERIODO\n\nATTENZIONE: Operazione irreversibile!\n\n• Verranno eliminati TUTTI i turni dal ' + new Date().toLocaleDateString() + ' in poi\n• Le assegnazioni del personale andranno perse\n• Non sarà possibile recuperare i dati\n\nSei SICURO di voler continuare?')) {
         // Crea un form per inviare i dati alla route di eliminazione
         const form = document.createElement('form');
         form.method = 'POST';
@@ -247,7 +247,7 @@ function editShift(shiftId) {
 }
 
 function deleteShift(shiftId) {
-    if (confirm('Sei sicuro di voler eliminare questo turno?')) {
+    if (confirm('Vuoi eliminare questo turno?\n\nIl turno assegnato verrà rimosso definitivamente e l\'utente non sarà più programmato per questa fascia oraria.')) {
         // Crea un form per inviare la richiesta di eliminazione
         const form = document.createElement('form');
         form.method = 'POST';

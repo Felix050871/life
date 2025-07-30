@@ -226,7 +226,7 @@
 {% block scripts %}
 <script>
 function confirmDelete(locationId) {
-    if (confirm('Sei sicuro di voler eliminare questa sede? Tutti i dati associati verranno rimossi.')) {
+    if (confirm('Vuoi eliminare definitivamente questa sede?\n\nATTENZIONE: Verranno eliminati per sempre:\n• Tutti gli utenti associati alla sede\n• Tutti i turni e le coperture\n• Tutti gli orari di lavoro\n• Tutte le presenze registrate\n\nQuesta operazione NON può essere annullata.')) {
         window.location.href = '/locations/delete/' + locationId;
     }
 }

@@ -136,7 +136,7 @@
                                             <!-- Elimina (solo se propria o admin, e solo se in attesa) -->
                                             {% if (expense.employee_id == current_user.id or current_user.can_manage_expense_reports()) and expense.status == 'pending' %}
                                             <form method="POST" action="{{ url_for('delete_expense_report', expense_id=expense.id) }}" 
-                                                  style="display:inline;" onsubmit="return confirm('Sei sicuro di voler eliminare questa nota spese?')">
+                                                  style="display:inline;" onsubmit="return confirm('Vuoi eliminare definitivamente questa nota spese? Tutti i dati verranno persi per sempre.')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina">
                                                     <i class="fas fa-trash"></i>

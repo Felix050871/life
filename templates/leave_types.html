@@ -71,7 +71,7 @@
                                             </a>
                                             {% if leave_type.leave_requests.count() == 0 %}
                                             <form method="POST" action="{{ url_for('delete_leave_type', id=leave_type.id) }}" 
-                                                  class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa tipologia?')">
+                                                  class="d-inline" onsubmit="return confirm('Vuoi eliminare definitivamente questa tipologia di permesso? Non sarà più possibile utilizzarla per nuove richieste.')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <button type="submit" class="btn btn-outline-danger" title="Elimina tipologia">
                                                     <i class="fas fa-trash"></i>

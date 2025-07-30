@@ -99,7 +99,7 @@
 
 <script>
 function deleteReperibilita(periodKey, periodName) {
-    if (confirm(`Sei sicuro di voler eliminare tutte le coperture reperibilità del periodo "${periodName}"? Questa azione non può essere annullata.`)) {
+    if (confirm(`Vuoi eliminare tutte le coperture reperibilità del periodo "${periodName}"?\n\nATTENZIONE: Operazione irreversibile!\n\n• Verranno eliminate TUTTE le coperture del periodo\n• Tutti i turni di reperibilità associati andranno persi\n• Gli interventi collegati perderanno il riferimento\n\nL'operazione NON può essere annullata.`)) {
         window.location.href = `/reperibilita_coverage/delete_period/${periodKey}`;
     }
 }

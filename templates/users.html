@@ -296,7 +296,7 @@
 {% block scripts %}
 <script>
 function confirmDelete(userId) {
-    if (confirm('Sei sicuro di voler eliminare questo utente? Tutti i dati associati verranno rimossi.')) {
+    if (confirm('Vuoi eliminare definitivamente questo utente?\n\nATTENZIONE: Verranno eliminati per sempre:\n• Tutte le presenze registrate\n• Tutte le richieste di ferie/permessi\n• Tutti i turni assegnati\n• Tutti i dati personali\n\nQuesta operazione NON può essere annullata.')) {
         window.location.href = '/users/delete/' + userId;
     }
 }

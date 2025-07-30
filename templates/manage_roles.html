@@ -94,7 +94,7 @@
                                             <a href="{{ url_for('toggle_role', role_id=role.id) }}" 
                                                class="btn btn-outline-{% if role.active %}warning{% else %}success{% endif %}" 
                                                title="{% if role.active %}Disattiva{% else %}Attiva{% endif %}"
-                                               onclick="return confirm('Sei sicuro di voler {% if role.active %}disattivare{% else %}attivare{% endif %} questo ruolo?')">
+                                               onclick="return confirm('Vuoi {% if role.active %}disattivare{% else %}riattivare{% endif %} questo ruolo?\n\n{% if role.active %}Gli utenti con questo ruolo perderanno temporaneamente l\'accesso alle funzioni associate.{% else %}Gli utenti con questo ruolo riacquisteranno l\'accesso alle funzioni associate.{% endif %}')">
                                                 <i class="fas fa-{% if role.active %}pause{% else %}play{% endif %}"></i>
                                             </a>
                                             
@@ -102,7 +102,7 @@
                                             {% if user_count == 0 %}
                                             <a href="{{ url_for('delete_role', role_id=role.id) }}" 
                                                class="btn btn-outline-danger" title="Elimina"
-                                               onclick="return confirm('Sei sicuro di voler eliminare questo ruolo? Questa azione non può essere annullata.')">
+                                               onclick="return confirm('Vuoi eliminare definitivamente questo ruolo?\n\nATTENZIONE: Non sarà più possibile:\n• Assegnare questo ruolo a nuovi utenti\n• Utilizzare i permessi associati\n\nL\'operazione NON può essere annullata.')">
                                                 <i class="fas fa-trash"></i>
                                             </a>
                                             {% else %}
