@@ -140,7 +140,9 @@ class UserRole(db.Model):
             'can_view_shifts_coverage_widget': 'Widget Coperture Turni',
             'can_view_reperibilita_widget': 'Widget Reperibilità',
             'can_view_my_overtime_requests_widget': 'Widget Le Mie Richieste Straordinario',
-            'can_view_overtime_management_widget': 'Widget Gestione Straordinari'
+            'can_view_overtime_management_widget': 'Widget Gestione Straordinari',
+            'can_view_overtime_widget': 'Widget Straordinari',
+            'can_view_my_overtime_widget': 'Widget I Miei Straordinari'
         }
 
 class User(UserMixin, db.Model):
@@ -552,6 +554,14 @@ class User(UserMixin, db.Model):
     def can_view_my_expense_reports_widget(self):
         """Widget le mie note spese personali"""
         return self.has_permission('can_view_my_expense_reports')
+    
+    def can_view_overtime_widget(self):
+        """Può visualizzare widget straordinari"""
+        return self.has_permission('can_view_overtime_widget')
+        
+    def can_view_my_overtime_widget(self):
+        """Può visualizzare widget dei propri straordinari"""
+        return self.has_permission('can_view_my_overtime_widget')
     
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""

@@ -621,6 +621,99 @@ class ExpenseReportForm(FlaskForm):
             self.category_id.choices = [(0, 'Nessuna categoria disponibile')]
 
 
+class OvertimeFilterForm(FlaskForm):
+    """Form per filtrare le richieste straordinari"""
+    status = SelectField('Stato', choices=[
+        ('all', 'Tutti'),
+        ('pending', 'In Attesa'),
+        ('approved', 'Approvate'),
+        ('rejected', 'Rifiutate')
+    ], default='all')
+    month = SelectField('Mese', choices=[], default='current')
+    submit = SubmitField('Filtra')
+    
+    def __init__(self, *args, **kwargs):
+        super(OvertimeFilterForm, self).__init__(*args, **kwargs)
+        from datetime import date
+        current_date = date.today()
+        
+        # Popola scelte mese (ultimi 6 mesi + prossimi 3)
+        months = []
+        for i in range(-6, 4):
+            year = current_date.year
+            month = current_date.month + i
+            
+            if month > 12:
+                year += month // 12
+                month = month % 12
+            elif month < 1:
+                year += (month - 12) // 12
+                month = month % 12 + 12
+            
+            month_name = [
+                '', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+            ][month]
+            
+            value = f"{year}-{month:02d}"
+            label = f"{month_name} {year}"
+            
+            if i == 0:
+                label += " (Corrente)"
+                
+            months.append((value, label))
+        
+        self.month.choices = [('all', 'Tutti i mesi')] + months
+
+
+class OvertimeTypeForm(FlaskForm):
+    """Form per gestire tipologie straordinari"""
+    name = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Descrizione', validators=[Length(max=500)])
+    hourly_rate_multiplier = DecimalField('Moltiplicatore Paga', validators=[
+        DataRequired(), 
+        NumberRange(min=1.0, max=3.0, message='Il moltiplicatore deve essere tra 1.0 e 3.0')
+    ], places=2, default=1.0)
+    active = BooleanField('Attiva', default=True)
+    submit = SubmitField('Salva Tipologia')
+
+
+class OvertimeRequestForm(FlaskForm):
+    """Form per creare richieste straordinari"""
+    overtime_date = DateField('Data Straordinario', validators=[DataRequired()])
+    start_time = TimeField('Ora Inizio', validators=[DataRequired()])
+    end_time = TimeField('Ora Fine', validators=[DataRequired()])
+    overtime_type_id = SelectField('Tipologia Straordinario', coerce=int, validators=[DataRequired()])
+    motivation = TextAreaField('Motivazione', validators=[DataRequired(), Length(max=500)])
+    submit = SubmitField('Invia Richiesta')
+    
+    def __init__(self, *args, **kwargs):
+        super(OvertimeRequestForm, self).__init__(*args, **kwargs)
+        # Popola tipologie straordinari attive
+        from models import OvertimeType
+        types = OvertimeType.query.filter_by(active=True).order_by(OvertimeType.name).all()
+        self.overtime_type_id.choices = [(t.id, f"{t.name} (x{t.hourly_rate_multiplier})") for t in types]
+        
+        if not self.overtime_type_id.choices:
+            self.overtime_type_id.choices = [(0, 'Nessuna tipologia disponibile')]
+    
+    def validate_overtime_date(self, field):
+        from datetime import date
+        if field.data and field.data < date.today():
+            raise ValidationError('La data straordinario non può essere nel passato.')
+    
+    def validate_end_time(self, field):
+        if field.data and self.start_time.data and field.data <= self.start_time.data:
+            raise ValidationError('L\'ora di fine deve essere successiva all\'ora di inizio.')
+
+
+class ApproveOvertimeForm(FlaskForm):
+    """Form per approvare/rifiutare straordinari"""
+    action = StringField('Azione', validators=[DataRequired()])
+    comment = TextAreaField('Commento', validators=[Length(max=500)])
+    submit = SubmitField('Conferma')
+
+
 class ExpenseApprovalForm(FlaskForm):
     """Form per approvare/rifiutare note spese"""
     action = SelectField('Azione', choices=[
@@ -880,6 +973,10 @@ class RoleForm(FlaskForm):
     can_view_my_reperibilita_widget = BooleanField('Widget Le Mie Reperibilità')
     can_view_expense_reports_widget = BooleanField('Widget Note Spese')
     
+    # Widget Straordinari
+    can_view_overtime_widget = BooleanField('Widget Straordinari')
+    can_view_my_overtime_widget = BooleanField('Widget I Miei Straordinari')
+    
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
     
@@ -987,7 +1084,11 @@ class RoleForm(FlaskForm):
             'can_view_my_shifts_widget': self.can_view_my_shifts_widget.data,
             'can_view_reperibilita_widget': self.can_view_reperibilita_widget.data,
             'can_view_my_reperibilita_widget': self.can_view_my_reperibilita_widget.data,
-            'can_view_expense_reports_widget': self.can_view_expense_reports_widget.data
+            'can_view_expense_reports_widget': self.can_view_expense_reports_widget.data,
+            
+            # Widget Straordinari  
+            'can_view_overtime_widget': self.can_view_overtime_widget.data,
+            'can_view_my_overtime_widget': self.can_view_my_overtime_widget.data
         }
     
     def populate_permissions(self, permissions_dict):
@@ -1071,6 +1172,10 @@ class RoleForm(FlaskForm):
         self.can_view_reperibilita_widget.data = permissions_dict.get('can_view_reperibilita_widget', False)
         self.can_view_my_reperibilita_widget.data = permissions_dict.get('can_view_my_reperibilita_widget', False)
         self.can_view_expense_reports_widget.data = permissions_dict.get('can_view_expense_reports_widget', False)
+        
+        # Widget Straordinari
+        self.can_view_overtime_widget.data = permissions_dict.get('can_view_overtime_widget', False)
+        self.can_view_my_overtime_widget.data = permissions_dict.get('can_view_my_overtime_widget', False)
 
 
 # Form del pacchetto presidio integrati

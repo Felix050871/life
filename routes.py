@@ -7220,7 +7220,9 @@ def edit_role(role_id):
                 'can_view_leave_requests_widget': form.can_view_leave_requests_widget.data,
                 'can_view_daily_attendance_widget': form.can_view_daily_attendance_widget.data,
                 'can_view_shifts_coverage_widget': form.can_view_shifts_coverage_widget.data,
-                'can_view_reperibilita_widget': form.can_view_reperibilita_widget.data
+                'can_view_reperibilita_widget': form.can_view_reperibilita_widget.data,
+                'can_view_overtime_widget': form.can_view_overtime_widget.data,
+                'can_view_my_overtime_widget': form.can_view_my_overtime_widget.data
             }
             existing_permissions.update(widget_permissions)
             role.permissions = existing_permissions
@@ -8758,7 +8760,7 @@ def create_overtime_request():
             overtime_date=form.overtime_date.data,
             start_time=form.start_time.data,
             end_time=form.end_time.data,
-            hours=hours,
+
             motivation=form.motivation.data,
             overtime_type_id=form.overtime_type_id.data,
             status='pending'
@@ -8932,5 +8934,52 @@ def overtime_requests_excel():
 
 
 
+
+
+
+
+@app.route("/overtime_types/<int:type_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_overtime_type(type_id):
+    """Modifica tipologia straordinario"""
+    if not current_user.can_manage_overtime_types():
+        flash("Non hai i permessi per modificare le tipologie di straordinario.", "warning")
+        return redirect(url_for("overtime_types"))
+    
+    overtime_type = OvertimeType.query.get_or_404(type_id)
+    form = OvertimeTypeForm(obj=overtime_type)
+    
+    if form.validate_on_submit():
+        overtime_type.name = form.name.data
+        overtime_type.description = form.description.data
+        overtime_type.hourly_rate_multiplier = form.hourly_rate_multiplier.data
+        overtime_type.active = form.active.data
+        
+        db.session.commit()
+        flash("Tipologia straordinario aggiornata con successo!", "success")
+        return redirect(url_for("overtime_types"))
+    
+    return render_template("edit_overtime_type.html", form=form, overtime_type=overtime_type)
+
+@app.route("/overtime_types/<int:type_id>/delete", methods=["POST"])
+@login_required
+def delete_overtime_type(type_id):
+    """Cancella tipologia straordinario"""
+    if not current_user.can_manage_overtime_types():
+        flash("Non hai i permessi per cancellare le tipologie di straordinario.", "warning")
+        return redirect(url_for("overtime_types"))
+    
+    overtime_type = OvertimeType.query.get_or_404(type_id)
+    
+    # Controlla se ci sono richieste associate
+    requests_count = OvertimeRequest.query.filter_by(overtime_type_id=type_id).count()
+    if requests_count > 0:
+        flash(f"Impossibile cancellare: ci sono {requests_count} richieste associate a questa tipologia.", "warning")
+        return redirect(url_for("overtime_types"))
+    
+    db.session.delete(overtime_type)
+    db.session.commit()
+    flash("Tipologia straordinario cancellata.", "info")
+    return redirect(url_for("overtime_types"))
 
 

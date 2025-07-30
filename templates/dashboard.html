@@ -318,6 +318,116 @@
     </div>
     {% endif %}
 
+    <!-- Widget: I Miei Straordinari -->
+    {% if current_user.can_view_my_overtime_widget() %}
+    <div class="col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>I Miei Straordinari</h5>
+            </div>
+            <div class="card-body">
+                {% if my_overtime_requests %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Orario</th>
+                                <th>Ore</th>
+                                <th>Tipologia</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in my_overtime_requests %}
+                            <tr>
+                                <td>{{ request.overtime_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}</td>
+                                <td>{{ request.hours }}h</td>
+                                <td><span class="badge bg-secondary">{{ request.overtime_type.name }}</span></td>
+                                <td>
+                                    {% if request.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">In Attesa</span>
+                                    {% elif request.status == 'approved' %}
+                                        <span class="badge bg-success">Approvata</span>
+                                    {% elif request.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rifiutata</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-clock fa-2x mb-3"></i>
+                    <p>Nessuna richiesta straordinario recente</p>
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{{ url_for('my_overtime_requests') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Visualizza Tutte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Widget: Gestione Straordinari -->
+    {% if current_user.can_view_overtime_widget() %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>Gestione Straordinari</h5>
+            </div>
+            <div class="card-body">
+                {% if overtime_stats %}
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0 text-primary">{{ overtime_stats.total_requests }}</div>
+                            <small class="text-muted">Totali</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0 text-warning">{{ overtime_stats.pending_requests }}</div>
+                            <small class="text-muted">In Attesa</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0 text-success">{{ overtime_stats.approved_requests }}</div>
+                            <small class="text-muted">Approvate</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0 text-info">{{ overtime_stats.total_hours }}h</div>
+                            <small class="text-muted">Ore Mensili</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('overtime_requests') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list me-1"></i>Gestisci Richieste
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-clock fa-2x mb-3"></i>
+                    <p>Nessuna richiesta straordinario</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Widget: Team Stats -->
     {% if current_user.can_view_team_stats_widget() and team_stats %}
     <div class="col-md-6 col-lg-4 mb-4">
