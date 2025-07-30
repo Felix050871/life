@@ -571,12 +571,11 @@ def generate_reperibilita_shifts_from_coverage(coverage_period, start_date, end_
     if not coverages:
         return 0, ["Nessuna copertura trovata per il periodo selezionato"]
     
-    # Ottieni utenti attivi escludendo amministratori, solo quelli con orario speciale "Turni"
-    # Nota: "Turni" è diverso da orari normali come "Orario per sede Turni" - solo utenti con "Turni" sono eligibili per generazione automatica
-    all_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+    # Ottieni utenti attivi escludendo amministratori
+    # Per reperibilità, includiamo tutti gli operatori attivi indipendentemente dall'orario
+    all_users = User.query.filter(
         User.active == True,
-        User.role != 'Amministratore',
-        WorkSchedule.name == 'Turni'  # Solo il tipo di orario speciale "Turni"
+        User.role != 'Amministratore'
     ).all()
     
     users_by_role = defaultdict(list)
