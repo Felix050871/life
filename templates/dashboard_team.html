@@ -33,10 +33,10 @@
                         <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-2" id="customRangeForm" onsubmit="showLoading()">
                             <label class="form-label mb-0 text-muted">Periodo:</label>
                             <input type="date" class="form-control form-control-sm" name="start_date" 
-                                   value="{{ request.args.get('start_date', today.strftime('%Y-%m-%d')) }}" style="width: 150px;" required>
+                                   value="{{ start_date.strftime('%Y-%m-%d') if start_date else today.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
                             <span class="text-muted">-</span>
                             <input type="date" class="form-control form-control-sm" name="end_date" 
-                                   value="{{ request.args.get('end_date', today.strftime('%Y-%m-%d')) }}" style="width: 150px;" required>
+                                   value="{{ end_date.strftime('%Y-%m-%d') if end_date else today.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
                             <button type="submit" class="btn btn-primary btn-sm" id="customSearchBtn">
                                 <i class="fas fa-search me-1"></i>Visualizza
                             </button>
@@ -45,7 +45,7 @@
                     
                     <!-- Export -->
                     <div class="d-flex align-items-center gap-2">
-                        <a href="{{ url_for('dashboard_team', start_date=request.args.get('start_date', today.strftime('%Y-%m-%d')), end_date=request.args.get('end_date', today.strftime('%Y-%m-%d')), export='csv') }}" 
+                        <a href="{{ url_for('dashboard_team', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d'), export='csv') }}" 
                            class="btn btn-outline-success btn-sm export-btn" onclick="showLoadingExport(this)">
                             <i class="fas fa-download me-1"></i>Esporta CSV
                         </a>
@@ -94,8 +94,9 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% if period_mode == 'today' %}
+                                        {% if start_date == end_date %}
                                             {% for user in sede_users %}
+                                            {% if user.id in attendance_data %}
                                             {% set attendance = attendance_data[user.id] %}
                                             <tr>
                                                 <td>
@@ -140,10 +141,6 @@
                                                                     <i class="fas fa-minus-circle me-1"></i>Assente
                                                                 </span>
                                                             {% endif %}
-                                                        {% elif attendance.status == 'non_working_day' %}
-                                                            <span class="badge bg-secondary">
-                                                                <i class="fas fa-calendar-times me-1"></i>Non Lavorativo
-                                                            </span>
                                                         {% endif %}
                                                     {% endif %}
                                                 </td>
@@ -178,14 +175,17 @@
                                                     {% endif %}
                                                 </td>
                                             </tr>
+                                            {% endif %}
                                             {% endfor %}
                                         {% else %}
                                             {% set all_daily_entries = [] %}
                                             {% for user in sede_users %}
+                                                {% if user.id in attendance_data %}
                                                 {% set attendance = attendance_data[user.id] %}
                                                 {% for daily in attendance.daily_details %}
                                                     {% set _ = all_daily_entries.append((daily.date, user, daily)) %}
                                                 {% endfor %}
+                                                {% endif %}
                                             {% endfor %}
                                             {% for date, user, daily in all_daily_entries|sort(attribute='0') %}
                                                 <tr>
@@ -233,10 +233,6 @@
                                                                         <i class="fas fa-minus-circle me-1"></i>Assente
                                                                     </span>
                                                                 {% endif %}
-                                                            {% elif daily.status == 'non_working_day' %}
-                                                                <span class="badge bg-secondary">
-                                                                    <i class="fas fa-calendar-times me-1"></i>Non Lavorativo
-                                                                </span>
                                                             {% else %}
                                                                 <span class="badge bg-outline-danger text-danger">
                                                                     <i class="fas fa-minus-circle me-1"></i>Assente

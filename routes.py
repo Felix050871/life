@@ -444,9 +444,8 @@ def dashboard_team():
     
     for user in all_users:
         if start_date == end_date:
-            # Vista giornaliera singola - mostra sempre gli utenti, anche se non è giorno lavorativo
-            status, last_event = AttendanceEvent.get_user_status(user.id, start_date)
-            daily_summary = AttendanceEvent.get_daily_summary(user.id, start_date)
+            # Vista giornaliera singola - mostra sempre gli utenti se è un giorno lavorativo
+            is_working = is_working_day(start_date, user)
             
             # Check for approved leave requests
             leave_request = LeaveRequest.query.filter(
@@ -456,19 +455,20 @@ def dashboard_team():
                 LeaveRequest.end_date >= start_date
             ).first()
             
-            # Se non è un giorno lavorativo e non ha richieste ferie, marca come non lavorativo
-            if not is_working_day(start_date, user) and not leave_request:
-                status = 'non_working_day'
-            
-            attendance_data[user.id] = {
-                'user': user,
-                'status': status,
-                'last_event': last_event,
-                'daily_summary': daily_summary,
-                'leave_request': leave_request
-            }
+            # Includi l'utente solo se è un giorno lavorativo OR ha una richiesta di congedo
+            if is_working or leave_request:
+                status, last_event = AttendanceEvent.get_user_status(user.id, start_date)
+                daily_summary = AttendanceEvent.get_daily_summary(user.id, start_date)
+                
+                attendance_data[user.id] = {
+                    'user': user,
+                    'status': status,
+                    'last_event': last_event,
+                    'daily_summary': daily_summary,
+                    'leave_request': leave_request
+                }
         else:
-            # Per periodo multi-giorno, filtra solo i giorni non lavorativi (non gli utenti)
+            # Per periodo multi-giorno, filtra solo i giorni non lavorativi
             daily_details = []
             current_date = start_date
             
@@ -481,9 +481,6 @@ def dashboard_team():
                 # Verifica se è un giorno lavorativo per questo utente
                 is_working = is_working_day(current_date, user)
                 
-                daily_summary = AttendanceEvent.get_daily_summary(user.id, current_date)
-                status, last_event = AttendanceEvent.get_user_status(user.id, current_date)
-                
                 # Check for approved leave requests
                 leave_request = LeaveRequest.query.filter(
                     LeaveRequest.user_id == user.id,
@@ -494,6 +491,9 @@ def dashboard_team():
                 
                 # Solo se è un giorno lavorativo O ha una richiesta di congedo, includi il giorno
                 if is_working or leave_request:
+                    daily_summary = AttendanceEvent.get_daily_summary(user.id, current_date)
+                    status, last_event = AttendanceEvent.get_user_status(user.id, current_date)
+                    
                     # Se non ci sono eventi e non ci sono richieste di congedo, forza status a 'out'
                     if not daily_summary and not leave_request and not last_event:
                         status = 'out'
@@ -508,11 +508,12 @@ def dashboard_team():
                 
                 current_date += timedelta(days=1)
             
-            # Aggiungi l'utente anche se non ha giorni (per mostrare che esiste)
-            attendance_data[user.id] = {
-                'user': user,
-                'daily_details': daily_details
-            }
+            # Aggiungi l'utente solo se ha giorni lavorativi
+            if daily_details:
+                attendance_data[user.id] = {
+                    'user': user,
+                    'daily_details': daily_details
+                }
     
     # Handle export
     if export_format == 'csv':
