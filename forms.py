@@ -803,7 +803,7 @@ class RoleForm(FlaskForm):
     can_view_schedules = BooleanField('Visualizzare Orari')
     
     # Gestione turni
-    can_manage_shifts = BooleanField('Gestire Turni')
+    can_manage_shifts = BooleanField('Gestione Coperture')
     can_view_shifts = BooleanField('Visualizzare Turni')
     
     # Reperibilità
