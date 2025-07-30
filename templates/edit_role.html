@@ -500,17 +500,19 @@
             </div>
 
             <!-- Informazioni aggiuntive -->
-            <div class="card mt-4">
-                <div class="card-body">
-                    <h6><i class="fas fa-info-circle me-1"></i>Informazioni Ruolo</h6>
+            <div class="card mt-4 border">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0 text-dark"><i class="fas fa-info-circle me-1"></i>Informazioni Ruolo</h6>
+                </div>
+                <div class="card-body bg-white">
                     <div class="row">
                         <div class="col-md-6">
-                            <small class="text-muted">
+                            <small class="text-dark">
                                 <strong>Creato:</strong> {{ role.created_at.strftime('%d/%m/%Y %H:%M') if role.created_at else 'N/A' }}
                             </small>
                         </div>
                         <div class="col-md-6">
-                            <small class="text-muted">
+                            <small class="text-dark">
                                 <strong>Utenti con questo ruolo:</strong> {{ role.name | users_with_role_count }}
                             </small>
                         </div>
