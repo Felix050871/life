@@ -542,136 +542,193 @@ def dashboard_team():
                          current_user=current_user)
 
 def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi, start_date=None, end_date=None):
-    """Genera export CSV delle presenze - IDENTICO alla visualizzazione web"""
+    """Genera export CSV delle presenze organizzato per sede"""
+    from io import StringIO
+    from datetime import datetime as dt
+    import zipfile
+    import tempfile
+    import os
+    
+    # Se c'è una sola sede, genera CSV singolo
+    sedi_data = {}
+    
+    # Raggruppa utenti per sede
+    for user_id, data in attendance_data.items():
+        user = data['user']
+        sede_name = user.sede.name if user.sede else 'Sede Non Definita'
+        
+        if sede_name not in sedi_data:
+            sedi_data[sede_name] = {}
+        sedi_data[sede_name][user_id] = data
+    
+    # Se c'è una sola sede, genera CSV singolo
+    if len(sedi_data) == 1:
+        sede_name = next(iter(sedi_data.keys()))
+        return generate_single_sede_csv(sedi_data[sede_name], period_label, start_date, end_date, sede_name)
+    
+    # Genera ZIP con un CSV per ogni sede
+    temp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(temp_dir, f'presenze_per_sede_{dt.now().strftime("%Y%m%d")}.zip')
+    
+    with zipfile.ZipFile(zip_path, 'w') as zipf:
+        for sede_name, sede_attendance in sedi_data.items():
+            csv_content = generate_single_sede_csv(sede_attendance, period_label, start_date, end_date, sede_name, return_content=True)
+            safe_sede_name = sede_name.replace(' ', '_').replace('/', '_')
+            zipf.writestr(f'presenze_{safe_sede_name}_{dt.now().strftime("%Y%m%d")}.csv', csv_content)
+    
+    # Restituisci il file ZIP
+    with open(zip_path, 'rb') as f:
+        zip_data = f.read()
+    
+    # Pulizia file temporanei
+    os.remove(zip_path)
+    os.rmdir(temp_dir)
+    
+    response = make_response(zip_data)
+    response.headers['Content-Type'] = 'application/zip'
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.zip"'
+    
+    return response
+
+def generate_single_sede_csv(attendance_data, period_label, start_date, end_date, sede_name, return_content=False):
+    """Genera CSV per una singola sede"""
     output = StringIO()
     writer = csv.writer(output)
     
-    # Header
-    writer.writerow(['Report Presenze - ' + period_label])
+    # Header con nome sede
+    writer.writerow([f'Report Presenze - {sede_name}'])
+    writer.writerow([period_label])
     writer.writerow([])  # Riga vuota
     writer.writerow(['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
     
-    # DUPLICA ESATTAMENTE LA LOGICA DEL TEMPLATE dashboard_team.html
+    # Determina la logica in base al periodo
     if start_date == end_date:
-        # Single day - loop attraverso sede_users come nel template 
-        # Ma prima dobbiamo ricostruire sede_users dall'attendance_data
-        sede_users = [data['user'] for data in attendance_data.values()]
-        
-        for user in sede_users:
-            if user.id in attendance_data:
-                attendance = attendance_data[user.id]
-                
-                # ESATTA COPIA della logica template per determinare stato
-                if attendance.get('leave_request'):
-                    if attendance['leave_request'].leave_type == 'Ferie':
-                        stato = 'Ferie'
-                    elif attendance['leave_request'].leave_type == 'Permesso':
-                        stato = 'Permesso'
-                    elif attendance['leave_request'].leave_type == 'Malattia':
-                        stato = 'Malattia'
-                    else:
-                        stato = f"In {attendance['leave_request'].leave_type}"
-                    entrata = uscita = '-'
-                    ore_lavorate = '-'
-                    note = attendance['leave_request'].reason[:50] if attendance['leave_request'].reason else ''
-                else:
-                    if attendance.get('status') == 'in':
-                        stato = 'Presente'
-                        entrata = attendance['daily_summary'].clock_in.strftime('%H:%M') if attendance.get('daily_summary') and attendance['daily_summary'].clock_in else '-'
-                        uscita = attendance['daily_summary'].clock_out.strftime('%H:%M') if attendance.get('daily_summary') and attendance['daily_summary'].clock_out else '-'
-                        ore_lavorate = f"{attendance['daily_summary'].total_hours:.1f}h" if attendance.get('daily_summary') and attendance['daily_summary'].total_hours else '0h'
-                        note = attendance['last_event'].notes[:50] if attendance.get('last_event') and attendance['last_event'].notes else ''
-                    elif attendance.get('status') == 'break':
-                        stato = 'In Pausa'
-                        entrata = attendance['daily_summary'].clock_in.strftime('%H:%M') if attendance.get('daily_summary') and attendance['daily_summary'].clock_in else '-'
-                        uscita = '-'
-                        ore_lavorate = f"{attendance['daily_summary'].total_hours:.1f}h" if attendance.get('daily_summary') and attendance['daily_summary'].total_hours else '0h'
-                        note = attendance['last_event'].notes[:50] if attendance.get('last_event') and attendance['last_event'].notes else ''
-                    elif attendance.get('status') == 'out':
-                        if attendance.get('daily_summary') and attendance['daily_summary'].clock_in:
-                            stato = 'Uscito'
-                            entrata = attendance['daily_summary'].clock_in.strftime('%H:%M')
-                            uscita = attendance['daily_summary'].clock_out.strftime('%H:%M') if attendance['daily_summary'].clock_out else '-'
-                            ore_lavorate = f"{attendance['daily_summary'].total_hours:.1f}h" if attendance['daily_summary'].total_hours else '0h'
-                            note = attendance['last_event'].notes[:50] if attendance.get('last_event') and attendance['last_event'].notes else ''
-                        else:
-                            stato = 'Assente'
-                            entrata = uscita = '-'
-                            ore_lavorate = '0h'
-                            note = ''
-                    else:
-                        stato = 'Non registrato'
-                        entrata = uscita = '-'
-                        ore_lavorate = '0h'
-                        note = ''
-                
-                writer.writerow([
-                    start_date.strftime('%d/%m/%Y'),
-                    user.get_full_name(),
-                    user.role if hasattr(user, 'role') and user.role else 'N/A',
-                    stato,
-                    entrata,
-                    uscita,
-                    ore_lavorate,
-                    note
-                ])
-    else:
-        # Multi-periodo: ESATTA COPIA della logica template
-        all_daily_entries = []
-        sede_users = [data['user'] for data in attendance_data.values()]
-        
-        for user in sede_users:
-            if user.id in attendance_data:
-                attendance = attendance_data[user.id]
-                if 'daily_details' in attendance:
-                    for daily in attendance['daily_details']:
-                        all_daily_entries.append((daily['date'], user, daily))
-        
-        # Ordina per data come nel template  
-        all_daily_entries.sort(key=lambda x: x[0])
-        
-        for date_val, user, daily in all_daily_entries:
-            # ESATTA COPIA della logica template per multi-periodo
-            if daily.get('leave_request'):
-                if daily['leave_request'].leave_type == 'Ferie':
+        # Single day
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            
+            # Determina stato
+            if data.get('leave_request'):
+                lr = data['leave_request']
+                if lr.leave_type == 'Ferie':
                     stato = 'Ferie'
-                elif daily['leave_request'].leave_type == 'Permesso':
+                elif lr.leave_type == 'Permesso':
                     stato = 'Permesso'
-                elif daily['leave_request'].leave_type == 'Malattia':
+                elif lr.leave_type == 'Malattia':
                     stato = 'Malattia'
                 else:
-                    stato = f"In {daily['leave_request'].leave_type}"
-                entrata = uscita = '-'
+                    stato = f"In {lr.leave_type}"
+                entrata = '-'
+                uscita = '-'
                 ore_lavorate = '-'
-                note = daily['leave_request'].reason[:50] if daily['leave_request'].reason else ''
+                note = lr.reason[:50] if lr.reason else ''
             else:
-                if daily.get('status') == 'in':
+                ds = data.get('daily_summary')
+                le = data.get('last_event')
+                status = data.get('status')
+                
+                if status == 'in':
                     stato = 'Presente'
-                    entrata = daily['daily_summary'].clock_in.strftime('%H:%M') if daily.get('daily_summary') and daily['daily_summary'].clock_in else '-'
-                    uscita = daily['daily_summary'].clock_out.strftime('%H:%M') if daily.get('daily_summary') and daily['daily_summary'].clock_out else '-'
-                    ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily.get('daily_summary') and daily['daily_summary'].total_hours else '0h'
-                    note = daily['last_event'].notes[:50] if daily.get('last_event') and daily['last_event'].notes else ''
-                elif daily.get('status') == 'break':
-                    stato = 'In Pausa'
-                    entrata = daily['daily_summary'].clock_in.strftime('%H:%M') if daily.get('daily_summary') and daily['daily_summary'].clock_in else '-'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
                     uscita = '-'
-                    ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily.get('daily_summary') and daily['daily_summary'].total_hours else '0h'
-                    note = daily['last_event'].notes[:50] if daily.get('last_event') and daily['last_event'].notes else ''
-                elif daily.get('status') == 'out':
-                    if daily.get('daily_summary') and daily['daily_summary'].clock_in:
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'break':
+                    stato = 'In Pausa'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'out':
+                    if ds and ds.clock_in:
                         stato = 'Uscito'
-                        entrata = daily['daily_summary'].clock_in.strftime('%H:%M')
-                        uscita = daily['daily_summary'].clock_out.strftime('%H:%M') if daily['daily_summary'].clock_out else '-'
-                        ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily['daily_summary'].total_hours else '0h'
-                        note = daily['last_event'].notes[:50] if daily.get('last_event') and daily['last_event'].notes else ''
+                        entrata = ds.clock_in.strftime('%H:%M')
+                        uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
                     else:
                         stato = 'Assente'
-                        entrata = uscita = '-'
+                        entrata = '-'
+                        uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                else:
+                    stato = 'Non registrato'
+                    entrata = '-'
+                    uscita = '-'
+                    ore_lavorate = '0h'
+                    note = ''
+            
+            writer.writerow([
+                start_date.strftime('%d/%m/%Y'),
+                user.get_full_name(),
+                user.role if hasattr(user, 'role') and user.role else 'N/A',
+                stato,
+                entrata,
+                uscita,
+                ore_lavorate,
+                note
+            ])
+    else:
+        # Multi-periodo
+        all_entries = []
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            if 'daily_details' in data:
+                for daily in data['daily_details']:
+                    all_entries.append((daily['date'], user, daily))
+        
+        all_entries.sort(key=lambda x: x[0])
+        
+        for date_val, user, daily in all_entries:
+            if daily.get('leave_request'):
+                lr = daily['leave_request']
+                if lr.leave_type == 'Ferie':
+                    stato = 'Ferie'
+                elif lr.leave_type == 'Permesso':
+                    stato = 'Permesso'
+                elif lr.leave_type == 'Malattia':
+                    stato = 'Malattia'
+                else:
+                    stato = f"In {lr.leave_type}"
+                entrata = '-'
+                uscita = '-'
+                ore_lavorate = '-'
+                note = lr.reason[:50] if lr.reason else ''
+            else:
+                ds = daily.get('daily_summary')
+                le = daily.get('last_event')
+                status = daily.get('status')
+                
+                if status == 'in':
+                    stato = 'Presente'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'break':
+                    stato = 'In Pausa'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'out':
+                    if ds and ds.clock_in:
+                        stato = 'Uscito'
+                        entrata = ds.clock_in.strftime('%H:%M')
+                        uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    else:
+                        stato = 'Assente'
+                        entrata = '-'
+                        uscita = '-'
                         ore_lavorate = '0h'
                         note = ''
                 else:
                     stato = 'Non definito'
-                    entrata = uscita = '-'
+                    entrata = '-'
+                    uscita = '-'  
                     ore_lavorate = '0h'
                     note = ''
             
@@ -687,11 +744,16 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
             ])
     
     output.seek(0)
+    content = output.getvalue()
     
-    response = make_response(output.getvalue())
-    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    if return_content:
+        return content
+    
     from datetime import datetime as dt
-    response.headers['Content-Disposition'] = f'attachment; filename="presenze_{period_mode}_{dt.now().strftime("%Y%m%d")}.csv"'
+    response = make_response(content)
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    safe_sede_name = sede_name.replace(' ', '_').replace('/', '_')
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_{safe_sede_name}_{dt.now().strftime("%Y%m%d")}.csv"'
     
     return response
 
