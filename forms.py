@@ -417,8 +417,7 @@ class ReperibilitaTemplateForm(FlaskForm):
         try:
             # Raggruppa le coperture per periodo (start_date + end_date)
             coverages = ReperibilitaCoverage.query.filter(
-                ReperibilitaCoverage.is_active == True,
-                ReperibilitaCoverage.end_date >= date.today()
+                ReperibilitaCoverage.is_active == True
             ).all()
             
             # Crea un dizionario raggruppato per periodo
