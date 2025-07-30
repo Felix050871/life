@@ -68,7 +68,7 @@ class UserRole(db.Model):
             
             # Gestione turni
             'can_manage_shifts': 'Gestione Coperture',
-            'can_view_shifts': 'Visualizzare Turni',
+            'can_view_shifts': 'Visualizza Coperture',
             
             # Reperibilità
             'can_manage_reperibilita': 'Gestire Reperibilità',

@@ -804,7 +804,7 @@ class RoleForm(FlaskForm):
     
     # Gestione turni
     can_manage_shifts = BooleanField('Gestione Coperture')
-    can_view_shifts = BooleanField('Visualizzare Turni')
+    can_view_shifts = BooleanField('Visualizza Coperture')
     
     # Reperibilità
     can_manage_reperibilita = BooleanField('Gestire Reperibilità')
