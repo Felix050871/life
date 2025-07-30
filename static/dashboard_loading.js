@@ -1,21 +1,24 @@
 // Sistema di indicatori di caricamento per Dashboard Team
 function showLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.classList.remove('d-none');
-        
-        // Disabilita tutti i controlli per prevenire azioni multiple DOPO il submit
-        const exportButtons = document.querySelectorAll('.export-btn');
-        exportButtons.forEach(btn => btn.style.pointerEvents = 'none');
-        
-        // Disabilita il pulsante submit solo DOPO aver permesso l'invio del form
-        setTimeout(() => {
-            const submitButton = document.getElementById('customSearchBtn');
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricamento...';
-            }
-        }, 100);
+    // Funzione legacy disabilitata per prevenire overlay persistente
+    console.log('showLoading called but disabled to prevent overlay issues');
+    
+    // Solo feedback sul pulsante, NO overlay globale
+    const submitButton = document.getElementById('customSearchBtn');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricamento...';
+        console.log('Form button feedback only - no global overlay');
+    }
+}
+
+function showLoadingForm(form) {
+    // Cambia solo il pulsante di submit del form, NON l'overlay globale
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricamento...';
+        console.log('Form submission started with button feedback only');
     }
 }
 
