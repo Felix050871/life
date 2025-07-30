@@ -2066,6 +2066,11 @@ class OvertimeRequest(db.Model):
         duration = end_datetime - start_datetime
         return round(duration.total_seconds() / 3600, 2)
     
+    @property
+    def hours(self):
+        """Alias per duration_hours per compatibilità template"""
+        return self.duration_hours
+    
     def can_be_edited(self):
         """Verifica se la richiesta può essere modificata"""
         return self.status == 'pending'

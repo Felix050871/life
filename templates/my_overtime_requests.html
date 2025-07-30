@@ -41,12 +41,11 @@
                             </td>
                             <td>
                                 <span class="badge bg-info">
-                                    {{ "%.1f"|format(request.hours) }}h
+                                    {{ "%.1f"|format(request.duration_hours) }}h
                                 </span>
                             </td>
                             <td>
                                 {{ request.overtime_type.name }}
-                                <small class="text-muted">(x{{ "%.1f"|format(request.overtime_type.hourly_rate_multiplier) }})</small>
                             </td>
                             <td>
                                 {{ request.motivation[:50] }}{% if request.motivation|length > 50 %}...{% endif %}

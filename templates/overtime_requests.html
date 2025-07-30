@@ -83,7 +83,7 @@
                                 {{ request.end_time.strftime('%H:%M') }}
                             </td>
                             <td>
-                                <span class="badge bg-info">{{ "%.1f"|format(request.hours) }}h</span>
+                                <span class="badge bg-info">{{ "%.1f"|format(request.duration_hours) }}h</span>
                             </td>
                             <td>
                                 {{ request.overtime_type.name }}
@@ -151,7 +151,7 @@
                         <p><strong>Utente:</strong> {{ request.user.get_full_name() }}</p>
                         <p><strong>Data:</strong> {{ request.overtime_date.strftime('%d/%m/%Y') }}</p>
                         <p><strong>Orario:</strong> {{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}</p>
-                        <p><strong>Ore totali:</strong> {{ "%.1f"|format(request.hours) }} ore</p>
+                        <p><strong>Ore totali:</strong> {{ "%.1f"|format(request.duration_hours) }} ore</p>
                     </div>
                     <div class="col-md-6">
                         <p><strong>Tipologia:</strong> {{ request.overtime_type.name }}</p>
