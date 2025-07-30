@@ -32,30 +32,31 @@ function showLoadingExport(element) {
     }, 3000);
 }
 
-// Mostra loading automaticamente se la pagina è lenta da caricare
+// Sistema ottimizzato per gestione loading overlay
 document.addEventListener('DOMContentLoaded', function() {
-    // Nasconde overlay se presente (pagina caricata correttamente)
+    // Forza la rimozione dell'overlay quando la pagina è caricata
     const overlay = document.getElementById('loadingOverlay');
-    if (overlay && !overlay.classList.contains('d-none')) {
+    if (overlay) {
         overlay.classList.add('d-none');
+        overlay.style.display = 'none'; // Forza anche lo stile CSS
+        console.log('Loading overlay forced hidden on page load');
     }
     
-    // Auto-nasconde overlay dopo massimo 15 secondi per prevenire loop infiniti
+    // Auto-nasconde overlay dopo massimo 8 secondi (ridotto per migliore UX)
     setTimeout(() => {
         if (overlay && !overlay.classList.contains('d-none')) {
             overlay.classList.add('d-none');
+            overlay.style.display = 'none';
             console.log('Loading overlay auto-hidden dopo timeout');
-            // Mostra un messaggio di errore se il caricamento è troppo lento
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-warning alert-dismissible fade show';
-            alertDiv.innerHTML = `
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Il caricamento sta impiegando più del previsto. La pagina dovrebbe aggiornarsi a breve.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.querySelector('.container-fluid').prepend(alertDiv);
+            
+            // Ripristina controlli se ancora disabilitati
+            const submitButton = document.getElementById('customSearchBtn');
+            if (submitButton && submitButton.disabled) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-search me-1"></i>Visualizza';
+            }
         }
-    }, 15000);
+    }, 8000);
 });
 
 // Gestisce il browser back/forward
