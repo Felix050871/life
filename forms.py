@@ -848,7 +848,7 @@ class RoleForm(FlaskForm):
     # Note spese
     can_manage_expense_reports = BooleanField('Gestire Note Spese')
     can_view_expense_reports = BooleanField('Visualizzare Note Spese')
-    can_view_my_expense_reports = BooleanField('Visualizzare Le Mie Note Spese')
+    can_view_my_expense_reports = BooleanField('Widget Le Mie Note Spese')
     can_approve_expense_reports = BooleanField('Approvare Note Spese')
     can_create_expense_reports = BooleanField('Creare Note Spese')
     
