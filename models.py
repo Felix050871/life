@@ -789,6 +789,24 @@ class AttendanceEvent(db.Model):
             def get_work_hours(self):
                 return AttendanceEvent.get_daily_work_hours(self.user_id, self.date)
             
+            @property
+            def total_hours(self):
+                """Calcola le ore totali lavorate"""
+                if not self.clock_in or not self.clock_out:
+                    return 0.0
+                
+                # Calcola la differenza in ore
+                time_diff = self.clock_out - self.clock_in
+                total_hours = time_diff.total_seconds() / 3600
+                
+                # Sottrai il tempo di pausa se presente
+                if self.break_start and self.break_end:
+                    break_time = self.break_end - self.break_start
+                    break_hours = break_time.total_seconds() / 3600
+                    total_hours -= break_hours
+                
+                return max(0.0, total_hours)
+            
             def get_attendance_indicators(self):
                 """Restituisce gli indicatori di ritardo/anticipo per entrata e uscita"""
                 from utils import check_user_schedule_with_permissions
