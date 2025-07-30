@@ -475,6 +475,11 @@ def dashboard_team():
             current_date = start_date
             
             while current_date <= end_date:
+                # Non visualizzare date future senza dati di presenza
+                if current_date > date.today():
+                    current_date += timedelta(days=1)
+                    continue
+                    
                 daily_summary = AttendanceEvent.get_daily_summary(user.id, current_date)
                 status, last_event = AttendanceEvent.get_user_status(user.id, current_date)
                 
@@ -563,7 +568,7 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                 note
             ])
     else:
-        writer.writerow(['Utente', 'Ruolo', 'Sede', 'Data', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
+        writer.writerow(['Data', 'Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
         
         for user_id, data in attendance_data.items():
             user = data['user']
@@ -599,10 +604,10 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                     note = ''
                 
                 writer.writerow([
+                    daily['date'].strftime('%d/%m/%Y'),
                     user.get_full_name(),
                     user.role if hasattr(user, 'role') else 'N/A',
                     sede_name,
-                    daily['date'].strftime('%d/%m/%Y'),
                     stato,
                     entrata,
                     uscita,

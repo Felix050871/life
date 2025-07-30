@@ -78,6 +78,7 @@
                                                 <th>Note</th>
                                             {% else %}
                                                 <th>Data</th>
+                                                <th>Utente</th>
                                                 <th>Stato</th>
                                                 <th>Entrata</th>
                                                 <th>Uscita</th>
@@ -170,17 +171,14 @@
                                                 </tr>
                                                 <tr>
                                                     <td>
-                                                        <strong>{{ user.get_full_name() }}</strong>
-                                                        <br>
-                                                        <small class="text-muted">@{{ user.username }}</small>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-secondary">{{ user.role }}</span>
-                                                    </td>
-                                                    <td>
                                                         <strong>{{ daily.date.strftime('%d/%m') }}</strong>
                                                         <br>
                                                         <small class="text-muted">{{ daily.date.strftime('%a') }}</small>
+                                                    </td>
+                                                    <td>
+                                                        <strong>{{ user.get_full_name() }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">@{{ user.username }}</small>
                                                     </td>
                                                     <td>
                                                         {% if daily.leave_request %}
