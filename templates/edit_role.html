@@ -510,18 +510,16 @@
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-info-circle me-1"></i>Informazioni Ruolo</h6>
                 </div>
-                <div class="card-body" style="background: linear-gradient(45deg, #ffffff, #f0f0f0) !important; color: #000000 !important; font-weight: bold !important;">
+                <div class="card-body bg-light" style="color: #212529 !important;">
                     <div class="row">
                         <div class="col-md-6">
-                            <div style="background-color: #ffffff !important; padding: 10px !important; border: 2px solid #007bff !important; border-radius: 5px !important; color: #000000 !important; font-weight: bold !important;">
-                                <strong style="color: #000000 !important;">Creato:</strong> 
-                                <span style="color: #000000 !important;">{{ role.created_at.strftime('%d/%m/%Y %H:%M') if role.created_at else 'N/A' }}</span>
+                            <div class="alert alert-info mb-2" style="color: #0c5460 !important; background-color: #d1ecf1 !important; border-color: #bee5eb !important;">
+                                <strong>Creato:</strong> {{ role.created_at.strftime('%d/%m/%Y %H:%M') if role.created_at else 'N/A' }}
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div style="background-color: #ffffff !important; padding: 10px !important; border: 2px solid #007bff !important; border-radius: 5px !important; color: #000000 !important; font-weight: bold !important;">
-                                <strong style="color: #000000 !important;">Utenti con questo ruolo:</strong> 
-                                <span style="color: #000000 !important;">{{ role.name | users_with_role_count }}</span>
+                            <div class="alert alert-success mb-2" style="color: #0f5132 !important; background-color: #d1e7dd !important; border-color: #badbcc !important;">
+                                <strong>Utenti con questo ruolo:</strong> {{ role.name | users_with_role_count }}
                             </div>
                         </div>
                     </div>
