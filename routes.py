@@ -535,10 +535,18 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
         
         for user_id, data in attendance_data.items():
             user = data['user']
-            sede_name = user.sede.name if user.sede else 'N/A'
+            # Ottieni la sede dalla query se non è già collegata
+            if hasattr(user, 'sede') and user.sede:
+                sede_name = user.sede.name
+            elif user.sede_id:
+                from models import Sede
+                sede = Sede.query.get(user.sede_id)
+                sede_name = sede.name if sede else 'N/A'
+            else:
+                sede_name = 'N/A'
             
             if data['leave_request']:
-                stato = f"In {data['leave_request'].type}"
+                stato = f"In {data['leave_request'].leave_type}"
                 entrata = uscita = ore_lavorate = 'N/A'
                 note = data['leave_request'].reason or ''
             elif data['status'] == 'in':
@@ -559,7 +567,7 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
             
             writer.writerow([
                 user.get_full_name(),
-                user.role.name if user.role else 'N/A',
+                user.role if hasattr(user, 'role') and user.role else 'N/A',
                 sede_name,
                 stato,
                 entrata,
@@ -572,7 +580,15 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
         
         for user_id, data in attendance_data.items():
             user = data['user']
-            sede_name = user.sede.name if user.sede else 'N/A'
+            # Ottieni la sede dalla query se non è già collegata
+            if hasattr(user, 'sede') and user.sede:
+                sede_name = user.sede.name
+            elif user.sede_id:
+                from models import Sede
+                sede = Sede.query.get(user.sede_id)
+                sede_name = sede.name if sede else 'N/A'
+            else:
+                sede_name = 'N/A'
             
             for daily in data['daily_details']:
                 if daily['leave_request']:
@@ -606,7 +622,7 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                 writer.writerow([
                     daily['date'].strftime('%d/%m/%Y'),
                     user.get_full_name(),
-                    user.role if hasattr(user, 'role') else 'N/A',
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',
                     sede_name,
                     stato,
                     entrata,
