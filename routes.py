@@ -451,15 +451,15 @@ def dashboard_team():
     
     for user in all_users:
         if period_mode == 'today':
-            status, last_event = AttendanceEvent.get_user_status(user.id, today)
-            daily_summary = AttendanceEvent.get_daily_summary(user.id, today)
+            status, last_event = AttendanceEvent.get_user_status(user.id, reference_date)
+            daily_summary = AttendanceEvent.get_daily_summary(user.id, reference_date)
             
             # Check for approved leave requests
             leave_request = LeaveRequest.query.filter(
                 LeaveRequest.user_id == user.id,
                 LeaveRequest.status == 'Approved',
-                LeaveRequest.start_date <= today,
-                LeaveRequest.end_date >= today
+                LeaveRequest.start_date <= reference_date,
+                LeaveRequest.end_date >= reference_date
             ).first()
             
             attendance_data[user.id] = {
