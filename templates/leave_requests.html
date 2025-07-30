@@ -35,13 +35,18 @@
                 <h5><i class="fas fa-list me-2"></i>
                     {% if can_approve %}Tutte le Richieste{% else %}Le Mie Richieste{% endif %}
                 </h5>
-                {% if can_approve %}
-                <div>
+                <div class="d-flex align-items-center gap-3">
+                    {% if can_approve %}
                     <span class="badge bg-warning">
                         {{ requests|selectattr('status', 'equalto', 'Pending')|list|length }} Da Approvare
                     </span>
+                    {% endif %}
+                    {% if requests %}
+                    <a href="{{ url_for('export_leave_requests_excel') }}" class="btn btn-outline-success btn-sm export-btn">
+                        <i class="fas fa-file-excel me-1"></i>Export in Excel
+                    </a>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
             <div class="card-body">
                 {% if requests %}

@@ -721,19 +721,23 @@
                 const confirmBtn = document.getElementById('globalConfirmModalOk');
                 const modal = document.getElementById('globalConfirmModal');
 
-                confirmBtn.addEventListener('click', () => {
-                    this.modal.hide();
-                    if (this.currentCallback) {
-                        setTimeout(() => {
-                            this.currentCallback();
-                            this.currentCallback = null;
-                        }, 300);
-                    }
-                });
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', () => {
+                        this.modal.hide();
+                        if (this.currentCallback) {
+                            setTimeout(() => {
+                                this.currentCallback();
+                                this.currentCallback = null;
+                            }, 300);
+                        }
+                    });
+                }
 
-                modal.addEventListener('hidden.bs.modal', () => {
-                    this.currentCallback = null;
-                });
+                if (modal) {
+                    modal.addEventListener('hidden.bs.modal', () => {
+                        this.currentCallback = null;
+                    });
+                }
             }
 
             show(title, message, onConfirm, confirmBtnText = 'Conferma', confirmBtnClass = 'btn-danger') {

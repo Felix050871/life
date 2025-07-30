@@ -5722,6 +5722,247 @@ def generate_static_qr():
     # Forza refresh della pagina per mostrare i nuovi QR code
     return redirect(url_for('admin_generate_qr_codes') + '?refresh=1')
 
+@app.route('/export_leave_requests_excel')
+@login_required
+def export_leave_requests_excel():
+    """Export delle richieste di ferie/permessi in formato Excel"""
+    if not current_user.can_view_leave_requests() and not current_user.can_request_leave():
+        flash('Non hai i permessi per esportare le richieste', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+    
+    # Determina se l'utente può vedere tutte le richieste o solo le proprie
+    can_approve = current_user.can_approve_leave()
+    
+    if can_approve:
+        # Admin può vedere tutte le richieste
+        requests = LeaveRequest.query.order_by(LeaveRequest.start_date.desc()).all()
+        filename = f"richieste_ferie_permessi_{date.today().strftime('%Y%m%d')}.xlsx"
+    else:
+        # Utente normale vede solo le proprie
+        requests = LeaveRequest.query.filter_by(user_id=current_user.id).order_by(LeaveRequest.start_date.desc()).all()
+        filename = f"mie_richieste_ferie_permessi_{date.today().strftime('%Y%m%d')}.xlsx"
+    
+    # Crea il workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Richieste Ferie e Permessi"
+    
+    # Definisci gli header
+    if can_approve:
+        headers = ['Utente', 'Ruolo', 'Periodo', 'Durata', 'Tipo', 'Motivo', 'Stato', 'Data Richiesta', 'Approvato da', 'Data Approvazione']
+    else:
+        headers = ['Periodo', 'Durata', 'Tipo', 'Motivo', 'Stato', 'Data Richiesta', 'Approvato da', 'Data Approvazione']
+    
+    # Scrive gli header
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Scrive i dati
+    for row_idx, request in enumerate(requests, 2):
+        col = 1
+        
+        if can_approve:
+            # Utente
+            ws.cell(row=row_idx, column=col, value=request.user.get_full_name())
+            col += 1
+            
+            # Ruolo
+            ws.cell(row=row_idx, column=col, value=request.user.role)
+            col += 1
+        
+        # Periodo
+        if request.leave_type == 'Permesso' and request.is_time_based():
+            periodo = f"{request.start_date.strftime('%d/%m/%Y')} {request.start_time.strftime('%H:%M')}-{request.end_time.strftime('%H:%M')}"
+        elif request.start_date != request.end_date:
+            periodo = f"{request.start_date.strftime('%d/%m/%Y')} - {request.end_date.strftime('%d/%m/%Y')}"
+        else:
+            periodo = request.start_date.strftime('%d/%m/%Y')
+        ws.cell(row=row_idx, column=col, value=periodo)
+        col += 1
+        
+        # Durata
+        if request.leave_type == 'Permesso' and request.is_time_based():
+            durata = f"{request.duration_hours}h"
+        else:
+            durata = f"{request.duration_days} giorni"
+        ws.cell(row=row_idx, column=col, value=durata)
+        col += 1
+        
+        # Tipo
+        ws.cell(row=row_idx, column=col, value=request.leave_type)
+        col += 1
+        
+        # Motivo
+        ws.cell(row=row_idx, column=col, value=request.reason or '-')
+        col += 1
+        
+        # Stato
+        status_cell = ws.cell(row=row_idx, column=col, value=request.status)
+        if request.status == 'Approved':
+            status_cell.fill = PatternFill(start_color="D4F8D4", end_color="D4F8D4", fill_type="solid")
+        elif request.status == 'Rejected':
+            status_cell.fill = PatternFill(start_color="F8D4D4", end_color="F8D4D4", fill_type="solid")
+        elif request.status == 'Pending':
+            status_cell.fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+        col += 1
+        
+        # Data Richiesta
+        ws.cell(row=row_idx, column=col, value=request.created_at.strftime('%d/%m/%Y %H:%M'))
+        col += 1
+        
+        # Approvato da
+        ws.cell(row=row_idx, column=col, value=request.approved_by.get_full_name() if request.approved_by else '-')
+        col += 1
+        
+        # Data Approvazione
+        ws.cell(row=row_idx, column=col, value=request.approved_at.strftime('%d/%m/%Y %H:%M') if request.approved_at else '-')
+        col += 1
+    
+    # Ajusta la larghezza delle colonne
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col)].width = 15
+    
+    # Prepara la risposta
+    response = make_response()
+    
+    # Salva in un buffer temporaneo
+    from io import BytesIO
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    response.data = buffer.getvalue()
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    
+    return response
+
+@app.route('/export_expense_reports_excel')
+@login_required
+def export_expense_reports_excel():
+    """Export delle note spese in formato Excel"""
+    if not current_user.can_view_expense_reports() and not current_user.can_create_expense_reports():
+        flash('Non hai i permessi per esportare le note spese', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+    from models import ExpenseReport, ExpenseCategory
+    
+    # Determina se l'utente può vedere tutte le note spese o solo le proprie
+    can_manage = current_user.can_manage_expense_reports() or current_user.can_approve_expense_reports()
+    
+    if can_manage:
+        # Admin può vedere tutte le note spese
+        expenses = ExpenseReport.query.order_by(ExpenseReport.expense_date.desc()).all()
+        filename = f"note_spese_{date.today().strftime('%Y%m%d')}.xlsx"
+    else:
+        # Utente normale vede solo le proprie
+        expenses = ExpenseReport.query.filter_by(employee_id=current_user.id).order_by(ExpenseReport.expense_date.desc()).all()
+        filename = f"mie_note_spese_{date.today().strftime('%Y%m%d')}.xlsx"
+    
+    # Crea il workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Note Spese"
+    
+    # Definisci gli header
+    if can_manage:
+        headers = ['Dipendente', 'Data Spesa', 'Categoria', 'Descrizione', 'Importo', 'Stato', 'Data Creazione', 'Approvato da', 'Data Approvazione', 'Note Approvazione']
+    else:
+        headers = ['Data Spesa', 'Categoria', 'Descrizione', 'Importo', 'Stato', 'Data Creazione', 'Approvato da', 'Data Approvazione', 'Note Approvazione']
+    
+    # Scrive gli header
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Scrive i dati
+    for row_idx, expense in enumerate(expenses, 2):
+        col = 1
+        
+        if can_manage:
+            # Dipendente
+            ws.cell(row=row_idx, column=col, value=expense.employee.get_full_name())
+            col += 1
+        
+        # Data Spesa
+        ws.cell(row=row_idx, column=col, value=expense.expense_date.strftime('%d/%m/%Y'))
+        col += 1
+        
+        # Categoria
+        ws.cell(row=row_idx, column=col, value=expense.category.name if expense.category else '-')
+        col += 1
+        
+        # Descrizione
+        ws.cell(row=row_idx, column=col, value=expense.description)
+        col += 1
+        
+        # Importo
+        ws.cell(row=row_idx, column=col, value=f"€ {expense.amount:.2f}")
+        col += 1
+        
+        # Stato
+        status_text = {
+            'pending': 'In attesa',
+            'approved': 'Approvata',
+            'rejected': 'Rifiutata'
+        }.get(expense.status, expense.status)
+        
+        status_cell = ws.cell(row=row_idx, column=col, value=status_text)
+        if expense.status == 'approved':
+            status_cell.fill = PatternFill(start_color="D4F8D4", end_color="D4F8D4", fill_type="solid")
+        elif expense.status == 'rejected':
+            status_cell.fill = PatternFill(start_color="F8D4D4", end_color="F8D4D4", fill_type="solid")
+        elif expense.status == 'pending':
+            status_cell.fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+        col += 1
+        
+        # Data Creazione
+        ws.cell(row=row_idx, column=col, value=expense.created_at.strftime('%d/%m/%Y %H:%M'))
+        col += 1
+        
+        # Approvato da
+        ws.cell(row=row_idx, column=col, value=expense.approved_by.get_full_name() if expense.approved_by else '-')
+        col += 1
+        
+        # Data Approvazione
+        ws.cell(row=row_idx, column=col, value=expense.approved_at.strftime('%d/%m/%Y %H:%M') if expense.approved_at else '-')
+        col += 1
+        
+        # Note Approvazione
+        ws.cell(row=row_idx, column=col, value=expense.approval_notes or '-')
+        col += 1
+    
+    # Ajusta la larghezza delle colonne
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col)].width = 15
+    
+    # Prepara la risposta
+    response = make_response()
+    
+    # Salva in un buffer temporaneo
+    from io import BytesIO
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    response.data = buffer.getvalue()
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    
+    return response
+
 
 # ===============================
 # GESTIONE TURNI PER SEDI
