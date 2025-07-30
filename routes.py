@@ -3805,6 +3805,14 @@ def reperibilita_replica(period_key):
                 # Mantiene i ruoli originali
                 new_coverage.set_required_roles_list(original_roles)
             
+            # Gestisce il cambio di sede se specificato
+            if form.sede_id.data:
+                # Assegna la nuova sede specificata
+                new_coverage.sedi_ids = [int(form.sede_id.data)]
+            else:
+                # Mantiene le sedi originali
+                new_coverage.sedi_ids = original_coverage.sedi_ids.copy()
+            
             db.session.add(new_coverage)
             new_coverages_count += 1
         
@@ -3814,6 +3822,10 @@ def reperibilita_replica(period_key):
             success_msg = f'Template reperibilità replicato con successo. Coperture create: {new_coverages_count}.'
             if role_mapping:
                 success_msg += f' Ruoli sostituiti: {len(role_mapping)}.'
+            if form.sede_id.data:
+                from models import Sede
+                sede = Sede.query.get(int(form.sede_id.data))
+                success_msg += f' Sede cambiata in: {sede.name}.'
             if existing_coverages:
                 success_msg += f' Aggiunte a {len(existing_coverages)} coperture esistenti.'
             

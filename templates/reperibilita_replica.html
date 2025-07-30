@@ -59,6 +59,15 @@
                         </div>
 
                         <div class="mb-3">
+                            {{ form.sede_id.label(class="form-label") }}
+                            {{ form.sede_id(class="form-select") }}
+                            {% for error in form.sede_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">Seleziona una sede specifica o lascia vuoto per mantenere le sedi originali</div>
+                        </div>
+
+                        <div class="mb-3">
                             {{ form.role_mapping.label(class="form-label") }}
                             {{ form.role_mapping(class="form-select") }}
                             {% for error in form.role_mapping.errors %}

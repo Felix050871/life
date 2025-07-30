@@ -358,6 +358,7 @@ class ReperibilitaReplicaForm(FlaskForm):
     """Form per replicare una copertura reperibilità cambiando date e/o ruoli"""
     start_date = DateField('Data Inizio Nuovo Periodo', validators=[DataRequired()])
     end_date = DateField('Data Fine Nuovo Periodo', validators=[DataRequired()])
+    sede_id = SelectField('Sede di Destinazione', choices=[], validators=[Optional()])
     
     # Mappatura ruoli: da ruolo originale a nuovo ruolo
     role_mapping = SelectMultipleField('Sostituzione Ruoli (Opzionale)', 
@@ -390,6 +391,16 @@ class ReperibilitaReplicaForm(FlaskForm):
     def validate_end_date(self, end_date):
         if end_date.data and self.start_date.data and end_date.data < self.start_date.data:
             raise ValidationError('La data di fine deve essere successiva alla data di inizio.')
+    
+    def __init__(self, *args, **kwargs):
+        super(ReperibilitaReplicaForm, self).__init__(*args, **kwargs)
+        # Popola le sedi disponibili
+        from models import Sede
+        try:
+            sedi = Sede.query.filter_by(active=True).order_by(Sede.name).all()
+            self.sede_id.choices = [('', 'Mantieni sedi originali')] + [(str(sede.id), sede.name) for sede in sedi]
+        except:
+            self.sede_id.choices = [('', 'Mantieni sedi originali')]
     
     def get_role_mapping_dict(self):
         """Converte le selezioni in un dizionario di mappatura ruoli"""
