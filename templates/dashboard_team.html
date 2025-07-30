@@ -13,7 +13,7 @@
                     <div class="btn-group btn-group-sm" role="group">
                         <a href="{{ url_for('dashboard_team', period='today', date=request.args.get('date')) }}" 
                            class="btn {% if period_mode == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            Oggi
+                            Giorno
                         </a>
                         <a href="{{ url_for('dashboard_team', period='week', date=request.args.get('date')) }}" 
                            class="btn {% if period_mode == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
