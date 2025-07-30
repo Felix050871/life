@@ -314,7 +314,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="GET" action="{{ url_for('dashboard_team') }}">
+            <form method="GET" action="{{ url_for('dashboard_team') }}" id="dateRangeForm">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -337,7 +337,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="visualizzaBtn">
                         <i class="fas fa-search me-1"></i>Visualizza
                     </button>
                 </div>
@@ -346,5 +346,42 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestione form range personalizzato
+    const dateRangeForm = document.getElementById('dateRangeForm');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    if (dateRangeForm) {
+        dateRangeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+            
+            if (!startDate || !endDate) {
+                alert('Seleziona entrambe le date');
+                return;
+            }
+            
+            if (startDate > endDate) {
+                alert('La data di inizio deve essere precedente alla data di fine');
+                return;
+            }
+            
+            // Costruisci URL con parametri
+            const url = new URL(window.location.origin + '{{ url_for("dashboard_team") }}');
+            url.searchParams.set('period', 'custom');
+            url.searchParams.set('start_date', startDate);
+            url.searchParams.set('end_date', endDate);
+            
+            // Reindirizza
+            window.location.href = url.toString();
+        });
+    }
+});
+</script>
 
 {% endblock %}
