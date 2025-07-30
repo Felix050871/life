@@ -4,15 +4,15 @@ function showLoading() {
     if (overlay) {
         overlay.classList.remove('d-none');
         
-        // Disabilita tutti i controlli per prevenire azioni multiple
-        const customForm = document.getElementById('customRangeForm');
+        // Disabilita tutti i controlli per prevenire azioni multiple DOPO il submit
         const exportButtons = document.querySelectorAll('.export-btn');
-        
         exportButtons.forEach(btn => btn.style.pointerEvents = 'none');
         
-        if (customForm) {
-            const inputs = customForm.querySelectorAll('input, button');
-            inputs.forEach(input => input.disabled = true);
+        // Non disabilitare gli input del form altrimenti i dati non vengono inviati
+        const submitButton = document.getElementById('customSearchBtn');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricamento...';
         }
     }
 }

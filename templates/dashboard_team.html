@@ -30,13 +30,13 @@
                     <!-- Controlli temporali semplificati -->
                     <div class="d-flex align-items-center gap-3">
                         <!-- Solo range personalizzato -->
-                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-2" id="customRangeForm" onsubmit="showLoading()">
+                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-2" id="customRangeForm" onsubmit="showLoading()"
                             <label class="form-label mb-0 text-muted">Periodo:</label>
                             <input type="date" class="form-control form-control-sm" name="start_date" 
-                                   value="{{ start_date.strftime('%Y-%m-%d') if start_date else today.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
+                                   value="{{ start_date.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
                             <span class="text-muted">-</span>
                             <input type="date" class="form-control form-control-sm" name="end_date" 
-                                   value="{{ end_date.strftime('%Y-%m-%d') if end_date else today.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
+                                   value="{{ end_date.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
                             <button type="submit" class="btn btn-primary btn-sm" id="customSearchBtn">
                                 <i class="fas fa-search me-1"></i>Visualizza
                             </button>
