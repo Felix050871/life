@@ -529,7 +529,7 @@ def dashboard_team():
     
     # Handle export
     if export_format == 'csv':
-        return generate_attendance_csv_export(attendance_data, 'custom', period_label, all_sedi, start_date)
+        return generate_attendance_csv_export(attendance_data, 'custom', period_label, all_sedi, start_date, end_date)
     
     return render_template('dashboard_team.html',
                          all_users=all_users,
@@ -541,127 +541,114 @@ def dashboard_team():
                          end_date=end_date,
                          current_user=current_user)
 
-def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi, start_date=None):
-    """Genera export CSV delle presenze"""
+def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi, start_date=None, end_date=None):
+    """Genera export CSV delle presenze - identico alla visualizzazione"""
     output = StringIO()
     writer = csv.writer(output)
     
     # Header
     writer.writerow(['Report Presenze - ' + period_label])
     writer.writerow([])  # Riga vuota
+    writer.writerow(['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
     
-    # Determina se è vista singola giorno dai dati
-    is_single_day = all(
-        'daily_details' not in data for data in attendance_data.values()
-    )
+    # Usa la stessa logica del template - genera all_daily_entries come nel template
+    all_daily_entries = []
     
-    if is_single_day:
-        writer.writerow(['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
-        
-        # Per vista single day, aggiungi anche la data
+    # Se single day, usa la struttura semplificata
+    if start_date == end_date:
         for user_id, data in attendance_data.items():
-            user = data['user']
-            # Ottieni la sede dalla query se non è già collegata
-            if hasattr(user, 'sede') and user.sede:
-                sede_name = user.sede.name
-            elif user.sede_id:
-                from models import Sede
-                sede = Sede.query.get(user.sede_id)
-                sede_name = sede.name if sede else 'N/A'
-            else:
-                sede_name = 'N/A'
-            
-            # Determina la data (per single day sarà la stessa per tutti)  
-            if start_date:
-                data_str = start_date.strftime('%d/%m/%Y')
-            else:
-                data_str = date.today().strftime('%d/%m/%Y')
-            
-            if data['leave_request']:
-                stato = f"In {data['leave_request'].leave_type}"
-                entrata = uscita = ore_lavorate = 'N/A'
-                note = data['leave_request'].reason or ''
-            elif data['status'] == 'in':
-                stato = 'Presente'
-                entrata = data['last_event'].timestamp.strftime('%H:%M') if data['last_event'] and data['last_event'].event_type == 'clock_in' else 'N/A'
-                uscita = 'In corso'
-                ore_lavorate = format_hours(data['daily_summary'].get('total_work_hours', 0)) if data['daily_summary'] else '0h'
-                note = data['last_event'].notes if data['last_event'] and data['last_event'].notes else ''
-            elif data['status'] == 'out':
-                stato = 'Assente'
-                entrata = uscita = 'N/A'
-                ore_lavorate = format_hours(data['daily_summary'].get('total_work_hours', 0)) if data['daily_summary'] else '0h'
-                note = data['last_event'].notes if data['last_event'] and data['last_event'].notes else ''
-            else:
-                stato = 'Non registrato'
-                entrata = uscita = ore_lavorate = 'N/A'
-                note = ''
-            
-            writer.writerow([
-                data_str,  # Data
-                user.get_full_name(),  # Utente
-                user.role if hasattr(user, 'role') and user.role else 'N/A',  # Ruolo
-                stato,  # Stato
-                entrata,  # Entrata
-                uscita,  # Uscita
-                ore_lavorate,  # Ore Lavorate
-                note  # Note
-            ])
-    else:
-        writer.writerow(['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
-        
-        for user_id, data in attendance_data.items():
-            user = data['user']
-            # Ottieni la sede dalla query se non è già collegata
-            if hasattr(user, 'sede') and user.sede:
-                sede_name = user.sede.name
-            elif user.sede_id:
-                from models import Sede
-                sede = Sede.query.get(user.sede_id)
-                sede_name = sede.name if sede else 'N/A'
-            else:
-                sede_name = 'N/A'
-            
-            for daily in data['daily_details']:
-                if daily['leave_request']:
-                    stato = f"In {daily['leave_request'].leave_type}"
+            if 'daily_details' not in data:
+                user = data['user']
+                # Determina stato, entrata, uscita, ore come nel template
+                if data.get('leave_request'):
+                    stato = f"In {data['leave_request'].leave_type}"
                     entrata = uscita = 'N/A'
-                    ore_lavorate = '0h'
-                    note = daily['leave_request'].reason or ''
-                elif daily['status'] == 'in':
+                    ore_lavorate = 'N/A'
+                    note = data['leave_request'].reason or ''
+                elif data.get('status') == 'in':
                     stato = 'Presente'
-                    entrata = daily['daily_summary'].clock_in.strftime('%H:%M') if daily['daily_summary'] and daily['daily_summary'].clock_in else 'N/A'
+                    entrata = data['last_event'].timestamp.strftime('%H:%M') if data.get('last_event') and data['last_event'].event_type == 'clock_in' else 'N/A'
                     uscita = 'In corso'
-                    ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily['daily_summary'] and daily['daily_summary'].total_hours else '0h'
-                    note = daily['last_event'].notes if daily['last_event'] and daily['last_event'].notes else ''
-                elif daily['status'] == 'out':
-                    if daily['daily_summary'] and daily['daily_summary'].clock_in:
+                    ore_lavorate = f"{data['daily_summary'].total_hours:.1f}h" if data.get('daily_summary') and data['daily_summary'].total_hours else '0h'
+                    note = data['last_event'].notes if data.get('last_event') and data['last_event'].notes else ''
+                elif data.get('status') == 'out':
+                    if data.get('daily_summary') and data['daily_summary'].clock_in:
                         stato = 'Uscito'
-                        entrata = daily['daily_summary'].clock_in.strftime('%H:%M')
-                        uscita = daily['daily_summary'].clock_out.strftime('%H:%M') if daily['daily_summary'].clock_out else 'N/A'
-                        ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily['daily_summary'].total_hours else '0h'
-                        note = daily['last_event'].notes if daily['last_event'] and daily['last_event'].notes else ''
+                        entrata = data['daily_summary'].clock_in.strftime('%H:%M')
+                        uscita = data['daily_summary'].clock_out.strftime('%H:%M') if data['daily_summary'].clock_out else 'N/A'
+                        ore_lavorate = f"{data['daily_summary'].total_hours:.1f}h" if data['daily_summary'].total_hours else '0h'
+                        note = data['last_event'].notes if data.get('last_event') and data['last_event'].notes else ''
                     else:
                         stato = 'Assente'
                         entrata = uscita = 'N/A'
                         ore_lavorate = '0h'
-                        note = 'Nessuna registrazione presenza'
+                        note = ''
                 else:
-                    stato = 'Non definito'
-                    entrata = uscita = 'N/A'
-                    ore_lavorate = '0h'
+                    stato = 'Non registrato'
+                    entrata = uscita = ore_lavorate = 'N/A'
                     note = ''
                 
                 writer.writerow([
-                    daily['date'].strftime('%d/%m/%Y'),  # Data
-                    user.get_full_name(),  # Utente  
-                    user.role if hasattr(user, 'role') and user.role else 'N/A',  # Ruolo
-                    stato,  # Stato
-                    entrata,  # Entrata
-                    uscita,  # Uscita
-                    ore_lavorate,  # Ore Lavorate
-                    note  # Note
+                    start_date.strftime('%d/%m/%Y'),
+                    user.get_full_name(),
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',
+                    stato,
+                    entrata,
+                    uscita,
+                    ore_lavorate,
+                    note
                 ])
+    else:
+        # Multi-periodo: usa daily_details come nel template
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            if 'daily_details' in data:
+                for daily in data['daily_details']:
+                    all_daily_entries.append((daily['date'], user, daily))
+        
+        # Ordina per data come nel template
+        all_daily_entries.sort(key=lambda x: x[0])
+        
+        for date_val, user, daily in all_daily_entries:
+            if daily.get('leave_request'):
+                stato = f"In {daily['leave_request'].leave_type}"
+                entrata = uscita = 'N/A'  
+                ore_lavorate = 'N/A'
+                note = daily['leave_request'].reason or ''
+            elif daily.get('status') == 'in':
+                stato = 'Presente'
+                entrata = daily['daily_summary'].clock_in.strftime('%H:%M') if daily.get('daily_summary') and daily['daily_summary'].clock_in else 'N/A'
+                uscita = 'In corso'
+                ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily.get('daily_summary') and daily['daily_summary'].total_hours else '0h'
+                note = daily['last_event'].notes if daily.get('last_event') and daily['last_event'].notes else ''
+            elif daily.get('status') == 'out':
+                if daily.get('daily_summary') and daily['daily_summary'].clock_in:
+                    stato = 'Uscito'
+                    entrata = daily['daily_summary'].clock_in.strftime('%H:%M')
+                    uscita = daily['daily_summary'].clock_out.strftime('%H:%M') if daily['daily_summary'].clock_out else 'N/A'
+                    ore_lavorate = f"{daily['daily_summary'].total_hours:.1f}h" if daily['daily_summary'].total_hours else '0h'  
+                    note = daily['last_event'].notes if daily.get('last_event') and daily['last_event'].notes else ''
+                else:
+                    stato = 'Assente'
+                    entrata = uscita = 'N/A'
+                    ore_lavorate = '0h'
+                    note = ''
+            else:
+                stato = 'Non definito'
+                entrata = uscita = 'N/A'
+                ore_lavorate = '0h'
+                note = ''
+                
+            writer.writerow([
+                date_val.strftime('%d/%m/%Y'),
+                user.get_full_name(),
+                user.role if hasattr(user, 'role') and user.role else 'N/A',
+                stato,
+                entrata,
+                uscita,
+                ore_lavorate,
+                note
+            ])
     
     output.seek(0)
     
