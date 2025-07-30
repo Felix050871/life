@@ -444,10 +444,7 @@ def dashboard_team():
     
     for user in all_users:
         if start_date == end_date:
-            # Vista giornaliera singola
-            if not is_working_day(start_date, user):
-                continue  # Salta i giorni non lavorativi
-                
+            # Vista giornaliera singola - mostra sempre gli utenti, anche se non è giorno lavorativo
             status, last_event = AttendanceEvent.get_user_status(user.id, start_date)
             daily_summary = AttendanceEvent.get_daily_summary(user.id, start_date)
             
@@ -459,6 +456,10 @@ def dashboard_team():
                 LeaveRequest.end_date >= start_date
             ).first()
             
+            # Se non è un giorno lavorativo e non ha richieste ferie, marca come non lavorativo
+            if not is_working_day(start_date, user) and not leave_request:
+                status = 'non_working_day'
+            
             attendance_data[user.id] = {
                 'user': user,
                 'status': status,
@@ -467,7 +468,7 @@ def dashboard_team():
                 'leave_request': leave_request
             }
         else:
-            # Per periodo multi-giorno, mostra dettagli giorno per giorno (solo giorni lavorativi)
+            # Per periodo multi-giorno, filtra solo i giorni non lavorativi (non gli utenti)
             daily_details = []
             current_date = start_date
             
@@ -477,11 +478,9 @@ def dashboard_team():
                     current_date += timedelta(days=1)
                     continue
                 
-                # Salta i giorni non lavorativi
-                if not is_working_day(current_date, user):
-                    current_date += timedelta(days=1)
-                    continue
-                    
+                # Verifica se è un giorno lavorativo per questo utente
+                is_working = is_working_day(current_date, user)
+                
                 daily_summary = AttendanceEvent.get_daily_summary(user.id, current_date)
                 status, last_event = AttendanceEvent.get_user_status(user.id, current_date)
                 
@@ -493,25 +492,27 @@ def dashboard_team():
                     LeaveRequest.end_date >= current_date
                 ).first()
                 
-                # Se non ci sono eventi e non ci sono richieste di congedo, forza status a 'out'
-                if not daily_summary and not leave_request and not last_event:
-                    status = 'out'
+                # Solo se è un giorno lavorativo O ha una richiesta di congedo, includi il giorno
+                if is_working or leave_request:
+                    # Se non ci sono eventi e non ci sono richieste di congedo, forza status a 'out'
+                    if not daily_summary and not leave_request and not last_event:
+                        status = 'out'
+                    
+                    daily_details.append({
+                        'date': current_date,
+                        'status': status,
+                        'daily_summary': daily_summary,
+                        'last_event': last_event,
+                        'leave_request': leave_request
+                    })
                 
-                daily_details.append({
-                    'date': current_date,
-                    'status': status,
-                    'daily_summary': daily_summary,
-                    'last_event': last_event,
-                    'leave_request': leave_request
-                })
                 current_date += timedelta(days=1)
             
-            # Aggiungi solo se ci sono giorni lavorativi
-            if daily_details:
-                attendance_data[user.id] = {
-                    'user': user,
-                    'daily_details': daily_details
-                }
+            # Aggiungi l'utente anche se non ha giorni (per mostrare che esiste)
+            attendance_data[user.id] = {
+                'user': user,
+                'daily_details': daily_details
+            }
     
     # Handle export
     if export_format == 'csv':

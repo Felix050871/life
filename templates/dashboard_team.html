@@ -140,6 +140,10 @@
                                                                     <i class="fas fa-minus-circle me-1"></i>Assente
                                                                 </span>
                                                             {% endif %}
+                                                        {% elif attendance.status == 'non_working_day' %}
+                                                            <span class="badge bg-secondary">
+                                                                <i class="fas fa-calendar-times me-1"></i>Non Lavorativo
+                                                            </span>
                                                         {% endif %}
                                                     {% endif %}
                                                 </td>
@@ -229,6 +233,10 @@
                                                                         <i class="fas fa-minus-circle me-1"></i>Assente
                                                                     </span>
                                                                 {% endif %}
+                                                            {% elif daily.status == 'non_working_day' %}
+                                                                <span class="badge bg-secondary">
+                                                                    <i class="fas fa-calendar-times me-1"></i>Non Lavorativo
+                                                                </span>
                                                             {% else %}
                                                                 <span class="badge bg-outline-danger text-danger">
                                                                     <i class="fas fa-minus-circle me-1"></i>Assente
