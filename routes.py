@@ -3596,16 +3596,33 @@ def reperibilita_shifts():
     period_mode = request.args.get('period', 'week')
     display_mode = request.args.get('display', 'table')
     
-    # Calcolo periodo di visualizzazione
+    # Calcolo periodo di visualizzazione con possibilità di navigazione
     today = italian_now().date()
+    
+    # Ottieni data di riferimento da parametri URL o usa oggi
+    ref_date_param = request.args.get('date')
+    if ref_date_param:
+        try:
+            ref_date = datetime.strptime(ref_date_param, '%Y-%m-%d').date()
+        except:
+            ref_date = today
+    else:
+        ref_date = today
+    
     if period_mode == 'month':
-        start_date = today.replace(day=1)
+        start_date = ref_date.replace(day=1)
         next_month = start_date.replace(month=start_date.month + 1) if start_date.month < 12 else start_date.replace(year=start_date.year + 1, month=1)
         end_date = next_month - timedelta(days=1)
+        # Calcola navigazione mese precedente/successivo
+        prev_month = start_date.replace(month=start_date.month - 1) if start_date.month > 1 else start_date.replace(year=start_date.year - 1, month=12)
+        next_month_date = next_month
     else:  # week
-        days_until_monday = today.weekday()
-        start_date = today - timedelta(days=days_until_monday)
+        days_until_monday = ref_date.weekday()
+        start_date = ref_date - timedelta(days=days_until_monday)
         end_date = start_date + timedelta(days=6)
+        # Calcola navigazione settimana precedente/successiva
+        prev_week = start_date - timedelta(days=7)
+        next_week = start_date + timedelta(days=7)
     
     # Get existing shifts filtrate per periodo
     shifts_query = ReperibilitaShift.query.filter(
@@ -3683,6 +3700,17 @@ def reperibilita_shifts():
         period_data['unique_sedi'] = sorted(list(period_data['unique_sedi']))
         period_data['total_shifts'] = len(period_data['shifts'])
 
+    # Prepara dati di navigazione
+    navigation = {}
+    if period_mode == 'month':
+        navigation['prev_date'] = prev_month
+        navigation['next_date'] = next_month_date
+        navigation['current_period'] = f"{start_date.strftime('%B %Y')}"
+    else:  # week
+        navigation['prev_date'] = prev_week
+        navigation['next_date'] = next_week
+        navigation['current_period'] = f"Settimana {start_date.strftime('%d/%m')} - {end_date.strftime('%d/%m/%Y')}"
+
     return render_template('reperibilita_shifts.html', 
                          shifts=shifts, 
                          templates=templates,
@@ -3692,7 +3720,11 @@ def reperibilita_shifts():
                          calendar_days=calendar_days,
                          today_date=today,
                          current_time=current_time,
-                         hide_coverage_section=hide_coverage_section)
+                         hide_coverage_section=hide_coverage_section,
+                         navigation=navigation,
+                         period_mode=period_mode,
+                         view_mode=view_mode,
+                         display_mode=display_mode)
 
 
 @app.route('/reperibilita_template/<start_date>/<end_date>')
