@@ -289,19 +289,17 @@
                     <table class="table table-sm">
                         <thead>
                             <tr>
-                                <th>Dal</th>
-                                <th>Al</th>
+                                <th>Data</th>
                                 <th>Orario</th>
-                                <th>Sede</th>
+                                <th>Descrizione</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for reperibilita in my_reperibilita %}
                             <tr>
-                                <td>{{ reperibilita.start_date.strftime('%d/%m/%Y') }}</td>
-                                <td>{{ reperibilita.end_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ reperibilita.date.strftime('%d/%m/%Y') }}</td>
                                 <td>{{ reperibilita.start_time.strftime('%H:%M') }} - {{ reperibilita.end_time.strftime('%H:%M') }}</td>
-                                <td>{{ reperibilita.sede.name if reperibilita.sede else 'N/A' }}</td>
+                                <td>{{ reperibilita.description or 'N/A' }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
