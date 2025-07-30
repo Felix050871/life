@@ -542,17 +542,16 @@ def dashboard_team():
                          current_user=current_user)
 
 def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi, start_date=None, end_date=None):
-    """Genera export CSV delle presenze organizzato per sede"""
-    from io import StringIO
+    """Genera export Excel delle presenze con un foglio per ogni sede"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
     from datetime import datetime as dt
-    import zipfile
     import tempfile
     import os
-    
-    # Se c'è una sola sede, genera CSV singolo
-    sedi_data = {}
+    from flask import make_response
     
     # Raggruppa utenti per sede
+    sedi_data = {}
     for user_id, data in attendance_data.items():
         user = data['user']
         if user.sede_id:
@@ -566,33 +565,205 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
             sedi_data[sede_name] = {}
         sedi_data[sede_name][user_id] = data
     
-    # Se c'è una sola sede, genera CSV singolo
-    if len(sedi_data) == 1:
-        sede_name = next(iter(sedi_data.keys()))
-        return generate_single_sede_csv(sedi_data[sede_name], period_label, start_date, end_date, sede_name)
+    # Crea workbook Excel
+    wb = Workbook()
+    # Rimuovi il foglio di default
+    wb.remove(wb.active)
     
-    # Genera ZIP con un CSV per ogni sede
+    # Crea un foglio per ogni sede
+    for sede_name, sede_attendance in sedi_data.items():
+        # Nome foglio sicuro (max 31 caratteri per Excel)
+        safe_sheet_name = sede_name.replace('/', '_').replace('\\', '_').replace('?', '_').replace('*', '_').replace('[', '_').replace(']', '_')[:31]
+        ws = wb.create_sheet(title=safe_sheet_name)
+        
+        # Header con stile
+        ws.append([f'Report Presenze - {sede_name}'])
+        ws.append([period_label])
+        ws.append([])  # Riga vuota
+        
+        # Intestazione colonne
+        headers = ['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note']
+        ws.append(headers)
+        
+        # Stile header
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=4, column=col_num)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Dati presenze
+        if start_date == end_date:
+            # Single day
+            for user_id, data in sede_attendance.items():
+                user = data['user']
+                
+                # Determina stato
+                if data.get('leave_request'):
+                    lr = data['leave_request']
+                    stato = lr.leave_type
+                    entrata = uscita = '-'
+                    ore_lavorate = '-'
+                    note = lr.reason[:50] if lr.reason else ''
+                else:
+                    ds = data.get('daily_summary')
+                    le = data.get('last_event')
+                    status = data.get('status')
+                    
+                    if status == 'in':
+                        stato = 'Presente'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'break':
+                        stato = 'In Pausa'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'out':
+                        if ds and ds.clock_in:
+                            stato = 'Uscito'
+                            entrata = ds.clock_in.strftime('%H:%M')
+                            uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                            ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                            note = le.notes[:50] if le and le.notes else ''
+                        else:
+                            stato = 'Assente'
+                            entrata = uscita = '-'
+                            ore_lavorate = '0h'
+                            note = ''
+                    else:
+                        stato = 'Non registrato'
+                        entrata = uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                
+                ws.append([
+                    start_date.strftime('%d/%m/%Y'),
+                    user.get_full_name(),
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',
+                    stato,
+                    entrata,
+                    uscita,
+                    ore_lavorate,
+                    note
+                ])
+        else:
+            # Multi-periodo
+            all_entries = []
+            for user_id, data in sede_attendance.items():
+                user = data['user']
+                if 'daily_details' in data:
+                    for daily in data['daily_details']:
+                        all_entries.append((daily['date'], user, daily))
+            
+            all_entries.sort(key=lambda x: x[0])
+            
+            for date_val, user, daily in all_entries:
+                if daily.get('leave_request'):
+                    lr = daily['leave_request']
+                    stato = lr.leave_type
+                    entrata = uscita = '-'
+                    ore_lavorate = '-'
+                    note = lr.reason[:50] if lr.reason else ''
+                else:
+                    ds = daily.get('daily_summary')
+                    le = daily.get('last_event')
+                    status = daily.get('status')
+                    
+                    if status == 'in':
+                        stato = 'Presente'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'break':
+                        stato = 'In Pausa'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'out':
+                        if ds and ds.clock_in:
+                            stato = 'Uscito'
+                            entrata = ds.clock_in.strftime('%H:%M')
+                            uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                            ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                            note = le.notes[:50] if le and le.notes else ''
+                        else:
+                            stato = 'Assente'
+                            entrata = uscita = '-'
+                            ore_lavorate = '0h'
+                            note = ''
+                    else:
+                        stato = 'Non definito'
+                        entrata = uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                
+                ws.append([
+                    date_val.strftime('%d/%m/%Y'),
+                    user.get_full_name(),
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',
+                    stato,
+                    entrata,
+                    uscita,
+                    ore_lavorate,
+                    note
+                ])
+        
+        # Auto-dimensiona colonne
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Salva file temporaneo
     temp_dir = tempfile.mkdtemp()
-    zip_path = os.path.join(temp_dir, f'presenze_per_sede_{dt.now().strftime("%Y%m%d")}.zip')
+    excel_path = os.path.join(temp_dir, f'presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx')
+    wb.save(excel_path)
     
-    with zipfile.ZipFile(zip_path, 'w') as zipf:
-        for sede_name, sede_attendance in sedi_data.items():
-            csv_content = generate_single_sede_csv(sede_attendance, period_label, start_date, end_date, sede_name, return_content=True)
-            safe_sede_name = sede_name.replace(' ', '_').replace('/', '_')
-            zipf.writestr(f'presenze_{safe_sede_name}_{dt.now().strftime("%Y%m%d")}.csv', csv_content)
+    # Leggi file per response
+    with open(excel_path, 'rb') as f:
+        excel_data = f.read()
     
-    # Restituisci il file ZIP
-    with open(zip_path, 'rb') as f:
-        zip_data = f.read()
-    
-    # Pulizia file temporanei
-    os.remove(zip_path)
+    # Pulizia
+    os.remove(excel_path)
     os.rmdir(temp_dir)
     
-    from flask import make_response
-    response = make_response(zip_data)
-    response.headers['Content-Type'] = 'application/zip'
-    response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.zip"'
+    response = make_response(excel_data)
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx"'
+    
+    return response
+    
+    # Salva file temporaneo
+    temp_dir = tempfile.mkdtemp()
+    excel_path = os.path.join(temp_dir, f'presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx')
+    wb.save(excel_path)
+    
+    # Leggi file per response
+    with open(excel_path, 'rb') as f:
+        excel_data = f.read()
+    
+    # Pulizia
+    os.remove(excel_path)
+    os.rmdir(temp_dir)
+    
+    response = make_response(excel_data)
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx"'
     
     return response
 
