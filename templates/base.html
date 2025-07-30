@@ -561,6 +561,31 @@
         </div>
     </div>
 
+    <!-- Global Confirmation Modal -->
+    <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-labelledby="globalConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="globalConfirmModalLabel">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>Conferma Operazione
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="globalConfirmModalBody">
+                    <!-- Il messaggio verrà inserito dinamicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </button>
+                    <button type="button" class="btn btn-danger" id="globalConfirmModalOk">
+                        <i class="fas fa-check me-1"></i>Conferma
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Global Loading Script -->
     <script>
         // Global Loading Overlay System
@@ -683,6 +708,139 @@
         // Expose globally for manual control
         window.showLoading = () => loadingManager.show();
         window.hideLoading = () => loadingManager.hide();
+
+        // Global Confirmation Modal System
+        class ConfirmationManager {
+            constructor() {
+                this.modal = new bootstrap.Modal(document.getElementById('globalConfirmModal'));
+                this.currentCallback = null;
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                const confirmBtn = document.getElementById('globalConfirmModalOk');
+                const modal = document.getElementById('globalConfirmModal');
+
+                confirmBtn.addEventListener('click', () => {
+                    this.modal.hide();
+                    if (this.currentCallback) {
+                        setTimeout(() => {
+                            this.currentCallback();
+                            this.currentCallback = null;
+                        }, 300);
+                    }
+                });
+
+                modal.addEventListener('hidden.bs.modal', () => {
+                    this.currentCallback = null;
+                });
+            }
+
+            show(title, message, onConfirm, confirmBtnText = 'Conferma', confirmBtnClass = 'btn-danger') {
+                document.getElementById('globalConfirmModalLabel').innerHTML = 
+                    `<i class="fas fa-exclamation-triangle text-warning me-2"></i>${title}`;
+                document.getElementById('globalConfirmModalBody').innerHTML = message;
+                
+                const confirmBtn = document.getElementById('globalConfirmModalOk');
+                confirmBtn.className = `btn ${confirmBtnClass}`;
+                confirmBtn.innerHTML = `<i class="fas fa-check me-1"></i>${confirmBtnText}`;
+                
+                this.currentCallback = onConfirm;
+                this.modal.show();
+            }
+        }
+
+        // Initialize global confirmation manager
+        const confirmationManager = new ConfirmationManager();
+
+        // Replace all confirm() calls with custom modal
+        window.showConfirm = (title, message, onConfirm, confirmBtnText, confirmBtnClass) => {
+            confirmationManager.show(title, message, onConfirm, confirmBtnText, confirmBtnClass);
+        };
+
+        // Function to replace form onsubmit with modal confirmation
+        function replaceConfirmForms() {
+            document.querySelectorAll('form[onsubmit*="confirm("]').forEach(form => {
+                const onsubmitAttr = form.getAttribute('onsubmit');
+                const confirmMatch = onsubmitAttr.match(/confirm\('([^']+)'\)/);
+                
+                if (confirmMatch) {
+                    const confirmMessage = confirmMatch[1];
+                    
+                    // Remove the original onsubmit attribute
+                    form.removeAttribute('onsubmit');
+                    
+                    // Add click handler to submit button
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Extract specific title and message from confirmMessage
+                            let title = 'Conferma Eliminazione';
+                            let message = confirmMessage;
+                            let confirmBtnText = 'Elimina';
+                            let confirmBtnClass = 'btn-danger';
+                            
+                            // Customize based on message content
+                            if (confirmMessage.includes('nota spese')) {
+                                title = 'Elimina Nota Spese';
+                                message = '<p><i class="fas fa-receipt me-2 text-danger"></i>Vuoi eliminare definitivamente questa nota spese?</p>' +
+                                         '<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>' +
+                                         '<strong>Attenzione:</strong> Tutti i dati verranno persi per sempre.</small></div>';
+                            } else if (confirmMessage.includes('tipologia')) {
+                                title = 'Elimina Tipologia';
+                                message = '<p><i class="fas fa-tags me-2 text-danger"></i>Vuoi eliminare definitivamente questa tipologia di permesso?</p>' +
+                                         '<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>' +
+                                         '<strong>Attenzione:</strong> Non sarà più possibile utilizzarla per nuove richieste.</small></div>';
+                            } else if (confirmMessage.includes('utente')) {
+                                title = 'Elimina Utente';
+                                message = '<p><i class="fas fa-user-times me-2 text-danger"></i>Vuoi eliminare definitivamente questo utente?</p>' +
+                                         '<div class="alert alert-danger mt-3 mb-0"><small><i class="fas fa-exclamation-triangle me-1"></i>' +
+                                         '<strong>Attenzione:</strong> Tutti i dati associati verranno persi per sempre.</small></div>';
+                            } else if (confirmMessage.includes('sede')) {
+                                title = 'Elimina Sede';
+                                message = '<p><i class="fas fa-building me-2 text-danger"></i>Vuoi eliminare definitivamente questa sede?</p>' +
+                                         '<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>' +
+                                         '<strong>Attenzione:</strong> L\'operazione non può essere annullata.</small></div>';
+                            } else if (confirmMessage.includes('ruolo')) {
+                                title = 'Elimina Ruolo';
+                                message = '<p><i class="fas fa-user-tag me-2 text-danger"></i>Vuoi eliminare definitivamente questo ruolo?</p>' +
+                                         '<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>' +
+                                         '<strong>Attenzione:</strong> Gli utenti associati perderanno i permessi di questo ruolo.</small></div>';
+                            } else if (confirmMessage.includes('orario')) {
+                                title = 'Elimina Orario di Lavoro';
+                                message = '<p><i class="fas fa-clock me-2 text-danger"></i>Vuoi eliminare definitivamente questo orario di lavoro?</p>' +
+                                         '<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>' +
+                                         '<strong>Attenzione:</strong> Gli utenti assegnati perderanno questo orario.</small></div>';
+                            } else if (confirmMessage.includes('turni')) {
+                                title = 'Elimina Turni';
+                                message = '<p><i class="fas fa-calendar-times me-2 text-danger"></i>Vuoi eliminare questi turni?</p>' +
+                                         '<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>' +
+                                         '<strong>Attenzione:</strong> I turni verranno rimossi dal sistema.</small></div>';
+                            } else {
+                                // Generic fallback
+                                message = '<p><i class="fas fa-exclamation-triangle me-2 text-warning"></i>' + confirmMessage + '</p>';
+                            }
+                            
+                            confirmationManager.show(title, message, () => {
+                                form.submit();
+                            }, confirmBtnText, confirmBtnClass);
+                        });
+                    }
+                }
+            });
+        }
+
+        // Run replacement on page load
+        replaceConfirmForms();
+
+        // Also run when new content is added dynamically
+        const observer = new MutationObserver(() => {
+            replaceConfirmForms();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
     </script>
 
     {% block scripts %}{% endblock %}
