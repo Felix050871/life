@@ -473,6 +473,13 @@ def dashboard_team():
         'current_period': period_label
     }
     
+    # Per range personalizzato, aggiungi le date specifiche di navigazione
+    if period_mode == 'custom':
+        navigation['prev_start_date'] = prev_start.strftime('%Y-%m-%d') if 'prev_start' in locals() else None
+        navigation['prev_end_date'] = prev_end.strftime('%Y-%m-%d') if 'prev_end' in locals() else None
+        navigation['next_start_date'] = next_start.strftime('%Y-%m-%d') if 'next_start' in locals() else None
+        navigation['next_end_date'] = next_end.strftime('%Y-%m-%d') if 'next_end' in locals() else None
+    
     # Aggiungi date specifiche per custom range
     if period_mode == 'custom' and start_date_str and end_date_str:
         range_days = (end_date - start_date).days + 1
