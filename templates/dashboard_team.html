@@ -75,24 +75,14 @@
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            {% if start_date == end_date %}
-                                                <th>Utente</th>
-                                                <th>Ruolo</th>
-                                                <th>Stato</th>
-                                                <th>Entrata</th>
-                                                <th>Uscita</th>
-                                                <th>Ore Lavorate</th>
-                                                <th>Note</th>
-                                            {% else %}
-                                                <th>Data</th>
-                                                <th>Utente</th>
-                                                <th>Ruolo</th>
-                                                <th>Stato</th>
-                                                <th>Entrata</th>
-                                                <th>Uscita</th>
-                                                <th>Ore Lavorate</th>
-                                                <th>Note</th>
-                                            {% endif %}
+                                            <th>Data</th>
+                                            <th>Utente</th>
+                                            <th>Ruolo</th>
+                                            <th>Stato</th>
+                                            <th>Entrata</th>
+                                            <th>Uscita</th>
+                                            <th>Ore Lavorate</th>
+                                            <th>Note</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -101,6 +91,11 @@
                                             {% if user.id in attendance_data %}
                                             {% set attendance = attendance_data[user.id] %}
                                             <tr>
+                                                <td>
+                                                    <strong>{{ start_date.strftime('%d/%m') }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ start_date.strftime('%a') }}</small>
+                                                </td>
                                                 <td>
                                                     <strong>{{ user.get_full_name() }}</strong>
                                                     <br>

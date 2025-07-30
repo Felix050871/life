@@ -529,7 +529,7 @@ def dashboard_team():
     
     # Handle export
     if export_format == 'csv':
-        return generate_attendance_csv_export(attendance_data, 'custom', period_label, all_sedi)
+        return generate_attendance_csv_export(attendance_data, 'custom', period_label, all_sedi, start_date)
     
     return render_template('dashboard_team.html',
                          all_users=all_users,
@@ -541,7 +541,7 @@ def dashboard_team():
                          end_date=end_date,
                          current_user=current_user)
 
-def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi):
+def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi, start_date=None):
     """Genera export CSV delle presenze"""
     output = StringIO()
     writer = csv.writer(output)
@@ -556,8 +556,9 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
     )
     
     if is_single_day:
-        writer.writerow(['Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
+        writer.writerow(['Data', 'Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
         
+        # Per vista single day, aggiungi anche la data
         for user_id, data in attendance_data.items():
             user = data['user']
             # Ottieni la sede dalla query se non è già collegata
@@ -569,6 +570,13 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                 sede_name = sede.name if sede else 'N/A'
             else:
                 sede_name = 'N/A'
+            
+            # Determina la data (per single day sarà la stessa per tutti)
+            if start_date:
+                data_str = start_date.strftime('%d/%m/%Y')
+            else:
+                from datetime import datetime
+                data_str = datetime.now().strftime('%d/%m/%Y')
             
             if data['leave_request']:
                 stato = f"In {data['leave_request'].leave_type}"
@@ -591,6 +599,7 @@ def generate_attendance_csv_export(attendance_data, period_mode, period_label, a
                 note = ''
             
             writer.writerow([
+                data_str,  # Aggiungi la data come prima colonna
                 user.get_full_name(),
                 user.role if hasattr(user, 'role') and user.role else 'N/A',
                 sede_name,
