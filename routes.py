@@ -382,36 +382,156 @@ def dashboard_team():
     # Get all active sedi
     all_sedi = Sede.query.filter(Sede.active == True).all()
     
-    # Get attendance data for today
+    # Parametri di visualizzazione
+    period_mode = request.args.get('period', 'today')
+    export_format = request.args.get('export')
+    
+    # Calcolo periodo di visualizzazione
     today = date.today()
-    today_attendance = {}
+    
+    if period_mode == 'week':
+        # Settimana corrente (lunedì-domenica)
+        days_until_monday = today.weekday()
+        start_date = today - timedelta(days=days_until_monday)
+        end_date = start_date + timedelta(days=6)
+        period_label = f"Settimana {start_date.strftime('%d/%m')} - {end_date.strftime('%d/%m/%Y')}"
+    elif period_mode == 'month':
+        # Mese corrente
+        start_date = today.replace(day=1)
+        next_month = start_date.replace(month=start_date.month + 1) if start_date.month < 12 else start_date.replace(year=start_date.year + 1, month=1)
+        end_date = next_month - timedelta(days=1)
+        period_label = f"Mese {start_date.strftime('%B %Y')}"
+    else:  # today
+        start_date = end_date = today
+        period_label = f"Oggi {today.strftime('%d/%m/%Y')}"
+    
+    # Get attendance data for the period
+    attendance_data = {}
     
     for user in all_users:
-        status, last_event = AttendanceEvent.get_user_status(user.id, today)
-        daily_summary = AttendanceEvent.get_daily_summary(user.id, today)
-        
-        # Check for approved leave requests
-        leave_request = LeaveRequest.query.filter(
-            LeaveRequest.user_id == user.id,
-            LeaveRequest.status == 'Approved',
-            LeaveRequest.start_date <= today,
-            LeaveRequest.end_date >= today
-        ).first()
-        
-        today_attendance[user.id] = {
-            'user': user,
-            'status': status,
-            'last_event': last_event,
-            'daily_summary': daily_summary,
-            'leave_request': leave_request
-        }
+        if period_mode == 'today':
+            status, last_event = AttendanceEvent.get_user_status(user.id, today)
+            daily_summary = AttendanceEvent.get_daily_summary(user.id, today)
+            
+            # Check for approved leave requests
+            leave_request = LeaveRequest.query.filter(
+                LeaveRequest.user_id == user.id,
+                LeaveRequest.status == 'Approved',
+                LeaveRequest.start_date <= today,
+                LeaveRequest.end_date >= today
+            ).first()
+            
+            attendance_data[user.id] = {
+                'user': user,
+                'status': status,
+                'last_event': last_event,
+                'daily_summary': daily_summary,
+                'leave_request': leave_request
+            }
+        else:
+            # Per settimana/mese, calcola statistiche aggregate
+            total_hours = 0
+            total_days = 0
+            current_date = start_date
+            
+            while current_date <= end_date:
+                daily_summary = AttendanceEvent.get_daily_summary(user.id, current_date)
+                if daily_summary and daily_summary.get('total_work_hours', 0) > 0:
+                    total_hours += daily_summary['total_work_hours']
+                    total_days += 1
+                current_date += timedelta(days=1)
+            
+            attendance_data[user.id] = {
+                'user': user,
+                'total_hours': total_hours,
+                'total_days': total_days,
+                'avg_hours_per_day': total_hours / total_days if total_days > 0 else 0
+            }
+    
+    # Handle export
+    if export_format == 'csv':
+        return generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi)
     
     return render_template('dashboard_team.html',
                          all_users=all_users,
                          all_sedi=all_sedi,
-                         today_attendance=today_attendance,
+                         attendance_data=attendance_data,
                          today=today,
+                         period_mode=period_mode,
+                         period_label=period_label,
+                         start_date=start_date,
+                         end_date=end_date,
                          current_user=current_user)
+
+def generate_attendance_csv_export(attendance_data, period_mode, period_label, all_sedi):
+    """Genera export CSV delle presenze"""
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow(['Report Presenze - ' + period_label])
+    writer.writerow([])  # Riga vuota
+    
+    if period_mode == 'today':
+        writer.writerow(['Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
+        
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            sede_name = user.sede.name if user.sede else 'N/A'
+            
+            if data['leave_request']:
+                stato = f"In {data['leave_request'].type}"
+                entrata = uscita = ore_lavorate = 'N/A'
+                note = data['leave_request'].reason or ''
+            elif data['status'] == 'in':
+                stato = 'Presente'
+                entrata = data['last_event'].timestamp.strftime('%H:%M') if data['last_event'] and data['last_event'].event_type == 'clock_in' else 'N/A'
+                uscita = 'In corso'
+                ore_lavorate = format_hours(data['daily_summary'].get('total_work_hours', 0)) if data['daily_summary'] else '0h'
+                note = data['last_event'].notes if data['last_event'] and data['last_event'].notes else ''
+            elif data['status'] == 'out':
+                stato = 'Assente'
+                entrata = uscita = 'N/A'
+                ore_lavorate = format_hours(data['daily_summary'].get('total_work_hours', 0)) if data['daily_summary'] else '0h'
+                note = data['last_event'].notes if data['last_event'] and data['last_event'].notes else ''
+            else:
+                stato = 'Non registrato'
+                entrata = uscita = ore_lavorate = 'N/A'
+                note = ''
+            
+            writer.writerow([
+                user.get_full_name(),
+                user.role.name if user.role else 'N/A',
+                sede_name,
+                stato,
+                entrata,
+                uscita,
+                ore_lavorate,
+                note
+            ])
+    else:
+        writer.writerow(['Utente', 'Ruolo', 'Sede', 'Ore Totali', 'Giorni Lavorati', 'Media Ore/Giorno'])
+        
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            sede_name = user.sede.name if user.sede else 'N/A'
+            
+            writer.writerow([
+                user.get_full_name(),
+                user.role.name if user.role else 'N/A',
+                sede_name,
+                format_hours(data['total_hours']),
+                data['total_days'],
+                format_hours(data['avg_hours_per_day'])
+            ])
+    
+    output.seek(0)
+    
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_{period_mode}_{datetime.now().strftime("%Y%m%d")}.csv"'
+    
+    return response
 
 @app.route('/dashboard_sede')
 @login_required
