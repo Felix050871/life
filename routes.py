@@ -420,7 +420,15 @@ def dashboard_team():
             # Se l'utente ha un orario definito, controlla i giorni della settimana
             if user.work_schedule.days_of_week:
                 weekday = check_date.weekday()  # 0=lunedì, 6=domenica
-                allowed_days = [int(d) for d in user.work_schedule.days_of_week.split(',')]
+                # Gestisci sia stringa che lista per days_of_week
+                if isinstance(user.work_schedule.days_of_week, str):
+                    allowed_days = [int(d) for d in user.work_schedule.days_of_week.split(',')]
+                elif isinstance(user.work_schedule.days_of_week, list):
+                    allowed_days = [int(d) for d in user.work_schedule.days_of_week]
+                else:
+                    # Default lun-ven se formato non riconosciuto
+                    allowed_days = [0, 1, 2, 3, 4]
+                    
                 if weekday not in allowed_days:
                     return False
         else:
