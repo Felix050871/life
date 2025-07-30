@@ -22,22 +22,7 @@ function showLoadingForm(form) {
     }
 }
 
-function showLoadingExport(element) {
-    // Cambia temporaneamente il testo del pulsante per l'export
-    const originalContent = element.innerHTML;
-    element.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generazione...';
-    element.style.pointerEvents = 'none';
-    
-    // NON mostrare l'overlay globale per l'export - solo il pulsante cambia
-    // L'export è veloce e non necessita di overlay full-screen
-    
-    // Ripristina il pulsante rapidamente dopo l'avvio del download
-    setTimeout(() => {
-        element.innerHTML = originalContent;
-        element.style.pointerEvents = 'auto';
-        console.log('Export button restored after download started');
-    }, 800); // Ridotto a 800ms per export veloce
-}
+// Funzione showLoadingExport rimossa completamente per eliminare overlay persistenti
 
 // Sistema ottimizzato per gestione loading overlay
 document.addEventListener('DOMContentLoaded', function() {
