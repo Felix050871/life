@@ -55,6 +55,7 @@ body {
     min-height: 100vh;
     background-color: #ffffff;
     color: #212529;
+    padding-top: 60px; /* Space for fixed navbar */
 }
 
 /* PROJECT TITLE BAR - Light Theme */
@@ -64,19 +65,25 @@ body {
     padding: 0.75rem 0;
     border-bottom: 1px solid #dee2e6;
     box-shadow: var(--shadow-sm);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1030;
 }
 
 /* SIDEBAR - Light Theme */
 .main-wrapper {
     display: flex;
-    min-height: calc(100vh - 60px);
+    min-height: 100vh;
 }
 
 .sidebar {
     width: 280px;
     background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
     border-right: 1px solid #dee2e6;
-    height: calc(100vh - 60px);
+    height: 100vh;
     position: fixed;
     left: 0;
     top: 60px;
@@ -219,14 +226,14 @@ body {
 .content-wrapper {
     flex: 1;
     margin-left: 280px;
-    min-height: calc(100vh - 60px);
+    min-height: 100vh;
     background-color: #f8f9fa;
 }
 
 /* MAIN CONTENT - Light Theme */
 .main-content {
     padding: 1rem;
-    min-height: calc(100vh - 60px);
+    min-height: 100vh;
 }
 
 .main-content .container-fluid {
