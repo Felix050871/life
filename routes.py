@@ -7096,6 +7096,59 @@ def mark_message_read(message_id):
     
     return redirect(url_for('internal_messages'))
 
+@app.route('/message/<int:message_id>/delete', methods=['POST'])
+@login_required  
+def delete_message(message_id):
+    """Cancella un messaggio"""
+    from models import InternalMessage
+    
+    message = InternalMessage.query.get_or_404(message_id)
+    
+    # Verifica che sia il destinatario del messaggio
+    if message.recipient_id != current_user.id:
+        flash('Non puoi cancellare questo messaggio', 'danger')
+        return redirect(url_for('internal_messages'))
+    
+    try:
+        db.session.delete(message)
+        db.session.commit()
+        flash('Messaggio cancellato con successo', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore nella cancellazione del messaggio', 'danger')
+    
+    return redirect(url_for('internal_messages'))
+
+@app.route('/messages/mark_all_read', methods=['POST'])
+@login_required  
+def mark_all_messages_read():
+    """Segna tutti i messaggi dell'utente come letti"""
+    from models import InternalMessage
+    
+    try:
+        # Segna tutti i messaggi non letti dell'utente corrente come letti
+        unread_messages = InternalMessage.query.filter_by(
+            recipient_id=current_user.id,
+            is_read=False
+        ).all()
+        
+        for message in unread_messages:
+            message.is_read = True
+        
+        db.session.commit()
+        
+        count = len(unread_messages)
+        if count > 0:
+            flash(f'Tutti i {count} messaggi non letti sono stati marcati come letti', 'success')
+        else:
+            flash('Nessun messaggio da marcare come letto', 'info')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore nel marcare i messaggi come letti', 'danger')
+    
+    return redirect(url_for('internal_messages'))
+
 @app.route('/send_message', methods=['GET', 'POST'])
 @login_required
 def send_message():
