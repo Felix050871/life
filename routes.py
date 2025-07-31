@@ -361,6 +361,11 @@ def dashboard():
             'monthly_total': monthly_total
         }
 
+    # Get all sedi for multi-sede users
+    all_sedi_list = []
+    if current_user.all_sedi:
+        all_sedi_list = Sede.query.filter_by(active=True).all()
+
     return render_template('dashboard.html', 
                          stats=stats, 
                          team_stats=team_stats,
@@ -373,6 +378,7 @@ def dashboard():
                          recent_interventions=recent_interventions,
                          recent_leaves=recent_leaves,
                          weekly_calendar=weekly_calendar,
+                         all_sedi_list=all_sedi_list,
                          today=today,
                          today_date=today_date,
                          current_time=current_time,
@@ -1402,12 +1408,28 @@ def clock_in():
     italy_tz = ZoneInfo('Europe/Rome')
     now = datetime.now(italy_tz)
     
+    # Ottieni sede_id da richiesta JSON o utente
+    data = request.get_json() or {}
+    sede_id = data.get('sede_id')
+    
+    # Se utente multi-sede, sede_id è obbligatorio
+    if current_user.all_sedi and not sede_id:
+        return jsonify({
+            'success': False, 
+            'message': 'Seleziona una sede per registrare la presenza.'
+        }), 400
+    
+    # Se utente con sede specifica, usa quella
+    if not current_user.all_sedi:
+        sede_id = current_user.sede_id
+    
     # Crea nuovo evento di entrata
     event = AttendanceEvent()
     event.user_id = current_user.id
     event.date = now.date()  # Usa la data italiana
     event.event_type = 'clock_in'
     event.timestamp = now
+    event.sede_id = sede_id
     
     # Controlla gli orari della sede e permessi per determinare lo stato
     try:
@@ -1479,12 +1501,28 @@ def clock_out():
     italy_tz = ZoneInfo('Europe/Rome')
     now = datetime.now(italy_tz)
     
+    # Ottieni sede_id da richiesta JSON o utente
+    data = request.get_json() or {}
+    sede_id = data.get('sede_id')
+    
+    # Se utente multi-sede, sede_id è obbligatorio
+    if current_user.all_sedi and not sede_id:
+        return jsonify({
+            'success': False, 
+            'message': 'Seleziona una sede per registrare la presenza.'
+        }), 400
+    
+    # Se utente con sede specifica, usa quella
+    if not current_user.all_sedi:
+        sede_id = current_user.sede_id
+    
     # Crea nuovo evento di uscita
     event = AttendanceEvent()
     event.user_id = current_user.id
     event.date = now.date()  # Usa la data italiana
     event.event_type = 'clock_out'
     event.timestamp = now
+    event.sede_id = sede_id
     
     # Controlla gli orari della sede e permessi per determinare lo stato
     try:
@@ -1539,12 +1577,28 @@ def break_start():
     italy_tz = ZoneInfo('Europe/Rome')
     now = datetime.now(italy_tz)
     
+    # Ottieni sede_id da richiesta JSON o utente
+    data = request.get_json() or {}
+    sede_id = data.get('sede_id')
+    
+    # Se utente multi-sede, sede_id è obbligatorio
+    if current_user.all_sedi and not sede_id:
+        return jsonify({
+            'success': False, 
+            'message': 'Seleziona una sede per registrare la presenza.'
+        }), 400
+    
+    # Se utente con sede specifica, usa quella
+    if not current_user.all_sedi:
+        sede_id = current_user.sede_id
+    
     # Crea nuovo evento di inizio pausa
     event = AttendanceEvent()
     event.user_id = current_user.id
     event.date = now.date()  # Usa la data italiana
     event.event_type = 'break_start'
     event.timestamp = now
+    event.sede_id = sede_id
     
     try:
         db.session.add(event)
@@ -1588,12 +1642,28 @@ def break_end():
     italy_tz = ZoneInfo('Europe/Rome')
     now = datetime.now(italy_tz)
     
+    # Ottieni sede_id da richiesta JSON o utente
+    data = request.get_json() or {}
+    sede_id = data.get('sede_id')
+    
+    # Se utente multi-sede, sede_id è obbligatorio
+    if current_user.all_sedi and not sede_id:
+        return jsonify({
+            'success': False, 
+            'message': 'Seleziona una sede per registrare la presenza.'
+        }), 400
+    
+    # Se utente con sede specifica, usa quella
+    if not current_user.all_sedi:
+        sede_id = current_user.sede_id
+    
     # Crea nuovo evento di fine pausa
     event = AttendanceEvent()
     event.user_id = current_user.id
     event.date = now.date()  # Usa la data italiana
     event.event_type = 'break_end'
     event.timestamp = now
+    event.sede_id = sede_id
     
     try:
         db.session.add(event)

@@ -72,6 +72,31 @@
                     {% endif %}
                 </div>
                 
+                <!-- Sede Selection for multi-sede users -->
+                {% if current_user.all_sedi %}
+                <div class="alert alert-warning mb-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <label for="sedeSelect" class="form-label mb-0">
+                                <i class="fas fa-building me-1"></i>Seleziona Sede per Registrazione Presenza:
+                            </label>
+                            <select class="form-select form-select-sm mt-1" id="sedeSelect" name="sede_id">
+                                <option value="">Seleziona una sede...</option>
+                                {% for sede in all_sedi_list %}
+                                <option value="{{ sede.id }}">{{ sede.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Obbligatorio per utenti multi-sede
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Action Buttons -->
                 <div class="row mb-3">
                     <div class="col-6 col-md-3 mb-2">
@@ -817,98 +842,142 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Attendance functions
 function handleClockIn() {
-    showConfirmModal('Conferma Entrata', 'Sei sicuro di voler registrare l\'entrata?', function() {
-        fetch('/clock_in', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Errore: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Errore di rete');
-        });
+    let requestData = {};
+    
+    // Check if user has multi-sede access and needs sede selection
+    const sedeSelect = document.getElementById('sedeSelect');
+    if (sedeSelect) {
+        if (!sedeSelect.value) {
+            alert('Seleziona una sede per registrare la presenza');
+            return;
+        }
+        requestData.sede_id = parseInt(sedeSelect.value);
+    }
+    
+    fetch('/clock_in', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Errore di rete');
     });
 }
 
 function handleClockOut() {
-    showConfirmModal('Conferma Uscita', 'Sei sicuro di voler registrare l\'uscita?', function() {
-        fetch('/clock_out', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Errore: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Errore di rete');
-        });
+    let requestData = {};
+    
+    // Check if user has multi-sede access and needs sede selection
+    const sedeSelect = document.getElementById('sedeSelect');
+    if (sedeSelect) {
+        if (!sedeSelect.value) {
+            alert('Seleziona una sede per registrare la presenza');
+            return;
+        }
+        requestData.sede_id = parseInt(sedeSelect.value);
+    }
+    
+    fetch('/clock_out', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Errore di rete');
     });
 }
 
 function handleBreakStart() {
-    showConfirmModal('Conferma Pausa', 'Sei sicuro di voler iniziare la pausa?', function() {
-        fetch('/break_start', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Errore: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Errore di rete');
-        });
+    let requestData = {};
+    
+    // Check if user has multi-sede access and needs sede selection
+    const sedeSelect = document.getElementById('sedeSelect');
+    if (sedeSelect) {
+        if (!sedeSelect.value) {
+            alert('Seleziona una sede per registrare la presenza');
+            return;
+        }
+        requestData.sede_id = parseInt(sedeSelect.value);
+    }
+    
+    fetch('/break_start', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Errore di rete');
     });
 }
 
 function handleBreakEnd() {
-    showConfirmModal('Conferma Ripresa', 'Sei sicuro di voler terminare la pausa?', function() {
-        fetch('/break_end', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Errore: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Errore di rete');
-        });
+    let requestData = {};
+    
+    // Check if user has multi-sede access and needs sede selection
+    const sedeSelect = document.getElementById('sedeSelect');
+    if (sedeSelect) {
+        if (!sedeSelect.value) {
+            alert('Seleziona una sede per registrare la presenza');
+            return;
+        }
+        requestData.sede_id = parseInt(sedeSelect.value);
+    }
+    
+    fetch('/break_end', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Errore di rete');
     });
 }
 
