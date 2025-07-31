@@ -78,6 +78,7 @@
                                         <tr>
                                             <th>Data</th>
                                             <th>Utente</th>
+                                            <th>Sede</th>
                                             <th>Ora Inizio</th>
                                             <th>Pausa</th>
                                             <th>Ora Fine</th>
@@ -102,6 +103,15 @@
                                                 <small class="text-muted d-block">{{ record.user.role }}</small>
                                                 {% else %}
                                                 <span class="text-muted">--</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if record.user and record.user.sede_obj %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-building me-1"></i>{{ record.user.sede_obj.name }}
+                                                </span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">Nessuna Sede</span>
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -234,7 +244,7 @@
                                 <tr>
                                     <th>Data</th>
                                     {% if show_team_data %}<th>Utente</th>{% endif %}
-                                    {% if show_team_data %}<th>Sede</th>{% endif %}
+                                    <th>Sede</th>
                                     <th>Ora Inizio</th>
                                     <th>Pausa</th>
                                     <th>Ora Fine</th>
@@ -262,16 +272,20 @@
                                         <span class="text-muted">--</span>
                                         {% endif %}
                                     </td>
+                                    {% endif %}
                                     <td>
                                         {% if record.user and record.user.sede_obj %}
                                         <span class="badge bg-info">
                                             <i class="fas fa-building me-1"></i>{{ record.user.sede_obj.name }}
                                         </span>
-                                        {% else %}
+                                        {% elif show_team_data %}
                                         <span class="badge bg-secondary">Nessuna Sede</span>
+                                        {% else %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-building me-1"></i>{{ current_user.sede_obj.name if current_user.sede_obj else 'Nessuna Sede' }}
+                                        </span>
                                         {% endif %}
                                     </td>
-                                    {% endif %}
                                     <td>
                                         {% if record.shift_status == 'assente' %}
                                         <span class="text-danger fw-bold">Nessuna presenza</span>
