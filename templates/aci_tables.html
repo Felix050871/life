@@ -32,15 +32,15 @@
                         <div class="row">
                             <div class="col-md-3">
                                 {{ form.tipologia.label(class="form-label") }}
-                                {{ form.tipologia(class="form-select") }}
+                                {{ form.tipologia(class="form-select", id="tipologia-filter") }}
                             </div>
                             <div class="col-md-3">
                                 {{ form.tipo.label(class="form-label") }}
-                                {{ form.tipo(class="form-select") }}
+                                {{ form.tipo(class="form-select", id="tipo-filter") }}
                             </div>
                             <div class="col-md-3">
                                 {{ form.marca.label(class="form-label") }}
-                                {{ form.marca(class="form-select") }}
+                                {{ form.marca(class="form-select", id="marca-filter") }}
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
                                 {{ form.submit(class="btn btn-outline-primary me-2") }}
@@ -174,7 +174,7 @@
             <div class="mt-4">
                 <h5>Cancellazione in Massa</h5>
                 <form method="POST" action="{{ url_for('aci_bulk_delete') }}" class="d-inline">
-                    {{ csrf_token() }}
+                    {{ form.hidden_tag() }}
                     <div class="input-group" style="max-width: 400px;">
                         <select name="tipologia" class="form-select" required>
                             <option value="">Seleziona tipologia da cancellare</option>
@@ -209,7 +209,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                 <form method="POST" id="deleteForm" class="d-inline">
-                    {{ csrf_token() }}
+                    {{ form.hidden_tag() }}
                     <button type="submit" class="btn btn-danger">Cancella Record</button>
                 </form>
             </div>
@@ -257,5 +257,62 @@ function submitBulkDelete() {
     const form = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]');
     form.submit();
 }
+
+// Filtri a cascata
+document.addEventListener('DOMContentLoaded', function() {
+    const tipologiaSelect = document.getElementById('tipologia-filter');
+    const tipoSelect = document.getElementById('tipo-filter');
+    const marcaSelect = document.getElementById('marca-filter');
+    
+    // Update tipo dropdown based on tipologia selection
+    tipologiaSelect.addEventListener('change', function() {
+        const selectedTipologia = this.value;
+        
+        // Reset tipo and marca
+        tipoSelect.innerHTML = '<option value="">Tutti i tipi</option>';
+        marcaSelect.innerHTML = '<option value="">Tutte le marche</option>';
+        
+        if (selectedTipologia) {
+            // Filter tipi based on selected tipologia
+            fetch(`/api/aci/tipos?tipologia=${encodeURIComponent(selectedTipologia)}`)
+                .then(response => response.json())
+                .then(tipos => {
+                    tipos.forEach(tipo => {
+                        if (tipo) {  // Skip null values
+                            const option = new Option(tipo, tipo);
+                            tipoSelect.add(option);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error loading tipos:', error));
+        }
+    });
+    
+    // Update marca dropdown based on tipologia and tipo selection
+    tipoSelect.addEventListener('change', function() {
+        const selectedTipologia = tipologiaSelect.value;
+        const selectedTipo = this.value;
+        
+        // Reset marca
+        marcaSelect.innerHTML = '<option value="">Tutte le marche</option>';
+        
+        if (selectedTipologia) {
+            let url = `/api/aci/marcas?tipologia=${encodeURIComponent(selectedTipologia)}`;
+            if (selectedTipo) {
+                url += `&tipo=${encodeURIComponent(selectedTipo)}`;
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(marcas => {
+                    marcas.forEach(marca => {
+                        const option = new Option(marca, marca);
+                        marcaSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error loading marcas:', error));
+        }
+    });
+});
 </script>
 {% endblock %}

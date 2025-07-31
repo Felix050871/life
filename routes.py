@@ -9066,6 +9066,41 @@ def aci_tables():
     return render_template("aci_tables.html", tables=tables, form=form)
 
 
+@app.route("/api/aci/tipos")
+@login_required
+@admin_required
+def api_aci_tipos():
+    """API per ottenere i tipi filtrati per tipologia"""
+    tipologia = request.args.get('tipologia')
+    
+    query = db.session.query(ACITable.tipo).filter(ACITable.tipo.isnot(None)).distinct()
+    
+    if tipologia:
+        query = query.filter(ACITable.tipologia == tipologia)
+    
+    tipos = [row.tipo for row in query.order_by(ACITable.tipo).all()]
+    return jsonify(tipos)
+
+
+@app.route("/api/aci/marcas")
+@login_required
+@admin_required
+def api_aci_marcas():
+    """API per ottenere le marche filtrate per tipologia e tipo"""
+    tipologia = request.args.get('tipologia')
+    tipo = request.args.get('tipo')
+    
+    query = db.session.query(ACITable.marca).distinct()
+    
+    if tipologia:
+        query = query.filter(ACITable.tipologia == tipologia)
+    if tipo:
+        query = query.filter(ACITable.tipo == tipo)
+    
+    marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
+    return jsonify(marcas)
+
+
 @app.route("/aci_tables/upload", methods=["GET", "POST"])
 @login_required
 @admin_required
