@@ -9057,6 +9057,8 @@ def aci_tables():
             query = query.filter(ACITable.tipologia == form.tipologia.data)
         if form.marca.data:
             query = query.filter(ACITable.marca == form.marca.data)
+        if form.modello.data:
+            query = query.filter(ACITable.modello == form.modello.data)
     
     # Ordina e pagina risultati
     tables = query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
@@ -9081,6 +9083,25 @@ def api_aci_marcas():
     
     marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
     return jsonify(marcas)
+
+
+@app.route("/api/aci/modelos")
+@login_required
+@admin_required
+def api_aci_modelos():
+    """API per ottenere i modelli filtrati per tipologia e marca"""
+    tipologia = request.args.get('tipologia')
+    marca = request.args.get('marca')
+    
+    query = db.session.query(ACITable.modello).distinct()
+    
+    if tipologia:
+        query = query.filter(ACITable.tipologia == tipologia)
+    if marca:
+        query = query.filter(ACITable.marca == marca)
+    
+    modelos = [row.modello for row in query.order_by(ACITable.modello).all()]
+    return jsonify(modelos)
 
 
 @app.route("/aci_tables/upload", methods=["GET", "POST"])

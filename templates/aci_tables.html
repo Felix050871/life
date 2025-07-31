@@ -30,15 +30,19 @@
                     <form method="POST" action="{{ url_for('aci_tables') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 {{ form.tipologia.label(class="form-label") }}
                                 {{ form.tipologia(class="form-select", id="tipologia-filter") }}
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 {{ form.marca.label(class="form-label") }}
                                 {{ form.marca(class="form-select", id="marca-filter") }}
                             </div>
-                            <div class="col-md-4 d-flex align-items-end">
+                            <div class="col-md-3">
+                                {{ form.modello.label(class="form-label") }}
+                                {{ form.modello(class="form-select", id="modello-filter") }}
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
                                 {{ form.submit(class="btn btn-outline-primary me-2") }}
                                 <a href="{{ url_for('aci_tables') }}" class="btn btn-outline-secondary">Reset</a>
                             </div>
@@ -245,15 +249,18 @@ function submitBulkDelete() {
 document.addEventListener('DOMContentLoaded', function() {
     const tipologiaSelect = document.getElementById('tipologia-filter');
     const marcaSelect = document.getElementById('marca-filter');
+    const modelloSelect = document.getElementById('modello-filter');
     
-    // Update marca dropdown based on tipologia selection
+    // Update marca and modello dropdowns based on tipologia selection
     tipologiaSelect.addEventListener('change', function() {
         const selectedTipologia = this.value;
         
-        // Reset marca
+        // Reset marca and modello
         marcaSelect.innerHTML = '<option value="">Tutte le marche</option>';
+        modelloSelect.innerHTML = '<option value="">Tutti i modelli</option>';
         
         if (selectedTipologia) {
+            // Load marcas for selected tipologia
             fetch(`/api/aci/marcas?tipologia=${encodeURIComponent(selectedTipologia)}`)
                 .then(response => response.json())
                 .then(marcas => {
@@ -263,6 +270,50 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 })
                 .catch(error => console.error('Error loading marcas:', error));
+                
+            // Load modelos for selected tipologia
+            fetch(`/api/aci/modelos?tipologia=${encodeURIComponent(selectedTipologia)}`)
+                .then(response => response.json())
+                .then(modelos => {
+                    modelos.forEach(modelo => {
+                        const option = new Option(modelo, modelo);
+                        modelloSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error loading modelos:', error));
+        }
+    });
+    
+    // Update modello dropdown based on marca selection
+    marcaSelect.addEventListener('change', function() {
+        const selectedTipologia = tipologiaSelect.value;
+        const selectedMarca = this.value;
+        
+        // Reset modello
+        modelloSelect.innerHTML = '<option value="">Tutti i modelli</option>';
+        
+        if (selectedTipologia && selectedMarca) {
+            // Load modelos for selected tipologia and marca
+            fetch(`/api/aci/modelos?tipologia=${encodeURIComponent(selectedTipologia)}&marca=${encodeURIComponent(selectedMarca)}`)
+                .then(response => response.json())
+                .then(modelos => {
+                    modelos.forEach(modelo => {
+                        const option = new Option(modelo, modelo);
+                        modelloSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error loading modelos:', error));
+        } else if (selectedTipologia) {
+            // Load all modelos for tipologia if no marca selected
+            fetch(`/api/aci/modelos?tipologia=${encodeURIComponent(selectedTipologia)}`)
+                .then(response => response.json())
+                .then(modelos => {
+                    modelos.forEach(modelo => {
+                        const option = new Option(modelo, modelo);
+                        modelloSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error loading modelos:', error));
         }
     });
 });

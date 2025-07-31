@@ -1428,6 +1428,7 @@ class ACIFilterForm(FlaskForm):
     """Form per filtrare i record delle tabelle ACI"""
     tipologia = SelectField('Tipologia', choices=[('', 'Tutte le tipologie')])
     marca = SelectField('Marca', choices=[('', 'Tutte le marche')])
+    modello = SelectField('Modello', choices=[('', 'Tutti i modelli')])
     submit = SubmitField('Filtra')
     
     def __init__(self, *args, **kwargs):
@@ -1445,6 +1446,10 @@ class ACIFilterForm(FlaskForm):
             # Marche uniche
             marche = db.session.query(ACITable.marca).distinct().order_by(ACITable.marca).all()
             self.marca.choices = [('', 'Tutte le marche')] + [(m.marca, m.marca) for m in marche]
+            
+            # Modelli unici
+            modelli = db.session.query(ACITable.modello).distinct().order_by(ACITable.modello).all()
+            self.modello.choices = [('', 'Tutti i modelli')] + [(m.modello, m.modello) for m in modelli]
             
         except Exception as e:
             # Fallback se non ci sono dati o errore database
