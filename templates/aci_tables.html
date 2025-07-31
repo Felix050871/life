@@ -167,7 +167,7 @@
                             <option value="{{ tipologia.0 }}">{{ tipologia.0 }} ({{ tipologia.1|list|length }} record)</option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-danger" onclick="confirmBulkDelete()">
+                        <button type="button" class="btn btn-danger" onclick="showBulkDeleteModal()">
                             <i class="fas fa-trash-alt"></i> Cancella Tipologia
                         </button>
                     </div>
@@ -222,6 +222,44 @@
     </div>
 </div>
 
+<!-- Modal Cancellazione in Massa -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Conferma Cancellazione Tipologia
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attenzione!</strong> Stai per cancellare definitivamente tutti i record della tipologia.
+                </div>
+                
+                <p>Confermi di voler cancellare <strong><span id="bulkDeleteCount">?</span> record</strong> della tipologia:</p>
+                <div class="text-center p-3 bg-light rounded">
+                    <strong class="text-danger h5" id="bulkDeleteTipologia">-</strong>
+                </div>
+                
+                <p class="text-danger mt-3">
+                    <i class="fas fa-exclamation-circle"></i> 
+                    <strong>Questa operazione non può essere annullata.</strong>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Annulla
+                </button>
+                <button type="button" class="btn btn-danger" onclick="executeBulkDelete()">
+                    <i class="fas fa-trash-alt"></i> Cancella Tutti i Record
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function showDeleteModal(recordId, recordName) {
     document.getElementById('deleteRecordName').textContent = recordName;
@@ -229,15 +267,27 @@ function showDeleteModal(recordId, recordName) {
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 
-function confirmBulkDelete() {
+function showBulkDeleteModal() {
     const tipologia = document.querySelector('select[name="tipologia"]').value;
     if (!tipologia) {
         alert('Seleziona una tipologia da cancellare');
         return;
     }
-    if (confirm(`Sei sicuro di voler cancellare tutti i record della tipologia "${tipologia}"?`)) {
-        document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]').submit();
-    }
+    
+    // Conta i record per questa tipologia
+    const recordCount = document.querySelector(`select[name="tipologia"] option[value="${tipologia}"]`).textContent.match(/\((\d+) record\)/);
+    const count = recordCount ? recordCount[1] : '?';
+    
+    // Aggiorna il testo della modal
+    document.getElementById('bulkDeleteTipologia').textContent = tipologia;
+    document.getElementById('bulkDeleteCount').textContent = count;
+    
+    // Mostra la modal
+    new bootstrap.Modal(document.getElementById('bulkDeleteModal')).show();
+}
+
+function executeBulkDelete() {
+    document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]').submit();
 }
 
 function submitBulkDelete() {

@@ -9372,13 +9372,28 @@ def aci_bulk_delete():
         return redirect(url_for("aci_tables"))
     
     try:
+        # Prima conta i record da cancellare
+        records_to_delete = ACITable.query.filter_by(tipologia=tipologia).count()
+        
+        if records_to_delete == 0:
+            flash("Nessun record trovato per la tipologia specificata.", "info")
+            return redirect(url_for("aci_tables"))
+        
+        # Esegui la cancellazione
         deleted_count = ACITable.query.filter_by(tipologia=tipologia).delete()
         db.session.commit()
-        flash(f"Cancellati {deleted_count} record della tipologia '{tipologia}'.", "success")
+        
+        flash(f"✅ Cancellazione completata con successo!", "success")
+        flash(f"📊 {deleted_count} record eliminati dalla tipologia '{tipologia}'", "info")
+        
+        import logging
+        logging.info(f"Admin {current_user.username} ha cancellato {deleted_count} record ACI tipologia '{tipologia}'")
         
     except Exception as e:
         db.session.rollback()
-        flash(f"Errore durante la cancellazione in massa: {str(e)}", "danger")
+        flash(f"❌ Errore durante la cancellazione in massa: {str(e)}", "danger")
+        import logging
+        logging.error(f"Errore cancellazione bulk ACI: {str(e)}")
     
     return redirect(url_for("aci_tables"))
 
