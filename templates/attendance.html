@@ -78,7 +78,6 @@
                                         <tr>
                                             <th>Data</th>
                                             <th>Utente</th>
-                                            <th>Sede</th>
                                             <th>Ora Inizio</th>
                                             <th>Pausa</th>
                                             <th>Ora Fine</th>
@@ -103,15 +102,6 @@
                                                 <small class="text-muted d-block">{{ record.user.role }}</small>
                                                 {% else %}
                                                 <span class="text-muted">--</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if record.user and record.user.sede_obj %}
-                                                <span class="badge bg-info">
-                                                    <i class="fas fa-building me-1"></i>{{ record.user.sede_obj.name }}
-                                                </span>
-                                                {% else %}
-                                                <span class="badge bg-secondary">Nessuna Sede</span>
                                                 {% endif %}
                                             </td>
                                             <td>
