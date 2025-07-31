@@ -20,6 +20,7 @@ class UserForm(FlaskForm):
     sede = SelectField('Sede', coerce=int, validators=[], validate_choice=False)
     all_sedi = BooleanField('Accesso a tutte le sedi', default=False)
     work_schedule = SelectField('Orario di Lavoro', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
+    aci_vehicle = SelectField('Veicolo ACI', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
     is_active = BooleanField('Attivo', default=True)
@@ -32,9 +33,16 @@ class UserForm(FlaskForm):
         
         # Popola le scelte delle sedi
         try:
-            from models import Sede as SedeModel
+            from models import Sede as SedeModel, ACITable
             sedi_attive = SedeModel.query.filter_by(active=True).all()
             self.sede.choices = [(-1, 'Seleziona una sede')] + [(sede.id, sede.name) for sede in sedi_attive]
+            
+            # Popola le scelte dei veicoli ACI
+            aci_vehicles = ACITable.query.order_by(ACITable.marca, ACITable.modello).all()
+            self.aci_vehicle.choices = [(-1, 'Nessun veicolo')] + [
+                (vehicle.id, f"{vehicle.marca} {vehicle.modello} (€{vehicle.costo_km:.4f}/km)")
+                for vehicle in aci_vehicles
+            ]
         except:
             self.sede.choices = [(-1, 'Seleziona una sede')]
         

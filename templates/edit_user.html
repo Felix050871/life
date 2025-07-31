@@ -145,12 +145,27 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                {{ form.aci_vehicle.label(class="form-label") }}
+                                {{ form.aci_vehicle(class="form-select") }}
+                                <small class="text-muted">Veicolo per rimborsi chilometrici (opzionale)</small>
+                                {% if form.aci_vehicle.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.aci_vehicle.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 <div class="form-check">
                                     {{ form.all_sedi(class="form-check-input", id="allSediCheck") }}
                                     {{ form.all_sedi.label(class="form-check-label") }}
                                 </div>
                                 <small class="text-muted">Se abilitato, può accedere a tutte le sedi</small>
                             </div>
+                        </div>
+                        
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="form-check">

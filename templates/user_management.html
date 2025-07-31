@@ -127,6 +127,18 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
+                            {{ form.aci_vehicle.label(class="form-label") }}
+                            {{ form.aci_vehicle(class="form-select") }}
+                            <small class="text-muted">Veicolo per rimborsi chilometrici (opzionale)</small>
+                            {% if form.aci_vehicle.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.aci_vehicle.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <div class="form-check mb-3">
                                 {{ form.all_sedi(class="form-check-input", id="allSediCheckNew") }}
                                 {{ form.all_sedi.label(class="form-check-label") }}
@@ -137,7 +149,10 @@
                                 {{ form.is_active.label(class="form-check-label") }}
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3 text-end">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-end">
                             {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </div>
@@ -170,6 +185,7 @@
                                 <th>Ruolo</th>
                                 <th>Sedi</th>
                                 <th>Orario</th>
+                                <th>Veicolo ACI</th>
                                 <th>% Lavoro</th>
                                 <th>Stato</th>
                                 <th>Registrato</th>
@@ -230,6 +246,16 @@
                                         </span>
                                     {% else %}
                                         <span class="text-muted">Nessun orario</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.aci_vehicle %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-car me-1"></i>{{ user.aci_vehicle.marca }} {{ user.aci_vehicle.modello }}
+                                        </span>
+                                        <br><small class="text-muted">€{{ "%.4f"|format(user.aci_vehicle.costo_km) }}/km</small>
+                                    {% else %}
+                                        <span class="text-muted">Nessun veicolo</span>
                                     {% endif %}
                                 </td>
                                 <td>
