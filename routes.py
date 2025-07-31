@@ -4741,7 +4741,7 @@ def qr_login(action):
         else:
             flash('Username o password non validi', 'error')
     
-    return render_template('qr_login.html', form=form, action=action)
+    return render_template('qr_login_standalone.html', form=form, action=action)
 
 
 @app.route('/qr_fresh/<action>')
