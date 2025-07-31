@@ -533,6 +533,12 @@ class User(UserMixin, db.Model):
                 self.can_manage_overtime_requests() or self.can_approve_overtime_requests() or
                 self.can_view_my_overtime_requests())
     
+    def can_access_mileage_menu(self):
+        """Accesso al menu Rimborsi Chilometrici"""
+        return (self.can_create_mileage_requests() or self.can_view_mileage_requests() or 
+                self.can_manage_mileage_requests() or self.can_approve_mileage_requests() or
+                self.can_view_my_mileage_requests())
+    
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):
         """Widget statistiche team nella dashboard"""
@@ -589,6 +595,14 @@ class User(UserMixin, db.Model):
     def can_view_my_overtime_widget(self):
         """Può visualizzare widget dei propri straordinari"""
         return self.has_permission('can_view_my_overtime_widget')
+    
+    def can_view_mileage_widget(self):
+        """Può visualizzare widget rimborsi chilometrici"""
+        return self.has_permission('can_view_mileage_widget')
+        
+    def can_view_my_mileage_widget(self):
+        """Può visualizzare widget dei propri rimborsi chilometrici"""
+        return self.has_permission('can_view_my_mileage_widget')
     
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""

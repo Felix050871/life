@@ -305,6 +305,37 @@
                                 </div>
                             </div>
 
+                            <!-- Rimborsi Chilometrici -->
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-car me-1"></i>Rimborsi Chilometrici</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_mileage_requests() }}
+                                            {{ form.can_manage_mileage_requests.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_approve_mileage_requests() }}
+                                            {{ form.can_approve_mileage_requests.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_create_mileage_requests() }}
+                                            {{ form.can_create_mileage_requests.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_mileage_requests() }}
+                                            {{ form.can_view_mileage_requests.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_my_mileage_requests() }}
+                                            {{ form.can_view_my_mileage_requests.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Note Spese -->
                             <div class="col-lg-4 col-md-6 mb-3">
                                 <div class="card border h-100">
@@ -522,6 +553,16 @@
                                                 <div class="form-check mb-2">
                                                     {{ form.can_view_my_overtime_widget() }}
                                                     {{ form.can_view_my_overtime_widget.label(class="form-check-label") }}
+                                                </div>
+                                                
+                                                <h6 class="text-dark mt-3"><i class="fas fa-car me-1"></i>Widget Rimborsi Km</h6>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_view_mileage_widget() }}
+                                                    {{ form.can_view_mileage_widget.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_view_my_mileage_widget() }}
+                                                    {{ form.can_view_my_mileage_widget.label(class="form-check-label") }}
                                                 </div>
                                             </div>
                                         </div>

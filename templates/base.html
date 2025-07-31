@@ -396,7 +396,7 @@
                 {% endif %}
 
                 <!-- RIMBORSI CHILOMETRICI - Solo se ha almeno un permesso rimborsi -->
-                {% set has_mileage_permission = current_user.can_create_mileage_requests() or current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests() %}
+                {% set has_mileage_permission = current_user.can_access_mileage_menu() %}
                 {% if has_mileage_permission %}
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">

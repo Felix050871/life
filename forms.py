@@ -936,6 +936,10 @@ class RoleForm(FlaskForm):
     can_view_overtime_widget = BooleanField('Widget Straordinari')
     can_view_my_overtime_widget = BooleanField('Widget I Miei Straordinari')
     
+    # Widget Rimborsi Chilometrici
+    can_view_mileage_widget = BooleanField('Widget Rimborsi Chilometrici')
+    can_view_my_mileage_widget = BooleanField('Widget I Miei Rimborsi Km')
+    
     # Gestione Rimborsi Chilometrici
     can_create_mileage_requests = BooleanField('Creare Richieste Rimborso Km')
     can_view_mileage_requests = BooleanField('Visualizzare Richieste Rimborso Km')
