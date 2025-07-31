@@ -1035,9 +1035,16 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
     entry_tolerance = timedelta(minutes=15)
     exit_tolerance = timedelta(minutes=5)
     
-    # Converti i tempi in datetime per il confronto
-    effective_start_datetime = datetime.combine(check_date, effective_start_time)
-    effective_end_datetime = datetime.combine(check_date, effective_end_time)
+    # Converti i tempi in datetime per il confronto con timezone italiana
+    from zoneinfo import ZoneInfo
+    italy_tz = ZoneInfo('Europe/Rome')
+    
+    effective_start_datetime = datetime.combine(check_date, effective_start_time).replace(tzinfo=italy_tz)
+    effective_end_datetime = datetime.combine(check_date, effective_end_time).replace(tzinfo=italy_tz)
+    
+    # Assicurati che check_datetime abbia timezone
+    if check_datetime.tzinfo is None:
+        check_datetime = check_datetime.replace(tzinfo=italy_tz)
     
     # Controlla lo stato di entrata
     if check_time <= effective_start_time:
