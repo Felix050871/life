@@ -4763,7 +4763,8 @@ def quick_attendance(action):
                 notes='Entrata tramite QR Code'
             )
             db.session.add(entry_event)
-            message = f'Entrata registrata alle {now.strftime("%H:%M")}'
+            message = f'✅ Entrata registrata alle {now.strftime("%H:%M")}'
+            message_type = 'success'
             
         else:  # uscita
             # Create exit event
@@ -4775,16 +4776,26 @@ def quick_attendance(action):
                 notes='Uscita tramite QR Code'
             )
             db.session.add(exit_event)
-            message = f'Uscita registrata alle {now.strftime("%H:%M")}'
+            message = f'✅ Uscita registrata alle {now.strftime("%H:%M")}'
+            message_type = 'success'
         
         db.session.commit()
-        flash(message, 'success')
+        
+        # Mostra pagina di conferma invece di redirect diretto
+        return render_template('qr_success.html', 
+                             action=action, 
+                             message=message,
+                             user=current_user,
+                             timestamp=now.strftime("%H:%M"))
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Errore durante la registrazione: {str(e)}', 'error')
-    
-    return redirect(url_for('index'))
+        error_message = f'❌ Errore durante la registrazione: {str(e)}'
+        return render_template('qr_success.html', 
+                             action=action, 
+                             message=error_message,
+                             user=current_user,
+                             error=True)
 
 
 @app.route('/generate_qr_codes')

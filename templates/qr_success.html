@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action.title() }} Registrata - QR Code</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .success-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .success-icon.entrata {
+            color: #28a745;
+        }
+        
+        .success-icon.uscita {
+            color: #dc3545;
+        }
+        
+        .success-icon.error {
+            color: #ffc107;
+        }
+        
+        .success-message {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .timestamp {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .auto-redirect {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 20px;
+        }
+        
+        .btn-dashboard {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-card">
+        <div class="success-icon {{ 'error' if error else action }}">
+            {% if error %}
+                <i class="fas fa-exclamation-triangle"></i>
+            {% elif action == 'entrata' %}
+                <i class="fas fa-sign-in-alt"></i>
+            {% else %}
+                <i class="fas fa-sign-out-alt"></i>
+            {% endif %}
+        </div>
+        
+        <div class="success-message">
+            {{ message }}
+        </div>
+        
+        {% if not error %}
+            <div class="user-info">
+                <h5><i class="fas fa-user me-2"></i>{{ user.first_name }} {{ user.last_name }}</h5>
+                <p class="mb-0 text-muted">{{ user.username }}</p>
+                <div class="timestamp">{{ timestamp }}</div>
+            </div>
+        {% endif %}
+        
+        <a href="{{ url_for('index') }}" class="btn-dashboard">
+            <i class="fas fa-home me-2"></i>Vai alla Dashboard
+        </a>
+        
+        <div class="auto-redirect">
+            <i class="fas fa-clock me-1"></i>
+            Reindirizzamento automatico in <span id="countdown">10</span> secondi
+        </div>
+    </div>
+    
+    <script>
+        // Auto redirect dopo 10 secondi
+        let countdown = 10;
+        const countdownElement = document.getElementById('countdown');
+        
+        const timer = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(timer);
+                window.location.href = "{{ url_for('index') }}";
+            }
+        }, 1000);
+        
+        // Click anywhere per andare alla dashboard
+        document.addEventListener('click', () => {
+            window.location.href = "{{ url_for('index') }}";
+        });
+    </script>
+</body>
+</html>
