@@ -13,33 +13,30 @@
                 </a>
             </div>
 
-            <!-- Istruzioni -->
+            <!-- Istruzioni Essenziali -->
             <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Istruzioni per il File Excel</h5>
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-excel"></i> File Excel - Solo 3 Colonne</h5>
                 </div>
                 <div class="card-body">
-                    <h6>Struttura File Excel Richiesta:</h6>
-                    <ul class="mb-3">
-                        <li><strong>Colonna A:</strong> MARCA (o TIPO se riga categoria) ✅ <em>utilizzata</em></li>
-                        <li><strong>Colonna B:</strong> MODELLO (vuota per righe TIPO) ✅ <em>utilizzata</em></li>
-                        <li><strong>Colonna C:</strong> COSTO KM 15.000 KM ✅ <em>utilizzata</em></li>
-                        <li><strong>Colonna D:</strong> FRINGE BENEFIT ANNUALE (20% CK) ❌ <em>ignorata</em></li>
-                        <li><strong>Colonna E:</strong> FRINGE BENEFIT ANNUALE (25% CK) ❌ <em>ignorata</em></li>
-                        <li><strong>Colonna F:</strong> FRINGE BENEFIT ANNUALE (30% CK) ❌ <em>ignorata</em></li>
-                        <li><strong>Colonne successive:</strong> Tutte ignorate ❌</li>
-                    </ul>
-                    
-                    <h6>Logica Righe TIPO:</h6>
-                    <div class="alert alert-light">
-                        <p class="mb-2">Le righe con <strong>MARCA valorizzata</strong> ma <strong>MODELLO vuoto</strong> sono considerate <strong>TIPO</strong> (categoria).</p>
-                        <p class="mb-2">Esempio: "PLUG-IN BENZINA" con MODELLO vuoto definisce il TIPO per tutti i veicoli successivi.</p>
-                        <p class="mb-0">Il TIPO viene applicato a tutti i record fino alla prossima riga TIPO.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success">✅ Colonne Utilizzate:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> <strong>Colonna A:</strong> MARCA</li>
+                                <li><i class="fas fa-check text-success"></i> <strong>Colonna B:</strong> MODELLO</li>
+                                <li><i class="fas fa-check text-success"></i> <strong>Colonna C:</strong> COSTO KM</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">❌ Colonne Ignorate:</h6>
+                            <p class="text-muted">Tutte le colonne dalla D in poi<br>vengono completamente ignorate</p>
+                        </div>
                     </div>
                     
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        <strong>IMPORTANTE:</strong> Solo le colonne A, B, C vengono elaborate. Tutte le colonne D, E, F e successive sono completamente ignorate.
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Righe TIPO:</strong> Se MARCA è valorizzata ma MODELLO è vuoto, la riga definisce una categoria (es: "PLUG-IN BENZINA")
                     </div>
                 </div>
             </div>
@@ -79,71 +76,43 @@
                 </div>
             </div>
 
-            <!-- Anteprima File (se necessario) -->
+            <!-- Esempio Semplificato -->
             <div class="card mt-4">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-eye"></i> Esempio Struttura File</h6>
+                    <h6 class="mb-0"><i class="fas fa-table"></i> Esempio Excel (Solo Prime 3 Colonne)</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-sm table-bordered">
-                            <thead class="table-light">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-success">
                                 <tr>
-                                    <th>MARCA</th>
-                                    <th>MODELLO</th>
-                                    <th>COSTO KM 15.000 KM</th>
-                                    <th class="text-muted"><strike>FRINGE BENEFIT (20%)</strike></th>
-                                    <th class="text-muted"><strike>FRINGE BENEFIT (25%)</strike></th>
-                                    <th class="text-muted"><strike>FRINGE BENEFIT (30%)</strike></th>
+                                    <th>A - MARCA</th>
+                                    <th>B - MODELLO</th>
+                                    <th>C - COSTO KM</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr class="table-warning">
                                     <td><strong>PLUG-IN BENZINA</strong></td>
-                                    <td><em>(vuoto - riga TIPO)</em></td>
+                                    <td><em>(vuoto - categoria)</em></td>
                                     <td>-</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
                                 </tr>
                                 <tr>
                                     <td>ALFA ROMEO</td>
                                     <td>Giulia 2.0 Turbo 200 CV AT8</td>
                                     <td>0.3985</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
                                 </tr>
                                 <tr>
                                     <td>AUDI</td>
                                     <td>A3 Sportback 40 TFSI e S tronic</td>
                                     <td>0.4864</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
-                                </tr>
-                                <tr class="table-warning">
-                                    <td><strong>PLUG-IN GASOLIO</strong></td>
-                                    <td><em>(vuoto - riga TIPO)</em></td>
-                                    <td>-</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
-                                </tr>
-                                <tr>
-                                    <td>BMW</td>
-                                    <td>X3 xDrive30e</td>
-                                    <td>0.5234</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
-                                    <td class="text-muted">ignorata</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <small class="text-muted">
-                        <i class="fas fa-lightbulb"></i> 
-                        Le righe evidenziate in giallo sono righe TIPO che definiscono la categoria per i veicoli sottostanti.
+                    <small class="text-success">
+                        <i class="fas fa-check-circle"></i> 
+                        Sistema semplificato: elabora solo queste 3 colonne, ignora tutto il resto
                     </small>
                 </div>
             </div>
