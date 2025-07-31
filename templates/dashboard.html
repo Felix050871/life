@@ -854,6 +854,12 @@ function handleClockIn() {
         requestData.sede_id = parseInt(sedeSelect.value);
     }
     
+    // Find the clock in button and update text
+    const clockInBtn = document.querySelector('button[onclick="handleClockIn()"]');
+    const originalText = clockInBtn.innerHTML;
+    clockInBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrazione in corso...';
+    clockInBtn.disabled = true;
+    
     fetch('/clock_in', {
         method: 'POST',
         headers: {
@@ -867,10 +873,16 @@ function handleClockIn() {
         if (data.success) {
             location.reload();
         } else {
+            // Restore button on error
+            clockInBtn.innerHTML = originalText;
+            clockInBtn.disabled = false;
             alert('Errore: ' + data.message);
         }
     })
     .catch(error => {
+        // Restore button on error
+        clockInBtn.innerHTML = originalText;
+        clockInBtn.disabled = false;
         console.error('Error:', error);
         alert('Errore di rete');
     });
@@ -889,6 +901,12 @@ function handleClockOut() {
         requestData.sede_id = parseInt(sedeSelect.value);
     }
     
+    // Find the clock out button and update text
+    const clockOutBtn = document.querySelector('button[onclick="handleClockOut()"]');
+    const originalText = clockOutBtn.innerHTML;
+    clockOutBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrazione in corso...';
+    clockOutBtn.disabled = true;
+    
     fetch('/clock_out', {
         method: 'POST',
         headers: {
@@ -902,10 +920,16 @@ function handleClockOut() {
         if (data.success) {
             location.reload();
         } else {
+            // Restore button on error
+            clockOutBtn.innerHTML = originalText;
+            clockOutBtn.disabled = false;
             alert('Errore: ' + data.message);
         }
     })
     .catch(error => {
+        // Restore button on error
+        clockOutBtn.innerHTML = originalText;
+        clockOutBtn.disabled = false;
         console.error('Error:', error);
         alert('Errore di rete');
     });
@@ -924,6 +948,12 @@ function handleBreakStart() {
         requestData.sede_id = parseInt(sedeSelect.value);
     }
     
+    // Find the break start button and update text
+    const breakStartBtn = document.querySelector('button[onclick="handleBreakStart()"]');
+    const originalText = breakStartBtn.innerHTML;
+    breakStartBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrazione in corso...';
+    breakStartBtn.disabled = true;
+    
     fetch('/break_start', {
         method: 'POST',
         headers: {
@@ -937,10 +967,16 @@ function handleBreakStart() {
         if (data.success) {
             location.reload();
         } else {
+            // Restore button on error
+            breakStartBtn.innerHTML = originalText;
+            breakStartBtn.disabled = false;
             alert('Errore: ' + data.message);
         }
     })
     .catch(error => {
+        // Restore button on error
+        breakStartBtn.innerHTML = originalText;
+        breakStartBtn.disabled = false;
         console.error('Error:', error);
         alert('Errore di rete');
     });
@@ -959,6 +995,12 @@ function handleBreakEnd() {
         requestData.sede_id = parseInt(sedeSelect.value);
     }
     
+    // Find the break end button and update text
+    const breakEndBtn = document.querySelector('button[onclick="handleBreakEnd()"]');
+    const originalText = breakEndBtn.innerHTML;
+    breakEndBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrazione in corso...';
+    breakEndBtn.disabled = true;
+    
     fetch('/break_end', {
         method: 'POST',
         headers: {
@@ -972,10 +1014,16 @@ function handleBreakEnd() {
         if (data.success) {
             location.reload();
         } else {
+            // Restore button on error
+            breakEndBtn.innerHTML = originalText;
+            breakEndBtn.disabled = false;
             alert('Errore: ' + data.message);
         }
     })
     .catch(error => {
+        // Restore button on error
+        breakEndBtn.innerHTML = originalText;
+        breakEndBtn.disabled = false;
         console.error('Error:', error);
         alert('Errore di rete');
     });
