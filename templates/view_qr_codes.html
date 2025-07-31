@@ -71,7 +71,7 @@
             </div>
             <h4 class="text-success">QR Code Entrata</h4>
             <div class="qr-code">
-                <img id="qrcode-entrata" src="/static/qr/qr_entrata.png" alt="QR Code Entrata" style="width: 200px; height: 200px;">
+                <img id="qrcode-entrata" src="/static/qr/qr_entrata.png" alt="QR Code Entrata" style="width: 200px; height: 200px;" onerror="this.style.display='none'; this.parentNode.innerHTML='<p class=text-danger>Errore caricamento QR</p>';">
             </div>
             <p style="color: #666;">Per registrazione rapida entrata</p>
             <div class="mt-3">
@@ -92,7 +92,7 @@
             </div>
             <h4 class="text-danger">QR Code Uscita</h4>
             <div class="qr-code">
-                <img id="qrcode-uscita" src="/static/qr/qr_uscita.png" alt="QR Code Uscita" style="width: 200px; height: 200px;">
+                <img id="qrcode-uscita" src="/static/qr/qr_uscita.png" alt="QR Code Uscita" style="width: 200px; height: 200px;" onerror="this.style.display='none'; this.parentNode.innerHTML='<p class=text-danger>Errore caricamento QR</p>';">
             </div>
             <p style="color: #666;">Per registrazione rapida uscita</p>
             <div class="mt-3">
@@ -134,19 +134,30 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // QR code statici già caricati tramite src nelle immagini
-    console.log('QR codes loaded from static files');
+    console.log('Initializing QR codes...');
     
-    // Fallback per errori di caricamento
-    document.getElementById('qrcode-entrata').onerror = function() {
-        console.log('Fallback to dynamic QR for entrata');
+    {% if qr_exist and static_qr_urls %}
+        console.log('Using static QR codes');
+        // QR statici già impostati nel template
+    {% else %}
+        console.log('Using dynamic QR codes');
+        // Genera QR dinamicamente
         generateQRCodeImage('{{ qr_urls.entrata }}', 'qrcode-entrata');
-    };
-    
-    document.getElementById('qrcode-uscita').onerror = function() {
-        console.log('Fallback to dynamic QR for uscita');
         generateQRCodeImage('{{ qr_urls.uscita }}', 'qrcode-uscita');
-    };
+    {% endif %}
+    
+    // Fallback universale
+    setTimeout(function() {
+        const entrataImg = document.getElementById('qrcode-entrata');
+        const uscitaImg = document.getElementById('qrcode-uscita');
+        
+        if (!entrataImg.src || entrataImg.src === '') {
+            generateQRCodeImage('{{ qr_urls.entrata }}', 'qrcode-entrata');
+        }
+        if (!uscitaImg.src || uscitaImg.src === '') {
+            generateQRCodeImage('{{ qr_urls.uscita }}', 'qrcode-uscita');
+        }
+    }, 1000);
 });
 
 function generateQRCodeImage(url, elementId) {
