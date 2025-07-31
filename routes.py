@@ -1733,6 +1733,10 @@ def attendance():
         # Ente e Staff vedono sempre e solo dati team
         show_team_data = True
         view_mode = 'team'
+    elif current_user.role in ['Amministratore']:
+        # Amministratore vede sempre dati team con sede
+        show_team_data = True
+        view_mode = 'sede'
     elif current_user.can_view_sede_attendance() and view_mode == 'sede':
         # Utenti con permesso "Visualizzare Presenze Sede" possono vedere presenze della propria sede
         show_team_data = True
@@ -1774,10 +1778,10 @@ def attendance():
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
             ).all()
-        elif view_mode == 'sede':
-            # Utenti con permessi visualizzazione sede
-            if current_user.all_sedi:
-                # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
+        elif view_mode == 'sede' or current_user.role == 'Amministratore':
+            # Utenti con permessi visualizzazione sede o amministratori
+            if current_user.all_sedi or current_user.role == 'Amministratore':
+                # Utenti multi-sede e amministratori vedono tutti gli utenti attivi di tutte le sedi
                 team_users = User.query.filter(
                     User.active.is_(True),
                     ~User.role.in_(['Admin', 'Staff'])

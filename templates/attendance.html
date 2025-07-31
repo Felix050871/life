@@ -19,7 +19,7 @@
                         {% endif %}
                     </h5>
                     
-                    {% if current_user.can_view_sede_attendance() and not current_user.all_sedi %}
+                    {% if current_user.can_view_sede_attendance() %}
                     <div class="btn-group" role="group">
                         <a href="{{ url_for('attendance') }}" class="btn {% if not show_team_data %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
                             <i class="fas fa-user me-1"></i>Le Mie
