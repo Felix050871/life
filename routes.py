@@ -9312,6 +9312,11 @@ def create_mileage_request():
         flash('Non hai i permessi per creare richieste di rimborso chilometrico.', 'warning')
         return redirect(url_for('dashboard'))
     
+    # Controlla se l'utente ha un veicolo ACI assegnato
+    if not current_user.aci_vehicle_id:
+        flash('Non puoi creare richieste di rimborso chilometrico senza avere un veicolo ACI assegnato. Contatta l\'amministratore per associare un veicolo al tuo profilo.', 'warning')
+        return redirect(url_for('my_mileage_requests'))
+    
     form = MileageRequestForm(user=current_user)
     
     if form.validate_on_submit():
