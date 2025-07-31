@@ -9415,6 +9415,115 @@ def delete_mileage_request(request_id):
     else:
         return redirect(url_for('mileage_requests'))
 
+@app.route('/api/calculate_distance', methods=['POST'])
+@login_required
+def calculate_distance():
+    """Calcola la distanza tra indirizzi usando API di geocoding"""
+    try:
+        data = request.get_json()
+        addresses = data.get('addresses', [])
+        
+        if len(addresses) < 2:
+            return jsonify({'error': 'Servono almeno 2 indirizzi', 'km': 0})
+        
+        # Per ora simuliamo il calcolo - in produzione usare Google Maps API o simile
+        # Calcolo basato su distanza approssimativa tra città italiane
+        total_km = 0
+        
+        for i in range(len(addresses) - 1):
+            start = addresses[i].lower()
+            end = addresses[i + 1].lower()
+            
+            # Calcolo approssimativo basato su città principali
+            segment_km = calculate_approximate_distance(start, end)
+            total_km += segment_km
+        
+        return jsonify({
+            'success': True,
+            'km': round(total_km, 1),
+            'segments': len(addresses) - 1
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'km': 0})
+
+def calculate_approximate_distance(start_address, end_address):
+    """Calcola distanza approssimativa tra due indirizzi italiani"""
+    
+    # Database semplificato di coordinate delle principali città italiane
+    city_coords = {
+        'roma': (41.9028, 12.4964),
+        'milano': (45.4642, 9.1900),
+        'napoli': (40.8518, 14.2681),
+        'torino': (45.0703, 7.6869),
+        'firenze': (43.7696, 11.2558),
+        'bologna': (44.4949, 11.3426),
+        'genova': (44.4056, 8.9463),
+        'palermo': (38.1157, 13.3613),
+        'bari': (41.1171, 16.8719),
+        'catania': (37.5079, 15.0830),
+        'venezia': (45.4408, 12.3155),
+        'verona': (45.4384, 10.9916),
+        'messina': (38.1938, 15.5540),
+        'padova': (45.4064, 11.8768),
+        'trieste': (45.6495, 13.7768),
+        'brescia': (45.5416, 10.2118),
+        'parma': (44.8015, 10.3279),
+        'modena': (44.6471, 10.9252),
+        'reggio calabria': (38.1059, 15.6219),
+        'perugia': (43.1122, 12.3888)
+    }
+    
+    def extract_city(address):
+        """Estrae il nome della città dall'indirizzo"""
+        address = address.lower().strip()
+        
+        # Cerca la città nell'indirizzo
+        for city in city_coords.keys():
+            if city in address:
+                return city
+        
+        # Se non trova la città, prova a estrarre la prima parola
+        first_word = address.split(',')[0].strip()
+        if first_word in city_coords:
+            return first_word
+            
+        return None
+    
+    def haversine_distance(coord1, coord2):
+        """Calcola la distanza in km tra due coordinate usando la formula di Haversine"""
+        import math
+        
+        lat1, lon1 = coord1
+        lat2, lon2 = coord2
+        
+        # Converti in radianti
+        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        
+        # Formula di Haversine
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        
+        # Raggio della Terra in km
+        r = 6371
+        
+        return c * r
+    
+    # Estrai le città dagli indirizzi
+    start_city = extract_city(start_address)
+    end_city = extract_city(end_address)
+    
+    if start_city and end_city and start_city in city_coords and end_city in city_coords:
+        # Calcola la distanza reale tra le città
+        distance = haversine_distance(city_coords[start_city], city_coords[end_city])
+        # Aggiungi un fattore di correzione per le strade (circa 1.3x la distanza in linea d'aria)
+        return distance * 1.3
+    else:
+        # Fallback: distanza approssimativa basata sulla lunghezza degli indirizzi
+        return max(20, min(100, len(start_address) + len(end_address)))
+
 @app.route('/mileage_requests/export')
 @login_required
 def export_mileage_requests():

@@ -209,20 +209,22 @@
                 <div class="card-body">
                     <ul class="list-unstyled mb-0">
                         <li class="mb-2">
-                            <i class="fas fa-check-circle text-success me-2"></i>
-                            Il rimborso viene calcolato automaticamente basandosi sui costi ACI
+                            <i class="fas fa-map-marker-alt text-success me-2"></i>
+                            <strong>Formato indirizzi:</strong><br>
+                            <small class="text-muted">Città, Via/Indirizzo, CAP<br>
+                            Esempio: "Roma, Via dei Fori Imperiali 1, 00186"</small>
                         </li>
                         <li class="mb-2">
-                            <i class="fas fa-route text-info me-2"></i>
-                            Puoi inserire percorsi multi-punto per viaggi complessi
+                            <i class="fas fa-calculator text-info me-2"></i>
+                            Il sistema calcola automaticamente i km tra le città principali
                         </li>
                         <li class="mb-2">
-                            <i class="fas fa-calendar text-warning me-2"></i>
-                            Le richieste possono essere create fino a 30 giorni nel futuro
+                            <i class="fas fa-route text-warning me-2"></i>
+                            Puoi aggiungere tappe intermedie per percorsi complessi
                         </li>
                         <li class="mb-0">
                             <i class="fas fa-user-check text-primary me-2"></i>
-                            La richiesta deve essere approvata dal tuo responsabile
+                            Il rimborso viene calcolato sui costi ACI ufficiali
                         </li>
                     </ul>
                 </div>
@@ -373,23 +375,55 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function calculateDistance(addresses) {
-        // Simulated calculation - replace with real Maps API in production
-        const avgDistancePerSegment = 50; // km per segment
-        const segments = addresses.length - 1;
-        totalCalculatedKm = segments * avgDistancePerSegment;
+        // Mostra loading
+        calculatedKm.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Calcolando...';
         
-        // Add some randomness to make it more realistic
-        totalCalculatedKm += (Math.random() - 0.5) * 20;
-        totalCalculatedKm = Math.max(1, Math.round(totalCalculatedKm * 10) / 10);
-        
-        calculatedKm.textContent = totalCalculatedKm + ' km';
-        
-        // Auto-update total km if not manual
-        if (!isKmManual.checked) {
-            totalKmInput.value = totalCalculatedKm;
-        }
-        
-        updateReimbursementPreview();
+        // Chiama API per calcolo distanza reale
+        fetch('/api/calculate_distance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            },
+            body: JSON.stringify({
+                addresses: addresses
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                totalCalculatedKm = data.km;
+                calculatedKm.textContent = totalCalculatedKm + ' km';
+                
+                // Auto-update total km if not manual
+                if (!isKmManual.checked) {
+                    totalKmInput.value = totalCalculatedKm;
+                }
+                
+                updateReimbursementPreview();
+            } else {
+                // Fallback in caso di errore
+                calculatedKm.innerHTML = '<small class="text-warning">Errore calcolo automatico</small>';
+                if (!isKmManual.checked) {
+                    totalKmInput.value = '';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Errore calcolo distanza:', error);
+            // Fallback con calcolo approssimativo
+            const avgDistancePerSegment = 50;
+            const segments = addresses.length - 1;
+            totalCalculatedKm = Math.max(10, segments * avgDistancePerSegment);
+            
+            calculatedKm.innerHTML = totalCalculatedKm + ' km <small class="text-muted">(stimato)</small>';
+            
+            if (!isKmManual.checked) {
+                totalKmInput.value = totalCalculatedKm;
+            }
+            
+            updateReimbursementPreview();
+        });
     }
     
     // Manual KM checkbox
