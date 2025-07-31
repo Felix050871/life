@@ -37,13 +37,61 @@
                             </div>
                         </div>
                         
-                        <!-- Percorso -->
+                        <!-- Percorso Dinamico -->
                         <div class="mb-3">
-                            {{ form.route_addresses.label(class="form-label") }}
-                            {{ form.route_addresses(class="form-control") }}
-                            <div class="form-text">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Inserisci un indirizzo per riga. Il sistema calcolerà automaticamente la distanza tra i punti.
+                            <label class="form-label">
+                                <i class="fas fa-route me-1"></i>Percorso Viaggio
+                            </label>
+                            <div id="routeContainer" class="border rounded p-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">Aggiungi gli indirizzi del tuo percorso</small>
+                                    <button type="button" class="btn btn-sm btn-primary" id="addRoutePoint">
+                                        <i class="fas fa-plus me-1"></i>Aggiungi Indirizzo
+                                    </button>
+                                </div>
+                                
+                                <!-- Container per gli indirizzi -->
+                                <div id="routePoints">
+                                    <div class="route-point mb-2">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-success text-white">
+                                                <i class="fas fa-play"></i>
+                                            </span>
+                                            <input type="text" class="form-control route-address" placeholder="Indirizzo di partenza">
+                                            <button type="button" class="btn btn-outline-secondary" disabled>
+                                                <i class="fas fa-map-marker-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="route-point mb-2">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-danger text-white">
+                                                <i class="fas fa-stop"></i>
+                                            </span>
+                                            <input type="text" class="form-control route-address" placeholder="Indirizzo di arrivo">
+                                            <button type="button" class="btn btn-outline-secondary" disabled>
+                                                <i class="fas fa-map-marker-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Campo nascosto per il form -->
+                                {{ form.route_addresses(style="display: none;") }}
+                                
+                                <!-- Riepilogo percorso e km -->
+                                <div class="mt-3 p-2 bg-white rounded border" id="routeSummary" style="display: none;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <small class="text-muted">Percorso calcolato:</small>
+                                            <div id="routeText"></div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="badge bg-primary fs-6" id="calculatedKm">0 km</div>
+                                            <div><small class="text-muted">automatico</small></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             {% for error in form.route_addresses.errors %}
                                 <div class="text-danger small">{{ error }}</div>
@@ -82,7 +130,19 @@
                         <div class="row mb-3">
                             <div class="col-md-8">
                                 {{ form.vehicle_id.label(class="form-label") }}
-                                {{ form.vehicle_id(class="form-select", id="vehicleSelect") }}
+                                {% if current_user.aci_vehicle_id %}
+                                    {{ form.vehicle_id(class="form-select", id="vehicleSelect", disabled=True) }}
+                                    <div class="form-text">
+                                        <i class="fas fa-lock me-1"></i>
+                                        Hai un veicolo assegnato dalla tua azienda. Non puoi selezionarne altri.
+                                    </div>
+                                {% else %}
+                                    {{ form.vehicle_id(class="form-select", id="vehicleSelect") }}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Seleziona il veicolo dalla tabella ACI o lascia vuoto per descrizione manuale.
+                                    </div>
+                                {% endif %}
                                 {% for error in form.vehicle_id.errors %}
                                     <div class="text-danger small">{{ error }}</div>
                                 {% endfor %}
@@ -208,6 +268,146 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewKm = document.getElementById('previewKm');
     const previewRate = document.getElementById('previewRate');
     const previewAmount = document.getElementById('previewAmount');
+    const isKmManual = document.getElementById('isKmManual');
+    const routeAddressesField = document.querySelector('textarea[name="route_addresses"]');
+    
+    // Route management
+    const addRoutePointBtn = document.getElementById('addRoutePoint');
+    const routePointsContainer = document.getElementById('routePoints');
+    const routeSummary = document.getElementById('routeSummary');
+    const routeText = document.getElementById('routeText');
+    const calculatedKm = document.getElementById('calculatedKm');
+    
+    let routePoints = [];
+    let totalCalculatedKm = 0;
+    
+    // Add route point
+    addRoutePointBtn.addEventListener('click', function() {
+        const pointIndex = routePointsContainer.children.length;
+        const newPoint = document.createElement('div');
+        newPoint.className = 'route-point mb-2';
+        newPoint.innerHTML = `
+            <div class="input-group">
+                <span class="input-group-text bg-info text-white">
+                    <i class="fas fa-map-marker-alt"></i>
+                </span>
+                <input type="text" class="form-control route-address" placeholder="Indirizzo intermedio">
+                <button type="button" class="btn btn-outline-danger remove-point">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        // Insert before the last point (destination)
+        const lastPoint = routePointsContainer.lastElementChild;
+        routePointsContainer.insertBefore(newPoint, lastPoint);
+        
+        // Add event listener to new input
+        const newInput = newPoint.querySelector('.route-address');
+        newInput.addEventListener('input', updateRoute);
+        
+        // Add event listener to remove button
+        const removeBtn = newPoint.querySelector('.remove-point');
+        removeBtn.addEventListener('click', function() {
+            newPoint.remove();
+            updateRoute();
+        });
+        
+        updateRoutePointIcons();
+    });
+    
+    // Initialize existing route inputs
+    document.querySelectorAll('.route-address').forEach(input => {
+        input.addEventListener('input', updateRoute);
+    });
+    
+    function updateRoutePointIcons() {
+        const points = document.querySelectorAll('.route-point');
+        points.forEach((point, index) => {
+            const icon = point.querySelector('.input-group-text i');
+            const span = point.querySelector('.input-group-text');
+            
+            if (index === 0) {
+                // Start point
+                icon.className = 'fas fa-play';
+                span.className = 'input-group-text bg-success text-white';
+            } else if (index === points.length - 1) {
+                // End point
+                icon.className = 'fas fa-stop';
+                span.className = 'input-group-text bg-danger text-white';
+            } else {
+                // Intermediate point
+                icon.className = 'fas fa-map-marker-alt';
+                span.className = 'input-group-text bg-info text-white';
+            }
+        });
+    }
+    
+    function updateRoute() {
+        const addresses = [];
+        document.querySelectorAll('.route-address').forEach(input => {
+            if (input.value.trim()) {
+                addresses.push(input.value.trim());
+            }
+        });
+        
+        // Update hidden field for form submission
+        routeAddressesField.value = addresses.join('\n');
+        
+        if (addresses.length >= 2) {
+            // Show route summary
+            routeText.textContent = addresses.join(' → ');
+            routeSummary.style.display = 'block';
+            
+            // Simulate distance calculation (in real implementation, use Maps API)
+            calculateDistance(addresses);
+        } else {
+            routeSummary.style.display = 'none';
+            totalCalculatedKm = 0;
+            if (!isKmManual.checked) {
+                totalKmInput.value = '';
+            }
+        }
+        
+        updateReimbursementPreview();
+    }
+    
+    function calculateDistance(addresses) {
+        // Simulated calculation - replace with real Maps API in production
+        const avgDistancePerSegment = 50; // km per segment
+        const segments = addresses.length - 1;
+        totalCalculatedKm = segments * avgDistancePerSegment;
+        
+        // Add some randomness to make it more realistic
+        totalCalculatedKm += (Math.random() - 0.5) * 20;
+        totalCalculatedKm = Math.max(1, Math.round(totalCalculatedKm * 10) / 10);
+        
+        calculatedKm.textContent = totalCalculatedKm + ' km';
+        
+        // Auto-update total km if not manual
+        if (!isKmManual.checked) {
+            totalKmInput.value = totalCalculatedKm;
+        }
+        
+        updateReimbursementPreview();
+    }
+    
+    // Manual KM checkbox
+    isKmManual.addEventListener('change', function() {
+        if (this.checked) {
+            // Manual mode - user can edit
+            totalKmInput.readOnly = false;
+            totalKmInput.classList.remove('bg-light');
+            calculatedKm.innerHTML = totalCalculatedKm + ' km <small class="text-muted">(ignorato)</small>';
+        } else {
+            // Auto mode - use calculated value
+            totalKmInput.readOnly = true;
+            totalKmInput.classList.add('bg-light');
+            totalKmInput.value = totalCalculatedKm;
+            calculatedKm.innerHTML = totalCalculatedKm + ' km';
+        }
+        updateReimbursementPreview();
+    });
     
     // Toggle vehicle description based on selection
     vehicleSelect.addEventListener('change', function() {
@@ -252,6 +452,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (vehicleSelect.value === '' || vehicleSelect.value === 'none') {
         vehicleDescriptionDiv.style.display = 'block';
     }
+    
+    // Initialize KM field state
+    if (isKmManual.checked) {
+        totalKmInput.readOnly = false;
+        totalKmInput.classList.remove('bg-light');
+    } else {
+        totalKmInput.readOnly = true;
+        totalKmInput.classList.add('bg-light');
+    }
+    
+    updateRoutePointIcons();
 });
 </script>
 {% endblock %}

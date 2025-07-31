@@ -1516,14 +1516,14 @@ class MileageRequestForm(FlaskForm):
                 for v in vehicles
             ]
             
-            # Se l'utente ha un veicolo assegnato, selezionalo di default
+            # Se l'utente ha un veicolo assegnato, mostra solo quello
             if user and hasattr(user, 'aci_vehicle_id') and user.aci_vehicle_id:
-                # Aggiungi il veicolo dell'utente se non è nelle scelte
                 user_vehicle = ACITable.query.get(user.aci_vehicle_id)
                 if user_vehicle:
-                    user_choice = (user_vehicle.id, f"{user_vehicle.marca} {user_vehicle.modello} (€{user_vehicle.costo_km:.4f}/km) - ASSEGNATO")
-                    if user_choice not in self.vehicle_id.choices:
-                        self.vehicle_id.choices.insert(1, user_choice)
+                    # Mostra solo il veicolo assegnato all'utente
+                    self.vehicle_id.choices = [
+                        (user_vehicle.id, f"{user_vehicle.marca} {user_vehicle.modello} (€{user_vehicle.costo_km:.4f}/km) - VEICOLO ASSEGNATO")
+                    ]
                     self.vehicle_id.data = user_vehicle.id
         except Exception as e:
             self.vehicle_id.choices = [('', 'Errore nel caricamento veicoli')]
