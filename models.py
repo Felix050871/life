@@ -2360,30 +2360,22 @@ class ACITable(db.Model):
     __tablename__ = 'aci_table'
     
     id = db.Column(db.Integer, primary_key=True)
-    tipologia = db.Column(db.String(255), nullable=True)  # Nome del file Excel caricato o categoria
     marca = db.Column(db.String(100), nullable=False)
     modello = db.Column(db.String(200), nullable=False)
     costo_km_15000 = db.Column(db.Numeric(10, 4), nullable=True)  # COSTO KM 15.000 KM
-    fringe_benefit_20 = db.Column(db.Numeric(10, 2), nullable=True)  # FRINGE BENEFIT ANNUALE (20% CK)
-    fringe_benefit_25 = db.Column(db.Numeric(10, 2), nullable=True)  # FRINGE BENEFIT ANNUALE (25% CK)
-    fringe_benefit_30 = db.Column(db.Numeric(10, 2), nullable=True)  # FRINGE BENEFIT ANNUALE (30% CK)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
     def __repr__(self):
-        return f'<ACITable {self.tipologia} - {self.marca} {self.modello}>'
+        return f'<ACITable {self.marca} {self.modello}>'
     
     def to_dict(self):
         """Converte l'oggetto in dizionario per export Excel"""
         return {
             'ID': self.id,
-            'Tipologia': self.tipologia,
             'Marca': self.marca,
             'Modello': self.modello,
             'Costo Km 15.000 Km': float(self.costo_km_15000) if self.costo_km_15000 else None,
-            'Fringe Benefit Annuale (20% CK)': float(self.fringe_benefit_20) if self.fringe_benefit_20 else None,
-            'Fringe Benefit Annuale (25% CK)': float(self.fringe_benefit_25) if self.fringe_benefit_25 else None,
-            'Fringe Benefit Annuale (30% CK)': float(self.fringe_benefit_30) if self.fringe_benefit_30 else None,
             'Creato il': self.created_at.strftime('%d/%m/%Y %H:%M') if self.created_at else '',
             'Aggiornato il': self.updated_at.strftime('%d/%m/%Y %H:%M') if self.updated_at else ''
         }

@@ -1409,10 +1409,6 @@ class ACITableUploadForm(FlaskForm):
 # Form per creazione/modifica manuale Tabelle ACI
 class ACITableForm(FlaskForm):
     """Form per gestione manuale singole voci Tabelle ACI"""
-    tipologia = StringField('Tipologia', validators=[
-        Optional(), 
-        Length(max=255, message='Massimo 255 caratteri')
-    ])
     marca = StringField('Marca', validators=[
         DataRequired(message='La marca è obbligatoria'), 
         Length(max=100, message='Massimo 100 caratteri')
@@ -1425,18 +1421,6 @@ class ACITableForm(FlaskForm):
         Optional(),
         NumberRange(min=0, message='Il costo deve essere positivo')
     ], places=4)
-    fringe_benefit_20 = DecimalField('Fringe Benefit Annuale (20% CK)', validators=[
-        Optional(),
-        NumberRange(min=0, message='Il valore deve essere positivo')
-    ], places=2)
-    fringe_benefit_25 = DecimalField('Fringe Benefit Annuale (25% CK)', validators=[
-        Optional(),
-        NumberRange(min=0, message='Il valore deve essere positivo')
-    ], places=2)
-    fringe_benefit_30 = DecimalField('Fringe Benefit Annuale (30% CK)', validators=[
-        Optional(),
-        NumberRange(min=0, message='Il valore deve essere positivo')
-    ], places=2)
     fringe_benefit_50 = DecimalField('Fringe Benefit 50%', validators=[
         DataRequired(message='Fringe Benefit 50% è obbligatorio'),
         NumberRange(min=0, message='Il valore deve essere positivo')
