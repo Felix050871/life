@@ -1607,18 +1607,23 @@ class MileageFilterForm(FlaskForm):
         super(MileageFilterForm, self).__init__(*args, **kwargs)
         
         # Popola gli utenti in base ai permessi
-        from models import User
-        
-        if current_user and current_user.all_sedi:
-            # Utenti con accesso globale vedono tutti
-            users = User.query.filter_by(active=True).order_by(User.username).all()
-        elif current_user and current_user.sede_id:
-            # Utenti con sede specifica vedono solo utenti della stessa sede
-            users = User.query.filter_by(active=True, sede_id=current_user.sede_id).order_by(User.username).all()
-        else:
-            users = []
-        
-        self.user_id.choices = [('', 'Tutti gli utenti')] + [(u.id, f"{u.username} ({u.get_full_name()})") for u in users]
+        try:
+            from models import User
+            
+            if current_user and current_user.all_sedi:
+                # Utenti con accesso globale vedono tutti
+                users = User.query.filter_by(active=True).order_by(User.username).all()
+            elif current_user and current_user.sede_id:
+                # Utenti con sede specifica vedono solo utenti della stessa sede
+                users = User.query.filter_by(active=True, sede_id=current_user.sede_id).order_by(User.username).all()
+            else:
+                users = []
+            
+            # Semplifica la visualizzazione usando solo username per evitare errori
+            self.user_id.choices = [('', 'Tutti gli utenti')] + [(u.id, u.username) for u in users]
+        except Exception as e:
+            # Fallback sicuro
+            self.user_id.choices = [('', 'Tutti gli utenti')]
 
 
 # Form per upload file Excel ACI

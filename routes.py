@@ -9259,45 +9259,50 @@ def delete_overtime_type(type_id):
 @login_required
 def mileage_requests():
     """Visualizza le richieste di rimborso chilometrico"""
-    if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
-        flash('Non hai i permessi per visualizzare le richieste di rimborso chilometrico.', 'warning')
+    try:
+        if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
+            flash('Non hai i permessi per visualizzare le richieste di rimborso chilometrico.', 'warning')
+            return redirect(url_for('dashboard'))
+        
+        # Filtri
+        filter_form = MileageFilterForm(current_user=current_user)
+        
+        # Base query
+        query = MileageRequest.query.options(
+            joinedload(MileageRequest.user),
+            joinedload(MileageRequest.approver),  
+            joinedload(MileageRequest.vehicle)
+        )
+        
+        # Filtri per sede (se l'utente non ha accesso globale)
+        if not current_user.all_sedi and current_user.sede_id:
+            query = query.join(User).filter(User.sede_id == current_user.sede_id)
+        
+        # Applica filtri dal form
+        if request.method == 'POST' and filter_form.validate_on_submit():
+            if filter_form.status.data:
+                query = query.filter(MileageRequest.status == filter_form.status.data)
+            if filter_form.user_id.data:
+                query = query.filter(MileageRequest.user_id == filter_form.user_id.data)
+            if filter_form.date_from.data:
+                query = query.filter(MileageRequest.travel_date >= filter_form.date_from.data)
+            if filter_form.date_to.data:
+                query = query.filter(MileageRequest.travel_date <= filter_form.date_to.data)
+            if filter_form.min_amount.data:
+                query = query.filter(MileageRequest.total_amount >= filter_form.min_amount.data)
+            if filter_form.max_amount.data:
+                query = query.filter(MileageRequest.total_amount <= filter_form.max_amount.data)
+        
+        # Ordina per data più recente
+        requests = query.order_by(MileageRequest.created_at.desc()).all()
+        
+        return render_template('mileage_requests.html', 
+                             requests=requests, 
+                             filter_form=filter_form)
+    except Exception as e:
+        logger.error(f"Errore in mileage_requests: {str(e)}")
+        flash('Errore nel caricamento delle richieste di rimborso chilometrico.', 'error')
         return redirect(url_for('dashboard'))
-    
-    # Filtri
-    filter_form = MileageFilterForm(current_user=current_user)
-    
-    # Base query
-    query = MileageRequest.query.options(
-        joinedload(MileageRequest.user),
-        joinedload(MileageRequest.approver),
-        joinedload(MileageRequest.vehicle)
-    )
-    
-    # Filtri per sede (se l'utente non ha accesso globale)
-    if not current_user.all_sedi and current_user.sede_id:
-        query = query.join(User).filter(User.sede_id == current_user.sede_id)
-    
-    # Applica filtri dal form
-    if request.method == 'POST' and filter_form.validate_on_submit():
-        if filter_form.status.data:
-            query = query.filter(MileageRequest.status == filter_form.status.data)
-        if filter_form.user_id.data:
-            query = query.filter(MileageRequest.user_id == filter_form.user_id.data)
-        if filter_form.date_from.data:
-            query = query.filter(MileageRequest.travel_date >= filter_form.date_from.data)
-        if filter_form.date_to.data:
-            query = query.filter(MileageRequest.travel_date <= filter_form.date_to.data)
-        if filter_form.min_amount.data:
-            query = query.filter(MileageRequest.total_amount >= filter_form.min_amount.data)
-        if filter_form.max_amount.data:
-            query = query.filter(MileageRequest.total_amount <= filter_form.max_amount.data)
-    
-    # Ordina per data più recente
-    requests = query.order_by(MileageRequest.created_at.desc()).all()
-    
-    return render_template('mileage_requests.html', 
-                         requests=requests, 
-                         filter_form=filter_form)
 
 @app.route('/mileage_requests/create', methods=['GET', 'POST'])
 @login_required
