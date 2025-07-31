@@ -1409,6 +1409,10 @@ class ACITableUploadForm(FlaskForm):
 # Form per creazione/modifica manuale Tabelle ACI
 class ACITableForm(FlaskForm):
     """Form per gestione manuale singole voci Tabelle ACI"""
+    tipo = StringField('Tipo', validators=[
+        Optional(), 
+        Length(max=255, message='Massimo 255 caratteri')
+    ])
     marca = StringField('Marca', validators=[
         DataRequired(message='La marca è obbligatoria'), 
         Length(max=100, message='Massimo 100 caratteri')

@@ -96,6 +96,7 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>ID</th>
+                                    <th>Tipo</th>
                                     <th>Marca</th>
                                     <th>Modello</th>
                                     <th class="text-end">Costo Km 15.000 Km</th>
@@ -107,6 +108,13 @@
                                 {% for aci in aci_tables.items %}
                                 <tr>
                                     <td><span class="badge bg-secondary">{{ aci.id }}</span></td>
+                                    <td>
+                                        {% if aci.tipo %}
+                                            <span class="badge bg-info">{{ aci.tipo }}</span>
+                                        {% else %}
+                                            <span class="text-muted">N/D</span>
+                                        {% endif %}
+                                    </td>
                                     <td><span class="badge bg-primary">{{ aci.marca }}</span></td>
                                     <td>{{ aci.modello }}</td>
                                     <td class="text-end">

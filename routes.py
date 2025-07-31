@@ -9118,11 +9118,12 @@ def aci_tables_upload():
                     os.remove(file_path)
                     return render_template('aci_tables_upload.html', form=form)
                 
-                # Processa ogni riga
+                # Processa ogni riga con gestione TIPO
                 rows_processed = 0
                 rows_errors = 0
                 rows_created = 0
                 rows_updated = 0
+                current_tipo = None  # Traccia il tipo corrente
                 
                 for index, row in df.iterrows():
                     try:
@@ -9130,8 +9131,13 @@ def aci_tables_upload():
                         marca = str(row[0]).strip() if pd.notna(row[0]) else ''
                         modello = str(row[1]).strip() if pd.notna(row[1]) else ''
                         
-                        # Salta le righe header (es. "PLUG-IN BENZINA" senza modello)
-                        if not marca or not modello or marca.upper() in ['PLUG-IN BENZINA', 'MARCA']:
+                        # Se la riga ha solo marca senza modello (o modello vuoto), è un TIPO
+                        if marca and (not modello or modello.upper() in ['MARCA', 'NAN', '']):
+                            current_tipo = marca
+                            continue  # Salta alla prossima riga
+                        
+                        # Salta righe vuote o header
+                        if not marca or not modello or marca.upper() in ['MARCA']:
                             continue
                         
                         try:
@@ -9152,12 +9158,14 @@ def aci_tables_upload():
                         
                         if existing:
                             # Aggiorna esistente
+                            existing.tipo = current_tipo
                             existing.costo_km_15000 = costo_km_15000
                             existing.updated_at = italian_now()
                             rows_updated += 1
                         else:
                             # Crea nuovo record
                             new_entry = ACITable(
+                                tipo=current_tipo,
                                 marca=marca,
                                 modello=modello,
                                 costo_km_15000=costo_km_15000
@@ -9213,6 +9221,7 @@ def add_aci_table():
             return render_template('aci_table_form.html', form=form, title="Aggiungi Voce ACI")
         
         new_entry = ACITable(
+            tipo=form.tipo.data,
             marca=form.marca.data,
             modello=form.modello.data,
             costo_km_15000=form.costo_km_15000.data
@@ -9253,6 +9262,7 @@ def edit_aci_table(aci_id):
             flash("Combinazione Marca-Modello già esistente!", "warning")
             return render_template('aci_table_form.html', form=form, title="Modifica Voce ACI", aci_entry=aci_entry)
         
+        aci_entry.tipo = form.tipo.data
         aci_entry.marca = form.marca.data
         aci_entry.modello = form.modello.data
         aci_entry.costo_km_15000 = form.costo_km_15000.data

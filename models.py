@@ -2360,6 +2360,7 @@ class ACITable(db.Model):
     __tablename__ = 'aci_table'
     
     id = db.Column(db.Integer, primary_key=True)
+    tipo = db.Column(db.String(255), nullable=True)  # PLUG-IN BENZINA, PLUG-IN GASOLIO, etc.
     marca = db.Column(db.String(100), nullable=False)
     modello = db.Column(db.String(200), nullable=False)
     costo_km_15000 = db.Column(db.Numeric(10, 4), nullable=True)  # COSTO KM 15.000 KM
@@ -2373,6 +2374,7 @@ class ACITable(db.Model):
         """Converte l'oggetto in dizionario per export Excel"""
         return {
             'ID': self.id,
+            'Tipo': self.tipo or '',
             'Marca': self.marca,
             'Modello': self.modello,
             'Costo Km 15.000 Km': float(self.costo_km_15000) if self.costo_km_15000 else None,

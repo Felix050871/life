@@ -24,6 +24,7 @@
                     <li><strong>Colonne richieste:</strong>
                         <code>MARCA</code>, <code>MODELLO</code>, <code>COSTO KM 15.000 KM</code>
                     </li>
+                    <li><strong>Categorie TIPO:</strong> Le righe con solo MARCA e senza MODELLO diventano intestazioni di categoria</li>
                     <li><strong>Valori numerici:</strong> Usa il punto come separatore decimale (es: 0.6641)</li>
                     <li><strong>Aggiornamenti:</strong> Se una combinazione Marca-Modello esiste già, verrà aggiornata</li>
                 </ul>
@@ -72,12 +73,17 @@
                         <table class="table table-bordered table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>MARCA</th>
+                                    <th>TIPO/MARCA</th>
                                     <th>MODELLO</th>
                                     <th>COSTO KM 15.000 KM</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <tr class="table-warning">
+                                    <td><strong>PLUG-IN BENZINA</strong></td>
+                                    <td><em>(intestazione categoria)</em></td>
+                                    <td>-</td>
+                                </tr>
                                 <tr>
                                     <td>ALFA ROMEO</td>
                                     <td>TONALE 1.3 PHEV 180CV</td>
@@ -88,13 +94,27 @@
                                     <td>A6 50 2.0 TFSI E QUATTRO 300CV PLUG-IN BENZINA</td>
                                     <td>0.8582</td>
                                 </tr>
+                                <tr class="table-warning">
+                                    <td><strong>PLUG-IN GASOLIO</strong></td>
+                                    <td><em>(intestazione categoria)</em></td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>MERCEDES</td>
+                                    <td>C 300 DE 2.0 325CV PLUG-IN GASOLIO</td>
+                                    <td>0.7432</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                     
                     <div class="alert alert-warning mt-3">
-                        <strong><i class="fas fa-exclamation-triangle me-1"></i>Nota importante:</strong>
-                        Le righe header verranno saltate automaticamente. Solo i dati effettivi verranno importati.
+                        <strong><i class="fas fa-exclamation-triangle me-1"></i>Struttura File:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Le righe con solo MARCA (senza MODELLO) diventano <strong>categorie TIPO</strong></li>
+                            <li>Il TIPO si applica a tutti i veicoli sottostanti fino al prossimo TIPO</li>
+                            <li>Le righe vuote o header vengono saltate automaticamente</li>
+                        </ul>
                     </div>
                 </div>
             </div>

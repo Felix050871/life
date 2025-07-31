@@ -34,6 +34,20 @@
                     <form method="POST">
                         {{ form.hidden_tag() }}
 
+                        <!-- Tipo -->
+                        <div class="mb-3">
+                            {{ form.tipo.label(class="form-label") }}
+                            {{ form.tipo(class="form-control") }}
+                            {% if form.tipo.errors %}
+                                <div class="text-danger mt-2">
+                                    {% for error in form.tipo.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Es: PLUG-IN BENZINA, PLUG-IN GASOLIO, IBRIDO</div>
+                        </div>
+
                         <!-- Marca e Modello su due colonne -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
