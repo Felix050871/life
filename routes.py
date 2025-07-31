@@ -12,8 +12,8 @@ from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from config import get_config
 from sqlalchemy.orm import joinedload
-from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm
+from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACITableUploadForm, ACITableForm, ACITableFilterForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
 
 # Inject configuration into all templates
@@ -9019,5 +9019,340 @@ def delete_overtime_type(type_id):
     db.session.commit()
     flash("Tipologia straordinario cancellata.", "info")
     return redirect(url_for("overtime_types"))
+
+
+# ==============================
+# TABELLE ACI - BACK OFFICE ADMIN ONLY
+# ==============================
+
+@app.route('/admin/aci_tables')
+@login_required
+def aci_tables():
+    """Visualizza tabelle ACI - Solo per amministratori"""
+    if not current_user.role or current_user.role.name != 'Amministratore':
+        flash("Accesso negato. Solo gli amministratori possono accedere alle Tabelle ACI.", "warning")
+        return redirect(url_for("dashboard"))
+    
+    from forms import ACITableFilterForm
+    from models import ACITable
+    
+    # Form per filtri
+    filter_form = ACITableFilterForm()
+    
+    # Query base
+    query = ACITable.query
+    
+    # Applica filtri se form valido
+    if filter_form.validate_on_submit():
+        if filter_form.search.data:
+            search_term = f"%{filter_form.search.data}%"
+            query = query.filter(
+                db.or_(
+                    ACITable.tipologia.ilike(search_term),
+                    ACITable.marca.ilike(search_term),
+                    ACITable.modello.ilike(search_term)
+                )
+            )
+        
+        if filter_form.marca.data:
+            query = query.filter(ACITable.marca == filter_form.marca.data)
+            
+        if filter_form.tipologia.data:
+            query = query.filter(ACITable.tipologia == filter_form.tipologia.data)
+    
+    # Paginazione
+    page = request.args.get('page', 1, type=int)
+    per_page = 25
+    aci_tables = query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    # Statistiche
+    total_entries = ACITable.query.count()
+    total_tipologie = db.session.query(db.func.count(db.distinct(ACITable.tipologia))).scalar()
+    total_marche = db.session.query(db.func.count(db.distinct(ACITable.marca))).scalar()
+    
+    return render_template('aci_tables.html', 
+                         aci_tables=aci_tables, 
+                         filter_form=filter_form,
+                         total_entries=total_entries,
+                         total_tipologie=total_tipologie,
+                         total_marche=total_marche)
+
+
+@app.route('/admin/aci_tables/upload', methods=['GET', 'POST'])
+@login_required  
+def aci_tables_upload():
+    """Upload file Excel per popolare tabelle ACI"""
+    if not current_user.role or current_user.role.name != 'Amministratore':
+        flash("Accesso negato. Solo gli amministratori possono caricare file Excel.", "warning")
+        return redirect(url_for("dashboard"))
+    
+    from forms import ACITableUploadForm
+    from models import ACITable
+    import pandas as pd
+    import os
+    from werkzeug.utils import secure_filename
+    
+    form = ACITableUploadForm()
+    
+    if form.validate_on_submit():
+        file = form.excel_file.data
+        if file:
+            try:
+                # Salva temporaneamente il file
+                filename = secure_filename(file.filename)
+                file_path = os.path.join('/tmp', filename)
+                file.save(file_path)
+                
+                # Leggi Excel con pandas  
+                df = pd.read_excel(file_path)
+                
+                # Verifica colonne richieste
+                required_columns = ['Marca', 'Modello', 'Costo Km', 'Fringe Benefit 10', 'Fringe Benefit 25', 'Fringe Benefit 30', 'Fringe Benefit 50']
+                missing_columns = [col for col in required_columns if col not in df.columns]
+                
+                if missing_columns:
+                    flash(f"Colonne mancanti nel file Excel: {', '.join(missing_columns)}", "danger")
+                    os.remove(file_path)
+                    return render_template('aci_tables_upload.html', form=form)
+                
+                # Nome file come tipologia (senza estensione)
+                tipologia = os.path.splitext(filename)[0]
+                
+                # Processa ogni riga
+                rows_processed = 0
+                rows_errors = 0
+                
+                for index, row in df.iterrows():
+                    try:
+                        # Verifica che i valori numerici siano validi
+                        costo_km = float(row['Costo Km']) if pd.notna(row['Costo Km']) else 0.0
+                        fb_10 = float(row['Fringe Benefit 10']) if pd.notna(row['Fringe Benefit 10']) else 0.0
+                        fb_25 = float(row['Fringe Benefit 25']) if pd.notna(row['Fringe Benefit 25']) else 0.0
+                        fb_30 = float(row['Fringe Benefit 30']) if pd.notna(row['Fringe Benefit 30']) else 0.0
+                        fb_50 = float(row['Fringe Benefit 50']) if pd.notna(row['Fringe Benefit 50']) else 0.0
+                        
+                        marca = str(row['Marca']).strip() if pd.notna(row['Marca']) else ''
+                        modello = str(row['Modello']).strip() if pd.notna(row['Modello']) else ''
+                        
+                        if not marca or not modello:
+                            rows_errors += 1
+                            continue
+                        
+                        # Verifica se esiste già
+                        existing = ACITable.query.filter_by(
+                            tipologia=tipologia,
+                            marca=marca,
+                            modello=modello
+                        ).first()
+                        
+                        if existing:
+                            # Aggiorna esistente
+                            existing.costo_km = costo_km
+                            existing.fringe_benefit_10 = fb_10
+                            existing.fringe_benefit_25 = fb_25
+                            existing.fringe_benefit_30 = fb_30
+                            existing.fringe_benefit_50 = fb_50
+                            existing.updated_at = italian_now()
+                        else:
+                            # Crea nuovo record
+                            new_entry = ACITable(
+                                tipologia=tipologia,
+                                marca=marca,
+                                modello=modello,
+                                costo_km=costo_km,
+                                fringe_benefit_10=fb_10,
+                                fringe_benefit_25=fb_25,
+                                fringe_benefit_30=fb_30,
+                                fringe_benefit_50=fb_50
+                            )
+                            db.session.add(new_entry)
+                        
+                        rows_processed += 1
+                        
+                    except Exception as e:
+                        rows_errors += 1
+                        continue
+                
+                # Salva nel database
+                db.session.commit()
+                
+                # Rimuovi file temporaneo
+                os.remove(file_path)
+                
+                flash(f"File Excel processato con successo! Righe elaborate: {rows_processed}, Errori: {rows_errors}", "success")
+                return redirect(url_for('aci_tables'))
+                
+            except Exception as e:
+                flash(f"Errore nel processamento del file Excel: {str(e)}", "danger")
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+    
+    return render_template('aci_tables_upload.html', form=form)
+
+
+@app.route('/admin/aci_tables/add', methods=['GET', 'POST'])
+@login_required
+def add_aci_table():
+    """Aggiungi manualmente voce tabella ACI"""
+    if not current_user.role or current_user.role.name != 'Amministratore':
+        flash("Accesso negato.", "warning")
+        return redirect(url_for("dashboard"))
+    
+    from forms import ACITableForm
+    from models import ACITable
+    
+    form = ACITableForm()
+    
+    if form.validate_on_submit():
+        # Verifica duplicati
+        existing = ACITable.query.filter_by(
+            tipologia=form.tipologia.data,
+            marca=form.marca.data,
+            modello=form.modello.data
+        ).first()
+        
+        if existing:
+            flash("Combinazione Tipologia-Marca-Modello già esistente!", "warning")
+            return render_template('aci_table_form.html', form=form, title="Aggiungi Voce ACI")
+        
+        new_entry = ACITable(
+            tipologia=form.tipologia.data,
+            marca=form.marca.data,
+            modello=form.modello.data,
+            costo_km=form.costo_km.data,
+            fringe_benefit_10=form.fringe_benefit_10.data,
+            fringe_benefit_25=form.fringe_benefit_25.data,
+            fringe_benefit_30=form.fringe_benefit_30.data,
+            fringe_benefit_50=form.fringe_benefit_50.data
+        )
+        
+        db.session.add(new_entry)
+        db.session.commit()
+        
+        flash("Voce ACI aggiunta con successo!", "success")
+        return redirect(url_for('aci_tables'))
+    
+    return render_template('aci_table_form.html', form=form, title="Aggiungi Voce ACI")
+
+
+@app.route('/admin/aci_tables/edit/<int:aci_id>', methods=['GET', 'POST'])
+@login_required
+def edit_aci_table(aci_id):
+    """Modifica voce tabella ACI"""
+    if not current_user.role or current_user.role.name != 'Amministratore':
+        flash("Accesso negato.", "warning")
+        return redirect(url_for("dashboard"))
+    
+    from forms import ACITableForm
+    from models import ACITable
+    
+    aci_entry = ACITable.query.get_or_404(aci_id)
+    form = ACITableForm(obj=aci_entry)
+    
+    if form.validate_on_submit():
+        # Verifica duplicati (escludendo se stesso)
+        existing = ACITable.query.filter(
+            ACITable.id != aci_id,
+            ACITable.tipologia == form.tipologia.data,
+            ACITable.marca == form.marca.data,
+            ACITable.modello == form.modello.data
+        ).first()
+        
+        if existing:
+            flash("Combinazione Tipologia-Marca-Modello già esistente!", "warning")
+            return render_template('aci_table_form.html', form=form, title="Modifica Voce ACI", aci_entry=aci_entry)
+        
+        aci_entry.tipologia = form.tipologia.data
+        aci_entry.marca = form.marca.data
+        aci_entry.modello = form.modello.data
+        aci_entry.costo_km = form.costo_km.data
+        aci_entry.fringe_benefit_10 = form.fringe_benefit_10.data
+        aci_entry.fringe_benefit_25 = form.fringe_benefit_25.data
+        aci_entry.fringe_benefit_30 = form.fringe_benefit_30.data
+        aci_entry.fringe_benefit_50 = form.fringe_benefit_50.data
+        aci_entry.updated_at = italian_now()
+        
+        db.session.commit()
+        
+        flash("Voce ACI aggiornata con successo!", "success")
+        return redirect(url_for('aci_tables'))
+    
+    return render_template('aci_table_form.html', form=form, title="Modifica Voce ACI", aci_entry=aci_entry)
+
+
+@app.route('/admin/aci_tables/delete/<int:aci_id>', methods=['POST'])
+@login_required
+def delete_aci_table(aci_id):
+    """Cancella voce tabella ACI"""
+    if not current_user.role or current_user.role.name != 'Amministratore':
+        flash("Accesso negato.", "warning")
+        return redirect(url_for("dashboard"))
+    
+    from models import ACITable
+    
+    aci_entry = ACITable.query.get_or_404(aci_id)
+    db.session.delete(aci_entry)
+    db.session.commit()
+    
+    flash(f"Voce ACI '{aci_entry.marca} {aci_entry.modello}' eliminata.", "info")
+    return redirect(url_for('aci_tables'))
+
+
+@app.route('/admin/aci_tables/export')
+@login_required
+def export_aci_tables():
+    """Export Excel di tutte le tabelle ACI"""
+    if not current_user.role or current_user.role.name != 'Amministratore':
+        flash("Accesso negato.", "warning")
+        return redirect(url_for("dashboard"))
+    
+    from models import ACITable
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.utils.dataframe import dataframe_to_rows
+    import pandas as pd
+    
+    # Ottieni tutti i dati
+    aci_entries = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
+    
+    if not aci_entries:
+        flash("Nessun dato da esportare.", "info")
+        return redirect(url_for('aci_tables'))
+    
+    # Converti in DataFrame
+    data = [entry.to_dict() for entry in aci_entries]
+    df = pd.DataFrame(data)
+    
+    # Crea workbook Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Tabelle ACI"
+    
+    # Aggiungi intestazioni con stile
+    headers = list(df.columns)
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    
+    # Aggiungi dati
+    for row_num, row_data in enumerate(df.values, 2):
+        for col_num, value in enumerate(row_data, 1):
+            ws.cell(row=row_num, column=col_num, value=value)
+    
+    # Salva in memoria
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Crea response
+    response = make_response(output.read())
+    response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    response.headers["Content-Disposition"] = f"attachment; filename=tabelle_aci_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return response
 
 

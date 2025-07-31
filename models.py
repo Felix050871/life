@@ -2353,3 +2353,39 @@ class WorkSchedule(db.Model):
             'all_week': ([0, 1, 2, 3, 4, 5, 6], 'Tutti i giorni'),
             'custom': ([], 'Personalizzato')
         }
+
+
+class ACITable(db.Model):
+    """Modello per la gestione delle Tabelle ACI - Back Office Admin Only"""
+    __tablename__ = 'aci_table'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    tipologia = db.Column(db.String(255), nullable=False)  # Nome del file Excel caricato
+    marca = db.Column(db.String(100), nullable=False)
+    modello = db.Column(db.String(100), nullable=False)
+    costo_km = db.Column(db.Numeric(10, 2), nullable=False)  # Decimale per costo al kilometro
+    fringe_benefit_10 = db.Column(db.Numeric(10, 2), nullable=False)
+    fringe_benefit_25 = db.Column(db.Numeric(10, 2), nullable=False)
+    fringe_benefit_30 = db.Column(db.Numeric(10, 2), nullable=False)
+    fringe_benefit_50 = db.Column(db.Numeric(10, 2), nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    def __repr__(self):
+        return f'<ACITable {self.tipologia} - {self.marca} {self.modello}>'
+    
+    def to_dict(self):
+        """Converte l'oggetto in dizionario per export Excel"""
+        return {
+            'ID': self.id,
+            'Tipologia': self.tipologia,
+            'Marca': self.marca,
+            'Modello': self.modello,
+            'Costo Km': float(self.costo_km),
+            'Fringe Benefit 10': float(self.fringe_benefit_10),
+            'Fringe Benefit 25': float(self.fringe_benefit_25),
+            'Fringe Benefit 30': float(self.fringe_benefit_30),
+            'Fringe Benefit 50': float(self.fringe_benefit_50),
+            'Creato il': self.created_at.strftime('%d/%m/%Y %H:%M') if self.created_at else '',
+            'Aggiornato il': self.updated_at.strftime('%d/%m/%Y %H:%M') if self.updated_at else ''
+        }

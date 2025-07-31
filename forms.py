@@ -1394,3 +1394,82 @@ class OvertimeFilterForm(FlaskForm):
             self.overtime_type_id.choices = [('', 'Tutte le tipologie')] + [(ot.id, ot.name) for ot in overtime_types]
         except:
             self.overtime_type_id.choices = [('', 'Tutte le tipologie')]
+
+
+# Form per upload Excel Tabelle ACI (Admin Only)
+class ACITableUploadForm(FlaskForm):
+    """Form per upload file Excel delle Tabelle ACI - Admin Back Office"""
+    excel_file = FileField('File Excel Tabelle ACI', validators=[
+        DataRequired(message='Seleziona un file Excel'),
+        FileAllowed(['xlsx', 'xls'], message='Solo file Excel (.xlsx, .xls) sono permessi')
+    ])
+    submit = SubmitField('Carica e Processa Excel')
+
+
+# Form per creazione/modifica manuale Tabelle ACI
+class ACITableForm(FlaskForm):
+    """Form per gestione manuale singole voci Tabelle ACI"""
+    tipologia = StringField('Tipologia', validators=[
+        DataRequired(message='La tipologia è obbligatoria'), 
+        Length(max=255, message='Massimo 255 caratteri')
+    ])
+    marca = StringField('Marca', validators=[
+        DataRequired(message='La marca è obbligatoria'), 
+        Length(max=100, message='Massimo 100 caratteri')
+    ])
+    modello = StringField('Modello', validators=[
+        DataRequired(message='Il modello è obbligatorio'), 
+        Length(max=100, message='Massimo 100 caratteri')
+    ])
+    costo_km = DecimalField('Costo per Km (€)', validators=[
+        DataRequired(message='Il costo per km è obbligatorio'),
+        NumberRange(min=0, message='Il costo deve essere positivo')
+    ], places=2)
+    fringe_benefit_10 = DecimalField('Fringe Benefit 10%', validators=[
+        DataRequired(message='Fringe Benefit 10% è obbligatorio'),
+        NumberRange(min=0, message='Il valore deve essere positivo')
+    ], places=2)
+    fringe_benefit_25 = DecimalField('Fringe Benefit 25%', validators=[
+        DataRequired(message='Fringe Benefit 25% è obbligatorio'),
+        NumberRange(min=0, message='Il valore deve essere positivo')
+    ], places=2)
+    fringe_benefit_30 = DecimalField('Fringe Benefit 30%', validators=[
+        DataRequired(message='Fringe Benefit 30% è obbligatorio'),
+        NumberRange(min=0, message='Il valore deve essere positivo')
+    ], places=2)
+    fringe_benefit_50 = DecimalField('Fringe Benefit 50%', validators=[
+        DataRequired(message='Fringe Benefit 50% è obbligatorio'),
+        NumberRange(min=0, message='Il valore deve essere positivo')
+    ], places=2)
+    submit = SubmitField('Salva Voce ACI')
+
+
+# Form per filtri e ricerca Tabelle ACI
+class ACITableFilterForm(FlaskForm):
+    """Form per filtrare e cercare nelle Tabelle ACI"""
+    search = StringField('Cerca per Tipologia/Marca/Modello', validators=[Optional()])
+    marca = SelectField('Filtra per Marca', choices=[('', 'Tutte le marche')], validators=[Optional()])
+    tipologia = SelectField('Filtra per Tipologia', choices=[('', 'Tutte le tipologie')], validators=[Optional()])
+    submit = SubmitField('Filtra')
+    
+    def __init__(self, *args, **kwargs):
+        super(ACITableFilterForm, self).__init__(*args, **kwargs)
+        
+        # Popola le scelte dinamicamente dal database
+        try:
+            from models import ACITable
+            from sqlalchemy import distinct
+            from app import db
+            
+            # Marche uniche
+            marche = db.session.query(distinct(ACITable.marca)).order_by(ACITable.marca).all()
+            self.marca.choices = [('', 'Tutte le marche')] + [(m[0], m[0]) for m in marche if m[0]]
+            
+            # Tipologie uniche  
+            tipologie = db.session.query(distinct(ACITable.tipologia)).order_by(ACITable.tipologia).all()
+            self.tipologia.choices = [('', 'Tutte le tipologie')] + [(t[0], t[0]) for t in tipologie if t[0]]
+            
+        except Exception as e:
+            # Fallback se non ci sono dati o errori
+            self.marca.choices = [('', 'Tutte le marche')]
+            self.tipologia.choices = [('', 'Tutte le tipologie')]
