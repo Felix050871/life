@@ -80,7 +80,7 @@
                 <div class="col-md-3">
                     <div class="card text-center border-warning">
                         <div class="card-body">
-                            <h5 class="card-title text-warning">{{ tables|groupby('tipo')|list|length }}</h5>
+                            <h5 class="card-title text-warning">{{ tables|selectattr('tipo')|groupby('tipo')|list|length }}</h5>
                             <p class="card-text">Tipi</p>
                         </div>
                     </div>
@@ -178,7 +178,7 @@
                     <div class="input-group" style="max-width: 400px;">
                         <select name="tipologia" class="form-select" required>
                             <option value="">Seleziona tipologia da cancellare</option>
-                            {% for tipologia in tables|groupby('tipologia') %}
+                            {% for tipologia in tables|groupby('tipologia')|sort %}
                             <option value="{{ tipologia.0 }}">{{ tipologia.0 }} ({{ tipologia.1|list|length }} record)</option>
                             {% endfor %}
                         </select>
