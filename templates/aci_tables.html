@@ -107,10 +107,6 @@
                                     <th>Marca</th>
                                     <th>Modello</th>
                                     <th>Costo KM</th>
-                                    <th>FB 10%</th>
-                                    <th>FB 25%</th>
-                                    <th>FB 30%</th>
-                                    <th>FB 50%</th>
                                     <th>Aggiornato</th>
                                     <th>Azioni</th>
                                 </tr>
@@ -133,34 +129,6 @@
                                     <td>{{ table.modello }}</td>
                                     <td>
                                         <span class="badge bg-success">{{ "%.4f"|format(table.costo_km) }}€</span>
-                                    </td>
-                                    <td>
-                                        {% if table.fringe_benefit_10 %}
-                                            {{ "%.2f"|format(table.fringe_benefit_10) }}€
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if table.fringe_benefit_25 %}
-                                            {{ "%.2f"|format(table.fringe_benefit_25) }}€
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if table.fringe_benefit_30 %}
-                                            {{ "%.2f"|format(table.fringe_benefit_30) }}€
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if table.fringe_benefit_50 %}
-                                            {{ "%.2f"|format(table.fringe_benefit_50) }}€
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
                                     </td>
                                     <td>
                                         <small class="text-muted">
