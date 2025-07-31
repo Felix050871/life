@@ -5692,11 +5692,15 @@ def admin_generate_qr_codes():
     # Se esistono, ottieni gli URL per visualizzarli
     static_qr_urls = get_qr_code_urls() if qr_exist else None
     
+    from config import get_config
+    config = get_config()
+    
     return render_template('admin_qr_codes.html', 
                          qr_urls=qr_urls,
                          qr_exist=qr_exist,
                          static_qr_urls=static_qr_urls,
-                         can_manage=True)
+                         can_manage=True,
+                         config=config)
 
 
 @app.route('/view/qr_codes')
@@ -5722,11 +5726,15 @@ def view_qr_codes():
     # Se esistono, ottieni gli URL per visualizzarli
     static_qr_urls = get_qr_code_urls() if qr_exist else None
     
+    from config import get_config
+    config = get_config()
+    
     return render_template('view_qr_codes.html', 
                          qr_urls=qr_urls,
                          qr_exist=qr_exist,
                          static_qr_urls=static_qr_urls,
-                         can_manage=False)
+                         can_manage=False,
+                         config=config)
 
 @app.route('/admin/generate_static_qr')
 @require_login  

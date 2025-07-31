@@ -71,7 +71,7 @@
             </div>
             <h4 class="text-success">QR Code Entrata</h4>
             <div class="qr-code">
-                <img id="qrcode-entrata" src="" alt="QR Code Entrata" style="width: 200px; height: 200px;">
+                <img id="qrcode-entrata" src="/static/qr/qr_entrata.png" alt="QR Code Entrata" style="width: 200px; height: 200px;">
             </div>
             <p style="color: #666;">Per registrazione rapida entrata</p>
             <div class="mt-3">
@@ -92,7 +92,7 @@
             </div>
             <h4 class="text-danger">QR Code Uscita</h4>
             <div class="qr-code">
-                <img id="qrcode-uscita" src="" alt="QR Code Uscita" style="width: 200px; height: 200px;">
+                <img id="qrcode-uscita" src="/static/qr/qr_uscita.png" alt="QR Code Uscita" style="width: 200px; height: 200px;">
             </div>
             <p style="color: #666;">Per registrazione rapida uscita</p>
             <div class="mt-3">
@@ -134,28 +134,38 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    {% if qr_exist and static_qr_urls %}
-        // Usa i QR code statici se disponibili
-        document.getElementById('qrcode-entrata').src = '{{ static_qr_urls.entrata }}';
-        document.getElementById('qrcode-uscita').src = '{{ static_qr_urls.uscita }}';
-    {% else %}
-        // Genera QR code dinamicamente solo per visualizzazione
+    // QR code statici già caricati tramite src nelle immagini
+    console.log('QR codes loaded from static files');
+    
+    // Fallback per errori di caricamento
+    document.getElementById('qrcode-entrata').onerror = function() {
+        console.log('Fallback to dynamic QR for entrata');
         generateQRCodeImage('{{ qr_urls.entrata }}', 'qrcode-entrata');
+    };
+    
+    document.getElementById('qrcode-uscita').onerror = function() {
+        console.log('Fallback to dynamic QR for uscita');
         generateQRCodeImage('{{ qr_urls.uscita }}', 'qrcode-uscita');
-    {% endif %}
+    };
 });
 
 function generateQRCodeImage(url, elementId) {
-    const qrApiUrl = `{{ config.QR_CODE_API_URL }}?size={{ config.QR_CODE_SIZE }}&data=${encodeURIComponent(url)}`;
+    // Usa API esterna per generazione QR code dinamico
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
     const img = document.getElementById(elementId);
     
+    console.log('Generating QR for URL:', url);
+    console.log('QR API URL:', qrApiUrl);
+    
     img.onload = function() {
+        console.log('QR code loaded successfully for', elementId);
         img.style.display = 'block';
     };
     
     img.onerror = function() {
+        console.error('Failed to load QR code for', elementId);
         img.style.display = 'none';
-        img.parentNode.innerHTML = '<p class="text-danger">Errore nel caricamento del QR code</p>';
+        img.parentNode.innerHTML = '<p class="text-danger">Errore nel caricamento del QR code<br><small>URL: ' + url + '</small></p>';
     };
     
     img.src = qrApiUrl;
