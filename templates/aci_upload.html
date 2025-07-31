@@ -21,12 +21,13 @@
                 <div class="card-body">
                     <h6>Struttura File Excel Richiesta:</h6>
                     <ul class="mb-3">
-                        <li><strong>Colonna A:</strong> MARCA (o TIPO se riga categoria)</li>
-                        <li><strong>Colonna B:</strong> MODELLO (vuota per righe TIPO)</li>
-                        <li><strong>Colonna C:</strong> COSTO KM 15.000 KM</li>
-                        <li><strong>Colonna D:</strong> FRINGE BENEFIT ANNUALE (20% CK) - <em>ignorata</em></li>
-                        <li><strong>Colonna E:</strong> FRINGE BENEFIT ANNUALE (25% CK)</li>
-                        <li><strong>Colonna F:</strong> FRINGE BENEFIT ANNUALE (30% CK)</li>
+                        <li><strong>Colonna A:</strong> MARCA (o TIPO se riga categoria) ✅ <em>utilizzata</em></li>
+                        <li><strong>Colonna B:</strong> MODELLO (vuota per righe TIPO) ✅ <em>utilizzata</em></li>
+                        <li><strong>Colonna C:</strong> COSTO KM 15.000 KM ✅ <em>utilizzata</em></li>
+                        <li><strong>Colonna D:</strong> FRINGE BENEFIT ANNUALE (20% CK) ❌ <em>ignorata</em></li>
+                        <li><strong>Colonna E:</strong> FRINGE BENEFIT ANNUALE (25% CK) ❌ <em>ignorata</em></li>
+                        <li><strong>Colonna F:</strong> FRINGE BENEFIT ANNUALE (30% CK) ❌ <em>ignorata</em></li>
+                        <li><strong>Colonne successive:</strong> Tutte ignorate ❌</li>
                     </ul>
                     
                     <h6>Logica Righe TIPO:</h6>
@@ -38,7 +39,7 @@
                     
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i> 
-                        <strong>Attenzione:</strong> Le colonne dopo "COSTO KM 15.000 KM" non verranno considerate nell'importazione.
+                        <strong>IMPORTANTE:</strong> Solo le colonne A, B, C vengono elaborate. Tutte le colonne D, E, F e successive sono completamente ignorate.
                     </div>
                 </div>
             </div>
@@ -91,9 +92,9 @@
                                     <th>MARCA</th>
                                     <th>MODELLO</th>
                                     <th>COSTO KM 15.000 KM</th>
-                                    <th>FRINGE BENEFIT (20%)</th>
-                                    <th>FRINGE BENEFIT (25%)</th>
-                                    <th>FRINGE BENEFIT (30%)</th>
+                                    <th class="text-muted"><strike>FRINGE BENEFIT (20%)</strike></th>
+                                    <th class="text-muted"><strike>FRINGE BENEFIT (25%)</strike></th>
+                                    <th class="text-muted"><strike>FRINGE BENEFIT (30%)</strike></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -101,41 +102,41 @@
                                     <td><strong>PLUG-IN BENZINA</strong></td>
                                     <td><em>(vuoto - riga TIPO)</em></td>
                                     <td>-</td>
-                                    <td>-</td>
-                                    <td>-</td>
-                                    <td>-</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
                                 </tr>
                                 <tr>
                                     <td>ALFA ROMEO</td>
                                     <td>Giulia 2.0 Turbo 200 CV AT8</td>
                                     <td>0.3985</td>
-                                    <td>2390.76</td>
-                                    <td>2988.45</td>
-                                    <td>3586.14</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
                                 </tr>
                                 <tr>
                                     <td>AUDI</td>
                                     <td>A3 Sportback 40 TFSI e S tronic</td>
                                     <td>0.4864</td>
-                                    <td>2914.32</td>
-                                    <td>3642.90</td>
-                                    <td>4371.48</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
                                 </tr>
                                 <tr class="table-warning">
                                     <td><strong>PLUG-IN GASOLIO</strong></td>
                                     <td><em>(vuoto - riga TIPO)</em></td>
                                     <td>-</td>
-                                    <td>-</td>
-                                    <td>-</td>
-                                    <td>-</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
                                 </tr>
                                 <tr>
                                     <td>BMW</td>
                                     <td>X3 xDrive30e</td>
                                     <td>0.5234</td>
-                                    <td>3140.40</td>
-                                    <td>3925.50</td>
-                                    <td>4710.60</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
+                                    <td class="text-muted">ignorata</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -151,31 +152,103 @@
 </div>
 
 <script>
-document.getElementById('uploadBtn').addEventListener('click', function() {
-    const btn = this;
-    const fileInput = document.querySelector('input[type="file"]');
-    const tipologia = document.querySelector('input[name="tipologia"]');
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadBtn = document.getElementById('uploadBtn');
+    const form = document.querySelector('form');
+    const overlay = document.getElementById('uploadOverlay');
     
-    if (!fileInput.files[0]) {
-        alert('Seleziona un file Excel da caricare');
-        return false;
+    // Override form submit per gestire upload
+    form.addEventListener('submit', function(e) {
+        const fileInput = document.querySelector('input[type="file"]');
+        const tipologia = document.querySelector('input[name="tipologia"]');
+        
+        // Validazione client-side
+        if (!fileInput.files[0]) {
+            e.preventDefault();
+            alert('❌ Seleziona un file Excel da caricare');
+            return false;
+        }
+        
+        if (!tipologia.value.trim()) {
+            e.preventDefault();
+            alert('❌ Inserisci il nome della tipologia');
+            tipologia.focus();
+            return false;
+        }
+        
+        // Validazione tipo file
+        const fileName = fileInput.files[0].name.toLowerCase();
+        if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+            e.preventDefault();
+            alert('❌ Seleziona un file Excel (.xlsx o .xls)');
+            return false;
+        }
+        
+        // Mostra overlay di caricamento
+        showUploadProgress(fileInput.files[0].name);
+        
+        // Disabilita pulsante
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Elaborazione in corso...';
+        uploadBtn.disabled = true;
+        
+        // Reset automatico dopo timeout
+        setTimeout(function() {
+            hideUploadProgress();
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Carica e Importa';
+            uploadBtn.disabled = false;
+        }, 60000); // 60 secondi timeout
+    });
+    
+    function showUploadProgress(fileName) {
+        document.getElementById('uploadOverlay').classList.remove('d-none');
+        
+        // Aggiorna messaggio progressivo
+        let step = 0;
+        const steps = [
+            'Caricamento file in corso...',
+            'Analisi struttura Excel...',
+            'Elaborazione colonne A, B, C...',
+            'Riconoscimento righe TIPO...',
+            'Inserimento dati nel database...'
+        ];
+        
+        const updateMessage = () => {
+            const messageEl = document.querySelector('#uploadOverlay small');
+            if (messageEl && step < steps.length) {
+                messageEl.textContent = steps[step];
+                step++;
+            }
+        };
+        
+        // Aggiorna messaggio ogni 3 secondi
+        const interval = setInterval(updateMessage, 3000);
+        
+        // Clear interval dopo 45 secondi
+        setTimeout(() => clearInterval(interval), 45000);
     }
     
-    if (!tipologia.value.trim()) {
-        alert('Inserisci il nome della tipologia');
-        tipologia.focus();
-        return false;
+    function hideUploadProgress() {
+        document.getElementById('uploadOverlay').classList.add('d-none');
     }
-    
-    // Mostra loading
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Caricamento in corso...';
-    btn.disabled = true;
-    
-    // Reset dopo 30 secondi se non completato
-    setTimeout(function() {
-        btn.innerHTML = '<i class="fas fa-upload"></i> Carica e Importa';
-        btn.disabled = false;
-    }, 30000);
 });
 </script>
+
+<!-- Overlay di caricamento -->
+<div id="uploadOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background: rgba(0,0,0,0.8); z-index: 9999;">
+    <div class="d-flex justify-content-center align-items-center h-100">
+        <div class="text-center text-white">
+            <div class="spinner-border spinner-border-lg text-primary mb-3" role="status">
+                <span class="visually-hidden">Caricamento...</span>
+            </div>
+            <h4><i class="fas fa-file-excel"></i> Caricamento Excel ACI</h4>
+            <p class="mb-2">Elaborazione file in corso...</p>
+            <small>Caricamento file in corso...</small>
+            <div class="mt-3">
+                <div class="progress" style="width: 300px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
