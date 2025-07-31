@@ -2361,14 +2361,9 @@ class ACITable(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     tipologia = db.Column(db.String(100), nullable=False)  # Nome file Excel caricato
-    tipo = db.Column(db.String(100), nullable=True)  # Categoria (es. PLUG-IN BENZINA)
     marca = db.Column(db.String(100), nullable=False)
     modello = db.Column(db.String(200), nullable=False)
     costo_km = db.Column(db.Numeric(10, 4), nullable=False)  # Costo per KM
-    fringe_benefit_10 = db.Column(db.Numeric(10, 2), nullable=True)  # Fringe Benefit 10%
-    fringe_benefit_25 = db.Column(db.Numeric(10, 2), nullable=True)  # Fringe Benefit 25%
-    fringe_benefit_30 = db.Column(db.Numeric(10, 2), nullable=True)  # Fringe Benefit 30%
-    fringe_benefit_50 = db.Column(db.Numeric(10, 2), nullable=True)  # Fringe Benefit 50%
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
@@ -2380,14 +2375,9 @@ class ACITable(db.Model):
         return {
             'id': self.id,
             'tipologia': self.tipologia,
-            'tipo': self.tipo,
             'marca': self.marca,
             'modello': self.modello,
             'costo_km': float(self.costo_km) if self.costo_km else None,
-            'fringe_benefit_10': float(self.fringe_benefit_10) if self.fringe_benefit_10 else None,
-            'fringe_benefit_25': float(self.fringe_benefit_25) if self.fringe_benefit_25 else None,
-            'fringe_benefit_30': float(self.fringe_benefit_30) if self.fringe_benefit_30 else None,
-            'fringe_benefit_50': float(self.fringe_benefit_50) if self.fringe_benefit_50 else None,
             'created_at': self.created_at.strftime('%d/%m/%Y %H:%M') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%d/%m/%Y %H:%M') if self.updated_at else None
         }
