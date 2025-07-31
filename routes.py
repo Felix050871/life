@@ -9092,36 +9092,27 @@ def aci_upload():
                 # Pulisci file temporaneo
                 os.unlink(tmp_file.name)
             
-            # Verifica struttura file Excel
-            expected_columns = [
-                'MARCA', 
-                'MODELLO', 
-                'COSTO KM 15.000 KM',
-                'FRINGE BENEFIT ANNUALE (20% CK)',  # Colonna D - IGNORATA
-                'FRINGE BENEFIT ANNUALE (25% CK)',  # Colonna E - UTILIZZATA
-                'FRINGE BENEFIT ANNUALE (30% CK)'   # Colonna F - UTILIZZATA
-            ]
-            
-            if len(df.columns) != 6:
-                flash(f"Errore: Il file Excel deve avere esattamente 6 colonne. Trovate {len(df.columns)} colonne.", "danger")
+            # Verifica struttura file Excel - richiede almeno 3 colonne (A, B, C)
+            if len(df.columns) < 3:
+                flash(f"Errore: Il file Excel deve avere almeno 3 colonne (MARCA, MODELLO, COSTO KM). Trovate {len(df.columns)} colonne.", "danger")
                 return render_template("aci_upload.html", form=form)
             
-            # Log struttura per debug (visibile solo in development)
+            # Log struttura per debug
             import logging
-            logging.info(f"Colonne Excel: {list(df.columns)}")
+            logging.info(f"Colonne Excel trovate: {list(df.columns)}")
+            logging.info(f"Utilizzo solo colonne A, B, C - ignorando tutte le altre")
             
-            # Processa dati Excel
+            # Processa dati Excel - SOLO COLONNE A, B, C
             imported_count = 0
             skipped_count = 0
             current_tipo = None
             
             for index, row in df.iterrows():
+                # UTILIZZO SOLO LE PRIME 3 COLONNE (A, B, C)
                 marca = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
                 modello = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
                 costo_km = row.iloc[2] if pd.notna(row.iloc[2]) else None
-                # IGNORA row.iloc[3] - FRINGE BENEFIT 20% CK (Colonna D)
-                fringe_25 = row.iloc[4] if pd.notna(row.iloc[4]) else None  # Colonna E - 25% CK
-                fringe_30 = row.iloc[5] if pd.notna(row.iloc[5]) else None  # Colonna F - 30% CK
+                # IGNORA COMPLETAMENTE TUTTE LE COLONNE D, E, F, ecc.
                 
                 # Determina se è una riga TIPO (marca non vuota ma modello vuoto o NaN)
                 if marca and (not modello or modello == 'nan'):
@@ -9143,21 +9134,19 @@ def aci_upload():
                 ).first()
                 
                 if existing:
-                    # Aggiorna record esistente invece di crearne uno nuovo
+                    # Aggiorna record esistente - SOLO COSTO KM
                     existing.costo_km = float(costo_km)
-                    existing.fringe_benefit_25 = float(fringe_25) if fringe_25 is not None else None
-                    existing.fringe_benefit_30 = float(fringe_30) if fringe_30 is not None else None
+                    # Non aggiorniamo fringe benefit - mantenuti come erano
                     imported_count += 1
                 else:
-                    # Crea nuovo record ACI
+                    # Crea nuovo record ACI - SOLO CON DATI COLONNE A, B, C
                     aci_record = ACITable(
                         tipologia=tipologia,
                         tipo=current_tipo,
                         marca=marca,
                         modello=modello,
-                        costo_km=float(costo_km),
-                        fringe_benefit_25=float(fringe_25) if fringe_25 is not None else None,
-                        fringe_benefit_30=float(fringe_30) if fringe_30 is not None else None
+                        costo_km=float(costo_km)
+                        # fringe_benefit_* rimangono NULL - non importati da Excel
                     )
                     
                     db.session.add(aci_record)
@@ -9171,7 +9160,7 @@ def aci_upload():
                 flash(f"📊 {imported_count} record processati (nuovi o aggiornati)", "info")
                 if skipped_count > 0:
                     flash(f"⏭️ {skipped_count} righe saltate (intestazioni o righe vuote)", "info")
-                flash(f"🚫 Colonna 'FRINGE BENEFIT 20% CK' ignorata come richiesto", "info")
+                flash(f"🚫 Importate solo colonne A, B, C (MARCA, MODELLO, COSTO KM) - tutte le altre colonne ignorate", "info")
             else:
                 flash("⚠️ Nessun record valido trovato nel file Excel", "warning")
                 
