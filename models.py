@@ -2358,6 +2358,23 @@ class MileageRequest(db.Model):
         )
         db.session.add(notification)
     
+    def calculate_reimbursement_amount(self):
+        """Calcola l'importo del rimborso basato sui km e sul veicolo"""
+        if self.vehicle_id:
+            # Usa il costo ACI del veicolo assegnato
+            vehicle = ACITable.query.get(self.vehicle_id)
+            if vehicle:
+                self.cost_per_km = vehicle.costo_km
+            else:
+                # Fallback - costo medio se il veicolo non esiste
+                self.cost_per_km = 0.3500  # €0.35/km come media
+        else:
+            # Usa costo standard per veicoli non ACI
+            self.cost_per_km = 0.3500  # €0.35/km come standard
+        
+        # Calcola l'importo totale
+        self.total_amount = round(self.total_km * self.cost_per_km, 2)
+    
     @classmethod
     def get_pending_count_for_user(cls, user):
         """Restituisce il numero di richieste in attesa per l'utente"""

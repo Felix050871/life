@@ -9310,11 +9310,17 @@ def create_mileage_request():
     form = MileageRequestForm(user=current_user)
     
     if form.validate_on_submit():
+        # Converti route_addresses da stringa a array
+        route_addresses_list = []
+        if form.route_addresses.data:
+            # Dividi per righe e filtra righe vuote
+            route_addresses_list = [addr.strip() for addr in form.route_addresses.data.split('\n') if addr.strip()]
+        
         # Crea la richiesta
         mileage_request = MileageRequest(
             user_id=current_user.id,
             travel_date=form.travel_date.data,
-            route_addresses=form.route_addresses.data,
+            route_addresses=route_addresses_list,  # Array invece di stringa
             total_km=form.total_km.data,
             is_km_manual=form.is_km_manual.data,
             purpose=form.purpose.data,
