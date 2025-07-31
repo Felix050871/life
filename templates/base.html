@@ -430,31 +430,6 @@
                 </li>
                 {% endif %}
 
-                <!-- TABELLE ACI - Solo per Amministratori -->
-                {% if current_user.role == 'Amministratore' %}
-                <li class="sidebar-nav-item">
-                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-car"></i>
-                        <span>Tabelle ACI</span>
-                        <i class="fas fa-chevron-right dropdown-arrow"></i>
-                    </a>
-                    <ul class="sidebar-submenu">
-                        <li><a href="{{ url_for('aci_tables') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-list"></i>Visualizza Tabelle
-                        </a></li>
-                        <li><a href="{{ url_for('aci_tables_upload') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-upload"></i>Carica Excel
-                        </a></li>
-                        <li><a href="{{ url_for('add_aci_table') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-plus"></i>Aggiungi Manuale
-                        </a></li>
-                        <li><a href="{{ url_for('export_aci_tables') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-download"></i>Export Excel
-                        </a></li>
-                    </ul>
-                </li>
-                {% endif %}
-
 
 
                 <!-- STATISTICHE/REPORT - Solo se ha almeno un permesso report -->

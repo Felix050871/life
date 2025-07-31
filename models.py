@@ -2353,31 +2353,3 @@ class WorkSchedule(db.Model):
             'all_week': ([0, 1, 2, 3, 4, 5, 6], 'Tutti i giorni'),
             'custom': ([], 'Personalizzato')
         }
-
-
-class ACITable(db.Model):
-    """Modello per la gestione delle Tabelle ACI - Back Office Admin Only"""
-    __tablename__ = 'aci_table'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    tipo = db.Column(db.String(255), nullable=True)  # PLUG-IN BENZINA, PLUG-IN GASOLIO, etc.
-    marca = db.Column(db.String(100), nullable=False)
-    modello = db.Column(db.String(200), nullable=False)
-    costo_km_15000 = db.Column(db.Numeric(10, 4), nullable=True)  # COSTO KM 15.000 KM
-    created_at = db.Column(db.DateTime, default=italian_now)
-    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
-    
-    def __repr__(self):
-        return f'<ACITable {self.marca} {self.modello}>'
-    
-    def to_dict(self):
-        """Converte l'oggetto in dizionario per export Excel"""
-        return {
-            'ID': self.id,
-            'Tipo': self.tipo or '',
-            'Marca': self.marca,
-            'Modello': self.modello,
-            'Costo Km 15.000 Km': float(self.costo_km_15000) if self.costo_km_15000 else None,
-            'Creato il': self.created_at.strftime('%d/%m/%Y %H:%M') if self.created_at else '',
-            'Aggiornato il': self.updated_at.strftime('%d/%m/%Y %H:%M') if self.updated_at else ''
-        }
