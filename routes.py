@@ -4719,7 +4719,7 @@ def delete_reperibilita_template(template_id):
 def qr_login(action):
     """Pagina di login con QR code per entrata/uscita rapida"""
     # Log per debug mobile
-    logger.info(f"QR Login access per {action}, authenticated: {current_user.is_authenticated}")
+    app.logger.info(f"QR Login access per {action}, authenticated: {current_user.is_authenticated}")
     
     if action not in ['entrata', 'uscita']:
         flash('Azione non valida', 'error')
@@ -4728,7 +4728,7 @@ def qr_login(action):
     # Se l'utente è già autenticato, esegui l'azione direttamente
     if current_user.is_authenticated:
         # Log per debug mobile
-        logger.info(f"User {current_user.username} già autenticato, redirect a quick_attendance/{action}")
+        app.logger.info(f"User {current_user.username} già autenticato, redirect a quick_attendance/{action}")
         return redirect(url_for('quick_attendance', action=action))
     
     form = LoginForm()
