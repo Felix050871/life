@@ -140,7 +140,7 @@ class UserForm(FlaskForm):
         return 100.0
 
 class AttendanceForm(FlaskForm):
-    sede_id = SelectField('Sede', coerce=int, validators=[Optional()])
+    sede_id = SelectField('Sede', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()])
     notes = TextAreaField('Note')
     submit = SubmitField('Registra')
     
