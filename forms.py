@@ -1410,7 +1410,7 @@ class ACITableUploadForm(FlaskForm):
 class ACITableForm(FlaskForm):
     """Form per gestione manuale singole voci Tabelle ACI"""
     tipologia = StringField('Tipologia', validators=[
-        DataRequired(message='La tipologia è obbligatoria'), 
+        Optional(), 
         Length(max=255, message='Massimo 255 caratteri')
     ])
     marca = StringField('Marca', validators=[
@@ -1419,22 +1419,22 @@ class ACITableForm(FlaskForm):
     ])
     modello = StringField('Modello', validators=[
         DataRequired(message='Il modello è obbligatorio'), 
-        Length(max=100, message='Massimo 100 caratteri')
+        Length(max=200, message='Massimo 200 caratteri')
     ])
-    costo_km = DecimalField('Costo per Km (€)', validators=[
-        DataRequired(message='Il costo per km è obbligatorio'),
+    costo_km_15000 = DecimalField('Costo Km 15.000 Km', validators=[
+        Optional(),
         NumberRange(min=0, message='Il costo deve essere positivo')
-    ], places=2)
-    fringe_benefit_10 = DecimalField('Fringe Benefit 10%', validators=[
-        DataRequired(message='Fringe Benefit 10% è obbligatorio'),
+    ], places=4)
+    fringe_benefit_20 = DecimalField('Fringe Benefit Annuale (20% CK)', validators=[
+        Optional(),
         NumberRange(min=0, message='Il valore deve essere positivo')
     ], places=2)
-    fringe_benefit_25 = DecimalField('Fringe Benefit 25%', validators=[
-        DataRequired(message='Fringe Benefit 25% è obbligatorio'),
+    fringe_benefit_25 = DecimalField('Fringe Benefit Annuale (25% CK)', validators=[
+        Optional(),
         NumberRange(min=0, message='Il valore deve essere positivo')
     ], places=2)
-    fringe_benefit_30 = DecimalField('Fringe Benefit 30%', validators=[
-        DataRequired(message='Fringe Benefit 30% è obbligatorio'),
+    fringe_benefit_30 = DecimalField('Fringe Benefit Annuale (30% CK)', validators=[
+        Optional(),
         NumberRange(min=0, message='Il valore deve essere positivo')
     ], places=2)
     fringe_benefit_50 = DecimalField('Fringe Benefit 50%', validators=[
