@@ -12,8 +12,8 @@ from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from config import get_config
 from sqlalchemy.orm import joinedload
-from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm
+from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
 
 # Inject configuration into all templates
@@ -9019,5 +9019,306 @@ def delete_overtime_type(type_id):
     db.session.commit()
     flash("Tipologia straordinario cancellata.", "info")
     return redirect(url_for("overtime_types"))
+
+
+# =============================================
+# SISTEMA ACI - BACK OFFICE AMMINISTRATORE
+# =============================================
+
+def admin_required(f):
+    """Decorator per verificare che l'utente sia amministratore"""
+    from functools import wraps
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        if not current_user.has_role('Amministratore'):
+            flash('Accesso negato. Solo gli amministratori possono accedere a questa sezione.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
+@app.route("/aci_tables")
+@login_required
+@admin_required
+def aci_tables():
+    """Visualizza tutte le tabelle ACI con filtri"""
+    form = ACIFilterForm()
+    
+    # Costruisci query base
+    query = ACITable.query
+    
+    # Applica filtri se presenti
+    if form.validate_on_submit():
+        if form.tipologia.data:
+            query = query.filter(ACITable.tipologia == form.tipologia.data)
+        if form.tipo.data:
+            query = query.filter(ACITable.tipo == form.tipo.data)
+        if form.marca.data:
+            query = query.filter(ACITable.marca == form.marca.data)
+    
+    # Ordina e pagina risultati
+    tables = query.order_by(ACITable.tipologia, ACITable.tipo, ACITable.marca, ACITable.modello).all()
+    
+    return render_template("aci_tables.html", tables=tables, form=form)
+
+
+@app.route("/aci_tables/upload", methods=["GET", "POST"])
+@login_required
+@admin_required
+def aci_upload():
+    """Upload e importazione file Excel ACI"""
+    form = ACIUploadForm()
+    
+    if form.validate_on_submit():
+        file = form.excel_file.data
+        tipologia = form.tipologia.data
+        
+        try:
+            # Salva file temporaneo
+            import tempfile
+            import os
+            import pandas as pd
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_file:
+                file.save(tmp_file.name)
+                
+                # Leggi file Excel
+                df = pd.read_excel(tmp_file.name, engine='openpyxl')
+                
+                # Pulisci file temporaneo
+                os.unlink(tmp_file.name)
+            
+            # Processa dati Excel
+            imported_count = 0
+            current_tipo = None
+            
+            for index, row in df.iterrows():
+                marca = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
+                modello = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
+                costo_km = row.iloc[2] if pd.notna(row.iloc[2]) else None
+                fringe_25 = row.iloc[4] if pd.notna(row.iloc[4]) else None  # FRINGE BENEFIT ANNUALE (25% CK)
+                fringe_30 = row.iloc[5] if pd.notna(row.iloc[5]) else None  # FRINGE BENEFIT ANNUALE (30% CK)
+                
+                # Determina se è una riga TIPO (marca non vuota ma modello vuoto)
+                if marca and not modello:
+                    current_tipo = marca
+                    continue
+                
+                # Skip righe vuote o incomplete
+                if not marca or not modello or costo_km is None:
+                    continue
+                
+                # Crea record ACI
+                aci_record = ACITable(
+                    tipologia=tipologia,
+                    tipo=current_tipo,
+                    marca=marca,
+                    modello=modello,
+                    costo_km=float(costo_km),
+                    fringe_benefit_25=float(fringe_25) if fringe_25 is not None else None,
+                    fringe_benefit_30=float(fringe_30) if fringe_30 is not None else None
+                )
+                
+                db.session.add(aci_record)
+                imported_count += 1
+            
+            db.session.commit()
+            flash(f"File Excel importato con successo! {imported_count} record aggiunti.", "success")
+            return redirect(url_for("aci_tables"))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Errore durante l'importazione del file: {str(e)}", "danger")
+    
+    return render_template("aci_upload.html", form=form)
+
+
+@app.route("/aci_tables/create", methods=["GET", "POST"])
+@login_required
+@admin_required
+def aci_create():
+    """Crea nuovo record ACI manualmente"""
+    form = ACIRecordForm()
+    
+    if form.validate_on_submit():
+        try:
+            aci_record = ACITable(
+                tipologia=form.tipologia.data,
+                tipo=form.tipo.data if form.tipo.data else None,
+                marca=form.marca.data,
+                modello=form.modello.data,
+                costo_km=form.costo_km.data,
+                fringe_benefit_10=form.fringe_benefit_10.data,
+                fringe_benefit_25=form.fringe_benefit_25.data,
+                fringe_benefit_30=form.fringe_benefit_30.data,
+                fringe_benefit_50=form.fringe_benefit_50.data
+            )
+            
+            db.session.add(aci_record)
+            db.session.commit()
+            flash("Record ACI creato con successo!", "success")
+            return redirect(url_for("aci_tables"))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Errore durante la creazione del record: {str(e)}", "danger")
+    
+    return render_template("aci_create.html", form=form)
+
+
+@app.route("/aci_tables/<int:record_id>/edit", methods=["GET", "POST"])
+@login_required
+@admin_required
+def aci_edit(record_id):
+    """Modifica record ACI esistente"""
+    aci_record = ACITable.query.get_or_404(record_id)
+    form = ACIRecordForm(obj=aci_record)
+    
+    if form.validate_on_submit():
+        try:
+            aci_record.tipologia = form.tipologia.data
+            aci_record.tipo = form.tipo.data if form.tipo.data else None
+            aci_record.marca = form.marca.data
+            aci_record.modello = form.modello.data
+            aci_record.costo_km = form.costo_km.data
+            aci_record.fringe_benefit_10 = form.fringe_benefit_10.data
+            aci_record.fringe_benefit_25 = form.fringe_benefit_25.data
+            aci_record.fringe_benefit_30 = form.fringe_benefit_30.data
+            aci_record.fringe_benefit_50 = form.fringe_benefit_50.data
+            
+            db.session.commit()
+            flash("Record ACI aggiornato con successo!", "success")
+            return redirect(url_for("aci_tables"))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Errore durante l'aggiornamento del record: {str(e)}", "danger")
+    
+    return render_template("aci_edit.html", form=form, record=aci_record)
+
+
+@app.route("/aci_tables/<int:record_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def aci_delete(record_id):
+    """Cancella record ACI"""
+    try:
+        aci_record = ACITable.query.get_or_404(record_id)
+        db.session.delete(aci_record)
+        db.session.commit()
+        flash("Record ACI cancellato con successo!", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Errore durante la cancellazione: {str(e)}", "danger")
+    
+    return redirect(url_for("aci_tables"))
+
+
+@app.route("/aci_tables/export")
+@login_required
+@admin_required
+def aci_export():
+    """Export Excel delle tabelle ACI"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from io import BytesIO
+        
+        # Recupera tutti i record ACI
+        records = ACITable.query.order_by(ACITable.tipologia, ACITable.tipo, ACITable.marca, ACITable.modello).all()
+        
+        # Crea workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Tabelle ACI"
+        
+        # Intestazioni
+        headers = [
+            "ID", "Tipologia", "Tipo", "Marca", "Modello", 
+            "Costo KM", "Fringe Benefit 10%", "Fringe Benefit 25%", 
+            "Fringe Benefit 30%", "Fringe Benefit 50%", 
+            "Creato il", "Aggiornato il"
+        ]
+        
+        # Stile intestazione
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+        
+        # Dati
+        for row, record in enumerate(records, 2):
+            ws.cell(row=row, column=1, value=record.id)
+            ws.cell(row=row, column=2, value=record.tipologia)
+            ws.cell(row=row, column=3, value=record.tipo)
+            ws.cell(row=row, column=4, value=record.marca)
+            ws.cell(row=row, column=5, value=record.modello)
+            ws.cell(row=row, column=6, value=float(record.costo_km) if record.costo_km else None)
+            ws.cell(row=row, column=7, value=float(record.fringe_benefit_10) if record.fringe_benefit_10 else None)
+            ws.cell(row=row, column=8, value=float(record.fringe_benefit_25) if record.fringe_benefit_25 else None)
+            ws.cell(row=row, column=9, value=float(record.fringe_benefit_30) if record.fringe_benefit_30 else None)
+            ws.cell(row=row, column=10, value=float(record.fringe_benefit_50) if record.fringe_benefit_50 else None)
+            ws.cell(row=row, column=11, value=record.created_at.strftime('%d/%m/%Y %H:%M') if record.created_at else "")
+            ws.cell(row=row, column=12, value=record.updated_at.strftime('%d/%m/%Y %H:%M') if record.updated_at else "")
+        
+        # Autofit colonne
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Salva in BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Response
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename=tabelle_aci_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        
+        return response
+        
+    except Exception as e:
+        flash(f"Errore durante l'export: {str(e)}", "danger")
+        return redirect(url_for("aci_tables"))
+
+
+@app.route("/aci_tables/bulk_delete", methods=["POST"])
+@login_required
+@admin_required
+def aci_bulk_delete():
+    """Cancellazione in massa per tipologia"""
+    tipologia = request.form.get('tipologia')
+    if not tipologia:
+        flash("Tipologia non specificata.", "warning")
+        return redirect(url_for("aci_tables"))
+    
+    try:
+        deleted_count = ACITable.query.filter_by(tipologia=tipologia).delete()
+        db.session.commit()
+        flash(f"Cancellati {deleted_count} record della tipologia '{tipologia}'.", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Errore durante la cancellazione in massa: {str(e)}", "danger")
+    
+    return redirect(url_for("aci_tables"))
 
 

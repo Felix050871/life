@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Record ACI{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-edit"></i> Modifica Record ACI</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('aci_tables') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Torna alle Tabelle
+                    </a>
+                    <button type="button" class="btn btn-danger" onclick="showDeleteModal()">
+                        <i class="fas fa-trash"></i> Cancella Record
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info Record -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informazioni Record</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>ID Record:</strong> <span class="badge bg-secondary">{{ record.id }}</span></p>
+                            <p class="mb-1"><strong>Creato il:</strong> {{ record.created_at.strftime('%d/%m/%Y %H:%M') if record.created_at else '-' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Ultima modifica:</strong> {{ record.updated_at.strftime('%d/%m/%Y %H:%M') if record.updated_at else '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-car"></i> Modifica Dettagli Veicolo</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.tipologia.label(class="form-label") }}
+                                {{ form.tipologia(class="form-control") }}
+                                {% if form.tipologia.errors %}
+                                    <div class="text-danger small">{{ form.tipologia.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.tipo.label(class="form-label") }}
+                                {{ form.tipo(class="form-control") }}
+                                <div class="form-text">Opzionale - categoria del veicolo</div>
+                                {% if form.tipo.errors %}
+                                    <div class="text-danger small">{{ form.tipo.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.marca.label(class="form-label") }}
+                                {{ form.marca(class="form-control") }}
+                                {% if form.marca.errors %}
+                                    <div class="text-danger small">{{ form.marca.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.modello.label(class="form-label") }}
+                                {{ form.modello(class="form-control") }}
+                                {% if form.modello.errors %}
+                                    <div class="text-danger small">{{ form.modello.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                {{ form.costo_km.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.costo_km(class="form-control") }}
+                                    <span class="input-group-text">€/km</span>
+                                </div>
+                                <div class="form-text">Costo per chilometro a 4 decimali (es: 0.4862)</div>
+                                {% if form.costo_km.errors %}
+                                    <div class="text-danger small">{{ form.costo_km.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <h6 class="mb-3"><i class="fas fa-percentage"></i> Fringe Benefit</h6>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                {{ form.fringe_benefit_10.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.fringe_benefit_10(class="form-control") }}
+                                    <span class="input-group-text">€</span>
+                                </div>
+                                {% if form.fringe_benefit_10.errors %}
+                                    <div class="text-danger small">{{ form.fringe_benefit_10.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.fringe_benefit_25.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.fringe_benefit_25(class="form-control") }}
+                                    <span class="input-group-text">€</span>
+                                </div>
+                                {% if form.fringe_benefit_25.errors %}
+                                    <div class="text-danger small">{{ form.fringe_benefit_25.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                {{ form.fringe_benefit_30.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.fringe_benefit_30(class="form-control") }}
+                                    <span class="input-group-text">€</span>
+                                </div>
+                                {% if form.fringe_benefit_30.errors %}
+                                    <div class="text-danger small">{{ form.fringe_benefit_30.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.fringe_benefit_50.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.fringe_benefit_50(class="form-control") }}
+                                    <span class="input-group-text">€</span>
+                                </div>
+                                {% if form.fringe_benefit_50.errors %}
+                                    <div class="text-danger small">{{ form.fringe_benefit_50.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('aci_tables') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Annulla
+                            </a>
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancellazione -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma Cancellazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler cancellare definitivamente questo record ACI?</p>
+                <div class="alert alert-info">
+                    <strong>Record:</strong> {{ record.marca }} {{ record.modello }}<br>
+                    <strong>Tipologia:</strong> {{ record.tipologia }}<br>
+                    {% if record.tipo %}<strong>Tipo:</strong> {{ record.tipo }}<br>{% endif %}
+                    <strong>Costo KM:</strong> {{ "%.4f"|format(record.costo_km) }}€
+                </div>
+                <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Questa operazione non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="POST" action="{{ url_for('aci_delete', record_id=record.id) }}" class="d-inline">
+                    {{ csrf_token() }}
+                    <button type="submit" class="btn btn-danger">Cancella Record</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDeleteModal() {
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

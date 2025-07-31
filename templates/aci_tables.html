@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Tabelle ACI - Back Office{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-car"></i> Tabelle ACI - Back Office</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('aci_upload') }}" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Carica Excel
+                    </a>
+                    <a href="{{ url_for('aci_create') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Nuovo Record
+                    </a>
+                    <a href="{{ url_for('aci_export') }}" class="btn btn-info">
+                        <i class="fas fa-download"></i> Export Excel
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtri -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Filtri</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('aci_tables') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="row">
+                            <div class="col-md-3">
+                                {{ form.tipologia.label(class="form-label") }}
+                                {{ form.tipologia(class="form-select") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.tipo.label(class="form-label") }}
+                                {{ form.tipo(class="form-select") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.marca.label(class="form-label") }}
+                                {{ form.marca(class="form-select") }}
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                {{ form.submit(class="btn btn-outline-primary me-2") }}
+                                <a href="{{ url_for('aci_tables') }}" class="btn btn-outline-secondary">Reset</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistiche -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ tables|length }}</h5>
+                            <p class="card-text">Record Totali</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-info">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">{{ tables|groupby('tipologia')|list|length }}</h5>
+                            <p class="card-text">Tipologie</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-success">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">{{ tables|groupby('marca')|list|length }}</h5>
+                            <p class="card-text">Marche</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">{{ tables|groupby('tipo')|list|length }}</h5>
+                            <p class="card-text">Tipi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabella -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Record ACI</h5>
+                    {% if tables %}
+                    <small class="text-muted">{{ tables|length }} record trovati</small>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if tables %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipologia</th>
+                                    <th>Tipo</th>
+                                    <th>Marca</th>
+                                    <th>Modello</th>
+                                    <th>Costo KM</th>
+                                    <th>FB 10%</th>
+                                    <th>FB 25%</th>
+                                    <th>FB 30%</th>
+                                    <th>FB 50%</th>
+                                    <th>Aggiornato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for table in tables %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">{{ table.id }}</span></td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ table.tipologia }}</span>
+                                    </td>
+                                    <td>
+                                        {% if table.tipo %}
+                                            <span class="badge bg-info">{{ table.tipo }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ table.marca }}</strong></td>
+                                    <td>{{ table.modello }}</td>
+                                    <td>
+                                        <span class="badge bg-success">{{ "%.4f"|format(table.costo_km) }}€</span>
+                                    </td>
+                                    <td>
+                                        {% if table.fringe_benefit_10 %}
+                                            {{ "%.2f"|format(table.fringe_benefit_10) }}€
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if table.fringe_benefit_25 %}
+                                            {{ "%.2f"|format(table.fringe_benefit_25) }}€
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if table.fringe_benefit_30 %}
+                                            {{ "%.2f"|format(table.fringe_benefit_30) }}€
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if table.fringe_benefit_50 %}
+                                            {{ "%.2f"|format(table.fringe_benefit_50) }}€
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ table.updated_at.strftime('%d/%m/%Y') if table.updated_at else '-' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('aci_edit', record_id=table.id) }}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    onclick="showDeleteModal('{{ table.id }}', '{{ table.marca }} {{ table.modello }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">Nessun record ACI trovato</h4>
+                        <p class="text-muted">Carica un file Excel o crea un nuovo record manualmente.</p>
+                        <a href="{{ url_for('aci_upload') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-upload"></i> Carica Excel
+                        </a>
+                        <a href="{{ url_for('aci_create') }}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Nuovo Record
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cancellazione in massa per tipologia -->
+            {% if tables %}
+            <div class="mt-4">
+                <h5>Cancellazione in Massa</h5>
+                <form method="POST" action="{{ url_for('aci_bulk_delete') }}" class="d-inline">
+                    {{ csrf_token() }}
+                    <div class="input-group" style="max-width: 400px;">
+                        <select name="tipologia" class="form-select" required>
+                            <option value="">Seleziona tipologia da cancellare</option>
+                            {% for tipologia in tables|groupby('tipologia') %}
+                            <option value="{{ tipologia.0 }}">{{ tipologia.0 }} ({{ tipologia.1|list|length }} record)</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-danger" onclick="showBulkDeleteModal()">
+                            <i class="fas fa-trash-alt"></i> Cancella Tipologia
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancellazione Record -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma Cancellazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler cancellare il record ACI:</p>
+                <p><strong id="deleteRecordName"></strong></p>
+                <p class="text-muted">Questa operazione non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="POST" id="deleteForm" class="d-inline">
+                    {{ csrf_token() }}
+                    <button type="submit" class="btn btn-danger">Cancella Record</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancellazione in Massa -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma Cancellazione in Massa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler cancellare <strong>TUTTI i record</strong> della tipologia selezionata?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Questa operazione cancellerà definitivamente tutti i veicoli della tipologia e non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-danger" onclick="submitBulkDelete()">Conferma Cancellazione</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDeleteModal(recordId, recordName) {
+    document.getElementById('deleteRecordName').textContent = recordName;
+    document.getElementById('deleteForm').action = '/aci_tables/' + recordId + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function showBulkDeleteModal() {
+    const tipologia = document.querySelector('select[name="tipologia"]').value;
+    if (!tipologia) {
+        alert('Seleziona una tipologia da cancellare');
+        return;
+    }
+    new bootstrap.Modal(document.getElementById('bulkDeleteModal')).show();
+}
+
+function submitBulkDelete() {
+    const form = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]');
+    form.submit();
+}
+</script>
+{% endblock %}
