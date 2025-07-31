@@ -4900,9 +4900,19 @@ def quick_attendance(action):
         now = italian_now()
         today = now.date()
         
-        # QR Code actions now use only AttendanceEvent
+        # Controlla lo stato attuale dell'utente
+        current_status, last_event = AttendanceEvent.get_user_status(current_user.id)
         
+        # Validazione dello stato per evitare registrazioni duplicate
         if action == 'entrata':
+            if current_status == 'in':
+                error_message = '⚠️ Sei già presente al lavoro. Non puoi registrare una nuova entrata.'
+                return render_template('qr_success.html', 
+                                     action=action, 
+                                     message=error_message,
+                                     user=current_user,
+                                     error=True)
+            
             # Create entry event
             entry_event = AttendanceEvent(
                 user_id=current_user.id,
@@ -4914,9 +4924,16 @@ def quick_attendance(action):
             )
             db.session.add(entry_event)
             message = f'✅ Entrata registrata alle {now.strftime("%H:%M")}'
-            message_type = 'success'
             
         else:  # uscita
+            if current_status == 'out':
+                error_message = '⚠️ Non risulti presente al lavoro. Non puoi registrare un\'uscita.'
+                return render_template('qr_success.html', 
+                                     action=action, 
+                                     message=error_message,
+                                     user=current_user,
+                                     error=True)
+            
             # Create exit event
             exit_event = AttendanceEvent(
                 user_id=current_user.id,
@@ -4928,7 +4945,6 @@ def quick_attendance(action):
             )
             db.session.add(exit_event)
             message = f'✅ Uscita registrata alle {now.strftime("%H:%M")}'
-            message_type = 'success'
         
         db.session.commit()
         
