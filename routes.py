@@ -9362,11 +9362,6 @@ def my_mileage_requests():
                                               joinedload(MileageRequest.vehicle))\
                                       .order_by(MileageRequest.created_at.desc()).all()
         
-        print(f"DEBUG: Trovate {len(requests)} richieste per utente {current_user.id}")
-        for req in requests:
-            print(f"DEBUG: Richiesta {req.id} - route_addresses type: {type(req.route_addresses)}")
-            print(f"DEBUG: Richiesta {req.id} - route_addresses value: {req.route_addresses}")
-        
         return render_template('my_mileage_requests.html', requests=requests)
     except Exception as e:
         print(f"ERRORE MY_MILEAGE_REQUESTS: {str(e)}")
