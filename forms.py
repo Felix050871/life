@@ -40,10 +40,10 @@ class UserForm(FlaskForm):
             self.sede.choices = [(-1, 'Seleziona una sede')] + [(sede.id, sede.name) for sede in sedi_attive]
             
             # Popola le scelte dei veicoli ACI con filtri progressivi
-            aci_vehicles = ACITable.query.order_by(ACITable.tipo, ACITable.marca, ACITable.modello).all()
+            aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
             
             # Tipo veicolo
-            tipos = list(set([v.tipo for v in aci_vehicles if v.tipo]))
+            tipos = list(set([v.tipologia for v in aci_vehicles if v.tipologia]))
             self.aci_vehicle_tipo.choices = [('', 'Seleziona tipo')] + [(tipo, tipo) for tipo in sorted(tipos)]
             
             # Marca (inizialmente vuoto, sarà popolato via JavaScript)

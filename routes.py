@@ -3250,21 +3250,21 @@ def edit_user(user_id):
         # Gestione del veicolo ACI con campi progressivi
         if user.aci_vehicle_id and user.aci_vehicle:
             # Popola i campi progressivi basati sul veicolo esistente
-            form.aci_vehicle_tipo.data = user.aci_vehicle.tipo
+            form.aci_vehicle_tipo.data = user.aci_vehicle.tipologia
             form.aci_vehicle_marca.data = user.aci_vehicle.marca
             form.aci_vehicle.data = user.aci_vehicle_id
             
             # Aggiorna le scelte per rendere i dropdown funzionali
             from models import ACITable
-            aci_vehicles = ACITable.query.order_by(ACITable.tipo, ACITable.marca, ACITable.modello).all()
+            aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
             
             # Aggiorna le scelte delle marche per il tipo selezionato
-            marche = list(set([v.marca for v in aci_vehicles if v.tipo == user.aci_vehicle.tipo and v.marca]))
+            marche = list(set([v.marca for v in aci_vehicles if v.tipologia == user.aci_vehicle.tipologia and v.marca]))
             form.aci_vehicle_marca.choices = [('', 'Seleziona marca')] + [(marca, marca) for marca in sorted(marche)]
             
             # Aggiorna le scelte dei modelli per tipo e marca selezionati
             modelli = ACITable.query.filter(
-                ACITable.tipo == user.aci_vehicle.tipo,
+                ACITable.tipologia == user.aci_vehicle.tipologia,
                 ACITable.marca == user.aci_vehicle.marca
             ).order_by(ACITable.modello).all()
             form.aci_vehicle.choices = [('', 'Seleziona modello')] + [

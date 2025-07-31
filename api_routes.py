@@ -211,7 +211,7 @@ def api_aci_marche_by_tipo(tipo):
     try:
         from models import ACITable
         marche = db.session.query(ACITable.marca).filter(
-            ACITable.tipo == tipo,
+            ACITable.tipologia == tipo,
             ACITable.marca.isnot(None)
         ).distinct().order_by(ACITable.marca).all()
         
@@ -233,7 +233,7 @@ def api_aci_modelli_by_tipo_marca(tipo, marca):
     try:
         from models import ACITable
         vehicles = ACITable.query.filter(
-            ACITable.tipo == tipo,
+            ACITable.tipologia == tipo,
             ACITable.marca == marca
         ).order_by(ACITable.modello).all()
         
