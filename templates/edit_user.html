@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function toggleSedeSelect() {
         if (allSediCheck && allSediCheck.checked) {
             sedeSelect.disabled = true;
-            sedeSelect.value = -1; // Imposta su "Seleziona una sede"
+            sedeSelect.value = ''; // Imposta valore vuoto per evitare validazione
             const workScheduleGroup = document.getElementById('workScheduleGroup');
             if (workScheduleGroup) {
                 workScheduleGroup.style.display = 'none';
@@ -279,6 +279,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateWorkSchedules();
             }, 100); // Piccolo delay per permettere al DOM di essere pronto
         }
+    }
+    
+    // Gestisce il submit del form per campo sede disabilitato
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Se all_sedi è checked, riabilita temporaneamente il campo sede per l'invio
+            if (allSediCheck && allSediCheck.checked && sedeSelect && sedeSelect.disabled) {
+                sedeSelect.disabled = false;
+                sedeSelect.value = ''; // Assicurati che sia vuoto
+            }
+        });
     }
 });
 </script>

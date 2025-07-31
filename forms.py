@@ -17,7 +17,7 @@ class UserForm(FlaskForm):
     role = SelectField('Ruolo', choices=[], validators=[DataRequired()])
     first_name = StringField('Nome', validators=[DataRequired(), Length(max=100)])
     last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
-    sede = SelectField('Sede', coerce=int, validators=[])
+    sede = SelectField('Sede', coerce=int, validators=[], validate_choice=False)
     all_sedi = BooleanField('Accesso a tutte le sedi', default=False)
     work_schedule = SelectField('Orario di Lavoro', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
@@ -83,12 +83,12 @@ class UserForm(FlaskForm):
             raise ValidationError('Email già esistente. Scegli un\'altra email.')
     
     def validate_sede(self, sede):
-        # Se all_sedi è False, deve essere selezionata una sede specifica
-        if not self.all_sedi.data and (not sede.data or sede.data == -1):
-            raise ValidationError('Seleziona una sede o abilita "Accesso a tutte le sedi".')
-        # Se all_sedi è True, non è necessaria una sede specifica
+        # Se all_sedi è True, la sede specifica non è richiesta
         if self.all_sedi.data:
             return
+        # Se all_sedi è False, deve essere selezionata una sede specifica
+        if not sede.data or sede.data == -1:
+            raise ValidationError('Seleziona una sede o abilita "Accesso a tutte le sedi".')
     
     def validate_work_schedule(self, work_schedule):
         # Il work_schedule è opzionale, ma se selezionato deve essere valido
