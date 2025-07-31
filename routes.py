@@ -9045,25 +9045,41 @@ def admin_required(f):
 @login_required
 @admin_required
 def aci_tables():
-    """Visualizza tutte le tabelle ACI con filtri"""
+    """Visualizza tabelle ACI con caricamento lazy - record caricati solo dopo filtro"""
     form = ACIFilterForm()
+    tables = []
+    total_records = ACITable.query.count()
     
-    # Costruisci query base
-    query = ACITable.query
-    
-    # Applica filtri se presenti (solo su POST)
+    # LAZY LOADING: carica record solo se è stato applicato un filtro (POST)
     if request.method == "POST" and form.validate_on_submit():
+        query = ACITable.query
+        
+        # Applica filtri selezionati
+        filters_applied = False
         if form.tipologia.data:
             query = query.filter(ACITable.tipologia == form.tipologia.data)
+            filters_applied = True
         if form.marca.data:
             query = query.filter(ACITable.marca == form.marca.data)
+            filters_applied = True
         if form.modello.data:
             query = query.filter(ACITable.modello == form.modello.data)
+            filters_applied = True
+            
+        # Carica risultati solo se almeno un filtro è applicato
+        if filters_applied:
+            tables = query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
+            import logging
+            logging.info(f"ACI Tables: Caricati {len(tables)} record con filtri applicati")
+        else:
+            # Se nessun filtro è selezionato ma form è stato inviato, mostra messaggio
+            flash("⚠️ Seleziona almeno un filtro prima di cercare", "warning")
     
-    # Ordina e pagina risultati
-    tables = query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
-    
-    return render_template("aci_tables.html", tables=tables, form=form)
+    return render_template("aci_tables.html", 
+                         tables=tables, 
+                         form=form, 
+                         total_records=total_records,
+                         show_results=(request.method == "POST"))
 
 
 

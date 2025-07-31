@@ -51,28 +51,36 @@
                 </div>
             </div>
 
-            <!-- Statistiche -->
+            <!-- Statistiche Database -->
             <div class="row mb-4">
                 <div class="col-md-3">
                     <div class="card text-center border-primary">
                         <div class="card-body">
-                            <h5 class="card-title text-primary">{{ tables|length }}</h5>
-                            <p class="card-text">Record Totali</p>
+                            <h5 class="card-title text-primary">{{ total_records }}</h5>
+                            <p class="card-text">Record nel DB</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card text-center border-info">
                         <div class="card-body">
-                            <h5 class="card-title text-info">{{ tables|groupby('tipologia')|list|length }}</h5>
-                            <p class="card-text">Tipologie</p>
+                            <h5 class="card-title text-info">{{ tables|length }}</h5>
+                            <p class="card-text">Record Filtrati</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card text-center border-success">
                         <div class="card-body">
-                            <h5 class="card-title text-success">{{ tables|groupby('marca')|list|length }}</h5>
+                            <h5 class="card-title text-success">{{ tables|groupby('tipologia')|list|length }}</h5>
+                            <p class="card-text">Tipologie</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">{{ tables|groupby('marca')|list|length }}</h5>
                             <p class="card-text">Marche</p>
                         </div>
                     </div>
@@ -89,8 +97,9 @@
                     {% endif %}
                 </div>
                 <div class="card-body p-0">
-                    {% if tables %}
-                    <div class="table-responsive">
+                    {% if show_results %}
+                        {% if tables %}
+                        <div class="table-responsive">
                         <table class="table table-hover mb-0" id="aciTable">
                             <thead class="table-dark">
                                 <tr>
@@ -147,25 +156,36 @@
                                 {% endfor %}
                             </tbody>
                         </table>
-                    </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">Nessun record trovato</h4>
+                            <p class="text-muted">I filtri applicati non hanno prodotto risultati. Prova con filtri diversi.</p>
+                            <a href="{{ url_for('aci_tables') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo"></i> Azzera Filtri
+                            </a>
+                        </div>
+                        {% endif %}
                     {% else %}
                     <div class="text-center py-5">
-                        <i class="fas fa-car fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted">Nessun record ACI trovato</h4>
-                        <p class="text-muted">Carica un file Excel o crea un nuovo record manualmente.</p>
-                        <a href="{{ url_for('aci_upload') }}" class="btn btn-primary me-2">
-                            <i class="fas fa-upload"></i> Carica Excel
-                        </a>
-                        <a href="{{ url_for('aci_create') }}" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Nuovo Record
-                        </a>
+                        <i class="fas fa-filter fa-3x text-primary mb-3"></i>
+                        <h4 class="text-primary">Sistema Caricamento Ottimizzato</h4>
+                        <p class="text-muted mb-4">
+                            <strong>{{ total_records }}</strong> record presenti nel database.<br>
+                            Per migliorare le performance, seleziona almeno un filtro e clicca "Filtra" per visualizzare i dati.
+                        </p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Caricamento Lazy:</strong> I record vengono caricati solo quando necessario per evitare rallentamenti.
+                        </div>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
             <!-- Cancellazione in massa per tipologia -->
-            {% if tables %}
+            {% if show_results and tables %}
             <div class="mt-4">
                 <h5>Cancellazione in Massa</h5>
                 <form method="POST" action="{{ url_for('aci_bulk_delete') }}" class="d-inline">
