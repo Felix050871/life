@@ -9352,16 +9352,28 @@ def create_mileage_request():
 @login_required
 def my_mileage_requests():
     """Visualizza le richieste di rimborso chilometrico dell'utente corrente"""
-    if not current_user.can_view_my_mileage_requests():
-        flash('Non hai i permessi per visualizzare le tue richieste di rimborso chilometrico.', 'warning')
+    try:
+        if not current_user.can_view_my_mileage_requests():
+            flash('Non hai i permessi per visualizzare le tue richieste di rimborso chilometrico.', 'warning')
+            return redirect(url_for('dashboard'))
+        
+        requests = MileageRequest.query.filter_by(user_id=current_user.id)\
+                                      .options(joinedload(MileageRequest.approver),
+                                              joinedload(MileageRequest.vehicle))\
+                                      .order_by(MileageRequest.created_at.desc()).all()
+        
+        print(f"DEBUG: Trovate {len(requests)} richieste per utente {current_user.id}")
+        for req in requests:
+            print(f"DEBUG: Richiesta {req.id} - route_addresses type: {type(req.route_addresses)}")
+            print(f"DEBUG: Richiesta {req.id} - route_addresses value: {req.route_addresses}")
+        
+        return render_template('my_mileage_requests.html', requests=requests)
+    except Exception as e:
+        print(f"ERRORE MY_MILEAGE_REQUESTS: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash('Errore nel caricamento delle richieste di rimborso.', 'danger')
         return redirect(url_for('dashboard'))
-    
-    requests = MileageRequest.query.filter_by(user_id=current_user.id)\
-                                  .options(joinedload(MileageRequest.approver),
-                                          joinedload(MileageRequest.vehicle))\
-                                  .order_by(MileageRequest.created_at.desc()).all()
-    
-    return render_template('my_mileage_requests.html', requests=requests)
 
 @app.route('/mileage_requests/<int:request_id>/approve', methods=['POST'])
 @login_required
