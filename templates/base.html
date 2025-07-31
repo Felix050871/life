@@ -395,6 +395,35 @@
                 </li>
                 {% endif %}
 
+                <!-- RIMBORSI CHILOMETRICI - Solo se ha almeno un permesso rimborsi -->
+                {% set has_mileage_permission = current_user.can_create_mileage_requests() or current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests() %}
+                {% if has_mileage_permission %}
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-car"></i>
+                        <span>Rimborsi Chilometrici</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        {% if current_user.can_create_mileage_requests() %}
+                        <li><a href="{{ url_for('create_mileage_request') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-plus"></i>Nuova Richiesta
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_my_mileage_requests() %}
+                        <li><a href="{{ url_for('my_mileage_requests') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-user"></i>Le Mie Richieste
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests() %}
+                        <li><a href="{{ url_for('mileage_requests') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-list"></i>Visualizza Richieste
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
                 <!-- FESTIVITÀ - Solo se ha almeno un permesso festività -->
                 {% set has_holidays_permission = current_user.can_manage_holidays() or current_user.can_view_holidays() %}
                 {% if has_holidays_permission %}

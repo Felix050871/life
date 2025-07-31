@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova Richiesta Rimborso Chilometrico - Workly{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            <i class="fas fa-plus-circle me-2"></i>
+            Nuova Richiesta Rimborso Chilometrico
+        </h1>
+        <a href="{{ url_for('my_mileage_requests') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Torna alle Mie Richieste
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-car me-2"></i>Dettagli Viaggio
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="mileageForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Data viaggio -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.travel_date.label(class="form-label") }}
+                                {{ form.travel_date(class="form-control") }}
+                                {% for error in form.travel_date.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Percorso -->
+                        <div class="mb-3">
+                            {{ form.route_addresses.label(class="form-label") }}
+                            {{ form.route_addresses(class="form-control") }}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Inserisci un indirizzo per riga. Il sistema calcolerà automaticamente la distanza tra i punti.
+                            </div>
+                            {% for error in form.route_addresses.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Chilometraggio -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.total_km.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.total_km(class="form-control", id="totalKmInput") }}
+                                    <span class="input-group-text">km</span>
+                                </div>
+                                {% for error in form.total_km.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="form-check">
+                                    {{ form.is_km_manual(class="form-check-input", id="isKmManual") }}
+                                    {{ form.is_km_manual.label(class="form-check-label") }}
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-calculator me-1"></i>
+                                    Spunta se hai inserito manualmente i chilometri invece di farli calcolare automaticamente.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Veicolo -->
+                        <hr>
+                        <h6><i class="fas fa-car me-2"></i>Informazioni Veicolo</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                {{ form.vehicle_id.label(class="form-label") }}
+                                {{ form.vehicle_id(class="form-select", id="vehicleSelect") }}
+                                {% for error in form.vehicle_id.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="vehicleDescriptionDiv" style="display: none;">
+                            {{ form.vehicle_description.label(class="form-label") }}
+                            {{ form.vehicle_description(class="form-control", placeholder="Es: Fiat Panda 1.2, BMW 320d, etc.") }}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Descrivi il veicolo utilizzato se non presente nella lista ACI.
+                            </div>
+                            {% for error in form.vehicle_description.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Calcolo rimborso preview -->
+                        <div class="alert alert-info" id="reimbursementPreview" style="display: none;">
+                            <h6><i class="fas fa-calculator me-2"></i>Stima Rimborso</h6>
+                            <p class="mb-0">
+                                <span id="previewKm">0</span> km × €<span id="previewRate">0.0000</span>/km = 
+                                <strong>€<span id="previewAmount">0.00</span></strong>
+                            </p>
+                        </div>
+                        
+                        <!-- Motivazione -->
+                        <hr>
+                        <div class="mb-3">
+                            {{ form.purpose.label(class="form-label") }}
+                            {{ form.purpose(class="form-control") }}
+                            {% for error in form.purpose.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Note aggiuntive -->
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control") }}
+                            {% for error in form.notes.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('my_mileage_requests') }}" class="btn btn-secondary">Annulla</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Info Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Informazioni
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Il rimborso viene calcolato automaticamente basandosi sui costi ACI
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-route text-info me-2"></i>
+                            Puoi inserire percorsi multi-punto per viaggi complessi
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-calendar text-warning me-2"></i>
+                            Le richieste possono essere create fino a 30 giorni nel futuro
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-user-check text-primary me-2"></i>
+                            La richiesta deve essere approvata dal tuo responsabile
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Veicolo assegnato -->
+            {% if current_user.aci_vehicle %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-car me-2"></i>Il Tuo Veicolo Assegnato
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-car fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">{{ current_user.aci_vehicle.marca }} {{ current_user.aci_vehicle.modello }}</h6>
+                            <p class="text-muted mb-0">€{{ "%.4f"|format(current_user.aci_vehicle.costo_km) }}/km</p>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-success">
+                            <i class="fas fa-check me-1"></i>
+                            Questo veicolo è preselezionato per le tue richieste
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const vehicleSelect = document.getElementById('vehicleSelect');
+    const vehicleDescriptionDiv = document.getElementById('vehicleDescriptionDiv');
+    const totalKmInput = document.getElementById('totalKmInput');
+    const reimbursementPreview = document.getElementById('reimbursementPreview');
+    const previewKm = document.getElementById('previewKm');
+    const previewRate = document.getElementById('previewRate');
+    const previewAmount = document.getElementById('previewAmount');
+    
+    // Toggle vehicle description based on selection
+    vehicleSelect.addEventListener('change', function() {
+        if (this.value === '' || this.value === 'none') {
+            vehicleDescriptionDiv.style.display = 'block';
+            document.querySelector('#vehicleDescriptionDiv input').required = true;
+        } else {
+            vehicleDescriptionDiv.style.display = 'none';
+            document.querySelector('#vehicleDescriptionDiv input').required = false;
+        }
+        updateReimbursementPreview();
+    });
+    
+    // Update reimbursement preview
+    totalKmInput.addEventListener('input', updateReimbursementPreview);
+    
+    function updateReimbursementPreview() {
+        const km = parseFloat(totalKmInput.value) || 0;
+        const selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
+        
+        if (km > 0 && selectedOption && selectedOption.value) {
+            // Extract rate from option text (format: "MARCA MODELLO (€0.xxxx/km)")
+            const rateMatch = selectedOption.text.match(/€([\d.]+)\/km/);
+            if (rateMatch) {
+                const rate = parseFloat(rateMatch[1]);
+                const amount = km * rate;
+                
+                previewKm.textContent = km.toFixed(1);
+                previewRate.textContent = rate.toFixed(4);
+                previewAmount.textContent = amount.toFixed(2);
+                reimbursementPreview.style.display = 'block';
+            } else {
+                reimbursementPreview.style.display = 'none';
+            }
+        } else {
+            reimbursementPreview.style.display = 'none';
+        }
+    }
+    
+    // Initialize on page load
+    updateReimbursementPreview();
+    if (vehicleSelect.value === '' || vehicleSelect.value === 'none') {
+        vehicleDescriptionDiv.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

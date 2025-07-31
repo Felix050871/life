@@ -12,8 +12,8 @@ from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from config import get_config
 from sqlalchemy.orm import joinedload
-from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm
+from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable, MileageRequest
+from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm, MileageRequestForm, ApproveMileageForm, MileageFilterForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
 
 # Inject configuration into all templates
@@ -198,6 +198,26 @@ def dashboard():
         ).options(
             joinedload(OvertimeRequest.overtime_type)
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
+    
+    # Get recent mileage requests for widget - TEMPORANEAMENTE DISABILITATO
+    recent_mileage_requests = []
+    my_mileage_requests = []
+    # TODO: Abilitare quando il modello MileageRequest sarà nel database
+    # if current_user.can_view_mileage_widget():
+    #     if current_user.can_manage_mileage_requests() or current_user.can_approve_mileage_requests():
+    #         # Managers see all requests
+    #         recent_mileage_requests = MileageRequest.query.options(
+    #             joinedload(MileageRequest.user),
+    #             joinedload(MileageRequest.aci_vehicle)
+    #         ).order_by(MileageRequest.created_at.desc()).limit(10).all()
+    # 
+    # # Get my mileage requests for personal widget  
+    # if current_user.can_view_my_mileage_widget():
+    #     my_mileage_requests = MileageRequest.query.filter_by(
+    #         user_id=current_user.id
+    #     ).options(
+    #         joinedload(MileageRequest.aci_vehicle)
+    #     ).order_by(MileageRequest.created_at.desc()).limit(5).all()
     
     # Get weekly calendar data (Monday to Sunday)
     today = date.today()
@@ -393,6 +413,8 @@ def dashboard():
                          expense_reports_data=expense_reports_data,
                          recent_overtime_requests=recent_overtime_requests,
                          my_overtime_requests=my_overtime_requests,
+                         recent_mileage_requests=recent_mileage_requests,
+                         my_mileage_requests=my_mileage_requests,
                          format_hours=format_hours)
 
 @app.route('/dashboard_team')
@@ -9227,6 +9249,275 @@ def delete_overtime_type(type_id):
     db.session.commit()
     flash("Tipologia straordinario cancellata.", "info")
     return redirect(url_for("overtime_types"))
+
+
+# =============================================
+# SISTEMA RIMBORSI CHILOMETRICI
+# =============================================
+
+@app.route('/mileage_requests')
+@login_required
+def mileage_requests():
+    """Visualizza le richieste di rimborso chilometrico"""
+    if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
+        flash('Non hai i permessi per visualizzare le richieste di rimborso chilometrico.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    # Filtri
+    filter_form = MileageFilterForm(current_user=current_user)
+    
+    # Base query
+    query = MileageRequest.query.options(
+        joinedload(MileageRequest.user),
+        joinedload(MileageRequest.approved_by),
+        joinedload(MileageRequest.aci_vehicle)
+    )
+    
+    # Filtri per sede (se l'utente non ha accesso globale)
+    if not current_user.all_sedi and current_user.sede_id:
+        query = query.join(User).filter(User.sede_id == current_user.sede_id)
+    
+    # Applica filtri dal form
+    if request.method == 'POST' and filter_form.validate_on_submit():
+        if filter_form.status.data:
+            query = query.filter(MileageRequest.status == filter_form.status.data)
+        if filter_form.user_id.data:
+            query = query.filter(MileageRequest.user_id == filter_form.user_id.data)
+        if filter_form.date_from.data:
+            query = query.filter(MileageRequest.travel_date >= filter_form.date_from.data)
+        if filter_form.date_to.data:
+            query = query.filter(MileageRequest.travel_date <= filter_form.date_to.data)
+        if filter_form.min_amount.data:
+            query = query.filter(MileageRequest.total_amount >= filter_form.min_amount.data)
+        if filter_form.max_amount.data:
+            query = query.filter(MileageRequest.total_amount <= filter_form.max_amount.data)
+    
+    # Ordina per data più recente
+    requests = query.order_by(MileageRequest.created_at.desc()).all()
+    
+    return render_template('mileage_requests.html', 
+                         requests=requests, 
+                         filter_form=filter_form)
+
+@app.route('/mileage_requests/create', methods=['GET', 'POST'])
+@login_required
+def create_mileage_request():
+    """Crea una nuova richiesta di rimborso chilometrico"""
+    if not current_user.can_create_mileage_requests():
+        flash('Non hai i permessi per creare richieste di rimborso chilometrico.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    form = MileageRequestForm(user=current_user)
+    
+    if form.validate_on_submit():
+        # Crea la richiesta
+        mileage_request = MileageRequest(
+            user_id=current_user.id,
+            travel_date=form.travel_date.data,
+            route_addresses=form.route_addresses.data,
+            total_km=form.total_km.data,
+            is_km_manual=form.is_km_manual.data,
+            purpose=form.purpose.data,
+            notes=form.notes.data,
+            aci_vehicle_id=form.vehicle_id.data if form.vehicle_id.data else None,
+            vehicle_description=form.vehicle_description.data if form.vehicle_description.data else None
+        )
+        
+        # Calcola l'importo del rimborso
+        mileage_request.calculate_reimbursement_amount()
+        
+        db.session.add(mileage_request)
+        db.session.commit()
+        
+        flash('Richiesta di rimborso chilometrico inviata con successo!', 'success')
+        return redirect(url_for('my_mileage_requests'))
+    
+    return render_template('create_mileage_request.html', form=form)
+
+@app.route('/my_mileage_requests')
+@login_required
+def my_mileage_requests():
+    """Visualizza le richieste di rimborso chilometrico dell'utente corrente"""
+    if not current_user.can_view_my_mileage_requests():
+        flash('Non hai i permessi per visualizzare le tue richieste di rimborso chilometrico.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    requests = MileageRequest.query.filter_by(user_id=current_user.id)\
+                                  .options(joinedload(MileageRequest.approved_by),
+                                          joinedload(MileageRequest.aci_vehicle))\
+                                  .order_by(MileageRequest.created_at.desc()).all()
+    
+    return render_template('my_mileage_requests.html', requests=requests)
+
+@app.route('/mileage_requests/<int:request_id>/approve', methods=['POST'])
+@login_required
+def approve_mileage_request(request_id):
+    """Approva una richiesta di rimborso chilometrico"""
+    if not current_user.can_approve_mileage_requests():
+        flash('Non hai i permessi per approvare richieste di rimborso chilometrico.', 'warning')
+        return redirect(url_for('mileage_requests'))
+    
+    mileage_request = MileageRequest.query.get_or_404(request_id)
+    
+    # Controllo per sede se necessario
+    if not current_user.all_sedi and current_user.sede_id:
+        if mileage_request.user.sede_id != current_user.sede_id:
+            flash('Non puoi approvare richieste di utenti di altre sedi.', 'warning')
+            return redirect(url_for('mileage_requests'))
+    
+    if mileage_request.status != 'pending':
+        flash('Questa richiesta è già stata processata.', 'warning')
+        return redirect(url_for('mileage_requests'))
+    
+    form = ApproveMileageForm()
+    if form.validate_on_submit():
+        if form.action.data == 'approve':
+            mileage_request.approve(current_user, form.comment.data)
+            flash('Richiesta di rimborso chilometrico approvata!', 'success')
+        else:  # reject
+            mileage_request.reject(current_user, form.comment.data)
+            flash('Richiesta di rimborso chilometrico rifiutata.', 'info')
+        
+        db.session.commit()
+        return redirect(url_for('mileage_requests'))
+    
+    return render_template('approve_mileage_request.html', 
+                         request=mileage_request, 
+                         form=form)
+
+@app.route('/mileage_requests/<int:request_id>/delete', methods=['POST'])
+@login_required
+def delete_mileage_request(request_id):
+    """Cancella una richiesta di rimborso chilometrico"""
+    mileage_request = MileageRequest.query.get_or_404(request_id)
+    
+    # Solo l'autore o un manager può cancellare
+    can_delete = (mileage_request.user_id == current_user.id and 
+                  current_user.can_view_my_mileage_requests()) or \
+                 current_user.can_manage_mileage_requests()
+    
+    if not can_delete:
+        flash('Non hai i permessi per cancellare questa richiesta.', 'warning')
+        return redirect(url_for('mileage_requests'))
+    
+    # Non permettere cancellazione se già approvata
+    if mileage_request.status == 'approved':
+        flash('Non è possibile cancellare una richiesta già approvata.', 'warning')
+        return redirect(url_for('mileage_requests'))
+    
+    db.session.delete(mileage_request)
+    db.session.commit()
+    flash('Richiesta di rimborso chilometrico cancellata.', 'info')
+    
+    # Redirect in base a dove si trovava l'utente
+    if mileage_request.user_id == current_user.id:
+        return redirect(url_for('my_mileage_requests'))
+    else:
+        return redirect(url_for('mileage_requests'))
+
+@app.route('/mileage_requests/export')
+@login_required
+def export_mileage_requests():
+    """Esporta le richieste di rimborso chilometrico in Excel"""
+    if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
+        flash('Non hai i permessi per esportare le richieste di rimborso chilometrico.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        # Base query
+        query = MileageRequest.query.options(
+            joinedload(MileageRequest.user),
+            joinedload(MileageRequest.approved_by),
+            joinedload(MileageRequest.aci_vehicle)
+        )
+        
+        # Filtri per sede
+        if not current_user.all_sedi and current_user.sede_id:
+            query = query.join(User).filter(User.sede_id == current_user.sede_id)
+        
+        requests = query.order_by(MileageRequest.travel_date.desc()).all()
+        
+        # Crea workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Rimborsi Chilometrici"
+        
+        # Header con stile
+        headers = [
+            'Data Viaggio', 'Utente', 'Percorso', 'KM Totali', 'Veicolo', 
+            'Importo (€)', 'Stato', 'Motivazione', 'Note', 'Data Richiesta', 
+            'Approvato/Rifiutato da', 'Data Approvazione', 'Commento Approvazione'
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+        
+        # Dati
+        for row, req in enumerate(requests, 2):
+            ws.cell(row=row, column=1, value=req.travel_date.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=2, value=req.user.get_full_name())
+            ws.cell(row=row, column=3, value=req.get_route_summary())
+            ws.cell(row=row, column=4, value=req.total_km)
+            
+            # Veicolo
+            if req.aci_vehicle:
+                vehicle_info = f"{req.aci_vehicle.marca} {req.aci_vehicle.modello}"
+            else:
+                vehicle_info = req.vehicle_description or "Non specificato"
+            ws.cell(row=row, column=5, value=vehicle_info)
+            
+            ws.cell(row=row, column=6, value=req.total_amount or 0)
+            
+            # Stato con colore
+            status_cell = ws.cell(row=row, column=7, value=req.get_status_display())
+            if req.status == 'approved':
+                status_cell.fill = PatternFill(start_color="D4F4DD", end_color="D4F4DD", fill_type="solid")
+            elif req.status == 'rejected':
+                status_cell.fill = PatternFill(start_color="F8D7DA", end_color="F8D7DA", fill_type="solid")
+            
+            ws.cell(row=row, column=8, value=req.purpose)
+            ws.cell(row=row, column=9, value=req.notes or '')
+            ws.cell(row=row, column=10, value=req.created_at.strftime('%d/%m/%Y %H:%M'))
+            
+            if req.approved_by:
+                ws.cell(row=row, column=11, value=req.approved_by.get_full_name())
+            if req.approved_at:
+                ws.cell(row=row, column=12, value=req.approved_at.strftime('%d/%m/%Y %H:%M'))
+            ws.cell(row=row, column=13, value=req.approval_comment or '')
+        
+        # Auto-fit colonne
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Prepara response
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        response = make_response(output.read())
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename=rimborsi_chilometrici_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        
+        return response
+        
+    except Exception as e:
+        flash(f'Errore durante l\'esportazione: {str(e)}', 'danger')
+        return redirect(url_for('mileage_requests'))
 
 
 # =============================================

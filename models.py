@@ -142,7 +142,16 @@ class UserRole(db.Model):
             'can_view_my_overtime_requests_widget': 'Widget Le Mie Richieste Straordinario',
             'can_view_overtime_management_widget': 'Widget Gestione Straordinari',
             'can_view_overtime_widget': 'Widget Straordinari',
-            'can_view_my_overtime_widget': 'Widget I Miei Straordinari'
+            'can_view_my_overtime_widget': 'Widget I Miei Straordinari',
+            
+            # Rimborsi chilometrici
+            'can_create_mileage_requests': 'Creare Richieste Rimborso Km',
+            'can_view_mileage_requests': 'Visualizzare Richieste Rimborso Km',
+            'can_approve_mileage_requests': 'Approvare Richieste Rimborso Km',
+            'can_manage_mileage_requests': 'Gestire Richieste Rimborso Km',
+            'can_view_my_mileage_requests': 'Visualizzare Le Mie Richieste Rimborso Km',
+            'can_view_mileage_widget': 'Widget Rimborsi Chilometrici',
+            'can_view_my_mileage_widget': 'Widget I Miei Rimborsi'
         }
 
 class User(UserMixin, db.Model):
@@ -402,6 +411,22 @@ class User(UserMixin, db.Model):
     
     def can_view_my_overtime_requests(self):
         return self.has_permission('can_view_my_overtime_requests')
+    
+    # Metodi permessi rimborsi chilometrici
+    def can_create_mileage_requests(self):
+        return self.has_permission('can_create_mileage_requests')
+    
+    def can_view_mileage_requests(self):
+        return self.has_permission('can_view_mileage_requests')
+    
+    def can_approve_mileage_requests(self):
+        return self.has_permission('can_approve_mileage_requests')
+    
+    def can_manage_mileage_requests(self):
+        return self.has_permission('can_manage_mileage_requests')
+    
+    def can_view_my_mileage_requests(self):
+        return self.has_permission('can_view_my_mileage_requests')
     
     def can_access_turni(self):
         """Verifica se l'utente può accedere alla gestione turni"""
@@ -2181,6 +2206,183 @@ class OvertimeRequest(db.Model):
         
         total_hours = sum(request.duration_hours for request in requests)
         return round(total_hours, 2)
+
+
+# ============================================================================
+# SISTEMA RIMBORSI CHILOMETRICI
+# ============================================================================
+
+class MileageRequest(db.Model):
+    """Richieste di rimborso chilometrico dei dipendenti"""
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    travel_date = db.Column(db.Date, nullable=False)
+    
+    # Percorso multi-punto (JSON array di indirizzi)
+    route_addresses = db.Column(db.JSON, nullable=False)  # ["Via Roma 32, Milano", "Via Milano 2, Roma", ...]
+    
+    # Chilometraggio
+    total_km = db.Column(db.Float, nullable=False)
+    calculated_km = db.Column(db.Float, nullable=True)  # KM calcolati automaticamente
+    is_km_manual = db.Column(db.Boolean, default=False)  # Se i KM sono stati inseriti manualmente
+    
+    # Veicolo utilizzato
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)
+    vehicle_description = db.Column(db.String(200))  # Descrizione del veicolo se non in ACI
+    
+    # Calcolo rimborso
+    cost_per_km = db.Column(db.Float, nullable=False)  # Costo per km al momento della richiesta
+    total_amount = db.Column(db.Float, nullable=False)  # Importo totale calcolato
+    
+    # Motivazione e note
+    purpose = db.Column(db.Text, nullable=False)  # Scopo del viaggio
+    notes = db.Column(db.Text)  # Note aggiuntive
+    
+    # Status e approvazione
+    status = db.Column(db.String(20), default='pending', nullable=False)  # pending, approved, rejected
+    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    approval_comment = db.Column(db.Text)
+    
+    # Metadati
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    employee = db.relationship('User', foreign_keys=[employee_id], backref='mileage_requests')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_mileage_requests')
+    vehicle = db.relationship('ACITable', backref='mileage_requests')
+    
+    def __repr__(self):
+        return f'<MileageRequest {self.employee.get_full_name()} - {self.travel_date} - {self.total_km}km>'
+    
+    @property
+    def status_display(self):
+        """Mostra lo stato in italiano"""
+        status_map = {
+            'pending': 'In Attesa',
+            'approved': 'Approvata',
+            'rejected': 'Rifiutata'
+        }
+        return status_map.get(self.status, self.status)
+    
+    @property
+    def status_color(self):
+        """Restituisce il colore Bootstrap per lo stato"""
+        color_map = {
+            'pending': 'warning',
+            'approved': 'success',
+            'rejected': 'danger'
+        }
+        return color_map.get(self.status, 'secondary')
+    
+    @property
+    def route_display(self):
+        """Restituisce il percorso in formato leggibile"""
+        if not self.route_addresses:
+            return "Percorso non specificato"
+        
+        if len(self.route_addresses) <= 2:
+            return " → ".join(self.route_addresses)
+        else:
+            # Per percorsi multi-punto, mostra partenza → ... → destinazione
+            return f"{self.route_addresses[0]} → ... → {self.route_addresses[-1]} ({len(self.route_addresses)} punti)"
+    
+    @property
+    def route_full_display(self):
+        """Restituisce il percorso completo"""
+        if not self.route_addresses:
+            return "Percorso non specificato"
+        return " → ".join(self.route_addresses)
+    
+    def can_be_edited(self):
+        """Verifica se la richiesta può essere modificata"""
+        return self.status == 'pending'
+    
+    def can_be_approved_by(self, user):
+        """Verifica se l'utente può approvare questa richiesta di rimborso"""
+        if not user.can_approve_mileage_requests():
+            return False
+            
+        # Controllo sede: stesso sede o accesso globale
+        if user.all_sedi:
+            return True
+        
+        return user.sede_id == self.employee.sede_id
+    
+    def approve(self, approver, comment=None):
+        """Approva la richiesta di rimborso chilometrico"""
+        self.status = 'approved'
+        self.approved_by = approver.id
+        self.approved_at = italian_now()
+        self.approval_comment = comment
+        
+        # Invia notifica di approvazione
+        notification = InternalMessage(
+            recipient_id=self.employee_id,
+            sender_id=approver.id,
+            title="Rimborso Chilometrico Approvato",
+            message=f"Il tuo rimborso chilometrico per {self.total_km}km del {self.travel_date.strftime('%d/%m/%Y')} è stato approvato per un importo di €{self.total_amount:.2f}. {comment or ''}",
+            message_type='Successo'
+        )
+        db.session.add(notification)
+    
+    def reject(self, approver, comment=None):
+        """Rifiuta la richiesta di rimborso chilometrico"""
+        self.status = 'rejected'
+        self.approved_by = approver.id
+        self.approved_at = italian_now()
+        self.approval_comment = comment
+        
+        # Invia notifica di rifiuto
+        notification = InternalMessage(
+            recipient_id=self.employee_id,
+            sender_id=approver.id,
+            title="Rimborso Chilometrico Rifiutato",
+            message=f"Il tuo rimborso chilometrico per {self.total_km}km del {self.travel_date.strftime('%d/%m/%Y')} è stato rifiutato. Motivo: {comment or 'Nessun motivo specificato'}",
+            message_type='Attenzione'
+        )
+        db.session.add(notification)
+    
+    @classmethod
+    def get_pending_count_for_user(cls, user):
+        """Restituisce il numero di richieste in attesa per l'utente"""
+        query = cls.query.filter_by(status='pending')
+        
+        if user.all_sedi:
+            return query.count()
+        else:
+            return query.join(User, cls.employee_id == User.id).filter(
+                User.sede_id == user.sede_id
+            ).count()
+    
+    @classmethod
+    def get_monthly_summary(cls, employee_id, year, month):
+        """Restituisce un riassunto mensile dei rimborsi per un dipendente"""
+        from sqlalchemy import extract
+        
+        query = cls.query.filter(
+            cls.employee_id == employee_id,
+            extract('year', cls.travel_date) == year,
+            extract('month', cls.travel_date) == month
+        )
+        
+        # Calcola totali per stato
+        pending = query.filter_by(status='pending').all()
+        approved = query.filter_by(status='approved').all()
+        rejected = query.filter_by(status='rejected').all()
+        
+        return {
+            'pending_count': len(pending),
+            'approved_count': len(approved),
+            'rejected_count': len(rejected),
+            'pending_km': sum([req.total_km for req in pending]),
+            'approved_km': sum([req.total_km for req in approved]),
+            'pending_amount': sum([req.total_amount for req in pending]),
+            'approved_amount': sum([req.total_amount for req in approved]),
+            'total_km': sum([req.total_km for req in pending + approved + rejected]),
+            'total_amount': sum([req.total_amount for req in pending + approved + rejected])
+        }
 
 
 class Sede(db.Model):

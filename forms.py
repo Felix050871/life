@@ -936,6 +936,17 @@ class RoleForm(FlaskForm):
     can_view_overtime_widget = BooleanField('Widget Straordinari')
     can_view_my_overtime_widget = BooleanField('Widget I Miei Straordinari')
     
+    # Gestione Rimborsi Chilometrici
+    can_create_mileage_requests = BooleanField('Creare Richieste Rimborso Km')
+    can_view_mileage_requests = BooleanField('Visualizzare Richieste Rimborso Km')
+    can_approve_mileage_requests = BooleanField('Approvare Richieste Rimborso Km')
+    can_manage_mileage_requests = BooleanField('Gestire Richieste Rimborso Km')
+    can_view_my_mileage_requests = BooleanField('Visualizzare Le Mie Richieste Rimborso Km')
+    
+    # Widget Rimborsi Chilometrici
+    can_view_mileage_widget = BooleanField('Widget Rimborsi Chilometrici')
+    can_view_my_mileage_widget = BooleanField('Widget I Miei Rimborsi')
+    
     is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
     
@@ -1055,7 +1066,16 @@ class RoleForm(FlaskForm):
             'can_manage_overtime_types': self.can_manage_overtime_types.data,
             
             'can_view_overtime_widget': self.can_view_overtime_widget.data,
-            'can_view_my_overtime_widget': self.can_view_my_overtime_widget.data
+            'can_view_my_overtime_widget': self.can_view_my_overtime_widget.data,
+            
+            # Rimborsi chilometrici
+            'can_create_mileage_requests': self.can_create_mileage_requests.data,
+            'can_view_mileage_requests': self.can_view_mileage_requests.data,
+            'can_approve_mileage_requests': self.can_approve_mileage_requests.data,
+            'can_manage_mileage_requests': self.can_manage_mileage_requests.data,
+            'can_view_my_mileage_requests': self.can_view_my_mileage_requests.data,
+            'can_view_mileage_widget': self.can_view_mileage_widget.data,
+            'can_view_my_mileage_widget': self.can_view_my_mileage_widget.data
         }
     
     def populate_permissions(self, permissions_dict):
@@ -1151,6 +1171,15 @@ class RoleForm(FlaskForm):
         
         self.can_view_overtime_widget.data = permissions_dict.get('can_view_overtime_widget', False)
         self.can_view_my_overtime_widget.data = permissions_dict.get('can_view_my_overtime_widget', False)
+        
+        # Rimborsi chilometrici
+        self.can_create_mileage_requests.data = permissions_dict.get('can_create_mileage_requests', False)
+        self.can_view_mileage_requests.data = permissions_dict.get('can_view_mileage_requests', False)
+        self.can_approve_mileage_requests.data = permissions_dict.get('can_approve_mileage_requests', False)
+        self.can_manage_mileage_requests.data = permissions_dict.get('can_manage_mileage_requests', False)
+        self.can_view_my_mileage_requests.data = permissions_dict.get('can_view_my_mileage_requests', False)
+        self.can_view_mileage_widget.data = permissions_dict.get('can_view_mileage_widget', False)
+        self.can_view_my_mileage_widget.data = permissions_dict.get('can_view_my_mileage_widget', False)
 
 
 # Form del pacchetto presidio integrati
@@ -1428,6 +1457,164 @@ class OvertimeFilterForm(FlaskForm):
             self.overtime_type_id.choices = [('', 'Tutte le tipologie')] + [(ot.id, ot.name) for ot in overtime_types]
         except:
             self.overtime_type_id.choices = [('', 'Tutte le tipologie')]
+
+
+# ============================================================================
+# FORM RIMBORSI CHILOMETRICI
+# ============================================================================
+
+class MileageRequestForm(FlaskForm):
+    """Form per creare/modificare richieste di rimborso chilometrico"""
+    travel_date = DateField('Data Viaggio', validators=[DataRequired()])
+    
+    # Percorso multi-punto
+    route_addresses = TextAreaField('Percorso (un indirizzo per riga)', 
+                                  validators=[DataRequired()],
+                                  render_kw={
+                                      'placeholder': 'Esempio:\nVia Roma 32, Milano\nVia Milano 2, Roma\nVia Roma 32, Milano',
+                                      'rows': 4
+                                  })
+    
+    # Chilometraggio
+    total_km = FloatField('Chilometri Totali', 
+                         validators=[DataRequired(), NumberRange(min=0.1, max=9999.9)],
+                         render_kw={'step': '0.1', 'placeholder': 'Es: 120.5'})
+    
+    is_km_manual = BooleanField('KM inseriti manualmente', default=False)
+    
+    # Veicolo (opzionale se l'utente ha già un veicolo assegnato)
+    vehicle_id = SelectField('Veicolo ACI', coerce=lambda x: int(x) if x and x != '' else None, 
+                           validators=[Optional()], validate_choice=False)
+    vehicle_description = StringField('Descrizione Veicolo (se non in ACI)', 
+                                    validators=[Optional(), Length(max=200)])
+    
+    # Motivazione
+    purpose = TextAreaField('Scopo del Viaggio', 
+                          validators=[DataRequired(), Length(max=500)],
+                          render_kw={'rows': 3, 'placeholder': 'Descrivi brevemente il motivo del viaggio...'})
+    
+    notes = TextAreaField('Note Aggiuntive', 
+                        validators=[Optional(), Length(max=500)],
+                        render_kw={'rows': 2})
+    
+    submit = SubmitField('Invia Richiesta')
+    
+    def __init__(self, user=None, *args, **kwargs):
+        super(MileageRequestForm, self).__init__(*args, **kwargs)
+        self.user = user
+        
+        # Popola le scelte dei veicoli ACI
+        try:
+            from models import ACITable
+            vehicles = ACITable.query.order_by(ACITable.marca, ACITable.modello).all()
+            self.vehicle_id.choices = [('', 'Seleziona veicolo')] + [
+                (v.id, f"{v.marca} {v.modello} (€{v.costo_km:.4f}/km)") 
+                for v in vehicles
+            ]
+            
+            # Se l'utente ha un veicolo assegnato, selezionalo di default
+            if user and hasattr(user, 'aci_vehicle_id') and user.aci_vehicle_id:
+                # Aggiungi il veicolo dell'utente se non è nelle scelte
+                user_vehicle = ACITable.query.get(user.aci_vehicle_id)
+                if user_vehicle:
+                    user_choice = (user_vehicle.id, f"{user_vehicle.marca} {user_vehicle.modello} (€{user_vehicle.costo_km:.4f}/km) - ASSEGNATO")
+                    if user_choice not in self.vehicle_id.choices:
+                        self.vehicle_id.choices.insert(1, user_choice)
+                    self.vehicle_id.data = user_vehicle.id
+        except Exception as e:
+            self.vehicle_id.choices = [('', 'Errore nel caricamento veicoli')]
+    
+    def validate_travel_date(self, field):
+        """Valida che la data del viaggio non sia troppo nel futuro"""
+        from datetime import date, timedelta
+        if field.data:
+            # Non permettere date più di 30 giorni nel futuro
+            max_date = date.today() + timedelta(days=30)
+            if field.data > max_date:
+                raise ValidationError('La data del viaggio non può essere più di 30 giorni nel futuro.')
+            
+            # Non permettere date più di 365 giorni nel passato
+            min_date = date.today() - timedelta(days=365)
+            if field.data < min_date:
+                raise ValidationError('La data del viaggio non può essere più di un anno nel passato.')
+    
+    def validate_route_addresses(self, field):
+        """Valida che ci siano almeno 2 indirizzi"""
+        if field.data:
+            addresses = [addr.strip() for addr in field.data.split('\n') if addr.strip()]
+            if len(addresses) < 2:
+                raise ValidationError('Inserisci almeno 2 indirizzi (partenza e destinazione).')
+            if len(addresses) > 10:
+                raise ValidationError('Massimo 10 indirizzi consentiti.')
+    
+    def validate(self, extra_validators=None):
+        """Validazione personalizzata del form"""
+        if not super().validate(extra_validators):
+            return False
+        
+        # Se non è selezionato un veicolo ACI, la descrizione del veicolo è obbligatoria
+        if not self.vehicle_id.data and not self.vehicle_description.data:
+            self.vehicle_description.errors.append('Seleziona un veicolo ACI oppure inserisci una descrizione del veicolo.')
+            return False
+        
+        return True
+    
+    def get_route_addresses_list(self):
+        """Restituisce la lista degli indirizzi dal campo textarea"""
+        if self.route_addresses.data:
+            return [addr.strip() for addr in self.route_addresses.data.split('\n') if addr.strip()]
+        return []
+
+
+class ApproveMileageForm(FlaskForm):
+    """Form per approvare/rifiutare richieste di rimborso chilometrico"""
+    action = SelectField('Azione', choices=[
+        ('approve', 'Approva'),
+        ('reject', 'Rifiuta')
+    ], validators=[DataRequired()])
+    comment = TextAreaField('Commento', render_kw={'rows': 3})
+    submit = SubmitField('Conferma')
+    
+    def validate_comment(self, field):
+        if self.action.data == 'reject' and not field.data:
+            raise ValidationError('Il commento è obbligatorio quando si rifiuta una richiesta.')
+
+
+class MileageFilterForm(FlaskForm):
+    """Form per filtrare le richieste di rimborso chilometrico"""
+    status = SelectField('Stato', choices=[
+        ('', 'Tutti'),
+        ('pending', 'In Attesa'),
+        ('approved', 'Approvate'),
+        ('rejected', 'Rifiutate')
+    ], default='')
+    
+    user_id = SelectField('Utente', coerce=lambda x: int(x) if x and x != '' and x != 'None' else None, choices=[])
+    
+    date_from = DateField('Da Data', format='%Y-%m-%d')
+    date_to = DateField('A Data', format='%Y-%m-%d')
+    
+    min_amount = FloatField('Importo Minimo (€)', render_kw={'step': '0.01', 'placeholder': '0.00'})
+    max_amount = FloatField('Importo Massimo (€)', render_kw={'step': '0.01', 'placeholder': '999.99'})
+    
+    submit = SubmitField('Filtra')
+    
+    def __init__(self, current_user=None, *args, **kwargs):
+        super(MileageFilterForm, self).__init__(*args, **kwargs)
+        
+        # Popola gli utenti in base ai permessi
+        from models import User
+        
+        if current_user and current_user.all_sedi:
+            # Utenti con accesso globale vedono tutti
+            users = User.query.filter_by(active=True).order_by(User.username).all()
+        elif current_user and current_user.sede_id:
+            # Utenti con sede specifica vedono solo utenti della stessa sede
+            users = User.query.filter_by(active=True, sede_id=current_user.sede_id).order_by(User.username).all()
+        else:
+            users = []
+        
+        self.user_id.choices = [('', 'Tutti gli utenti')] + [(u.id, f"{u.username} ({u.get_full_name()})") for u in users]
 
 
 # Form per upload file Excel ACI
