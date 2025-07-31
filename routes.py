@@ -9108,66 +9108,62 @@ def aci_tables_upload():
                 # Leggi Excel con pandas  
                 df = pd.read_excel(file_path)
                 
-                # Verifica colonne richieste
-                required_columns = ['Marca', 'Modello', 'Costo Km', 'Fringe Benefit 10', 'Fringe Benefit 25', 'Fringe Benefit 30', 'Fringe Benefit 50']
-                missing_columns = [col for col in required_columns if col not in df.columns]
+                # Verifica colonne richieste (solo le prime 3 colonne)
+                required_columns = ['MARCA', 'MODELLO', 'COSTO KM 15.000 KM']
+                available_columns = [col.upper() for col in df.columns]
+                missing_columns = [col for col in required_columns if col not in available_columns]
                 
                 if missing_columns:
                     flash(f"Colonne mancanti nel file Excel: {', '.join(missing_columns)}", "danger")
                     os.remove(file_path)
                     return render_template('aci_tables_upload.html', form=form)
                 
-                # Nome file come tipologia (senza estensione)
-                tipologia = os.path.splitext(filename)[0]
-                
                 # Processa ogni riga
                 rows_processed = 0
                 rows_errors = 0
+                rows_created = 0
+                rows_updated = 0
                 
                 for index, row in df.iterrows():
                     try:
-                        # Verifica che i valori numerici siano validi
-                        costo_km = float(row['Costo Km']) if pd.notna(row['Costo Km']) else 0.0
-                        fb_10 = float(row['Fringe Benefit 10']) if pd.notna(row['Fringe Benefit 10']) else 0.0
-                        fb_25 = float(row['Fringe Benefit 25']) if pd.notna(row['Fringe Benefit 25']) else 0.0
-                        fb_30 = float(row['Fringe Benefit 30']) if pd.notna(row['Fringe Benefit 30']) else 0.0
-                        fb_50 = float(row['Fringe Benefit 50']) if pd.notna(row['Fringe Benefit 50']) else 0.0
+                        # Estraiamo i dati dalle colonne corrette
+                        marca = str(row[0]).strip() if pd.notna(row[0]) else ''
+                        modello = str(row[1]).strip() if pd.notna(row[1]) else ''
                         
-                        marca = str(row['Marca']).strip() if pd.notna(row['Marca']) else ''
-                        modello = str(row['Modello']).strip() if pd.notna(row['Modello']) else ''
+                        # Salta le righe header (es. "PLUG-IN BENZINA" senza modello)
+                        if not marca or not modello or marca.upper() in ['PLUG-IN BENZINA', 'MARCA']:
+                            continue
                         
+                        try:
+                            costo_km_15000 = float(row[2]) if pd.notna(row[2]) and str(row[2]).strip() != '' else None
+                        except (ValueError, TypeError):
+                            costo_km_15000 = None
+                        
+                        # Salta righe con dati vuoti obbligatori
                         if not marca or not modello:
                             rows_errors += 1
                             continue
                         
                         # Verifica se esiste già
                         existing = ACITable.query.filter_by(
-                            tipologia=tipologia,
                             marca=marca,
                             modello=modello
                         ).first()
                         
                         if existing:
                             # Aggiorna esistente
-                            existing.costo_km = costo_km
-                            existing.fringe_benefit_10 = fb_10
-                            existing.fringe_benefit_25 = fb_25
-                            existing.fringe_benefit_30 = fb_30
-                            existing.fringe_benefit_50 = fb_50
+                            existing.costo_km_15000 = costo_km_15000
                             existing.updated_at = italian_now()
+                            rows_updated += 1
                         else:
                             # Crea nuovo record
                             new_entry = ACITable(
-                                tipologia=tipologia,
                                 marca=marca,
                                 modello=modello,
-                                costo_km=costo_km,
-                                fringe_benefit_10=fb_10,
-                                fringe_benefit_25=fb_25,
-                                fringe_benefit_30=fb_30,
-                                fringe_benefit_50=fb_50
+                                costo_km_15000=costo_km_15000
                             )
                             db.session.add(new_entry)
+                            rows_created += 1
                         
                         rows_processed += 1
                         
@@ -9181,7 +9177,7 @@ def aci_tables_upload():
                 # Rimuovi file temporaneo
                 os.remove(file_path)
                 
-                flash(f"File Excel processato con successo! Righe elaborate: {rows_processed}, Errori: {rows_errors}", "success")
+                flash(f"File Excel processato con successo! Righe elaborate: {rows_processed}, Create: {rows_created}, Aggiornate: {rows_updated}, Errori: {rows_errors}", "success")
                 return redirect(url_for('aci_tables'))
                 
             except Exception as e:
@@ -9208,24 +9204,18 @@ def add_aci_table():
     if form.validate_on_submit():
         # Verifica duplicati
         existing = ACITable.query.filter_by(
-            tipologia=form.tipologia.data,
             marca=form.marca.data,
             modello=form.modello.data
         ).first()
         
         if existing:
-            flash("Combinazione Tipologia-Marca-Modello già esistente!", "warning")
+            flash("Combinazione Marca-Modello già esistente!", "warning")
             return render_template('aci_table_form.html', form=form, title="Aggiungi Voce ACI")
         
         new_entry = ACITable(
-            tipologia=form.tipologia.data,
             marca=form.marca.data,
             modello=form.modello.data,
-            costo_km=form.costo_km.data,
-            fringe_benefit_10=form.fringe_benefit_10.data,
-            fringe_benefit_25=form.fringe_benefit_25.data,
-            fringe_benefit_30=form.fringe_benefit_30.data,
-            fringe_benefit_50=form.fringe_benefit_50.data
+            costo_km_15000=form.costo_km_15000.data
         )
         
         db.session.add(new_entry)
@@ -9255,23 +9245,17 @@ def edit_aci_table(aci_id):
         # Verifica duplicati (escludendo se stesso)
         existing = ACITable.query.filter(
             ACITable.id != aci_id,
-            ACITable.tipologia == form.tipologia.data,
             ACITable.marca == form.marca.data,
             ACITable.modello == form.modello.data
         ).first()
         
         if existing:
-            flash("Combinazione Tipologia-Marca-Modello già esistente!", "warning")
+            flash("Combinazione Marca-Modello già esistente!", "warning")
             return render_template('aci_table_form.html', form=form, title="Modifica Voce ACI", aci_entry=aci_entry)
         
-        aci_entry.tipologia = form.tipologia.data
         aci_entry.marca = form.marca.data
         aci_entry.modello = form.modello.data
-        aci_entry.costo_km = form.costo_km.data
-        aci_entry.fringe_benefit_10 = form.fringe_benefit_10.data
-        aci_entry.fringe_benefit_25 = form.fringe_benefit_25.data
-        aci_entry.fringe_benefit_30 = form.fringe_benefit_30.data
-        aci_entry.fringe_benefit_50 = form.fringe_benefit_50.data
+        aci_entry.costo_km_15000 = form.costo_km_15000.data
         aci_entry.updated_at = italian_now()
         
         db.session.commit()

@@ -96,14 +96,10 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>ID</th>
-                                    <th>Tipologia</th>
                                     <th>Marca</th>
                                     <th>Modello</th>
-                                    <th class="text-end">Costo Km (€)</th>
-                                    <th class="text-end">FB 10%</th>
-                                    <th class="text-end">FB 25%</th>
-                                    <th class="text-end">FB 30%</th>
-                                    <th class="text-end">FB 50%</th>
+                                    <th class="text-end">Costo Km 15.000 Km</th>
+                                    <th class="text-center">Data Creazione</th>
                                     <th class="text-center">Azioni</th>
                                 </tr>
                             </thead>
@@ -111,17 +107,18 @@
                                 {% for aci in aci_tables.items %}
                                 <tr>
                                     <td><span class="badge bg-secondary">{{ aci.id }}</span></td>
-                                    <td>
-                                        <strong>{{ aci.tipologia }}</strong>
-                                        <br><small class="text-muted">{{ aci.created_at.strftime('%d/%m/%Y') if aci.created_at }}</small>
-                                    </td>
                                     <td><span class="badge bg-primary">{{ aci.marca }}</span></td>
                                     <td>{{ aci.modello }}</td>
-                                    <td class="text-end"><strong>€ {{ "%.2f"|format(aci.costo_km) }}</strong></td>
-                                    <td class="text-end">€ {{ "%.2f"|format(aci.fringe_benefit_10) }}</td>
-                                    <td class="text-end">€ {{ "%.2f"|format(aci.fringe_benefit_25) }}</td>
-                                    <td class="text-end">€ {{ "%.2f"|format(aci.fringe_benefit_30) }}</td>
-                                    <td class="text-end">€ {{ "%.2f"|format(aci.fringe_benefit_50) }}</td>
+                                    <td class="text-end">
+                                        {% if aci.costo_km_15000 %}
+                                            <strong>€ {{ "%.4f"|format(aci.costo_km_15000) }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">N/D</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <small class="text-muted">{{ aci.created_at.strftime('%d/%m/%Y') if aci.created_at }}</small>
+                                    </td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm">
                                             <a href="{{ url_for('edit_aci_table', aci_id=aci.id) }}" 
@@ -129,7 +126,9 @@
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <button type="button" class="btn btn-outline-danger" 
-                                                    onclick="confirmDelete('{{ aci.marca }} {{ aci.modello }}', '{{ url_for('delete_aci_table', aci_id=aci.id) }}')" 
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                                    data-title="{{ aci.marca }} {{ aci.modello }}"
+                                                    data-url="{{ url_for('delete_aci_table', aci_id=aci.id) }}"
                                                     title="Elimina">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -229,11 +228,23 @@
     </div>
 </div>
 
+{% block scripts %}
 <script>
-function confirmDelete(itemName, deleteUrl) {
-    document.getElementById('deleteItemName').textContent = itemName;
-    document.getElementById('deleteForm').action = deleteUrl;
-    new bootstrap.Modal(document.getElementById('deleteModal')).show();
-}
+// Gestione Modale Bootstrap per Eliminazione
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteItemName = document.getElementById('deleteItemName');
+    const deleteForm = document.getElementById('deleteForm');
+
+    // Quando si apre la modale
+    deleteModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const itemName = button.getAttribute('data-title');
+        const deleteUrl = button.getAttribute('data-url');
+        
+        deleteItemName.textContent = itemName;
+        deleteForm.action = deleteUrl;
+    });
+});
 </script>
 {% endblock %}
