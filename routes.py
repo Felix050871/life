@@ -199,25 +199,24 @@ def dashboard():
             joinedload(OvertimeRequest.overtime_type)
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
     
-    # Get recent mileage requests for widget - TEMPORANEAMENTE DISABILITATO
+    # Get recent mileage requests for widget
     recent_mileage_requests = []
     my_mileage_requests = []
-    # TODO: Abilitare quando il modello MileageRequest sarà nel database
-    # if current_user.can_view_mileage_widget():
-    #     if current_user.can_manage_mileage_requests() or current_user.can_approve_mileage_requests():
-    #         # Managers see all requests
-    #         recent_mileage_requests = MileageRequest.query.options(
-    #             joinedload(MileageRequest.user),
-    #             joinedload(MileageRequest.aci_vehicle)
-    #         ).order_by(MileageRequest.created_at.desc()).limit(10).all()
-    # 
-    # # Get my mileage requests for personal widget  
-    # if current_user.can_view_my_mileage_widget():
-    #     my_mileage_requests = MileageRequest.query.filter_by(
-    #         user_id=current_user.id
-    #     ).options(
-    #         joinedload(MileageRequest.aci_vehicle)
-    #     ).order_by(MileageRequest.created_at.desc()).limit(5).all()
+    if current_user.can_view_mileage_widget():
+        if current_user.can_manage_mileage_requests() or current_user.can_approve_mileage_requests():
+            # Managers see all requests
+            recent_mileage_requests = MileageRequest.query.options(
+                joinedload(MileageRequest.user),
+                joinedload(MileageRequest.vehicle)
+            ).order_by(MileageRequest.created_at.desc()).limit(10).all()
+    
+    # Get my mileage requests for personal widget  
+    if current_user.can_view_my_mileage_widget():
+        my_mileage_requests = MileageRequest.query.filter_by(
+            user_id=current_user.id
+        ).options(
+            joinedload(MileageRequest.vehicle)
+        ).order_by(MileageRequest.created_at.desc()).limit(5).all()
     
     # Get weekly calendar data (Monday to Sunday)
     today = date.today()
