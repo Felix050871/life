@@ -39,6 +39,7 @@
                                         <tr>
                                             <th>Utente</th>
                                             <th>Ruolo</th>
+                                            <th>Sede</th>
                                             <th>Stato</th>
                                             <th>Entrata</th>
                                             <th>Uscita</th>
@@ -61,6 +62,12 @@
                                                     <br>
                                                     <small class="text-muted">Part-time {{ user.part_time_percentage }}%</small>
                                                 {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-building me-1"></i>
+                                                    {{ user.sede_obj.name if user.sede_obj else 'Nessuna Sede' }}
+                                                </span>
                                             </td>
                                             <td>
                                                 {% if attendance.leave_request %}

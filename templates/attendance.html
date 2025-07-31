@@ -78,6 +78,7 @@
                                         <tr>
                                             <th>Data</th>
                                             <th>Utente</th>
+                                            <th>Sede</th>
                                             <th>Ora Inizio</th>
                                             <th>Pausa</th>
                                             <th>Ora Fine</th>
@@ -102,6 +103,15 @@
                                                 <small class="text-muted d-block">{{ record.user.role }}</small>
                                                 {% else %}
                                                 <span class="text-muted">--</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if record.user and record.user.sede_obj %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-building me-1"></i>{{ record.user.sede_obj.name }}
+                                                </span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">Nessuna Sede</span>
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -234,6 +244,7 @@
                                 <tr>
                                     <th>Data</th>
                                     {% if show_team_data %}<th>Utente</th>{% endif %}
+                                    {% if show_team_data %}<th>Sede</th>{% endif %}
                                     <th>Ora Inizio</th>
                                     <th>Pausa</th>
                                     <th>Ora Fine</th>
@@ -256,13 +267,18 @@
                                     <td>
                                         {% if record.user %}
                                         <span class="text-primary">{{ record.user.get_full_name() }}</span>
-                                        <small class="text-muted d-block">{{ record.user.role }}
-                                            {% if record.user.sede_obj %}
-                                            - <i class="fas fa-building me-1"></i>{{ record.user.sede_obj.name }}
-                                            {% endif %}
-                                        </small>
+                                        <small class="text-muted d-block">{{ record.user.role }}</small>
                                         {% else %}
                                         <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.user and record.user.sede_obj %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-building me-1"></i>{{ record.user.sede_obj.name }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Nessuna Sede</span>
                                         {% endif %}
                                     </td>
                                     {% endif %}
