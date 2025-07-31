@@ -4744,6 +4744,22 @@ def qr_login(action):
     return render_template('qr_login.html', form=form, action=action)
 
 
+@app.route('/qr_fresh/<action>')
+def qr_fresh(action):
+    """Route per QR dal browser - forza logout e redirect a qr_login"""
+    if action not in ['entrata', 'uscita']:
+        flash('Azione non valida', 'error')
+        return redirect(url_for('login'))
+    
+    # Forza logout se utente autenticato (dal browser)
+    if current_user.is_authenticated:
+        logout_user()
+        flash('Disconnesso per accesso QR', 'info')
+    
+    # Redirect alla pagina QR login
+    return redirect(url_for('qr_login', action=action))
+
+
 @app.route('/quick_attendance/<action>', methods=['GET'])
 @require_login
 def quick_attendance(action):
