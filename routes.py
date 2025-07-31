@@ -9341,9 +9341,7 @@ def create_mileage_request():
             
         except Exception as e:
             db.session.rollback()
-            print(f"ERRORE CREAZIONE MILEAGE REQUEST: {str(e)}")
-            print(f"Dati form: travel_date={form.travel_date.data}, total_km={form.total_km.data}, vehicle_id={form.vehicle_id.data}")
-            flash(f'Errore nella creazione della richiesta: {str(e)}', 'danger')
+            flash('Errore nella creazione della richiesta di rimborso. Riprova più tardi.', 'danger')
             return render_template('create_mileage_request.html', form=form)
     
     return render_template('create_mileage_request.html', form=form)
@@ -9364,9 +9362,6 @@ def my_mileage_requests():
         
         return render_template('my_mileage_requests.html', requests=requests)
     except Exception as e:
-        print(f"ERRORE MY_MILEAGE_REQUESTS: {str(e)}")
-        import traceback
-        traceback.print_exc()
         flash('Errore nel caricamento delle richieste di rimborso.', 'danger')
         return redirect(url_for('dashboard'))
 
