@@ -91,15 +91,25 @@
                 <div class="card-body p-0">
                     {% if tables %}
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0" id="aciTable">
                             <thead class="table-dark">
                                 <tr>
                                     <th>ID</th>
-                                    <th>Tipologia</th>
-                                    <th>Marca</th>
-                                    <th>Modello</th>
-                                    <th>Costo KM</th>
-                                    <th>Aggiornato</th>
+                                    <th class="sortable" onclick="sortTable(1)" style="cursor: pointer;">
+                                        Tipologia <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable(2)" style="cursor: pointer;">
+                                        Marca <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable(3)" style="cursor: pointer;">
+                                        Modello <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable(4)" style="cursor: pointer;">
+                                        Costo KM <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable(5)" style="cursor: pointer;">
+                                        Aggiornato <i class="fas fa-sort text-muted"></i>
+                                    </th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
@@ -379,5 +389,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Funzione di ordinamento tabella
+let sortDirection = {};
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('aciTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = Array.from(tbody.rows);
+    
+    // Determina direzione ordinamento
+    const isAsc = sortDirection[columnIndex] !== 'asc';
+    sortDirection[columnIndex] = isAsc ? 'asc' : 'desc';
+    
+    // Aggiorna icone
+    document.querySelectorAll('.sortable i').forEach(icon => {
+        icon.className = 'fas fa-sort text-muted';
+    });
+    
+    const currentIcon = document.querySelector(`th:nth-child(${columnIndex + 1}) i`);
+    if (currentIcon) {
+        currentIcon.className = isAsc ? 'fas fa-sort-up text-white' : 'fas fa-sort-down text-white';
+    }
+    
+    // Ordina righe
+    rows.sort((a, b) => {
+        let aValue = a.cells[columnIndex].textContent.trim();
+        let bValue = b.cells[columnIndex].textContent.trim();
+        
+        // Gestione speciale per colonna costo (rimuovi € e converti a numero)
+        if (columnIndex === 4) {
+            aValue = parseFloat(aValue.replace('€', '').replace(',', '.'));
+            bValue = parseFloat(bValue.replace('€', '').replace(',', '.'));
+        }
+        
+        // Gestione date per colonna Aggiornato
+        if (columnIndex === 5) {
+            if (aValue === '-') aValue = '01/01/1900';
+            if (bValue === '-') bValue = '01/01/1900';
+            
+            // Converti date DD/MM/YYYY in formato confrontabile
+            const [dayA, monthA, yearA] = aValue.split('/');
+            const [dayB, monthB, yearB] = bValue.split('/');
+            aValue = new Date(yearA, monthA - 1, dayA);
+            bValue = new Date(yearB, monthB - 1, dayB);
+        }
+        
+        let comparison = 0;
+        if (aValue > bValue) comparison = 1;
+        if (aValue < bValue) comparison = -1;
+        
+        return isAsc ? comparison : -comparison;
+    });
+    
+    // Ricostruisci tabella
+    rows.forEach(row => tbody.appendChild(row));
+}
 </script>
 {% endblock %}
