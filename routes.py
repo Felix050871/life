@@ -9310,33 +9310,41 @@ def create_mileage_request():
     form = MileageRequestForm(user=current_user)
     
     if form.validate_on_submit():
-        # Converti route_addresses da stringa a array
-        route_addresses_list = []
-        if form.route_addresses.data:
-            # Dividi per righe e filtra righe vuote
-            route_addresses_list = [addr.strip() for addr in form.route_addresses.data.split('\n') if addr.strip()]
-        
-        # Crea la richiesta
-        mileage_request = MileageRequest(
-            user_id=current_user.id,
-            travel_date=form.travel_date.data,
-            route_addresses=route_addresses_list,  # Array invece di stringa
-            total_km=form.total_km.data,
-            is_km_manual=form.is_km_manual.data,
-            purpose=form.purpose.data,
-            notes=form.notes.data,
-            vehicle_id=form.vehicle_id.data if form.vehicle_id.data else None,
-            vehicle_description=form.vehicle_description.data if form.vehicle_description.data else None
-        )
-        
-        # Calcola l'importo del rimborso
-        mileage_request.calculate_reimbursement_amount()
-        
-        db.session.add(mileage_request)
-        db.session.commit()
-        
-        flash('Richiesta di rimborso chilometrico inviata con successo!', 'success')
-        return redirect(url_for('my_mileage_requests'))
+        try:
+            # Converti route_addresses da stringa a array
+            route_addresses_list = []
+            if form.route_addresses.data:
+                # Dividi per righe e filtra righe vuote
+                route_addresses_list = [addr.strip() for addr in form.route_addresses.data.split('\n') if addr.strip()]
+            
+            # Crea la richiesta
+            mileage_request = MileageRequest(
+                user_id=current_user.id,
+                travel_date=form.travel_date.data,
+                route_addresses=route_addresses_list,  # Array invece di stringa
+                total_km=form.total_km.data,
+                is_km_manual=form.is_km_manual.data,
+                purpose=form.purpose.data,
+                notes=form.notes.data,
+                vehicle_id=form.vehicle_id.data if form.vehicle_id.data else None,
+                vehicle_description=form.vehicle_description.data if form.vehicle_description.data else None
+            )
+            
+            # Calcola l'importo del rimborso
+            mileage_request.calculate_reimbursement_amount()
+            
+            db.session.add(mileage_request)
+            db.session.commit()
+            
+            flash('Richiesta di rimborso chilometrico inviata con successo!', 'success')
+            return redirect(url_for('my_mileage_requests'))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"ERRORE CREAZIONE MILEAGE REQUEST: {str(e)}")
+            print(f"Dati form: travel_date={form.travel_date.data}, total_km={form.total_km.data}, vehicle_id={form.vehicle_id.data}")
+            flash(f'Errore nella creazione della richiesta: {str(e)}', 'danger')
+            return render_template('create_mileage_request.html', form=form)
     
     return render_template('create_mileage_request.html', form=form)
 
