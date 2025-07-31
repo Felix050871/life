@@ -132,8 +132,26 @@ class UserForm(FlaskForm):
         return 100.0
 
 class AttendanceForm(FlaskForm):
+    sede_id = SelectField('Sede', coerce=int, validators=[Optional()])
     notes = TextAreaField('Note')
     submit = SubmitField('Registra')
+    
+    def __init__(self, user=None, *args, **kwargs):
+        super(AttendanceForm, self).__init__(*args, **kwargs)
+        if user and user.all_sedi:
+            # Per utenti multi-sede, popola le sedi disponibili
+            from models import Sede
+            sedi = Sede.query.filter_by(active=True).all()
+            self.sede_id.choices = [('', 'Seleziona una sede')] + [(sede.id, sede.name) for sede in sedi]
+            # Rendi obbligatorio per utenti multi-sede
+            self.sede_id.validators = [DataRequired(message="Seleziona una sede")]
+        elif user and user.sede_id:
+            # Per utenti con sede specifica, usa quella sede
+            self.sede_id.choices = [(user.sede_id, user.sede_obj.name if user.sede_obj else 'Sede')]
+            self.sede_id.data = user.sede_id
+        else:
+            # Nascondi il campo se non applicabile
+            self.sede_id.choices = []
 
 class LeaveTypeForm(FlaskForm):
     """Form per la gestione delle tipologie di permesso"""

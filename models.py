@@ -612,11 +612,13 @@ class AttendanceEvent(db.Model):
     date = db.Column(db.Date, nullable=False, default=date.today)
     event_type = db.Column(db.String(20), nullable=False)  # 'clock_in', 'clock_out', 'break_start', 'break_end'
     timestamp = db.Column(db.DateTime, nullable=False)
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede dove è avvenuto l'evento
     notes = db.Column(db.Text)
     shift_status = db.Column(db.String(20), nullable=True)  # 'anticipo', 'normale', 'ritardo' per entrate/uscite
     created_at = db.Column(db.DateTime, default=italian_now)
     
     user = db.relationship('User', backref='attendance_events')
+    sede = db.relationship('Sede', backref='sede_attendance_events')
     
     @staticmethod
     def get_user_status(user_id, target_date=None):

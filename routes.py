@@ -1625,7 +1625,7 @@ def attendance():
         flash('Non hai i permessi per accedere alla gestione presenze.', 'danger')
         return redirect(url_for('dashboard'))
     
-    form = AttendanceForm()
+    form = AttendanceForm(user=current_user)
     
     # Ottieni stato attuale dell'utente e eventi di oggi (solo se non è Ente o Staff)
     if current_user.role not in ['Ente', 'Staff']:
@@ -1653,11 +1653,19 @@ def attendance():
                 italy_tz = ZoneInfo('Europe/Rome')
                 now = datetime.now(italy_tz)
                 
+                # Determina sede_id
+                sede_id = None
+                if current_user.all_sedi and form.sede_id.data:
+                    sede_id = form.sede_id.data
+                elif current_user.sede_id:
+                    sede_id = current_user.sede_id
+                
                 note_event = AttendanceEvent(
                     user_id=current_user.id,
                     date=now.date(),
                     event_type='clock_in',  # Evento fittizio per salvare le note
                     timestamp=now,
+                    sede_id=sede_id,
                     notes=form.notes.data
                 )
                 db.session.add(note_event)
@@ -4760,13 +4768,35 @@ def qr_fresh(action):
     return redirect(url_for('qr_login', action=action))
 
 
-@app.route('/quick_attendance/<action>', methods=['GET'])
+@app.route('/quick_attendance/<action>', methods=['GET', 'POST'])
 @require_login
 def quick_attendance(action):
     """Gestisce la registrazione rapida di entrata/uscita tramite QR"""
     if action not in ['entrata', 'uscita']:
         flash('Azione non valida', 'error')
         return redirect(url_for('index'))
+    
+    # Se utente multi-sede, mostra form selezione sede
+    if current_user.all_sedi:
+        form = AttendanceForm(user=current_user)
+        if request.method == 'GET':
+            return render_template('qr_sede_selection.html', 
+                                 form=form, 
+                                 action=action,
+                                 user=current_user)
+        
+        # POST: processa selezione sede
+        if form.validate_on_submit():
+            sede_id = form.sede_id.data
+        else:
+            flash('Seleziona una sede valida', 'error')
+            return render_template('qr_sede_selection.html', 
+                                 form=form, 
+                                 action=action,
+                                 user=current_user)
+    else:
+        # Utente con sede specifica
+        sede_id = current_user.sede_id
     
     try:
         now = italian_now()
@@ -4781,7 +4811,8 @@ def quick_attendance(action):
                 date=today,
                 event_type='clock_in',
                 timestamp=now,
-                notes='Entrata tramite QR Code'
+                sede_id=sede_id,
+                notes=f'Entrata tramite QR Code - {Sede.query.get(sede_id).name if sede_id else ""}'
             )
             db.session.add(entry_event)
             message = f'✅ Entrata registrata alle {now.strftime("%H:%M")}'
@@ -4794,7 +4825,8 @@ def quick_attendance(action):
                 date=today,
                 event_type='clock_out',
                 timestamp=now,
-                notes='Uscita tramite QR Code'
+                sede_id=sede_id,
+                notes=f'Uscita tramite QR Code - {Sede.query.get(sede_id).name if sede_id else ""}'
             )
             db.session.add(exit_event)
             message = f'✅ Uscita registrata alle {now.strftime("%H:%M")}'
