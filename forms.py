@@ -1397,11 +1397,24 @@ class OvertimeFilterForm(FlaskForm):
 
 
 # Form per upload file Excel ACI
+def validate_file_size(form, field):
+    """Validatore per la dimensione del file (max 50MB)"""
+    if field.data:
+        # Reset file pointer per leggere la dimensione
+        field.data.seek(0, 2)  # Vai alla fine del file
+        size = field.data.tell()  # Ottieni dimensione in bytes
+        field.data.seek(0)  # Torna all'inizio
+        
+        max_size = 50 * 1024 * 1024  # 50MB in bytes
+        if size > max_size:
+            raise ValidationError(f'File troppo grande: {size//1024//1024}MB. Massimo consentito: 50MB')
+
 class ACIUploadForm(FlaskForm):
     """Form per caricare file Excel delle tabelle ACI"""
     excel_file = FileField('File Excel ACI', validators=[
         DataRequired(),
-        FileAllowed(['xlsx', 'xls'], 'Solo file Excel (.xlsx, .xls) sono permessi')
+        FileAllowed(['xlsx', 'xls'], 'Solo file Excel (.xlsx, .xls) sono permessi'),
+        validate_file_size
     ])
     tipologia = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)],
                           render_kw={'placeholder': 'Es: Plug-in IN 2025'})

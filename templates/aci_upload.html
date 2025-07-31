@@ -36,7 +36,12 @@
                     
                     <div class="alert alert-info mt-3">
                         <i class="fas fa-info-circle"></i> 
-                        <strong>Righe TIPO:</strong> Se MARCA è valorizzata ma MODELLO è vuoto, la riga definisce una categoria (es: "PLUG-IN BENZINA")
+                        <strong>File grandi:</strong> Massimo 50MB. File voluminosi vengono processati automaticamente a lotti per evitare timeout.
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attenzione:</strong> Non chiudere la finestra durante l'upload. File grandi richiedono tempo per essere processati.
                     </div>
                 </div>
             </div>
@@ -66,8 +71,19 @@
                             </div>
                         </div>
                         
+                        <!-- Progress Bar (hidden initially) -->
+                        <div id="uploadProgress" class="mb-3" style="display: none;">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%">
+                                    <span id="progressText">Caricamento in corso...</span>
+                                </div>
+                            </div>
+                            <small class="text-muted mt-2">File Excel di grandi dimensioni possono richiedere alcuni minuti</small>
+                        </div>
+                        
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('aci_tables') }}" class="btn btn-secondary me-md-2">
+                            <a href="{{ url_for('aci_tables') }}" class="btn btn-secondary me-md-2" id="cancelBtn">
                                 <i class="fas fa-times"></i> Annulla
                             </a>
                             {{ form.submit(class="btn btn-primary btn-lg", id="uploadBtn") }}
@@ -220,4 +236,78 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const progressBar = document.getElementById('uploadProgress');
+    const progressBarFill = progressBar.querySelector('.progress-bar');
+    const progressText = document.getElementById('progressText');
+    const fileInput = document.querySelector('input[type="file"]');
+    
+    // Gestione file size check
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const sizeMB = file.size / (1024 * 1024);
+            if (sizeMB > 50) {
+                alert(`File troppo grande: ${sizeMB.toFixed(1)}MB. Massimo consentito: 50MB`);
+                this.value = '';
+                return;
+            }
+            
+            // Stima il tempo basato sulla dimensione
+            if (sizeMB > 10) {
+                const estimatedMinutes = Math.ceil(sizeMB / 5);
+                progressText.innerHTML = `File ${sizeMB.toFixed(1)}MB - Tempo stimato: ${estimatedMinutes} minuti`;
+            }
+        }
+    });
+    
+    form.addEventListener('submit', function(e) {
+        const file = fileInput.files[0];
+        if (!file) {
+            e.preventDefault();
+            alert('Seleziona un file Excel prima di procedere');
+            return;
+        }
+        
+        // Mostra progress bar
+        progressBar.style.display = 'block';
+        uploadBtn.disabled = true;
+        cancelBtn.style.display = 'none';
+        
+        // Animazione progresso simulata
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 90) {
+                progress = 90;
+                clearInterval(interval);
+                progressText.innerHTML = 'Finalizzazione import...';
+            }
+            progressBarFill.style.width = progress + '%';
+            
+            if (progress < 30) {
+                progressText.innerHTML = 'Lettura file Excel...';
+            } else if (progress < 60) {
+                progressText.innerHTML = 'Processamento dati...';
+            } else if (progress < 90) {
+                progressText.innerHTML = 'Salvataggio nel database...';
+            }
+        }, 500);
+        
+        // Reset dopo timeout lungo (5 minuti)
+        setTimeout(() => {
+            clearInterval(interval);
+            if (uploadBtn.disabled) {
+                progressText.innerHTML = 'Timeout - Ricaricare la pagina';
+                progressBarFill.classList.add('bg-danger');
+            }
+        }, 300000);
+    });
+});
+</script>
 {% endblock %}

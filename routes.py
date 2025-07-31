@@ -9124,8 +9124,11 @@ def aci_upload():
             with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_file:
                 file.save(tmp_file.name)
                 
-                # Leggi file Excel
-                df = pd.read_excel(tmp_file.name, engine='openpyxl')
+                # Leggi file Excel con ottimizzazioni per file grandi
+                df = pd.read_excel(tmp_file.name, engine='openpyxl', 
+                                 usecols=[0, 1, 2],  # Leggi solo colonne A, B, C
+                                 dtype={0: 'str', 1: 'str', 2: 'float64'},  # Forza tipi di dato
+                                 na_filter=True)
                 
                 # Pulisci file temporaneo
                 os.unlink(tmp_file.name)
@@ -9147,47 +9150,63 @@ def aci_upload():
                 filename = file.filename or "Excel_File"
                 tipologia = os.path.splitext(filename)[0]
             
-            # Processa dati Excel - SOLO COLONNE A, B, C
+            # Processa dati Excel - SOLO COLONNE A, B, C con ottimizzazione per file grandi
             imported_count = 0
             skipped_count = 0
+            batch_size = 100  # Processa a lotti per evitare timeout
             
+            # Converti DataFrame in lista per processamento più veloce
+            rows_data = []
             for index, row in df.iterrows():
                 # UTILIZZO SOLO LE PRIME 3 COLONNE (A, B, C)
                 marca = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
                 modello = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
                 costo_km = row.iloc[2] if pd.notna(row.iloc[2]) else None
-                # IGNORA COMPLETAMENTE TUTTE LE COLONNE D, E, F, ecc.
                 
-                # Skip righe vuote o incomplete (ignora righe senza dati)
+                # Skip righe vuote o incomplete
                 if not marca or not modello or modello == 'nan' or costo_km is None:
                     skipped_count += 1
                     continue
+                    
+                rows_data.append((marca, modello, costo_km))
+            
+            logging.info(f"Processando {len(rows_data)} righe valide in batch da {batch_size}")
+            
+            # Processa in batch per evitare timeout
+            for i in range(0, len(rows_data), batch_size):
+                batch = rows_data[i:i + batch_size]
                 
-                # Verifica duplicati esistenti
-                existing = ACITable.query.filter_by(
-                    tipologia=tipologia,
-                    marca=marca,
-                    modello=modello
-                ).first()
-                
-                if existing:
-                    # Aggiorna record esistente - SOLO COSTO KM
-                    existing.costo_km = float(costo_km)
-                    # Non aggiorniamo fringe benefit - mantenuti come erano
-                    imported_count += 1
-                else:
-                    # Crea nuovo record ACI - SOLO CON DATI COLONNE A, B, C
-                    aci_record = ACITable(
+                for marca, modello, costo_km in batch:
+                    # Verifica duplicati esistenti
+                    existing = ACITable.query.filter_by(
                         tipologia=tipologia,
                         marca=marca,
-                        modello=modello,
-                        costo_km=float(costo_km)
-                    )
+                        modello=modello
+                    ).first()
                     
-                    db.session.add(aci_record)
-                    imported_count += 1
-            
-            db.session.commit()
+                    if existing:
+                        # Aggiorna record esistente - SOLO COSTO KM
+                        existing.costo_km = float(costo_km)
+                        imported_count += 1
+                    else:
+                        # Crea nuovo record ACI
+                        aci_record = ACITable(
+                            tipologia=tipologia,
+                            marca=marca,
+                            modello=modello,
+                            costo_km=float(costo_km)
+                        )
+                        db.session.add(aci_record)
+                        imported_count += 1
+                
+                # Commit ogni batch per liberare memoria
+                try:
+                    db.session.commit()
+                    logging.info(f"Batch {i//batch_size + 1} completato: {len(batch)} record")
+                except Exception as batch_error:
+                    db.session.rollback()
+                    logging.error(f"Errore batch {i//batch_size + 1}: {batch_error}")
+                    raise batch_error
             
             # Messaggi di feedback dettagliati
             if imported_count > 0:
