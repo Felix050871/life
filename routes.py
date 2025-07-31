@@ -403,11 +403,46 @@ def dashboard_team():
         flash('Non hai i permessi per visualizzare questo contenuto.', 'danger')
         return redirect(url_for('dashboard'))
     
-    # Get users visible to current user based on sede access
-    all_users = User.get_visible_users_query(current_user).filter(User.active == True).all()
+    # Get users visible to current user based on role and sede access - consistent with attendance logic
+    if current_user.role == 'Amministratore':
+        # Amministratori vedono tutti gli utenti di tutte le sedi
+        all_users = User.query.filter(
+            User.active.is_(True),
+            ~User.role.in_(['Admin', 'Staff'])
+        ).all()
+    elif current_user.role in ['Responsabile', 'Management']:
+        # Responsabili e Management vedono solo utenti della propria sede
+        all_users = User.query.filter(
+            User.sede_id == current_user.sede_id,
+            User.active.is_(True),
+            ~User.role.in_(['Admin', 'Staff'])
+        ).all()
+    elif current_user.all_sedi:
+        # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
+        all_users = User.query.filter(
+            User.active.is_(True),
+            ~User.role.in_(['Admin', 'Staff'])
+        ).all()
+    else:
+        # Altri utenti vedono solo utenti della propria sede se specificata
+        if current_user.sede_id:
+            all_users = User.query.filter(
+                User.sede_id == current_user.sede_id,
+                User.active.is_(True),
+                ~User.role.in_(['Admin', 'Staff'])
+            ).all()
+        else:
+            all_users = []
     
-    # Get all active sedi
-    all_sedi = Sede.query.filter(Sede.active == True).all()
+    # Get sedi visible to current user 
+    if current_user.role == 'Amministratore' or current_user.all_sedi:
+        # Amministratori e utenti multi-sede vedono tutte le sedi
+        all_sedi = Sede.query.filter(Sede.active == True).all()
+    elif current_user.sede_id:
+        # Altri utenti vedono solo la propria sede
+        all_sedi = [current_user.sede_obj] if current_user.sede_obj and current_user.sede_obj.active else []
+    else:
+        all_sedi = []
     
     # Parametri di visualizzazione semplificati
     export_format = request.args.get('export')
