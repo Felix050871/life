@@ -9276,7 +9276,7 @@ def mileage_requests():
         
         # Filtri per sede (se l'utente non ha accesso globale)
         if not current_user.all_sedi and current_user.sede_id:
-            query = query.join(User).filter(User.sede_id == current_user.sede_id)
+            query = query.join(User, MileageRequest.user_id == User.id).filter(User.sede_id == current_user.sede_id)
         
         # Applica filtri dal form
         if request.method == 'POST' and filter_form.validate_on_submit():
