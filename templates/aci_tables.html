@@ -268,15 +268,18 @@ function showDeleteModal(recordId, recordName) {
 }
 
 function showBulkDeleteModal() {
-    const tipologia = document.querySelector('select[name="tipologia"]').value;
+    // Cerca la tipologia nel form di cancellazione (NON nel form di filtri)
+    const tipologiaSelect = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"] select[name="tipologia"]');
+    const tipologia = tipologiaSelect ? tipologiaSelect.value : '';
+    
     if (!tipologia) {
         alert('Seleziona una tipologia da cancellare');
         return;
     }
     
-    // Conta i record per questa tipologia
-    const recordCount = document.querySelector(`select[name="tipologia"] option[value="${tipologia}"]`).textContent.match(/\((\d+) record\)/);
-    const count = recordCount ? recordCount[1] : '?';
+    // Conta i record per questa tipologia dalla option selezionata
+    const selectedOption = tipologiaSelect.querySelector(`option[value="${tipologia}"]`);
+    const count = selectedOption ? selectedOption.textContent.match(/\((\d+) record\)/)?.[1] || '?' : '?';
     
     // Aggiorna il testo della modal
     document.getElementById('bulkDeleteTipologia').textContent = tipologia;
@@ -287,7 +290,16 @@ function showBulkDeleteModal() {
 }
 
 function executeBulkDelete() {
-    document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]').submit();
+    // Chiudi la modal
+    bootstrap.Modal.getInstance(document.getElementById('bulkDeleteModal')).hide();
+    
+    // Invia il form
+    const form = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]');
+    if (form) {
+        form.submit();
+    } else {
+        alert('Errore: form di cancellazione non trovato');
+    }
 }
 
 function submitBulkDelete() {
