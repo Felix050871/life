@@ -110,6 +110,11 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <div class="form-check mt-2">
+                                {{ form.all_sedi(class="form-check-input", id="allSediCheckNew") }}
+                                {{ form.all_sedi.label(class="form-check-label") }}
+                            </div>
+                            <small class="text-muted">Se abilitato, può accedere a tutte le sedi</small>
                         </div>
                         <div class="col-md-6 mb-3" id="workScheduleGroupNew" style="display: none;">
                             {{ form.work_schedule.label(class="form-label") }}
@@ -163,11 +168,6 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <div class="form-check mb-3">
-                                {{ form.all_sedi(class="form-check-input", id="allSediCheckNew") }}
-                                {{ form.all_sedi.label(class="form-check-label") }}
-                            </div>
-                            <small class="text-muted mb-2 d-block">Se abilitato, può accedere a tutte le sedi</small>
                             <div class="form-check mb-3">
                                 {{ form.is_active(class="form-check-input") }}
                                 {{ form.is_active.label(class="form-check-label") }}
