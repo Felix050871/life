@@ -9055,47 +9055,29 @@ def aci_tables():
     if request.method == "POST" and form.validate_on_submit():
         if form.tipologia.data:
             query = query.filter(ACITable.tipologia == form.tipologia.data)
-        if form.tipo.data:
-            query = query.filter(ACITable.tipo == form.tipo.data)
         if form.marca.data:
             query = query.filter(ACITable.marca == form.marca.data)
     
     # Ordina e pagina risultati
-    tables = query.order_by(ACITable.tipologia, ACITable.tipo, ACITable.marca, ACITable.modello).all()
+    tables = query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
     
     return render_template("aci_tables.html", tables=tables, form=form)
 
 
-@app.route("/api/aci/tipos")
-@login_required
-@admin_required
-def api_aci_tipos():
-    """API per ottenere i tipi filtrati per tipologia"""
-    tipologia = request.args.get('tipologia')
-    
-    query = db.session.query(ACITable.tipo).filter(ACITable.tipo.isnot(None)).distinct()
-    
-    if tipologia:
-        query = query.filter(ACITable.tipologia == tipologia)
-    
-    tipos = [row.tipo for row in query.order_by(ACITable.tipo).all()]
-    return jsonify(tipos)
+
 
 
 @app.route("/api/aci/marcas")
 @login_required
 @admin_required
 def api_aci_marcas():
-    """API per ottenere le marche filtrate per tipologia e tipo"""
+    """API per ottenere le marche filtrate per tipologia"""
     tipologia = request.args.get('tipologia')
-    tipo = request.args.get('tipo')
     
     query = db.session.query(ACITable.marca).distinct()
     
     if tipologia:
         query = query.filter(ACITable.tipologia == tipologia)
-    if tipo:
-        query = query.filter(ACITable.tipo == tipo)
     
     marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
     return jsonify(marcas)
@@ -9137,10 +9119,16 @@ def aci_upload():
             logging.info(f"Colonne Excel trovate: {list(df.columns)}")
             logging.info(f"Utilizzo solo colonne A, B, C - ignorando tutte le altre")
             
+            # Usa il nome del file come tipologia se non specificata esplicitamente
+            if not tipologia.strip():
+                # Estrae nome file senza estensione
+                import os
+                filename = file.filename or "Excel_File"
+                tipologia = os.path.splitext(filename)[0]
+            
             # Processa dati Excel - SOLO COLONNE A, B, C
             imported_count = 0
             skipped_count = 0
-            current_tipo = None
             
             for index, row in df.iterrows():
                 # UTILIZZO SOLO LE PRIME 3 COLONNE (A, B, C)
@@ -9149,13 +9137,7 @@ def aci_upload():
                 costo_km = row.iloc[2] if pd.notna(row.iloc[2]) else None
                 # IGNORA COMPLETAMENTE TUTTE LE COLONNE D, E, F, ecc.
                 
-                # Determina se è una riga TIPO (marca non vuota ma modello vuoto o NaN)
-                if marca and (not modello or modello == 'nan'):
-                    current_tipo = marca
-                    skipped_count += 1  # Conta righe di intestazione tipologia
-                    continue
-                
-                # Skip righe vuote o incomplete
+                # Skip righe vuote o incomplete (ignora righe senza dati)
                 if not marca or not modello or modello == 'nan' or costo_km is None:
                     skipped_count += 1
                     continue
@@ -9163,7 +9145,6 @@ def aci_upload():
                 # Verifica duplicati esistenti
                 existing = ACITable.query.filter_by(
                     tipologia=tipologia,
-                    tipo=current_tipo,
                     marca=marca,
                     modello=modello
                 ).first()
@@ -9177,11 +9158,9 @@ def aci_upload():
                     # Crea nuovo record ACI - SOLO CON DATI COLONNE A, B, C
                     aci_record = ACITable(
                         tipologia=tipologia,
-                        tipo=current_tipo,
                         marca=marca,
                         modello=modello,
                         costo_km=float(costo_km)
-                        # fringe_benefit_* rimangono NULL - non importati da Excel
                     )
                     
                     db.session.add(aci_record)
@@ -9219,14 +9198,9 @@ def aci_create():
         try:
             aci_record = ACITable(
                 tipologia=form.tipologia.data,
-                tipo=form.tipo.data if form.tipo.data else None,
                 marca=form.marca.data,
                 modello=form.modello.data,
-                costo_km=form.costo_km.data,
-                fringe_benefit_10=form.fringe_benefit_10.data,
-                fringe_benefit_25=form.fringe_benefit_25.data,
-                fringe_benefit_30=form.fringe_benefit_30.data,
-                fringe_benefit_50=form.fringe_benefit_50.data
+                costo_km=form.costo_km.data
             )
             
             db.session.add(aci_record)
@@ -9252,14 +9226,9 @@ def aci_edit(record_id):
     if form.validate_on_submit():
         try:
             aci_record.tipologia = form.tipologia.data
-            aci_record.tipo = form.tipo.data if form.tipo.data else None
             aci_record.marca = form.marca.data
             aci_record.modello = form.modello.data
             aci_record.costo_km = form.costo_km.data
-            aci_record.fringe_benefit_10 = form.fringe_benefit_10.data
-            aci_record.fringe_benefit_25 = form.fringe_benefit_25.data
-            aci_record.fringe_benefit_30 = form.fringe_benefit_30.data
-            aci_record.fringe_benefit_50 = form.fringe_benefit_50.data
             
             db.session.commit()
             flash("Record ACI aggiornato con successo!", "success")

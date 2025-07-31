@@ -30,19 +30,15 @@
                     <form method="POST" action="{{ url_for('aci_tables') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 {{ form.tipologia.label(class="form-label") }}
                                 {{ form.tipologia(class="form-select", id="tipologia-filter") }}
                             </div>
-                            <div class="col-md-3">
-                                {{ form.tipo.label(class="form-label") }}
-                                {{ form.tipo(class="form-select", id="tipo-filter") }}
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 {{ form.marca.label(class="form-label") }}
                                 {{ form.marca(class="form-select", id="marca-filter") }}
                             </div>
-                            <div class="col-md-3 d-flex align-items-end">
+                            <div class="col-md-4 d-flex align-items-end">
                                 {{ form.submit(class="btn btn-outline-primary me-2") }}
                                 <a href="{{ url_for('aci_tables') }}" class="btn btn-outline-secondary">Reset</a>
                             </div>
@@ -77,14 +73,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card text-center border-warning">
-                        <div class="card-body">
-                            <h5 class="card-title text-warning">{{ tables|selectattr('tipo')|groupby('tipo')|list|length }}</h5>
-                            <p class="card-text">Tipi</p>
-                        </div>
-                    </div>
-                </div>
+
             </div>
 
             <!-- Tabella -->
@@ -103,7 +92,6 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Tipologia</th>
-                                    <th>Tipo</th>
                                     <th>Marca</th>
                                     <th>Modello</th>
                                     <th>Costo KM</th>
@@ -117,13 +105,6 @@
                                     <td><span class="badge bg-secondary">{{ table.id }}</span></td>
                                     <td>
                                         <span class="badge bg-primary">{{ table.tipologia }}</span>
-                                    </td>
-                                    <td>
-                                        {% if table.tipo %}
-                                            <span class="badge bg-info">{{ table.tipo }}</span>
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
                                     </td>
                                     <td><strong>{{ table.marca }}</strong></td>
                                     <td>{{ table.modello }}</td>
@@ -182,7 +163,7 @@
                             <option value="{{ tipologia.0 }}">{{ tipologia.0 }} ({{ tipologia.1|list|length }} record)</option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-danger" onclick="showBulkDeleteModal()">
+                        <button type="button" class="btn btn-danger" onclick="confirmBulkDelete()">
                             <i class="fas fa-trash-alt"></i> Cancella Tipologia
                         </button>
                     </div>
@@ -244,13 +225,15 @@ function showDeleteModal(recordId, recordName) {
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 
-function showBulkDeleteModal() {
+function confirmBulkDelete() {
     const tipologia = document.querySelector('select[name="tipologia"]').value;
     if (!tipologia) {
         alert('Seleziona una tipologia da cancellare');
         return;
     }
-    new bootstrap.Modal(document.getElementById('bulkDeleteModal')).show();
+    if (confirm(`Sei sicuro di voler cancellare tutti i record della tipologia "${tipologia}"?`)) {
+        document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]').submit();
+    }
 }
 
 function submitBulkDelete() {
@@ -261,48 +244,17 @@ function submitBulkDelete() {
 // Filtri a cascata
 document.addEventListener('DOMContentLoaded', function() {
     const tipologiaSelect = document.getElementById('tipologia-filter');
-    const tipoSelect = document.getElementById('tipo-filter');
     const marcaSelect = document.getElementById('marca-filter');
     
-    // Update tipo dropdown based on tipologia selection
+    // Update marca dropdown based on tipologia selection
     tipologiaSelect.addEventListener('change', function() {
         const selectedTipologia = this.value;
-        
-        // Reset tipo and marca
-        tipoSelect.innerHTML = '<option value="">Tutti i tipi</option>';
-        marcaSelect.innerHTML = '<option value="">Tutte le marche</option>';
-        
-        if (selectedTipologia) {
-            // Filter tipi based on selected tipologia
-            fetch(`/api/aci/tipos?tipologia=${encodeURIComponent(selectedTipologia)}`)
-                .then(response => response.json())
-                .then(tipos => {
-                    tipos.forEach(tipo => {
-                        if (tipo) {  // Skip null values
-                            const option = new Option(tipo, tipo);
-                            tipoSelect.add(option);
-                        }
-                    });
-                })
-                .catch(error => console.error('Error loading tipos:', error));
-        }
-    });
-    
-    // Update marca dropdown based on tipologia and tipo selection
-    tipoSelect.addEventListener('change', function() {
-        const selectedTipologia = tipologiaSelect.value;
-        const selectedTipo = this.value;
         
         // Reset marca
         marcaSelect.innerHTML = '<option value="">Tutte le marche</option>';
         
         if (selectedTipologia) {
-            let url = `/api/aci/marcas?tipologia=${encodeURIComponent(selectedTipologia)}`;
-            if (selectedTipo) {
-                url += `&tipo=${encodeURIComponent(selectedTipo)}`;
-            }
-            
-            fetch(url)
+            fetch(`/api/aci/marcas?tipologia=${encodeURIComponent(selectedTipologia)}`)
                 .then(response => response.json())
                 .then(marcas => {
                     marcas.forEach(marca => {

@@ -1412,9 +1412,7 @@ class ACIUploadForm(FlaskForm):
 class ACIRecordForm(FlaskForm):
     """Form per creare o modificare manualmente record ACI"""
     tipologia = StringField('Tipologia', validators=[DataRequired(), Length(max=100)],
-                          render_kw={'placeholder': 'Es: Plug-in IN 2025'})
-    tipo = StringField('Tipo', validators=[Optional(), Length(max=100)],
-                      render_kw={'placeholder': 'Es: PLUG-IN BENZINA'})
+                          render_kw={'placeholder': 'Lascia vuoto per usare nome file Excel'})
     marca = StringField('Marca', validators=[DataRequired(), Length(max=100)],
                        render_kw={'placeholder': 'Es: ALFA ROMEO'})
     modello = StringField('Modello', validators=[DataRequired(), Length(max=200)],
@@ -1422,18 +1420,6 @@ class ACIRecordForm(FlaskForm):
     costo_km = DecimalField('Costo per KM', validators=[DataRequired(), NumberRange(min=0)], 
                            places=4, rounding=None,
                            render_kw={'placeholder': '0.0000', 'step': '0.0001'})
-    fringe_benefit_10 = DecimalField('Fringe Benefit 10%', validators=[Optional(), NumberRange(min=0)], 
-                                    places=2, rounding=None,
-                                    render_kw={'placeholder': '0.00', 'step': '0.01'})
-    fringe_benefit_25 = DecimalField('Fringe Benefit 25%', validators=[Optional(), NumberRange(min=0)], 
-                                    places=2, rounding=None,
-                                    render_kw={'placeholder': '0.00', 'step': '0.01'})
-    fringe_benefit_30 = DecimalField('Fringe Benefit 30%', validators=[Optional(), NumberRange(min=0)], 
-                                    places=2, rounding=None,
-                                    render_kw={'placeholder': '0.00', 'step': '0.01'})
-    fringe_benefit_50 = DecimalField('Fringe Benefit 50%', validators=[Optional(), NumberRange(min=0)], 
-                                    places=2, rounding=None,
-                                    render_kw={'placeholder': '0.00', 'step': '0.01'})
     submit = SubmitField('Salva Record')
 
 
@@ -1441,7 +1427,6 @@ class ACIRecordForm(FlaskForm):
 class ACIFilterForm(FlaskForm):
     """Form per filtrare i record delle tabelle ACI"""
     tipologia = SelectField('Tipologia', choices=[('', 'Tutte le tipologie')])
-    tipo = SelectField('Tipo', choices=[('', 'Tutti i tipi')])
     marca = SelectField('Marca', choices=[('', 'Tutte le marche')])
     submit = SubmitField('Filtra')
     
@@ -1456,10 +1441,6 @@ class ACIFilterForm(FlaskForm):
             # Tipologie uniche
             tipologie = db.session.query(ACITable.tipologia).distinct().order_by(ACITable.tipologia).all()
             self.tipologia.choices = [('', 'Tutte le tipologie')] + [(t.tipologia, t.tipologia) for t in tipologie]
-            
-            # Tipi unici (escludi None)
-            tipi = db.session.query(ACITable.tipo).filter(ACITable.tipo.isnot(None)).distinct().order_by(ACITable.tipo).all()
-            self.tipo.choices = [('', 'Tutti i tipi')] + [(t.tipo, t.tipo) for t in tipi]
             
             # Marche uniche
             marche = db.session.query(ACITable.marca).distinct().order_by(ACITable.marca).all()
