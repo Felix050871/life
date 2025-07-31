@@ -9041,7 +9041,7 @@ def admin_required(f):
     return decorated_function
 
 
-@app.route("/aci_tables")
+@app.route("/aci_tables", methods=["GET", "POST"])
 @login_required
 @admin_required
 def aci_tables():
@@ -9051,8 +9051,8 @@ def aci_tables():
     # Costruisci query base
     query = ACITable.query
     
-    # Applica filtri se presenti
-    if form.validate_on_submit():
+    # Applica filtri se presenti (solo su POST)
+    if request.method == "POST" and form.validate_on_submit():
         if form.tipologia.data:
             query = query.filter(ACITable.tipologia == form.tipologia.data)
         if form.tipo.data:
