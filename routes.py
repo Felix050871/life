@@ -793,25 +793,6 @@ def generate_attendance_excel_export(attendance_data, period_mode, period_label,
     response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx"'
     
     return response
-    
-    # Salva file temporaneo
-    temp_dir = tempfile.mkdtemp()
-    excel_path = os.path.join(temp_dir, f'presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx')
-    wb.save(excel_path)
-    
-    # Leggi file per response
-    with open(excel_path, 'rb') as f:
-        excel_data = f.read()
-    
-    # Pulizia
-    os.remove(excel_path)
-    os.rmdir(temp_dir)
-    
-    response = make_response(excel_data)
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx"'
-    
-    return response
 
 def generate_single_sede_excel(attendance_data, period_label, start_date, end_date, sede_name, return_content=False):
     """Genera CSV per una singola sede"""
