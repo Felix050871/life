@@ -69,10 +69,10 @@ def generate_static_qr_codes():
             config = get_config()
             base_url = config.BASE_URL
         
-        # URL per entrata e uscita
+        # URL per entrata e uscita - corretti per corrispondenza route
         urls = {
-            'entrata': f"{base_url}/attendance/quick/entrata",
-            'uscita': f"{base_url}/attendance/quick/uscita"
+            'entrata': f"{base_url}/qr_login/entrata",
+            'uscita': f"{base_url}/qr_login/uscita"
         }
         
         # Ottieni configurazione QR centralizzata
