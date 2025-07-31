@@ -9029,7 +9029,7 @@ def delete_overtime_type(type_id):
 @login_required
 def aci_tables():
     """Visualizza tabelle ACI - Solo per amministratori"""
-    if not current_user.role or current_user.role.name != 'Amministratore':
+    if current_user.role != 'Amministratore':
         flash("Accesso negato. Solo gli amministratori possono accedere alle Tabelle ACI.", "warning")
         return redirect(url_for("dashboard"))
     
@@ -9084,7 +9084,7 @@ def aci_tables():
 @login_required  
 def aci_tables_upload():
     """Upload file Excel per popolare tabelle ACI"""
-    if not current_user.role or current_user.role.name != 'Amministratore':
+    if current_user.role != 'Amministratore':
         flash("Accesso negato. Solo gli amministratori possono caricare file Excel.", "warning")
         return redirect(url_for("dashboard"))
     
@@ -9196,7 +9196,7 @@ def aci_tables_upload():
 @login_required
 def add_aci_table():
     """Aggiungi manualmente voce tabella ACI"""
-    if not current_user.role or current_user.role.name != 'Amministratore':
+    if current_user.role != 'Amministratore':
         flash("Accesso negato.", "warning")
         return redirect(url_for("dashboard"))
     
@@ -9241,7 +9241,7 @@ def add_aci_table():
 @login_required
 def edit_aci_table(aci_id):
     """Modifica voce tabella ACI"""
-    if not current_user.role or current_user.role.name != 'Amministratore':
+    if current_user.role != 'Amministratore':
         flash("Accesso negato.", "warning")
         return redirect(url_for("dashboard"))
     
@@ -9286,7 +9286,7 @@ def edit_aci_table(aci_id):
 @login_required
 def delete_aci_table(aci_id):
     """Cancella voce tabella ACI"""
-    if not current_user.role or current_user.role.name != 'Amministratore':
+    if current_user.role != 'Amministratore':
         flash("Accesso negato.", "warning")
         return redirect(url_for("dashboard"))
     
@@ -9304,7 +9304,7 @@ def delete_aci_table(aci_id):
 @login_required
 def export_aci_tables():
     """Export Excel di tutte le tabelle ACI"""
-    if not current_user.role or current_user.role.name != 'Amministratore':
+    if current_user.role != 'Amministratore':
         flash("Accesso negato.", "warning")
         return redirect(url_for("dashboard"))
     

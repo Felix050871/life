@@ -431,7 +431,7 @@
                 {% endif %}
 
                 <!-- TABELLE ACI - Solo per Amministratori -->
-                {% if current_user.role and current_user.role.name == 'Amministratore' %}
+                {% if current_user.role == 'Amministratore' %}
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
                         <i class="fas fa-car"></i>
