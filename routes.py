@@ -9269,8 +9269,8 @@ def mileage_requests():
     # Base query
     query = MileageRequest.query.options(
         joinedload(MileageRequest.user),
-        joinedload(MileageRequest.approved_by),
-        joinedload(MileageRequest.aci_vehicle)
+        joinedload(MileageRequest.approver),
+        joinedload(MileageRequest.vehicle)
     )
     
     # Filtri per sede (se l'utente non ha accesso globale)
@@ -9319,7 +9319,7 @@ def create_mileage_request():
             is_km_manual=form.is_km_manual.data,
             purpose=form.purpose.data,
             notes=form.notes.data,
-            aci_vehicle_id=form.vehicle_id.data if form.vehicle_id.data else None,
+            vehicle_id=form.vehicle_id.data if form.vehicle_id.data else None,
             vehicle_description=form.vehicle_description.data if form.vehicle_description.data else None
         )
         
@@ -9343,8 +9343,8 @@ def my_mileage_requests():
         return redirect(url_for('dashboard'))
     
     requests = MileageRequest.query.filter_by(user_id=current_user.id)\
-                                  .options(joinedload(MileageRequest.approved_by),
-                                          joinedload(MileageRequest.aci_vehicle))\
+                                  .options(joinedload(MileageRequest.approver),
+                                          joinedload(MileageRequest.vehicle))\
                                   .order_by(MileageRequest.created_at.desc()).all()
     
     return render_template('my_mileage_requests.html', requests=requests)
@@ -9430,8 +9430,8 @@ def export_mileage_requests():
         # Base query
         query = MileageRequest.query.options(
             joinedload(MileageRequest.user),
-            joinedload(MileageRequest.approved_by),
-            joinedload(MileageRequest.aci_vehicle)
+            joinedload(MileageRequest.approver),
+            joinedload(MileageRequest.vehicle)
         )
         
         # Filtri per sede
@@ -9466,8 +9466,8 @@ def export_mileage_requests():
             ws.cell(row=row, column=4, value=req.total_km)
             
             # Veicolo
-            if req.aci_vehicle:
-                vehicle_info = f"{req.aci_vehicle.marca} {req.aci_vehicle.modello}"
+            if req.vehicle:
+                vehicle_info = f"{req.vehicle.marca} {req.vehicle.modello}"
             else:
                 vehicle_info = req.vehicle_description or "Non specificato"
             ws.cell(row=row, column=5, value=vehicle_info)
@@ -9485,8 +9485,8 @@ def export_mileage_requests():
             ws.cell(row=row, column=9, value=req.notes or '')
             ws.cell(row=row, column=10, value=req.created_at.strftime('%d/%m/%Y %H:%M'))
             
-            if req.approved_by:
-                ws.cell(row=row, column=11, value=req.approved_by.get_full_name())
+            if req.approver:
+                ws.cell(row=row, column=11, value=req.approver.get_full_name())
             if req.approved_at:
                 ws.cell(row=row, column=12, value=req.approved_at.strftime('%d/%m/%Y %H:%M'))
             ws.cell(row=row, column=13, value=req.approval_comment or '')

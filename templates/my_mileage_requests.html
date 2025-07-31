@@ -142,11 +142,11 @@
                                         </div>
                                     </div>
                                     
-                                    {% if req.aci_vehicle %}
+                                    {% if req.vehicle %}
                                         <p class="mb-1">
                                             <i class="fas fa-car text-muted me-1"></i>
-                                            <strong>Veicolo:</strong> {{ req.aci_vehicle.marca }} {{ req.aci_vehicle.modello }}
-                                            <small class="text-muted">(€{{ "%.4f"|format(req.aci_vehicle.costo_km) }}/km)</small>
+                                            <strong>Veicolo:</strong> {{ req.vehicle.marca }} {{ req.vehicle.modello }}
+                                            <small class="text-muted">(€{{ "%.4f"|format(req.vehicle.costo_km) }}/km)</small>
                                         </p>
                                     {% elif req.vehicle_description %}
                                         <p class="mb-1">
@@ -155,11 +155,11 @@
                                         </p>
                                     {% endif %}
                                     
-                                    {% if req.status in ['approved', 'rejected'] and req.approved_by %}
+                                    {% if req.status in ['approved', 'rejected'] and req.approver %}
                                         <p class="mb-1">
                                             <i class="fas fa-user-check text-muted me-1"></i>
                                             {% if req.status == 'approved' %}Approvata{% else %}Rifiutata{% endif %} 
-                                            da <strong>{{ req.approved_by.get_full_name() }}</strong>
+                                            da <strong>{{ req.approver.get_full_name() }}</strong>
                                             il {{ req.approved_at.strftime('%d/%m/%Y alle %H:%M') }}
                                         </p>
                                         {% if req.approval_comment %}
@@ -262,9 +262,9 @@
                     </div>
                     <div class="col-md-6">
                         <h6><i class="fas fa-car me-1"></i>Veicolo</h6>
-                        {% if req.aci_vehicle %}
-                            <p>{{ req.aci_vehicle.marca }} {{ req.aci_vehicle.modello }}<br>
-                            <small class="text-muted">Costo: €{{ "%.4f"|format(req.aci_vehicle.costo_km) }}/km</small></p>
+                        {% if req.vehicle %}
+                            <p>{{ req.vehicle.marca }} {{ req.vehicle.modello }}<br>
+                            <small class="text-muted">Costo: €{{ "%.4f"|format(req.vehicle.costo_km) }}/km</small></p>
                         {% else %}
                             <p>{{ req.vehicle_description or "Non specificato" }}</p>
                         {% endif %}
