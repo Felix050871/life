@@ -203,3 +203,47 @@ def api_get_coverage_requirements(template_id):
         'success': True,
         'coverages': coverage_data
     })
+
+@app.route('/api/aci/marche/<tipo>')
+@login_required
+def api_aci_marche_by_tipo(tipo):
+    """API per ottenere le marche filtrate per tipo di veicolo"""
+    try:
+        from models import ACITable
+        marche = db.session.query(ACITable.marca).filter(
+            ACITable.tipo == tipo,
+            ACITable.marca.isnot(None)
+        ).distinct().order_by(ACITable.marca).all()
+        
+        marche_list = [m[0] for m in marche if m[0]]
+        return jsonify({
+            'success': True,
+            'marche': marche_list
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/aci/modelli/<tipo>/<marca>')
+@login_required
+def api_aci_modelli_by_tipo_marca(tipo, marca):
+    """API per ottenere i modelli filtrati per tipo e marca di veicolo"""
+    try:
+        from models import ACITable
+        vehicles = ACITable.query.filter(
+            ACITable.tipo == tipo,
+            ACITable.marca == marca
+        ).order_by(ACITable.modello).all()
+        
+        modelli_list = [(v.id, f"{v.modello} (€{v.costo_km:.4f}/km)") for v in vehicles]
+        return jsonify({
+            'success': True,
+            'modelli': modelli_list
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })

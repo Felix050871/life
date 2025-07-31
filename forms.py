@@ -20,7 +20,9 @@ class UserForm(FlaskForm):
     sede = SelectField('Sede', coerce=int, validators=[], validate_choice=False)
     all_sedi = BooleanField('Accesso a tutte le sedi', default=False)
     work_schedule = SelectField('Orario di Lavoro', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
-    aci_vehicle = SelectField('Veicolo ACI', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
+    aci_vehicle_tipo = SelectField('Tipo Veicolo', coerce=str, validators=[Optional()], validate_choice=False)
+    aci_vehicle_marca = SelectField('Marca', coerce=str, validators=[Optional()], validate_choice=False)
+    aci_vehicle = SelectField('Modello', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
     is_active = BooleanField('Attivo', default=True)
@@ -37,12 +39,18 @@ class UserForm(FlaskForm):
             sedi_attive = SedeModel.query.filter_by(active=True).all()
             self.sede.choices = [(-1, 'Seleziona una sede')] + [(sede.id, sede.name) for sede in sedi_attive]
             
-            # Popola le scelte dei veicoli ACI
-            aci_vehicles = ACITable.query.order_by(ACITable.marca, ACITable.modello).all()
-            self.aci_vehicle.choices = [(-1, 'Nessun veicolo')] + [
-                (vehicle.id, f"{vehicle.marca} {vehicle.modello} (€{vehicle.costo_km:.4f}/km)")
-                for vehicle in aci_vehicles
-            ]
+            # Popola le scelte dei veicoli ACI con filtri progressivi
+            aci_vehicles = ACITable.query.order_by(ACITable.tipo, ACITable.marca, ACITable.modello).all()
+            
+            # Tipo veicolo
+            tipos = list(set([v.tipo for v in aci_vehicles if v.tipo]))
+            self.aci_vehicle_tipo.choices = [('', 'Seleziona tipo')] + [(tipo, tipo) for tipo in sorted(tipos)]
+            
+            # Marca (inizialmente vuoto, sarà popolato via JavaScript)
+            self.aci_vehicle_marca.choices = [('', 'Seleziona prima il tipo')]
+            
+            # Modello (inizialmente vuoto, sarà popolato via JavaScript)
+            self.aci_vehicle.choices = [('', 'Seleziona prima marca')]
         except:
             self.sede.choices = [(-1, 'Seleziona una sede')]
         

@@ -3247,10 +3247,32 @@ def edit_user(user_id):
             # Se non ha un orario, imposta il valore di default
             form.work_schedule.data = ''
         
-        # Gestione del veicolo ACI
-        if user.aci_vehicle_id:
+        # Gestione del veicolo ACI con campi progressivi
+        if user.aci_vehicle_id and user.aci_vehicle:
+            # Popola i campi progressivi basati sul veicolo esistente
+            form.aci_vehicle_tipo.data = user.aci_vehicle.tipo
+            form.aci_vehicle_marca.data = user.aci_vehicle.marca
             form.aci_vehicle.data = user.aci_vehicle_id
+            
+            # Aggiorna le scelte per rendere i dropdown funzionali
+            from models import ACITable
+            aci_vehicles = ACITable.query.order_by(ACITable.tipo, ACITable.marca, ACITable.modello).all()
+            
+            # Aggiorna le scelte delle marche per il tipo selezionato
+            marche = list(set([v.marca for v in aci_vehicles if v.tipo == user.aci_vehicle.tipo and v.marca]))
+            form.aci_vehicle_marca.choices = [('', 'Seleziona marca')] + [(marca, marca) for marca in sorted(marche)]
+            
+            # Aggiorna le scelte dei modelli per tipo e marca selezionati
+            modelli = ACITable.query.filter(
+                ACITable.tipo == user.aci_vehicle.tipo,
+                ACITable.marca == user.aci_vehicle.marca
+            ).order_by(ACITable.modello).all()
+            form.aci_vehicle.choices = [('', 'Seleziona modello')] + [
+                (v.id, f"{v.modello} (€{v.costo_km:.4f}/km)") for v in modelli
+            ]
         else:
+            form.aci_vehicle_tipo.data = ''
+            form.aci_vehicle_marca.data = ''
             form.aci_vehicle.data = ''
     
     if form.validate_on_submit():

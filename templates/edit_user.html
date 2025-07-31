@@ -144,10 +144,34 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                {{ form.aci_vehicle_tipo.label(class="form-label") }}
+                                {{ form.aci_vehicle_tipo(class="form-select", id="tipoVeicoloSelect") }}
+                                <small class="text-muted">Tipo di veicolo</small>
+                                {% if form.aci_vehicle_tipo.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.aci_vehicle_tipo.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.aci_vehicle_marca.label(class="form-label") }}
+                                {{ form.aci_vehicle_marca(class="form-select", id="marcaVeicoloSelect", disabled=true) }}
+                                <small class="text-muted">Marca del veicolo</small>
+                                {% if form.aci_vehicle_marca.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.aci_vehicle_marca.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 {{ form.aci_vehicle.label(class="form-label") }}
-                                {{ form.aci_vehicle(class="form-select") }}
-                                <small class="text-muted">Veicolo per rimborsi chilometrici (opzionale)</small>
+                                {{ form.aci_vehicle(class="form-select", id="modelloVeicoloSelect", disabled=true) }}
+                                <small class="text-muted">Modello e costo/km</small>
                                 {% if form.aci_vehicle.errors %}
                                     <div class="text-danger">
                                         {% for error in form.aci_vehicle.errors %}
@@ -304,6 +328,75 @@ document.addEventListener('DOMContentLoaded', function() {
             if (allSediCheck && allSediCheck.checked && sedeSelect && sedeSelect.disabled) {
                 sedeSelect.disabled = false;
                 sedeSelect.value = ''; // Assicurati che sia vuoto
+            }
+        });
+    }
+
+    // ACI Vehicle Progressive Selection
+    const tipoSelect = document.getElementById('tipoVeicoloSelect');
+    const marcaSelect = document.getElementById('marcaVeicoloSelect');
+    const modelloSelect = document.getElementById('modelloVeicoloSelect');
+
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', function() {
+            const tipo = this.value;
+            marcaSelect.disabled = true;
+            modelloSelect.disabled = true;
+            marcaSelect.innerHTML = '<option value="">Caricamento...</option>';
+            modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+
+            if (tipo) {
+                fetch(`/api/aci/marche/${encodeURIComponent(tipo)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        marcaSelect.innerHTML = '<option value="">Seleziona marca</option>';
+                        if (data.success && data.marche.length > 0) {
+                            data.marche.forEach(marca => {
+                                const option = document.createElement('option');
+                                option.value = marca;
+                                option.textContent = marca;
+                                marcaSelect.appendChild(option);
+                            });
+                            marcaSelect.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading marche:', error);
+                        marcaSelect.innerHTML = '<option value="">Errore caricamento</option>';
+                    });
+            } else {
+                marcaSelect.innerHTML = '<option value="">Seleziona prima il tipo</option>';
+                modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+            }
+        });
+
+        marcaSelect.addEventListener('change', function() {
+            const tipo = tipoSelect.value;
+            const marca = this.value;
+            modelloSelect.disabled = true;
+            modelloSelect.innerHTML = '<option value="">Caricamento...</option>';
+
+            if (tipo && marca) {
+                fetch(`/api/aci/modelli/${encodeURIComponent(tipo)}/${encodeURIComponent(marca)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        modelloSelect.innerHTML = '<option value="">Seleziona modello</option>';
+                        if (data.success && data.modelli.length > 0) {
+                            data.modelli.forEach(modello => {
+                                const option = document.createElement('option');
+                                option.value = modello[0];
+                                option.textContent = modello[1];
+                                modelloSelect.appendChild(option);
+                            });
+                            modelloSelect.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading modelli:', error);
+                        modelloSelect.innerHTML = '<option value="">Errore caricamento</option>';
+                    });
+            } else {
+                modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
             }
         });
     }
