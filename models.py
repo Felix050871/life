@@ -2229,7 +2229,7 @@ class OvertimeRequest(db.Model):
 class MileageRequest(db.Model):
     """Richieste di rimborso chilometrico dei dipendenti"""
     id = db.Column(db.Integer, primary_key=True)
-    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     travel_date = db.Column(db.Date, nullable=False)
     
     # Percorso multi-punto (JSON array di indirizzi)
@@ -2263,12 +2263,12 @@ class MileageRequest(db.Model):
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
     # Relationships
-    employee = db.relationship('User', foreign_keys=[employee_id], backref='mileage_requests')
+    user = db.relationship('User', foreign_keys=[user_id], backref='mileage_requests')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_mileage_requests')
     vehicle = db.relationship('ACITable', backref='mileage_requests')
     
     def __repr__(self):
-        return f'<MileageRequest {self.employee.get_full_name()} - {self.travel_date} - {self.total_km}km>'
+        return f'<MileageRequest {self.user.get_full_name()} - {self.travel_date} - {self.total_km}km>'
     
     @property
     def status_display(self):
@@ -2322,7 +2322,7 @@ class MileageRequest(db.Model):
         if user.all_sedi:
             return True
         
-        return user.sede_id == self.employee.sede_id
+        return user.sede_id == self.user.sede_id
     
     def approve(self, approver, comment=None):
         """Approva la richiesta di rimborso chilometrico"""
@@ -2333,7 +2333,7 @@ class MileageRequest(db.Model):
         
         # Invia notifica di approvazione
         notification = InternalMessage(
-            recipient_id=self.employee_id,
+            recipient_id=self.user_id,
             sender_id=approver.id,
             title="Rimborso Chilometrico Approvato",
             message=f"Il tuo rimborso chilometrico per {self.total_km}km del {self.travel_date.strftime('%d/%m/%Y')} è stato approvato per un importo di €{self.total_amount:.2f}. {comment or ''}",
@@ -2350,7 +2350,7 @@ class MileageRequest(db.Model):
         
         # Invia notifica di rifiuto
         notification = InternalMessage(
-            recipient_id=self.employee_id,
+            recipient_id=self.user_id,
             sender_id=approver.id,
             title="Rimborso Chilometrico Rifiutato",
             message=f"Il tuo rimborso chilometrico per {self.total_km}km del {self.travel_date.strftime('%d/%m/%Y')} è stato rifiutato. Motivo: {comment or 'Nessun motivo specificato'}",
@@ -2366,17 +2366,17 @@ class MileageRequest(db.Model):
         if user.all_sedi:
             return query.count()
         else:
-            return query.join(User, cls.employee_id == User.id).filter(
+            return query.join(User, cls.user_id == User.id).filter(
                 User.sede_id == user.sede_id
             ).count()
     
     @classmethod
-    def get_monthly_summary(cls, employee_id, year, month):
+    def get_monthly_summary(cls, user_id, year, month):
         """Restituisce un riassunto mensile dei rimborsi per un dipendente"""
         from sqlalchemy import extract
         
         query = cls.query.filter(
-            cls.employee_id == employee_id,
+            cls.user_id == user_id,
             extract('year', cls.travel_date) == year,
             extract('month', cls.travel_date) == month
         )
