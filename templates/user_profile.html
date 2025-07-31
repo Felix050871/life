@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Il Mio Profilo - Workly{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            <i class="fas fa-user-circle me-2"></i>
+            Il Mio Profilo
+        </h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-edit me-2"></i>Informazioni Personali
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.first_name.label(class="form-label") }}
+                                {{ form.first_name(class="form-control") }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.first_name.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.last_name.label(class="form-label") }}
+                                {{ form.last_name(class="form-control") }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.last_name.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {{ form.username(class="form-control", readonly=true) }}
+                            <small class="text-muted">Il nome utente non può essere modificato</small>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="mb-3">
+                            <i class="fas fa-key me-2"></i>Cambia Password (opzionale)
+                        </h6>
+
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control", placeholder="Lascia vuoto per non modificare") }}
+                            {% if form.password.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.password.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.confirm_password.label(class="form-label") }}
+                            {{ form.confirm_password(class="form-control", placeholder="Conferma nuova password") }}
+                            {% if form.confirm_password.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.confirm_password.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Annulla
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Salva Modifiche
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Informazioni Account
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Ruolo:</strong>
+                        <span class="badge bg-primary">{{ current_user.role.name }}</span>
+                    </div>
+                    
+                    {% if current_user.sede_obj %}
+                    <div class="mb-3">
+                        <strong>Sede:</strong>
+                        <span class="badge bg-info">{{ current_user.sede_obj.name }}</span>
+                    </div>
+                    {% elif current_user.all_sedi %}
+                    <div class="mb-3">
+                        <strong>Accesso:</strong>
+                        <span class="badge bg-success">Tutte le Sedi</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_user.work_schedule %}
+                    <div class="mb-3">
+                        <strong>Orario di Lavoro:</strong>
+                        <div class="text-muted">{{ current_user.work_schedule.name }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if current_user.aci_vehicle %}
+                    <div class="mb-3">
+                        <strong>Veicolo ACI:</strong>
+                        <div class="text-muted">{{ current_user.aci_vehicle.marca }} {{ current_user.aci_vehicle.modello }}</div>
+                        <small class="text-muted">€{{ "%.4f"|format(current_user.aci_vehicle.costo_km) }}/km</small>
+                    </div>
+                    {% endif %}
+
+                    {% if current_user.part_time_percentage and current_user.part_time_percentage < 100 %}
+                    <div class="mb-3">
+                        <strong>Part-time:</strong>
+                        <span class="badge bg-warning">{{ current_user.part_time_percentage }}%</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Sicurezza
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Le modifiche al profilo sono registrate per sicurezza.
+                    </p>
+                    <p class="text-muted">
+                        <i class="fas fa-lock me-1"></i>
+                        Per modifiche al ruolo o alla sede, contatta l'amministratore.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

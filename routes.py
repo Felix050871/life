@@ -13,7 +13,7 @@ from app import app, db, csrf
 from config import get_config
 from sqlalchemy.orm import joinedload
 from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable, MileageRequest
-from forms import LoginForm, UserForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm, MileageRequestForm, ApproveMileageForm, MileageFilterForm
+from forms import LoginForm, UserForm, UserProfileForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm, MileageRequestForm, ApproveMileageForm, MileageFilterForm
 from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
 
 # Inject configuration into all templates
@@ -3240,7 +3240,40 @@ def user_management():
     return render_template('user_management.html', users=users, form=form, 
                          sede_name=sede_name, is_multi_sede=current_user.all_sedi)
 
-
+@app.route('/user_profile', methods=['GET', 'POST'])
+@login_required
+def user_profile():
+    """Route per la gestione del profilo personale dell'utente"""
+    form = UserProfileForm(original_email=current_user.email, obj=current_user)
+    
+    if request.method == 'GET':
+        # Popola i campi con i dati attuali dell'utente
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.email.data = current_user.email
+        form.username.data = current_user.username
+    
+    if form.validate_on_submit():
+        # Aggiorna i dati del profilo
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.email = form.email.data
+        
+        # Aggiorna la password solo se fornita
+        if form.password.data:
+            current_user.password_hash = generate_password_hash(form.password.data)
+            flash('Password aggiornata con successo', 'success')
+        
+        try:
+            db.session.commit()
+            flash('Profilo aggiornato con successo', 'success')
+            return redirect(url_for('user_profile'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Errore durante l\'aggiornamento del profilo', 'danger')
+            return redirect(url_for('user_profile'))
+    
+    return render_template('user_profile.html', form=form)
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @login_required

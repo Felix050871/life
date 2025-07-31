@@ -10,6 +10,32 @@ class LoginForm(FlaskForm):
     remember_me = BooleanField('Ricordami')
     submit = SubmitField('Accedi')
 
+class UserProfileForm(FlaskForm):
+    """Form per modificare il proprio profilo utente"""
+    first_name = StringField('Nome', validators=[DataRequired(), Length(max=100)])
+    last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    username = StringField('Username', render_kw={'readonly': True})
+    password = PasswordField('Nuova Password', validators=[Optional(), Length(min=6)])
+    confirm_password = PasswordField('Conferma Password', validators=[
+        EqualTo('password', message='Le password devono corrispondere')
+    ])
+    submit = SubmitField('Salva Modifiche')
+
+    def __init__(self, original_email=None, *args, **kwargs):
+        super(UserProfileForm, self).__init__(*args, **kwargs)
+        self.original_email = original_email
+
+    def validate_email(self, email):
+        if email.data != self.original_email:
+            user = User.query.filter_by(email=email.data).first()
+            if user:
+                raise ValidationError('Questa email è già in uso.')
+
+    def validate_password(self, password):
+        if password.data and len(password.data) < 6:
+            raise ValidationError('La password deve essere di almeno 6 caratteri.')
+
 class UserForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
