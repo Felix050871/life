@@ -158,6 +158,163 @@ def get_shift_type_from_time(start_time, end_time):
     else:  # 23:00-06:00
         return 'notte'
 
+def check_weekly_rest_compliance(user_id, week_start_date, new_shift_date):
+    """
+    Verifica se l'utente rispetta i requisiti di riposo settimanale (almeno 2 giorni).
+    
+    Args:
+        user_id: ID dell'utente
+        week_start_date: Data di inizio della settimana (lunedì)
+        new_shift_date: Data del nuovo turno da assegnare
+    
+    Returns:
+        dict: {
+            'compliant': bool,
+            'work_days_count': int,
+            'rest_days_remaining': int,
+            'penalty_score': int
+        }
+    """
+    from datetime import timedelta
+    
+    # Calcola le date della settimana (lunedì-domenica)
+    week_dates = []
+    for i in range(7):
+        week_dates.append(week_start_date + timedelta(days=i))
+    
+    # Conta i giorni lavorativi nella settimana (escluso il nuovo turno)
+    work_days = set()
+    
+    # Controlla turni presidio
+    presidio_shifts = Shift.query.filter(
+        Shift.user_id == user_id,
+        Shift.date >= week_start_date,
+        Shift.date < week_start_date + timedelta(days=7),
+        Shift.date != new_shift_date  # Escludi il nuovo turno che stiamo valutando
+    ).all()
+    
+    for shift in presidio_shifts:
+        work_days.add(shift.date)
+    
+    # Controlla turni reperibilità
+    from models import ReperibilitaShift
+    reperibilita_shifts = ReperibilitaShift.query.filter(
+        ReperibilitaShift.user_id == user_id,
+        ReperibilitaShift.date >= week_start_date,
+        ReperibilitaShift.date < week_start_date + timedelta(days=7),
+        ReperibilitaShift.date != new_shift_date
+    ).all()
+    
+    for shift in reperibilita_shifts:
+        work_days.add(shift.date)
+    
+    # Aggiungi il nuovo turno
+    work_days.add(new_shift_date)
+    
+    work_days_count = len(work_days)
+    rest_days_count = 7 - work_days_count
+    
+    # Requisito: almeno 2 giorni di riposo settimanali
+    min_rest_days = 2
+    compliant = rest_days_count >= min_rest_days
+    
+    # Calcola penalità progressiva
+    penalty_score = 0
+    if rest_days_count < min_rest_days:
+        if rest_days_count == 1:
+            penalty_score = 8000  # ALTA penalità per solo 1 giorno di riposo
+        elif rest_days_count == 0:
+            penalty_score = 15000  # MASSIMA penalità per nessun giorno di riposo
+    
+    return {
+        'compliant': compliant,
+        'work_days_count': work_days_count,
+        'rest_days_remaining': rest_days_count,
+        'penalty_score': penalty_score
+    }
+
+def check_weekly_hours_compliance(user_id, week_start_date, new_shift_start, new_shift_end):
+    """
+    Verifica se l'utente rispetta il limite di 40 ore settimanali (per utenti al 100%).
+    
+    Args:
+        user_id: ID dell'utente
+        week_start_date: Data di inizio della settimana (lunedì)
+        new_shift_start: Orario inizio nuovo turno
+        new_shift_end: Orario fine nuovo turno
+    
+    Returns:
+        dict: {
+            'compliant': bool,
+            'current_hours': float,
+            'max_hours': float,
+            'hours_after_new_shift': float,
+            'penalty_score': int
+        }
+    """
+    from datetime import timedelta
+    
+    # Ottieni l'utente per verificare la percentuale part-time
+    user = User.query.get(user_id)
+    if not user:
+        return {'compliant': True, 'current_hours': 0, 'max_hours': 40, 'hours_after_new_shift': 0, 'penalty_score': 0}
+    
+    # Calcola ore massime settimanali basate sulla percentuale part-time
+    base_weekly_hours = 40.0
+    max_weekly_hours = base_weekly_hours * (user.part_time_percentage / 100.0)
+    
+    # Calcola ore già lavorate nella settimana
+    current_hours = 0.0
+    
+    # Conta ore dai turni presidio
+    presidio_shifts = Shift.query.filter(
+        Shift.user_id == user_id,
+        Shift.date >= week_start_date,
+        Shift.date < week_start_date + timedelta(days=7)
+    ).all()
+    
+    for shift in presidio_shifts:
+        shift_hours = get_shift_duration_hours(shift.start_time, shift.end_time)
+        current_hours += shift_hours
+    
+    # Conta ore dai turni reperibilità
+    from models import ReperibilitaShift
+    reperibilita_shifts = ReperibilitaShift.query.filter(
+        ReperibilitaShift.user_id == user_id,
+        ReperibilitaShift.date >= week_start_date,
+        ReperibilitaShift.date < week_start_date + timedelta(days=7)
+    ).all()
+    
+    for shift in reperibilita_shifts:
+        shift_hours = get_shift_duration_hours(shift.start_time, shift.end_time)
+        current_hours += shift_hours
+    
+    # Calcola ore del nuovo turno
+    new_shift_hours = get_shift_duration_hours(new_shift_start, new_shift_end)
+    hours_after_new_shift = current_hours + new_shift_hours
+    
+    # Verifica compliance
+    compliant = hours_after_new_shift <= max_weekly_hours
+    
+    # Calcola penalità progressiva per superamento ore
+    penalty_score = 0
+    if hours_after_new_shift > max_weekly_hours:
+        overtime_hours = hours_after_new_shift - max_weekly_hours
+        if overtime_hours <= 2:
+            penalty_score = 3000  # MEDIA penalità per superamento fino a 2h
+        elif overtime_hours <= 5:
+            penalty_score = 6000  # ALTA penalità per superamento fino a 5h
+        else:
+            penalty_score = 12000  # MASSIMA penalità per superamento oltre 5h
+    
+    return {
+        'compliant': compliant,
+        'current_hours': current_hours,
+        'max_hours': max_weekly_hours,
+        'hours_after_new_shift': hours_after_new_shift,
+        'penalty_score': penalty_score
+    }
+
 def get_rest_period_penalty(user_id, current_date, new_start_time, new_end_time):
     """
     Calcola penalità per assegnazioni che violano i periodi di riposo necessari.
@@ -220,6 +377,15 @@ def get_rest_period_penalty(user_id, current_date, new_start_time, new_end_time)
     
     if total_daily_hours + new_shift_hours > max_daily_hours:
         penalty += 2000  # Penalità per superamento capacità giornaliera
+    
+    # NUOVO: Controllo riposo settimanale (almeno 2 giorni)
+    week_start = current_date - timedelta(days=current_date.weekday())  # Lunedì della settimana
+    weekly_rest_check = check_weekly_rest_compliance(user_id, week_start, current_date)
+    penalty += weekly_rest_check['penalty_score']
+    
+    # NUOVO: Controllo ore settimanali (40h per 100%, proporzionale per part-time)
+    weekly_hours_check = check_weekly_hours_compliance(user_id, week_start, new_start_time, new_end_time)
+    penalty += weekly_hours_check['penalty_score']
     
     return penalty
 
@@ -416,6 +582,8 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     - Approved leave requests
     - Smart user capacity-based shift splitting (automatic division based on part-time %)
     - Intelligent rest period management (prevents inappropriate consecutive shifts)
+    - Weekly rest compliance (minimum 2 days off per week)
+    - Weekly hours compliance (40h base for 100%, proportional for part-time)
     
     Bilanciamento: L'algoritmo favorisce gli utenti con minor utilizzo percentuale 
     nei 30 giorni precedenti, bilanciando automaticamente il carico di lavoro.
@@ -426,6 +594,9 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     
     Gestione Riposo: Sistema previene assegnazioni consecutive inappropriate come 
     turno notturno seguito da turno mattutino, garantendo adeguati periodi di riposo.
+    
+    Compliance Settimanale: Garantisce almeno 2 giorni di riposo settimanali e 
+    rispetto del limite di 40 ore settimanali (proporzionale per part-time).
     """
     # Get all active coverage configurations valid for the period
     coverage_configs = PresidioCoverage.query.filter(
@@ -638,10 +809,10 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                         # Bonus significativo per utenti molto sotto-utilizzati (>20% sotto media ruolo)
                         underutilization_bonus = 1000 if role_gap > 20 else 0
                         
-                        # NUOVO: Penalità per turni consecutivi inappropriati
+                        # NUOVO: Penalità completa per turni consecutivi, riposo settimanale e ore settimanali
                         rest_penalty = get_rest_period_penalty(user.id, current_date, segment_start, segment_end)
                         
-                        # Primary: bonus sottoutilizzo, Secondary: penalità riposo, Tertiary: gap personale, Quaternary: utilizzo corrente basso
+                        # Primary: bonus sottoutilizzo, Secondary: penalità riposo/compliance, Tertiary: gap personale, Quaternary: utilizzo corrente basso
                         return (-underutilization_bonus, rest_penalty, -role_gap, -personal_gap, current_util)
                     
                     available_users.sort(key=get_priority_score)
@@ -674,11 +845,11 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                             final_fallback.append(user)
                     
                     if final_fallback:
-                        # Sort by current utilization AND rest period penalties (lowest first)
+                        # Sort by current utilization AND full compliance penalties (lowest first)
                         def get_fallback_score(user):
                             current_util = current_utilization.get(user.id, 0)
-                            rest_penalty = get_rest_period_penalty(user.id, current_date, segment_start, segment_end)
-                            return (rest_penalty, current_util)
+                            full_penalty = get_rest_period_penalty(user.id, current_date, segment_start, segment_end)
+                            return (full_penalty, current_util)
                         
                         final_fallback.sort(key=get_fallback_score)
                         selected_user = final_fallback[0]
@@ -1451,12 +1622,12 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
             if final_available_users:
                 # Sort by priority for reperibilità assignment with rest period management
                 def get_reperibilita_priority_score(user):
-                    # Use current utilization plus rest period penalties
+                    # Use current utilization plus full compliance penalties
                     current_util = current_utilization.get(user.id, 0)
-                    rest_penalty = get_rest_period_penalty(user.id, current_date, coverage.start_time, coverage.end_time)
+                    full_penalty = get_rest_period_penalty(user.id, current_date, coverage.start_time, coverage.end_time)
                     
-                    # Combina utilizzo corrente e penalità riposo per priorità intelligente
-                    return (rest_penalty, current_util)
+                    # Combina utilizzo corrente e penalità compliance per priorità intelligente
+                    return (full_penalty, current_util)
                 
                 final_available_users.sort(key=get_reperibilita_priority_score)
                 
