@@ -451,8 +451,9 @@ def split_coverage_into_segments_by_user_capacity(coverage, available_users):
     # LIMITE MASSIMO ASSOLUTO: 8 ore per turno
     MAX_SHIFT_HOURS = 8.0
     
-    # DEBUG: Mostra sempre il calcolo
-    print(f"SPLIT DEBUG: Copertura {coverage.start_time}-{coverage.end_time}, durata: {total_duration}h")
+    # DEBUG: Mostra sempre il calcolo - usando stderr per essere sicuro che arrivi
+    import sys
+    print(f"SPLIT DEBUG: Copertura {coverage.start_time}-{coverage.end_time}, durata: {total_duration}h", file=sys.stderr, flush=True)
     
     # Se la durata è <= 8 ore, nessuna divisione necessaria
     if total_duration <= MAX_SHIFT_HOURS:
@@ -736,7 +737,10 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                         coverage_available_users.append(user)
             
             # Dividi la copertura basandoti sulla capacità degli utenti
+            import sys
+            print(f"MAIN DEBUG: Processando copertura {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
             coverage_segments = split_coverage_into_segments_by_user_capacity(coverage, coverage_available_users)
+            print(f"MAIN DEBUG: Ricevuti {len(coverage_segments)} segmenti", file=sys.stderr, flush=True)
             
             # DEBUG: Verifica che i segmenti siano corretti
             total_coverage_hours = get_shift_duration_hours(coverage.start_time, coverage.end_time)
