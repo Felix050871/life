@@ -317,9 +317,10 @@ init_app_database() {
     
     # Inizializza database
     python -c "
-from app import app, db
+from main import app
 with app.app_context():
     try:
+        from models import db
         db.create_all()
         print('✓ Tabelle database create')
     except Exception as e:

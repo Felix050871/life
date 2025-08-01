@@ -192,7 +192,7 @@ echo [OK] Credenziali database salvate in .db_credentials
 :: Inizializzazione database applicazione
 echo [INFO] Inizializzazione database applicazione...
 if exist "main.py" (
-    python -c "from app import app, db; app.app_context().push(); db.create_all(); print('[OK] Database inizializzato')"
+    python -c "from main import app; app.app_context().push(); from models import db; db.create_all(); print('[OK] Database inizializzato')"
     if !errorlevel! neq 0 (
         echo [ERRORE] Inizializzazione database fallita
         pause

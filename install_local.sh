@@ -493,7 +493,7 @@ try:
             email='$ADMIN_EMAIL',
             username='$ADMIN_USERNAME',
             password_hash=generate_password_hash('$ADMIN_PASSWORD'),
-            is_active=True,
+            active=True,
             all_sedi=True,
             role_id=admin_role.id
         )
