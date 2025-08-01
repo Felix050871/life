@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 """
+Script per rigenerare TUTTI gli script installazione
+con database completamente corretto (solo campo 'active')
+"""
+
+import os
+import shutil
+from datetime import datetime
+
+def regenerate_populate_test_data():
+    """Rigenera populate_test_data.py con campi corretti"""
+    
+    script_content = '''#!/usr/bin/env python3
+"""
 Script per popolare il database Workly con dati di test
 AGGIORNATO: Tutti i campi ora usano 'active' invece di 'is_active'
 """
@@ -395,3 +408,127 @@ if __name__ == "__main__":
     else:
         print("✗ Errore durante il popolamento database")
         sys.exit(1)
+'''
+    
+    # Scrivi il file aggiornato
+    with open('populate_test_data.py', 'w', encoding='utf-8') as f:
+        f.write(script_content)
+    
+    return True
+
+def main():
+    """Rigenera tutti gli script con database corretto"""
+    
+    print("=== RIGENERAZIONE SCRIPT INSTALLAZIONE CORRETTI ===")
+    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+    
+    # 1. Rigenera populate_test_data.py
+    print("1. Rigenerazione populate_test_data.py...")
+    if regenerate_populate_test_data():
+        print("✓ populate_test_data.py aggiornato")
+    else:
+        print("✗ Errore aggiornamento populate_test_data.py")
+        return False
+    
+    # 2. Crea pacchetto finale completo
+    print("2. Creazione pacchetto installazione finale...")
+    
+    PACKAGE_NAME = f"workly-installation-final-corrected-{datetime.now().strftime('%Y%m%d')}"
+    TEMP_DIR = f"/tmp/{PACKAGE_NAME}"
+    
+    os.makedirs(TEMP_DIR, exist_ok=True)
+    
+    # File applicazione essenziali
+    essential_files = [
+        'main.py', 'models.py', 'forms.py', 'routes.py', 'utils.py', 
+        'api_routes.py', 'config.py'
+    ]
+    
+    for file in essential_files:
+        if os.path.exists(file):
+            shutil.copy2(file, TEMP_DIR)
+    
+    # Directory statiche
+    for dir_name in ['templates', 'static']:
+        if os.path.exists(dir_name):
+            shutil.copytree(dir_name, os.path.join(TEMP_DIR, dir_name))
+    
+    # Script installazione corretti
+    install_files = [
+        'install.sh', 'install.bat', 'install_local.sh', 'install_local.bat'
+    ]
+    
+    for file in install_files:
+        if os.path.exists(file):
+            shutil.copy2(file, TEMP_DIR)
+            # Assicura permessi esecuzione per script Unix
+            if file.endswith('.sh'):
+                os.chmod(os.path.join(TEMP_DIR, file), 0o755)
+    
+    # Script database corretti
+    database_files = [
+        'initialize_database.py',
+        'workly_database_schema_corrected_20250801_110528.sql',
+        'fix_database_inconsistencies_20250801_110528.sql',
+        'README_DATABASE_CREATION.md',
+        'README_DATABASE_FIXES.md'
+    ]
+    
+    for file in database_files:
+        if os.path.exists(file):
+            shutil.copy2(file, TEMP_DIR)
+    
+    # Script popolamento dati corretto
+    shutil.copy2('populate_test_data.py', TEMP_DIR)
+    
+    # File di configurazione
+    config_files = [
+        'requirements.txt', 'pyproject.toml', '.replit', 'replit.nix'
+    ]
+    
+    for file in config_files:
+        if os.path.exists(file):
+            shutil.copy2(file, TEMP_DIR)
+    
+    # Documentazione
+    doc_files = [
+        'README_INSTALLAZIONE_LOCALE.md', 'INSTALLATION_GUIDE_LOCAL.md', 
+        'README.md', 'INSTALLATION_GUIDE.md', 'VERSION.md', 'PACKAGE_CONTENTS.md'
+    ]
+    
+    for file in doc_files:
+        if os.path.exists(file):
+            try:
+                shutil.copy2(file, TEMP_DIR)
+            except FileNotFoundError:
+                pass  # File opzionale
+    
+    # Crea archivio finale
+    import subprocess
+    
+    result = subprocess.run([
+        'tar', '-czf', f'{PACKAGE_NAME}.tar.gz', '-C', '/tmp', PACKAGE_NAME
+    ], cwd='/home/runner/workspace', capture_output=True, text=True)
+    
+    if result.returncode == 0:
+        # Pulizia
+        shutil.rmtree(TEMP_DIR)
+        
+        print(f"✓ Pacchetto finale creato: {PACKAGE_NAME}.tar.gz")
+        
+        # Mostra dimensione
+        size_result = subprocess.run([
+            'ls', '-lh', f'{PACKAGE_NAME}.tar.gz'
+        ], cwd='/home/runner/workspace', capture_output=True, text=True)
+        
+        if size_result.returncode == 0:
+            print(f"  Dimensione: {size_result.stdout.split()[4]}")
+        
+        return True
+    else:
+        print(f"✗ Errore creazione pacchetto: {result.stderr}")
+        return False
+
+if __name__ == "__main__":
+    main()
