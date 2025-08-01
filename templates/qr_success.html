@@ -163,30 +163,100 @@
     <script>
         // Funzione per chiudere l'app
         function closeApp() {
-            // Prova diversi metodi per chiudere la finestra/app
-            if (window.close) {
+            console.log('🔄 Tentativo di chiusura app...');
+            let closed = false;
+            
+            // Metodo 1: Prova window.close() (funziona su finestre aperte da script)
+            try {
                 window.close();
-            } else if (history.length > 1) {
-                history.back();
-            } else {
-                // Fallback: vai alla pagina vuota
-                window.location.href = "about:blank";
+                console.log('✅ window.close() eseguito');
+                closed = true;
+            } catch(e) {
+                console.log('❌ window.close() fallito:', e);
             }
+            
+            // Aspetta 500ms e controlla se la finestra si è chiusa
+            setTimeout(() => {
+                if (!closed || !window.closed) {
+                    console.log('🔄 Tentativo metodo 2: history navigation');
+                    
+                    try {
+                        if (history.length > 1) {
+                            history.back();
+                            console.log('✅ history.back() eseguito');
+                        } else {
+                            // Metodo 3: Redirect a pagina vuota
+                            console.log('🔄 Redirect a about:blank');
+                            window.location.href = 'about:blank';
+                        }
+                    } catch(e) {
+                        console.log('❌ Navigation fallita:', e);
+                        
+                        // Metodo 4: Fallback finale - nascondi contenuto
+                        try {
+                            document.body.innerHTML = `
+                                <div style="
+                                    display: flex; 
+                                    align-items: center; 
+                                    justify-content: center; 
+                                    min-height: 100vh; 
+                                    background: #2c3e50; 
+                                    color: white; 
+                                    font-family: Arial, sans-serif;
+                                    text-align: center;
+                                    padding: 20px;
+                                ">
+                                    <div>
+                                        <i class="fas fa-check-circle" style="font-size: 3rem; color: #27ae60; margin-bottom: 20px;"></i>
+                                        <h2>✅ Operazione completata</h2>
+                                        <p>Puoi chiudere questa scheda del browser</p>
+                                        <button onclick="window.close()" style="
+                                            background: #e74c3c; 
+                                            color: white; 
+                                            border: none; 
+                                            padding: 10px 20px; 
+                                            border-radius: 5px; 
+                                            margin-top: 20px;
+                                            cursor: pointer;
+                                            font-size: 16px;
+                                        ">Chiudi scheda</button>
+                                    </div>
+                                </div>
+                            `;
+                            console.log('✅ Fallback UI mostrata');
+                        } catch(fe) {
+                            console.log('❌ Anche il fallback è fallito:', fe);
+                        }
+                    }
+                }
+            }, 500);
         }
         
         // Auto chiusura dopo 8 secondi
         let countdown = 8;
         const countdownElement = document.getElementById('countdown');
+        console.log('⏰ Countdown iniziato:', countdown, 'secondi');
         
         const timer = setInterval(() => {
             countdown--;
-            countdownElement.textContent = countdown;
+            console.log('⏰ Countdown:', countdown);
+            
+            if (countdownElement) {
+                countdownElement.textContent = countdown;
+            }
             
             if (countdown <= 0) {
                 clearInterval(timer);
+                console.log('⏰ Countdown terminato - avvio chiusura automatica');
                 closeApp();
             }
         }, 1000);
+        
+        // Debug info all'avvio
+        console.log('📱 QR Success page caricata');
+        console.log('🌐 User Agent:', navigator.userAgent);
+        console.log('📍 Current URL:', window.location.href);
+        console.log('🔗 History length:', history.length);
         
         // Rimuovi il click automatico per evitare chiusure accidentali
         // Solo i pulsanti specifici eseguono azioni
