@@ -73,9 +73,7 @@
         .action-buttons {
             margin-top: 20px;
             display: flex;
-            gap: 15px;
             justify-content: center;
-            flex-wrap: wrap;
         }
         
         .btn-dashboard {
@@ -88,9 +86,7 @@
             text-decoration: none;
             display: inline-block;
             transition: transform 0.2s;
-            flex: 1;
-            min-width: 140px;
-            max-width: 160px;
+            min-width: 160px;
         }
         
         .btn-dashboard:hover {
@@ -98,27 +94,7 @@
             color: white;
         }
         
-        .btn-exit {
-            background: linear-gradient(45deg, #dc3545, #c82333);
-            border: none;
-            color: white;
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            transition: transform 0.2s;
-            cursor: pointer;
-            flex: 1;
-            min-width: 140px;
-            max-width: 160px;
-        }
-        
-        .btn-exit:hover {
-            transform: translateY(-2px);
-            color: white;
-            background: linear-gradient(45deg, #c82333, #bd2130);
-        }
+
     </style>
 </head>
 <body>
@@ -149,9 +125,6 @@
             <a href="{{ url_for('index') }}" class="btn-dashboard">
                 <i class="fas fa-home me-2"></i>Dashboard
             </a>
-            <button type="button" onclick="closeApp(); return false;" class="btn-exit">
-                <i class="fas fa-times me-2"></i>Esci
-            </button>
         </div>
         
         <div class="auto-redirect">
