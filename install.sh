@@ -316,7 +316,12 @@ init_app_database() {
     fi
     
     # Inizializza database
-    python -c "
+    if [ -f "initialize_database.py" ]; then
+        print_info "Usando script initialize_database.py..."
+        python initialize_database.py
+        if [ $? -ne 0 ]; then
+            print_warning "Script initialize_database.py fallito, provo metodo alternativo..."
+            python -c "
 from main import app
 with app.app_context():
     try:
@@ -327,6 +332,20 @@ with app.app_context():
         print(f'✗ Errore creazione tabelle: {e}')
         exit(1)
 "
+        fi
+    else
+        python -c "
+from main import app
+with app.app_context():
+    try:
+        from models import db
+        db.create_all()
+        print('✓ Tabelle database create')
+    except Exception as e:
+        print(f'✗ Errore creazione tabelle: {e}')
+        exit(1)
+"
+    fi
     
     print_success "Database applicazione inizializzato"
 }
