@@ -136,6 +136,106 @@ def round_to_half_hour(hour_decimal):
     half_hours = round(hour_decimal * 2) / 2
     return half_hours
 
+def get_shift_type_from_time(start_time, end_time):
+    """
+    Determina il tipo di turno basandosi sull'orario.
+    Returns: 'mattina', 'pomeriggio', 'sera', 'notte'
+    """
+    start_hour = start_time.hour
+    end_hour = end_time.hour
+    
+    # Se il turno attraversa la mezzanotte
+    if end_hour < start_hour:
+        return 'notte'
+    
+    # Classificazione basata sull'orario di inizio
+    if start_hour >= 6 and start_hour < 14:
+        return 'mattina'
+    elif start_hour >= 14 and start_hour < 19:
+        return 'pomeriggio'  
+    elif start_hour >= 19 and start_hour < 23:
+        return 'sera'
+    else:  # 23:00-06:00
+        return 'notte'
+
+def get_rest_period_penalty(user_id, current_date, new_start_time, new_end_time):
+    """
+    Calcola penalità per assegnazioni che violano i periodi di riposo necessari.
+    Evita situazioni come: turno notturno seguito da turno mattutino il giorno successivo.
+    
+    Returns: penalty score (0 = nessuna penalità, valori positivi = penalità crescenti)
+    """
+    penalty = 0
+    
+    # Controlla i turni del giorno precedente
+    previous_date = current_date - timedelta(days=1)
+    previous_shifts = Shift.query.filter(
+        Shift.user_id == user_id,
+        Shift.date == previous_date
+    ).all()
+    
+    # Controlla i turni del giorno successivo (se già assegnati)
+    next_date = current_date + timedelta(days=1)
+    next_shifts = Shift.query.filter(
+        Shift.user_id == user_id,
+        Shift.date == next_date
+    ).all()
+    
+    new_shift_type = get_shift_type_from_time(new_start_time, new_end_time)
+    
+    # Regole di penalità per turni consecutivi inappropriati
+    for prev_shift in previous_shifts:
+        prev_shift_type = get_shift_type_from_time(prev_shift.start_time, prev_shift.end_time)
+        
+        # Penalità MASSIMA: turno notturno seguito da turno mattutino
+        if prev_shift_type == 'notte' and new_shift_type == 'mattina':
+            penalty += 10000  # Penalità molto alta per evitare questa combinazione
+        
+        # Penalità ALTA: turno sera tardi seguito da turno mattutino presto
+        elif (prev_shift_type == 'sera' and new_shift_type == 'mattina' and 
+              prev_shift.end_time.hour >= 22 and new_start_time.hour <= 7):
+            penalty += 5000
+        
+        # Penalità MEDIA: turni lunghi consecutivi (>6 ore ciascuno)
+        elif (get_shift_duration_hours(prev_shift.start_time, prev_shift.end_time) >= 6 and
+              get_shift_duration_hours(new_start_time, new_end_time) >= 6):
+            penalty += 1000
+    
+    # Controlla anche turni nel giorno corrente per evitare sovraccarico
+    current_shifts = Shift.query.filter(
+        Shift.user_id == user_id,
+        Shift.date == current_date
+    ).all()
+    
+    total_daily_hours = sum([
+        get_shift_duration_hours(shift.start_time, shift.end_time) 
+        for shift in current_shifts
+    ])
+    
+    new_shift_hours = get_shift_duration_hours(new_start_time, new_end_time)
+    
+    # Penalità per superamento ore giornaliere raccomandate
+    user = User.query.get(user_id)
+    max_daily_hours = get_user_max_daily_hours(user) if user else 8.0
+    
+    if total_daily_hours + new_shift_hours > max_daily_hours:
+        penalty += 2000  # Penalità per superamento capacità giornaliera
+    
+    return penalty
+
+def get_shift_duration_hours(start_time, end_time):
+    """
+    Calcola la durata di un turno in ore decimali.
+    """
+    start_hour = start_time.hour + start_time.minute / 60.0
+    end_hour = end_time.hour + end_time.minute / 60.0
+    
+    # Gestisce turni che attraversano la mezzanotte
+    if end_hour < start_hour:
+        end_hour += 24
+    
+    return end_hour - start_hour
+
 def get_user_max_daily_hours(user):
     """
     Calcola l'orario massimo lavorabile giornaliero per un utente.
@@ -315,6 +415,7 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     - Previous workload balancing (favors underutilized users from previous 30 days)
     - Approved leave requests
     - Smart user capacity-based shift splitting (automatic division based on part-time %)
+    - Intelligent rest period management (prevents inappropriate consecutive shifts)
     
     Bilanciamento: L'algoritmo favorisce gli utenti con minor utilizzo percentuale 
     nei 30 giorni precedenti, bilanciando automaticamente il carico di lavoro.
@@ -322,6 +423,9 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     Divisione Intelligente: Coperture che eccedono l'orario lavorativo disponibile 
     degli utenti (8h per 100%, proporzionale per part-time) vengono automaticamente 
     divise su più utenti per ottimizzare la distribuzione del carico.
+    
+    Gestione Riposo: Sistema previene assegnazioni consecutive inappropriate come 
+    turno notturno seguito da turno mattutino, garantendo adeguati periodi di riposo.
     """
     # Get all active coverage configurations valid for the period
     coverage_configs = PresidioCoverage.query.filter(
@@ -517,7 +621,7 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                 available_users = non_overlapping_users
                 
                 if available_users:
-                    # Enhanced bilanciamento: favorisce utenti con utilizzo molto sotto la media del loro ruolo
+                    # Enhanced bilanciamento: considera turni precedenti per evitare assegnazioni consecutive inappropriate
                     def get_priority_score(user):
                         current_util = current_utilization.get(user.id, 0)
                         target_util = user.part_time_percentage
@@ -534,8 +638,11 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                         # Bonus significativo per utenti molto sotto-utilizzati (>20% sotto media ruolo)
                         underutilization_bonus = 1000 if role_gap > 20 else 0
                         
-                        # Primary: bonus sottoutilizzo, Secondary: gap personale, Tertiary: utilizzo corrente basso
-                        return (-underutilization_bonus, -role_gap, -personal_gap, current_util)
+                        # NUOVO: Penalità per turni consecutivi inappropriati
+                        rest_penalty = get_rest_period_penalty(user.id, current_date, segment_start, segment_end)
+                        
+                        # Primary: bonus sottoutilizzo, Secondary: penalità riposo, Tertiary: gap personale, Quaternary: utilizzo corrente basso
+                        return (-underutilization_bonus, rest_penalty, -role_gap, -personal_gap, current_util)
                     
                     available_users.sort(key=get_priority_score)
                     
@@ -567,8 +674,13 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                             final_fallback.append(user)
                     
                     if final_fallback:
-                        # Sort by current utilization (lowest first)
-                        final_fallback.sort(key=lambda u: current_utilization.get(u.id, 0))
+                        # Sort by current utilization AND rest period penalties (lowest first)
+                        def get_fallback_score(user):
+                            current_util = current_utilization.get(user.id, 0)
+                            rest_penalty = get_rest_period_penalty(user.id, current_date, segment_start, segment_end)
+                            return (rest_penalty, current_util)
+                        
+                        final_fallback.sort(key=get_fallback_score)
                         selected_user = final_fallback[0]
                     else:
                         # TRULY EXCEPTIONAL: If still no users, track as uncovered
@@ -1337,11 +1449,14 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
             final_available_users = preferred_users if preferred_users else available_users
             
             if final_available_users:
-                # Sort by priority for reperibilità assignment (simple version)
+                # Sort by priority for reperibilità assignment with rest period management
                 def get_reperibilita_priority_score(user):
-                    # Use only current utilization to avoid database query issues
+                    # Use current utilization plus rest period penalties
                     current_util = current_utilization.get(user.id, 0)
-                    return current_util
+                    rest_penalty = get_rest_period_penalty(user.id, current_date, coverage.start_time, coverage.end_time)
+                    
+                    # Combina utilizzo corrente e penalità riposo per priorità intelligente
+                    return (rest_penalty, current_util)
                 
                 final_available_users.sort(key=get_reperibilita_priority_score)
                 
