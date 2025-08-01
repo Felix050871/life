@@ -136,13 +136,115 @@ def round_to_half_hour(hour_decimal):
     half_hours = round(hour_decimal * 2) / 2
     return half_hours
 
+def get_user_max_daily_hours(user):
+    """
+    Calcola l'orario massimo lavorabile giornaliero per un utente.
+    - 8 ore per utenti al 100%
+    - Proporzione per part-time
+    """
+    if not user or not user.part_time_percentage:
+        return 8.0
+    
+    # 8 ore base per giornata lavorativa completa
+    base_hours = 8.0
+    max_hours = base_hours * (user.part_time_percentage / 100.0)
+    
+    # Minimo 4 ore anche per part-time molto bassi
+    return max(max_hours, 4.0)
+
+def split_coverage_into_segments_by_user_capacity(coverage, available_users):
+    """
+    Divide una copertura in segmenti basati sulla capacità lavorativa degli utenti disponibili.
+    Se la copertura eccede la capacità di un singolo utente, la divide automaticamente.
+    
+    Args:
+        coverage: Oggetto copertura da dividere
+        available_users: Lista degli utenti disponibili per la copertura
+    
+    Returns:
+        Lista di tuple (start_time, end_time, suggested_users_count)
+    """
+    segments = []
+    
+    # Calcola la durata totale in ore
+    start_hour = coverage.start_time.hour + coverage.start_time.minute / 60.0
+    end_hour = coverage.end_time.hour + coverage.end_time.minute / 60.0
+    
+    # Se la copertura attraversa la mezzanotte
+    if end_hour < start_hour:
+        end_hour += 24
+    
+    total_duration = end_hour - start_hour
+    
+    # Se abbiamo utenti disponibili, usa la loro capacità per calcolare i segmenti
+    if available_users:
+        # Prendi l'utente con maggiore capacità per calcolare i segmenti ottimali
+        max_user_capacity = max([get_user_max_daily_hours(user) for user in available_users])
+        
+        # Se la durata totale è entro la capacità massima, nessuna divisione necessaria
+        if total_duration <= max_user_capacity:
+            segments.append((coverage.start_time, coverage.end_time, 1))
+            return segments
+        
+        # Calcola quanti utenti servono per coprire la durata
+        users_needed = int(total_duration / max_user_capacity)
+        if total_duration % max_user_capacity > 0:
+            users_needed += 1
+        
+        # Dividi equamente la copertura tra gli utenti necessari
+        segment_duration = total_duration / users_needed
+        
+    else:
+        # Fallback: usa 8 ore massime per segmento
+        MAX_SEGMENT_HOURS = 8.0
+        if total_duration <= MAX_SEGMENT_HOURS:
+            segments.append((coverage.start_time, coverage.end_time, 1))
+            return segments
+        
+        users_needed = int(total_duration / MAX_SEGMENT_HOURS)
+        if total_duration % MAX_SEGMENT_HOURS > 0:
+            users_needed += 1
+        
+        segment_duration = total_duration / users_needed
+    
+    # Crea i segmenti bilanciati
+    current_hour = start_hour
+    
+    for i in range(users_needed):
+        if i == users_needed - 1:
+            # Ultimo segmento: usa tutto il tempo rimanente
+            segment_end_hour = end_hour
+        else:
+            # Segmenti intermedi: usa la durata calcolata e arrotonda alla mezz'ora
+            raw_segment_end = current_hour + segment_duration
+            segment_end_hour = round_to_half_hour(raw_segment_end)
+            
+            # Assicurati che non superi l'orario di fine
+            if segment_end_hour >= end_hour - 0.5:
+                segment_end_hour = end_hour
+        
+        # Converte gli orari decimali in oggetti time
+        start_time_obj = time(
+            hour=int(current_hour) % 24,
+            minute=int((current_hour % 1) * 60)
+        )
+        
+        end_time_obj = time(
+            hour=int(segment_end_hour) % 24,
+            minute=int((segment_end_hour % 1) * 60)
+        )
+        
+        segments.append((start_time_obj, end_time_obj, 1))
+        current_hour = segment_end_hour
+    
+    return segments
+
 def split_coverage_into_max_7h_segments(coverage):
     """
-    Divide una copertura in segmenti bilanciati di massimo 7 ore per rispettare 
-    i vincoli di lavoro consecutivo. Privilegia la divisione equa del carico 
-    invece di assegnare sempre 7h al primo turno.
+    DEPRECATA: Usa split_coverage_into_segments_by_user_capacity() invece.
+    Mantenuta per compatibilità con codice esistente.
     """
-    MAX_CONSECUTIVE_HOURS = 7
+    MAX_CONSECUTIVE_HOURS = 8  # Aumentato a 8h per una giornata lavorativa completa
     segments = []
     
     # Calcola la durata totale in ore
@@ -212,13 +314,14 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     - Part-time percentages  
     - Previous workload balancing (favors underutilized users from previous 30 days)
     - Approved leave requests
-    - 7-hour consecutive work limit (automatic split into multiple shifts)
+    - Smart user capacity-based shift splitting (automatic division based on part-time %)
     
     Bilanciamento: L'algoritmo favorisce gli utenti con minor utilizzo percentuale 
     nei 30 giorni precedenti, bilanciando automaticamente il carico di lavoro.
     
-    Limitazione 7 ore: Coperture superiori a 7h vengono automaticamente divise 
-    in turni alternati per rispettare i vincoli di lavoro consecutivo.
+    Divisione Intelligente: Coperture che eccedono l'orario lavorativo disponibile 
+    degli utenti (8h per 100%, proporzionale per part-time) vengono automaticamente 
+    divise su più utenti per ottimizzare la distribuzione del carico.
     """
     # Get all active coverage configurations valid for the period
     coverage_configs = PresidioCoverage.query.filter(
@@ -336,10 +439,29 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
             if not coverage.is_valid_for_date(current_date):
                 continue
             
-            # Split coverage into max 7-hour segments
-            coverage_segments = split_coverage_into_max_7h_segments(coverage)
+            # Split coverage into segments based on user capacity
+            # Prima ottieni gli utenti disponibili per questa copertura
+            coverage_required_roles = coverage.get_required_roles_list() if hasattr(coverage, 'get_required_roles_list') else []
+            coverage_available_users = []
             
-            for segment_start, segment_end in coverage_segments:
+            for role in coverage_required_roles:
+                if role in users_by_role:
+                    for user in users_by_role[role]:
+                        if (user.id not in user_leave_dates or 
+                            current_date not in user_leave_dates[user.id]):
+                            coverage_available_users.append(user)
+            
+            # Se non ci sono ruoli specifici, usa tutti gli utenti disponibili
+            if not coverage_available_users:
+                for user in all_users:
+                    if (user.id not in user_leave_dates or 
+                        current_date not in user_leave_dates[user.id]):
+                        coverage_available_users.append(user)
+            
+            # Dividi la copertura basandoti sulla capacità degli utenti
+            coverage_segments = split_coverage_into_segments_by_user_capacity(coverage, coverage_available_users)
+            
+            for segment_start, segment_end, users_count in coverage_segments:
                 slot_key = (segment_start.strftime('%H:%M'), segment_end.strftime('%H:%M'))
                 if slot_key not in time_slot_groups:
                     time_slot_groups[slot_key] = []
