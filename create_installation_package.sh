@@ -18,6 +18,7 @@ echo "Directory temporanea: $TEMP_DIR"
 
 # Copia file principali applicazione
 echo "Copiando file applicazione..."
+cp app.py "$TEMP_DIR/"
 cp main.py "$TEMP_DIR/"
 cp models.py "$TEMP_DIR/"
 cp routes.py "$TEMP_DIR/"
