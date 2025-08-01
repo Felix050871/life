@@ -1216,7 +1216,7 @@ class LeaveType(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
     requires_approval = db.Column(db.Boolean, default=True)  # Se richiede autorizzazione
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
@@ -1340,7 +1340,7 @@ class PresidioCoverageTemplate(db.Model):
     end_date = db.Column(db.Date, nullable=False)     # Data fine validità
     description = db.Column(db.String(200))           # Descrizione opzionale
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede associata
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
@@ -1357,21 +1357,21 @@ class PresidioCoverageTemplate(db.Model):
     def get_total_hours_per_week(self):
         """Calcola le ore totali di copertura settimanale"""
         total_hours = 0
-        for coverage in self.coverages.filter_by(is_active=True):
+        for coverage in self.coverages.filter_by(active=True):
             total_hours += coverage.get_duration_hours()
         return total_hours
     
     def get_covered_days_count(self):
         """Conta i giorni della settimana con copertura"""
         covered_days = set()
-        for coverage in self.coverages.filter_by(is_active=True):
+        for coverage in self.coverages.filter_by(active=True):
             covered_days.add(coverage.day_of_week)
         return len(covered_days)
     
     def get_involved_roles(self):
         """Restituisce tutti i ruoli coinvolti nella copertura"""
         all_roles = set()
-        for coverage in self.coverages.filter_by(is_active=True):
+        for coverage in self.coverages.filter_by(active=True):
             roles = coverage.get_required_roles()
             all_roles.update(roles)
         return list(all_roles)
@@ -1393,7 +1393,7 @@ class PresidioCoverage(db.Model):
     break_start = db.Column(db.Time)                     # Ora inizio pausa (nuovo dal pacchetto)
     break_end = db.Column(db.Time)                       # Ora fine pausa (nuovo dal pacchetto)
     description = db.Column(db.String(200))  # Descrizione opzionale della copertura
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
     # Campi per backward compatibility - periodo di validità per coperture senza template
     start_date = db.Column(db.Date, nullable=True)  # Data inizio validità (ora nullable)
     end_date = db.Column(db.Date, nullable=True)    # Data fine validità (ora nullable)
@@ -1487,11 +1487,11 @@ class PresidioCoverage(db.Model):
         """Verifica se la copertura è valida per una data specifica tramite il template o periodo diretto"""
         if self.template_id and self.template:
             return (self.template.start_date <= check_date <= self.template.end_date and 
-                    self.is_active and self.template.is_active)
+                    self.active and self.template.active)
         elif self.start_date and self.end_date:
             # Backward compatibility: usa i campi diretti se non c'è template
-            return self.start_date <= check_date <= self.end_date and self.is_active
-        return self.is_active  # Se non ci sono date, considera solo is_active
+            return self.start_date <= check_date <= self.end_date and self.active
+        return self.active  # Se non ci sono date, considera solo active
     
     def get_period_display(self):
         """Restituisce il periodo di validità formattato"""
@@ -1552,7 +1552,7 @@ class PresidioCoverage(db.Model):
 # Funzioni di utilità per query comuni del pacchetto presidio
 def get_active_presidio_templates():
     """Ottieni tutti i template presidio attivi"""
-    return PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(
+    return PresidioCoverageTemplate.query.filter_by(active=True).order_by(
         PresidioCoverageTemplate.start_date.desc()
     ).all()
 
@@ -1560,7 +1560,7 @@ def get_presidio_coverage_for_day(day_of_week, target_date=None):
     """Ottieni coperture presidio per un giorno specifico"""
     query = PresidioCoverage.query.filter(
         PresidioCoverage.day_of_week == day_of_week,
-        PresidioCoverage.is_active == True
+        PresidioCoverage.active == True
     )
     
     if target_date:
@@ -1568,7 +1568,7 @@ def get_presidio_coverage_for_day(day_of_week, target_date=None):
         query = query.join(PresidioCoverageTemplate).filter(
             PresidioCoverageTemplate.start_date <= target_date,
             PresidioCoverageTemplate.end_date >= target_date,
-            PresidioCoverageTemplate.is_active == True
+            PresidioCoverageTemplate.active == True
         )
     
     return query.order_by(PresidioCoverage.start_time).all()
@@ -1594,7 +1594,7 @@ class ReperibilitaCoverage(db.Model):
     required_roles = db.Column(db.Text, nullable=False)  # JSON array dei ruoli richiesti per questa fascia
     sedi_ids = db.Column(db.Text, nullable=False)  # JSON array degli ID delle sedi coinvolte
     description = db.Column(db.String(200))  # Descrizione opzionale della copertura
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
     
     # Periodo di validità
     start_date = db.Column(db.Date, nullable=False)  # Data inizio validità
@@ -1663,7 +1663,7 @@ class ReperibilitaCoverage(db.Model):
     
     def is_valid_for_date(self, check_date):
         """Verifica se la copertura è valida per una data specifica"""
-        return self.start_date <= check_date <= self.end_date and self.is_active
+        return self.start_date <= check_date <= self.end_date and self.active
     
     def get_period_display(self):
         """Restituisce il periodo di validità formattato"""
@@ -1781,7 +1781,7 @@ class Holiday(db.Model):
     month = db.Column(db.Integer, nullable=False)  # 1-12
     day = db.Column(db.Integer, nullable=False)    # 1-31
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # NULL = nazionale
-    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    active = db.Column(db.Boolean, default=True, nullable=False)
     description = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -1808,7 +1808,7 @@ class Holiday(db.Model):
         """Verifica se questa festività cade nella data specificata"""
         return (check_date.month == self.month and 
                 check_date.day == self.day and 
-                self.is_active)
+                self.active)
     
     @classmethod
     def get_holidays_for_date(cls, check_date, sede_id=None):
@@ -1816,7 +1816,7 @@ class Holiday(db.Model):
         query = cls.query.filter(
             cls.month == check_date.month,
             cls.day == check_date.day,
-            cls.is_active == True
+            cls.active == True
         )
         
         if sede_id:
@@ -1883,7 +1883,7 @@ class ExpenseCategory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.String(255))
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     

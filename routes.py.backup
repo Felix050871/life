@@ -505,7 +505,7 @@ def dashboard_team():
         holiday = Holiday.query.filter(
             Holiday.month == check_date.month,
             Holiday.day == check_date.day,
-            Holiday.active == True
+            Holiday.is_active == True
         ).first()
         if holiday:
             return False
@@ -2143,7 +2143,7 @@ def turni_automatici():
     
     # Ottieni template presidio attivi per creazione turni
     from models import PresidioCoverageTemplate
-    presidio_templates = PresidioCoverageTemplate.query.filter_by(active=True).order_by(
+    presidio_templates = PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(
         PresidioCoverageTemplate.start_date.desc()
     ).all()
     
@@ -2326,7 +2326,7 @@ def visualizza_turni():
     
     # Ottieni template presidio attivi
     from models import PresidioCoverageTemplate
-    presidio_templates = PresidioCoverageTemplate.query.filter_by(active=True).order_by(
+    presidio_templates = PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(
         PresidioCoverageTemplate.start_date.desc()
     ).all()
     
@@ -2446,7 +2446,7 @@ def genera_turni_da_template():
         # Ottieni coperture del template
         coverages = PresidioCoverage.query.filter_by(
             template_id=template_id,
-            active=True
+            is_active=True
         ).all()
         
         if not coverages:
@@ -2888,7 +2888,7 @@ def add_leave_type_page():
                 name=name,
                 description=description,
                 requires_approval=requires_approval,
-                active=is_active
+                is_active=is_active
             )
             
             db.session.add(leave_type)
@@ -2925,7 +2925,7 @@ def edit_leave_type_page(id):
             leave_type.name = name
             leave_type.description = request.form.get('description')
             leave_type.requires_approval = 'requires_approval' in request.form
-            leave_type.active = 'is_active' in request.form
+            leave_type.is_active = 'is_active' in request.form
             leave_type.updated_at = italian_now()
             
             db.session.commit()
@@ -3006,7 +3006,7 @@ def create_leave_request_page():
     if request.method == 'POST' and form.validate_on_submit():
         # Ottieni la tipologia di permesso selezionata
         leave_type = LeaveType.query.get(form.leave_type_id.data)
-        if not leave_type or not leave_type.active:
+        if not leave_type or not leave_type.is_active:
             flash('Tipologia di permesso non valida', 'danger')
             return redirect(url_for('leave_requests'))
         
@@ -3208,7 +3208,7 @@ def new_user():
             work_schedule_id=form.work_schedule.data,
             aci_vehicle_id=form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None,
             part_time_percentage=form.get_part_time_percentage_as_float(),
-            active=form.active.data
+            active=form.is_active.data
         )
         db.session.add(user)
         db.session.flush()  # Per ottenere l'ID dell'utente
@@ -3331,7 +3331,7 @@ def edit_user(user_id):
     
     if form.validate_on_submit():
         # Impedisce la disattivazione dell'amministratore
-        if user.role == 'Amministratore' and not form.active.data:
+        if user.role == 'Amministratore' and not form.is_active.data:
             flash('Non è possibile disattivare l\'utente amministratore', 'danger')
             return render_template('edit_user.html', form=form, user=user)
         
@@ -3345,7 +3345,7 @@ def edit_user(user_id):
         user.work_schedule_id = form.work_schedule.data
         user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
         user.part_time_percentage = form.get_part_time_percentage_as_float()
-        user.active = form.active.data
+        user.active = form.is_active.data
         
         # Update password only if provided
         if form.password.data:
@@ -3548,7 +3548,7 @@ def add_holiday():
             month=form.month.data,
             day=form.day.data,
             sede_id=sede_id,
-            active=True
+            is_active=True
         ).first()
         
         if existing:
@@ -3561,7 +3561,7 @@ def add_holiday():
                 day=form.day.data,
                 sede_id=sede_id,
                 description=form.description.data,
-                active=form.active.data,
+                is_active=form.is_active.data,
                 created_by=current_user.id
             )
             
@@ -3601,7 +3601,7 @@ def edit_holiday(holiday_id):
             Holiday.month == form.month.data,
             Holiday.day == form.day.data,
             Holiday.sede_id == sede_id,
-            Holiday.active == True,
+            Holiday.is_active == True,
             Holiday.id != holiday_id
         ).first()
         
@@ -3614,7 +3614,7 @@ def edit_holiday(holiday_id):
             holiday.day = form.day.data
             holiday.sede_id = sede_id
             holiday.description = form.description.data
-            holiday.active = form.active.data
+            holiday.is_active = form.is_active.data
             
             db.session.commit()
             
@@ -4156,7 +4156,7 @@ def create_reperibilita_coverage():
             coverage.set_required_roles_list(form.required_roles.data)
             coverage.set_sedi_ids_list(form.sedi.data)  # Aggiungi le sedi selezionate
             coverage.description = form.description.data
-            coverage.active = form.active.data
+            coverage.is_active = form.is_active.data
             coverage.start_date = form.start_date.data
             coverage.end_date = form.end_date.data
             coverage.created_by = current_user.id
@@ -4195,7 +4195,7 @@ def edit_reperibilita_coverage(coverage_id):
         coverage.set_required_roles_list(form.required_roles.data)
         coverage.set_sedi_ids_list(form.sedi.data)  # Aggiungi le sedi selezionate
         coverage.description = form.description.data
-        coverage.active = form.active.data
+        coverage.is_active = form.is_active.data
         coverage.start_date = form.start_date.data
         coverage.end_date = form.end_date.data
         
@@ -4213,7 +4213,7 @@ def edit_reperibilita_coverage(coverage_id):
         form.end_time.data = coverage.end_time
         form.required_roles.data = coverage.get_required_roles_list()
         form.description.data = coverage.description
-        form.active.data = coverage.active
+        form.is_active.data = coverage.is_active
         form.start_date.data = coverage.start_date
         form.end_date.data = coverage.end_date
         form.days_of_week.data = [coverage.day_of_week]  # Single day for edit
@@ -4567,7 +4567,7 @@ def reperibilita_replica(period_key):
             new_coverage.start_time = original_coverage.start_time
             new_coverage.end_time = original_coverage.end_time
             new_coverage.description = original_coverage.description
-            new_coverage.active = original_coverage.active
+            new_coverage.is_active = original_coverage.is_active
             new_coverage.start_date = form.start_date.data
             new_coverage.end_date = form.end_date.data
             new_coverage.created_by = current_user.id
@@ -6286,7 +6286,7 @@ def manage_turni():
         # Conta coperture attive per questa sede (usando PresidioCoverage temporaneamente)
         from models import PresidioCoverage
         coperture_count = PresidioCoverage.query.filter(
-            PresidioCoverage.active == True
+            PresidioCoverage.is_active == True
         ).count()
         
         sede_stats[sede.id] = {
@@ -6379,7 +6379,7 @@ def create_shift_coverage():
                 start_time=day_start_time,
                 end_time=day_end_time,
                 description=description,
-                active=True,
+                is_active=True,
                 start_date=start_date_obj,
                 end_date=end_date_obj,
                 created_by=current_user.id
@@ -6441,7 +6441,7 @@ def view_turni_coverage():
     # Ottieni le coperture create per questa sede
     # Per ora prendiamo tutte le coperture attive - in futuro potremmo aggiungere un campo sede_id
     from models import PresidioCoverage
-    coperture = PresidioCoverage.query.filter_by(active=True).order_by(
+    coperture = PresidioCoverage.query.filter_by(is_active=True).order_by(
         PresidioCoverage.start_date.desc(),
         PresidioCoverage.day_of_week,
         PresidioCoverage.start_time
@@ -6462,7 +6462,7 @@ def view_turni_coverage():
                 'start_date': copertura.start_date,
                 'end_date': copertura.end_date,
                 'coperture': [],
-                'is_active': copertura.active and copertura.end_date >= date.today()
+                'is_active': copertura.is_active and copertura.end_date >= date.today()
             }
         coperture_grouped[period_key]['coperture'].append(copertura)
     
@@ -6513,7 +6513,7 @@ def generate_turni_from_coverage():
     
     # Ottieni le coperture attive per questa sede
     from models import PresidioCoverage
-    coperture = PresidioCoverage.query.filter_by(active=True).order_by(
+    coperture = PresidioCoverage.query.filter_by(is_active=True).order_by(
         PresidioCoverage.start_date.desc(),
         PresidioCoverage.day_of_week,
         PresidioCoverage.start_time
@@ -6534,7 +6534,7 @@ def generate_turni_from_coverage():
                 'start_date': copertura.start_date,
                 'end_date': copertura.end_date,
                 'coperture': [],
-                'is_active': copertura.active and copertura.end_date >= date.today(),
+                'is_active': copertura.is_active and copertura.end_date >= date.today(),
                 'period_id': f"{copertura.start_date.strftime('%Y%m%d')}-{copertura.end_date.strftime('%Y%m%d')}"
             }
         coperture_grouped[period_key]['coperture'].append(copertura)
@@ -6595,7 +6595,7 @@ def process_generate_turni_from_coverage():
         coperture = PresidioCoverage.query.filter(
             PresidioCoverage.start_date <= end_date,
             PresidioCoverage.end_date >= start_date,
-            PresidioCoverage.active == True
+            PresidioCoverage.is_active == True
         ).all()
         
         if not coperture:
@@ -6763,7 +6763,7 @@ def view_generated_shifts():
     reference_coverages = PresidioCoverage.query.filter(
         PresidioCoverage.start_date <= coverage_end_date,
         PresidioCoverage.end_date >= coverage_start_date,
-        PresidioCoverage.active == True
+        PresidioCoverage.is_active == True
     ).all()
     
     total_shifts = len(shifts)
@@ -6844,7 +6844,7 @@ def regenerate_turni_from_coverage():
         coperture = PresidioCoverage.query.filter(
             PresidioCoverage.start_date <= end_date,
             PresidioCoverage.end_date >= start_date,
-            PresidioCoverage.active == True
+            PresidioCoverage.is_active == True
         ).all()
         
         if not coperture:
@@ -7035,7 +7035,7 @@ def generate_turnazioni():
     
     for sede in sedi_turni:
         # Ottieni le coperture attive per questa sede
-        coperture = PresidioCoverage.query.filter_by(active=True).order_by(
+        coperture = PresidioCoverage.query.filter_by(is_active=True).order_by(
             PresidioCoverage.start_date.desc(),
             PresidioCoverage.day_of_week,
             PresidioCoverage.start_time
@@ -7050,7 +7050,7 @@ def generate_turnazioni():
                     'start_date': copertura.start_date,
                     'end_date': copertura.end_date,
                     'coperture': [],
-                    'is_active': copertura.active and copertura.end_date >= date.today(),
+                    'is_active': copertura.is_active and copertura.end_date >= date.today(),
                     'period_id': f"{copertura.start_date.strftime('%Y%m%d')}-{copertura.end_date.strftime('%Y%m%d')}"
                 }
             coperture_grouped[period_key]['coperture'].append(copertura)
@@ -7225,7 +7225,7 @@ def create_sede():
             address=form.address.data,
             description=form.description.data,
             tipologia=form.tipologia.data,
-            active=form.active.data
+            active=form.is_active.data
         )
         db.session.add(sede)
         db.session.commit()
@@ -7253,7 +7253,7 @@ def edit_sede(sede_id):
         sede.address = form.address.data
         sede.description = form.description.data
         sede.tipologia = form.tipologia.data
-        sede.active = form.active.data
+        sede.active = form.is_active.data
         
         db.session.commit()
         flash(f'Sede "{sede.name}" modificata con successo', 'success')
@@ -7317,7 +7317,7 @@ def create_work_schedule():
             end_time=form.end_time_min.data,
             days_of_week=days_of_week,
             description=form.description.data,
-            active=form.active.data
+            active=form.is_active.data
         )
         db.session.add(schedule)
         db.session.commit()
@@ -7378,7 +7378,7 @@ def edit_work_schedule(schedule_id):
         schedule.end_time = form.end_time_min.data
         schedule.days_of_week = days_of_week
         schedule.description = form.description.data
-        schedule.active = form.active.data
+        schedule.active = form.is_active.data
         
         db.session.commit()
         flash(f'Orario "{schedule.name}" modificato con successo', 'success')
@@ -7453,7 +7453,7 @@ def create_role():
             display_name=form.display_name.data,
             description=form.description.data,
             permissions=form.get_permissions_dict(),
-            active=form.active.data
+            active=form.is_active.data
         )
         
         db.session.add(new_role)
@@ -7518,7 +7518,7 @@ def edit_role(role_id):
             role.display_name = form.display_name.data
             role.description = form.description.data
             role.permissions = form.get_permissions_dict()
-            role.active = form.active.data
+            role.active = form.is_active.data
         
         db.session.commit()
 
@@ -7530,7 +7530,7 @@ def edit_role(role_id):
     form.name.data = role.name
     form.display_name.data = role.display_name
     form.description.data = role.description
-    form.active.data = role.active
+    form.is_active.data = role.active
     form.populate_permissions(role.permissions)
     
     return render_template('edit_role.html', form=form, role=role, is_admin_widget_only=is_admin_widget_only)
@@ -7793,7 +7793,7 @@ def view_presidio_coverage(period_key):
     coverages = PresidioCoverage.query.filter(
         PresidioCoverage.start_date == start_date,
         PresidioCoverage.end_date == end_date,
-        PresidioCoverage.active == True
+        PresidioCoverage.is_active == True
     ).order_by(PresidioCoverage.day_of_week, PresidioCoverage.start_time).all()
     
     if not coverages:
@@ -7893,7 +7893,7 @@ def edit_presidio_coverage(period_key):
                     
                     coverage.set_required_roles_dict(roles_dict)
                     coverage.description = description.strip() if description else None
-                    coverage.active = is_active
+                    coverage.is_active = is_active
                     success_count += 1
                 else:
                     error_count += 1
@@ -7973,7 +7973,7 @@ def create_presidio_coverage():
                     break_end_time=time(13, 0),    # Default 13:00
                     required_roles='Operatore',
                     description=description,
-                    active=is_active
+                    is_active=is_active
                 )
                 db.session.add(coverage)
                 template_count += 1
@@ -8027,7 +8027,7 @@ def generate_turnazioni_coverage(period_key):
         # Genera nuovi turni basati sui template
         shifts_created = 0
         for coverage in coverages:
-            if coverage.active:
+            if coverage.is_active:
                 # Parse ruoli richiesti
                 roles_needed = []
                 if coverage.required_roles:
@@ -8104,7 +8104,7 @@ def view_coverage_templates():
                 'start_date': coverage.start_date,
                 'end_date': coverage.end_date,
                 'coverages': [],
-                'is_active': coverage.active
+                'is_active': coverage.is_active
             }
         # Solo aggiungi se non già presente (controllo ID)
         if not any(c.id == coverage.id for c in coverage_periods[period_key]['coverages']):
@@ -8198,7 +8198,7 @@ def presidio_coverage():
     
     # Applica filtri di ricerca se presenti
     if request.args.get('search'):
-        query = PresidioCoverageTemplate.query.filter_by(active=True)
+        query = PresidioCoverageTemplate.query.filter_by(is_active=True)
         
         template_name = request.args.get('template_name')
         if template_name:
@@ -8223,7 +8223,7 @@ def presidio_coverage():
         is_active = request.args.get('is_active')
         if is_active:
             active_bool = is_active == 'true'
-            query = query.filter(PresidioCoverageTemplate.active == active_bool)
+            query = query.filter(PresidioCoverageTemplate.is_active == active_bool)
         
         templates = query.order_by(PresidioCoverageTemplate.created_at.desc()).all()
     
@@ -8302,7 +8302,7 @@ def presidio_coverage_edit(template_id):
                     required_roles=json.dumps(coverage_form.required_roles.data),
                     role_count=coverage_form.role_count.data,
                     description=coverage_form.description.data,
-                    active=coverage_form.active.data,
+                    is_active=coverage_form.is_active.data,
                     start_date=current_template.start_date,
                     end_date=current_template.end_date,
                     created_by=current_user.id
@@ -8346,7 +8346,7 @@ def presidio_detail(template_id):
     
     # Organizza le coperture per giorno della settimana
     coverages_by_day = {}
-    for coverage in template.coverages.filter_by(active=True).order_by(PresidioCoverage.start_time):
+    for coverage in template.coverages.filter_by(is_active=True).order_by(PresidioCoverage.start_time):
         day = coverage.day_of_week
         if day not in coverages_by_day:
             coverages_by_day[day] = []
@@ -8364,7 +8364,7 @@ def view_presidi():
         flash('Non hai i permessi per visualizzare i presidi', 'warning')
         return redirect(url_for('dashboard'))
     
-    templates = PresidioCoverageTemplate.query.filter_by(active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
+    templates = PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
     return render_template('view_presidi.html', templates=templates)
 
 @app.route('/api/presidio_coverage/<int:template_id>')
@@ -8374,7 +8374,7 @@ def api_presidio_coverage(template_id):
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
     
     coverages = []
-    for coverage in template.coverages.filter_by(active=True):
+    for coverage in template.coverages.filter_by(is_active=True):
         coverages.append({
             'id': coverage.id,
             'day_of_week': coverage.day_of_week,
@@ -8401,14 +8401,14 @@ def toggle_presidio_template_status(template_id):
         return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
     
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
-    new_status = request.json.get('is_active', not template.active)
+    new_status = request.json.get('is_active', not template.is_active)
     
-    template.active = new_status
+    template.is_active = new_status
     template.updated_at = italian_now()
     
     # Aggiorna anche tutte le coperture associate
     for coverage in template.coverages:
-        coverage.active = new_status
+        coverage.is_active = new_status
     
     db.session.commit()
     
@@ -8427,10 +8427,10 @@ def delete_presidio_template(template_id):
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
     
     # Soft delete del template e di tutte le coperture
-    template.active = False
+    template.is_active = False
     coverages_count = 0
     for coverage in template.coverages:
-        coverage.active = False
+        coverage.is_active = False
         coverages_count += 1
     
     db.session.commit()
@@ -8462,7 +8462,7 @@ def duplicate_presidio_template(template_id):
     
     # Duplica tutte le coperture
     coverages_count = 0
-    for coverage in source_template.coverages.filter_by(active=True):
+    for coverage in source_template.coverages.filter_by(is_active=True):
         new_coverage = PresidioCoverage(
             template_id=new_template.id,
             day_of_week=coverage.day_of_week,
@@ -8490,14 +8490,14 @@ def duplicate_presidio_template(template_id):
 def get_presidio_coverage_for_period(start_date, end_date):
     """Ottieni coperture presidio valide per un periodo"""
     templates = PresidioCoverageTemplate.query.filter(
-        PresidioCoverageTemplate.active == True,
+        PresidioCoverageTemplate.is_active == True,
         PresidioCoverageTemplate.start_date <= end_date,
         PresidioCoverageTemplate.end_date >= start_date
     ).all()
     
     all_coverages = []
     for template in templates:
-        for coverage in template.coverages.filter_by(active=True):
+        for coverage in template.coverages.filter_by(is_active=True):
             all_coverages.append(coverage)
     
     return all_coverages
@@ -8509,7 +8509,7 @@ def get_required_roles_for_day_time(day_of_week, time_slot):
         time_slot = datetime.strptime(time_slot, '%H:%M').time()
     
     coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.active == True,
+        PresidioCoverage.is_active == True,
         PresidioCoverage.day_of_week == day_of_week,
         PresidioCoverage.start_time <= time_slot,
         PresidioCoverage.end_time > time_slot
@@ -8523,7 +8523,7 @@ def get_required_roles_for_day_time(day_of_week, time_slot):
 
 def get_active_presidio_templates():
     """Ottieni tutti i template presidio attivi ordinati per data"""
-    return PresidioCoverageTemplate.query.filter_by(active=True).order_by(
+    return PresidioCoverageTemplate.query.filter_by(is_active=True).order_by(
         PresidioCoverageTemplate.start_date.desc()
     ).all()
 
@@ -8542,7 +8542,7 @@ def create_presidio_shift_from_template(template, target_week_start, users_by_ro
     created_shifts = []
     errors = []
     
-    for coverage in template.coverages.filter_by(active=True):
+    for coverage in template.coverages.filter_by(is_active=True):
         # Calcola la data specifica per il giorno della settimana
         target_date = target_week_start + timedelta(days=coverage.day_of_week)
         
@@ -8624,7 +8624,7 @@ def delete_presidio_coverage(coverage_id):
         return redirect(url_for('presidio_coverage_edit', template_id=template_id))
     
     # Disattiva invece di eliminare
-    coverage.active = False
+    coverage.is_active = False
     db.session.commit()
     
     flash('Copertura eliminata con successo', 'success')
@@ -8913,7 +8913,7 @@ def create_expense_category():
         category = ExpenseCategory(
             name=form.name.data,
             description=form.description.data,
-            active=form.active.data,
+            is_active=form.is_active.data,
             created_by=current_user.id
         )
         

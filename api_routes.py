@@ -114,7 +114,7 @@ def api_get_shifts_for_template(template_id):
         week_data['unique_users'] = len(week_data['unique_users'])
     
     # STEP 3: CALCOLA MISSING_ROLES - CON DEBUG COMPLETO
-    coverages = PresidioCoverage.query.filter_by(template_id=template_id, is_active=True).all()
+    coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
     logger.debug(f" Found {len(coverages)} coverages for template {template_id}")
     
     for coverage in coverages:
@@ -182,7 +182,7 @@ def api_get_shifts_for_template(template_id):
 def api_get_coverage_requirements(template_id):
     """API per ottenere i requisiti di copertura di un template"""
     
-    coverages = PresidioCoverage.query.filter_by(template_id=template_id, is_active=True).all()
+    coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
     
     coverage_data = []
     for coverage in coverages:
