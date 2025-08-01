@@ -2877,7 +2877,7 @@ def add_leave_type_page():
             name = request.form.get('name')
             description = request.form.get('description')
             requires_approval = 'requires_approval' in request.form
-            is_active = 'is_active' in request.form
+            active_status = 'active' in request.form
             
             # Verifica duplicati
             if LeaveType.query.filter_by(name=name).first():
@@ -2888,7 +2888,7 @@ def add_leave_type_page():
                 name=name,
                 description=description,
                 requires_approval=requires_approval,
-                active=is_active
+                active=active_status
             )
             
             db.session.add(leave_type)
@@ -2925,7 +2925,7 @@ def edit_leave_type_page(id):
             leave_type.name = name
             leave_type.description = request.form.get('description')
             leave_type.requires_approval = 'requires_approval' in request.form
-            leave_type.active = 'is_active' in request.form
+            leave_type.active = 'active' in request.form
             leave_type.updated_at = italian_now()
             
             db.session.commit()
@@ -6462,7 +6462,7 @@ def view_turni_coverage():
                 'start_date': copertura.start_date,
                 'end_date': copertura.end_date,
                 'coperture': [],
-                'is_active': copertura.active and copertura.end_date >= date.today()
+                'active_status': copertura.active and copertura.end_date >= date.today()
             }
         coperture_grouped[period_key]['coperture'].append(copertura)
     
@@ -6534,7 +6534,7 @@ def generate_turni_from_coverage():
                 'start_date': copertura.start_date,
                 'end_date': copertura.end_date,
                 'coperture': [],
-                'is_active': copertura.active and copertura.end_date >= date.today(),
+                'active_status': copertura.active and copertura.end_date >= date.today(),
                 'period_id': f"{copertura.start_date.strftime('%Y%m%d')}-{copertura.end_date.strftime('%Y%m%d')}"
             }
         coperture_grouped[period_key]['coperture'].append(copertura)
@@ -7050,7 +7050,7 @@ def generate_turnazioni():
                     'start_date': copertura.start_date,
                     'end_date': copertura.end_date,
                     'coperture': [],
-                    'is_active': copertura.active and copertura.end_date >= date.today(),
+                    'active_status': copertura.active and copertura.end_date >= date.today(),
                     'period_id': f"{copertura.start_date.strftime('%Y%m%d')}-{copertura.end_date.strftime('%Y%m%d')}"
                 }
             coperture_grouped[period_key]['coperture'].append(copertura)
@@ -7858,7 +7858,7 @@ def edit_presidio_coverage(period_key):
                 break_end_str = request.form.get(f'coverage_{coverage_id}_break_end_time')
                 roles_str = request.form.get(f'coverage_{coverage_id}_roles')
                 description = request.form.get(f'coverage_{coverage_id}_description')
-                is_active = request.form.get(f'coverage_{coverage_id}_is_active') == '1'
+                active_status = request.form.get(f'coverage_{coverage_id}_active') == '1'
                 
                 if start_time_str and end_time_str and roles_str:
                     coverage.start_time = datetime.strptime(start_time_str, '%H:%M').time()
@@ -7893,7 +7893,7 @@ def edit_presidio_coverage(period_key):
                     
                     coverage.set_required_roles_dict(roles_dict)
                     coverage.description = description.strip() if description else None
-                    coverage.active = is_active
+                    coverage.active = active_status
                     success_count += 1
                 else:
                     error_count += 1
@@ -7938,7 +7938,7 @@ def create_presidio_coverage():
             start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
             end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date()
             description = request.form.get('description', '')
-            is_active = request.form.get('is_active') == 'on'
+            active_status = request.form.get('active') == 'on'
             
             # Validazione date
             if start_date >= end_date:
@@ -7973,7 +7973,7 @@ def create_presidio_coverage():
                     break_end_time=time(13, 0),    # Default 13:00
                     required_roles='Operatore',
                     description=description,
-                    active=is_active
+                    active=active_status
                 )
                 db.session.add(coverage)
                 template_count += 1
@@ -8104,7 +8104,7 @@ def view_coverage_templates():
                 'start_date': coverage.start_date,
                 'end_date': coverage.end_date,
                 'coverages': [],
-                'is_active': coverage.active
+                'active_status': coverage.active
             }
         # Solo aggiungi se non già presente (controllo ID)
         if not any(c.id == coverage.id for c in coverage_periods[period_key]['coverages']):
@@ -8220,9 +8220,9 @@ def presidio_coverage():
             except ValueError:
                 pass
         
-        is_active = request.args.get('is_active')
-        if is_active:
-            active_bool = is_active == 'true'
+        active_arg = request.args.get('active')
+        if active_arg:
+            active_bool = active_arg == 'true'
             query = query.filter(PresidioCoverageTemplate.active == active_bool)
         
         templates = query.order_by(PresidioCoverageTemplate.created_at.desc()).all()
@@ -8401,7 +8401,7 @@ def toggle_presidio_template_status(template_id):
         return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
     
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
-    new_status = request.json.get('is_active', not template.active)
+    new_status = request.json.get('active', not template.active)
     
     template.active = new_status
     template.updated_at = italian_now()

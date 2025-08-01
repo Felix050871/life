@@ -194,8 +194,8 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-list me-2"></i>Utenti Registrati</h5>
                 <div>
-                    <span class="badge bg-success">{{ users|selectattr('is_active', 'equalto', True)|list|length }} Attivi</span>
-                    <span class="badge bg-secondary">{{ users|selectattr('is_active', 'equalto', False)|list|length }} Inattivi</span>
+                    <span class="badge bg-success">{{ users|selectattr('active', 'equalto', True)|list|length }} Attivi</span>
+                    <span class="badge bg-secondary">{{ users|selectattr('active', 'equalto', False)|list|length }} Inattivi</span>
                 </div>
             </div>
             <div class="card-body">

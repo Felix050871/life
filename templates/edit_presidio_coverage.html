@@ -117,7 +117,7 @@
                                                placeholder="Descrizione opzionale">
                                     </td>
                                     <td>
-                                        <select name="coverage_{{ coverage.id }}_is_active" class="form-select form-select-sm">
+                                        <select name="coverage_{{ coverage.id }}_active" class="form-select form-select-sm">
                                             <option value="1" {{ 'selected' if coverage.active else '' }}>Attiva</option>
                                             <option value="0" {{ 'selected' if not coverage.active else '' }}>Inattiva</option>
                                         </select>

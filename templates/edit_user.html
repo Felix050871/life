@@ -194,7 +194,7 @@
                                     {% if user.role == 'Amministratore' %}
                                         {{ form.active(class="form-check-input", disabled=true, checked=true) }}
                                         {{ form.active.label(class="form-check-label text-muted") }}
-                                        <input type="hidden" name="is_active" value="True">
+                                        <input type="hidden" name="active" value="True">
                                         <small class="text-muted d-block">L'amministratore non può essere disattivato</small>
                                     {% else %}
                                         {{ form.active(class="form-check-input") }}
