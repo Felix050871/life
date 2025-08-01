@@ -9291,6 +9291,9 @@ def delete_overtime_type(type_id):
 @login_required
 def mileage_requests():
     """Visualizza le richieste di rimborso chilometrico"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
             flash('Non hai i permessi per visualizzare le richieste di rimborso chilometrico.', 'warning')

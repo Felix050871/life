@@ -2309,6 +2309,12 @@ class MileageRequest(db.Model):
             return "Percorso non specificato"
         return " → ".join(self.route_addresses)
     
+    def get_route_list(self):
+        """Restituisce la lista degli indirizzi del percorso"""
+        if not self.route_addresses:
+            return []
+        return self.route_addresses
+    
     def can_be_edited(self):
         """Verifica se la richiesta può essere modificata"""
         return self.status == 'pending'
