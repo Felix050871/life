@@ -149,7 +149,7 @@
             <a href="{{ url_for('index') }}" class="btn-dashboard">
                 <i class="fas fa-home me-2"></i>Dashboard
             </a>
-            <button onclick="closeApp()" class="btn-exit">
+            <button type="button" onclick="closeApp(); return false;" class="btn-exit">
                 <i class="fas fa-times me-2"></i>Esci
             </button>
         </div>
@@ -164,6 +164,11 @@
         // Funzione per chiudere l'app
         function closeApp() {
             console.log('🔄 Tentativo di chiusura app...');
+            
+            // Previeni qualsiasi comportamento di default
+            event.preventDefault();
+            event.stopPropagation();
+            
             let closed = false;
             
             // Metodo 1: Prova window.close() (funziona su finestre aperte da script)
