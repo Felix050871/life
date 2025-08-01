@@ -423,6 +423,8 @@ def split_coverage_into_segments_by_user_capacity(coverage, available_users):
     Divide una copertura in segmenti basati sulla capacità lavorativa degli utenti disponibili.
     Se la copertura eccede la capacità di un singolo utente, la divide automaticamente.
     
+    REGOLA CRITICA: Nessun utente può lavorare più di 8 ore consecutive.
+    
     Args:
         coverage: Oggetto copertura da dividere
         available_users: Lista degli utenti disponibili per la copertura
@@ -442,36 +444,21 @@ def split_coverage_into_segments_by_user_capacity(coverage, available_users):
     
     total_duration = end_hour - start_hour
     
-    # Se abbiamo utenti disponibili, usa la loro capacità per calcolare i segmenti
-    if available_users:
-        # Prendi l'utente con maggiore capacità per calcolare i segmenti ottimali
-        max_user_capacity = max([get_user_max_daily_hours(user) for user in available_users])
-        
-        # Se la durata totale è entro la capacità massima, nessuna divisione necessaria
-        if total_duration <= max_user_capacity:
-            segments.append((coverage.start_time, coverage.end_time, 1))
-            return segments
-        
-        # Calcola quanti utenti servono per coprire la durata
-        users_needed = int(total_duration / max_user_capacity)
-        if total_duration % max_user_capacity > 0:
-            users_needed += 1
-        
-        # Dividi equamente la copertura tra gli utenti necessari
-        segment_duration = total_duration / users_needed
-        
-    else:
-        # Fallback: usa 8 ore massime per segmento
-        MAX_SEGMENT_HOURS = 8.0
-        if total_duration <= MAX_SEGMENT_HOURS:
-            segments.append((coverage.start_time, coverage.end_time, 1))
-            return segments
-        
-        users_needed = int(total_duration / MAX_SEGMENT_HOURS)
-        if total_duration % MAX_SEGMENT_HOURS > 0:
-            users_needed += 1
-        
-        segment_duration = total_duration / users_needed
+    # LIMITE MASSIMO ASSOLUTO: 8 ore per turno
+    MAX_SHIFT_HOURS = 8.0
+    
+    # Se la durata è <= 8 ore, nessuna divisione necessaria
+    if total_duration <= MAX_SHIFT_HOURS:
+        segments.append((coverage.start_time, coverage.end_time, 1))
+        return segments
+    
+    # Calcola quanti utenti servono per coprire la durata (sempre basato su MAX 8 ore)
+    users_needed = int(total_duration / MAX_SHIFT_HOURS)
+    if total_duration % MAX_SHIFT_HOURS > 0:
+        users_needed += 1
+    
+    # Calcola la durata ottimale per segmento distribuendo equamente
+    segment_duration = total_duration / users_needed
     
     # Crea i segmenti bilanciati
     current_hour = start_hour
@@ -740,7 +727,14 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                 slot_key = (segment_start.strftime('%H:%M'), segment_end.strftime('%H:%M'))
                 if slot_key not in time_slot_groups:
                     time_slot_groups[slot_key] = []
-                time_slot_groups[slot_key].append(coverage)
+                # Crea una copia della copertura con gli orari del segmento per evitare sovrapposizioni
+                segment_coverage = type(coverage)()
+                for attr in ['id', 'day_of_week', 'description', 'required_roles', 'role_count', 'active', 'valid_from', 'valid_to']:
+                    if hasattr(coverage, attr):
+                        setattr(segment_coverage, attr, getattr(coverage, attr))
+                segment_coverage.start_time = segment_start
+                segment_coverage.end_time = segment_end
+                time_slot_groups[slot_key].append(segment_coverage)
         
         # Process each time slot group - BUSINESS RULE: ONE PERSON PER REQUIRED ROLE
         for (start_str, end_str), coverages_in_slot in time_slot_groups.items():
