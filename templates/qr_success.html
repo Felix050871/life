@@ -70,22 +70,54 @@
             margin-top: 20px;
         }
         
+        .action-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
         .btn-dashboard {
             background: linear-gradient(45deg, #667eea, #764ba2);
             border: none;
             color: white;
-            padding: 12px 30px;
+            padding: 12px 25px;
             border-radius: 25px;
             font-weight: 600;
             text-decoration: none;
             display: inline-block;
-            margin-top: 20px;
             transition: transform 0.2s;
+            flex: 1;
+            min-width: 140px;
+            max-width: 160px;
         }
         
         .btn-dashboard:hover {
             transform: translateY(-2px);
             color: white;
+        }
+        
+        .btn-exit {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+            cursor: pointer;
+            flex: 1;
+            min-width: 140px;
+            max-width: 160px;
+        }
+        
+        .btn-exit:hover {
+            transform: translateY(-2px);
+            color: white;
+            background: linear-gradient(45deg, #c82333, #bd2130);
         }
     </style>
 </head>
@@ -113,19 +145,37 @@
             </div>
         {% endif %}
         
-        <a href="{{ url_for('index') }}" class="btn-dashboard">
-            <i class="fas fa-home me-2"></i>Vai alla Dashboard
-        </a>
+        <div class="action-buttons">
+            <a href="{{ url_for('index') }}" class="btn-dashboard">
+                <i class="fas fa-home me-2"></i>Dashboard
+            </a>
+            <button onclick="closeApp()" class="btn-exit">
+                <i class="fas fa-times me-2"></i>Esci
+            </button>
+        </div>
         
         <div class="auto-redirect">
             <i class="fas fa-clock me-1"></i>
-            Reindirizzamento automatico in <span id="countdown">10</span> secondi
+            Chiusura automatica in <span id="countdown">8</span> secondi
         </div>
     </div>
     
     <script>
-        // Auto redirect dopo 10 secondi
-        let countdown = 10;
+        // Funzione per chiudere l'app
+        function closeApp() {
+            // Prova diversi metodi per chiudere la finestra/app
+            if (window.close) {
+                window.close();
+            } else if (history.length > 1) {
+                history.back();
+            } else {
+                // Fallback: vai alla pagina vuota
+                window.location.href = "about:blank";
+            }
+        }
+        
+        // Auto chiusura dopo 8 secondi
+        let countdown = 8;
         const countdownElement = document.getElementById('countdown');
         
         const timer = setInterval(() => {
@@ -134,14 +184,12 @@
             
             if (countdown <= 0) {
                 clearInterval(timer);
-                window.location.href = "{{ url_for('index') }}";
+                closeApp();
             }
         }, 1000);
         
-        // Click anywhere per andare alla dashboard
-        document.addEventListener('click', () => {
-            window.location.href = "{{ url_for('index') }}";
-        });
+        // Rimuovi il click automatico per evitare chiusure accidentali
+        // Solo i pulsanti specifici eseguono azioni
     </script>
 </body>
 </html>

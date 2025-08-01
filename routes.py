@@ -5030,6 +5030,7 @@ def quick_attendance(action):
                                      action=action, 
                                      message=error_message,
                                      user=current_user,
+                                     timestamp=now.strftime('%H:%M'),
                                      error=True)
             
             # Create entry event
@@ -5051,6 +5052,7 @@ def quick_attendance(action):
                                      action=action, 
                                      message=error_message,
                                      user=current_user,
+                                     timestamp=now.strftime('%H:%M'),
                                      error=True)
             
             # Create exit event
@@ -5081,6 +5083,7 @@ def quick_attendance(action):
                              action=action, 
                              message=error_message,
                              user=current_user,
+                             timestamp=now.strftime('%H:%M'),
                              error=True)
 
 
