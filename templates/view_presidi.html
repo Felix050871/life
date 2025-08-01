@@ -169,7 +169,7 @@
                 <!-- Coperture per giorno - Tabella strutturata -->
                 <h6><i class="fas fa-calendar-week me-2"></i>Coperture Definite</h6>
                 {% set coverages_by_day = {} %}
-                {% for coverage in template.coverages.filter_by(is_active=True).order_by('day_of_week', 'start_time') %}
+                {% for coverage in template.coverages.filter_by(active=True).order_by('day_of_week', 'start_time') %}
                     {% if coverage.day_of_week not in coverages_by_day %}
                         {% set _ = coverages_by_day.update({coverage.day_of_week: []}) %}
                     {% endif %}
