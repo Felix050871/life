@@ -427,7 +427,7 @@ sys.path.insert(0, os.getcwd())
 try:
     from main import app
     with app.app_context():
-        from models import db, User, Role
+        from models import db, User, UserRole
         from werkzeug.security import generate_password_hash
         
         # Verifica se l'utente esiste già
@@ -442,10 +442,10 @@ try:
             sys.exit(1)
         
         # Trova o crea ruolo amministratore
-        admin_role = Role.query.filter_by(name='Amministratore').first()
+        admin_role = UserRole.query.filter_by(name='Amministratore').first()
         if not admin_role:
             # Crea ruolo amministratore con tutti i permessi
-            admin_role = Role(
+            admin_role = UserRole(
                 name='Amministratore',
                 description='Amministratore sistema con accesso completo',
                 can_manage_users=True,
@@ -516,6 +516,31 @@ if [ $? -eq 0 ]; then
 else
     print_error "Errore durante la creazione dell'utente amministratore"
     exit 1
+fi
+
+echo ""
+
+# =============================================================================
+# DATI DI TEST (OPZIONALE)
+# =============================================================================
+
+print_info "8. Dati di test (opzionale)..."
+
+read -p "Vuoi caricare dati di test nel database? (y/N): " LOAD_TEST_DATA
+if [[ "$LOAD_TEST_DATA" =~ ^[Yy]$ ]]; then
+    print_info "Caricamento dati di test..."
+    if [ -f "populate_test_data.py" ]; then
+        $VENV_DIR/bin/python3 populate_test_data.py
+        if [ $? -eq 0 ]; then
+            print_success "Dati di test caricati con successo"
+        else
+            print_warning "Errore durante il caricamento dati di test"
+        fi
+    else
+        print_warning "File populate_test_data.py non trovato"
+    fi
+else
+    print_info "Dati di test saltati"
 fi
 
 echo ""
