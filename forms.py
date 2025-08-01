@@ -980,10 +980,11 @@ class RoleForm(FlaskForm):
     active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
     
-    def __init__(self, original_name=None, widget_only=False, *args, **kwargs):
+    def __init__(self, original_name=None, widget_only=False, protected_permissions=None, *args, **kwargs):
         super(RoleForm, self).__init__(*args, **kwargs)
         self.original_name = original_name
         self.widget_only = widget_only
+        self.protected_permissions = protected_permissions or []
         
         # Se è widget_only, rimuovi i validator richiesti
         if not widget_only:

@@ -57,6 +57,11 @@
                             <i class="fas fa-info-circle me-2"></i>
                             Come amministratore, puoi modificare solo i permessi dei Widget per questo ruolo.
                         </div>
+                        {% elif is_admin_editing_admin_role %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            <strong>Modifica Amministratore:</strong> Puoi modificare tutti i permessi eccetto "Gestire Ruoli" e "Gestire Utenti" (protetti per sicurezza).
+                        </div>
                         {% endif %}
 
                         <hr>
@@ -98,11 +103,19 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
-                                            {{ form.can_manage_roles() }}
-                                            {{ form.can_manage_roles.label(class="form-check-label") }}
+                                            {% if 'can_manage_roles' in protected_permissions %}
+                                                {{ form.can_manage_roles(disabled=True, class="form-check-input") }}
+                                                {{ form.can_manage_roles.label(class="form-check-label text-muted") }}
+                                                <small class="text-danger d-block">
+                                                    <i class="fas fa-lock"></i> Permesso protetto - non modificabile
+                                                </small>
+                                            {% else %}
+                                                {{ form.can_manage_roles(class="form-check-input") }}
+                                                {{ form.can_manage_roles.label(class="form-check-label") }}
+                                            {% endif %}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_roles() }}
+                                            {{ form.can_view_roles(class="form-check-input") }}
                                             {{ form.can_view_roles.label(class="form-check-label") }}
                                         </div>
                                     </div>
@@ -117,11 +130,19 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
-                                            {{ form.can_manage_users() }}
-                                            {{ form.can_manage_users.label(class="form-check-label") }}
+                                            {% if 'can_manage_users' in protected_permissions %}
+                                                {{ form.can_manage_users(disabled=True, class="form-check-input") }}
+                                                {{ form.can_manage_users.label(class="form-check-label text-muted") }}
+                                                <small class="text-danger d-block">
+                                                    <i class="fas fa-lock"></i> Permesso protetto - non modificabile
+                                                </small>
+                                            {% else %}
+                                                {{ form.can_manage_users(class="form-check-input") }}
+                                                {{ form.can_manage_users.label(class="form-check-label") }}
+                                            {% endif %}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_users() }}
+                                            {{ form.can_view_users(class="form-check-input") }}
                                             {{ form.can_view_users.label(class="form-check-label") }}
                                         </div>
                                     </div>

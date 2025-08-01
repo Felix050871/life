@@ -7518,10 +7518,9 @@ def edit_role(role_id):
     
     role = UserRole.query.get_or_404(role_id)
     
-    # Verifica che non sia un ruolo di sistema protetto
-    # L'amministratore può modificare solo i widget del ruolo Amministratore
-    protected_roles = ['Admin']
-    if role.name in protected_roles:
+    # Verifica che non sia un ruolo di sistema protetto (solo Admin rimane completamente protetto)
+    fully_protected_roles = ['Admin']
+    if role.name in fully_protected_roles:
         flash(f'Il ruolo "{role.display_name}" è protetto e non può essere modificato', 'danger')
         return redirect(url_for('manage_roles'))
     
@@ -7530,33 +7529,36 @@ def edit_role(role_id):
         flash(f'Solo un amministratore può modificare il ruolo "{role.display_name}"', 'danger')
         return redirect(url_for('manage_roles'))
     
-    # Determina se l'utente corrente è amministratore e può modificare solo widget
-    # Solo quando l'amministratore modifica il ruolo "Amministratore"
-    is_admin_widget_only = current_user.has_role('Amministratore') and role.name == 'Amministratore'
+    # Determina se l'utente corrente è amministratore che modifica ruolo Amministratore
+    # In questo caso può modificare TUTTI i permessi eccetto quelli critici
+    is_admin_editing_admin_role = current_user.has_role('Amministratore') and role.name == 'Amministratore'
     
-    form = RoleForm(original_name=role.name, widget_only=is_admin_widget_only)
+    # Lista dei permessi critici che non possono essere modificati dall'admin (per sicurezza)
+    protected_permissions = ['can_manage_roles', 'can_manage_users'] if is_admin_editing_admin_role else []
+    
+    form = RoleForm(original_name=role.name, widget_only=False, protected_permissions=protected_permissions)
     
 
     
     if form.validate_on_submit():
-        if is_admin_widget_only:
-            # Per l'amministratore, aggiorna solo i permessi widget
+        if is_admin_editing_admin_role:
+            # Per l'amministratore che modifica il ruolo Amministratore:
+            # può modificare TUTTI i permessi eccetto quelli protetti
             existing_permissions = role.permissions.copy()
-            widget_permissions = {
-                'can_view_team_stats_widget': form.can_view_team_stats_widget.data,
-                'can_view_my_attendance_widget': form.can_view_my_attendance_widget.data,
-                'can_view_team_management_widget': form.can_view_team_management_widget.data,
-                'can_view_leave_requests_widget': form.can_view_leave_requests_widget.data,
-                'can_view_daily_attendance_widget': form.can_view_daily_attendance_widget.data,
-                'can_view_shifts_coverage_widget': form.can_view_shifts_coverage_widget.data,
-                'can_view_reperibilita_widget': form.can_view_reperibilita_widget.data,
-                'can_view_overtime_widget': form.can_view_overtime_widget.data,
-                'can_view_my_overtime_widget': form.can_view_my_overtime_widget.data
-            }
-            existing_permissions.update(widget_permissions)
-            role.permissions = existing_permissions
+            new_permissions = form.get_permissions_dict()
+            
+            # Mantieni i permessi protetti con i valori esistenti
+            for protected_perm in protected_permissions:
+                if protected_perm in existing_permissions:
+                    new_permissions[protected_perm] = existing_permissions[protected_perm]
+            
+            # Aggiorna tutti gli altri permessi
+            role.permissions = new_permissions
+            # Non modificare name, display_name per il ruolo Amministratore
+            role.description = form.description.data
+            role.active = form.active.data
         else:
-            # Per altri utenti autorizzati, aggiorna tutti i permessi
+            # Per altri utenti autorizzati, aggiorna tutti i permessi normalmente
             role.name = form.name.data
             role.display_name = form.display_name.data
             role.description = form.description.data
@@ -7576,7 +7578,10 @@ def edit_role(role_id):
     form.active.data = role.active
     form.populate_permissions(role.permissions)
     
-    return render_template('edit_role.html', form=form, role=role, is_admin_widget_only=is_admin_widget_only)
+    return render_template('edit_role.html', form=form, role=role, 
+                         is_admin_widget_only=False,
+                         is_admin_editing_admin_role=is_admin_editing_admin_role,
+                         protected_permissions=protected_permissions)
 
 
 @app.route('/admin/roles/toggle/<int:role_id>')
