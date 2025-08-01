@@ -2967,31 +2967,74 @@ def delete_leave_type(id):
 @app.route('/leave_requests')
 @login_required
 def leave_requests():
+    # Ottieni il parametro view per determinare la modalità di visualizzazione
+    view_mode = request.args.get('view', 'default')
+    
     form = LeaveRequestForm()
     
-    if current_user.can_approve_leave():
-        if current_user.role == 'Responsabili':
-            # Responsabili vedono solo le richieste della propria sede
-            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).filter(
-                User.sede_id == current_user.sede_id
-            ).order_by(LeaveRequest.created_at.desc()).all()
-        else:
-            # Project managers e Management vedono tutte le richieste
-            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).order_by(
-                LeaveRequest.created_at.desc()
-            ).all()
-        can_approve = True
-    else:
-        # Users see only their requests
+    # Determina il comportamento in base al view_mode e ai permessi utente
+    if view_mode == 'my':
+        # Modalità "Le Mie Richieste" - sempre solo richieste dell'utente corrente
         requests = LeaveRequest.query.filter_by(
             user_id=current_user.id
         ).order_by(LeaveRequest.created_at.desc()).all()
         can_approve = False
+        page_title = "Le Mie Richieste Ferie/Permessi"
+        
+    elif view_mode == 'approve' and current_user.can_approve_leave():
+        # Modalità approvazione - solo richieste pending da approvare
+        if current_user.role == 'Responsabili':
+            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).filter(
+                User.sede_id == current_user.sede_id,
+                LeaveRequest.status == 'Pending'
+            ).order_by(LeaveRequest.created_at.desc()).all()
+        else:
+            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).filter(
+                LeaveRequest.status == 'Pending'
+            ).order_by(LeaveRequest.created_at.desc()).all()
+        can_approve = True
+        page_title = "Approva Richieste Ferie/Permessi"
+        
+    elif view_mode == 'view' and current_user.can_view_leave():
+        # Modalità visualizzazione - tutte le richieste per reportistica
+        if current_user.role == 'Responsabili':
+            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).filter(
+                User.sede_id == current_user.sede_id
+            ).order_by(LeaveRequest.created_at.desc()).all()
+        else:
+            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).order_by(
+                LeaveRequest.created_at.desc()
+            ).all()
+        can_approve = False
+        page_title = "Visualizza Richieste Ferie/Permessi"
+        
+    elif current_user.can_approve_leave():
+        # Modalità gestione completa per manager
+        if current_user.role == 'Responsabili':
+            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).filter(
+                User.sede_id == current_user.sede_id
+            ).order_by(LeaveRequest.created_at.desc()).all()
+        else:
+            requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).order_by(
+                LeaveRequest.created_at.desc()
+            ).all()
+        can_approve = True
+        page_title = "Gestione Richieste Ferie/Permessi"
+        
+    else:
+        # Modalità utente normale - solo le proprie richieste
+        requests = LeaveRequest.query.filter_by(
+            user_id=current_user.id
+        ).order_by(LeaveRequest.created_at.desc()).all()
+        can_approve = False
+        page_title = "Le Mie Richieste Ferie/Permessi"
     
     return render_template('leave_requests.html', 
                          requests=requests, 
                          form=form,
                          can_approve=can_approve,
+                         page_title=page_title,
+                         view_mode=view_mode,
                          today=date.today())
 
 @app.route('/create_leave_request', methods=['GET', 'POST'])

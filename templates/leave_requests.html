@@ -7,18 +7,27 @@
     <div class="col">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2><i class="fas fa-umbrella-beach me-2"></i>Gestione Ferie e Permessi</h2>
-                {% if can_approve %}
+                <h2><i class="fas fa-umbrella-beach me-2"></i>{{ page_title or "Gestione Ferie e Permessi" }}</h2>
+                {% if view_mode == 'approve' %}
+                <p class="text-muted">Approva le richieste di ferie e permessi in attesa</p>
+                {% elif view_mode == 'view' %}
+                <p class="text-muted">Visualizza tutte le richieste di ferie e permessi</p>
+                {% elif can_approve %}
                 <p class="text-muted">Gestisci le richieste di ferie e permessi del team</p>
                 {% else %}
                 <p class="text-muted">Le tue richieste di ferie e permessi</p>
                 {% endif %}
             </div>
-            {% if current_user.can_request_leave() and not can_approve %}
+            {% if current_user.can_request_leave() %}
             <div>
                 <a href="{{ url_for('create_leave_request_page') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>Nuova Richiesta
                 </a>
+                {% if view_mode in ['approve', 'view', 'my'] %}
+                <a href="{{ url_for('leave_requests') }}" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-list me-2"></i>Vista Completa
+                </a>
+                {% endif %}
             </div>
             {% endif %}
         </div>
