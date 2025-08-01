@@ -38,3 +38,7 @@ Preferred communication style: Simple, everyday language.
 - **Werkzeug**: Password hashing.
 - **Openpyxl**: Python library for server-side Excel file generation.
 - **SheetJS (XLSX)**: JavaScript library for client-side Excel handling.
+
+## Recent Changes
+- August 1, 2025: **Pacchetto Installazione Locale PostgreSQL Rigenerato** - Creato nuovo pacchetto installazione completamente ottimizzato: eliminati riferimenti SQLite, utilizzati solo path relativi per ambiente virtuale e file, script install_local.sh/bat con controllo prerequisiti PostgreSQL, inizializzazione database corretta con verifica connessione, creazione automatica utente admin con ruolo completo, file .env con variabili PostgreSQL corrette, script avvio start_workly.sh/bat, documentazione completa README_INSTALLAZIONE_LOCALE.md, pacchetto tar.gz pronto per distribuzione (490KB), installazione completamente locale e portabile
+- August 1, 2025: **Widget Dashboard Rimborsi Chilometrici Abilitati e Errori Risolti** - Attivati widget rimborsi chilometrici nel dashboard con correzione errori: rimossi commenti temporanei nella route dashboard, aggiunti widget "I Miei Rimborsi Chilometrici" e "Rimborsi Chilometrici Management", corretti attributi template (total_km, total_amount), aggiunto metodo get_route_list() nel modello MileageRequest, risolto errore logger mancante, widget dashboard e pagina visualizzazione rimborsi ora completamente funzionanti
