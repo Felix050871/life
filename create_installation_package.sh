@@ -26,6 +26,7 @@ cp utils.py "$TEMP_DIR/"
 cp config.py "$TEMP_DIR/"
 cp requirements.txt "$TEMP_DIR/"
 cp pyproject.toml "$TEMP_DIR/" 2>/dev/null || true
+cp populate_test_data.py "$TEMP_DIR/" 2>/dev/null || true
 
 # Copia directory
 echo "Copiando directory..."
@@ -137,6 +138,10 @@ INSTALLAZIONE RAPIDA:
 3. Accesso:
    - http://127.0.0.1:5000
    - Username/Password: quelli inseriti durante installazione
+
+4. Dati di Test (Opzionale):
+   - python populate_test_data.py
+   - Aggiunge utenti, turni e dati di esempio per testare il sistema
 
 DOCUMENTAZIONE COMPLETA:
 - Leggi README_INSTALLAZIONE_LOCALE.md per dettagli completi
