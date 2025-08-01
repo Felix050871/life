@@ -1,584 +1,636 @@
 #!/usr/bin/env python3
 """
-Script per popolare il database con dati di test per il mese di Luglio 2025
-Crea presenze, richieste ferie, straordinari, interventi e altri dati realistici
+Script per popolare il database Workly con dati di test realistici
+Crea utenti, presenze, richieste e altri dati per testare il sistema
+Versione rigenerata - Agosto 2025
 """
 
 import os
 import sys
 from datetime import datetime, timedelta, time
 import random
-from werkzeug.security import generate_password_hash
+import logging
 
-# Add the project root to Python path
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Add project directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app import app, db
-from models import (
-    User, UserRole, Sede, WorkSchedule, AttendanceEvent, LeaveRequest, LeaveType,
-    OvertimeRequest, OvertimeType, ExpenseReport, ExpenseCategory, InternalMessage,
-    Holiday, ReperibilitaShift, Intervention
-)
+def main():
+    """Funzione principale per il popolamento dati"""
+    try:
+        from main import app
+        from models import db
+        import models
+        from werkzeug.security import generate_password_hash
+        
+        with app.app_context():
+            logger.info("🚀 Avvio popolamento database con dati di test...")
+            
+            # 1. Verifica e crea ruoli base
+            create_base_roles(db, models)
+            
+            # 2. Verifica e crea sedi
+            create_base_sedi(db, models)
+            
+            # 3. Crea utenti di test
+            create_test_users(db, models, generate_password_hash)
+            
+            # 4. Crea tipologie base
+            create_base_types(db, models)
+            
+            # 5. Crea festività
+            create_holidays(db, models)
+            
+            # 6. Crea dati ACI se non esistenti
+            create_aci_data(db, models)
+            
+            # 7. Crea presenze per ultimi 30 giorni
+            create_attendance_data(db, models)
+            
+            # 8. Crea richieste varie
+            create_requests_data(db, models)
+            
+            # 9. Crea messaggi interni
+            create_internal_messages(db, models)
+            
+            # 10. Crea turni e reperibilità
+            create_shifts_data(db, models)
+            
+            logger.info("✅ Popolamento database completato con successo!")
+            print("\n=== RIEPILOGO DATI CREATI ===")
+            
+            # Mostra statistiche
+            show_statistics(db, models)
+            
+    except Exception as e:
+        logger.error(f"❌ Errore durante il popolamento: {str(e)}")
+        raise
 
-def italian_now():
-    """Helper per timezone italiano"""
-    return datetime.now()
-
-def create_test_data():
-    """Crea tutti i dati di test per luglio 2025"""
-    
-    with app.app_context():
-        try:
-            print("🚀 Inizio popolamento database con dati di test per Luglio 2025...")
-            
-            # 1. Crea ruoli se non esistono
-            create_roles()
-            db.session.commit()
-            
-            # 2. Crea sedi se non esistono
-            create_sedi()
-            db.session.commit()
-            
-            # 3. Crea orari di lavoro
-            create_work_schedules()
-            db.session.commit()
-            
-            # 4. Crea utenti di test
-            create_test_users()
-            db.session.commit()
-            
-            # 5. Crea tipologie leave e overtime
-            create_leave_and_overtime_types()
-            db.session.commit()
-            
-            # 6. Crea categorie spese
-            create_expense_categories()
-            db.session.commit()
-            
-            # 7. Crea festività luglio
-            create_july_holidays()
-            db.session.commit()
-            
-            # 8. Popola presenze per tutto luglio
-            populate_july_attendance()
-            db.session.commit()
-            
-            # 9. Crea richieste ferie/permessi
-            create_leave_requests()
-            db.session.commit()
-            
-            # 10. Crea richieste straordinari
-            create_overtime_requests()
-            db.session.commit()
-            
-            # 11. Crea note spese
-            create_expense_reports()
-            db.session.commit()
-            
-            # 12. Crea turni reperibilità
-            create_reperibilita_shifts()
-            db.session.commit()
-            
-            # 13. Crea interventi
-            create_interventions()
-            db.session.commit()
-            
-            # 14. Crea messaggi interni
-            create_internal_messages()
-            db.session.commit()
-            
-            print("✅ Popolamento database completato con successo!")
-            
-        except Exception as e:
-            db.session.rollback()
-            print(f"❌ Errore durante il popolamento: {e}")
-            raise
-
-def create_roles():
+def create_base_roles(db, models):
     """Crea ruoli base se non esistono"""
+    logger.info("Creazione ruoli base...")
+    
     roles_data = [
-        ("Amministratore", "Amministratore del sistema", True),
-        ("Responsabile", "Responsabile di sede", True),
-        ("Supervisore", "Supervisore operativo", True),
-        ("Operatore", "Operatore standard", True),
-        ("Ospite", "Accesso limitato", True)
+        {
+            'name': 'Amministratore',
+            'description': 'Amministratore sistema con accesso completo',
+            'permissions': {
+                'can_manage_users': True,
+                'can_view_all_users': True,
+                'can_edit_all_users': True,  
+                'can_delete_users': True,
+                'can_manage_roles': True,
+                'can_view_attendance': True,
+                'can_edit_attendance': True,
+                'can_manage_shifts': True,
+                'can_view_all_shifts': True,
+                'can_create_shifts': True,
+                'can_edit_shifts': True,
+                'can_delete_shifts': True,
+                'can_manage_holidays': True,
+                'can_view_reports': True,
+                'can_export_data': True,
+                'can_manage_sedi': True,
+                'can_view_dashboard': True,
+                'can_manage_leave_requests': True,
+                'can_approve_leave_requests': True,
+                'can_view_leave_requests': True,
+                'can_create_leave_requests': True,
+                'can_manage_overtime_requests': True,
+                'can_approve_overtime_requests': True,
+                'can_view_overtime_requests': True,
+                'can_create_overtime_requests': True,
+                'can_manage_mileage_requests': True,
+                'can_approve_mileage_requests': True,
+                'can_view_mileage_requests': True,
+                'can_create_mileage_requests': True,
+                'can_manage_internal_messages': True,
+                'can_send_internal_messages': True,
+                'can_view_internal_messages': True,
+                'can_manage_aci_tables': True,
+                'can_view_aci_tables': True
+            }
+        },
+        {
+            'name': 'Responsabile',
+            'description': 'Responsabile area con permessi gestione team',
+            'permissions': {
+                'can_view_all_users': True,
+                'can_edit_all_users': True,
+                'can_view_attendance': True,
+                'can_edit_attendance': True,
+                'can_view_all_shifts': True,
+                'can_create_shifts': True,
+                'can_edit_shifts': True,
+                'can_view_reports': True,
+                'can_export_data': True,
+                'can_view_dashboard': True,
+                'can_approve_leave_requests': True,
+                'can_view_leave_requests': True,
+                'can_create_leave_requests': True,
+                'can_approve_overtime_requests': True,
+                'can_view_overtime_requests': True,
+                'can_create_overtime_requests': True,
+                'can_approve_mileage_requests': True,
+                'can_view_mileage_requests': True,
+                'can_create_mileage_requests': True,
+                'can_send_internal_messages': True,
+                'can_view_internal_messages': True,
+                'can_view_aci_tables': True
+            }
+        },
+        {
+            'name': 'Supervisore',
+            'description': 'Supervisore con permessi limitati di gestione',
+            'permissions': {
+                'can_view_attendance': True,
+                'can_view_all_shifts': True,
+                'can_create_shifts': True,
+                'can_view_reports': True,
+                'can_view_dashboard': True,
+                'can_view_leave_requests': True,
+                'can_create_leave_requests': True,
+                'can_view_overtime_requests': True,
+                'can_create_overtime_requests': True,
+                'can_view_mileage_requests': True,
+                'can_create_mileage_requests': True,
+                'can_send_internal_messages': True,
+                'can_view_internal_messages': True,
+                'can_view_aci_tables': True
+            }
+        },
+        {
+            'name': 'Operatore',
+            'description': 'Operatore standard',
+            'permissions': {
+                'can_view_attendance': True,
+                'can_view_dashboard': True,
+                'can_create_leave_requests': True,
+                'can_create_overtime_requests': True,
+                'can_create_mileage_requests': True,
+                'can_view_internal_messages': True,
+                'can_view_aci_tables': True
+            }
+        }
     ]
     
-    for name, display_name, active in roles_data:
-        if not UserRole.query.filter_by(name=name).first():
-            role = UserRole(
-                name=name,
-                display_name=display_name,
-                active=active,
-                permissions={}  # Permissions will be set later
+    for role_data in roles_data:
+        existing_role = models.UserRole.query.filter_by(name=role_data['name']).first()
+        if not existing_role:
+            role = models.UserRole(
+                name=role_data['name'],
+                description=role_data['description'],
+                **role_data['permissions']
             )
             db.session.add(role)
-            print(f"✓ Ruolo creato: {name}")
+            logger.info(f"  ➕ Creato ruolo: {role_data['name']}")
+        else:
+            logger.info(f"  ✓ Ruolo esistente: {role_data['name']}")
+    
+    db.session.commit()
 
-def create_sedi():
-    """Crea sedi di test se non esistono"""
+def create_base_sedi(db, models):
+    """Crea sedi base se non esistono"""
+    logger.info("Creazione sedi base...")
+    
     sedi_data = [
-        ("Sede Principale", "Via Roma 123, Milano", "Sede principale con modalità oraria", "Oraria"),
-        ("Sede Turni", "Via Garibaldi 456, Milano", "Sede con modalità turnazioni", "Turni"),
-        ("Sede Nord", "Via Manzoni 789, Bergamo", "Filiale nord", "Oraria")
+        {
+            'name': 'Sede Centrale Roma',
+            'address': 'Via Roma 123, 00100 Roma RM',
+            'description': 'Sede principale dell\'azienda a Roma',
+            'active': True,
+            'tipologia': 'centrale'
+        },
+        {
+            'name': 'Filiale Milano',
+            'address': 'Via Milano 456, 20100 Milano MI',
+            'description': 'Filiale operativa di Milano',
+            'active': True,
+            'tipologia': 'filiale'
+        },
+        {
+            'name': 'Ufficio Napoli',
+            'address': 'Via Napoli 789, 80100 Napoli NA',
+            'description': 'Ufficio periferico di Napoli',
+            'active': True,
+            'tipologia': 'ufficio'
+        }
     ]
     
-    for name, address, description, tipologia in sedi_data:
-        if not Sede.query.filter_by(name=name).first():
-            sede = Sede(
-                name=name,
-                address=address,
-                description=description,
-                tipologia=tipologia,
-                active=True
-            )
+    for sede_data in sedi_data:
+        existing_sede = models.Sede.query.filter_by(name=sede_data['name']).first()
+        if not existing_sede:
+            sede = models.Sede(**sede_data)
             db.session.add(sede)
-            print(f"✓ Sede creata: {name}")
+            logger.info(f"  ➕ Creata sede: {sede_data['name']}")
+        else:
+            logger.info(f"  ✓ Sede esistente: {sede_data['name']}")
+    
+    db.session.commit()
 
-def create_work_schedules():
-    """Crea orari di lavoro standard"""
-    schedules_data = [
-        ("Orario Standard", "08:45", "09:15", "17:30", "18:30", [0,1,2,3,4], 1),  # Lun-Ven con range
-        ("Part-time Mattino", "08:45", "09:15", "12:45", "13:15", [0,1,2,3,4], 1),
-        ("Turni", "06:00", "10:00", "14:00", "22:00", [0,1,2,3,4,5,6], 2),  # Per sede turni
-        ("Orario Esteso", "07:45", "08:15", "18:45", "19:15", [0,1,2,3,4], 1)
-    ]
+def create_test_users(db, models, generate_password_hash):
+    """Crea utenti di test"""
+    logger.info("Creazione utenti di test...")
     
-    for name, start_min, start_max, end_min, end_max, days, sede_id in schedules_data:
-        if not WorkSchedule.query.filter_by(name=name, sede_id=sede_id).first():
-            schedule = WorkSchedule(
-                name=name,
-                start_time_min=time.fromisoformat(start_min),
-                start_time_max=time.fromisoformat(start_max),
-                end_time_min=time.fromisoformat(end_min),
-                end_time_max=time.fromisoformat(end_max),
-                days_of_week=days,
-                sede_id=sede_id,
-                active=True
-            )
-            db.session.add(schedule)
-            print(f"✓ Orario creato: {name}")
-
-def create_test_users():
-    """Crea utenti di test realistici"""
-    # Get roles and sedi
-    admin_role = UserRole.query.filter_by(name="Amministratore").first()
-    resp_role = UserRole.query.filter_by(name="Responsabile").first()
-    super_role = UserRole.query.filter_by(name="Supervisore").first()
-    op_role = UserRole.query.filter_by(name="Operatore").first()
+    # Ottieni ruoli e sedi
+    admin_role = models.UserRole.query.filter_by(name='Amministratore').first()
+    resp_role = models.UserRole.query.filter_by(name='Responsabile').first()
+    sup_role = models.UserRole.query.filter_by(name='Supervisore').first()
+    op_role = models.UserRole.query.filter_by(name='Operatore').first()
     
-    sede_principale = Sede.query.filter_by(name="Sede Principale").first()
-    sede_turni = Sede.query.filter_by(name="Sede Turni").first()
-    sede_nord = Sede.query.filter_by(name="Sede Nord").first()
-    
-    orario_standard = WorkSchedule.query.filter_by(name="Orario Standard").first()
-    orario_part_time = WorkSchedule.query.filter_by(name="Part-time Mattino").first()
-    orario_turni = WorkSchedule.query.filter_by(name="Turni").first()
+    sede_roma = models.Sede.query.filter_by(name='Sede Centrale Roma').first()
+    sede_milano = models.Sede.query.filter_by(name='Filiale Milano').first()
+    sede_napoli = models.Sede.query.filter_by(name='Ufficio Napoli').first()
     
     users_data = [
-        # Admin (già esiste, skippiamo)
-        ("marco.rossi", "marco.rossi@workly.com", "Marco", "Rossi", resp_role, sede_principale, orario_standard, 100.0, False),
-        ("giulia.bianchi", "giulia.bianchi@workly.com", "Giulia", "Bianchi", super_role, None, None, 100.0, True),  # Multi-sede
-        ("luca.ferrari", "luca.ferrari@workly.com", "Luca", "Ferrari", op_role, sede_principale, orario_standard, 100.0, False),
-        ("anna.verde", "anna.verde@workly.com", "Anna", "Verde", op_role, sede_principale, orario_part_time, 50.0, False),
-        ("paolo.neri", "paolo.neri@workly.com", "Paolo", "Neri", op_role, sede_turni, orario_turni, 100.0, False),
-        ("sara.gialli", "sara.gialli@workly.com", "Sara", "Gialli", resp_role, sede_nord, orario_standard, 100.0, False),
-        ("davide.blu", "davide.blu@workly.com", "Davide", "Blu", op_role, sede_nord, orario_standard, 100.0, False),
-        ("chiara.rosa", "chiara.rosa@workly.com", "Chiara", "Rosa", op_role, sede_principale, orario_standard, 80.0, False),
+        {
+            'first_name': 'Mario',
+            'last_name': 'Rossi',
+            'email': 'mario.rossi@workly.local',
+            'username': 'mario.rossi',
+            'role': resp_role,
+            'sede': sede_roma,
+            'modalita_lavoro': 'ORARIA'
+        },
+        {
+            'first_name': 'Anna',
+            'last_name': 'Verdi',
+            'email': 'anna.verdi@workly.local',
+            'username': 'anna.verdi',
+            'role': sup_role,
+            'sede': sede_milano,
+            'modalita_lavoro': 'ORARIA'
+        },
+        {
+            'first_name': 'Giuseppe',
+            'last_name': 'Bianchi',
+            'email': 'giuseppe.bianchi@workly.local',
+            'username': 'giuseppe.bianchi',
+            'role': op_role,
+            'sede': sede_roma,
+            'modalita_lavoro': 'TURNI'
+        },
+        {
+            'first_name': 'Maria',
+            'last_name': 'Neri',
+            'email': 'maria.neri@workly.local',
+            'username': 'maria.neri',
+            'role': op_role,
+            'sede': sede_napoli,
+            'modalita_lavoro': 'ORARIA'
+        },
+        {
+            'first_name': 'Francesco',
+            'last_name': 'Gialli',
+            'email': 'francesco.gialli@workly.local',
+            'username': 'francesco.gialli',
+            'role': op_role,
+            'sede': sede_milano,
+            'modalita_lavoro': 'TURNI'
+        }
     ]
     
-    for username, email, first_name, last_name, role, sede, schedule, percentage, all_sedi in users_data:
-        if not User.query.filter_by(username=username).first():
-            user = User(
-                username=username,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                password_hash=generate_password_hash("password123"),
-                role=role.name if role else "Operatore",
-                sede_id=sede.id if sede else None,
-                work_schedule_id=schedule.id if schedule else None,
-                part_time_percentage=percentage,
-                all_sedi=all_sedi,
-                active=True
+    password = 'Password123!'  # Password di test standard
+    
+    for user_data in users_data:
+        existing_user = models.User.query.filter_by(username=user_data['username']).first()
+        if not existing_user:
+            user = models.User(
+                first_name=user_data['first_name'],
+                last_name=user_data['last_name'],
+                email=user_data['email'],
+                username=user_data['username'],
+                password_hash=generate_password_hash(password),
+                role=user_data['role'].name if user_data['role'] else 'Operatore',
+                active=True,
+                all_sedi=False,
+                part_time_percentage=100.0
             )
             db.session.add(user)
-            print(f"✓ Utente creato: {username} ({first_name} {last_name})")
+            db.session.flush()
+            
+            # Associa alla sede principale tramite sede_id
+            if user_data['sede']:
+                user.sede_id = user_data['sede'].id
+            
+            logger.info(f"  ➕ Creato utente: {user_data['first_name']} {user_data['last_name']}")
+        else:
+            logger.info(f"  ✓ Utente esistente: {user_data['first_name']} {user_data['last_name']}")
+    
+    db.session.commit()
 
-def create_leave_and_overtime_types():
-    """Crea tipologie ferie e straordinari"""
-    # Tipologie ferie
+def create_base_types(db, models):
+    """Crea tipologie base per leave, overtime, expense"""
+    logger.info("Creazione tipologie base...")
+    
+    # Tipologie ferie/permessi
     leave_types = [
-        ("Ferie", "Giorni di ferie annuali", True),
-        ("Permesso", "Permesso retribuito", True),
-        ("Malattia", "Assenza per malattia", False),
-        ("Congedo", "Congedo straordinario", False)
+        {'name': 'Ferie', 'description': 'Ferie annuali', 'is_active': True},
+        {'name': 'Permesso', 'description': 'Permesso personale', 'is_active': True},
+        {'name': 'Malattia', 'description': 'Congedo per malattia', 'is_active': True},
+        {'name': 'Lutto', 'description': 'Congedo per lutto', 'is_active': True}
     ]
     
-    for name, description, requires_approval in leave_types:
-        if not LeaveType.query.filter_by(name=name).first():
-            leave_type = LeaveType(
-                name=name,
-                description=description,
-                requires_approval=requires_approval,
-                is_active=True
-            )
+    for lt_data in leave_types:
+        existing = models.LeaveType.query.filter_by(name=lt_data['name']).first()
+        if not existing:
+            leave_type = models.LeaveType(**lt_data)
             db.session.add(leave_type)
-            print(f"✓ Tipologia ferie creata: {name}")
+            logger.info(f"  ➕ Creata tipologia ferie: {lt_data['name']}")
     
-    # Tipologie straordinari
+    # Tipologie straordinari - usa 'active' invece di 'is_active'
     overtime_types = [
-        ("Straordinario Standard", "Ore straordinarie normali", 1.5),
-        ("Straordinario Festivo", "Lavoro nei giorni festivi", 2.0),
-        ("Straordinario Notturno", "Lavoro notturno", 1.8),
-        ("Reperibilità", "Servizio di reperibilità", 1.2)
+        {'name': 'Straordinario Feriale', 'description': 'Lavoro straordinario nei giorni feriali', 'active': True},
+        {'name': 'Straordinario Festivo', 'description': 'Lavoro straordinario nei giorni festivi', 'active': True},
+        {'name': 'Reperibilità', 'description': 'Ore di reperibilità', 'active': True}
     ]
     
-    for name, description, multiplier in overtime_types:
-        if not OvertimeType.query.filter_by(name=name).first():
-            overtime_type = OvertimeType(
-                name=name,
-                description=description,
-                hourly_rate_multiplier=multiplier,
-                active=True
+    for ot_data in overtime_types:
+        existing = models.OvertimeType.query.filter_by(name=ot_data['name']).first()
+        if not existing:
+            # Crea solo con campi base
+            overtime_type = models.OvertimeType(
+                name=ot_data['name'],
+                description=ot_data['description']
             )
             db.session.add(overtime_type)
-            print(f"✓ Tipologia straordinario creata: {name}")
+            logger.info(f"  ➕ Creata tipologia straordinari: {ot_data['name']}")
+    
+    # Categorie spese - model non presente, le saltiamo per ora
+    logger.info("  ⚠️ Categorie spese saltate - modello non disponibile")
+    
+    db.session.commit()
 
-def create_expense_categories():
-    """Crea categorie note spese"""
-    categories = [
-        ("Trasferte", "Spese per trasferte di lavoro"),
-        ("Carburante", "Rifornimenti carburante"),
-        ("Pasti", "Pasti di lavoro"),
-        ("Materiali", "Acquisto materiali"),
-        ("Telefonia", "Spese telefoniche"),
-        ("Formazione", "Corsi e formazione")
+def create_holidays(db, models):
+    """Crea festività per l'anno corrente"""
+    logger.info("Creazione festività...")
+    
+    current_year = datetime.now().year
+    holidays_data = [
+        {'date': f'{current_year}-01-01', 'name': 'Capodanno', 'description': 'Primo gennaio'},
+        {'date': f'{current_year}-01-06', 'name': 'Epifania', 'description': 'Befana'},
+        {'date': f'{current_year}-04-25', 'name': 'Liberazione', 'description': '25 Aprile'},
+        {'date': f'{current_year}-05-01', 'name': 'Festa del Lavoro', 'description': '1 Maggio'},
+        {'date': f'{current_year}-06-02', 'name': 'Festa della Repubblica', 'description': '2 Giugno'},
+        {'date': f'{current_year}-08-15', 'name': 'Ferragosto', 'description': '15 Agosto'},
+        {'date': f'{current_year}-11-01', 'name': 'Ognissanti', 'description': '1 Novembre'},
+        {'date': f'{current_year}-12-08', 'name': 'Immacolata', 'description': '8 Dicembre'},
+        {'date': f'{current_year}-12-25', 'name': 'Natale', 'description': '25 Dicembre'},
+        {'date': f'{current_year}-12-26', 'name': 'Santo Stefano', 'description': '26 Dicembre'}
     ]
     
-    # Get admin user for created_by field
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
-        print("⚠️ Admin user not found, skipping expense categories")
-        return
-    
-    for name, description in categories:
-        if not ExpenseCategory.query.filter_by(name=name).first():
-            category = ExpenseCategory(
-                name=name,
-                description=description,
+    for holiday_data in holidays_data:
+        date_obj = datetime.strptime(holiday_data['date'], '%Y-%m-%d').date()
+        existing = models.Holiday.query.filter_by(name=holiday_data['name']).first()
+        if not existing:
+            holiday = models.Holiday(
+                name=holiday_data['name'],
+                month=date_obj.month,
+                day=date_obj.day,
+                description=holiday_data['description'],
                 is_active=True,
-                created_by=admin.id
-            )
-            db.session.add(category)
-            print(f"✓ Categoria spese creata: {name}")
-
-def create_july_holidays():
-    """Crea festività di luglio 2025"""
-    # Get admin user for created_by field
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
-        print("⚠️ Admin user not found, skipping holidays")
-        return
-    
-    holidays = [
-        ("Festa del Santo Patrono", 7, 15)  # 15 luglio - festa locale esempio
-    ]
-    
-    for name, month, day in holidays:
-        if not Holiday.query.filter_by(name=name, month=month, day=day).first():
-            holiday = Holiday(
-                name=name,
-                month=month,
-                day=day,
-                is_active=True,
-                created_by=admin.id,
-                description="Festività di test per luglio"
+                created_by=1  # ID admin di default
             )
             db.session.add(holiday)
-            print(f"✓ Festività creata: {name} ({day}/{month})")
+            logger.info(f"  ➕ Creata festività: {holiday_data['name']}")
+    
+    db.session.commit()
 
-def populate_july_attendance():
-    """Popola presenze per tutto luglio 2025"""
-    print("📅 Creazione presenze per Luglio 2025...")
+def create_aci_data(db, models):
+    """Crea dati ACI di base se non esistenti"""
+    logger.info("Verifica dati ACI...")
     
-    # Get all active users except admin
-    users = User.query.filter(
-        User.is_active == True,
-        User.username != 'admin'
-    ).all()
-    
-    # July 2025 dates (excluding weekends for most users)
-    start_date = datetime(2025, 7, 1)
-    end_date = datetime(2025, 7, 31)
-    
-    current_date = start_date
-    while current_date <= end_date:
-        # Skip weekends for office workers (not shift workers)
-        if current_date.weekday() < 5:  # Monday=0, Friday=4
-            
-            for user in users:
-                # Skip some days randomly (holidays, sick days, etc.)
-                if random.random() < 0.1:  # 10% chance to skip
-                    continue
-                
-                # Check if user has work schedule
-                if user.work_schedule:
-                    schedule = user.work_schedule
-                    
-                    # Generate realistic attendance times using range
-                    if schedule.start_time_min and schedule.end_time_min:
-                        # Random time within the range
-                        start_minutes = random.randint(
-                            schedule.start_time_min.hour * 60 + schedule.start_time_min.minute,
-                            schedule.start_time_max.hour * 60 + schedule.start_time_max.minute
-                        )
-                        end_minutes = random.randint(
-                            schedule.end_time_min.hour * 60 + schedule.end_time_min.minute,
-                            schedule.end_time_max.hour * 60 + schedule.end_time_max.minute
-                        )
-                        
-                        entry_time = datetime.combine(current_date.date(), time(start_minutes // 60, start_minutes % 60))
-                        exit_time = datetime.combine(current_date.date(), time(end_minutes // 60, end_minutes % 60))
-                        
-                        # Create entry event
-                        entry_event = AttendanceEvent(
-                            user_id=user.id,
-                            event_type='entry',
-                            timestamp=entry_time,
-                            notes=f"Entrata {current_date.strftime('%d/%m')}"
-                        )
-                        db.session.add(entry_event)
-                        
-                        # Create break events (around lunch time)
-                        if "Standard" in schedule.name or "Esteso" in schedule.name:
-                            break_start = datetime.combine(current_date.date(), time(12, random.randint(0, 15)))
-                            break_end = break_start + timedelta(minutes=random.randint(45, 75))
-                            
-                            break_start_event = AttendanceEvent(
-                                user_id=user.id,
-                                event_type='break_start',
-                                timestamp=break_start,
-                                notes="Inizio pausa pranzo"
-                            )
-                            db.session.add(break_start_event)
-                            
-                            break_end_event = AttendanceEvent(
-                                user_id=user.id,
-                                event_type='break_end',
-                                timestamp=break_end,
-                                notes="Fine pausa pranzo"
-                            )
-                            db.session.add(break_end_event)
-                        
-                        # Create exit event
-                        exit_event = AttendanceEvent(
-                            user_id=user.id,
-                            event_type='exit',
-                            timestamp=exit_time,
-                            notes=f"Uscita {current_date.strftime('%d/%m')}"
-                        )
-                        db.session.add(exit_event)
+    aci_count = models.ACITable.query.count()
+    if aci_count < 10:
+        logger.info("  ➕ Creazione dati ACI di esempio...")
         
-        current_date += timedelta(days=1)
-    
-    print(f"✓ Presenze create per tutto Luglio 2025")
-
-def create_leave_requests():
-    """Crea richieste ferie/permessi realistiche"""
-    print("🏖️ Creazione richieste ferie e permessi...")
-    
-    users = User.query.filter(User.active == True, User.username != 'admin').all()
-    leave_types = LeaveType.query.filter_by(is_active=True).all()
-    
-    # Create some leave requests for July
-    leave_requests_data = [
-        # (user_index, leave_type_name, start_date, end_date, status, reason)
-        (0, "Ferie", "2025-07-15", "2025-07-19", "approved", "Vacanze estive"),
-        (1, "Permesso", "2025-07-08", "2025-07-08", "approved", "Visita medica"),
-        (2, "Ferie", "2025-07-22", "2025-07-26", "pending", "Ferie in famiglia"),
-        (3, "Malattia", "2025-07-10", "2025-07-11", "approved", "Influenza"),
-        (4, "Permesso", "2025-07-30", "2025-07-30", "pending", "Appuntamento personale"),
-        (5, "Ferie", "2025-07-01", "2025-07-05", "approved", "Ponte estivo"),
-    ]
-    
-    for user_idx, leave_type_name, start_str, end_str, status, reason in leave_requests_data:
-        if user_idx < len(users):
-            user = users[user_idx]
-            leave_type = next((lt for lt in leave_types if lt.name == leave_type_name), None)
-            
-            if leave_type:
-                leave_request = LeaveRequest(
-                    user_id=user.id,
-                    leave_type_id=leave_type.id,
-                    leave_type=leave_type.name,  # Add legacy field for compatibility
-                    start_date=datetime.strptime(start_str, "%Y-%m-%d").date(),
-                    end_date=datetime.strptime(end_str, "%Y-%m-%d").date(),
-                    reason=reason,
-                    status=status,
-                    created_at=italian_now() - timedelta(days=random.randint(1, 20))
-                )
-                db.session.add(leave_request)
-                print(f"✓ Richiesta {leave_type_name} creata per {user.first_name}")
-
-def create_overtime_requests():
-    """Crea richieste straordinari"""
-    print("⏰ Creazione richieste straordinari...")
-    
-    users = User.query.filter(User.active == True, User.username != 'admin').all()
-    overtime_types = OvertimeType.query.filter_by(active=True).all()
-    
-    overtime_requests_data = [
-        (0, "Straordinario Standard", "2025-07-12", "18:00", "20:00", "approved", "Completamento progetto urgente"),
-        (1, "Straordinario Standard", "2025-07-18", "17:00", "19:30", "pending", "Supporto cliente importante"),
-        (2, "Straordinario Notturno", "2025-07-25", "22:00", "02:00", "approved", "Manutenzione sistema"),
-        (3, "Reperibilità", "2025-07-06", "08:00", "18:00", "approved", "Reperibilità weekend"),
-        (4, "Straordinario Standard", "2025-07-29", "18:30", "21:00", "pending", "Chiusura mensile"),
-    ]
-    
-    for user_idx, ot_type_name, date_str, start_time, end_time, status, motivation in overtime_requests_data:
-        if user_idx < len(users):
-            user = users[user_idx]
-            ot_type = next((ot for ot in overtime_types if ot.name == ot_type_name), None)
-            
-            if ot_type:
-                overtime_request = OvertimeRequest(
-                    employee_id=user.id,
-                    overtime_type_id=ot_type.id,
-                    overtime_date=datetime.strptime(date_str, "%Y-%m-%d").date(),
-                    start_time=datetime.strptime(start_time, "%H:%M").time(),
-                    end_time=datetime.strptime(end_time, "%H:%M").time(),
-                    motivation=motivation,
-                    status=status,
-                    created_at=italian_now() - timedelta(days=random.randint(1, 15))
-                )
-                db.session.add(overtime_request)
-                print(f"✓ Richiesta straordinario creata per {user.first_name}")
-
-def create_expense_reports():
-    """Crea note spese di esempio"""
-    print("💰 Creazione note spese...")
-    
-    users = User.query.filter(User.active == True, User.username != 'admin').all()
-    categories = ExpenseCategory.query.filter_by(is_active=True).all()
-    
-    expense_data = [
-        (0, "Trasferte", 85.50, "2025-07-08", "approved", "Trasferta Milano - Roma"),
-        (1, "Pasti", 45.00, "2025-07-15", "pending", "Pranzo con cliente"),
-        (2, "Carburante", 72.30, "2025-07-20", "approved", "Rifornimento auto aziendale"),
-        (3, "Materiali", 125.80, "2025-07-12", "approved", "Acquisto materiale ufficio"),
-        (4, "Telefonia", 35.90, "2025-07-25", "pending", "Ricarica telefono aziendale"),
-        (5, "Formazione", 280.00, "2025-07-18", "approved", "Corso di aggiornamento"),
-    ]
-    
-    for user_idx, cat_name, amount, date_str, status, description in expense_data:
-        if user_idx < len(users):
-            user = users[user_idx]
-            category = next((c for c in categories if c.name == cat_name), None)
-            
-            if category:
-                expense = ExpenseReport(
-                    employee_id=user.id,
-                    category_id=category.id,
-                    amount=amount,
-                    expense_date=datetime.strptime(date_str, "%Y-%m-%d").date(),
-                    description=description,
-                    status=status,
-                    created_at=italian_now() - timedelta(days=random.randint(1, 20))
-                )
-                db.session.add(expense)
-                print(f"✓ Nota spese creata per {user.first_name}: €{amount}")
-
-def create_reperibilita_shifts():
-    """Crea turni di reperibilità"""
-    print("🔄 Creazione turni reperibilità...")
-    
-    users = User.query.filter(User.active == True, User.username != 'admin').all()
-    
-    # Create some shifts for July weekends
-    shift_dates = [
-        ("2025-07-05", "2025-07-06"),  # Weekend 1
-        ("2025-07-12", "2025-07-13"),  # Weekend 2
-        ("2025-07-19", "2025-07-20"),  # Weekend 3
-        ("2025-07-26", "2025-07-27"),  # Weekend 4
-    ]
-    
-    for weekend_start, weekend_end in shift_dates:
-        for date_str in [weekend_start, weekend_end]:
-            user = random.choice(users[:4])  # Random user from first 4
-            
-            # Get admin user for created_by field
-            admin = User.query.filter_by(username='admin').first()
-            if admin:
-                shift = ReperibilitaShift(
-                    user_id=user.id,
-                    date=datetime.strptime(date_str, "%Y-%m-%d").date(),
-                    start_time=time(8, 0),
-                    end_time=time(20, 0),
-                    description=f"Reperibilità {date_str}",
-                    created_by=admin.id
-                )
-                db.session.add(shift)
-                print(f"✓ Turno reperibilità creato per {user.first_name} il {date_str}")
-
-def create_interventions():
-    """Crea interventi per i turni di reperibilità"""
-    print("🚨 Creazione interventi...")
-    
-    shifts = ReperibilitaShift.query.all()
-    
-    # Create some interventions
-    for i, shift in enumerate(shifts[:6]):  # Create interventions for first 6 shifts
-        intervention_time = datetime.combine(
-            shift.date, 
-            time(random.randint(10, 18), random.randint(0, 59))
-        )
+        # Alcuni dati ACI di esempio
+        aci_data = [
+            {'veicolo': 'FIAT PANDA', 'alimentazione': 'Benzina', 'cilindrata': '1.2', 'costo_km': 0.4532},
+            {'veicolo': 'VOLKSWAGEN GOLF', 'alimentazione': 'Benzina', 'cilindrata': '1.4', 'costo_km': 0.5123},
+            {'veicolo': 'FORD FOCUS', 'alimentazione': 'Diesel', 'cilindrata': '1.6', 'costo_km': 0.4891},
+            {'veicolo': 'TOYOTA YARIS', 'alimentazione': 'Ibrida', 'cilindrata': '1.5', 'costo_km': 0.4234},
+            {'veicolo': 'OPEL CORSA', 'alimentazione': 'Benzina', 'cilindrata': '1.0', 'costo_km': 0.4123}
+        ]
         
-        intervention = Intervention(
-            user_id=shift.user_id,
-            start_datetime=intervention_time,
-            end_datetime=intervention_time + timedelta(hours=random.randint(1, 3)),
-            description=f"Intervento di emergenza #{i+1}",
-            priority="Media",
-            is_remote=True
-        )
-        db.session.add(intervention)
-        print(f"✓ Intervento creato per il turno del {shift.date}")
+        for aci in aci_data:
+            aci_table = models.ACITable(
+                veicolo=aci['veicolo'],
+                alimentazione=aci['alimentazione'], 
+                cilindrata=aci['cilindrata'],
+                costo_km=aci['costo_km']
+            )
+            db.session.add(aci_table)
+        
+        db.session.commit()
+        logger.info(f"  ✓ Creati {len(aci_data)} record ACI")
+    else:
+        logger.info(f"  ✓ Dati ACI esistenti: {aci_count} record")
 
-def create_internal_messages():
-    """Crea messaggi interni di esempio"""
-    print("💬 Creazione messaggi interni...")
+def create_attendance_data(db, models):
+    """Crea dati presenze per gli ultimi 30 giorni"""
+    logger.info("Creazione dati presenze ultimi 30 giorni...")
     
-    users = User.query.filter(User.is_active == True).all()
-    admin = User.query.filter_by(username='admin').first()
-    
-    if not admin or len(users) < 2:
+    users = models.User.query.filter_by(active=True).all()
+    if not users:
+        logger.warning("  ⚠️ Nessun utente trovato per creare presenze")
         return
     
-    messages_data = [
-        ("Aggiornamento Orari", "Informativo", "Si comunica che dal prossimo mese gli orari di ufficio saranno modificati."),
-        ("Chiusura Estiva", "Attenzione", "Ricordiamo che l'ufficio sarà chiuso dal 10 al 20 agosto."),
-        ("Nuovo Sistema", "Successo", "È stato implementato il nuovo sistema di gestione presenze."),
-        ("Manutenzione Programmata", "Urgente", "Manutenzione server prevista per questo weekend."),
-        ("Formazione Sicurezza", "Informativo", "Corso obbligatorio di sicurezza previsto per il 15 agosto."),
+    start_date = datetime.now() - timedelta(days=30)
+    end_date = datetime.now()
+    
+    created_count = 0
+    for user in users:
+        current_date = start_date
+        while current_date <= end_date:
+            # Salta weekend con probabilità 80%
+            if current_date.weekday() >= 5 and random.random() < 0.8:
+                current_date += timedelta(days=1)
+                continue
+            
+            # Verifica se esistono già presenze per questo utente/giorno
+            existing = models.AttendanceEvent.query.filter_by(
+                user_id=user.id,
+                date=current_date.date()
+            ).first()
+            
+            if not existing:
+                # Crea entrata (clock_in)
+                entry_time_obj = time(random.randint(7, 9), random.randint(0, 59))
+                entry_datetime = datetime.combine(current_date.date(), entry_time_obj)
+                entry_event = models.AttendanceEvent(
+                    user_id=user.id,
+                    date=current_date.date(),
+                    timestamp=entry_datetime,
+                    event_type='clock_in',
+                    sede_id=user.sede_id,
+                    notes='Entrata automatica - Test data'
+                )
+                db.session.add(entry_event)
+                
+                # Crea uscita (clock_out) - 8-9 ore dopo
+                work_hours = random.randint(8, 9)
+                exit_datetime = entry_datetime + timedelta(hours=work_hours)
+                exit_event = models.AttendanceEvent(
+                    user_id=user.id,
+                    date=current_date.date(),
+                    timestamp=exit_datetime,
+                    event_type='clock_out',
+                    sede_id=user.sede_id,
+                    notes='Uscita automatica - Test data'
+                )
+                db.session.add(exit_event)
+                created_count += 2
+            
+            current_date += timedelta(days=1)
+    
+    db.session.commit()
+    logger.info(f"  ✓ Creati {created_count} eventi presenza")
+
+def create_requests_data(db, models):
+    """Crea richieste di ferie, straordinari, rimborsi"""
+    logger.info("Creazione richieste varie...")
+    
+    users = models.User.query.filter_by(active=True).all()
+    if not users:
+        return
+    
+    # Richieste ferie
+    leave_types = models.LeaveType.query.all()
+    if leave_types:
+        for _ in range(random.randint(5, 10)):
+            user = random.choice(users)
+            leave_type = random.choice(leave_types)
+            start_date = datetime.now() + timedelta(days=random.randint(1, 60))
+            end_date = start_date + timedelta(days=random.randint(1, 5))
+            
+            # Usa un nome abbreviato per rispettare il limite di 50 char
+            leave_type_name = leave_type.name[:40] if len(leave_type.name) > 40 else leave_type.name
+            
+            leave_request = models.LeaveRequest(
+                user_id=user.id,
+                leave_type_id=leave_type.id,
+                leave_type=leave_type_name,
+                start_date=start_date.date(),
+                end_date=end_date.date(),
+                reason=f'Richiesta {leave_type_name} - Test data',
+                status=random.choice(['pending', 'approved', 'rejected']),
+                created_at=datetime.now() - timedelta(days=random.randint(1, 30))
+            )
+            db.session.add(leave_request)
+    
+    # Richieste straordinari
+    overtime_types = models.OvertimeType.query.all()
+    if overtime_types:
+        for _ in range(random.randint(8, 15)):
+            user = random.choice(users)
+            overtime_type = random.choice(overtime_types)
+            work_date = datetime.now() - timedelta(days=random.randint(1, 30))
+            
+            overtime_request = models.OvertimeRequest(
+                employee_id=user.id,
+                overtime_type_id=overtime_type.id,
+                overtime_date=work_date.date(),
+                start_time=time(random.randint(17, 19), 0),
+                end_time=time(random.randint(20, 23), 0),
+                motivation=f'Lavoro straordinario {overtime_type.name} - Test data',
+                status=random.choice(['pending', 'approved', 'rejected']),
+                created_at=work_date
+            )
+            db.session.add(overtime_request)
+    
+    db.session.commit()
+    logger.info("  ✓ Richieste create")
+
+def create_internal_messages(db, models):
+    """Crea messaggi interni di test"""
+    logger.info("Creazione messaggi interni...")
+    
+    users = models.User.query.filter_by(active=True).all()
+    if len(users) < 2:
+        return
+    
+    messages = [
+        "Riunione di team programmata per domani alle 14:00",
+        "Ricordo di compilare i timesheet entro venerdì",
+        "Nuove procedure di sicurezza in vigore da lunedì",
+        "Formazione obbligatoria sui nuovi sistemi",
+        "Aggiornamento software previsto per il weekend"
     ]
     
-    for title, msg_type, message in messages_data:
-        # Send to random users
-        recipients = random.sample(users[1:], min(3, len(users)-1))
+    for _ in range(random.randint(5, 10)):
+        sender = random.choice(users)
+        recipients = [u for u in users if u.id != sender.id]
+        recipient = random.choice(recipients) if recipients else sender
         
-        for recipient in recipients:
-            internal_msg = InternalMessage(
-                sender_id=admin.id,
-                recipient_id=recipient.id,
-                title=title,
-                message=message,
-                message_type=msg_type,
-                created_at=italian_now() - timedelta(days=random.randint(1, 15))
-            )
-            db.session.add(internal_msg)
+        selected_message = random.choice(messages)
+        message = models.InternalMessage(
+            sender_id=sender.id,
+            recipient_id=recipient.id,
+            title=f"Comunicazione: {selected_message[:30]}",
+            message=selected_message,
+            message_type='general',
+            created_at=datetime.now() - timedelta(days=random.randint(1, 30))
+        )
+        db.session.add(message)
+    
+    db.session.commit()
+    logger.info("  ✓ Messaggi interni creati")
+
+def create_shifts_data(db, models):
+    """Crea alcuni turni di esempio"""
+    logger.info("Creazione turni di esempio...")
+    
+    users = models.User.query.filter_by(active=True).all()
+    sedi = models.Sede.query.all()
+    
+    if not users or not sedi:
+        logger.info("  ⚠️ Nessun utente o sede per creare turni")
+        return
+    
+    for _ in range(random.randint(10, 20)):
+        user = random.choice(users)
+        sede = random.choice(sedi)
+        shift_date = datetime.now() + timedelta(days=random.randint(1, 30))
         
-        print(f"✓ Messaggio '{title}' inviato a {len(recipients)} utenti")
+        shift = models.Shift(
+            user_id=user.id,
+            date=shift_date.date(),
+            start_time=time(random.choice([6, 7, 8, 14, 22]), 0),
+            end_time=time(random.choice([14, 15, 16, 22, 6]), 0),
+            shift_type=random.choice(['mattina', 'pomeriggio', 'notte']),
+            created_at=datetime.now(),
+            created_by=1  # ID admin di default
+        )
+        db.session.add(shift)
+    
+    db.session.commit()
+    logger.info("  ✓ Turni creati")
+
+def show_statistics(db, models):
+    """Mostra statistiche dei dati creati"""
+    stats = {
+        'Ruoli': models.UserRole.query.count(),
+        'Utenti': models.User.query.count(),
+        'Sedi': models.Sede.query.count(),
+        'Eventi Presenza': models.AttendanceEvent.query.count(),
+        'Richieste Ferie': models.LeaveRequest.query.count(),
+        'Richieste Straordinari': models.OvertimeRequest.query.count(),
+        'Messaggi Interni': models.InternalMessage.query.count(),
+        'Turni': models.Shift.query.count(),
+        'Festività': models.Holiday.query.count(),
+        'Dati ACI': models.ACITable.query.count()
+    }
+    
+    for key, value in stats.items():
+        print(f"{key}: {value}")
+    
+    print(f"\n✅ Database popolato con successo!")
+    print(f"👤 Utenti di test creati con password: Password123!")
+    print(f"🔐 Accesso admin esistente o creato durante installazione")
 
 if __name__ == "__main__":
-    create_test_data()
+    main()
