@@ -478,8 +478,8 @@
                                 <td class="text-truncate" style="max-width: 200px;">
                                     {{ request.route_display|truncate(40) }}
                                 </td>
-                                <td>{{ "%.1f"|format(request.total_distance_km) }}</td>
-                                <td>€{{ "%.2f"|format(request.reimbursement_amount) }}</td>
+                                <td>{{ "%.1f"|format(request.total_km) }}</td>
+                                <td>€{{ "%.2f"|format(request.total_amount) }}</td>
                                 <td>
                                     <span class="badge 
                                         {% if request.status == 'pending' %}bg-warning text-dark
@@ -544,7 +544,7 @@
                     </div>
                     <div class="col-6 mb-3">
                         <div class="text-center">
-                            <div class="h4 mb-0 text-info">€{{ "%.0f"|format(recent_mileage_requests|selectattr("status", "equalto", "approved")|map(attribute="reimbursement_amount")|sum) }}</div>
+                            <div class="h4 mb-0 text-info">€{{ "%.0f"|format(recent_mileage_requests|selectattr("status", "equalto", "approved")|map(attribute="total_amount")|sum) }}</div>
                             <small class="text-muted">Importo Mensile</small>
                         </div>
                     </div>
