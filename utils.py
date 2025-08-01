@@ -451,18 +451,27 @@ def split_coverage_into_segments_by_user_capacity(coverage, available_users):
     # LIMITE MASSIMO ASSOLUTO: 8 ore per turno
     MAX_SHIFT_HOURS = 8.0
     
+    # DEBUG: Mostra sempre il calcolo
+    print(f"SPLIT DEBUG: Copertura {coverage.start_time}-{coverage.end_time}, durata: {total_duration}h")
+    
     # Se la durata è <= 8 ore, nessuna divisione necessaria
     if total_duration <= MAX_SHIFT_HOURS:
+        print(f"SPLIT DEBUG: Durata {total_duration}h <= {MAX_SHIFT_HOURS}h, nessuna divisione necessaria")
         segments.append((coverage.start_time, coverage.end_time, 1))
         return segments
+    
+    print(f"SPLIT DEBUG: Durata {total_duration}h > {MAX_SHIFT_HOURS}h, divisione necessaria!")
     
     # Calcola quanti utenti servono per coprire la durata (sempre basato su MAX 8 ore)
     users_needed = int(total_duration / MAX_SHIFT_HOURS)
     if total_duration % MAX_SHIFT_HOURS > 0:
         users_needed += 1
     
+    print(f"SPLIT DEBUG: Servono {users_needed} utenti per coprire {total_duration}h")
+    
     # Calcola la durata ottimale per segmento distribuendo equamente
     segment_duration = total_duration / users_needed
+    print(f"SPLIT DEBUG: Durata per segmento: {segment_duration}h")
     
     # Crea i segmenti bilanciati
     current_hour = start_hour
@@ -492,8 +501,10 @@ def split_coverage_into_segments_by_user_capacity(coverage, available_users):
         )
         
         segments.append((start_time_obj, end_time_obj, 1))
+        print(f"SPLIT DEBUG: Segmento {i+1}: {start_time_obj}-{end_time_obj} ({segment_end_hour - current_hour}h)")
         current_hour = segment_end_hour
     
+    print(f"SPLIT DEBUG: Creati {len(segments)} segmenti totali")
     return segments
 
 def split_coverage_into_max_7h_segments(coverage):
