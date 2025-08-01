@@ -601,6 +601,10 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     Compliance Settimanale: Garantisce almeno 2 giorni di riposo settimanali e 
     rispetto del limite di 40 ore settimanali (proporzionale per part-time).
     """
+    # DEBUG: Aggiungo logging all'inizio per verificare che la funzione venga chiamata
+    import sys
+    print(f"FUNCTION DEBUG: generate_shifts_for_period chiamata per periodo {start_date} - {end_date}", file=sys.stderr, flush=True)
+    
     # Get all active coverage configurations valid for the period
     coverage_configs = PresidioCoverage.query.filter(
         PresidioCoverage.active == True,
