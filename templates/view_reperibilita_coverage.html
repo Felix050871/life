@@ -46,7 +46,7 @@
                             <td>{{ coverage.get_required_roles_display() }}</td>
                             <td>{{ coverage.description or '-' }}</td>
                             <td>
-                                {% if coverage.is_active %}
+                                {% if coverage.active %}
                                     <span class="badge bg-success">Attivo</span>
                                 {% else %}
                                     <span class="badge bg-secondary">Inattivo</span>

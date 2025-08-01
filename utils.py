@@ -19,7 +19,7 @@ def is_italian_holiday(check_date):
     holidays = Holiday.query.filter_by(
         month=check_date.month,
         day=check_date.day,
-        is_active=True
+        active=True
     ).all()
     
     return len(holidays) > 0
@@ -29,7 +29,7 @@ def get_italian_holidays():
     Restituisce tutte le festività italiane attive dal database
     """
     from models import Holiday
-    return Holiday.query.filter_by(is_active=True).order_by(Holiday.month, Holiday.day).all()
+    return Holiday.query.filter_by(active=True).order_by(Holiday.month, Holiday.day).all()
 
 def format_hours(hours_decimal):
     """
@@ -222,7 +222,7 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     """
     # Get all active coverage configurations valid for the period
     coverage_configs = PresidioCoverage.query.filter(
-        PresidioCoverage.is_active == True,
+        PresidioCoverage.active == True,
         PresidioCoverage.start_date <= end_date,
         PresidioCoverage.end_date >= start_date
     ).all()
@@ -551,7 +551,7 @@ def generate_reperibilita_shifts_from_coverage(coverage_period, start_date, end_
     
     # Ottieni tutte le coperture per il periodo selezionato, filtrando per sede se specificata
     query = ReperibilitaCoverage.query.filter(
-        ReperibilitaCoverage.is_active == True,
+        ReperibilitaCoverage.active == True,
         ReperibilitaCoverage.start_date == coverage_start_date,
         ReperibilitaCoverage.end_date == coverage_end_date
     )
@@ -1105,7 +1105,7 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
     
     # Get coverage configurations for the time period
     coverage_configs = ReperibilitaCoverage.query.filter(
-        ReperibilitaCoverage.is_active == True
+        ReperibilitaCoverage.active == True
     ).all()
     
     # Get leave requests for the period

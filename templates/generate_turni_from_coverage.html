@@ -61,7 +61,7 @@
                         <i class="fas fa-calendar-alt me-2"></i>
                         Periodo: {{ period_data.start_date.strftime('%d/%m/%Y') }} - {{ period_data.end_date.strftime('%d/%m/%Y') }}
                     </h5>
-                    {% if period_data.is_active %}
+                    {% if period_data.active %}
                         <span class="badge bg-success">ATTIVO</span>
                     {% else %}
                         {% if period_data.end_date < today %}

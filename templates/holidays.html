@@ -36,10 +36,10 @@
                             </thead>
                             <tbody>
                                 {% for holiday in holidays %}
-                                <tr class="{{ 'table-secondary' if not holiday.is_active else '' }}">
+                                <tr class="{{ 'table-secondary' if not holiday.active else '' }}">
                                     <td>
                                         <strong>{{ holiday.name }}</strong>
-                                        {% if not holiday.is_active %}
+                                        {% if not holiday.active %}
                                         <small class="text-muted">(Disattivata)</small>
                                         {% endif %}
                                     </td>
@@ -59,7 +59,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if holiday.is_active %}
+                                        {% if holiday.active %}
                                         <span class="badge bg-success">Attiva</span>
                                         {% else %}
                                         <span class="badge bg-secondary">Disattivata</span>

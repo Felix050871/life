@@ -79,8 +79,8 @@
                         </div>
 
                         <div class="mb-3 form-check">
-                            {{ form.is_active(class="form-check-input") }}
-                            {{ form.is_active.label(class="form-check-label") }}
+                            {{ form.active(class="form-check-input") }}
+                            {{ form.active.label(class="form-check-label") }}
                             <small class="form-text text-muted d-block">
                                 Le festività disattivate non vengono considerate nella generazione turni
                             </small>
@@ -106,7 +106,7 @@
                         <div class="col-md-6">
                             <strong>Data corrente:</strong> {{ holiday.date_display }}<br>
                             <strong>Stato:</strong> 
-                            {% if holiday.is_active %}
+                            {% if holiday.active %}
                                 <span class="badge bg-success">Attiva</span>
                             {% else %}
                                 <span class="badge bg-secondary">Disattivata</span>

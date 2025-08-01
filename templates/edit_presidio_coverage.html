@@ -118,8 +118,8 @@
                                     </td>
                                     <td>
                                         <select name="coverage_{{ coverage.id }}_is_active" class="form-select form-select-sm">
-                                            <option value="1" {{ 'selected' if coverage.is_active else '' }}>Attiva</option>
-                                            <option value="0" {{ 'selected' if not coverage.is_active else '' }}>Inattiva</option>
+                                            <option value="1" {{ 'selected' if coverage.active else '' }}>Attiva</option>
+                                            <option value="0" {{ 'selected' if not coverage.active else '' }}>Inattiva</option>
                                         </select>
                                     </td>
                                     <td>

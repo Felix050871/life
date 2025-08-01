@@ -202,7 +202,7 @@ h2, h4 {
                                     <td>{{ template.creator.get_full_name() }}</td>
                                     <td>{{ template.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
                                     <td>
-                                        {% if template.is_active %}
+                                        {% if template.active %}
                                         <span class="badge bg-success">Attivo</span>
                                         {% else %}
                                         <span class="badge bg-secondary">Inattivo</span>
@@ -423,8 +423,8 @@ h2, h4 {
                         </div>
                         
                         <div class="form-check mb-3">
-                            {{ coverage_form.is_active(class="form-check-input") }}
-                            {{ coverage_form.is_active.label(class="form-check-label") }}
+                            {{ coverage_form.active(class="form-check-input") }}
+                            {{ coverage_form.active.label(class="form-check-label") }}
                         </div>
                     </div>
                     

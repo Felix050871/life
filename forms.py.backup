@@ -51,7 +51,7 @@ class UserForm(FlaskForm):
     aci_vehicle = SelectField('Modello', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
-    active = BooleanField('Attivo', default=True)
+    is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Utente')
     
     def __init__(self, original_username=None, is_edit=False, *args, **kwargs):
@@ -200,7 +200,7 @@ class LeaveTypeForm(FlaskForm):
     name = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Descrizione', validators=[Length(max=500)])
     requires_approval = BooleanField('Richiede Autorizzazione', default=True)
-    active = BooleanField('Attiva', default=True)
+    is_active = BooleanField('Attiva', default=True)
     submit = SubmitField('Salva Tipologia')
     
     def __init__(self, original_name=None, *args, **kwargs):
@@ -233,7 +233,7 @@ class LeaveRequestForm(FlaskForm):
         # Popola le scelte delle tipologie di permesso attive
         try:
             from models import LeaveType
-            active_types = LeaveType.query.filter_by(active=True).order_by(LeaveType.name).all()
+            active_types = LeaveType.query.filter_by(is_active=True).order_by(LeaveType.name).all()
             self.leave_type_id.choices = [(None, 'Seleziona tipo richiesta')] + [(t.id, t.name) for t in active_types]
         except:
             self.leave_type_id.choices = [(None, 'Seleziona tipo richiesta')]
@@ -311,7 +311,7 @@ class PresidioCoverageForm(FlaskForm):
     end_time = TimeField('Ora Fine', validators=[DataRequired()])
     required_roles = SelectMultipleField('Ruoli Richiesti', choices=[], validators=[DataRequired()])
     description = StringField('Descrizione', validators=[Length(max=200)])
-    active = BooleanField('Attivo', default=True)
+    is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Copertura')
     
     def __init__(self, *args, **kwargs):
@@ -378,7 +378,7 @@ class ReperibilitaCoverageForm(FlaskForm):
     
     required_roles = SelectMultipleField('Ruoli Richiesti', choices=[], validators=[DataRequired()])
     description = StringField('Descrizione', validators=[Length(max=200)])
-    active = BooleanField('Attivo', default=True)
+    is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Copertura')
     
     def __init__(self, *args, **kwargs):
@@ -489,7 +489,7 @@ class ReperibilitaTemplateForm(FlaskForm):
         try:
             # Raggruppa le coperture per periodo (start_date + end_date)
             coverages = ReperibilitaCoverage.query.filter(
-                ReperibilitaCoverage.active == True,
+                ReperibilitaCoverage.is_active == True,
                 ReperibilitaCoverage.end_date >= date.today()
             ).all()
             
@@ -553,7 +553,7 @@ class HolidayForm(FlaskForm):
     sede_id = SelectField('Ambito', coerce=lambda x: int(x) if x and x != '' else None, 
                          validators=[Optional()])
     description = StringField('Descrizione', validators=[Length(max=200)])
-    active = BooleanField('Attiva', default=True)
+    is_active = BooleanField('Attiva', default=True)
     submit = SubmitField('Salva Festività')
     
     def __init__(self, *args, **kwargs):
@@ -656,7 +656,7 @@ class ExpenseCategoryForm(FlaskForm):
     """Form per gestire le categorie di spesa"""
     name = StringField('Nome Categoria', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Descrizione', validators=[Length(max=255)])
-    active = BooleanField('Attiva', default=True)
+    is_active = BooleanField('Attiva', default=True)
     submit = SubmitField('Salva Categoria')
 
 
@@ -675,7 +675,7 @@ class ExpenseReportForm(FlaskForm):
         super(ExpenseReportForm, self).__init__(*args, **kwargs)
         # Popola le categorie attive
         from models import ExpenseCategory
-        categories = ExpenseCategory.query.filter_by(active=True).order_by(ExpenseCategory.name).all()
+        categories = ExpenseCategory.query.filter_by(is_active=True).order_by(ExpenseCategory.name).all()
         self.category_id.choices = [(cat.id, cat.name) for cat in categories]
         
         if not self.category_id.choices:
@@ -738,7 +738,7 @@ class ExpenseFilterForm(FlaskForm):
         
         # Popola categorie
         from models import ExpenseCategory
-        categories = ExpenseCategory.query.filter_by(active=True).order_by(ExpenseCategory.name).all()
+        categories = ExpenseCategory.query.filter_by(is_active=True).order_by(ExpenseCategory.name).all()
         self.category_id.choices = [('', 'Tutte le categorie')] + [
             (cat.id, cat.name) for cat in categories
         ]
@@ -753,7 +753,7 @@ class SedeForm(FlaskForm):
         ('Oraria', 'Oraria - Gestione basata su orari'),
         ('Turni', 'Turni - Gestione basata su turnazioni')
     ], default='Oraria', validators=[DataRequired()])
-    active = BooleanField('Attiva', default=True)
+    is_active = BooleanField('Attiva', default=True)
     submit = SubmitField('Salva Sede')
     
     def __init__(self, original_name=None, *args, **kwargs):
@@ -801,7 +801,7 @@ class WorkScheduleForm(FlaskForm):
     ], coerce=int, default=[0, 1, 2, 3, 4])
     
     description = TextAreaField('Descrizione', validators=[Length(max=500)])
-    active = BooleanField('Attivo', default=True)
+    is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Orario')
     
     def __init__(self, *args, **kwargs):
@@ -977,7 +977,7 @@ class RoleForm(FlaskForm):
     can_view_mileage_widget = BooleanField('Widget Rimborsi Chilometrici')
     can_view_my_mileage_widget = BooleanField('Widget I Miei Rimborsi')
     
-    active = BooleanField('Attivo', default=True)
+    is_active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
     
     def __init__(self, original_name=None, widget_only=False, *args, **kwargs):
@@ -1335,7 +1335,7 @@ class PresidioCoverageForm(FlaskForm):
         'placeholder': 'Descrizione opzionale della copertura'
     })
     
-    active = BooleanField('Attiva', default=True)
+    is_active = BooleanField('Attiva', default=True)
     
     # Pulsanti di azione
     submit = SubmitField('Salva Copertura')
@@ -1387,7 +1387,7 @@ class PresidioCoverageSearchForm(FlaskForm):
         'class': 'form-select'
     })
     
-    active = SelectField('Stato', choices=[
+    is_active = SelectField('Stato', choices=[
         ('', 'Tutti'),
         ('true', 'Attivo'),
         ('false', 'Inattivo')
