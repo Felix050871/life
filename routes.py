@@ -1118,7 +1118,7 @@ def ente_home():
                     present_users.append(user)
             except Exception as e:
                 # Skip users with database issues but log the error
-                app.logger.error(f"Error checking presence for user {user.id}: {e}")
+                pass  # Silent error handling
                 continue
     except:
         # Handle database errors gracefully
@@ -1343,7 +1343,7 @@ def ente_home():
 @app.route('/test_route', methods=['GET', 'POST'])
 @login_required
 def test_route():
-    app.logger.error("TEST ROUTE CALLED!")
+    pass  # Test route
     flash('Test route funziona!', 'info')
     return redirect(url_for('attendance'))
 
@@ -1360,7 +1360,7 @@ def get_work_hours(user_id, date_str):
         work_hours = AttendanceEvent.get_daily_work_hours(user_id, target_date)
         return jsonify({'work_hours': round(work_hours, 1)})
     except Exception as e:
-        app.logger.error(f"Error in get_work_hours: {e}")
+        pass  # Silent error handling
         return jsonify({'work_hours': 0})
 
 @app.route('/check_shift_before_clock_in', methods=['POST'])
@@ -1398,7 +1398,7 @@ def clock_in():
             'message': 'Non hai i permessi per registrare presenze.'
         }), 403
         
-    app.logger.error(f"CLOCK_IN: User {current_user.id} attempting clock-in")
+    pass  # Clock-in attempt
     
     # Verifica se può fare clock-in
     if not AttendanceEvent.can_perform_action(current_user.id, 'clock_in'):
@@ -1476,19 +1476,19 @@ def clock_in():
         else:
             event.shift_status = 'normale'
     except Exception as e:
-        app.logger.error(f"Error checking schedule for entry: {e}")
+        pass  # Silent error handling
         event.shift_status = 'normale'
     
     try:
         db.session.add(event)
         db.session.commit()
-        app.logger.info(f"CLOCK_IN: Event created successfully at {now}")
+        pass  # Event created successfully
         return jsonify({
             'success': True, 
             'message': f'Entrata registrata alle {now.strftime("%H:%M")}'
         })
     except Exception as e:
-        app.logger.error(f"CLOCK_IN: Database commit failed: {e}")
+        pass  # Silent error handling
         db.session.rollback()
         return jsonify({
             'success': False, 
@@ -1569,7 +1569,7 @@ def clock_out():
         else:
             event.shift_status = 'normale'
     except Exception as e:
-        app.logger.error(f"Error checking schedule for exit: {e}")
+        pass  # Silent error handling
         event.shift_status = 'normale'
     
     try:
@@ -3454,7 +3454,7 @@ def reports():
     try:
         team_stats = get_team_statistics(start_date, end_date)
     except Exception as e:
-        app.logger.error(f"Error loading team statistics: {e}")
+        pass  # Silent error handling
         team_stats = {
             'active_users': 0,
             'total_hours': 0,
@@ -3464,7 +3464,7 @@ def reports():
     
     # Get user statistics for all active users (excluding Amministratore and Ospite)
     users = User.query.filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
-    app.logger.error(f"REPORTS: Found {len(users)} active users (excluding Admin and Ente)")
+    pass  # User count info
     
     user_stats = []
     chart_data = []  # Separate data for charts without User objects
@@ -3489,13 +3489,13 @@ def reports():
                 'pending_leaves': stats['pending_leaves']
             })
             
-            app.logger.error(f"REPORTS: User {user.username} stats: {stats}")
+            pass  # User stats processed
         except Exception as e:
-            app.logger.error(f"Error getting stats for user {user.username}: {e}")
+            pass  # Silent error handling
             # Continue without this user's stats
             continue
     
-    app.logger.error(f"REPORTS: Total user_stats: {len(user_stats)}")
+    pass  # Stats collected
     
     # Get interventions data for the table (entrambi i tipi)
     from models import Intervention, ReperibilitaIntervention
@@ -3515,7 +3515,7 @@ def reports():
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
     except Exception as e:
-        app.logger.error(f"Errore nel caricamento interventi: {e}")
+        pass  # Silent error handling
         interventions = []
         reperibilita_interventions = []
     
@@ -3536,7 +3536,7 @@ def reports():
                     daily_total_hours += float(daily_hours)
                     workers_present += 1
             except Exception as e:
-                app.logger.error(f"Error calculating daily hours for chart user {user_id} date {current_date}: {e}")
+                pass  # Silent error handling
                 # Continue to next user instead of stopping
                 continue
         
@@ -4725,10 +4725,7 @@ def generate_reperibilita_shifts():
             import sys
             # Log shift generation parameters for debugging
             import logging
-            logger = logging.getLogger(__name__)
-            logger.debug(f"Generazione turni per copertura: {form.coverage_period.data}")
-            logger.debug(f"Periodo: {start_date} - {end_date}")
-            logger.debug(f"Usa intero periodo: {form.use_full_period.data}")
+            pass  # Generate shifts
             
             # Genera turni reperibilità dalla copertura selezionata
             shifts_created, warnings = generate_reperibilita_shifts_from_coverage(
@@ -4738,10 +4735,7 @@ def generate_reperibilita_shifts():
                 current_user.id
             )
             
-            logger.debug(f"Risultato generazione: {shifts_created} turni, warnings: {warnings}")
-            
             db.session.commit()
-            logger.debug("Commit completato")
             
             # Costruisci messaggio di successo con dettagli debug
             success_msg = f'Turni reperibilità generati: {shifts_created} per il periodo {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}.'
@@ -4759,8 +4753,7 @@ def generate_reperibilita_shifts():
         except Exception as e:
             import traceback
             import sys
-            logger.error(f"Errore durante generazione: {e}")
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            pass  # Silent error handling
             db.session.rollback()
             flash(f'Errore durante la generazione: {str(e)}', 'error')
 
@@ -4943,17 +4936,12 @@ def delete_reperibilita_template(template_id):
 @app.route('/qr_login/<action>', methods=['GET', 'POST'])
 def qr_login(action):
     """Pagina di login con QR code per entrata/uscita rapida"""
-    # Log per debug mobile
-    app.logger.info(f"QR Login access per {action}, authenticated: {current_user.is_authenticated}")
-    
     if action not in ['entrata', 'uscita']:
         flash('Azione non valida', 'error')
         return redirect(url_for('login'))
     
     # Se l'utente è già autenticato, esegui l'azione direttamente
     if current_user.is_authenticated:
-        # Log per debug mobile
-        app.logger.info(f"User {current_user.username} già autenticato, redirect a quick_attendance/{action}")
         return redirect(url_for('quick_attendance', action=action))
     
     form = LoginForm()
@@ -9342,8 +9330,7 @@ def delete_overtime_type(type_id):
 @login_required
 def mileage_requests():
     """Visualizza le richieste di rimborso chilometrico"""
-    import logging
-    logger = logging.getLogger(__name__)
+    pass  # Mileage requests view
     
     try:
         if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
@@ -9386,7 +9373,7 @@ def mileage_requests():
                              requests=requests, 
                              filter_form=filter_form)
     except Exception as e:
-        logger.error(f"Errore in mileage_requests: {str(e)}")
+        pass  # Silent error handling
         flash('Errore nel caricamento delle richieste di rimborso chilometrico.', 'error')
         return redirect(url_for('dashboard'))
 

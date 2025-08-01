@@ -101,7 +101,7 @@ def generate_static_qr_codes():
         return True
         
     except Exception as e:
-        logger.error(f"Errore nella generazione QR code: {e}")
+        pass  # Silent error handling
         return False
 
 def qr_codes_exist():
@@ -1128,7 +1128,7 @@ def get_user_statistics(user_id, start_date=None, end_date=None):
                 total_hours += daily_hours
                 days_worked += 1
         except Exception as e:
-            logger.error(f"Error calculating daily hours for user {user_id} on {current_date}: {e}")
+            pass  # Silent error handling
             # Continue with 0 hours for this day
         current_date += timedelta(days=1)
     
@@ -1162,7 +1162,7 @@ def get_user_statistics(user_id, start_date=None, end_date=None):
             Intervention.start_datetime <= end_datetime
         ).all()
     except Exception as e:
-        logger.error(f"Error loading interventions for user {user_id}: {e}")
+        pass  # Silent error handling
         interventions = []
     
     total_interventions = len(interventions)
@@ -1319,7 +1319,7 @@ def get_team_statistics(start_date=None, end_date=None):
         return TeamStats(active_users, role_stats, active_users, estimated_hours, pending_leaves)
         
     except Exception as e:
-        logger.error(f"Error in get_team_statistics: {e}")
+        pass  # Silent error handling
         # Ritorna oggetto con attributi per evitare errori template
         class TeamStats:
             def __init__(self):
@@ -1715,9 +1715,7 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
         sender_user: Utente che ha eseguito l'azione (per cancelled è l'utente stesso)
     """
     from models import InternalMessage, User
-    import logging
-    
-    logger = logging.getLogger(__name__)
+    pass  # Leave request messages
     
     # Determina i destinatari in base al tipo di azione
     recipients = []
@@ -1735,9 +1733,9 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
                     (user.sede_id and leave_request.user.sede_id and 
                      user.sede_id == leave_request.user.sede_id)):  # Stessa sede
                     recipients.append(user)
-                    logger.info(f"Added approver {user.username} (sede: {user.sede_id}, all_sedi: {user.all_sedi}) for leave request from {leave_request.user.username}")
+                    pass  # Approver added
         
-        logger.info(f"Found {len(recipients)} eligible approvers for leave request from user {leave_request.user.username} (sede: {leave_request.user.sede_id})")
+        pass  # Recipients processed
         
         # Rimuovi duplicati e l'utente richiedente se presente
         recipients = list(set(recipients))
@@ -1789,9 +1787,9 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
     
     try:
         db.session.commit()
-        logger.info(f"Sent {len(recipients)} messages for leave request {action_type}")
+        pass  # Messages sent
     except Exception as e:
-        logger.error(f"Error sending leave request messages: {e}")
+        pass  # Silent error handling
         db.session.rollback()
 
 
@@ -1804,9 +1802,8 @@ def send_overtime_request_message(overtime_request, action_type, sender_user=Non
         sender_user: Utente che ha eseguito l'azione (per cancelled è l'utente stesso)
     """
     from models import InternalMessage, User
-    import logging
     
-    logger = logging.getLogger(__name__)
+    pass  # Overtime request messages
     
     try:
         # Determina i destinatari in base al tipo di azione
@@ -1825,9 +1822,9 @@ def send_overtime_request_message(overtime_request, action_type, sender_user=Non
                         (user.sede_id and overtime_request.employee.sede_id and 
                          user.sede_id == overtime_request.employee.sede_id)):  # Stessa sede
                         recipients.append(user)
-                        logger.info(f"Added overtime approver {user.username} (sede: {user.sede_id}, all_sedi: {user.all_sedi}) for overtime request from user {overtime_request.employee.username}")
+                        pass  # Overtime approver added
             
-            logger.info(f"Found {len(recipients)} eligible approvers for overtime request from user {overtime_request.employee.username} (sede: {overtime_request.employee.sede_id})")
+            pass  # Overtime recipients processed
             
             # Rimuovi duplicati e l'utente richiedente se presente
             recipients = list(set(recipients))
@@ -1879,12 +1876,12 @@ def send_overtime_request_message(overtime_request, action_type, sender_user=Non
     
         try:
             db.session.commit()
-            logger.info(f"Sent {len(recipients)} messages for overtime request {action_type}")
+            pass  # Overtime messages sent
         except Exception as e:
-            logger.error(f"Error sending overtime request messages: {e}")
+            pass  # Silent error handling
             db.session.rollback()
     
     except Exception as e:
-        logger.error(f"Error in send_overtime_request_message: {e}")
+        pass  # Silent error handling
         import traceback
         traceback.print_exc()

@@ -102,7 +102,7 @@ def format_time_italian(timestamp):
             return "--:--"
         return italian_time.strftime('%H:%M')
     except Exception as e:
-        app.logger.error(f"Error formatting time: {e}")
+        pass  # Silent error handling
         return "--:--"
 
 @app.template_filter('get_permission_display')
