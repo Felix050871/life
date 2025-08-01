@@ -192,7 +192,7 @@
                                         <!-- Cancellazione -->
                                         {% if req.status != 'approved' and (req.user_id == current_user.id or current_user.can_manage_mileage_requests()) %}
                                             <form method="POST" action="{{ url_for('delete_mileage_request', request_id=req.id) }}" style="display: inline;" onsubmit="return confirm('Sei sicuro di voler cancellare questa richiesta?')">
-                                                {{ csrf_token() }}
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <button type="submit" class="btn btn-outline-danger">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
@@ -325,7 +325,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('approve_mileage_request', request_id=req.id) }}">
-                {{ csrf_token() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-gavel me-2"></i>
