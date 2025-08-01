@@ -406,17 +406,21 @@ def get_user_max_daily_hours(user):
     """
     Calcola l'orario massimo lavorabile giornaliero per un utente.
     - 8 ore per utenti al 100%
-    - Proporzione per part-time
+    - Proporzione per part-time (es: 50% = 4 ore max)
+    - Mai superiore a 8 ore assolute
     """
     if not user or not user.part_time_percentage:
         return 8.0
     
     # 8 ore base per giornata lavorativa completa
     base_hours = 8.0
-    max_hours = base_hours * (user.part_time_percentage / 100.0)
+    part_time_hours = base_hours * (user.part_time_percentage / 100.0)
     
-    # Minimo 4 ore anche per part-time molto bassi
-    return max(max_hours, 4.0)
+    # LIMITE ASSOLUTO: mai superiore a 8 ore, anche per utenti al 100%
+    max_hours = min(part_time_hours, 8.0)
+    
+    # Minimo 2 ore anche per part-time molto bassi per evitare turni troppo frammentati
+    return max(max_hours, 2.0)
 
 def split_coverage_into_segments_by_user_capacity(coverage, available_users):
     """
@@ -723,6 +727,38 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
             # Dividi la copertura basandoti sulla capacità degli utenti
             coverage_segments = split_coverage_into_segments_by_user_capacity(coverage, coverage_available_users)
             
+            # DEBUG: Verifica che i segmenti siano corretti
+            total_coverage_hours = get_shift_duration_hours(coverage.start_time, coverage.end_time)
+            if total_coverage_hours > 8.0:
+                print(f"DEBUG: Copertura originale {coverage.start_time}-{coverage.end_time} ({total_coverage_hours}h) divisa in {len(coverage_segments)} segmenti:")
+                for i, (seg_start, seg_end, users_count) in enumerate(coverage_segments):
+                    seg_hours = get_shift_duration_hours(seg_start, seg_end)
+                    print(f"  Segmento {i+1}: {seg_start}-{seg_end} ({seg_hours}h)")
+                    if seg_hours > 8.0:
+                        print(f"  ERRORE: Segmento ancora troppo lungo!")
+            
+            # Se un segmento è ancora troppo lungo, applicare split ricorsivo
+            final_segments = []
+            for segment_start, segment_end, users_count in coverage_segments:
+                segment_hours = get_shift_duration_hours(segment_start, segment_end)
+                if segment_hours > 8.0:
+                    print(f"ERRORE: Segmento {segment_start}-{segment_end} ancora {segment_hours}h, riapplicando split...")
+                    # Crea una mini-copertura per questo segmento e riapplica lo split
+                    mini_coverage = type(coverage)()
+                    for attr in ['id', 'day_of_week', 'description', 'required_roles', 'role_count', 'active', 'valid_from', 'valid_to']:
+                        if hasattr(coverage, attr):
+                            setattr(mini_coverage, attr, getattr(coverage, attr))
+                    mini_coverage.start_time = segment_start
+                    mini_coverage.end_time = segment_end
+                    
+                    # Riapplica split ricorsivamente
+                    sub_segments = split_coverage_into_segments_by_user_capacity(mini_coverage, coverage_available_users)
+                    final_segments.extend(sub_segments)
+                else:
+                    final_segments.append((segment_start, segment_end, users_count))
+            
+            coverage_segments = final_segments
+            
             for segment_start, segment_end, users_count in coverage_segments:
                 slot_key = (segment_start.strftime('%H:%M'), segment_end.strftime('%H:%M'))
                 if slot_key not in time_slot_groups:
@@ -876,6 +912,17 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                         segment_end_hour += 24
                     
                     segment_hours = segment_end_hour - segment_start_hour
+                    
+                    # CONTROLLO CRITICO: Verifica che il turno non superi i limiti dell'utente
+                    user_max_hours = get_user_max_daily_hours(selected_user)
+                    
+                    if segment_hours > user_max_hours:
+                        # ERRORE: Questo turno supera il limite dell'utente, non dovrebbe succedere
+                        # Se succede, significa che la funzione split non ha funzionato correttamente
+                        # Forza la divisione del turno qui
+                        print(f"ERRORE: Turno di {segment_hours}h supera limite {user_max_hours}h per utente {selected_user.username}")
+                        print(f"Turno: {segment_start} - {segment_end}")
+                        continue  # Salta questo turno troppo lungo
                     
                     # Create the shift for this role in this time slot
                     shift = Shift()
