@@ -34,7 +34,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = app.config['DATABASE_URL']
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": app.config['DATABASE_POOL_RECYCLE'],
     "pool_pre_ping": app.config['DATABASE_POOL_PRE_PING'],
-    "connect_args": config_class.DATABASE_CONNECT_ARGS
 }
 
 # Initialize the app with the extension

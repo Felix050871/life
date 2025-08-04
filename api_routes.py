@@ -2,64 +2,26 @@ from datetime import datetime, timedelta
 from flask import jsonify, request
 from flask_login import login_required, current_user
 from app import app, db
-from sqlalchemy.orm import joinedload
 from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
 import json
 import logging
 from utils import split_coverage_into_segments_by_user_capacity
 from new_shift_generation import calculate_shift_duration
 
-# Setup logging for API routes  
-logging.basicConfig(level=logging.INFO)
+# Setup logging for API routes
 logger = logging.getLogger(__name__)
 
-@app.route('/api/get_shifts_for_template/<int:template_id>', methods=['GET'])
+@app.route('/api/get_shifts_for_template/<int:template_id>')
 @login_required  
 def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
     
-    # FORCE IMMEDIATE OUTPUT TO IDENTIFY EXECUTION
-    import sys
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    logger.addHandler(handler)
-    
-    logger.info("=== API EXECUTION START ===")
-    print("=== API CALLED ===", flush=True)
-    print(f"Function called with template_id: {template_id}", flush=True)
-    sys.stdout.flush()
-    
     try:
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
-        print(f"Template {template_id}: {template.start_date} to {template.end_date}", flush=True)
-        sys.stdout.flush()
-        
-        # Query diretta senza eager loading per test
-        all_shifts = Shift.query.all()
-        print(f"Total shifts in database: {len(all_shifts)}", flush=True)
-        sys.stdout.flush()
-        
         shifts = Shift.query.filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
-        
-        print(f"API DEBUG: Found {len(shifts)} shifts for template {template_id}", flush=True)
-        sys.stdout.flush()
-        for shift in shifts[:10]:  # Log primi 10 turni per debug
-            print(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} -> user_id={shift.user_id}", flush=True)
-        sys.stdout.flush()
-        
-        # DEBUG AGGIUNTIVO: Controlla turni specifici 01/10
-        oct_01_shifts = [s for s in shifts if s.date.strftime('%Y-%m-%d') == '2025-10-01']
-        print(f"01/10 shifts found: {len(oct_01_shifts)}", flush=True)
-        sys.stdout.flush()
-        for shift in oct_01_shifts:
-            print(f"01/10 - Shift {shift.id}: {shift.start_time}-{shift.end_time} -> user_id={shift.user_id}", flush=True)
-        sys.stdout.flush()
         
         # STEP 1: Organizza turni per settimana
         weeks_data = {}
@@ -85,32 +47,14 @@ def api_get_shifts_for_template(template_id):
                     })
             
             day_index = shift.date.weekday()
-            
-            # Safe access to user data
-            try:
-                if shift.user:
-                    user_display_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
-                    if not user_display_name:
-                        user_display_name = shift.user.username
-                    user_role = shift.user.role
-                else:
-                    user_display_name = "Utente eliminato"
-                    user_role = "N/A"
-            except Exception as e:
-                print(f"Error accessing user for shift {shift.id}: {e}")
-                user_display_name = f"Utente ID {shift.user_id}"
-                user_role = "N/A"
-            
             shift_data = {
                 'id': shift.id,
-                'user': user_display_name,
-                'user_id': shift.user_id,
-                'role': user_role,
+                'user': shift.user.username,
+                'user_id': shift.user.id,
+                'role': shift.user.role.name if shift.user.role else 'Senza ruolo',
                 'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
             }
             weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
-            print(f"Added shift {shift.id} to week {week_key}, day {day_index}: {user_display_name}", flush=True)
-            sys.stdout.flush()
             weeks_data[week_key]['shift_count'] += 1
             weeks_data[week_key]['unique_users'].add(shift.user.username)
         
@@ -193,119 +137,6 @@ def api_get_coverage_requirements(template_id):
         'coverages': coverage_data
     })
 
-@app.route('/api/users_by_role/<role>')
-@login_required
-def api_users_by_role(role):
-    """API per ottenere utenti con un ruolo specifico"""
-    try:
-        if not current_user.can_access_turni():
-            return jsonify({'error': 'Non autorizzato'}), 403
-        
-        # Ottieni utenti attivi con il ruolo richiesto nella sede dell'utente corrente
-        query = User.query.filter(
-            User.role == role,
-            User.active == True
-        )
-        
-        # Se l'utente non è admin, filtra per sede
-        if current_user.role != 'Amministratore' and current_user.sede_obj:
-            query = query.filter(User.sede_id == current_user.sede_obj.id)
-        
-        users = query.order_by(User.first_name, User.last_name).all()
-        
-        users_data = []
-        for user in users:
-            users_data.append({
-                'id': user.id,
-                'username': user.username,
-                'full_name': user.get_full_name(),
-                'role': user.role
-            })
-        
-        return jsonify({
-            'success': True,
-            'users': users_data
-        })
-        
-    except Exception as e:
-        print(f"Errore API users_by_role: {e}")
-        return jsonify({'error': 'Errore interno del server'}), 500
-
-@app.route('/api/update_shift/<int:shift_id>', methods=['POST'])
-@login_required  
-def api_update_shift(shift_id):
-    """API per aggiornare l'assegnazione di un turno"""
-    try:
-        if not current_user.can_access_turni():
-            return jsonify({'error': 'Non autorizzato'}), 403
-        
-        shift = Shift.query.get_or_404(shift_id)
-        
-        # Verifica che il turno non sia passato
-        from datetime import date
-        if shift.date < date.today():
-            return jsonify({'error': 'Non è possibile modificare turni passati'}), 400
-        
-        # Verifica permessi sulla sede (se non admin)
-        if current_user.role != 'Amministratore':
-            if not current_user.sede_obj or current_user.sede_obj.id != shift.user.sede_id:
-                return jsonify({'error': 'Non hai i permessi per modificare turni per questa sede'}), 403
-        
-        # Per chiamate AJAX, Flask-WTF non richiede CSRF per API routes
-        data = request.get_json()
-        new_user_id = data.get('new_user_id')
-        
-        if not new_user_id:
-            return jsonify({'error': 'ID utente richiesto'}), 400
-        
-        new_user = User.query.get(new_user_id)
-        if not new_user:
-            return jsonify({'error': 'Utente non trovato'}), 404
-        
-        # Verifica che il nuovo utente abbia il ruolo appropriato
-        # Il ruolo del turno è determinato dal ruolo dell'utente originale
-        current_shift_role = shift.user.role if shift.user else None
-        if current_shift_role and new_user.role != current_shift_role:
-            return jsonify({'error': f'Il nuovo utente deve avere il ruolo {current_shift_role}'}), 400
-        
-        # Verifica sovrapposizioni
-        overlapping_shift = Shift.query.filter(
-            Shift.user_id == new_user_id,
-            Shift.date == shift.date,
-            Shift.id != shift.id,
-            # Controlla sovrapposizione oraria
-            db.or_(
-                db.and_(Shift.start_time <= shift.start_time, Shift.end_time > shift.start_time),
-                db.and_(Shift.start_time < shift.end_time, Shift.end_time >= shift.end_time),
-                db.and_(Shift.start_time >= shift.start_time, Shift.end_time <= shift.end_time)
-            )
-        ).first()
-        
-        if overlapping_shift:
-            return jsonify({
-                'error': f'Sovrapposizione rilevata: l\'utente selezionato ha già un turno dalle {overlapping_shift.start_time.strftime("%H:%M")} alle {overlapping_shift.end_time.strftime("%H:%M")}'
-            }), 400
-        
-        # Salva i valori originali per il log
-        old_user = shift.user.get_full_name()
-        
-        # Aggiorna il turno
-        shift.user_id = new_user_id
-        db.session.commit()
-        
-        # Log dell'operazione
-        print(f"Turno {shift_id} aggiornato: {old_user} -> {new_user.get_full_name()}")
-        
-        return jsonify({
-            'success': True,
-            'message': f'Turno aggiornato da {old_user} a {new_user.get_full_name()}'
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"Errore API update_shift: {e}")
-        return jsonify({'error': 'Errore interno del server'}), 500
-
 @app.route('/api/aci/marche/<tipo>')
 @login_required
 def api_aci_marche_by_tipo(tipo):
@@ -349,90 +180,3 @@ def api_aci_modelli_by_tipo_marca(tipo, marca):
             'success': False,
             'error': str(e)
         })
-
-@app.route('/api/assign_missing_shift', methods=['POST'])
-@login_required
-def assign_missing_shift():
-    """API per assegnare un utente a una copertura mancante"""
-    try:
-        data = request.get_json()
-        app.logger.info(f"=== ASSIGN MISSING SHIFT ===")
-        app.logger.info(f"Data received: {data}")
-        
-        # Estrai parametri dalla richiesta
-        date_str = data.get('date')
-        role = data.get('role')
-        time_slot = data.get('time_slot')
-        user_id = data.get('user_id')
-        notes = data.get('notes', '')
-        template_id = data.get('template_id')
-        
-        if not all([date_str, role, time_slot, user_id]):
-            return jsonify({'success': False, 'message': 'Parametri mancanti'}), 400
-        
-        # Converti data dal formato "01/10" al formato completo
-        from datetime import datetime
-        try:
-            # Assume anno corrente se non specificato
-            if len(date_str.split('/')) == 2:
-                day, month = date_str.split('/')
-                current_year = datetime.now().year
-                date_obj = datetime.strptime(f"{day}/{month}/{current_year}", "%d/%m/%Y")
-            else:
-                date_obj = datetime.strptime(date_str, "%d/%m/%Y")
-        except ValueError:
-            return jsonify({'success': False, 'message': 'Formato data non valido'}), 400
-        
-        # Estrai start_time e end_time dal time_slot
-        try:
-            start_time_str, end_time_str = time_slot.split('-')
-            start_time = datetime.strptime(start_time_str, "%H:%M").time()
-            end_time = datetime.strptime(end_time_str, "%H:%M").time()
-        except ValueError:
-            return jsonify({'success': False, 'message': 'Formato orario non valido'}), 400
-        
-        # Verifica che l'utente esista
-        from models import User
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'success': False, 'message': 'Utente non trovato'}), 404
-        
-        # Controlla se esiste già un turno per questa data/orario/utente
-        from models import Shift
-        existing_shift = Shift.query.filter_by(
-            date=date_obj.date(),
-            user_id=user_id,
-            start_time=start_time,
-            end_time=end_time
-        ).first()
-        
-        if existing_shift:
-            return jsonify({'success': False, 'message': 'Turno già esistente per questo utente in questo orario'}), 400
-        
-        # Crea nuovo turno
-        new_shift = Shift(
-            date=date_obj.date(),
-            start_time=start_time,
-            end_time=end_time,
-            user_id=user_id,
-            role=role,
-            template_id=template_id,
-            notes=notes,
-            created_by=current_user.id
-        )
-        
-        db.session.add(new_shift)
-        db.session.commit()
-        
-        app.logger.info(f"Created new shift: ID={new_shift.id}, User={user.first_name} {user.last_name}, Date={date_obj.date()}, Time={time_slot}")
-        
-        return jsonify({
-            'success': True, 
-            'message': 'Turno assegnato con successo',
-            'shift_id': new_shift.id
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error in assign_missing_shift: {str(e)}")
-        db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
