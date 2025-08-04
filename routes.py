@@ -2522,6 +2522,9 @@ def genera_turni_da_template():
             # Trova coperture per questo giorno
             day_coverages = [c for c in coverages if c.day_of_week == day_of_week]
             
+            # CRITICAL: Track temporary assignments for this day to prevent overlaps
+            daily_temp_assignments = {}  # user_id -> [(start_time, end_time), ...]
+            
             for coverage in day_coverages:
                 try:
                     # Parsing ruoli richiesti
@@ -2538,17 +2541,28 @@ def genera_turni_da_template():
                     # IMPROVEMENT: Filtra utenti già assegnati in questo giorno prima della selezione
                     users_without_conflicts = []
                     for user in available_users:
+                        # Check existing shifts in database
                         existing_shifts_user = Shift.query.filter_by(
                             user_id=user.id,
                             date=current_date
                         ).all()
                         
                         has_conflict = False
+                        
+                        # Check conflicts with existing database shifts
                         for existing in existing_shifts_user:
-                            # Controlla sovrapposizione temporale
                             if not (coverage.end_time <= existing.start_time or coverage.start_time >= existing.end_time):
                                 has_conflict = True
                                 break
+                        
+                        # CRITICAL: Check conflicts with temporary assignments from this generation
+                        if not has_conflict and user.id in daily_temp_assignments:
+                            for temp_start, temp_end in daily_temp_assignments[user.id]:
+                                if not (coverage.end_time <= temp_start or coverage.start_time >= temp_end):
+                                    has_conflict = True
+                                    import sys
+                                    print(f"TEMP CONFLICT: User {user.username} già assegnato temporaneamente {temp_start}-{temp_end}, SKIP {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
+                                    break
                         
                         if not has_conflict:
                             users_without_conflicts.append(user)
@@ -2575,13 +2589,23 @@ def genera_turni_da_template():
                         ).all()
                         
                         has_time_overlap = False
+                        
+                        # Check database conflicts
                         for existing in existing_shifts_user:
-                            # Controlla sovrapposizione temporale O consecutività senza pausa
                             if not (coverage.end_time <= existing.start_time or coverage.start_time >= existing.end_time):
                                 has_time_overlap = True
                                 import sys
-                                print(f"OVERLAP PREVENTED: User {user.username} ha già turno {existing.start_time}-{existing.end_time}, SKIP {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
+                                print(f"DB OVERLAP PREVENTED: User {user.username} ha già turno {existing.start_time}-{existing.end_time}, SKIP {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
                                 break
+                        
+                        # Check temporary conflicts
+                        if not has_time_overlap and user.id in daily_temp_assignments:
+                            for temp_start, temp_end in daily_temp_assignments[user.id]:
+                                if not (coverage.end_time <= temp_start or coverage.start_time >= temp_end):
+                                    has_time_overlap = True
+                                    import sys
+                                    print(f"TEMP OVERLAP PREVENTED: User {user.username} già assegnato temp {temp_start}-{temp_end}, SKIP {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
+                                    break
                         
                         if not has_time_overlap:
                             new_shift = Shift(
@@ -2594,8 +2618,14 @@ def genera_turni_da_template():
                             )
                             db.session.add(new_shift)
                             turni_creati += 1
+                            
+                            # CRITICAL: Track temporary assignment to prevent future overlaps
+                            if user.id not in daily_temp_assignments:
+                                daily_temp_assignments[user.id] = []
+                            daily_temp_assignments[user.id].append((coverage.start_time, coverage.end_time))
+                            
                             import sys
-                            print(f"SHIFT CREATED: User {user.username} assegnato {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
+                            print(f"SHIFT CREATED: User {user.username} assegnato {coverage.start_time}-{coverage.end_time}, temp assignments: {daily_temp_assignments[user.id]}", file=sys.stderr, flush=True)
                 
                 except json.JSONDecodeError:
                     continue
