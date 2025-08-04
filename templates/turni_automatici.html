@@ -273,8 +273,9 @@ function loadShiftsForTemplate(templateId, templateName) {
                         var startDateStr = selectedOption.dataset.start; // formato dd/mm/yyyy
                         var endDateStr = selectedOption.dataset.end;
                         
-                        // console.log('TEMPLATE DEBUG: selectedOption=', selectedOption);
-                        // console.log('TEMPLATE DEBUG: startDateStr=', startDateStr, 'endDateStr=', endDateStr);
+                        console.log('TEMPLATE DEBUG: selectedOption=', selectedOption);
+                        console.log('TEMPLATE DEBUG: startDateStr=', startDateStr, 'endDateStr=', endDateStr);
+                        console.log('TEMPLATE DEBUG: dataset=', selectedOption.dataset);
                         
                         if (startDateStr && endDateStr) {
                             // Converti da dd/mm/yyyy a yyyy-mm-dd
@@ -283,7 +284,7 @@ function loadShiftsForTemplate(templateId, templateName) {
                             templateStartDate = new Date(startParts[2], startParts[1] - 1, startParts[0]); // yyyy, mm-1, dd
                             templateEndDate = new Date(endParts[2], endParts[1] - 1, endParts[0]);
                             
-                            // console.log('TEMPLATE RANGE PARSED: from', templateStartDate, 'to', templateEndDate);
+                            console.log('TEMPLATE RANGE PARSED: from', templateStartDate, 'to', templateEndDate);
                         } else {
                             console.log('ERROR: No start/end dates in selected option dataset!');
                         }
@@ -341,14 +342,14 @@ function loadShiftsForTemplate(templateId, templateName) {
                                         var templateYear = templateStartDate.getFullYear();
                                         var dayDate = new Date(templateYear, dayParts[1] - 1, dayParts[0]);
                                         
-                                        // console.log('Checking date:', dayData.date, 'parsed as:', dayDate, 'template range:', templateStartDate, 'to', templateEndDate);
+                                        console.log('Checking date:', dayData.date, 'parsed as:', dayDate, 'template range:', templateStartDate, 'to', templateEndDate);
                                         
                                         // Se la data è prima del template start o dopo il template end, salta
                                         if (dayDate < templateStartDate || dayDate > templateEndDate) {
                                             isInRange = false;
-                                            // console.log('Date', dayData.date, 'is OUT OF RANGE - skipping missing_roles calculation');
+                                            console.log('Date', dayData.date, 'is OUT OF RANGE - skipping missing_roles calculation');
                                         } else {
-                                            // console.log('Date', dayData.date, 'is IN RANGE - calculating missing_roles');
+                                            console.log('Date', dayData.date, 'is IN RANGE - calculating missing_roles');
                                         }
                                     }
                                     
@@ -361,7 +362,7 @@ function loadShiftsForTemplate(templateId, templateName) {
                                     if (!isInRange) {
                                         // Date fuori range: nessun missing_roles
                                         dayData.missing_roles = [];
-                                        // console.log('Date', dayData.date, 'set to EMPTY missing_roles (out of range)');
+                                        console.log('Date', dayData.date, 'set to EMPTY missing_roles (out of range)');
                                         continue;
                                     }
                                     
