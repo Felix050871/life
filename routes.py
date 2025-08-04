@@ -2255,6 +2255,365 @@ def user_management():
     users = User.query.order_by(User.first_name, User.last_name).all()
     return render_template('user_management.html', users=users)
 
+@app.route('/new_user', methods=['GET', 'POST'])
+@login_required
+def new_user():
+    """Crea nuovo utente"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per creare utenti.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = UserForm()
+    
+    if form.validate_on_submit():
+        user = User(
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            email=form.email.data,
+            username=form.username.data
+        )
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash('Utente creato con successo!', 'success')
+        return redirect(url_for('user_management'))
+    
+    return render_template('new_user.html', form=form)
+
+@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    """Modifica utente"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per modificare utenti.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    form = UserForm(obj=user)
+    
+    if form.validate_on_submit():
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.email = form.email.data
+        user.username = form.username.data
+        if form.password.data:
+            user.set_password(form.password.data)
+        db.session.commit()
+        flash('Utente modificato con successo!', 'success')
+        return redirect(url_for('user_management'))
+    
+    return render_template('edit_user.html', form=form, user=user)
+
+@app.route('/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    """Elimina utente"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per eliminare utenti.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('Utente eliminato con successo!', 'success')
+    return redirect(url_for('user_management'))
+
+@app.route('/create_role', methods=['GET', 'POST'])
+@login_required
+def create_role():
+    """Crea nuovo ruolo"""
+    if not current_user.can_manage_roles():
+        flash('Non hai i permessi per creare ruoli.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = RoleForm()
+    
+    if form.validate_on_submit():
+        role = UserRole(
+            name=form.name.data,
+            description=form.description.data
+        )
+        db.session.add(role)
+        db.session.commit()
+        flash('Ruolo creato con successo!', 'success')
+        return redirect(url_for('manage_roles'))
+    
+    return render_template('create_role.html', form=form)
+
+@app.route('/create_sede', methods=['GET', 'POST'])
+@login_required
+def create_sede():
+    """Crea nuova sede"""
+    if not current_user.can_manage_sedi():
+        flash('Non hai i permessi per creare sedi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = SedeForm()
+    
+    if form.validate_on_submit():
+        sede = Sede(
+            name=form.name.data,
+            address=form.address.data,
+            city=form.city.data,
+            active=form.active.data
+        )
+        db.session.add(sede)
+        db.session.commit()
+        flash('Sede creata con successo!', 'success')
+        return redirect(url_for('manage_sedi'))
+    
+    return render_template('create_sede.html', form=form)
+
+@app.route('/create_holiday', methods=['GET', 'POST'])
+@login_required
+def create_holiday():
+    """Crea nuova festività"""
+    if not current_user.can_manage_holidays():
+        flash('Non hai i permessi per creare festività.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = HolidayForm()
+    
+    if form.validate_on_submit():
+        holiday = Holiday(
+            name=form.name.data,
+            date=form.date.data,
+            sede_id=form.sede_id.data if form.sede_id.data else None
+        )
+        db.session.add(holiday)
+        db.session.commit()
+        flash('Festività creata con successo!', 'success')
+        return redirect(url_for('holidays'))
+    
+    return render_template('create_holiday.html', form=form)
+
+@app.route('/create_work_schedule', methods=['GET', 'POST'])
+@login_required
+def create_work_schedule():
+    """Crea nuovo orario di lavoro"""
+    if not current_user.can_manage_work_schedules():
+        flash('Non hai i permessi per creare orari di lavoro.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = WorkScheduleForm()
+    
+    if form.validate_on_submit():
+        schedule = WorkSchedule(
+            name=form.name.data,
+            start_time=form.start_time.data,
+            end_time=form.end_time.data,
+            active=form.active.data
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        flash('Orario di lavoro creato con successo!', 'success')
+        return redirect(url_for('manage_work_schedules'))
+    
+    return render_template('create_work_schedule.html', form=form)
+
+# ===== ALTRE ROUTE CRUD MANCANTI =====
+@app.route('/delete_leave/<int:request_id>', methods=['POST'])
+@login_required
+def delete_leave(request_id):
+    """Elimina richiesta ferie"""
+    if not current_user.can_manage_leave():
+        flash('Non hai i permessi per eliminare richieste ferie.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    leave_request = LeaveRequest.query.get_or_404(request_id)
+    db.session.delete(leave_request)
+    db.session.commit()
+    flash('Richiesta ferie eliminata!', 'success')
+    return redirect(url_for('leave_requests'))
+
+@app.route('/create_expense_category', methods=['GET', 'POST'])
+@login_required
+def create_expense_category():
+    """Crea categoria spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per creare categorie spese.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = ExpenseCategoryForm()
+    
+    if form.validate_on_submit():
+        category = ExpenseCategory(
+            name=form.name.data,
+            description=form.description.data,
+            active=form.active.data
+        )
+        db.session.add(category)
+        db.session.commit()
+        flash('Categoria creata con successo!', 'success')
+        return redirect(url_for('expense_categories'))
+    
+    return render_template('create_expense_category.html', form=form)
+
+@app.route('/edit_expense_report/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def edit_expense_report(expense_id):
+    """Modifica note spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per modificare note spese.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    form = ExpenseReportForm(obj=expense)
+    
+    if form.validate_on_submit():
+        expense.amount = form.amount.data
+        expense.description = form.description.data
+        expense.category_id = form.category_id.data
+        db.session.commit()
+        flash('Nota spese modificata!', 'success')
+        return redirect(url_for('expense_reports'))
+    
+    return render_template('edit_expense_report.html', form=form, expense=expense)
+
+@app.route('/delete_expense_report/<int:expense_id>', methods=['POST'])
+@login_required
+def delete_expense_report(expense_id):
+    """Elimina nota spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per eliminare note spese.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    db.session.delete(expense)
+    db.session.commit()
+    flash('Nota spese eliminata!', 'success')
+    return redirect(url_for('expense_reports'))
+
+@app.route('/edit_holiday/<int:holiday_id>', methods=['GET', 'POST'])
+@login_required
+def edit_holiday(holiday_id):
+    """Modifica festività"""
+    if not current_user.can_manage_holidays():
+        flash('Non hai i permessi per modificare festività.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    holiday = Holiday.query.get_or_404(holiday_id)
+    form = HolidayForm(obj=holiday)
+    
+    if form.validate_on_submit():
+        holiday.name = form.name.data
+        holiday.date = form.date.data
+        holiday.sede_id = form.sede_id.data if form.sede_id.data else None
+        db.session.commit()
+        flash('Festività modificata!', 'success')
+        return redirect(url_for('holidays'))
+    
+    return render_template('edit_holiday.html', form=form, holiday=holiday)
+
+@app.route('/delete_holiday/<int:holiday_id>', methods=['POST'])
+@login_required
+def delete_holiday(holiday_id):
+    """Elimina festività"""
+    if not current_user.can_manage_holidays():
+        flash('Non hai i permessi per eliminare festività.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    holiday = Holiday.query.get_or_404(holiday_id)
+    db.session.delete(holiday)
+    db.session.commit()
+    flash('Festività eliminata!', 'success')
+    return redirect(url_for('holidays'))
+
+@app.route('/delete_message/<int:message_id>', methods=['POST'])
+@login_required
+def delete_message(message_id):
+    """Elimina messaggio"""
+    if not current_user.can_manage_messages():
+        flash('Non hai i permessi per eliminare messaggi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    message = InternalMessage.query.get_or_404(message_id)
+    db.session.delete(message)
+    db.session.commit()
+    flash('Messaggio eliminato!', 'success')
+    return redirect(url_for('internal_messages'))
+
+@app.route('/edit_leave_type_page/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_leave_type_page(id):
+    """Modifica tipo ferie"""
+    if not current_user.can_manage_leave_types():
+        flash('Non hai i permessi per modificare tipi ferie.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    leave_type = LeaveType.query.get_or_404(id)
+    form = LeaveTypeForm(obj=leave_type)
+    
+    if form.validate_on_submit():
+        leave_type.name = form.name.data
+        leave_type.days_allowed = form.days_allowed.data
+        leave_type.active = form.active.data
+        db.session.commit()
+        flash('Tipo ferie modificato!', 'success')
+        return redirect(url_for('leave_types'))
+    
+    return render_template('edit_leave_type.html', form=form, leave_type=leave_type)
+
+@app.route('/delete_leave_type/<int:id>', methods=['POST'])
+@login_required
+def delete_leave_type(id):
+    """Elimina tipo ferie"""
+    if not current_user.can_manage_leave_types():
+        flash('Non hai i permessi per eliminare tipi ferie.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    leave_type = LeaveType.query.get_or_404(id)
+    db.session.delete(leave_type)
+    db.session.commit()
+    flash('Tipo ferie eliminato!', 'success')
+    return redirect(url_for('leave_types'))
+
+@app.route('/new_location', methods=['GET', 'POST'])
+@login_required
+def new_location():
+    """Nuova ubicazione"""
+    if not current_user.can_manage_sedi():
+        flash('Non hai i permessi per creare ubicazioni.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = SedeForm()
+    
+    if form.validate_on_submit():
+        sede = Sede(
+            name=form.name.data,
+            address=form.address.data,
+            city=form.city.data,
+            active=form.active.data
+        )
+        db.session.add(sede)
+        db.session.commit()
+        flash('Ubicazione creata!', 'success')
+        return redirect(url_for('locations'))
+    
+    return render_template('new_location.html', form=form)
+
+@app.route('/edit_location/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_location(id):
+    """Modifica ubicazione"""
+    if not current_user.can_manage_sedi():
+        flash('Non hai i permessi per modificare ubicazioni.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede = Sede.query.get_or_404(id)
+    form = SedeForm(obj=sede)
+    
+    if form.validate_on_submit():
+        sede.name = form.name.data
+        sede.address = form.address.data
+        sede.city = form.city.data
+        sede.active = form.active.data
+        db.session.commit()
+        flash('Ubicazione modificata!', 'success')
+        return redirect(url_for('locations'))
+    
+    return render_template('edit_location.html', form=form, sede=sede)
+
 @app.route('/user_profile', methods=['GET', 'POST'])
 @login_required
 def user_profile():
