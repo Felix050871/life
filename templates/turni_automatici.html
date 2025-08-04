@@ -280,11 +280,11 @@ function displayShiftsFromAPI(data, templateName) {
                         totalMissing += day.missing_roles.length;
                         console.log('FOUND MISSING ROLES:', day.date, day.missing_roles);
                     }
-                    // Debug specifico per 2 ottobre (mercoledì)
+                    // Debug specifico per 2 ottobre (giovedì!)
                     if (day.date === '02/10') {
-                        console.log('2 OTTOBRE DEBUG - Shifts:', day.shifts);
-                        console.log('2 OTTOBRE DEBUG - Missing:', day.missing_roles);
-                        console.log('2 OTTOBRE DEBUG - Dovrebbe avere 3 turni ma ne ha:', day.shifts ? day.shifts.length : 0);
+                        console.log('2 OTTOBRE DEBUG (GIOVEDÌ) - Shifts:', day.shifts);
+                        console.log('2 OTTOBRE DEBUG (GIOVEDÌ) - Missing:', day.missing_roles);
+                        console.log('2 OTTOBRE DEBUG (GIOVEDÌ) - Dovrebbe avere 3 turni ma ne ha:', day.shifts ? day.shifts.length : 0);
                     }
                 });
             }

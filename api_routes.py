@@ -80,11 +80,13 @@ def api_get_shifts_for_template(template_id):
             # Trova coperture richieste per questo giorno (0=Monday, 6=Sunday)
             day_coverages = [c for c in coverages if c.day_of_week == day_index]
             
-            # Debug solo per mercoledì (day_index=2) - il 2 ottobre
-            if day_index == 2 and (day_coverages or day_data['shifts']):
-                print(f"DEBUG DAY 2 (Mercoledì): {len(day_coverages)} coperture, {len(day_data['shifts'])} turni", file=sys.stderr, flush=True)
+            # Debug per giovedì (day_index=3 = Giovedì, il 2 ottobre 2025 è GIOVEDÌ!)
+            if day_index == 3 and (day_coverages or day_data['shifts']):
+                print(f"DEBUG DAY 3 (Giovedì 2 Ott): {len(day_coverages)} coperture, {len(day_data['shifts'])} turni", file=sys.stderr, flush=True)
                 for shift in day_data['shifts']:
                     print(f"  SHIFT: {shift['time']} - {shift['role']} - {shift['user']}", file=sys.stderr, flush=True)
+                for coverage in day_coverages:
+                    print(f"  REQUIRED: {coverage.start_time}-{coverage.end_time} roles={coverage.required_roles}", file=sys.stderr, flush=True)
             
             for coverage in day_coverages:
                 # Parse ruoli richiesti
@@ -96,8 +98,8 @@ def api_get_shifts_for_template(template_id):
                 # Verifica copertura
                 time_slot = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
                 
-                # Debug per mercoledì
-                if day_index == 2:
+                # Debug per giovedì (2 ottobre)
+                if day_index == 3:
                     print(f"DEBUG COVERAGE: Cerco {required_roles} per {time_slot}", file=sys.stderr, flush=True)
                 
                 # Verifica ogni ruolo richiesto per questa copertura
