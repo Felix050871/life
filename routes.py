@@ -2510,4 +2510,11 @@ def admin_generate_qr_codes():
     flash('Funzionalità generazione codici QR in sviluppo', 'info')
     return redirect(url_for('dashboard'))
 
+@app.route('/visualizza_turni')
+@login_required
+def visualizza_turni():
+    """Visualizza turni - placeholder semplice"""
+    flash('Funzionalità visualizzazione turni in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
 
