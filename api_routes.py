@@ -19,9 +19,9 @@ def api_get_shifts_for_template(template_id):
     # DEBUG: Aggiungo logging per verificare chiamate API
     import sys
     print(f"API DEBUG: get_shifts_for_template chiamata per template_id={template_id}", file=sys.stderr, flush=True)
-    print(f"API DEBUG: Template {template.name}, periodo {template.start_date} - {template.end_date}", file=sys.stderr, flush=True)
     
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    print(f"API DEBUG: Template {template.name}, periodo {template.start_date} - {template.end_date}", file=sys.stderr, flush=True)
     shifts = Shift.query.filter(
         Shift.date >= template.start_date,
         Shift.date <= template.end_date
