@@ -373,28 +373,41 @@ function loadShiftsForTemplate(templateId, templateName) {
                                     
                                     // Per ogni copertura richiesta, verifica se è soddisfatta
                                     dayCoverages.forEach(function(coverage) {
+                                        console.log('COVERAGE DEBUG: Checking coverage', coverage.start_time + '-' + coverage.end_time, 'for roles', coverage.required_roles);
+                                        
                                         coverage.required_roles.forEach(function(requiredRole) {
                                             // Conta quanti turni di questo ruolo coprono la fascia oraria
                                             var roleCount = 0;
                                             
                                             if (dayData.shifts) {
+                                                console.log('SHIFTS DEBUG: Found', dayData.shifts.length, 'shifts for', dayData.date);
                                                 dayData.shifts.forEach(function(shift) {
+                                                    console.log('SHIFT DEBUG: Checking shift', shift.role, shift.time, 'vs required', requiredRole);
                                                     if (shift.role === requiredRole) {
                                                         // Verifica sovrapposizione oraria
                                                         var shiftTimes = shift.time.split('-');
                                                         var shiftStart = shiftTimes[0];
                                                         var shiftEnd = shiftTimes[1];
                                                         
+                                                        console.log('TIME DEBUG: Coverage', coverage.start_time + '-' + coverage.end_time, 'vs Shift', shiftStart + '-' + shiftEnd);
+                                                        
                                                         if (shiftStart <= coverage.end_time && shiftEnd >= coverage.start_time) {
                                                             roleCount++;
+                                                            console.log('OVERLAP DEBUG: Match found! roleCount now =', roleCount);
+                                                        } else {
+                                                            console.log('OVERLAP DEBUG: No overlap detected');
                                                         }
                                                     }
                                                 });
+                                            } else {
+                                                console.log('SHIFTS DEBUG: No shifts for', dayData.date);
                                             }
                                             
                                             // Se il ruolo è insufficiente, aggiungi a missing_roles
+                                            console.log('ROLE COUNT DEBUG: Found', roleCount, 'roles, required', coverage.role_count);
                                             if (roleCount < coverage.role_count) {
                                                 var missingText = requiredRole + ' mancante (' + coverage.start_time + '-' + coverage.end_time + ')';
+                                                console.log('MISSING DEBUG: Adding missing role:', missingText);
                                                 if (!dayData.missing_roles.includes(missingText)) {
                                                     dayData.missing_roles.push(missingText);
                                                 }
