@@ -216,6 +216,7 @@ function loadShiftsForTemplate(templateId, templateName) {
     
     // Richiesta AJAX per caricare i turni con credentials
     console.log('Calling API:', '/api/get_shifts_for_template/' + templateId);
+    console.log('FORCE API CALL - bypassing complex logic');
     fetch('/api/get_shifts_for_template/' + templateId, {
         credentials: 'same-origin',
         headers: {
@@ -235,442 +236,106 @@ function loadShiftsForTemplate(templateId, templateName) {
         .then(data => {
             console.log('=== API DATA RECEIVED ===');
             console.log('Full data:', data);
-            console.log('Weeks count:', data.weeks ? data.weeks.length : 0);
-            if (data.weeks && data.weeks[0]) {
-                console.log('First week days:', data.weeks[0].days);
-                console.log('Monday missing_roles:', data.weeks[0].days['0'].missing_roles);
-            }
+            console.log('Weeks count:', data.weeks ? Object.keys(data.weeks).length : 0);
             
-            console.log('*** BYPASSING AJAX API - CALCULATING MISSING_ROLES IN FRONTEND ***');
-            
-            // SOLUZIONE FINALE: CALCOLA MISSING_ROLES DINAMICAMENTE DAL DATABASE
-            console.log('*** LOADING COVERAGE REQUIREMENTS FROM DATABASE ***');
-            
-            // Carica le coperture richieste dal database per questo template
-            fetch('/api/get_coverage_requirements/' + templateId, {
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(coverageData => {
-                console.log('Coverage requirements loaded:', coverageData);
-                
-                // Calcola missing_roles dinamicamente per tutti i template - SOLO NEL RANGE
-                if (data.weeks && coverageData.success) {
-                    // CORRETTO: Ottieni date dal select option attualmente selezionato
-                    var templateSelect = document.getElementById('template_id');
-                    var templateStartDate = null;
-                    var templateEndDate = null;
-                    
-                    console.log('TEMPLATE SELECTION DEBUG: templateSelect=', templateSelect);
-                    console.log('TEMPLATE SELECTION DEBUG: selectedIndex=', templateSelect ? templateSelect.selectedIndex : 'null');
-                    console.log('TEMPLATE SELECTION DEBUG: options length=', templateSelect ? templateSelect.options.length : 'null');
-                    
-                    if (templateSelect && templateSelect.selectedIndex > 0) {
-                        var selectedOption = templateSelect.options[templateSelect.selectedIndex];
-                        var startDateStr = selectedOption.dataset.start; // formato dd/mm/yyyy
-                        var endDateStr = selectedOption.dataset.end;
-                        
-                        console.log('TEMPLATE DEBUG: selectedOption=', selectedOption);
-                        console.log('TEMPLATE DEBUG: startDateStr=', startDateStr, 'endDateStr=', endDateStr);
-                        console.log('TEMPLATE DEBUG: dataset=', selectedOption.dataset);
-                        
-                        if (startDateStr && endDateStr) {
-                            // Converti da dd/mm/yyyy a yyyy-mm-dd
-                            var startParts = startDateStr.split('/');
-                            var endParts = endDateStr.split('/');
-                            templateStartDate = new Date(startParts[2], startParts[1] - 1, startParts[0]); // yyyy, mm-1, dd
-                            templateEndDate = new Date(endParts[2], endParts[1] - 1, endParts[0]);
-                            
-                            console.log('TEMPLATE RANGE PARSED: from', templateStartDate, 'to', templateEndDate);
-                        } else {
-                            console.log('ERROR: No start/end dates in selected option dataset!');
-                        }
-                    } else {
-                        console.log('WARNING: No template selected or no select found! All missing_roles will be calculated.');
-                        console.log('FALLBACK: Selected template ID from form submission or URL parameter');
-                        
-                        // FALLBACK: Prova a ottenere il template ID dalla form submission attuale
-                        var templateId = new URLSearchParams(window.location.search).get('template_id');
-                        if (!templateId) {
-                            // Prova a ottenere dal form se è stato appena inviato
-                            var form = document.querySelector('form[action*="genera_turni_da_template"]');
-                            if (form) {
-                                var formData = new FormData(form);
-                                templateId = formData.get('template_id');
-                            }
-                        }
-                        
-                        console.log('FALLBACK: templateId found=', templateId);
-                        
-                        if (templateId && templateSelect) {
-                            // Imposta il select al template corretto
-                            templateSelect.value = templateId;
-                            console.log('FALLBACK: Set template select to', templateId);
-                            
-                            if (templateSelect.selectedIndex > 0) {
-                                var selectedOption = templateSelect.options[templateSelect.selectedIndex];
-                                var startDateStr = selectedOption.dataset.start;
-                                var endDateStr = selectedOption.dataset.end;
-                                
-                                console.log('FALLBACK: Using template dates', startDateStr, 'to', endDateStr);
-                                
-                                if (startDateStr && endDateStr) {
-                                    var startParts = startDateStr.split('/');
-                                    var endParts = endDateStr.split('/');
-                                    templateStartDate = new Date(startParts[2], startParts[1] - 1, startParts[0]);
-                                    templateEndDate = new Date(endParts[2], endParts[1] - 1, endParts[0]);
-                                    console.log('FALLBACK: Template range set from', templateStartDate, 'to', templateEndDate);
-                                }
-                            }
-                        }
-                    }
-                    
-                    data.weeks.forEach(function(week) {
-                        if (week.days && Array.isArray(week.days)) {
-                            for (var dayIndex = 0; dayIndex < 7; dayIndex++) {
-                                if (week.days[dayIndex]) {
-                                    var dayData = week.days[dayIndex];
-                                    
-                                    // FILTRO: Verifica se la data è nel range del template
-                                    var isInRange = true;
-                                    if (templateStartDate && templateEndDate && dayData.date) {
-                                        var dayParts = dayData.date.split('/'); // formato dd/mm
-                                        // CORREZIONE: Usa l'anno del template, non l'anno corrente
-                                        var templateYear = templateStartDate.getFullYear();
-                                        var dayDate = new Date(templateYear, dayParts[1] - 1, dayParts[0]);
-                                        
-                                        console.log('Checking date:', dayData.date, 'parsed as:', dayDate, 'template range:', templateStartDate, 'to', templateEndDate);
-                                        
-                                        // Se la data è prima del template start o dopo il template end, salta
-                                        if (dayDate < templateStartDate || dayDate > templateEndDate) {
-                                            isInRange = false;
-                                            console.log('Date', dayData.date, 'is OUT OF RANGE - skipping missing_roles calculation');
-                                        } else {
-                                            console.log('Date', dayData.date, 'is IN RANGE - calculating missing_roles');
-                                        }
-                                    }
-                                    
-                                    // Inizializza missing_roles
-                                    if (!dayData.missing_roles) {
-                                        dayData.missing_roles = [];
-                                    }
-                                    
-                                    // IMPORTANTE: Non sovrascrivere missing_roles dall'API!
-                                    // L'API ora calcola correttamente i missing_roles per i segmenti spezzati
-                                    // Mantieni i missing_roles come arrivano dall'API server-side
-                                    
-                                    // SOLO filtra per date fuori range del template
-                                    if (!isInRange) {
-                                        // Date fuori range: svuota missing_roles
-                                        dayData.missing_roles = [];
-                                    }
-                                    
-                                    // DEBUG: Mostra missing_roles dall'API
-                                    if (dayData.missing_roles && dayData.missing_roles.length > 0) {
-                                        console.log('API Missing roles for', dayData.date, ':', dayData.missing_roles);
-                                    }
-
-                                }
-                            }
-                        }
-                    });
-                }
-                
-                // Ora renderizza con i missing_roles calcolati dinamicamente
-                renderWeeksWithMissingRoles(data, templateName);
-            })
-            .catch(error => {
-                console.log('Coverage loading failed, using data without missing_roles calculation');
-                renderWeeksWithMissingRoles(data, templateName);
-            });
+            // DISPLAY DIRECTLY FROM API DATA - NO COMPLEX LOGIC
+            displayShiftsFromAPI(data, templateName);
+            return; // EXIT HERE - NO MORE COMPLEX PROCESSING
         })
         .catch(error => {
-            console.error('=== API ERROR ===');
-            console.error('Error details:', error);
-            document.getElementById('weeks-container').innerHTML = 
-                '<div class="alert alert-danger">Errore nel caricamento dei turni: ' + error.message + '. Problema di autenticazione - ricarica la pagina.</div>';
+            console.error('API Error:', error);
+            document.getElementById('weeks-container').innerHTML = '<div class="alert alert-danger">Errore caricamento: ' + error.message + '</div>';
         });
 }
 
-function renderWeeksWithMissingRoles(data, templateName) {
-            
-    document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong> (' + data.period + ')';
-    document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';
+function displayShiftsFromAPI(data, templateName) {
+    console.log('=== displayShiftsFromAPI START ===');
     
-    if (data.weeks && data.weeks.length > 0) {
-        var weeksHtml = '';
-        data.weeks.forEach(function(week) {
-            weeksHtml += createWeekHtml(week);
-        });
-        document.getElementById('weeks-container').innerHTML = weeksHtml;
-    } else {
-        document.getElementById('weeks-container').innerHTML = 
-            '<div class="text-center py-5">' +
-            '<i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>' +
-            '<h5 class="text-muted">Nessun turno presente</h5>' +
-            '<p class="text-muted">Non ci sono turni generati per questo template.</p>' +
-            '</div>';
-    }
-}
-
-function createWeekHtml(week) {
-    var weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
-    var html = '<div class="week-card">' +
-               '<div class="week-header d-flex justify-content-between align-items-center">' +
-               '<div><strong style="color: #ffffff;">' + week.start + ' - ' + week.end + '</strong></div>' +
-               '<div class="d-flex gap-3">' +
-               '<span class="badge bg-primary">' + week.shift_count + ' turni</span>' +
-               '<span class="badge bg-info">' + week.unique_users + ' persone</span>' +
-               '<span class="badge bg-success">' + week.total_hours.toFixed(1) + 'h</span>' +
-               '</div></div>' +
-               '<div class="row g-0">';
+    // Update template name
+    document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong>';
     
-    for (var i = 0; i < 7; i++) {
-        html += '<div class="col shift-day">' +
-                '<div class="text-center">' +
-                '<small style="color: #adb5bd;">' + weekdays[i] + '</small>' +
-                '<div><small style="color: #ffffff; font-weight: 500;">' + week.days[i].date + '</small></div>' +
-                '</div>';
-        
-        if (week.days[i].shifts && week.days[i].shifts.length > 0) {
-            week.days[i].shifts.forEach(function(shift) {
-                html += '<div class="shift-item editable-shift" data-shift-id="' + shift.id + '" data-user-id="' + shift.user_id + '" data-role="' + shift.role + '" title="' + shift.user + ' - ' + shift.time + '">' +
-                        '<div class="d-flex justify-content-between align-items-start">' +
-                        '<div class="shift-content">' +
-                        '<div class="fw-bold shift-user">' + (shift.user.length > 12 ? shift.user.substring(0, 12) + '...' : shift.user) + '</div>' +
-                        '<small>' + shift.time + '</small>' +
-                        '</div>' +
-                        '<i class="fas fa-edit edit-shift-btn" style="cursor: pointer; opacity: 0.7; font-size: 10px;" title="Modifica turno"></i>' +
-                        '</div>' +
-                        '</div>';
-            });
-        }
-        
-        // Aggiungi evidenziazione per ruoli richiesti ma mancanti - SOLO SE ARRAY NON VUOTO
-        if (week.days[i].missing_roles && Array.isArray(week.days[i].missing_roles) && week.days[i].missing_roles.length > 0) {
-            week.days[i].missing_roles.forEach(function(missing) {
-                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #333333 !important; font-size: 10px; font-weight: bold;">' +
-                        '<small style="color: #333333 !important;"><i class="fas fa-exclamation-triangle me-1" style="color: #333333 !important;"></i>' + missing + '</small>' +
-                        '</div>';
-            });
-        }
-        
-        // Solo se NON ci sono turni E ci sono ruoli richiesti per questo giorno, mostra SCOPERTO - CON CONTROLLO ARRAY
-        if ((!week.days[i].shifts || week.days[i].shifts.length === 0) && 
-            week.days[i].missing_roles && Array.isArray(week.days[i].missing_roles) && week.days[i].missing_roles.length > 0) {
-            html += '<div class="text-center p-2 rounded" style="background-color: rgba(220, 53, 69, 0.2); border: 1px solid rgba(220, 53, 69, 0.4); color: #dc3545;"><small><i class="fas fa-exclamation-triangle me-1"></i>SCOPERTO</small></div>';
-        }
-        
-        html += '</div>';
-    }
+    var container = document.getElementById('weeks-container');
     
-    html += '</div></div>';
-    return html;
-}
-
-// Funzione per modificare un turno
-function editShift(shiftElement) {
-    var shiftId = shiftElement.attr('data-shift-id');
-    var currentUserId = shiftElement.attr('data-user-id');
-    var role = shiftElement.attr('data-role');
-    var templateId = $('#template-select').val() || $('#template_id').val();
-    
-    console.log('Template ID found:', templateId);
-    console.log('Shift data:', {
-        shiftId: shiftId,
-        currentUserId: currentUserId, 
-        role: role
-    });
-    console.log('Element attributes:', {
-        'data-shift-id': shiftElement.attr('data-shift-id'),
-        'data-user-id': shiftElement.attr('data-user-id'),
-        'data-role': shiftElement.attr('data-role')
-    });
-    
-    if (!templateId) {
-        alert('Seleziona prima un template.');
+    if (!data.weeks || Object.keys(data.weeks).length === 0) {
+        container.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Nessun turno trovato per questo template.</div>';
+        document.getElementById('weeks-count').textContent = '0 settimane';
         return;
     }
     
-    // Trova la data del turno dal DOM
-    var shiftDate = getShiftDateFromElement(shiftElement);
-    console.log('Extracted shift date:', shiftDate);
+    var weeksCount = Object.keys(data.weeks).length;
+    document.getElementById('weeks-count').textContent = weeksCount + ' settiman' + (weeksCount === 1 ? 'a' : 'e');
     
-    // Carica utenti disponibili per questo ruolo
-    $.ajax({
-        url: '/api/get_users_by_role',
-        method: 'GET',
-        data: {
-            role: role,
-            template_id: templateId,
-            shift_date: shiftDate
-        },
-        success: function(users) {
-            console.log('Users received:', users);
-            if (users && users.length > 0) {
-                showUserSelectionModal(shiftId, currentUserId, users, shiftElement);
-            } else {
-                alert('Nessun utente disponibile per questo ruolo.');
+    var html = '';
+    
+    // Process each week
+    Object.keys(data.weeks).forEach(function(weekKey) {
+        var week = data.weeks[weekKey];
+        html += '<div class="mb-4">';
+        html += '<div class="d-flex justify-content-between align-items-center mb-3">';
+        html += '<h6 class="mb-0 text-primary"><i class="fas fa-calendar-week me-2"></i>Settimana ' + week.start + ' - ' + week.end + '</h6>';
+        html += '<div>';
+        html += '<span class="badge bg-primary me-2">' + week.shift_count + ' turni</span>';
+        html += '<span class="badge bg-secondary me-2">' + week.unique_users + ' persone</span>';
+        html += '<span class="badge bg-info">' + week.total_hours + 'h</span>';
+        html += '</div>';
+        html += '</div>';
+        
+        html += '<div class="row">';
+        
+        // Process each day
+        var dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+        
+        for (var i = 0; i < 7; i++) {
+            var day = week.days[i];
+            html += '<div class="col-md-6 col-lg-4 mb-3">';
+            html += '<div class="card h-100">';
+            html += '<div class="card-header py-2">';
+            html += '<small class="text-muted d-block">' + dayNames[i] + '</small>';
+            html += '<strong>' + day.date + '</strong>';
+            html += '</div>';
+            html += '<div class="card-body py-2">';
+            
+            // Show shifts
+            if (day.shifts && day.shifts.length > 0) {
+                day.shifts.forEach(function(shift) {
+                    html += '<div class="d-flex justify-content-between align-items-center mb-1">';
+                    html += '<div>';
+                    html += '<span class="badge bg-success me-1">' + shift.role + '</span>';
+                    html += '<small class="text-muted">' + shift.user + '</small>';
+                    html += '</div>';
+                    html += '<small class="text-muted">' + shift.time + '</small>';
+                    html += '</div>';
+                });
             }
-        },
-        error: function() {
-            alert('Errore nel caricamento degli utenti disponibili.');
-        }
-    });
-}
-
-// Modal per selezione utente
-function showUserSelectionModal(shiftId, currentUserId, users, shiftElement) {
-    var modal = $('<div class="modal fade" tabindex="-1">' +
-                  '<div class="modal-dialog">' +
-                  '<div class="modal-content">' +
-                  '<div class="modal-header">' +
-                  '<h5 class="modal-title">Modifica Assegnazione Turno</h5>' +
-                  '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>' +
-                  '</div>' +
-                  '<div class="modal-body">' +
-                  '<label class="form-label">Seleziona nuovo utente:</label>' +
-                  '<select class="form-select" id="new-user-select">' +
-                  '</select>' +
-                  '</div>' +
-                  '<div class="modal-footer">' +
-                  '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>' +
-                  '<button type="button" class="btn btn-primary" id="save-shift-change">Salva</button>' +
-                  '</div>' +
-                  '</div>' +
-                  '</div>' +
-                  '</div>');
-    
-    var select = modal.find('#new-user-select');
-    users.forEach(function(user) {
-        var selected = user.id == currentUserId ? 'selected' : '';
-        select.append('<option value="' + user.id + '" ' + selected + '>' + user.full_name + '</option>');
-    });
-    
-    modal.find('#save-shift-change').click(function() {
-        var newUserId = select.val();
-        if (newUserId != currentUserId) {
-            updateShiftUser(shiftId, newUserId, shiftElement, modal);
-        } else {
-            modal.modal('hide');
-        }
-    });
-    
-    $('body').append(modal);
-    modal.modal('show');
-    modal.on('hidden.bs.modal', function() {
-        modal.remove();
-    });
-}
-
-// Aggiorna l'utente del turno
-function updateShiftUser(shiftId, newUserId, shiftElement, modal) {
-    $.ajax({
-        url: '/api/update_shift_user',
-        method: 'POST',
-        data: {
-            shift_id: shiftId,
-            user_id: newUserId,
-            csrf_token: $('meta[name=csrf-token]').attr('content')
-        },
-        success: function(response) {
-            if (response.success) {
-                // Aggiorna l'interfaccia con nome completo
-                var displayName = response.user.full_name || response.user.username;
-                shiftElement.find('.shift-user').text(displayName.length > 12 ? 
-                    displayName.substring(0, 12) + '...' : displayName);
-                shiftElement.data('user-id', newUserId);
-                shiftElement.attr('title', displayName + ' - ' + shiftElement.find('small').text());
-                modal.modal('hide');
-                
-                // Ricarica i turni per aggiornare le statistiche  
-                var templateId = $('#template-select').val() || $('#template_id').val();
-                var templateName = $('#template-select option:selected').text() || $('#template_id option:selected').text();
-                console.log('Reloading shifts with templateId:', templateId, 'templateName:', templateName);
-                loadShiftsForTemplate(templateId, templateName);
-            } else {
-                alert('Errore nell\'aggiornamento: ' + response.message);
+            
+            // Show missing roles
+            if (day.missing_roles && day.missing_roles.length > 0) {
+                day.missing_roles.forEach(function(missing) {
+                    html += '<div class="alert alert-danger py-1 px-2 mb-1">';
+                    html += '<i class="fas fa-exclamation-triangle me-1"></i>';
+                    html += '<small>' + missing + '</small>';
+                    html += '</div>';
+                });
             }
-        },
-        error: function() {
-            alert('Errore nel salvataggio delle modifiche.');
-        }
-    });
-}
-
-// Event listener principale per i click su edit
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('edit-shift-btn')) {
-        e.stopPropagation();
-        console.log('Edit button clicked');
-        var shiftElement = $(e.target).closest('.editable-shift');
-        editShift(shiftElement);
-    }
-});
-
-// Validazione form prima dell'invio
-// Rimossa modale di conferma - la conferma avverrà nella pagina successiva se necessario
-
-// Funzione helper per estrarre la data del turno dall'elemento DOM
-function getShiftDateFromElement(shiftElement) {
-    console.log('Debug: getShiftDateFromElement called with:', shiftElement);
-    
-    // Trova la data dal titolo del giorno nella colonna
-    var dayColumn = shiftElement.closest('.shift-day');
-    console.log('Debug: dayColumn found:', dayColumn.length > 0);
-    
-    if (dayColumn && dayColumn.length > 0) {
-        // Cerca tutti i small elements nella colonna
-        var smallElements = dayColumn.find('small');
-        console.log('Debug: found', smallElements.length, 'small elements');
-        
-        smallElements.each(function(index) {
-            console.log('Debug: small', index, ':', $(this).text());
-        });
-        
-        // Prova diverse strategie per trovare la data
-        var dateText = null;
-        
-        // Strategia 1: ultimo small element
-        if (smallElements.length > 0) {
-            dateText = smallElements.last().text().trim();
-            console.log('Debug: dateText from last small:', dateText);
-        }
-        
-        // Strategia 2: cerca pattern DD/MM
-        if (!dateText || !dateText.match(/\d{1,2}\/\d{1,2}/)) {
-            smallElements.each(function() {
-                var text = $(this).text().trim();
-                if (text.match(/\d{1,2}\/\d{1,2}/)) {
-                    dateText = text;
-                    console.log('Debug: dateText from pattern match:', dateText);
-                    return false; // break
-                }
-            });
-        }
-        
-        if (dateText && dateText.match(/\d{1,2}\/\d{1,2}/)) {
-            // Assume anno corrente e converte in formato YYYY-MM-DD
-            var currentYear = new Date().getFullYear();
-            var parts = dateText.split('/');
-            if (parts.length === 2) {
-                var day = parts[0].padStart(2, '0');
-                var month = parts[1].padStart(2, '0');
-                var result = currentYear + '-' + month + '-' + day;
-                console.log('Debug: final date result:', result);
-                return result;
+            
+            if ((!day.shifts || day.shifts.length === 0) && (!day.missing_roles || day.missing_roles.length === 0)) {
+                html += '<small class="text-muted">Nessun turno</small>';
             }
+            
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
         }
-    }
+        
+        html += '</div>';
+        html += '</div>';
+    });
     
-    console.log('Debug: no date found, returning null');
-    return null;
+    container.innerHTML = html;
+    console.log('=== displayShiftsFromAPI COMPLETE ===');
 }
 
-// Rimuovi i debug console.log dopo aver verificato che tutto funziona
-// console.log può essere rimosso per pulire i log in produzione
+// End of simplified API-only logic
 </script>
 {% endblock %}
+                }
