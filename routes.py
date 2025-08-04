@@ -2244,7 +2244,54 @@ def genera_turni_da_template():
     flash('Turni generati con successo!', 'success')
     return redirect(url_for('turni_automatici'))
 
-# Route duplicate rimosse - esistevano già
+# ===== ROUTE TOGGLE MANCANTI =====
+@app.route('/toggle_user/<int:user_id>')
+@login_required
+def toggle_user(user_id):
+    """Toggle attivazione utente"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per gestire gli utenti.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    user.active = not user.active
+    db.session.commit()
+    
+    status = "attivato" if user.active else "disattivato"
+    flash(f'Utente {user.first_name} {user.last_name} {status}!', 'success')
+    return redirect(url_for('user_management'))
+
+@app.route('/toggle_sede/<int:sede_id>')
+@login_required
+def toggle_sede(sede_id):
+    """Toggle attivazione sede"""
+    if not current_user.can_manage_sedi():
+        flash('Non hai i permessi per gestire le sedi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    sede.active = not sede.active
+    db.session.commit()
+    
+    status = "attivata" if sede.active else "disattivata"
+    flash(f'Sede {sede.name} {status}!', 'success')
+    return redirect(url_for('manage_sedi'))
+
+@app.route('/toggle_work_schedule/<int:schedule_id>')
+@login_required
+def toggle_work_schedule(schedule_id):
+    """Toggle attivazione orario"""
+    if not current_user.can_manage_work_schedules():
+        flash('Non hai i permessi per gestire gli orari.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    schedule = WorkSchedule.query.get_or_404(schedule_id)
+    schedule.active = not schedule.active
+    db.session.commit()
+    
+    status = "attivato" if schedule.active else "disattivato"
+    flash(f'Orario {schedule.name} {status}!', 'success')
+    return redirect(url_for('manage_work_schedules'))
 
 # ===== GESTIONE UTENTI =====
 @app.route('/users')
@@ -2792,8 +2839,15 @@ def manage_sedi():
         return redirect(url_for('dashboard'))
     
     sedi = Sede.query.all()
-    form = SedeForm()  # Aggiungo form richiesto dal template
-    return render_template('manage_sedi.html', sedi=sedi, form=form)
+    form = SedeForm()
+    # Calcolo statistiche sedi richieste dal template
+    sedi_stats = {}
+    for sede in sedi:
+        sedi_stats[sede.id] = {
+            'users_count': User.query.filter_by(sede_id=sede.id, active=True).count(),
+            'shifts_count': 0  # Placeholder per turni
+        }
+    return render_template('manage_sedi.html', sedi=sedi, form=form, sedi_stats=sedi_stats)
 
 # ===== GESTIONE ORARI =====
 @app.route('/manage_work_schedules')
