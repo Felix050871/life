@@ -385,7 +385,7 @@ function loadShiftsForTemplate(templateId, templateName) {
                                             var roleCount = 0;
                                             
                                             if (dayData.shifts) {
-                                                console.log('SHIFTS DEBUG: Found', dayData.shifts.length, 'shifts for', dayData.date);
+                                                console.log('SHIFTS DEBUG: Found', dayData.shifts.length, 'shifts for', dayData.date, '- shifts:', dayData.shifts.map(s => s.time).join(', '));
                                                 dayData.shifts.forEach(function(shift) {
                                                     console.log('SHIFT DEBUG: Checking shift', shift.role, shift.time, 'vs required', requiredRole);
                                                     if (shift.role === requiredRole) {
@@ -395,12 +395,13 @@ function loadShiftsForTemplate(templateId, templateName) {
                                                         var shiftEnd = shiftTimes[1];
                                                         
                                                         console.log('TIME DEBUG: Coverage', coverage.start_time + '-' + coverage.end_time, 'vs Shift', shiftStart + '-' + shiftEnd);
+                                                        console.log('OVERLAP DEBUG: Checking if', shiftStart, '<=', coverage.end_time, 'AND', shiftEnd, '>=', coverage.start_time);
                                                         
                                                         if (shiftStart <= coverage.end_time && shiftEnd >= coverage.start_time) {
                                                             roleCount++;
-                                                            console.log('OVERLAP DEBUG: Match found! roleCount now =', roleCount);
+                                                            console.log('OVERLAP DEBUG: ✓ MATCH FOUND! roleCount now =', roleCount);
                                                         } else {
-                                                            console.log('OVERLAP DEBUG: No overlap detected');
+                                                            console.log('OVERLAP DEBUG: ✗ NO OVERLAP detected');
                                                         }
                                                     }
                                                 });
