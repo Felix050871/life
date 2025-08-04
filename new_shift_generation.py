@@ -80,6 +80,7 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                         'required_roles': required_roles,
                         'day_of_week': current_date.weekday()
                     }
+                    uncovered_shifts.append(uncovered_shift_info)
                     print(f"⚠️ TURNO SCOPERTO: {current_date} {coverage.start_time}-{coverage.end_time} - Ruoli richiesti: {required_roles} - NESSUN UTENTE IDONEO", file=sys.stderr, flush=True)
                     continue
                 
@@ -119,7 +120,13 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
     for user in available_users:
         print(f"STATS: User {user.username} -> {len(user_assignments[user.id])} turni totali", file=sys.stderr, flush=True)
     
-    return turni_creati, f"Creati {turni_creati} turni con algoritmo greedy ottimizzato"
+    # Report turni scoperti
+    if uncovered_shifts:
+        print(f"\n⚠️ REPORT TURNI SCOPERTI ({len(uncovered_shifts)} turni):", file=sys.stderr, flush=True)
+        for uncovered in uncovered_shifts:
+            print(f"   • {uncovered['date']} {uncovered['start_time']}-{uncovered['end_time']} - {uncovered['required_roles']}", file=sys.stderr, flush=True)
+    
+    return turni_creati, f"Creati {turni_creati} turni con algoritmo greedy ottimizzato ({len(uncovered_shifts)} turni scoperti)"
 
 def load_existing_night_shifts(users, start_date):
     """

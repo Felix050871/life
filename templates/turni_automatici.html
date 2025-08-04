@@ -257,17 +257,55 @@ function loadShiftsForTemplate(templateId, templateName) {
             .then(coverageData => {
                 console.log('Coverage requirements loaded:', coverageData);
                 
-                // Calcola missing_roles dinamicamente per tutti i template
+                // Calcola missing_roles dinamicamente per tutti i template - SOLO NEL RANGE
                 if (data.weeks && coverageData.success) {
+                    // Ottieni date template dal pulsante selezionato
+                    var selectedTemplate = document.querySelector('.template-btn.selected');
+                    var templateStartDate = null;
+                    var templateEndDate = null;
+                    
+                    if (selectedTemplate) {
+                        var startDateStr = selectedTemplate.dataset.start; // formato dd/mm/yyyy
+                        var endDateStr = selectedTemplate.dataset.end;
+                        
+                        if (startDateStr && endDateStr) {
+                            // Converti da dd/mm/yyyy a yyyy-mm-dd
+                            var startParts = startDateStr.split('/');
+                            var endParts = endDateStr.split('/');
+                            templateStartDate = new Date(startParts[2], startParts[1] - 1, startParts[0]); // yyyy, mm-1, dd
+                            templateEndDate = new Date(endParts[2], endParts[1] - 1, endParts[0]);
+                        }
+                    }
+                    
                     data.weeks.forEach(function(week) {
                         if (week.days && Array.isArray(week.days)) {
                             for (var dayIndex = 0; dayIndex < 7; dayIndex++) {
                                 if (week.days[dayIndex]) {
                                     var dayData = week.days[dayIndex];
                                     
+                                    // FILTRO: Verifica se la data è nel range del template
+                                    var isInRange = true;
+                                    if (templateStartDate && templateEndDate && dayData.date) {
+                                        var dayParts = dayData.date.split('/'); // formato dd/mm
+                                        var currentYear = new Date().getFullYear();
+                                        var dayDate = new Date(currentYear, dayParts[1] - 1, dayParts[0]);
+                                        
+                                        // Se la data è prima del template start o dopo il template end, salta
+                                        if (dayDate < templateStartDate || dayDate > templateEndDate) {
+                                            isInRange = false;
+                                        }
+                                    }
+                                    
                                     // Inizializza missing_roles
                                     if (!dayData.missing_roles) {
                                         dayData.missing_roles = [];
+                                    }
+                                    
+                                    // SOLO se la data è nel range del template, calcola missing_roles
+                                    if (!isInRange) {
+                                        // Date fuori range: nessun missing_roles
+                                        dayData.missing_roles = [];
+                                        continue;
                                     }
                                     
                                     // Trova coperture richieste per questo giorno
