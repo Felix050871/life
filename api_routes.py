@@ -19,26 +19,28 @@ def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
     
     try:
+        print("=== API CALLED ===")
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
         print(f"Template {template_id}: {template.start_date} to {template.end_date}")
         
-        # Eager loading per evitare query N+1
-        shifts = Shift.query.options(db.joinedload(Shift.user)).filter(
+        # Query diretta senza eager loading per test
+        all_shifts = Shift.query.all()
+        print(f"Total shifts in database: {len(all_shifts)}")
+        
+        shifts = Shift.query.filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
         
         print(f"API DEBUG: Found {len(shifts)} shifts for template {template_id}")
-        for shift in shifts[:5]:  # Log primi 5 turni per debug
-            user_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
-            print(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} -> {user_name} ({shift.user.role})")
+        for shift in shifts[:10]:  # Log primi 10 turni per debug
+            print(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} -> user_id={shift.user_id}")
         
         # DEBUG AGGIUNTIVO: Controlla turni specifici 01/10
         oct_01_shifts = [s for s in shifts if s.date.strftime('%Y-%m-%d') == '2025-10-01']
         print(f"01/10 shifts found: {len(oct_01_shifts)}")
         for shift in oct_01_shifts:
-            user_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
-            print(f"01/10 - Shift {shift.id}: {shift.start_time}-{shift.end_time} -> {user_name}")
+            print(f"01/10 - Shift {shift.id}: {shift.start_time}-{shift.end_time} -> user_id={shift.user_id}")
         
         # STEP 1: Organizza turni per settimana
         weeks_data = {}
@@ -64,16 +66,27 @@ def api_get_shifts_for_template(template_id):
                     })
             
             day_index = shift.date.weekday()
-            # Costruisci nome completo utente
-            user_display_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
-            if not user_display_name:
-                user_display_name = shift.user.username
+            
+            # Safe access to user data
+            try:
+                if shift.user:
+                    user_display_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
+                    if not user_display_name:
+                        user_display_name = shift.user.username
+                    user_role = shift.user.role
+                else:
+                    user_display_name = "Utente eliminato"
+                    user_role = "N/A"
+            except Exception as e:
+                print(f"Error accessing user for shift {shift.id}: {e}")
+                user_display_name = f"Utente ID {shift.user_id}"
+                user_role = "N/A"
             
             shift_data = {
                 'id': shift.id,
                 'user': user_display_name,
-                'user_id': shift.user.id,
-                'role': shift.user.role,  # Il ruolo è direttamente una stringa nel modello User
+                'user_id': shift.user_id,
+                'role': user_role,
                 'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
             }
             weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
