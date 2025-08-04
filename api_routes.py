@@ -349,3 +349,90 @@ def api_aci_modelli_by_tipo_marca(tipo, marca):
             'success': False,
             'error': str(e)
         })
+
+@app.route('/api/assign_missing_shift', methods=['POST'])
+@login_required
+def assign_missing_shift():
+    """API per assegnare un utente a una copertura mancante"""
+    try:
+        data = request.get_json()
+        app.logger.info(f"=== ASSIGN MISSING SHIFT ===")
+        app.logger.info(f"Data received: {data}")
+        
+        # Estrai parametri dalla richiesta
+        date_str = data.get('date')
+        role = data.get('role')
+        time_slot = data.get('time_slot')
+        user_id = data.get('user_id')
+        notes = data.get('notes', '')
+        template_id = data.get('template_id')
+        
+        if not all([date_str, role, time_slot, user_id]):
+            return jsonify({'success': False, 'message': 'Parametri mancanti'}), 400
+        
+        # Converti data dal formato "01/10" al formato completo
+        from datetime import datetime
+        try:
+            # Assume anno corrente se non specificato
+            if len(date_str.split('/')) == 2:
+                day, month = date_str.split('/')
+                current_year = datetime.now().year
+                date_obj = datetime.strptime(f"{day}/{month}/{current_year}", "%d/%m/%Y")
+            else:
+                date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Formato data non valido'}), 400
+        
+        # Estrai start_time e end_time dal time_slot
+        try:
+            start_time_str, end_time_str = time_slot.split('-')
+            start_time = datetime.strptime(start_time_str, "%H:%M").time()
+            end_time = datetime.strptime(end_time_str, "%H:%M").time()
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Formato orario non valido'}), 400
+        
+        # Verifica che l'utente esista
+        from models import User
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'message': 'Utente non trovato'}), 404
+        
+        # Controlla se esiste già un turno per questa data/orario/utente
+        from models import Shift
+        existing_shift = Shift.query.filter_by(
+            date=date_obj.date(),
+            user_id=user_id,
+            start_time=start_time,
+            end_time=end_time
+        ).first()
+        
+        if existing_shift:
+            return jsonify({'success': False, 'message': 'Turno già esistente per questo utente in questo orario'}), 400
+        
+        # Crea nuovo turno
+        new_shift = Shift(
+            date=date_obj.date(),
+            start_time=start_time,
+            end_time=end_time,
+            user_id=user_id,
+            role=role,
+            template_id=template_id,
+            notes=notes,
+            created_by=current_user.id
+        )
+        
+        db.session.add(new_shift)
+        db.session.commit()
+        
+        app.logger.info(f"Created new shift: ID={new_shift.id}, User={user.first_name} {user.last_name}, Date={date_obj.date()}, Time={time_slot}")
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Turno assegnato con successo',
+            'shift_id': new_shift.id
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in assign_missing_shift: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500

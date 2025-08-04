@@ -481,12 +481,26 @@ function renderTurniLayout(data, templateName) {
                 });
             }
             
-            // Show missing roles - ALERT ROSSI COME ORIGINALE
+            // Show missing roles - ALERT ROSSI CON PULSANTE ASSEGNA
             if (day.missing_roles && day.missing_roles.length > 0) {
                 day.missing_roles.forEach(function(missing) {
-                    html += '<div class="shift-item mb-2 p-2 bg-danger text-white rounded">';
+                    // Estrai ruolo e orario dal testo "Operatore mancante (16:00-23:59)"
+                    let roleMatch = missing.match(/^(.+?)\s+mancante\s+\((.+?)\)$/);
+                    let missingRole = roleMatch ? roleMatch[1] : 'Operatore';
+                    let missingTime = roleMatch ? roleMatch[2] : '';
+                    
+                    html += '<div class="shift-item mb-2 p-2 bg-danger text-white rounded position-relative">';
                     html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
                     html += '<small class="d-block">' + missing + '</small>';
+                    
+                    // Pulsante Assegna
+                    html += '<button type="button" class="btn btn-warning btn-sm position-absolute" ';
+                    html += 'style="top: 2px; right: 2px; font-size: 10px; padding: 2px 6px;" ';
+                    html += 'onclick="assignToMissing(\'' + (day.date || '') + '\', \'' + missingRole + '\', \'' + missingTime + '\')" ';
+                    html += 'title="Assegna utente a questa copertura">';
+                    html += '<i class="fas fa-plus me-1"></i>Assegna';
+                    html += '</button>';
+                    
                     html += '</div>';
                 });
             }
@@ -561,6 +575,171 @@ function editShift(shiftId, currentUser, currentRole, currentTime) {
     // Mostra modal
     const modal = new bootstrap.Modal(document.getElementById('editShiftModal'));
     modal.show();
+}
+
+// Funzione per assegnare utente a una copertura mancante
+function assignToMissing(date, role, timeSlot) {
+    const modalHtml = `
+        <div class="modal fade" id="assignMissingModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Assegna Copertura Mancante</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Data:</strong> ${date}<br>
+                            <strong>Ruolo:</strong> ${role}<br>
+                            <strong>Orario:</strong> ${timeSlot}
+                        </div>
+                        <form id="assignMissingForm">
+                            <div class="mb-3">
+                                <label for="assignUser" class="form-label">Seleziona Utente</label>
+                                <select class="form-select" id="assignUser" required>
+                                    <option value="">Caricamento utenti...</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="assignNotes" class="form-label">Note (opzionale)</label>
+                                <textarea class="form-control" id="assignNotes" rows="2" placeholder="Note aggiuntive per questa assegnazione..."></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="button" class="btn btn-success" onclick="saveAssignment('${date}', '${role}', '${timeSlot}')">
+                            <i class="fas fa-check me-1"></i>Assegna Turno
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Rimuovi modal esistente se presente
+    const existingModal = document.getElementById('assignMissingModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Aggiungi modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Carica lista utenti per questo ruolo
+    loadUsersForAssignment(role);
+    
+    // Mostra modal
+    const modal = new bootstrap.Modal(document.getElementById('assignMissingModal'));
+    modal.show();
+}
+
+// Funzione per caricare utenti disponibili per assegnazione
+function loadUsersForAssignment(requiredRole) {
+    fetch('/api/users_by_role/' + encodeURIComponent(requiredRole), {
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const select = document.getElementById('assignUser');
+        select.innerHTML = '<option value="">Seleziona utente...</option>';
+        
+        if (data.users && data.users.length > 0) {
+            data.users.forEach(user => {
+                select.innerHTML += `<option value="${user.id}">${user.name} (ID: ${user.id})</option>`;
+            });
+        } else {
+            select.innerHTML = '<option value="">Nessun utente disponibile per questo ruolo</option>';
+        }
+    })
+    .catch(error => {
+        console.error('Errore caricamento utenti:', error);
+        const select = document.getElementById('assignUser');
+        select.innerHTML = '<option value="">Errore caricamento utenti</option>';
+    });
+}
+
+// Funzione per salvare l'assegnazione
+function saveAssignment(date, role, timeSlot) {
+    const userId = document.getElementById('assignUser').value;
+    const notes = document.getElementById('assignNotes').value;
+    
+    if (!userId) {
+        alert('Seleziona un utente da assegnare');
+        return;
+    }
+    
+    // Mostra loading
+    const saveBtn = document.querySelector('#assignMissingModal .btn-success');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Assegnando...';
+    saveBtn.disabled = true;
+    
+    // Invia richiesta di assegnazione
+    fetch('/api/assign_missing_shift', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            date: date,
+            role: role,
+            time_slot: timeSlot,
+            user_id: parseInt(userId),
+            notes: notes,
+            template_id: document.getElementById('template_id').value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Chiudi modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('assignMissingModal'));
+            modal.hide();
+            
+            // Ricarica i turni per aggiornare la visualizzazione
+            const templateId = document.getElementById('template_id').value;
+            const templateName = document.getElementById('template_id').selectedOptions[0].text;
+            loadShiftsForTemplate(templateId, templateName);
+            
+            // Mostra messaggio di successo
+            showNotification('Turno assegnato con successo!', 'success');
+        } else {
+            throw new Error(data.message || 'Errore durante l\'assegnazione');
+        }
+    })
+    .catch(error => {
+        console.error('Errore assegnazione:', error);
+        showNotification('Errore durante l\'assegnazione: ' + error.message, 'danger');
+        
+        // Ripristina pulsante
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Funzione per mostrare notifiche
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-rimuovi dopo 5 secondi
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }
 
 // Funzione per caricare utenti con il ruolo appropriato
