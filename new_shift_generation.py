@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, time
 from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User, WorkSchedule
 import json
 import sys
-import random
 from app import db
 
 def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_id):
