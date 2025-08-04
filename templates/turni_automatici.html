@@ -403,6 +403,13 @@ function loadShiftsForTemplate(templateId, templateName) {
                                     });
                                     
                                     console.log('Day', dayIndex, 'dynamic missing_roles:', dayData.missing_roles);
+                                    
+                                    // DEBUG: Verifica i missing_roles dopo il calcolo
+                                    if (dayData.missing_roles && dayData.missing_roles.length > 0) {
+                                        console.log('✓ MISSING ROLES FOUND for', dayData.date, ':', dayData.missing_roles);
+                                    } else {
+                                        console.log('✗ NO MISSING ROLES for', dayData.date);
+                                    }
                                 }
                             }
                         }
