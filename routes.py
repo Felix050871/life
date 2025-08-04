@@ -2673,11 +2673,17 @@ def generate_shifts():
         db.session.add(template)
         db.session.commit()
         
+        # DEBUG: Verifica che la route venga chiamata
+        import sys
+        print(f"ROUTE DEBUG: generate_shifts chiamata per {form.start_date.data} - {form.end_date.data}", file=sys.stderr, flush=True)
+        
         success, message = generate_shifts_for_period(
             form.start_date.data,
             form.end_date.data,
             current_user.id
         )
+        
+        print(f"ROUTE DEBUG: generate_shifts_for_period ha restituito success={success}", file=sys.stderr, flush=True)
         
         if success:
             flash(message, 'success')
@@ -2717,11 +2723,16 @@ def regenerate_template(template_id):
     db.session.commit()
     
     # Regenerate shifts
+    import sys
+    print(f"REGENERATE DEBUG: regenerate_template chiamata per template {template_id}", file=sys.stderr, flush=True)
+    
     success, message = generate_shifts_for_period(
         template.start_date,
         template.end_date,
         current_user.id
     )
+    
+    print(f"REGENERATE DEBUG: generate_shifts_for_period ha restituito success={success}", file=sys.stderr, flush=True)
     
     if success:
         preserved_msg = f" (preservati {(today - template.start_date).days} giorni già lavorati)" if today > template.start_date else ""

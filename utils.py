@@ -943,6 +943,18 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                         print(f"Turno: {segment_start} - {segment_end}")
                         continue  # Salta questo turno troppo lungo
                     
+                    # CRITICO: Verifica durata prima di creare il turno
+                    segment_duration = get_shift_duration_hours(segment_start, segment_end)
+                    if segment_duration > 8.0:
+                        import sys
+                        print(f"ERRORE CRITICO: Tentativo di creare turno di {segment_duration}h ({segment_start}-{segment_end}) per {selected_user.nome} {selected_user.cognome}!", file=sys.stderr, flush=True)
+                        print(f"ERRORE CRITICO: Interrotto per prevenire turno illegale!", file=sys.stderr, flush=True)
+                        continue  # Skip this segment, don't create illegal shift
+                    
+                    # DEBUG: Log della creazione turno
+                    import sys  
+                    print(f"TURNO DEBUG: Creando turno {segment_start}-{segment_end} ({segment_duration}h) per {selected_user.nome} {selected_user.cognome}", file=sys.stderr, flush=True)
+                    
                     # Create the shift for this role in this time slot
                     shift = Shift()
                     shift.user_id = selected_user.id
