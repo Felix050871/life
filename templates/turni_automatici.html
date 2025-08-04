@@ -218,10 +218,13 @@ function loadShiftsForTemplate(templateId, templateName) {
     // Richiesta AJAX per caricare i turni con credentials
     console.log('Calling API:', '/api/get_shifts_for_template/' + templateId);
     console.log('FORCE API CALL - bypassing complex logic');
-    fetch('/api/get_shifts_for_template/' + templateId, {
+    // Forza no-cache per avere sempre dati freschi
+    fetch('/api/get_shifts_for_template/' + templateId + '?_=' + Date.now(), {
         credentials: 'same-origin',
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
         }
     })
         .then(response => {
@@ -618,10 +621,17 @@ function saveShiftEdit(shiftId) {
             const modal = bootstrap.Modal.getInstance(document.getElementById('editShiftModal'));
             modal.hide();
             
+            // Pulisci cache per forzare ricaricamento dati freschi
+            templateCoverageCache = {};
+            
             // Ricarica i turni per mostrare le modifiche
             const templateId = document.getElementById('template_id').value;
             const templateName = document.getElementById('template_id').selectedOptions[0].text;
-            loadShiftsForTemplate(templateId, templateName);
+            
+            // Forza ricaricamento completo senza cache
+            setTimeout(() => {
+                loadShiftsForTemplate(templateId, templateName);
+            }, 100);
             
             alert('Turno aggiornato con successo');
         } else {
