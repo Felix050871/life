@@ -2673,9 +2673,16 @@ def generate_shifts():
         db.session.add(template)
         db.session.commit()
         
-        # DEBUG: Verifica che la route venga chiamata
+        # DEBUG: Verifica che la route venga chiamata  
         import sys
         print(f"ROUTE DEBUG: generate_shifts chiamata per {form.start_date.data} - {form.end_date.data}", file=sys.stderr, flush=True)
+        
+        # DEBUG: Verifica le coperture esistenti
+        from models import PresidioCoverage
+        coverages = PresidioCoverage.query.filter_by(active=True).all()
+        print(f"ROUTE DEBUG: Trovate {len(coverages)} coperture attive", file=sys.stderr, flush=True)
+        for cov in coverages[:5]:  # Mostra le prime 5
+            print(f"ROUTE DEBUG: Copertura {cov.get_day_name()} {cov.start_time}-{cov.end_time}", file=sys.stderr, flush=True)
         
         success, message = generate_shifts_for_period(
             form.start_date.data,
@@ -2725,6 +2732,12 @@ def regenerate_template(template_id):
     # Regenerate shifts
     import sys
     print(f"REGENERATE DEBUG: regenerate_template chiamata per template {template_id}", file=sys.stderr, flush=True)
+    
+    # DEBUG: Verifica le coperture prima della rigenerazione
+    from models import PresidioCoverage
+    coverages = PresidioCoverage.query.filter_by(active=True).all()
+    problem_coverages = [c for c in coverages if c.start_time.strftime('%H:%M') == '08:00' and c.end_time.strftime('%H:%M') == '23:59']
+    print(f"REGENERATE DEBUG: Trovate {len(problem_coverages)} coperture 08:00-23:59 ancora attive!", file=sys.stderr, flush=True)
     
     success, message = generate_shifts_for_period(
         template.start_date,
