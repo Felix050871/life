@@ -3055,6 +3055,30 @@ def reperibilita_shifts():
                          period_mode=period_mode,
                          display_mode=display_mode)
 
+@app.route('/start_intervention', methods=['POST'])
+@login_required
+def start_intervention():
+    """Avvia intervento reperibilità"""
+    if not current_user.can_create_interventions():
+        flash('Non hai i permessi per creare interventi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Logica per avviare intervento
+    flash('Intervento avviato!', 'success')
+    return redirect(url_for('reperibilita_shifts'))
+
+@app.route('/end_intervention', methods=['POST'])
+@login_required
+def end_intervention():
+    """Termina intervento reperibilità"""
+    if not current_user.can_manage_interventions():
+        flash('Non hai i permessi per gestire gli interventi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Logica per terminare intervento
+    flash('Intervento terminato!', 'success')
+    return redirect(url_for('my_interventions'))
+
 @app.route('/reperibilita_coverage')
 @login_required
 def reperibilita_coverage():
