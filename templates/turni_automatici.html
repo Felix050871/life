@@ -414,11 +414,11 @@ function updateDayDisplay(day) {
                         alertDiv.className = 'shift-item mb-2 p-2 bg-danger text-white rounded position-relative';
                         alertDiv.innerHTML = '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>' +
                                            '<small class="d-block">' + missing + '</small>' +
-                                           '<button type="button" class="btn btn-warning btn-sm position-absolute" ' +
-                                           'style="top: 2px; right: 2px; font-size: 10px; padding: 2px 6px;" ' +
+                                           '<button type="button" class="btn btn-link btn-sm p-0 position-absolute" ' +
+                                           'style="top: 2px; right: 2px; color: #ffc107;" ' +
                                            'onclick="assignToMissing(\'' + day.date + '\', \'' + missingRole + '\', \'' + missingTime + '\')" ' +
                                            'title="Assegna utente a questa copertura">' +
-                                           '<i class="fas fa-plus me-1"></i>Assegna' +
+                                           '<i class="fas fa-plus" style="font-size: 12px;"></i>' +
                                            '</button>';
                         shiftsContainer.appendChild(alertDiv);
                     });
@@ -511,12 +511,12 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
                     html += '<small class="d-block">' + missing + '</small>';
                     
-                    // Pulsante Assegna
-                    html += '<button type="button" class="btn btn-warning btn-sm position-absolute" ';
-                    html += 'style="top: 2px; right: 2px; font-size: 10px; padding: 2px 6px;" ';
+                    // Pulsante Assegna  
+                    html += '<button type="button" class="btn btn-link btn-sm p-0 position-absolute" ';
+                    html += 'style="top: 2px; right: 2px; color: #ffc107;" ';
                     html += 'onclick="assignToMissing(\'' + (day.date || '') + '\', \'' + missingRole + '\', \'' + missingTime + '\')" ';
                     html += 'title="Assegna utente a questa copertura">';
-                    html += '<i class="fas fa-plus me-1"></i>Assegna';
+                    html += '<i class="fas fa-plus" style="font-size: 12px;"></i>';
                     html += '</button>';
                     
                     html += '</div>';
@@ -666,7 +666,7 @@ function loadUsersForAssignment(requiredRole) {
         
         if (data.users && data.users.length > 0) {
             data.users.forEach(user => {
-                select.innerHTML += `<option value="${user.id}">${user.name} (ID: ${user.id})</option>`;
+                select.innerHTML += `<option value="${user.id}">${user.full_name}</option>`;
             });
         } else {
             select.innerHTML = '<option value="">Nessun utente disponibile per questo ruolo</option>';
