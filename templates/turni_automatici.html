@@ -259,16 +259,21 @@ function loadShiftsForTemplate(templateId, templateName) {
                 
                 // Calcola missing_roles dinamicamente per tutti i template - SOLO NEL RANGE
                 if (data.weeks && coverageData.success) {
-                    // Ottieni date template dal pulsante selezionato
-                    var selectedTemplate = document.querySelector('.template-btn.selected');
+                    // CORRETTO: Ottieni date dal select option attualmente selezionato
+                    var templateSelect = document.getElementById('template_id');
                     var templateStartDate = null;
                     var templateEndDate = null;
                     
-                    if (selectedTemplate) {
-                        var startDateStr = selectedTemplate.dataset.start; // formato dd/mm/yyyy
-                        var endDateStr = selectedTemplate.dataset.end;
+                    console.log('TEMPLATE SELECTION DEBUG: templateSelect=', templateSelect);
+                    
+                    if (templateSelect && templateSelect.selectedIndex > 0) {
+                        var selectedOption = templateSelect.options[templateSelect.selectedIndex];
+                        var startDateStr = selectedOption.dataset.start; // formato dd/mm/yyyy
+                        var endDateStr = selectedOption.dataset.end;
                         
+                        console.log('TEMPLATE DEBUG: selectedOption=', selectedOption);
                         console.log('TEMPLATE DEBUG: startDateStr=', startDateStr, 'endDateStr=', endDateStr);
+                        console.log('TEMPLATE DEBUG: dataset=', selectedOption.dataset);
                         
                         if (startDateStr && endDateStr) {
                             // Converti da dd/mm/yyyy a yyyy-mm-dd
@@ -277,8 +282,12 @@ function loadShiftsForTemplate(templateId, templateName) {
                             templateStartDate = new Date(startParts[2], startParts[1] - 1, startParts[0]); // yyyy, mm-1, dd
                             templateEndDate = new Date(endParts[2], endParts[1] - 1, endParts[0]);
                             
-                            console.log('TEMPLATE RANGE: from', templateStartDate, 'to', templateEndDate);
+                            console.log('TEMPLATE RANGE PARSED: from', templateStartDate, 'to', templateEndDate);
+                        } else {
+                            console.log('ERROR: No start/end dates in selected option dataset!');
                         }
+                    } else {
+                        console.log('WARNING: No template selected or no select found! All missing_roles will be calculated.');
                     }
                     
                     data.weeks.forEach(function(week) {
