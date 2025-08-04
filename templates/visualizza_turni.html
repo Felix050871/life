@@ -227,20 +227,80 @@ function loadTemplateShifts() {
     }
 }
 
-// Funzione helper per applicare logica missing_roles DINAMICA (non hardcoded)
+// Funzione helper per applicare logica missing_roles DINAMICA dal database
 function applyMissingRolesLogic(day, startDate, endDate, templateId) {
     // Reset missing_roles
     day.missing_roles = [];
     
     // Verifica se questo giorno è nel periodo del template
-    var dayDate = parseTemplateDate(day.date + '/2025'); // Aggiungi anno
+    var dayDate = parseTemplateDate(day.date + '/2025');
     
     if (dayDate >= startDate && dayDate <= endDate) {
-        // CARICA COPERTURE DINAMICAMENTE DAL DATABASE (non hardcoded)
-        console.log('Loading dynamic coverage requirements for template', templateId, 'day', day.date);
-        
-        // Per ora reset, la logica dinamica verrà implementata con API call
-        // Non più slot hardcoded come ['00:00-07:59', '08:00-16:00', '16:00-23:59']
+        // Carica le coperture richieste per questo template e giorno
+        loadCoverageRequirementsForDay(templateId, dayDate.getDay(), day);
+    }
+}
+
+// Funzione per caricare coperture dal database e calcolare missing roles
+function loadCoverageRequirementsForDay(templateId, dayOfWeek, dayData) {
+    // Converte da domenica=0 a lunedì=0
+    var normalizedDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    
+    fetch('/api/get_coverage_requirements/' + templateId, {
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.coverages) {
+            // Filtra coperture per questo giorno della settimana
+            var dayCoverages = data.coverages.filter(c => c.day_of_week === normalizedDayOfWeek);
+            
+            dayCoverages.forEach(function(coverage) {
+                var timeSlot = coverage.start_time + '-' + coverage.end_time;
+                
+                coverage.required_roles.forEach(function(requiredRole) {
+                    // Verifica se esiste un turno con questo ruolo per questo slot
+                    var roleFound = dayData.shifts.some(function(shift) {
+                        return shift.role === requiredRole && shift.time === timeSlot;
+                    });
+                    
+                    if (!roleFound) {
+                        var missingText = requiredRole + ' mancante (' + timeSlot + ')';
+                        if (dayData.missing_roles.indexOf(missingText) === -1) {
+                            dayData.missing_roles.push(missingText);
+                        }
+                    }
+                });
+            });
+            
+            // Forza re-render del giorno con missing_roles aggiornati
+            updateDayMissingRoles(dayData);
+        }
+    })
+    .catch(error => console.log('Error loading coverage requirements:', error));
+}
+
+// Funzione per aggiornare la visualizzazione missing_roles di un giorno
+function updateDayMissingRoles(dayData) {
+    if (dayData.missing_roles && dayData.missing_roles.length > 0) {
+        // Cerca l'elemento del giorno nel DOM e aggiorna gli alert
+        var dayElements = document.querySelectorAll('.day-container');
+        dayElements.forEach(function(element) {
+            var dateText = element.querySelector('.date-text');
+            if (dateText && dateText.textContent.includes(dayData.date)) {
+                var existingAlert = element.querySelector('.missing-roles-alert');
+                if (existingAlert) {
+                    existingAlert.remove();
+                }
+                
+                var alertHtml = '<div class="alert alert-danger alert-sm mt-2 missing-roles-alert">' +
+                    '<i class="fas fa-exclamation-triangle me-1"></i>' +
+                    dayData.missing_roles.join('<br>') +
+                    '</div>';
+                element.insertAdjacentHTML('beforeend', alertHtml);
+            }
+        });
     }
 }
 

@@ -284,9 +284,8 @@ function displayShiftsFromAPI(data, templateName) {
                         // DISABILITATO: Non più slot hardcoded!
                         // Il sistema ora deve leggere coperture dal database per ogni template
                         // let requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59']; // HARDCODED RIMOSSO
-                        // SISTEMA HARDCODED COMPLETAMENTE DISABILITATO
-                        // Il calcolo missing_roles deve essere fatto dal backend con dati reali
-                        console.log(day.date + ' - Nel periodo template: true (hardcoded missing_roles system disabled)');
+                        // CALCOLO DINAMICO MISSING_ROLES DAL DATABASE
+                        loadCoverageRequirementsForDay(templateName, day, dayDate, startDate, endDate);
                     }
                 });
             }
@@ -302,6 +301,55 @@ function parseTemplateDate(dateStr) {
         parts.push('2025');
     }
     return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+}
+
+// Funzione per caricare coperture dinamicamente e calcolare missing roles
+function loadCoverageRequirementsForDay(templateName, day, dayDate, startDate, endDate) {
+    // Estrai templateId dal nome (assume formato "Presidio [Mese] 2025 - Sede Turni")
+    let templateId = null;
+    if (templateName.includes('Settembre')) templateId = 3;
+    else if (templateName.includes('Ottobre')) templateId = 5;
+    else if (templateName.includes('Novembre')) templateId = 6;
+    else if (templateName.includes('Agosto')) templateId = 4;
+    
+    if (!templateId) return;
+    
+    // Converte da domenica=0 a lunedì=0 per il database
+    let normalizedDayOfWeek = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
+    
+    fetch('/api/get_coverage_requirements/' + templateId, {
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.coverages) {
+            // Filtra coperture per questo giorno della settimana
+            let dayCoverages = data.coverages.filter(c => c.day_of_week === normalizedDayOfWeek);
+            
+            dayCoverages.forEach(function(coverage) {
+                let timeSlot = coverage.start_time + '-' + coverage.end_time;
+                
+                coverage.required_roles.forEach(function(requiredRole) {
+                    // Verifica se esiste un turno con questo ruolo per questo slot
+                    let roleFound = day.shifts && day.shifts.some(function(shift) {
+                        return shift.role === requiredRole && shift.time === timeSlot;
+                    });
+                    
+                    if (!roleFound) {
+                        let missingText = requiredRole + ' mancante (' + timeSlot + ')';
+                        if (!day.missing_roles) day.missing_roles = [];
+                        if (day.missing_roles.indexOf(missingText) === -1) {
+                            day.missing_roles.push(missingText);
+                        }
+                    }
+                });
+            });
+            
+            console.log(day.date + ' - Missing roles calculated:', day.missing_roles);
+        }
+    })
+    .catch(error => console.log('Error loading coverage for', day.date, ':', error));
 }
     
     // Update template name - RIPRISTINO LAYOUT ORIGINALE
