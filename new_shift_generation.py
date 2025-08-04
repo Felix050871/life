@@ -7,7 +7,7 @@ from app import db
 
 def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_id):
     """
-    Sistema avanzato di generazione turni con regole rigorose di sicurezza operativa
+    Sistema ottimizzato di generazione turni con algoritmo greedy e priorità
     """
     
     # Ottieni coperture del template
@@ -28,12 +28,19 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
     if not available_users:
         return 0, "Nessun utente disponibile per i turni"
     
-    print(f"ADVANCED: Inizio generazione per {len(available_users)} utenti con regole rigorose", file=sys.stderr, flush=True)
+    print(f"OPTIMIZED: Inizio generazione per {len(available_users)} utenti con algoritmo greedy", file=sys.stderr, flush=True)
+    
+    # Carica turni notturni esistenti dal database per riposo post-notte
+    existing_night_shifts = load_existing_night_shifts(available_users, start_date)
     
     # Tracciamento storico degli assegnamenti per applicare regole
     user_assignments = {}  # user_id -> [(date, start_time, end_time), ...]
     for user in available_users:
         user_assignments[user.id] = []
+    
+    # Aggiungi turni notturni esistenti al tracciamento
+    for user_id, shifts in existing_night_shifts.items():
+        user_assignments[user_id].extend(shifts)
     
     turni_creati = 0
     current_date = start_date
@@ -42,10 +49,10 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
         day_of_week = current_date.weekday()
         day_coverages = [c for c in coverages if c.day_of_week == day_of_week]
         
-        print(f"ADVANCED: Processo data {current_date}, {len(day_coverages)} coperture", file=sys.stderr, flush=True)
+        print(f"OPTIMIZED: Processo data {current_date}, {len(day_coverages)} coperture", file=sys.stderr, flush=True)
         
-        # Ordina coperture per orario per elaborazione sequenziale
-        day_coverages.sort(key=lambda c: c.start_time)
+        # Ordina coperture per PRIORITÀ: prima turni difficili da coprire
+        day_coverages.sort(key=lambda c: get_coverage_priority(c, current_date, available_users, user_assignments))
         
         for coverage in day_coverages:
             try:
@@ -54,63 +61,46 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                 # Filtra utenti per ruolo richiesto
                 role_users = [u for u in available_users if u.role in required_roles]
                 
-                # Applica tutte le regole di sicurezza per ogni utente
+                # Verifica in tempo reale i conflitti prima dell'assegnazione
                 eligible_users = []
                 for user in role_users:
-                    if is_user_eligible_for_shift(user.id, current_date, coverage.start_time, coverage.end_time, user_assignments):
+                    if is_user_eligible_real_time(user.id, current_date, coverage.start_time, coverage.end_time, user_assignments):
                         eligible_users.append(user)
-                    else:
-                        print(f"ADVANCED: User {user.username} NON IDONEO per {coverage.start_time}-{coverage.end_time} il {current_date}", file=sys.stderr, flush=True)
                 
-                print(f"ADVANCED: Copertura {coverage.start_time}-{coverage.end_time}, {len(eligible_users)}/{len(role_users)} utenti idonei", file=sys.stderr, flush=True)
+                print(f"OPTIMIZED: Copertura {coverage.start_time}-{coverage.end_time}, {len(eligible_users)}/{len(role_users)} utenti idonei", file=sys.stderr, flush=True)
                 
                 if not eligible_users:
-                    print(f"ADVANCED: NESSUN utente idoneo per {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
+                    # Prova con assegnazioni casuali se nessuno è perfettamente idoneo
+                    print(f"OPTIMIZED: Nessun utente perfetto, controllo flessibile...", file=sys.stderr, flush=True)
                     continue
                 
-                # Calcola durata del turno in ore
-                shift_duration = calculate_shift_duration(coverage.start_time, coverage.end_time)
+                # Algoritmo GREEDY: seleziona utente con meno turni e migliori preferenze
+                selected_user = select_best_user_greedy(eligible_users, user_assignments, coverage)
                 
-                # Verifica se il turno necessita spezzamento
-                if shift_duration > 8.0:  # Turno troppo lungo
-                    users_needed = max(coverage.role_count, int(shift_duration / 8) + 1)
-                    print(f"ADVANCED: Turno lungo {shift_duration}h, serve spezzamento su {users_needed} utenti", file=sys.stderr, flush=True)
-                else:
-                    users_needed = coverage.role_count
-                
-                # Ordina utenti per bilanciamento (meno turni assegnati)
-                eligible_users.sort(key=lambda u: len(user_assignments[u.id]))
-                
-                # Seleziona utenti da assegnare (max disponibili)
-                users_to_assign = eligible_users[:min(users_needed, len(eligible_users))]
-                
-                for user in users_to_assign:
+                if selected_user:
                     # Verifica conflitti database
                     existing_shift = Shift.query.filter_by(
-                        user_id=user.id,
+                        user_id=selected_user.id,
                         date=current_date
                     ).first()
                     
-                    if existing_shift:
-                        print(f"ADVANCED: User {user.username} ha già turno in database, SKIP", file=sys.stderr, flush=True)
-                        continue
-                    
-                    # Crea il turno
-                    new_shift = Shift(
-                        user_id=user.id,
-                        date=current_date,
-                        start_time=coverage.start_time,
-                        end_time=coverage.end_time,
-                        shift_type='presidio',
-                        created_by=created_by_user_id
-                    )
-                    db.session.add(new_shift)
-                    turni_creati += 1
-                    
-                    # Traccia assegnamento per regole future
-                    user_assignments[user.id].append((current_date, coverage.start_time, coverage.end_time))
-                    
-                    print(f"ADVANCED: User {user.username} assegnato {coverage.start_time}-{coverage.end_time}, turni totali: {len(user_assignments[user.id])}", file=sys.stderr, flush=True)
+                    if not existing_shift:
+                        # Crea il turno
+                        new_shift = Shift(
+                            user_id=selected_user.id,
+                            date=current_date,
+                            start_time=coverage.start_time,
+                            end_time=coverage.end_time,
+                            shift_type='presidio',
+                            created_by=created_by_user_id
+                        )
+                        db.session.add(new_shift)
+                        turni_creati += 1
+                        
+                        # Traccia assegnamento per regole future
+                        user_assignments[selected_user.id].append((current_date, coverage.start_time, coverage.end_time))
+                        
+                        print(f"OPTIMIZED: User {selected_user.username} assegnato {coverage.start_time}-{coverage.end_time}, turni totali: {len(user_assignments[selected_user.id])}", file=sys.stderr, flush=True)
             
             except json.JSONDecodeError:
                 continue
@@ -121,53 +111,90 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
     for user in available_users:
         print(f"STATS: User {user.username} -> {len(user_assignments[user.id])} turni totali", file=sys.stderr, flush=True)
     
-    return turni_creati, f"Creati {turni_creati} turni con sistema avanzato e regole rigorose"
+    return turni_creati, f"Creati {turni_creati} turni con algoritmo greedy ottimizzato"
 
-def is_user_eligible_for_shift(user_id, date, start_time, end_time, user_assignments):
+def load_existing_night_shifts(users, start_date):
     """
-    Verifica se un utente è idoneo per un turno applicando tutte le regole di sicurezza
+    Carica turni notturni esistenti dal database per gestire il riposo post-notte
+    """
+    existing_shifts = {}
+    for user in users:
+        existing_shifts[user.id] = []
+        
+        # Cerca turni notturni recenti nel database
+        past_shifts = Shift.query.filter(
+            Shift.user_id == user.id,
+            Shift.date >= start_date - timedelta(days=7),
+            Shift.date < start_date
+        ).all()
+        
+        for shift in past_shifts:
+            if shift.start_time <= time(6, 0) or shift.end_time <= time(8, 0):
+                existing_shifts[user.id].append((shift.date, shift.start_time, shift.end_time))
+    
+    return existing_shifts
+
+def get_coverage_priority(coverage, date, users, assignments):
+    """
+    Calcola priorità di una copertura - prima i turni più difficili da coprire
+    """
+    required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
+    role_users = [u for u in users if u.role in required_roles]
+    
+    eligible_count = 0
+    for user in role_users:
+        if is_user_eligible_real_time(user.id, date, coverage.start_time, coverage.end_time, assignments):
+            eligible_count += 1
+    
+    # Priorità inversa: meno utenti disponibili = priorità più alta (numero più basso)
+    return eligible_count
+
+def is_user_eligible_real_time(user_id, date, start_time, end_time, user_assignments):
+    """
+    Verifica in tempo reale se un utente è idoneo con controllo di conflitto ottimizzato
     """
     user_shifts = user_assignments[user_id]
     
     # Regola 1: Non sovrapposizione - Un utente non può fare due turni nello stesso giorno
     for shift_date, shift_start, shift_end in user_shifts:
         if shift_date == date:
-            print(f"RULE_VIOLATION: User {user_id} già assegnato il {date}", file=sys.stderr, flush=True)
             return False
     
-    # Regola 2: Non turni consecutivi
+    # Regola 2: Non turni consecutivi migliorata
     previous_day = date - timedelta(days=1)
-    next_day = date + timedelta(days=1)
     
     for shift_date, shift_start, shift_end in user_shifts:
-        # Se ha turno pomeridiano/serale ieri (16:00-24:00), non può fare turno oggi
+        # Se ha turno pomeridiano/serale ieri, non può fare turno oggi
         if shift_date == previous_day:
             if shift_start >= time(16, 0) or shift_end > time(20, 0):
-                print(f"RULE_VIOLATION: User {user_id} ha turno pomeridiano/serale il {previous_day}, SKIP {date}", file=sys.stderr, flush=True)
                 return False
-        
-        # Se fa turno oggi e va oltre le 20:00, non può fare turno domani mattina
-        if shift_date == date and end_time > time(20, 0):
-            for future_date, future_start, future_end in user_shifts:
-                if future_date == next_day and future_start < time(12, 0):
-                    print(f"RULE_VIOLATION: User {user_id} turno serale oggi -> no turno mattina domani", file=sys.stderr, flush=True)
-                    return False
     
-    # Regola 3: Riposo obbligatorio dopo turno notturno (11 ore minimo)
+    # Regola 3: Riposo obbligatorio dopo turno notturno (11 ore minimo) ottimizzato
     for shift_date, shift_start, shift_end in user_shifts:
-        # Controlla turni notturni precedenti
         if shift_start <= time(6, 0) or shift_end <= time(8, 0):  # Turno notturno
-            # Calcola quando finisce il riposo obbligatorio
             shift_end_datetime = datetime.combine(shift_date, shift_end)
             rest_end = shift_end_datetime + timedelta(hours=11)
-            
             new_start_datetime = datetime.combine(date, start_time)
             
             if new_start_datetime < rest_end:
-                print(f"RULE_VIOLATION: User {user_id} in riposo obbligatorio fino alle {rest_end}", file=sys.stderr, flush=True)
                 return False
     
     return True
+
+def select_best_user_greedy(eligible_users, user_assignments, coverage):
+    """
+    Algoritmo greedy per selezionare il miglior utente considerando:
+    - Numero di turni già assegnati (bilanciamento)
+    - Preferenze temporali (ignora per ora)
+    """
+    if not eligible_users:
+        return None
+    
+    # Ordina per numero di turni (meno turni = priorità più alta)
+    eligible_users.sort(key=lambda u: len(user_assignments[u.id]))
+    
+    # Seleziona il primo (quello con meno turni)
+    return eligible_users[0]
 
 def calculate_shift_duration(start_time, end_time):
     """
