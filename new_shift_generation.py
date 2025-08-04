@@ -211,9 +211,10 @@ def load_existing_night_shifts(users, start_date):
         
         for shift in past_shifts:
             # LOGICA CORRETTA: riconosce ENTRAMBI i turni notturni
-            # - Turno mattutino notturno: 00:00-07:59 (inizia prima delle 08:00)
-            # - Turno serale notturno: 16:00-23:59 (finisce dopo le 23:00)
-            is_night_shift = (shift.start_time <= time(8, 0) or shift.end_time >= time(23, 0))
+            # - Turno mattutino notturno: 00:00-07:59 (inizia entro le 07:59)
+            # - Turno serale notturno: 16:00-23:59 (finisce dalle 23:00 in poi)
+            # IMPORTANTE: Il turno 08:00-16:00 NON è notturno!
+            is_night_shift = (shift.start_time <= time(7, 59) or shift.end_time >= time(23, 0))
             if is_night_shift:
                 existing_shifts[user.id].append((shift.date, shift.start_time, shift.end_time))
     
@@ -256,10 +257,11 @@ def is_user_eligible_real_time(user_id, date, start_time, end_time, user_assignm
     
     # Regola 3: Riposo obbligatorio dopo turno notturno (11 ore minimo) CORRETTA
     for shift_date, shift_start, shift_end in user_shifts:
-        # Turno notturno: LOGICA CORRETTA per entrambi i turni notturni
-        # - Turno serale notturno: 16:00-23:59 (finisce dopo le 23:00)
-        # - Turno mattutino notturno: 00:00-07:59 (inizia prima delle 08:00)
-        is_night_shift = (shift_start <= time(8, 0) or shift_end >= time(23, 0))
+        # Turno notturno: LOGICA CORRETTA e SPECIFICA
+        # - Turno mattutino notturno: inizia dalle 00:00 alle 07:59 (start_time <= 07:59)
+        # - Turno serale notturno: finisce dalle 23:00 in poi (end_time >= 23:00)
+        # IMPORTANTE: Il turno 08:00-16:00 NON è notturno!
+        is_night_shift = (shift_start <= time(7, 59) or shift_end >= time(23, 0))
         
         if is_night_shift:
             # Calcola fine turno gestendo mezzanotte
