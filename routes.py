@@ -2580,13 +2580,25 @@ def genera_turni_da_template():
                         if not has_conflict:
                             users_without_conflicts.append(user)
                     
-                    # Usa utenti senza conflitti per selezione
+                    # Usa utenti senza conflitti per selezione - ALGORITMO GREEDY
                     if len(users_without_conflicts) < coverage.role_count:
                         # Usa tutti gli utenti disponibili senza conflitti
                         selected_users = users_without_conflicts
                     else:
-                        # Seleziona casualmente il numero richiesto dai non-conflittuali
-                        selected_users = random.sample(users_without_conflicts, coverage.role_count)
+                        # Seleziona deterministicamente basato su bilanciamento (utenti con meno turni)
+                        # Conta turni esistenti per ogni utente
+                        user_shift_counts = {}
+                        for user in users_without_conflicts:
+                            shift_count = Shift.query.filter_by(
+                                user_id=user.id,
+                                date__gte=start_date,
+                                date__lte=end_date
+                            ).count()
+                            user_shift_counts[user.id] = shift_count
+                        
+                        # Ordina per numero turni crescente (meno turni = priorità più alta)
+                        users_without_conflicts.sort(key=lambda u: user_shift_counts[u.id])
+                        selected_users = users_without_conflicts[:coverage.role_count]
                     
                     if not selected_users:
                         continue
