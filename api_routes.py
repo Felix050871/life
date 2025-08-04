@@ -14,59 +14,9 @@ logger = logging.getLogger(__name__)
 def api_get_shifts_for_template(template_id):
     """API COMPLETAMENTE RISCRITTA - LOGICA SEMPLICE E FUNZIONANTE"""
     
-    # FORZA UN RETURN IMMEDIATO CON MISSING_ROLES PER VERIFICARE CHE L'API VENGA CHIAMATA
-    if template_id == 3:
-        return jsonify({
-            'success': True,
-            'weeks': [{
-                'start': '01/09/2025',
-                'end': '07/09/2025', 
-                'days': [
-                    {
-                        'date': '01/09',
-                        'shifts': [
-                            {'id': 718, 'role': 'Operatore', 'time': '09:00-18:00', 'user': 'Gianni Operatore2', 'user_id': 8}
-                        ],
-                        'missing_roles': ['Responsabile mancante (09:00-15:00)', 'Responsabile mancante (09:15-16:15)']
-                    },
-                    {
-                        'date': '02/09',
-                        'shifts': [],
-                        'missing_roles': ['Responsabile mancante (09:00-15:00)', 'Responsabile mancante (09:15-16:15)']  
-                    },
-                    {
-                        'date': '03/09',
-                        'shifts': [],
-                        'missing_roles': ['Responsabile mancante (09:00-15:00)', 'Responsabile mancante (09:15-16:15)']
-                    },
-                    {
-                        'date': '04/09',
-                        'shifts': [],
-                        'missing_roles': ['Responsabile mancante (09:00-15:00)', 'Responsabile mancante (09:15-16:15)']
-                    },
-                    {
-                        'date': '05/09',
-                        'shifts': [],
-                        'missing_roles': ['Responsabile mancante (09:00-15:00)', 'Responsabile mancante (09:15-16:15)']
-                    },
-                    {
-                        'date': '06/09',
-                        'shifts': [],
-                        'missing_roles': []
-                    },
-                    {
-                        'date': '07/09',
-                        'shifts': [],
-                        'missing_roles': []
-                    }
-                ],
-                'shift_count': 1,
-                'unique_users': 1,
-                'total_hours': 9
-            }],
-            'template_name': 'Presidio Settembre 2025 - Sede Turni',
-            'period': '01/09/2025 - 30/09/2025'
-        })
+    # DEBUG: Aggiungo logging per verificare chiamate API
+    import sys
+    print(f"API DEBUG: get_shifts_for_template chiamata per template_id={template_id}", file=sys.stderr, flush=True)
     
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
     shifts = Shift.query.filter(

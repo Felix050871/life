@@ -630,6 +630,12 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     coverage_configs = valid_coverages
     print(f"FUNCTION DEBUG: Dopo filtro date: {len(coverage_configs)} coperture valide per il periodo", file=sys.stderr, flush=True)
     
+    # DEBUG: Verifica specificamente le coperture serali
+    evening_coverages = [c for c in coverage_configs if c.start_time.strftime('%H:%M') == '16:00' and c.end_time.strftime('%H:%M') == '23:59']
+    print(f"FUNCTION DEBUG: Trovate {len(evening_coverages)} coperture serali 16:00-23:59", file=sys.stderr, flush=True)
+    for cov in evening_coverages[:3]:  # Mostra le prime 3
+        print(f"FUNCTION DEBUG: Copertura serale {cov.get_day_name()} {cov.start_time}-{cov.end_time} ruoli: {cov.required_roles}", file=sys.stderr, flush=True)
+    
     if not coverage_configs:
         return False, "Nessuna copertura presidio valida per il periodo selezionato. Configura prima i requisiti di copertura per le date richieste."
     
