@@ -20,6 +20,8 @@ def api_get_shifts_for_template(template_id):
     
     try:
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
+        print(f"Template {template_id}: {template.start_date} to {template.end_date}")
+        
         # Eager loading per evitare query N+1
         shifts = Shift.query.options(db.joinedload(Shift.user)).filter(
             Shift.date >= template.start_date,
@@ -75,6 +77,7 @@ def api_get_shifts_for_template(template_id):
                 'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
             }
             weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
+            print(f"Added shift {shift.id} to week {week_key}, day {day_index}: {user_display_name}")
             weeks_data[week_key]['shift_count'] += 1
             weeks_data[week_key]['unique_users'].add(shift.user.username)
         
