@@ -358,52 +358,20 @@ function loadShiftsForTemplate(templateId, templateName) {
                                         dayData.missing_roles = [];
                                     }
                                     
-                                    // SOLO se la data è nel range del template, calcola missing_roles
+                                    // IMPORTANTE: Non sovrascrivere missing_roles dall'API!
+                                    // L'API ora calcola correttamente i missing_roles per i segmenti spezzati
+                                    // Mantieni i missing_roles come arrivano dall'API server-side
+                                    
+                                    // SOLO filtra per date fuori range del template
                                     if (!isInRange) {
-                                        // Date fuori range: nessun missing_roles
+                                        // Date fuori range: svuota missing_roles
                                         dayData.missing_roles = [];
-
-                                        continue;
                                     }
                                     
-                                    // Trova coperture richieste per questo giorno
-                                    var dayCoverages = coverageData.coverages.filter(function(cov) {
-                                        return cov.day_of_week === dayIndex;
-                                    });
-                                    
-                                    // Per ogni copertura richiesta, verifica se è soddisfatta
-                                    dayCoverages.forEach(function(coverage) {
-                                        
-                                        coverage.required_roles.forEach(function(requiredRole) {
-                                            // Conta quanti turni di questo ruolo coprono la fascia oraria
-                                            var roleCount = 0;
-                                            
-                                            if (dayData.shifts) {
-                                                dayData.shifts.forEach(function(shift) {
-                                                    if (shift.role === requiredRole) {
-                                                        // Verifica sovrapposizione oraria
-                                                        var shiftTimes = shift.time.split('-');
-                                                        var shiftStart = shiftTimes[0];
-                                                        var shiftEnd = shiftTimes[1];
-                                                        
-                                                        // Fix: Usa < e > per evitare sovrapposizioni al limite (08:00-16:00 non copre 16:00-23:59)
-                                                        if (shiftStart < coverage.end_time && shiftEnd > coverage.start_time) {
-                                                            roleCount++;
-                                                        }
-                                                    }
-                                                });
-                                            }
-                                            
-                                            // Se il ruolo è insufficiente, aggiungi a missing_roles
-                                            if (roleCount < coverage.role_count) {
-                                                var missingText = requiredRole + ' mancante (' + coverage.start_time + '-' + coverage.end_time + ')';
-                                                if (!dayData.missing_roles.includes(missingText)) {
-                                                    dayData.missing_roles.push(missingText);
-                                                }
-                                            }
-                                        });
-                                    });
-                                    
+                                    // DEBUG: Mostra missing_roles dall'API
+                                    if (dayData.missing_roles && dayData.missing_roles.length > 0) {
+                                        console.log('API Missing roles for', dayData.date, ':', dayData.missing_roles);
+                                    }
 
                                 }
                             }
