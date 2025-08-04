@@ -29,6 +29,9 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
     
     print(f"OPTIMIZED: Inizio generazione per {len(available_users)} utenti con algoritmo greedy", file=sys.stderr, flush=True)
     
+    # Lista per tracciare turni scoperti
+    uncovered_shifts = []
+    
     # Carica turni notturni esistenti dal database per riposo post-notte
     existing_night_shifts = load_existing_night_shifts(available_users, start_date)
     
@@ -69,8 +72,15 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                 print(f"OPTIMIZED: Copertura {coverage.start_time}-{coverage.end_time}, {len(eligible_users)}/{len(role_users)} utenti idonei", file=sys.stderr, flush=True)
                 
                 if not eligible_users:
-                    # Prova con assegnazioni casuali se nessuno è perfettamente idoneo
-                    print(f"OPTIMIZED: Nessun utente perfetto, controllo flessibile...", file=sys.stderr, flush=True)
+                    # NESSUN UTENTE DISPONIBILE - TURNO SCOPERTO
+                    uncovered_shift_info = {
+                        'date': current_date,
+                        'start_time': coverage.start_time,
+                        'end_time': coverage.end_time,
+                        'required_roles': required_roles,
+                        'day_of_week': current_date.weekday()
+                    }
+                    print(f"⚠️ TURNO SCOPERTO: {current_date} {coverage.start_time}-{coverage.end_time} - Ruoli richiesti: {required_roles} - NESSUN UTENTE IDONEO", file=sys.stderr, flush=True)
                     continue
                 
                 # Algoritmo GREEDY: seleziona utente con meno turni e migliori preferenze
@@ -85,14 +95,13 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                     
                     if not existing_shift:
                         # Crea il turno
-                        new_shift = Shift(
-                            user_id=selected_user.id,
-                            date=current_date,
-                            start_time=coverage.start_time,
-                            end_time=coverage.end_time,
-                            shift_type='presidio',
-                            created_by=created_by_user_id
-                        )
+                        new_shift = Shift()
+                        new_shift.user_id = selected_user.id
+                        new_shift.date = current_date
+                        new_shift.start_time = coverage.start_time
+                        new_shift.end_time = coverage.end_time
+                        new_shift.shift_type = 'presidio'
+                        new_shift.created_by = created_by_user_id
                         db.session.add(new_shift)
                         turni_creati += 1
                         
@@ -168,14 +177,25 @@ def is_user_eligible_real_time(user_id, date, start_time, end_time, user_assignm
             if shift_start >= time(16, 0) or shift_end > time(20, 0):
                 return False
     
-    # Regola 3: Riposo obbligatorio dopo turno notturno (11 ore minimo) ottimizzato
+    # Regola 3: Riposo obbligatorio dopo turno notturno (11 ore minimo) CORRETTA
     for shift_date, shift_start, shift_end in user_shifts:
-        if shift_start <= time(6, 0) or shift_end <= time(8, 0):  # Turno notturno
-            shift_end_datetime = datetime.combine(shift_date, shift_end)
+        # Turno notturno: inizia prima delle 06:00 O finisce dopo le 23:00 O attraversa la mezzanotte
+        is_night_shift = (shift_start <= time(6, 0) or 
+                         shift_end >= time(23, 0) or 
+                         shift_end <= time(8, 0))  # Turno che attraversa mezzanotte
+        
+        if is_night_shift:
+            # Calcola fine turno gestendo mezzanotte
+            if shift_end <= shift_start:  # Attraversa mezzanotte
+                shift_end_datetime = datetime.combine(shift_date + timedelta(days=1), shift_end)
+            else:
+                shift_end_datetime = datetime.combine(shift_date, shift_end)
+            
             rest_end = shift_end_datetime + timedelta(hours=11)
             new_start_datetime = datetime.combine(date, start_time)
             
             if new_start_datetime < rest_end:
+                print(f"REGOLA 3 VIOLATA: User {user_id} ha turno notturno {shift_date} {shift_start}-{shift_end}, riposo fino {rest_end}, nuovo turno {new_start_datetime}", file=sys.stderr, flush=True)
                 return False
     
     return True
