@@ -181,85 +181,39 @@ function loadTemplateShifts() {
         fetch('/api/get_shifts_for_template/' + templateId)
             .then(response => response.json())
             .then(data => {
-                console.log('*** VISUALIZZA_TURNI - CALCULATING MISSING_ROLES DYNAMICALLY ***');
+                console.log('*** VISUALIZZA_TURNI - CALCOLO MISSING_ROLES SEMPLIFICATO ***');
                 
-                // CALCOLA MISSING_ROLES DINAMICAMENTE DAL DATABASE - STESSA LOGICA DI TURNI_AUTOMATICI
-                console.log('*** LOADING COVERAGE REQUIREMENTS FROM DATABASE ***');
-                
-                // Carica le coperture richieste dal database per questo template
-                fetch('/api/get_coverage_requirements/' + templateId, {
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(coverageData => {
-                    console.log('Coverage requirements loaded:', coverageData);
+                // STESSA LOGICA SEMPLICE DI TURNI_AUTOMATICI - SOLO PER GIORNI NEL PERIODO TEMPLATE
+                if (data.weeks && data.period) {
+                    // Estrai date periodo template
+                    var periodParts = data.period.split(' - ');
+                    var startDate = parseTemplateDate(periodParts[0]);
+                    var endDate = parseTemplateDate(periodParts[1]);
                     
-                    // Calcola missing_roles dinamicamente per tutti i template
-                    if (data.weeks && coverageData.success) {
+                    if (Array.isArray(data.weeks)) {
+                        // Se weeks è un array (vecchio formato)
                         data.weeks.forEach(function(week) {
                             if (week.days && Array.isArray(week.days)) {
-                                for (var dayIndex = 0; dayIndex < 7; dayIndex++) {
-                                    if (week.days[dayIndex]) {
-                                        var dayData = week.days[dayIndex];
-                                        
-                                        // Inizializza missing_roles
-                                        if (!dayData.missing_roles) {
-                                            dayData.missing_roles = [];
-                                        }
-                                        
-                                        // Trova coperture richieste per questo giorno
-                                        var dayCoverages = coverageData.coverages.filter(function(cov) {
-                                            return cov.day_of_week === dayIndex;
-                                        });
-                                        
-                                        // Per ogni copertura richiesta, verifica se è soddisfatta
-                                        dayCoverages.forEach(function(coverage) {
-                                            coverage.required_roles.forEach(function(requiredRole) {
-                                                // Conta quanti turni di questo ruolo coprono la fascia oraria
-                                                var roleCount = 0;
-                                                
-                                                if (dayData.shifts) {
-                                                    dayData.shifts.forEach(function(shift) {
-                                                        if (shift.role === requiredRole) {
-                                                            // Verifica sovrapposizione oraria
-                                                            var shiftTimes = shift.time.split('-');
-                                                            var shiftStart = shiftTimes[0];
-                                                            var shiftEnd = shiftTimes[1];
-                                                            
-                                                            if (shiftStart <= coverage.end_time && shiftEnd >= coverage.start_time) {
-                                                                roleCount++;
-                                                            }
-                                                        }
-                                                    });
-                                                }
-                                                
-                                                // Se il ruolo è insufficiente, aggiungi a missing_roles
-                                                if (roleCount < coverage.role_count) {
-                                                    var missingText = requiredRole + ' mancante (' + coverage.start_time + '-' + coverage.end_time + ')';
-                                                    if (!dayData.missing_roles.includes(missingText)) {
-                                                        dayData.missing_roles.push(missingText);
-                                                    }
-                                                }
-                                            });
-                                        });
-                                        
-                                        console.log('Day', dayIndex, 'dynamic missing_roles:', dayData.missing_roles);
-                                    }
-                                }
+                                week.days.forEach(function(day, dayIndex) {
+                                    applyMissingRolesLogic(day, startDate, endDate);
+                                });
+                            }
+                        });
+                    } else {
+                        // Se weeks è un dizionario (nuovo formato)
+                        Object.keys(data.weeks).forEach(function(weekKey) {
+                            var week = data.weeks[weekKey];
+                            if (week.days && Array.isArray(week.days)) {
+                                week.days.forEach(function(day, dayIndex) {
+                                    applyMissingRolesLogic(day, startDate, endDate);
+                                });
                             }
                         });
                     }
-                    
-                    // Ora renderizza con i missing_roles calcolati dinamicamente
-                    renderVisualizeTurniWithMissingRoles(data, templateId);
-                })
-                .catch(error => {
-                    console.log('Coverage loading failed, using data without missing_roles calculation');
-                    renderVisualizeTurniWithMissingRoles(data, templateId);
-                });
+                }
+                
+                // Renderizza subito con la logica semplificata
+                renderVisualizeTurniWithMissingRoles(data, templateId);
             })
             .catch(error => {
                 console.error('Errore:', error);
@@ -273,15 +227,68 @@ function loadTemplateShifts() {
     }
 }
 
+// Funzione helper per applicare logica missing_roles (stessa di turni_automatici)
+function applyMissingRolesLogic(day, startDate, endDate) {
+    // Reset missing_roles
+    day.missing_roles = [];
+    
+    // Verifica se questo giorno è nel periodo del template
+    var dayDate = parseTemplateDate(day.date + '/2025'); // Aggiungi anno
+    
+    if (dayDate >= startDate && dayDate <= endDate) {
+        // Solo per giorni nel periodo: verifica slot mancanti
+        var requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59'];
+        var existingSlots = [];
+        
+        if (day.shifts) {
+            day.shifts.forEach(function(shift) {
+                existingSlots.push(shift.time);
+            });
+        }
+        
+        // Verifica slot mancanti
+        requiredSlots.forEach(function(slot) {
+            if (!existingSlots.includes(slot)) {
+                day.missing_roles.push('Operatore mancante (' + slot + ')');
+            }
+        });
+    }
+}
+
+// Funzione helper per parsing date template (stessa di turni_automatici)
+function parseTemplateDate(dateStr) {
+    var parts = dateStr.split('/');
+    if (parts.length === 2) {
+        parts.push('2025');
+    }
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+}
+
 function renderVisualizeTurniWithMissingRoles(data, templateId) {
     console.log('*** RENDERING VISUALIZZA_TURNI WITH MISSING_ROLES ***');
-    document.getElementById('weeks-count').textContent = (data.weeks ? data.weeks.length : 0) + ' settimane';
     
-    if (data.success && data.weeks && data.weeks.length > 0) {
-        var weeksHtml = '';
-        data.weeks.forEach(function(week) {
-            weeksHtml += createWeekHtml(week);
-        });
+    var weeksCount = 0;
+    var weeksHtml = '';
+    
+    if (data.success && data.weeks) {
+        if (Array.isArray(data.weeks)) {
+            // Formato array (vecchio)
+            weeksCount = data.weeks.length;
+            data.weeks.forEach(function(week) {
+                weeksHtml += createWeekHtml(week);
+            });
+        } else {
+            // Formato dizionario (nuovo)
+            weeksCount = Object.keys(data.weeks).length;
+            Object.keys(data.weeks).forEach(function(weekKey) {
+                weeksHtml += createWeekHtml(data.weeks[weekKey]);
+            });
+        }
+    }
+    
+    document.getElementById('weeks-count').textContent = weeksCount + ' settimane';
+    
+    if (weeksCount > 0) {
         document.getElementById('weeks-container').innerHTML = weeksHtml;
     } else {
         document.getElementById('weeks-container').innerHTML = 
@@ -324,11 +331,11 @@ function createWeekHtml(week) {
             });
         }
         
-        // Aggiungi evidenziazione per ruoli richiesti ma mancanti
+        // Aggiungi evidenziazione per ruoli richiesti ma mancanti (ROSSO come turni_automatici)
         if (week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
             week.days[i].missing_roles.forEach(function(missing) {
-                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #333333 !important; font-size: 10px; font-weight: bold;">' +
-                        '<small style="color: #333333 !important;"><i class="fas fa-exclamation-triangle me-1" style="color: #333333 !important;"></i>' + missing + '</small>' +
+                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #f8d7da; border: 1px solid #dc3545; color: #721c24 !important; font-size: 10px; font-weight: bold;">' +
+                        '<small style="color: #721c24 !important;"><i class="fas fa-exclamation-triangle me-1" style="color: #721c24 !important;"></i>' + missing + '</small>' +
                         '</div>';
             });
         }
