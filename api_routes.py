@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from flask import jsonify, request
 from flask_login import login_required, current_user
 from app import app, db
+from sqlalchemy.orm import joinedload
 from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
 import json
 import logging
@@ -18,10 +19,16 @@ def api_get_shifts_for_template(template_id):
     
     try:
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
-        shifts = Shift.query.filter(
+        # Eager loading per evitare query N+1
+        shifts = Shift.query.options(db.joinedload(Shift.user)).filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
+        
+        print(f"API DEBUG: Found {len(shifts)} shifts for template {template_id}")
+        for shift in shifts[:5]:  # Log primi 5 turni per debug
+            user_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
+            print(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} -> {user_name} ({shift.user.role})")
         
         # STEP 1: Organizza turni per settimana
         weeks_data = {}
