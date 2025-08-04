@@ -169,9 +169,9 @@ def manage_roles():
     form = RoleForm()
     return render_template('manage_roles.html', roles=roles, form=form)
 
-@app.route('/new_role', methods=['GET', 'POST'])
+@app.route('/create_role', methods=['GET', 'POST'])
 @login_required
-def new_role():
+def create_role():
     """Crea nuovo ruolo"""
     if not current_user.can_manage_roles():
         flash('Non hai i permessi per creare ruoli.', 'danger')
@@ -186,7 +186,7 @@ def new_role():
         flash(f'Ruolo {role.name} creato!', 'success')
         return redirect(url_for('manage_roles'))
     
-    return render_template('new_role.html', form=form)
+    return render_template('create_role.html', form=form)
 
 @app.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
 @login_required
@@ -259,6 +259,23 @@ def manage_sedi():
     
     return render_template('manage_sedi.html', sedi=sedi, form=form, sedi_stats=sedi_stats)
 
+@app.route('/create_sede', methods=['POST'])
+@login_required
+def create_sede():
+    """Crea nuova sede"""
+    if not current_user.can_manage_sedi():
+        flash('Non hai i permessi per creare sedi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = SedeForm()
+    if form.validate_on_submit():
+        sede = Sede(name=form.name.data, description=form.description.data)
+        db.session.add(sede)
+        db.session.commit()
+        flash(f'Sede {sede.name} creata!', 'success')
+    
+    return redirect(url_for('manage_sedi'))
+
 @app.route('/toggle_sede/<int:sede_id>')
 @login_required
 def toggle_sede(sede_id):
@@ -287,6 +304,23 @@ def manage_work_schedules():
     schedules = WorkSchedule.query.all()
     form = WorkScheduleForm()
     return render_template('manage_work_schedules.html', schedules=schedules, form=form)
+
+@app.route('/create_work_schedule', methods=['POST'])
+@login_required
+def create_work_schedule():
+    """Crea nuovo orario di lavoro"""
+    if not current_user.can_manage_work_schedules():
+        flash('Non hai i permessi per creare orari.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = WorkScheduleForm()
+    if form.validate_on_submit():
+        schedule = WorkSchedule(name=form.name.data, description=form.description.data)
+        db.session.add(schedule)
+        db.session.commit()
+        flash(f'Orario {schedule.name} creato!', 'success')
+    
+    return redirect(url_for('manage_work_schedules'))
 
 @app.route('/toggle_work_schedule/<int:schedule_id>')
 @login_required
