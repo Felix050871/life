@@ -858,11 +858,15 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                         for existing_start, existing_end in daily_user_assignments[user.id]:
                             # Check if time slots overlap OR are consecutive (no gap between shifts)
                             # Prevent both overlaps and consecutive shifts without break
-                            if not (segment_end < existing_start or segment_start > existing_end):
+                            if not (segment_end <= existing_start or segment_start >= existing_end):
                                 has_overlap = True
+                                print(f"OVERLAP BLOCK: User {user.username} ha overlap {segment_start}-{segment_end} vs {existing_start}-{existing_end}", file=sys.stderr, flush=True)
                                 break
                     if not has_overlap:
                         non_overlapping_users.append(user)
+                        print(f"OVERLAP OK: User {user.username} disponibile per {segment_start}-{segment_end}", file=sys.stderr, flush=True)
+                    
+                print(f"OVERLAP DEBUG: {len(available_users)} -> {len(non_overlapping_users)} users dopo controllo sovrapposizioni", file=sys.stderr, flush=True)
                 available_users = non_overlapping_users
                 
                 if available_users:
@@ -893,6 +897,7 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                     
                     # Assign the best available user for this role in this time slot
                     selected_user = available_users[0]
+                    print(f"ASSIGN DEBUG: Assegnato {selected_user.username} per {segment_start}-{segment_end}", file=sys.stderr, flush=True)
                 else:
                     # FALLBACK: If no ideal users, try any eligible user without utilization filters
                     fallback_users = users_by_role.get(required_role, [])
@@ -997,6 +1002,7 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
                     if selected_user.id not in daily_user_assignments:
                         daily_user_assignments[selected_user.id] = []
                     daily_user_assignments[selected_user.id].append((segment_start, segment_end))
+                    print(f"TRACK DEBUG: User {selected_user.username} ora ha turni: {daily_user_assignments[selected_user.id]}", file=sys.stderr, flush=True)
                     
                     # Update utilization tracking
                     current_utilization[selected_user.id] = current_utilization.get(selected_user.id, 0) + segment_hours
