@@ -265,6 +265,8 @@ function loadShiftsForTemplate(templateId, templateName) {
                     var templateEndDate = null;
                     
                     console.log('TEMPLATE SELECTION DEBUG: templateSelect=', templateSelect);
+                    console.log('TEMPLATE SELECTION DEBUG: selectedIndex=', templateSelect ? templateSelect.selectedIndex : 'null');
+                    console.log('TEMPLATE SELECTION DEBUG: options length=', templateSelect ? templateSelect.options.length : 'null');
                     
                     if (templateSelect && templateSelect.selectedIndex > 0) {
                         var selectedOption = templateSelect.options[templateSelect.selectedIndex];
@@ -287,6 +289,42 @@ function loadShiftsForTemplate(templateId, templateName) {
                         }
                     } else {
                         console.log('WARNING: No template selected or no select found! All missing_roles will be calculated.');
+                        console.log('FALLBACK: Selected template ID from form submission or URL parameter');
+                        
+                        // FALLBACK: Prova a ottenere il template ID dalla form submission attuale
+                        var templateId = new URLSearchParams(window.location.search).get('template_id');
+                        if (!templateId) {
+                            // Prova a ottenere dal form se è stato appena inviato
+                            var form = document.querySelector('form[action*="genera_turni_da_template"]');
+                            if (form) {
+                                var formData = new FormData(form);
+                                templateId = formData.get('template_id');
+                            }
+                        }
+                        
+                        console.log('FALLBACK: templateId found=', templateId);
+                        
+                        if (templateId && templateSelect) {
+                            // Imposta il select al template corretto
+                            templateSelect.value = templateId;
+                            console.log('FALLBACK: Set template select to', templateId);
+                            
+                            if (templateSelect.selectedIndex > 0) {
+                                var selectedOption = templateSelect.options[templateSelect.selectedIndex];
+                                var startDateStr = selectedOption.dataset.start;
+                                var endDateStr = selectedOption.dataset.end;
+                                
+                                console.log('FALLBACK: Using template dates', startDateStr, 'to', endDateStr);
+                                
+                                if (startDateStr && endDateStr) {
+                                    var startParts = startDateStr.split('/');
+                                    var endParts = endDateStr.split('/');
+                                    templateStartDate = new Date(startParts[2], startParts[1] - 1, startParts[0]);
+                                    templateEndDate = new Date(endParts[2], endParts[1] - 1, endParts[0]);
+                                    console.log('FALLBACK: Template range set from', templateStartDate, 'to', templateEndDate);
+                                }
+                            }
+                        }
                     }
                     
                     data.weeks.forEach(function(week) {
