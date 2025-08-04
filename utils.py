@@ -607,10 +607,28 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
     
     # Get all active coverage configurations valid for the period
     coverage_configs = PresidioCoverage.query.filter(
-        PresidioCoverage.active == True,
-        PresidioCoverage.start_date <= end_date,
-        PresidioCoverage.end_date >= start_date
+        PresidioCoverage.active == True
     ).all()
+    
+    # DEBUG: Mostra tutte le coperture trovate
+    import sys
+    print(f"FUNCTION DEBUG: Trovate {len(coverage_configs)} coperture totali", file=sys.stderr, flush=True)
+    for cov in coverage_configs:
+        print(f"FUNCTION DEBUG: Copertura {cov.get_day_name()} {cov.start_time}-{cov.end_time} ruoli: {cov.required_roles}", file=sys.stderr, flush=True)
+    
+    # Filtra solo quelle valide per il periodo (se hanno date di validità)
+    valid_coverages = []
+    for cov in coverage_configs:
+        if cov.start_date and cov.end_date:
+            # Ha date di validità, controlla sovrapposizione
+            if cov.start_date <= end_date and cov.end_date >= start_date:
+                valid_coverages.append(cov)
+        else:
+            # Nessuna data di validità, sempre valida
+            valid_coverages.append(cov)
+    
+    coverage_configs = valid_coverages
+    print(f"FUNCTION DEBUG: Dopo filtro date: {len(coverage_configs)} coperture valide per il periodo", file=sys.stderr, flush=True)
     
     if not coverage_configs:
         return False, "Nessuna copertura presidio valida per il periodo selezionato. Configura prima i requisiti di copertura per le date richieste."
