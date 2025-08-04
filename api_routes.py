@@ -18,10 +18,21 @@ logger = logging.getLogger(__name__)
 def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
     
+    # FORCE IMMEDIATE OUTPUT TO IDENTIFY EXECUTION
+    import sys
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    
+    logger.info("=== API EXECUTION START ===")
+    print("=== API CALLED ===", flush=True)
+    print(f"Function called with template_id: {template_id}", flush=True)
+    sys.stdout.flush()
+    
     try:
-        import sys
-        print("=== API CALLED ===", flush=True)
-        sys.stdout.flush()
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
         print(f"Template {template_id}: {template.start_date} to {template.end_date}", flush=True)
         sys.stdout.flush()
