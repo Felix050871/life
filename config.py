@@ -19,6 +19,10 @@ class Config:
     DATABASE_URL = os.environ.get('DATABASE_URL') or 'sqlite:///instance/workly.db'
     DATABASE_POOL_RECYCLE = int(os.environ.get('DATABASE_POOL_RECYCLE', '300'))  # 5 minutes
     DATABASE_POOL_PRE_PING = os.environ.get('DATABASE_POOL_PRE_PING', 'True').lower() == 'true'
+    DATABASE_CONNECT_ARGS = {
+        'sslmode': 'require',
+        'connect_timeout': 30
+    } if os.environ.get('DATABASE_URL') and 'postgresql' in os.environ.get('DATABASE_URL', '') else {}
     
     # Server Configuration
     SERVER_HOST = os.environ.get('SERVER_HOST', '0.0.0.0')
