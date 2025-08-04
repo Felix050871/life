@@ -61,7 +61,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        if user and user.active and check_password_hash(user.password_hash, form.password.data):
+        if user and user.active and user.password_hash and check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
@@ -186,17 +186,12 @@ def dashboard():
     if current_user.can_view_overtime_widget():
         if current_user.can_manage_overtime_requests() or current_user.can_approve_overtime_requests():
             # Managers see all requests
-            recent_overtime_requests = OvertimeRequest.query.options(
-                joinedload(OvertimeRequest.employee),
-                joinedload(OvertimeRequest.overtime_type)
-            ).order_by(OvertimeRequest.created_at.desc()).limit(10).all()
+            recent_overtime_requests = OvertimeRequest.query.order_by(OvertimeRequest.created_at.desc()).limit(10).all()
     
     # Get my overtime requests for personal widget  
     if current_user.can_view_my_overtime_widget():
         my_overtime_requests = OvertimeRequest.query.filter_by(
             employee_id=current_user.id
-        ).options(
-            joinedload(OvertimeRequest.overtime_type)
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
     
     # Get recent mileage requests for widget
@@ -205,17 +200,12 @@ def dashboard():
     if current_user.can_view_mileage_widget():
         if current_user.can_manage_mileage_requests() or current_user.can_approve_mileage_requests():
             # Managers see all requests
-            recent_mileage_requests = MileageRequest.query.options(
-                joinedload(MileageRequest.user),
-                joinedload(MileageRequest.vehicle)
-            ).order_by(MileageRequest.created_at.desc()).limit(10).all()
+            recent_mileage_requests = MileageRequest.query.order_by(MileageRequest.created_at.desc()).limit(10).all()
     
     # Get my mileage requests for personal widget  
     if current_user.can_view_my_mileage_widget():
         my_mileage_requests = MileageRequest.query.filter_by(
             user_id=current_user.id
-        ).options(
-            joinedload(MileageRequest.vehicle)
         ).order_by(MileageRequest.created_at.desc()).limit(5).all()
     
     # Get weekly calendar data (Monday to Sunday)
@@ -1772,9 +1762,9 @@ def attendance():
                     date=now.date(),
                     event_type='clock_in',  # Evento fittizio per salvare le note
                     timestamp=now,
-                    sede_id=sede_id,
-                    notes=form.notes.data
+                    sede_id=sede_id
                 )
+                note_event.notes = form.notes.data
                 db.session.add(note_event)
                 db.session.commit()
                 flash('Note salvate', 'success')
@@ -1974,6 +1964,13 @@ def attendance():
     # Determina gli utenti per cui cercare le richieste di ferie
     if show_team_data:
         # Per vista team, cerca ferie di tutti gli utenti del team
+        team_users = []  # Inizializza se non ancora definito
+        if 'team_users' not in locals():
+            # Ottieni utenti del team in base ai permessi
+            if current_user.can_view_all_attendance():
+                team_users = User.query.filter_by(active=True).all()
+            else:
+                team_users = User.get_visible_users_query(current_user).filter_by(active=True).all()
         target_user_ids = [user.id for user in team_users]
     else:
         # Per vista personale, solo l'utente corrente
@@ -2046,7 +2043,7 @@ def attendance():
                                 from models import WorkSchedule
                                 from datetime import datetime, time
                                 user_schedule = None
-                                if self.user.work_schedule_id:
+                                if hasattr(self.user, 'work_schedule_id') and self.user.work_schedule_id:
                                     user_schedule = WorkSchedule.query.get(self.user.work_schedule_id)
                                 
                                 if user_schedule:
