@@ -483,11 +483,14 @@ function renderTurniLayout(data, templateName) {
             
             // Show missing roles - ALERT ROSSI CON PULSANTE ASSEGNA
             if (day.missing_roles && day.missing_roles.length > 0) {
+                console.log('RENDERING MISSING ROLES for day', day.date, ':', day.missing_roles);
                 day.missing_roles.forEach(function(missing) {
                     // Estrai ruolo e orario dal testo "Operatore mancante (16:00-23:59)"
                     let roleMatch = missing.match(/^(.+?)\s+mancante\s+\((.+?)\)$/);
                     let missingRole = roleMatch ? roleMatch[1] : 'Operatore';
                     let missingTime = roleMatch ? roleMatch[2] : '';
+                    
+                    console.log('Creating missing role button for:', missingRole, missingTime);
                     
                     html += '<div class="shift-item mb-2 p-2 bg-danger text-white rounded position-relative">';
                     html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
