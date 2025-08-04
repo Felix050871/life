@@ -695,13 +695,18 @@ function saveAssignment(date, role, timeSlot) {
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Assegnando...';
     saveBtn.disabled = true;
     
+    // Ottieni token CSRF
+    const csrfToken = document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || 
+                     document.querySelector('[name=csrf_token]')?.value || '';
+    
     // Invia richiesta di assegnazione
     fetch('/api/assign_missing_shift', {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({
             date: date,
@@ -712,7 +717,12 @@ function saveAssignment(date, role, timeSlot) {
             template_id: document.getElementById('template_id').value
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Chiudi modal
