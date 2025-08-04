@@ -2357,4 +2357,157 @@ def manage_presidio_templates():
     flash('Funzionalità gestione template presidio in sviluppo', 'info')
     return redirect(url_for('dashboard'))
 
+# AGGIUNTE TUTTE LE ROUTE MANCANTI IDENTIFICATE DAI TEMPLATE
+@app.route('/user_management')
+@login_required
+def user_management():
+    flash('Funzionalità gestione utenti in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/manage_work_schedules')
+@login_required
+def manage_work_schedules():
+    flash('Funzionalità gestione orari di lavoro in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/presidio_coverage')
+@login_required
+def presidio_coverage():
+    flash('Funzionalità coperture presidio in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/view_presidi')
+@login_required
+def view_presidi():
+    flash('Funzionalità visualizzazione presidi in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/generate_reperibilita_shifts')
+@login_required
+def generate_reperibilita_shifts():
+    flash('Funzionalità generazione turni reperibilità in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/reperibilita_coverage')
+@login_required
+def reperibilita_coverage():
+    flash('Funzionalità coperture reperibilità in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/reperibilita_shifts')
+@login_required
+def reperibilita_shifts():
+    flash('Funzionalità turni reperibilità in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+# dashboard_team già esiste - rimossa duplicazione
+
+@app.route('/aci_tables')
+@login_required
+def aci_tables():
+    flash('Funzionalità tabelle ACI in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/aci_create')
+@login_required
+def aci_create():
+    flash('Funzionalità creazione ACI in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/aci_export')
+@login_required
+def aci_export():
+    flash('Funzionalità esportazione ACI in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/aci_upload')
+@login_required
+def aci_upload():
+    flash('Funzionalità upload ACI in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/holidays')
+@login_required
+def holidays():
+    flash('Funzionalità gestione festività in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/leave_types')
+@login_required
+def leave_types():
+    flash('Funzionalità tipi di ferie in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/overtime_types')
+@login_required
+def overtime_types():
+    flash('Funzionalità tipi straordinari in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/expense_categories')
+@login_required
+def expense_categories():
+    flash('Funzionalità categorie spese in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/expense_reports')
+@login_required
+def expense_reports():
+    flash('Funzionalità report spese in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/create_expense_report')
+@login_required
+def create_expense_report():
+    flash('Funzionalità creazione report spese in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/create_leave_request_page')
+@login_required
+def create_leave_request_page():
+    flash('Funzionalità creazione richiesta ferie in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/create_mileage_request')
+@login_required
+def create_mileage_request():
+    flash('Funzionalità creazione rimborso chilometrico in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/create_overtime_request')
+@login_required
+def create_overtime_request():
+    flash('Funzionalità creazione richiesta straordinari in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/my_mileage_requests')
+@login_required
+def my_mileage_requests():
+    flash('Funzionalità miei rimborsi chilometrici in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/my_overtime_requests')
+@login_required
+def my_overtime_requests():
+    flash('Funzionalità mie richieste straordinari in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/my_interventions') 
+@login_required
+def my_interventions():
+    flash('Funzionalità miei interventi in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/overtime_requests_management')
+@login_required
+def overtime_requests_management():
+    flash('Funzionalità gestione richieste straordinari in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/admin_generate_qr_codes')
+@login_required
+def admin_generate_qr_codes():
+    flash('Funzionalità generazione codici QR in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
 
