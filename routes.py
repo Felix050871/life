@@ -2255,4 +2255,39 @@ def internal_messages():
     flash('Funzionalità messaggi interni in sviluppo', 'info')
     return redirect(url_for('dashboard'))
 
+@app.route('/user_profile')
+@login_required
+def user_profile():
+    """Route placeholder per profilo utente"""
+    flash('Funzionalità profilo utente in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/change_password')
+@login_required
+def change_password():
+    """Route placeholder per cambio password"""
+    flash('Funzionalità cambio password in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/admin_panel')
+@login_required
+def admin_panel():
+    """Route placeholder per pannello admin"""
+    flash('Funzionalità pannello admin in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/shift_calendar')
+@login_required
+def shift_calendar():
+    """Route placeholder per calendario turni"""
+    flash('Funzionalità calendario turni in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/reports')
+@login_required
+def reports():
+    """Route placeholder per report"""
+    flash('Funzionalità report in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
 
