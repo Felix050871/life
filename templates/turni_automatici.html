@@ -263,8 +263,13 @@ function loadShiftsForTemplate(templateId, templateName) {
 function displayShiftsFromAPI(data, templateName) {
     console.log('=== displayShiftsFromAPI START ===');
     
-    // CALCOLO MISSING_ROLES NEL FRONTEND - APPROCCIO DIRETTO
-    if (data.weeks) {
+    // CALCOLO MISSING_ROLES NEL FRONTEND - SOLO PER GIORNI NEL PERIODO TEMPLATE
+    if (data.weeks && data.period) {
+        // Estrai date periodo template (es. "01/10/2025 - 31/10/2025")
+        let periodParts = data.period.split(' - ');
+        let startDate = parseTemplateDate(periodParts[0]);
+        let endDate = parseTemplateDate(periodParts[1]);
+        
         Object.keys(data.weeks).forEach(function(weekKey) {
             let week = data.weeks[weekKey];
             if (week.days && Array.isArray(week.days)) {
@@ -272,33 +277,50 @@ function displayShiftsFromAPI(data, templateName) {
                     // Reset missing_roles
                     day.missing_roles = [];
                     
-                    // REGOLA SEMPLICE: ogni giorno dovrebbe avere 3 turni (00:00-07:59, 08:00-16:00, 16:00-23:59)
-                    let requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59'];
-                    let existingSlots = [];
+                    // Verifica se questo giorno è nel periodo del template
+                    let dayDate = parseTemplateDate(day.date + '/2025'); // Aggiungi anno
                     
-                    if (day.shifts) {
-                        day.shifts.forEach(function(shift) {
-                            existingSlots.push(shift.time);
-                        });
-                    }
-                    
-                    // Verifica slot mancanti
-                    requiredSlots.forEach(function(slot) {
-                        if (!existingSlots.includes(slot)) {
-                            day.missing_roles.push('Operatore mancante (' + slot + ')');
+                    if (dayDate >= startDate && dayDate <= endDate) {
+                        // Solo per giorni nel periodo: verifica slot mancanti
+                        let requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59'];
+                        let existingSlots = [];
+                        
+                        if (day.shifts) {
+                            day.shifts.forEach(function(shift) {
+                                existingSlots.push(shift.time);
+                            });
                         }
-                    });
-                    
-                    // Debug per 2 ottobre
-                    if (day.date === '02/10') {
-                        console.log('2 OTTOBRE - Required slots:', requiredSlots);
-                        console.log('2 OTTOBRE - Existing slots:', existingSlots);
-                        console.log('2 OTTOBRE - Missing:', day.missing_roles);
+                        
+                        // Verifica slot mancanti
+                        requiredSlots.forEach(function(slot) {
+                            if (!existingSlots.includes(slot)) {
+                                day.missing_roles.push('Operatore mancante (' + slot + ')');
+                            }
+                        });
+                        
+                        // Debug per 2 ottobre
+                        if (day.date === '02/10') {
+                            console.log('2 OTTOBRE - Nel periodo template:', dayDate >= startDate && dayDate <= endDate);
+                            console.log('2 OTTOBRE - Required slots:', requiredSlots);
+                            console.log('2 OTTOBRE - Existing slots:', existingSlots);
+                            console.log('2 OTTOBRE - Missing:', day.missing_roles);
+                        }
                     }
                 });
             }
         });
     }
+
+// Funzione helper per parsing date template
+function parseTemplateDate(dateStr) {
+    // Converte "02/10" o "02/10/2025" in oggetto Date
+    let parts = dateStr.split('/');
+    if (parts.length === 2) {
+        // Aggiungi anno corrente
+        parts.push('2025');
+    }
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+}
     
     // Update template name - RIPRISTINO LAYOUT ORIGINALE
     document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong>';
