@@ -47,11 +47,16 @@ def api_get_shifts_for_template(template_id):
                     })
             
             day_index = shift.date.weekday()
+            # Costruisci nome completo utente
+            user_display_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
+            if not user_display_name:
+                user_display_name = shift.user.username
+            
             shift_data = {
                 'id': shift.id,
-                'user': shift.user.username,
+                'user': user_display_name,
                 'user_id': shift.user.id,
-                'role': shift.user.role.name if shift.user.role else 'Senza ruolo',
+                'role': shift.user.role,  # Il ruolo è direttamente una stringa nel modello User
                 'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
             }
             weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
