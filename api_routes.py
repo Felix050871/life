@@ -95,6 +95,7 @@ def api_get_shifts_for_template(template_id):
                 
                 if shift_duration > 8.0:
                     # Copertura lunga: spezza in segmenti
+                    import sys
                     print(f"API SPLIT: Copertura {coverage.start_time}-{coverage.end_time} durata {shift_duration}h > 8h, spezzamento per missing roles", file=sys.stderr, flush=True)
                     
                     # Ottieni utenti per ruolo (mock list per spezzamento)
