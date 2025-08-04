@@ -68,15 +68,17 @@ def api_get_shifts_for_template(template_id):
     
     # STEP 3: CALCOLA MISSING_ROLES - CORRETTO PER TUTTI I GIORNI
     coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
-    print(f"API DEBUG: Found {len(coverages)} coverages for template {template_id}", file=sys.stderr, flush=True)
+    print(f"🔍 API: Found {len(coverages)} total coverages for template {template_id}")
     
+    total_missing = 0
     for week_data in weeks_data.values():
         for day_index in range(7):
             day_data = week_data['days'][day_index]
             
             # Trova coperture richieste per questo giorno (0=Monday, 6=Sunday)
             day_coverages = [c for c in coverages if c.day_of_week == day_index]
-            print(f"API DEBUG: Day {day_index} has {len(day_coverages)} coverages, {len(day_data['shifts'])} shifts", file=sys.stderr, flush=True)
+            if day_coverages or day_data['shifts']:
+                print(f"📅 Day {day_index}: {len(day_coverages)} coperture, {len(day_data['shifts'])} turni")
             
             for coverage in day_coverages:
                 # Parse ruoli richiesti
@@ -115,7 +117,10 @@ def api_get_shifts_for_template(template_id):
                         missing_text = f"{required_role} mancante ({time_slot})"
                         if missing_text not in day_data['missing_roles']:
                             day_data['missing_roles'].append(missing_text)
-                            print(f"API: MISSING COVERAGE: {missing_text}", file=sys.stderr, flush=True)
+                            total_missing += 1
+                            print(f"🚨 MISSING: {missing_text} on day {day_index}")
+    
+    print(f"🎯 API RESULT: {total_missing} total missing coverages found")
     
     # STEP 4: Ordina e restituisci - MANTIENI COME DIZIONARIO PER FRONTEND
     return jsonify({
