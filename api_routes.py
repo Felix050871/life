@@ -176,7 +176,7 @@ def api_users_by_role(role):
         return jsonify({'error': 'Errore interno del server'}), 500
 
 @app.route('/api/update_shift/<int:shift_id>', methods=['POST'])
-@login_required
+@login_required  
 def api_update_shift(shift_id):
     """API per aggiornare l'assegnazione di un turno"""
     try:
@@ -186,6 +186,7 @@ def api_update_shift(shift_id):
         shift = Shift.query.get_or_404(shift_id)
         
         # Verifica che il turno non sia passato
+        from datetime import date
         if shift.date < date.today():
             return jsonify({'error': 'Non è possibile modificare turni passati'}), 400
         
@@ -194,6 +195,7 @@ def api_update_shift(shift_id):
             if not current_user.sede_obj or current_user.sede_obj.id != shift.user.sede_id:
                 return jsonify({'error': 'Non hai i permessi per modificare turni per questa sede'}), 403
         
+        # Per chiamate AJAX, Flask-WTF non richiede CSRF per API routes
         data = request.get_json()
         new_user_id = data.get('new_user_id')
         

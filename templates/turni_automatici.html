@@ -76,6 +76,7 @@
     color: #adb5bd !important;
 }
 </style>
+<meta name="csrf-token" content="{{ csrf_token() }}">
 {% endblock %}
 
 {% block content %}
@@ -594,12 +595,16 @@ function saveShiftEdit(shiftId) {
         return;
     }
     
+    // Ottieni CSRF token
+    const csrfToken = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
+    
     // Chiamata API per aggiornare il turno
     fetch('/api/update_shift/' + shiftId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
         },
         credentials: 'same-origin',
         body: JSON.stringify({
