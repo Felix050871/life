@@ -354,26 +354,48 @@
             </div>
             <div class="card-body">
                 <div class="row text-center">
-                    <div class="col-md-2">
-                        <h4 class="text-danger">{{ users|selectattr('role', 'equalto', 'Amministratore')|list|length }}</h4>
-                        <small>Amministratori</small>
-                    </div>
-                    <div class="col-md-2">
-                        <h4 class="text-warning">{{ users|selectattr('role', 'equalto', 'Responsabile')|list|length }}</h4>
-                        <small>Responsabili</small>
-                    </div>
-                    <div class="col-md-2">
-                        <h4 class="text-info">{{ users|selectattr('role', 'equalto', 'Supervisore')|list|length }}</h4>
-                        <small>Supervisori</small>
-                    </div>
-                    <div class="col-md-3">
-                        <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Operatore')|list|length }}</h4>
-                        <small>Operatori</small>
-                    </div>
-                    <div class="col-md-3">
-                        <h4 class="text-secondary">{{ users|selectattr('role', 'equalto', 'Ospite')|list|length }}</h4>
-                        <small>Ospiti</small>
-                    </div>
+                    {% if team_stats and team_stats.role_stats %}
+                        {% for role_name, count in team_stats.role_stats.items() %}
+                        <div class="col-md-2 mb-3">
+                            {% if role_name == 'Amministratore' %}
+                            <h4 class="text-danger">{{ count }}</h4>
+                            {% elif role_name == 'Responsabile' %}
+                            <h4 class="text-warning">{{ count }}</h4>
+                            {% elif role_name == 'Supervisore' %}
+                            <h4 class="text-info">{{ count }}</h4>
+                            {% elif role_name == 'Operatore' %}
+                            <h4 class="text-primary">{{ count }}</h4>
+                            {% elif role_name == 'Ospite' %}
+                            <h4 class="text-secondary">{{ count }}</h4>
+                            {% else %}
+                            <h4 class="text-dark">{{ count }}</h4>
+                            {% endif %}
+                            <small>{{ role_name }}{% if count != 1 %}i{% endif %}</small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Fallback per compatibilità se team_stats non è disponibile -->
+                        <div class="col-md-2">
+                            <h4 class="text-danger">{{ users|selectattr('role', 'equalto', 'Amministratore')|list|length }}</h4>
+                            <small>Amministratori</small>
+                        </div>
+                        <div class="col-md-2">
+                            <h4 class="text-warning">{{ users|selectattr('role', 'equalto', 'Responsabile')|list|length }}</h4>
+                            <small>Responsabili</small>
+                        </div>
+                        <div class="col-md-2">
+                            <h4 class="text-info">{{ users|selectattr('role', 'equalto', 'Supervisore')|list|length }}</h4>
+                            <small>Supervisori</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Operatore')|list|length }}</h4>
+                            <small>Operatori</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-secondary">{{ users|selectattr('role', 'equalto', 'Ospite')|list|length }}</h4>
+                            <small>Ospiti</small>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

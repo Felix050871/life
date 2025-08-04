@@ -3254,8 +3254,14 @@ def user_management():
     sede_name = None if current_user.all_sedi else (current_user.sede_obj.name if current_user.sede_obj else None)
     form = UserForm(is_edit=False)
     
+    # Aggiungi statistiche team per le statistiche utenti dinamiche
+    team_stats = None
+    if current_user.can_view_team_stats_widget():
+        team_stats = get_team_statistics()
+    
     return render_template('user_management.html', users=users, form=form, 
-                         sede_name=sede_name, is_multi_sede=current_user.all_sedi)
+                         sede_name=sede_name, is_multi_sede=current_user.all_sedi,
+                         team_stats=team_stats)
 
 @app.route('/user_profile', methods=['GET', 'POST'])
 @login_required
