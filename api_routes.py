@@ -16,12 +16,11 @@ logger = logging.getLogger(__name__)
 def api_get_shifts_for_template(template_id):
     """API COMPLETAMENTE RISCRITTA - LOGICA SEMPLICE E FUNZIONANTE"""
     
-    # DEBUG: Aggiungo logging per verificare chiamate API
-    import sys
-    print(f"API DEBUG: get_shifts_for_template chiamata per template_id={template_id}", file=sys.stderr, flush=True)
+    # Logging Flask visibile nei workflow logs
+    app.logger.info(f"API CHIAMATA: get_shifts_for_template per template {template_id}")
     
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
-    print(f"API DEBUG: Template {template.name}, periodo {template.start_date} - {template.end_date}", file=sys.stderr, flush=True)
+    app.logger.info(f"Template caricato: {template.name}, periodo {template.start_date} - {template.end_date}")
     shifts = Shift.query.filter(
         Shift.date >= template.start_date,
         Shift.date <= template.end_date
@@ -68,7 +67,7 @@ def api_get_shifts_for_template(template_id):
     
     # STEP 3: CALCOLA MISSING_ROLES - CORRETTO PER TUTTI I GIORNI
     coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
-    print(f"🔍 API: Found {len(coverages)} total coverages for template {template_id}")
+    app.logger.info(f"Trovate {len(coverages)} coperture per template {template_id}")
     
     total_missing = 0
     for week_data in weeks_data.values():
@@ -78,7 +77,7 @@ def api_get_shifts_for_template(template_id):
             # Trova coperture richieste per questo giorno (0=Monday, 6=Sunday)
             day_coverages = [c for c in coverages if c.day_of_week == day_index]
             if day_coverages or day_data['shifts']:
-                print(f"📅 Day {day_index}: {len(day_coverages)} coperture, {len(day_data['shifts'])} turni")
+                app.logger.info(f"Giorno {day_index}: {len(day_coverages)} coperture richieste, {len(day_data['shifts'])} turni esistenti")
             
             for coverage in day_coverages:
                 # Parse ruoli richiesti
@@ -118,9 +117,9 @@ def api_get_shifts_for_template(template_id):
                         if missing_text not in day_data['missing_roles']:
                             day_data['missing_roles'].append(missing_text)
                             total_missing += 1
-                            print(f"🚨 MISSING: {missing_text} on day {day_index}")
+                            app.logger.warning(f"COPERTURA MANCANTE: {missing_text} nel giorno {day_index}")
     
-    print(f"🎯 API RESULT: {total_missing} total missing coverages found")
+    app.logger.info(f"RISULTATO API: {total_missing} coperture mancanti totali trovate")
     
     # STEP 4: Ordina e restituisci - MANTIENI COME DIZIONARIO PER FRONTEND
     return jsonify({
