@@ -387,6 +387,8 @@ function applyMissingRolesFromCache(day, dayDate, coverages) {
 function updateDayDisplay(day) {
     if (!day.date || !day.missing_roles || day.missing_roles.length === 0) return;
     
+    console.log('updateDayDisplay called for', day.date, 'with missing_roles:', day.missing_roles);
+    
     // Trova l'elemento del giorno nel DOM
     let dateElements = document.querySelectorAll('.date-text');
     dateElements.forEach(function(element) {
@@ -399,12 +401,25 @@ function updateDayDisplay(day) {
                     let existingAlerts = shiftsContainer.querySelectorAll('.bg-danger');
                     existingAlerts.forEach(alert => alert.remove());
                     
-                    // Aggiungi nuovi alert per missing_roles
+                    // Aggiungi nuovi alert per missing_roles CON PULSANTI ASSEGNA
                     day.missing_roles.forEach(function(missing) {
+                        // Estrai ruolo e orario dal testo "Operatore mancante (16:00-23:59)"
+                        let roleMatch = missing.match(/^(.+?)\s+mancante\s+\((.+?)\)$/);
+                        let missingRole = roleMatch ? roleMatch[1] : 'Operatore';
+                        let missingTime = roleMatch ? roleMatch[2] : '';
+                        
+                        console.log('Creating missing alert with ASSIGN BUTTON for:', missingRole, missingTime);
+                        
                         let alertDiv = document.createElement('div');
-                        alertDiv.className = 'shift-item mb-2 p-2 bg-danger text-white rounded';
+                        alertDiv.className = 'shift-item mb-2 p-2 bg-danger text-white rounded position-relative';
                         alertDiv.innerHTML = '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>' +
-                                           '<small class="d-block">' + missing + '</small>';
+                                           '<small class="d-block">' + missing + '</small>' +
+                                           '<button type="button" class="btn btn-warning btn-sm position-absolute" ' +
+                                           'style="top: 2px; right: 2px; font-size: 10px; padding: 2px 6px;" ' +
+                                           'onclick="assignToMissing(\'' + day.date + '\', \'' + missingRole + '\', \'' + missingTime + '\')" ' +
+                                           'title="Assegna utente a questa copertura">' +
+                                           '<i class="fas fa-plus me-1"></i>Assegna' +
+                                           '</button>';
                         shiftsContainer.appendChild(alertDiv);
                     });
                 }
