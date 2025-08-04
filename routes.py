@@ -2290,4 +2290,71 @@ def reports():
     flash('Funzionalità report in sviluppo', 'info')
     return redirect(url_for('dashboard'))
 
+# Route mancanti dal template base.html - aggiunte tutte insieme per evitare errori
+@app.route('/manage_roles')
+@login_required
+def manage_roles():
+    flash('Funzionalità gestione ruoli in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/manage_users')
+@login_required
+def manage_users():
+    flash('Funzionalità gestione utenti in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/manage_sedi')
+@login_required
+def manage_sedi():
+    flash('Funzionalità gestione sedi in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/manage_holidays')
+@login_required
+def manage_holidays():
+    flash('Funzionalità gestione festività in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/mileage_requests')
+@login_required
+def mileage_requests():
+    flash('Funzionalità rimborsi chilometrici in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/reperibilita')
+@login_required
+def reperibilita():
+    flash('Funzionalità reperibilità in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/reperibilita_manager')
+@login_required
+def reperibilita_manager():
+    flash('Funzionalità gestione reperibilità in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/expense_notes')
+@login_required
+def expense_notes():
+    flash('Funzionalità note spese in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/overtime_requests')
+@login_required
+def overtime_requests():
+    flash('Funzionalità richieste straordinari in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/leave_requests')
+@login_required
+def leave_requests():
+    flash('Funzionalità richieste ferie in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/manage_presidio_templates')
+@login_required
+def manage_presidio_templates():
+    flash('Funzionalità gestione template presidio in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
 
