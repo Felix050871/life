@@ -9,7 +9,8 @@ import logging
 from utils import split_coverage_into_segments_by_user_capacity
 from new_shift_generation import calculate_shift_duration
 
-# Setup logging for API routes
+# Setup logging for API routes  
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @app.route('/api/get_shifts_for_template/<int:template_id>')
@@ -29,6 +30,13 @@ def api_get_shifts_for_template(template_id):
         for shift in shifts[:5]:  # Log primi 5 turni per debug
             user_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
             print(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} -> {user_name} ({shift.user.role})")
+        
+        # DEBUG AGGIUNTIVO: Controlla turni specifici 01/10
+        oct_01_shifts = [s for s in shifts if s.date.strftime('%Y-%m-%d') == '2025-10-01']
+        print(f"01/10 shifts found: {len(oct_01_shifts)}")
+        for shift in oct_01_shifts:
+            user_name = f"{shift.user.first_name} {shift.user.last_name}".strip()
+            print(f"01/10 - Shift {shift.id}: {shift.start_time}-{shift.end_time} -> {user_name}")
         
         # STEP 1: Organizza turni per settimana
         weeks_data = {}
