@@ -26,19 +26,28 @@
                 
                 <!-- User Menu and Messages -->
                 <div class="d-flex align-items-center gap-3">
-                    <!-- Messages - Temporaneamente disabilitato finché non viene implementato -->
-                    {% if false %}
+                    <!-- Messages -->
+                    {% if current_user.can_send_messages() or current_user.can_view_messages() %}
                     <div class="dropdown">
                         <a class="btn btn-outline-light btn-sm dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-envelope me-1"></i>
+                            {% if unread_messages_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.2em 0.4em; margin-left: -0.5rem;">
+                                {{ unread_messages_count if unread_messages_count < 100 else '99+' }}
+                            </span>
+                            {% endif %}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#">
+                            {% if current_user.can_send_messages() %}
+                            <li><a class="dropdown-item" href="{{ url_for('send_message') }}">
                                 <i class="fas fa-paper-plane me-1"></i>Invia Messaggio
                             </a></li>
-                            <li><a class="dropdown-item" href="#">
+                            {% endif %}
+                            {% if current_user.can_view_messages() %}
+                            <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
                                 <i class="fas fa-inbox me-1"></i>Visualizza Messaggi
                             </a></li>
+                            {% endif %}
                         </ul>
                     </div>
                     {% endif %}
@@ -49,7 +58,7 @@
                             <i class="fas fa-user me-1"></i>{{ current_user.first_name or current_user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#" onclick="alert('Profilo utente in sviluppo')">
+                            <li><a class="dropdown-item" href="{{ url_for('user_profile') }}">
                                 <i class="fas fa-user-edit me-1"></i>Profilo
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -86,7 +95,6 @@
                 </li>
                 {% endif %}
                 <!-- RUOLI - Solo se ha almeno un permesso ruoli -->
-                {% if current_user.is_authenticated %}
                 {% set has_roles_permission = current_user.can_manage_roles() or current_user.can_view_roles() %}
                 {% if has_roles_permission %}
                 <li class="sidebar-nav-item">
@@ -126,7 +134,7 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_users() %}
-                        <li><a href="{{ url_for('users') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('user_management') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Utenti
                         </a></li>
                         {% endif %}
@@ -223,7 +231,7 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_reperibilita() %}
-                        <li><a href="{{ url_for('reperibilita_shifts') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('generate_reperibilita_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Reperibilità
                         </a></li>
                         {% endif %}
@@ -233,12 +241,12 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_coverage() %}
-                        <li><a href="{{ url_for('presidio_coverage') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Coperture Reperibilità
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_coverage() %}
-                        <li><a href="{{ url_for('presidio_coverage') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Coperture Reperibilità
                         </a></li>
                         {% endif %}
@@ -929,6 +937,5 @@
     </script>
 
     {% block scripts %}{% endblock %}
-    {% endif %}
 </body>
 </html>

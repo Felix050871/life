@@ -415,7 +415,9 @@ def assign_missing_shift():
             start_time=start_time,
             end_time=end_time,
             user_id=user_id,
-            shift_type=role,  # Usa shift_type al posto di role
+            role=role,
+            template_id=template_id,
+            notes=notes,
             created_by=current_user.id
         )
         
