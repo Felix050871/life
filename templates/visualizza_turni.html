@@ -322,26 +322,28 @@ function loadCoverageRequirementsForDay(templateId, dayOfWeek, dayData) {
     .catch(error => console.log('Error loading coverage requirements:', error));
 }
 
-// Funzione per aggiornare la visualizzazione missing_roles di un giorno
+// Funzione per aggiornare la visualizzazione missing_roles di un giorno  
 function updateDayMissingRoles(dayData) {
     if (dayData.missing_roles && dayData.missing_roles.length > 0) {
         // Cerca l'elemento del giorno nel DOM e aggiorna gli alert
-        var dayElements = document.querySelectorAll('.day-container');
-        dayElements.forEach(function(element) {
-            var dateText = element.querySelector('.date-text');
-            if (dateText && dateText.textContent.includes(dayData.date)) {
-                var existingAlert = element.querySelector('.missing-roles-alert');
-                if (existingAlert) {
-                    existingAlert.remove();
+        setTimeout(function() {
+            var dayElements = document.querySelectorAll('.day-container');
+            dayElements.forEach(function(element) {
+                var dateText = element.querySelector('.date-text');
+                if (dateText && dateText.textContent.includes(dayData.date)) {
+                    var existingAlert = element.querySelector('.missing-roles-alert');
+                    if (existingAlert) {
+                        existingAlert.remove();
+                    }
+                    
+                    var alertHtml = '<div class="alert alert-danger alert-sm mt-2 missing-roles-alert">' +
+                        '<i class="fas fa-exclamation-triangle me-1"></i>' +
+                        dayData.missing_roles.join('<br>') +
+                        '</div>';
+                    element.insertAdjacentHTML('beforeend', alertHtml);
                 }
-                
-                var alertHtml = '<div class="alert alert-danger alert-sm mt-2 missing-roles-alert">' +
-                    '<i class="fas fa-exclamation-triangle me-1"></i>' +
-                    dayData.missing_roles.join('<br>') +
-                    '</div>';
-                element.insertAdjacentHTML('beforeend', alertHtml);
-            }
-        });
+            });
+        }, 100); // Piccolo delay per assicurare che il DOM sia pronto
     }
 }
 

@@ -374,6 +374,39 @@ function applyMissingRolesFromCache(day, dayDate, coverages) {
     });
     
     console.log(day.date + ' - Missing roles calculated:', day.missing_roles);
+    
+    // FORZA RE-RENDER dopo calcolo missing_roles
+    updateDayDisplay(day);
+}
+
+// Funzione per aggiornare la visualizzazione di un singolo giorno
+function updateDayDisplay(day) {
+    if (!day.date || !day.missing_roles || day.missing_roles.length === 0) return;
+    
+    // Trova l'elemento del giorno nel DOM
+    let dateElements = document.querySelectorAll('.date-text');
+    dateElements.forEach(function(element) {
+        if (element.textContent === day.date) {
+            let dayContainer = element.closest('.shift-day');
+            if (dayContainer) {
+                let shiftsContainer = dayContainer.querySelector('.shifts-container');
+                if (shiftsContainer) {
+                    // Rimuovi alert esistenti
+                    let existingAlerts = shiftsContainer.querySelectorAll('.bg-danger');
+                    existingAlerts.forEach(alert => alert.remove());
+                    
+                    // Aggiungi nuovi alert per missing_roles
+                    day.missing_roles.forEach(function(missing) {
+                        let alertDiv = document.createElement('div');
+                        alertDiv.className = 'shift-item mb-2 p-2 bg-danger text-white rounded';
+                        alertDiv.innerHTML = '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>' +
+                                           '<small class="d-block">' + missing + '</small>';
+                        shiftsContainer.appendChild(alertDiv);
+                    });
+                }
+            }
+        }
+    });
 }
 
 // Funzione per renderizzare il layout turni
