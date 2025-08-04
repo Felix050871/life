@@ -2517,4 +2517,44 @@ def visualizza_turni():
     flash('Funzionalità visualizzazione turni in sviluppo', 'info')
     return redirect(url_for('dashboard'))
 
+# Route critiche per turni_automatici
+@app.route('/genera_turni_da_template', methods=['GET', 'POST'])
+@login_required
+def genera_turni_da_template():
+    """Genera turni da template - placeholder"""
+    flash('Funzionalità generazione turni da template in sviluppo', 'info')
+    return redirect(url_for('turni_automatici'))
+
+@app.route('/new_user')
+@login_required
+def new_user():
+    flash('Funzionalità nuovo utente in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/users')
+@login_required
+def users():
+    flash('Funzionalità lista utenti in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/shifts')
+@login_required
+def shifts():
+    flash('Funzionalità turni in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/manage_coverage')
+@login_required
+def manage_coverage():
+    flash('Funzionalità gestione coperture in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/generate_shifts')
+@login_required
+def generate_shifts():
+    flash('Funzionalità generazione turni in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
+# index già esiste - rimossa duplicazione
+
 
