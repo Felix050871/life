@@ -262,6 +262,10 @@ function loadShiftsForTemplate(templateId, templateName) {
 
 function displayShiftsFromAPI(data, templateName) {
     console.log('=== displayShiftsFromAPI START ===');
+    console.log('DEBUG API DATA:', data);
+    if (data.debug_missing_count !== undefined) {
+        console.log('MISSING ROLES COUNT IN API RESPONSE:', data.debug_missing_count);
+    }
     
     // Update template name - RIPRISTINO LAYOUT ORIGINALE
     document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong>';

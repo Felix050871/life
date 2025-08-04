@@ -65,9 +65,12 @@ def api_get_shifts_for_template(template_id):
     for week_data in weeks_data.values():
         week_data['unique_users'] = len(week_data['unique_users'])
     
-    # STEP 3: CALCOLA MISSING_ROLES - CORRETTO PER TUTTI I GIORNI
+    # STEP 3: CALCOLA MISSING_ROLES - SISTEMA DEBUG DEFINITIVO
     coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
-    app.logger.info(f"Trovate {len(coverages)} coperture per template {template_id}")
+    
+    # DEBUG: Forza output visibile - usando anche stderr
+    import sys
+    print(f"DEBUG COVERAGE: Trovate {len(coverages)} coperture per template {template_id}", file=sys.stderr, flush=True)
     
     total_missing = 0
     for week_data in weeks_data.values():
@@ -76,25 +79,29 @@ def api_get_shifts_for_template(template_id):
             
             # Trova coperture richieste per questo giorno (0=Monday, 6=Sunday)
             day_coverages = [c for c in coverages if c.day_of_week == day_index]
-            if day_coverages or day_data['shifts']:
-                app.logger.info(f"Giorno {day_index}: {len(day_coverages)} coperture richieste, {len(day_data['shifts'])} turni esistenti")
+            
+            # Debug solo per mercoledì (day_index=2) - il 2 ottobre
+            if day_index == 2 and (day_coverages or day_data['shifts']):
+                print(f"DEBUG DAY 2 (Mercoledì): {len(day_coverages)} coperture, {len(day_data['shifts'])} turni", file=sys.stderr, flush=True)
+                for shift in day_data['shifts']:
+                    print(f"  SHIFT: {shift['time']} - {shift['role']} - {shift['user']}", file=sys.stderr, flush=True)
             
             for coverage in day_coverages:
                 # Parse ruoli richiesti
                 try:
                     required_roles = json.loads(coverage.required_roles) if coverage.required_roles else []
-                    logger.debug(f" Coverage requires roles: {required_roles}")
                 except Exception as e:
-                    logger.debug(f" Error parsing roles: {e}")
                     required_roles = []
                 
-                # Verifica copertura (non spezzare, le coperture sono già definite correttamente)
+                # Verifica copertura
                 time_slot = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
+                
+                # Debug per mercoledì
+                if day_index == 2:
+                    print(f"DEBUG COVERAGE: Cerco {required_roles} per {time_slot}", file=sys.stderr, flush=True)
                 
                 # Verifica ogni ruolo richiesto per questa copertura
                 for required_role in required_roles:
-                    logger.debug(f" Looking for role '{required_role}' in time slot {time_slot}")
-                    
                     # Conta ruoli esistenti che coprono questa fascia oraria ESATTA
                     role_found = False
                     required_start = coverage.start_time.strftime('%H:%M')
@@ -117,16 +124,26 @@ def api_get_shifts_for_template(template_id):
                         if missing_text not in day_data['missing_roles']:
                             day_data['missing_roles'].append(missing_text)
                             total_missing += 1
-                            app.logger.warning(f"COPERTURA MANCANTE: {missing_text} nel giorno {day_index}")
+                            print(f"!!! MISSING TROVATO: {missing_text} nel giorno {day_index}", file=sys.stderr, flush=True)
     
-    app.logger.info(f"RISULTATO API: {total_missing} coperture mancanti totali trovate")
+    print(f"RISULTATO FINALE: {total_missing} coperture mancanti totali", file=sys.stderr, flush=True)
     
-    # STEP 4: Ordina e restituisci - MANTIENI COME DIZIONARIO PER FRONTEND
+    # STEP 4: Aggiungi debug dell'output finale e restituisci
+    
+    # Debug: conta missing_roles nel risultato finale
+    total_missing_in_output = 0
+    for week_data in weeks_data.values():
+        for day_data in week_data['days']:
+            total_missing_in_output += len(day_data['missing_roles'])
+    
+    print(f"OUTPUT FINALE: {total_missing_in_output} missing_roles nel JSON di output", file=sys.stderr, flush=True)
+    
     return jsonify({
         'success': True,
         'weeks': weeks_data,  # Restituisci come dizionario, non array
         'template_name': template.name,
-        'period': template.get_period_display()
+        'period': template.get_period_display(),
+        'debug_missing_count': total_missing_in_output  # Debug field
     })
 
 @app.route('/api/get_coverage_requirements/<int:template_id>')
