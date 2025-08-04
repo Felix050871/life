@@ -2267,7 +2267,8 @@ def user_management():
         return redirect(url_for('dashboard'))
     
     users = User.query.order_by(User.first_name, User.last_name).all()
-    return render_template('user_management.html', users=users)
+    form = UserForm()  # Aggiungo form richiesto dal template
+    return render_template('user_management.html', users=users, form=form)
 
 @app.route('/new_user', methods=['GET', 'POST'])
 @login_required
@@ -2778,7 +2779,8 @@ def manage_roles():
         return redirect(url_for('dashboard'))
     
     roles = UserRole.query.all()
-    return render_template('manage_roles.html', roles=roles)
+    form = RoleForm()  # Aggiungo form richiesto dal template
+    return render_template('manage_roles.html', roles=roles, form=form)
 
 # ===== GESTIONE SEDI =====
 @app.route('/manage_sedi')
@@ -2790,7 +2792,8 @@ def manage_sedi():
         return redirect(url_for('dashboard'))
     
     sedi = Sede.query.all()
-    return render_template('manage_sedi.html', sedi=sedi)
+    form = SedeForm()  # Aggiungo form richiesto dal template
+    return render_template('manage_sedi.html', sedi=sedi, form=form)
 
 # ===== GESTIONE ORARI =====
 @app.route('/manage_work_schedules')
