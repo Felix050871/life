@@ -14,7 +14,7 @@ from config import get_config
 from sqlalchemy.orm import joinedload
 from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable, MileageRequest
 from forms import LoginForm, UserForm, UserProfileForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm, MileageRequestForm, ApproveMileageForm, MileageFilterForm
-from utils import generate_shifts_for_period, get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
+from utils import get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
 
 # Inject configuration into all templates
 @app.context_processor
@@ -2418,9 +2418,9 @@ def visualizza_turni():
                          timedelta=timedelta)
 
 @app.route('/genera_turni_da_template', methods=['POST'])
-@login_required
+@login_required  
 def genera_turni_da_template():
-    """Genera turni automaticamente da template presidio"""
+    """Genera turni automaticamente da template presidio con approccio metodico 24/7"""
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per creare turni', 'danger')
         return redirect(url_for('turni_automatici'))
@@ -2434,9 +2434,9 @@ def genera_turni_da_template():
     
     try:
         from datetime import datetime, timedelta
-        from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User
+        from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User, WorkSchedule
         import json
-        import random
+        import sys
         
         # Ottieni template e usa le sue date
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
@@ -2472,6 +2472,7 @@ def genera_turni_da_template():
                                  end_date=end_date)
         
         # Se force_regenerate è True, cancella i turni esistenti futuri
+        # Elimina turni esistenti se richiesto
         if force_regenerate and existing_shifts > 0:
             deleted_shifts = Shift.query.filter(
                 Shift.date >= future_start_date,
@@ -2479,6 +2480,18 @@ def genera_turni_da_template():
             ).delete()
             db.session.commit()
             flash(f'Cancellati {deleted_shifts} turni esistenti per rigenerazione', 'info')
+        
+        # Usa il nuovo approccio metodico
+        from new_shift_generation import generate_shifts_methodical
+        turni_creati, message = generate_shifts_methodical(
+            template_id, 
+            start_date, 
+            end_date, 
+            current_user.id
+        )
+        
+        db.session.commit()
+        flash(message, 'success' if turni_creati > 0 else 'warning')
         
         # Controllo preventivo della disponibilità di utenti per tutti i ruoli richiesti
         insufficient_coverage_warnings = []

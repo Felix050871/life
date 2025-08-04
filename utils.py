@@ -576,7 +576,7 @@ def split_coverage_into_max_7h_segments(coverage):
     
     return segments
 
-def generate_shifts_for_period(start_date, end_date, created_by_id):
+def generate_shifts_for_period_OLD_DISABLED(start_date, end_date, created_by_id):
     """
     Generate shifts based on configured presidio coverage requirements considering:
     - Configured coverage slots per day/time/role
