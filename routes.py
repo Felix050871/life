@@ -2374,6 +2374,20 @@ def delete_role(role_id):
     flash('Ruolo eliminato con successo!', 'success')
     return redirect(url_for('manage_roles'))
 
+@app.route('/toggle_role/<int:role_id>', methods=['POST'])
+@login_required
+def toggle_role(role_id):
+    """Toggle stato ruolo"""
+    if not current_user.can_manage_roles():
+        flash('Non hai i permessi per modificare ruoli.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    role = UserRole.query.get_or_404(role_id)
+    role.active = not role.active
+    db.session.commit()
+    flash(f'Ruolo {"attivato" if role.active else "disattivato"}!', 'success')
+    return redirect(url_for('manage_roles'))
+
 @app.route('/create_sede', methods=['GET', 'POST'])
 @login_required
 def create_sede():
@@ -3203,7 +3217,8 @@ def aci_tables():
         return redirect(url_for('dashboard'))
     
     aci_records = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
-    return render_template('aci_tables.html', aci_records=aci_records)
+    form = ACIUploadForm()  # Aggiungo form per template che lo richiede
+    return render_template('aci_tables.html', aci_records=aci_records, form=form)
 
 @app.route('/aci_export')
 @login_required
@@ -3328,7 +3343,11 @@ def reports():
         flash('Non hai i permessi per visualizzare i report.', 'danger')
         return redirect(url_for('dashboard'))
     
-    return render_template('reports.html')
+    # Aggiungo variabili richieste dal template reports.html
+    from datetime import datetime, timedelta
+    start_date = datetime.now() - timedelta(days=30)
+    end_date = datetime.now()
+    return render_template('reports.html', start_date=start_date, end_date=end_date)
 
 # ===== OVERTIME TYPES =====
 @app.route('/overtime_types')
