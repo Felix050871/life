@@ -3033,7 +3033,27 @@ def reperibilita_shifts():
         return redirect(url_for('dashboard'))
     
     shifts = ReperibilitaShift.query.order_by(ReperibilitaShift.date.desc()).limit(100).all()
-    return render_template('reperibilita_shifts.html', shifts=shifts)
+    
+    # Aggiungo variabili navigation richieste dal template
+    from datetime import date, timedelta
+    today = date.today()
+    navigation = {
+        'prev_date': today - timedelta(days=30),
+        'next_date': today + timedelta(days=30),
+        'current_date': today
+    }
+    
+    # Parametri view mode dal template
+    view_mode = request.args.get('view', 'calendar')
+    period_mode = request.args.get('period', 'month')
+    display_mode = request.args.get('display', 'all')
+    
+    return render_template('reperibilita_shifts.html', 
+                         shifts=shifts,
+                         navigation=navigation,
+                         view_mode=view_mode,
+                         period_mode=period_mode,
+                         display_mode=display_mode)
 
 @app.route('/reperibilita_coverage')
 @login_required
@@ -3444,5 +3464,7 @@ def expense_categories():
     
     categories = ExpenseCategory.query.all()
     return render_template('expense_categories.html', categories=categories)
+
+# Route ACI duplicate rimosse - esistevano già
 
 
