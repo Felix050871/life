@@ -242,10 +242,12 @@ function loadShiftsForTemplate(templateId, templateName) {
             if (data.weeks) {
                 Object.keys(data.weeks).forEach(function(weekKey) {
                     var week = data.weeks[weekKey];
-                    for (var i = 0; i < 7; i++) {
-                        if (week.days[i] && week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
-                            console.log('Missing roles found for day', i, ':', week.days[i].missing_roles);
-                        }
+                    if (week.days && Array.isArray(week.days)) {
+                        week.days.forEach(function(day, i) {
+                            if (day && day.missing_roles && day.missing_roles.length > 0) {
+                                console.log('Missing roles found for day', i, ':', day.missing_roles);
+                            }
+                        });
                     }
                 });
             }
@@ -274,23 +276,26 @@ function displayShiftsFromAPI(data, templateName) {
             let week = data.weeks[weekKey];
             if (week.days && Array.isArray(week.days)) {
                 week.days.forEach(function(day, dayIndex) {
-                    // Reset missing_roles
-                    day.missing_roles = [];
-                    
-                    // Verifica se questo giorno è nel periodo del template
-                    let dayDate = parseTemplateDate(day.date + '/2025'); // Aggiungi anno
-                    
-                    if (dayDate >= startDate && dayDate <= endDate) {
-                        // DISABILITATO: Non più slot hardcoded!
-                        // Il sistema ora deve leggere coperture dal database per ogni template
-                        // let requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59']; // HARDCODED RIMOSSO
-                        // CALCOLO DINAMICO MISSING_ROLES DAL DATABASE
-                        loadCoverageRequirementsForDaySync(templateName, day, dayDate, startDate, endDate);
+                    if (day && day.date) {
+                        // Reset missing_roles
+                        day.missing_roles = [];
+                        
+                        // Verifica se questo giorno è nel periodo del template
+                        let dayDate = parseTemplateDate(day.date + '/2025'); // Aggiungi anno
+                        
+                        if (dayDate >= startDate && dayDate <= endDate) {
+                            // CALCOLO DINAMICO MISSING_ROLES DAL DATABASE
+                            loadCoverageRequirementsForDaySync(templateName, day, dayDate, startDate, endDate);
+                        }
                     }
                 });
             }
         });
     }
+    
+    // Renderizza turni usando il codice esistente alla fine del file
+    renderTurniLayout(data, templateName);
+}
 
 // Funzione helper per parsing date template
 function parseTemplateDate(dateStr) {
@@ -370,7 +375,9 @@ function applyMissingRolesFromCache(day, dayDate, coverages) {
     
     console.log(day.date + ' - Missing roles calculated:', day.missing_roles);
 }
-    
+
+// Funzione per renderizzare il layout turni
+function renderTurniLayout(data, templateName) {
     // Update template name - RIPRISTINO LAYOUT ORIGINALE
     document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong>';
     
@@ -410,11 +417,11 @@ function applyMissingRolesFromCache(day, dayDate, coverages) {
         var dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
         
         for (var i = 0; i < 7; i++) {
-            var day = week.days[i];
+            var day = week.days[i] || {}; // Protezione contro undefined
             html += '<div class="col shift-day">';
             html += '<div class="p-2">';
             html += '<strong class="day-name">' + dayNames[i] + '</strong>';
-            html += '<br><small class="date-text">' + day.date + '</small>';
+            html += '<br><small class="date-text">' + (day.date || '') + '</small>';
             html += '<div class="shifts-container mt-2">';
             
             // Show shifts
@@ -452,10 +459,9 @@ function applyMissingRolesFromCache(day, dayDate, coverages) {
     });
     
     container.innerHTML = html;
-    console.log('=== displayShiftsFromAPI COMPLETE ===');
+    console.log('=== renderTurniLayout COMPLETE ===');
 }
 
 // End of simplified API-only logic
 </script>
 {% endblock %}
-                }
