@@ -2248,4 +2248,11 @@ def forgot_password():
     flash('Funzionalità reset password in sviluppo', 'info')
     return redirect(url_for('login'))
 
+@app.route('/internal_messages')
+@login_required
+def internal_messages():
+    """Route placeholder per messaggi interni"""
+    flash('Funzionalità messaggi interni in sviluppo', 'info')
+    return redirect(url_for('dashboard'))
+
 
