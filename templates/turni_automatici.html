@@ -362,7 +362,7 @@ function loadShiftsForTemplate(templateId, templateName) {
                                     if (!isInRange) {
                                         // Date fuori range: nessun missing_roles
                                         dayData.missing_roles = [];
-                                        console.log('Date', dayData.date, 'set to EMPTY missing_roles (out of range)');
+
                                         continue;
                                     }
                                     
@@ -371,67 +371,40 @@ function loadShiftsForTemplate(templateId, templateName) {
                                         return cov.day_of_week === dayIndex;
                                     });
                                     
-                                    console.log('DAY COVERAGE DEBUG: Day', dayIndex, '(' + dayData.date + ') has', dayCoverages.length, 'coverages');
-                                    dayCoverages.forEach(function(cov) {
-                                        console.log('  - Coverage:', cov.start_time + '-' + cov.end_time, 'roles:', cov.required_roles);
-                                    });
-                                    
                                     // Per ogni copertura richiesta, verifica se è soddisfatta
                                     dayCoverages.forEach(function(coverage) {
-                                        console.log('COVERAGE DEBUG: Checking coverage', coverage.start_time + '-' + coverage.end_time, 'for roles', coverage.required_roles);
                                         
                                         coverage.required_roles.forEach(function(requiredRole) {
                                             // Conta quanti turni di questo ruolo coprono la fascia oraria
                                             var roleCount = 0;
                                             
                                             if (dayData.shifts) {
-                                                console.log('SHIFTS DEBUG: Found', dayData.shifts.length, 'shifts for', dayData.date, '- shifts:', dayData.shifts.map(s => s.time).join(', '));
                                                 dayData.shifts.forEach(function(shift) {
-                                                    console.log('SHIFT DEBUG: Checking shift', shift.role, shift.time, 'vs required', requiredRole);
                                                     if (shift.role === requiredRole) {
                                                         // Verifica sovrapposizione oraria
                                                         var shiftTimes = shift.time.split('-');
                                                         var shiftStart = shiftTimes[0];
                                                         var shiftEnd = shiftTimes[1];
                                                         
-                                                        console.log('TIME DEBUG: Coverage', coverage.start_time + '-' + coverage.end_time, 'vs Shift', shiftStart + '-' + shiftEnd);
-                                                        console.log('OVERLAP DEBUG: Checking if', shiftStart, '<', coverage.end_time, 'AND', shiftEnd, '>', coverage.start_time);
-                                                        
                                                         // Fix: Usa < e > per evitare sovrapposizioni al limite (08:00-16:00 non copre 16:00-23:59)
                                                         if (shiftStart < coverage.end_time && shiftEnd > coverage.start_time) {
                                                             roleCount++;
-                                                            console.log('OVERLAP DEBUG: ✓ MATCH FOUND! roleCount now =', roleCount);
-                                                        } else {
-                                                            console.log('OVERLAP DEBUG: ✗ NO OVERLAP detected');
                                                         }
                                                     }
                                                 });
-                                            } else {
-                                                console.log('SHIFTS DEBUG: No shifts for', dayData.date);
                                             }
                                             
                                             // Se il ruolo è insufficiente, aggiungi a missing_roles
-                                            console.log('ROLE COUNT DEBUG: Found', roleCount, 'roles, required', coverage.role_count, 'for coverage', coverage.start_time + '-' + coverage.end_time);
                                             if (roleCount < coverage.role_count) {
                                                 var missingText = requiredRole + ' mancante (' + coverage.start_time + '-' + coverage.end_time + ')';
-                                                console.log('MISSING DEBUG: Adding missing role:', missingText);
                                                 if (!dayData.missing_roles.includes(missingText)) {
                                                     dayData.missing_roles.push(missingText);
                                                 }
-                                            } else {
-                                                console.log('COVERAGE OK: Coverage', coverage.start_time + '-' + coverage.end_time, 'satisfied with', roleCount, 'roles');
                                             }
                                         });
                                     });
                                     
-                                    console.log('Day', dayIndex, 'dynamic missing_roles:', dayData.missing_roles);
-                                    
-                                    // DEBUG: Verifica i missing_roles dopo il calcolo
-                                    if (dayData.missing_roles && dayData.missing_roles.length > 0) {
-                                        console.log('✓ MISSING ROLES FOUND for', dayData.date, ':', dayData.missing_roles);
-                                    } else {
-                                        console.log('✗ NO MISSING ROLES for', dayData.date);
-                                    }
+
                                 }
                             }
                         }

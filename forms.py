@@ -1357,8 +1357,8 @@ class PresidioCoverageForm(FlaskForm):
                 end_dt += timedelta(days=1)
             
             duration = (end_dt - start_dt).total_seconds() / 3600
-            if duration > 16:  # Massimo 16 ore consecutive
-                raise ValidationError('La copertura non può durare più di 16 ore consecutive')
+            if duration > 24:  # Massimo 24 ore consecutive (copertura completa giornaliera)
+                raise ValidationError('La copertura non può durare più di 24 ore consecutive')
 
 class PresidioCoverageSearchForm(FlaskForm):
     """Form per ricerca e filtri delle coperture presidio"""
