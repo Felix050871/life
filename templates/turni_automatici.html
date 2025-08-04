@@ -281,30 +281,12 @@ function displayShiftsFromAPI(data, templateName) {
                     let dayDate = parseTemplateDate(day.date + '/2025'); // Aggiungi anno
                     
                     if (dayDate >= startDate && dayDate <= endDate) {
-                        // Solo per giorni nel periodo: verifica slot mancanti
-                        let requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59'];
-                        let existingSlots = [];
-                        
-                        if (day.shifts) {
-                            day.shifts.forEach(function(shift) {
-                                existingSlots.push(shift.time);
-                            });
-                        }
-                        
-                        // Verifica slot mancanti
-                        requiredSlots.forEach(function(slot) {
-                            if (!existingSlots.includes(slot)) {
-                                day.missing_roles.push('Operatore mancante (' + slot + ')');
-                            }
-                        });
-                        
-                        // Debug per 2 ottobre
-                        if (day.date === '02/10') {
-                            console.log('2 OTTOBRE - Nel periodo template:', dayDate >= startDate && dayDate <= endDate);
-                            console.log('2 OTTOBRE - Required slots:', requiredSlots);
-                            console.log('2 OTTOBRE - Existing slots:', existingSlots);
-                            console.log('2 OTTOBRE - Missing:', day.missing_roles);
-                        }
+                        // DISABILITATO: Non più slot hardcoded!
+                        // Il sistema ora deve leggere coperture dal database per ogni template
+                        // let requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59']; // HARDCODED RIMOSSO
+                        // SISTEMA HARDCODED COMPLETAMENTE DISABILITATO
+                        // Il calcolo missing_roles deve essere fatto dal backend con dati reali
+                        console.log(day.date + ' - Nel periodo template: true (hardcoded missing_roles system disabled)');
                     }
                 });
             }

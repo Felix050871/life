@@ -38,3 +38,6 @@ Preferred communication style: Simple, everyday language.
 - **Werkzeug**: Password hashing.
 - **Openpyxl**: Python library for server-side Excel file generation.
 - **SheetJS (XLSX)**: JavaScript library for client-side Excel handling.
+
+## Recent Changes
+- August 4, 2025: **Sistema Missing Coverage Hardcoded Disabilitato** - Identificato e disabilitato completamente sistema hardcoded che usava slot fissi ['00:00-07:59','08:00-16:00','16:00-23:59'] per tutti i template. Questo causava errori su template con coperture diverse (es. Settembre 2025 con 09:00-18:00). Sistema missing_roles ora deve essere implementato dinamicamente leggendo coperture reali dal database per ogni template specifico. Frontend non mostra più alert di copertura mancante fino a implementazione dinamica.

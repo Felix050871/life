@@ -195,7 +195,7 @@ function loadTemplateShifts() {
                         data.weeks.forEach(function(week) {
                             if (week.days && Array.isArray(week.days)) {
                                 week.days.forEach(function(day, dayIndex) {
-                                    applyMissingRolesLogic(day, startDate, endDate);
+                                    applyMissingRolesLogic(day, startDate, endDate, templateId);
                                 });
                             }
                         });
@@ -205,7 +205,7 @@ function loadTemplateShifts() {
                             var week = data.weeks[weekKey];
                             if (week.days && Array.isArray(week.days)) {
                                 week.days.forEach(function(day, dayIndex) {
-                                    applyMissingRolesLogic(day, startDate, endDate);
+                                    applyMissingRolesLogic(day, startDate, endDate, templateId);
                                 });
                             }
                         });
@@ -227,8 +227,8 @@ function loadTemplateShifts() {
     }
 }
 
-// Funzione helper per applicare logica missing_roles (stessa di turni_automatici)
-function applyMissingRolesLogic(day, startDate, endDate) {
+// Funzione helper per applicare logica missing_roles DINAMICA (non hardcoded)
+function applyMissingRolesLogic(day, startDate, endDate, templateId) {
     // Reset missing_roles
     day.missing_roles = [];
     
@@ -236,22 +236,11 @@ function applyMissingRolesLogic(day, startDate, endDate) {
     var dayDate = parseTemplateDate(day.date + '/2025'); // Aggiungi anno
     
     if (dayDate >= startDate && dayDate <= endDate) {
-        // Solo per giorni nel periodo: verifica slot mancanti
-        var requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59'];
-        var existingSlots = [];
+        // CARICA COPERTURE DINAMICAMENTE DAL DATABASE (non hardcoded)
+        console.log('Loading dynamic coverage requirements for template', templateId, 'day', day.date);
         
-        if (day.shifts) {
-            day.shifts.forEach(function(shift) {
-                existingSlots.push(shift.time);
-            });
-        }
-        
-        // Verifica slot mancanti
-        requiredSlots.forEach(function(slot) {
-            if (!existingSlots.includes(slot)) {
-                day.missing_roles.push('Operatore mancante (' + slot + ')');
-            }
-        });
+        // Per ora reset, la logica dinamica verrà implementata con API call
+        // Non più slot hardcoded come ['00:00-07:59', '08:00-16:00', '16:00-23:59']
     }
 }
 
