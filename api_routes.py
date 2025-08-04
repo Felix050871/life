@@ -19,28 +19,36 @@ def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
     
     try:
-        print("=== API CALLED ===")
+        import sys
+        print("=== API CALLED ===", flush=True)
+        sys.stdout.flush()
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
-        print(f"Template {template_id}: {template.start_date} to {template.end_date}")
+        print(f"Template {template_id}: {template.start_date} to {template.end_date}", flush=True)
+        sys.stdout.flush()
         
         # Query diretta senza eager loading per test
         all_shifts = Shift.query.all()
-        print(f"Total shifts in database: {len(all_shifts)}")
+        print(f"Total shifts in database: {len(all_shifts)}", flush=True)
+        sys.stdout.flush()
         
         shifts = Shift.query.filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
         
-        print(f"API DEBUG: Found {len(shifts)} shifts for template {template_id}")
+        print(f"API DEBUG: Found {len(shifts)} shifts for template {template_id}", flush=True)
+        sys.stdout.flush()
         for shift in shifts[:10]:  # Log primi 10 turni per debug
-            print(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} -> user_id={shift.user_id}")
+            print(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} -> user_id={shift.user_id}", flush=True)
+        sys.stdout.flush()
         
         # DEBUG AGGIUNTIVO: Controlla turni specifici 01/10
         oct_01_shifts = [s for s in shifts if s.date.strftime('%Y-%m-%d') == '2025-10-01']
-        print(f"01/10 shifts found: {len(oct_01_shifts)}")
+        print(f"01/10 shifts found: {len(oct_01_shifts)}", flush=True)
+        sys.stdout.flush()
         for shift in oct_01_shifts:
-            print(f"01/10 - Shift {shift.id}: {shift.start_time}-{shift.end_time} -> user_id={shift.user_id}")
+            print(f"01/10 - Shift {shift.id}: {shift.start_time}-{shift.end_time} -> user_id={shift.user_id}", flush=True)
+        sys.stdout.flush()
         
         # STEP 1: Organizza turni per settimana
         weeks_data = {}
@@ -90,7 +98,8 @@ def api_get_shifts_for_template(template_id):
                 'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
             }
             weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
-            print(f"Added shift {shift.id} to week {week_key}, day {day_index}: {user_display_name}")
+            print(f"Added shift {shift.id} to week {week_key}, day {day_index}: {user_display_name}", flush=True)
+            sys.stdout.flush()
             weeks_data[week_key]['shift_count'] += 1
             weeks_data[week_key]['unique_users'].add(shift.user.username)
         
