@@ -2481,9 +2481,9 @@ def genera_turni_da_template():
             db.session.commit()
             flash(f'Cancellati {deleted_shifts} turni esistenti per rigenerazione', 'info')
         
-        # Usa il nuovo approccio metodico
-        from new_shift_generation import generate_shifts_methodical
-        turni_creati, message = generate_shifts_methodical(
+        # Usa il nuovo sistema avanzato con regole rigorose
+        from new_shift_generation import generate_shifts_advanced
+        turni_creati, message = generate_shifts_advanced(
             template_id, 
             start_date, 
             end_date, 
