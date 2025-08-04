@@ -262,10 +262,35 @@ function loadShiftsForTemplate(templateId, templateName) {
 
 function displayShiftsFromAPI(data, templateName) {
     console.log('=== displayShiftsFromAPI START ===');
-    console.log('DEBUG API DATA:', data);
+    console.log('DEBUG API DATA KEYS:', Object.keys(data));
+    console.log('HAS DEBUG FIELD:', 'debug_missing_count' in data);
     if (data.debug_missing_count !== undefined) {
         console.log('MISSING ROLES COUNT IN API RESPONSE:', data.debug_missing_count);
     }
+    
+    // VERIFICA MANUALE MISSING_ROLES - CORRETTA PER STRUTTURA DIZIONARIO
+    let totalMissing = 0;
+    if (data.weeks) {
+        // data.weeks è un dizionario, non un array
+        Object.keys(data.weeks).forEach(function(weekKey) {
+            let week = data.weeks[weekKey];
+            if (week.days && Array.isArray(week.days)) {
+                week.days.forEach(function(day, dayIndex) {
+                    if (day.missing_roles && day.missing_roles.length > 0) {
+                        totalMissing += day.missing_roles.length;
+                        console.log('FOUND MISSING ROLES:', day.date, day.missing_roles);
+                    }
+                    // Debug specifico per 2 ottobre (mercoledì)
+                    if (day.date === '02/10') {
+                        console.log('2 OTTOBRE DEBUG - Shifts:', day.shifts);
+                        console.log('2 OTTOBRE DEBUG - Missing:', day.missing_roles);
+                        console.log('2 OTTOBRE DEBUG - Dovrebbe avere 3 turni ma ne ha:', day.shifts ? day.shifts.length : 0);
+                    }
+                });
+            }
+        });
+    }
+    console.log('TOTAL MISSING FOUND IN CLIENT:', totalMissing);
     
     // Update template name - RIPRISTINO LAYOUT ORIGINALE
     document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong>';
