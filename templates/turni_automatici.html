@@ -262,10 +262,10 @@ function loadShiftsForTemplate(templateId, templateName) {
 
 function displayShiftsFromAPI(data, templateName) {
     console.log('=== displayShiftsFromAPI START ===');
-    console.log('DEBUG API DATA KEYS:', Object.keys(data));
-    console.log('HAS DEBUG FIELD:', 'debug_missing_count' in data);
-    if (data.debug_missing_count !== undefined) {
-        console.log('MISSING ROLES COUNT IN API RESPONSE:', data.debug_missing_count);
+    console.log('API RESPONSE - DEBUG COUNT:', data.debug_missing_count);
+    console.log('API RESPONSE - SUCCESS:', data.success);
+    if (data.error) {
+        console.error('API ERROR:', data.error);
     }
     
     // VERIFICA MANUALE MISSING_ROLES - CORRETTA PER STRUTTURA DIZIONARIO
