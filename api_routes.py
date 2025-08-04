@@ -66,21 +66,17 @@ def api_get_shifts_for_template(template_id):
     for week_data in weeks_data.values():
         week_data['unique_users'] = len(week_data['unique_users'])
     
-    # STEP 3: CALCOLA MISSING_ROLES - CON DEBUG COMPLETO
+    # STEP 3: CALCOLA MISSING_ROLES - CORRETTO PER TUTTI I GIORNI
     coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
-    logger.debug(f" Found {len(coverages)} coverages for template {template_id}")
-    
-    for coverage in coverages:
-        print(f"API DEBUG: Coverage {coverage.id}: day={coverage.day_of_week}, time={coverage.start_time}-{coverage.end_time}, roles={coverage.required_roles}", file=sys.stderr, flush=True)
+    print(f"API DEBUG: Found {len(coverages)} coverages for template {template_id}", file=sys.stderr, flush=True)
     
     for week_data in weeks_data.values():
         for day_index in range(7):
             day_data = week_data['days'][day_index]
-            print(f"API DEBUG: Processing day {day_index} with {len(day_data['shifts'])} shifts", file=sys.stderr, flush=True)
             
-            # Trova coperture richieste per questo giorno
+            # Trova coperture richieste per questo giorno (0=Monday, 6=Sunday)
             day_coverages = [c for c in coverages if c.day_of_week == day_index]
-            print(f"API DEBUG: Day {day_index} has {len(day_coverages)} coverages", file=sys.stderr, flush=True)
+            print(f"API DEBUG: Day {day_index} has {len(day_coverages)} coverages, {len(day_data['shifts'])} shifts", file=sys.stderr, flush=True)
             
             for coverage in day_coverages:
                 # Parse ruoli richiesti

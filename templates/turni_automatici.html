@@ -263,7 +263,7 @@ function loadShiftsForTemplate(templateId, templateName) {
 function displayShiftsFromAPI(data, templateName) {
     console.log('=== displayShiftsFromAPI START ===');
     
-    // Update template name
+    // Update template name - RIPRISTINO LAYOUT ORIGINALE
     document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong>';
     
     var container = document.getElementById('weeks-container');
@@ -279,53 +279,53 @@ function displayShiftsFromAPI(data, templateName) {
     
     var html = '';
     
-    // Process each week
+    // LAYOUT ORIGINALE: Process each week con struttura tabella
     Object.keys(data.weeks).forEach(function(weekKey) {
         var week = data.weeks[weekKey];
-        html += '<div class="mb-4">';
-        html += '<div class="d-flex justify-content-between align-items-center mb-3">';
-        html += '<h6 class="mb-0 text-primary"><i class="fas fa-calendar-week me-2"></i>Settimana ' + week.start + ' - ' + week.end + '</h6>';
+        
+        // Week card con layout originale
+        html += '<div class="week-card">';
+        html += '<div class="week-header">';
+        html += '<div class="d-flex justify-content-between align-items-center">';
+        html += '<h6 class="mb-0"><i class="fas fa-calendar-week me-2"></i>Settimana ' + week.start + ' - ' + week.end + '</h6>';
         html += '<div>';
         html += '<span class="badge bg-primary me-2">' + week.shift_count + ' turni</span>';
         html += '<span class="badge bg-secondary me-2">' + week.unique_users + ' persone</span>';
         html += '<span class="badge bg-info">' + week.total_hours + 'h</span>';
         html += '</div>';
         html += '</div>';
+        html += '</div>';
         
-        html += '<div class="row">';
+        // Tabella con giorni della settimana - LAYOUT ORIGINALE
+        html += '<div class="row g-0">';
         
-        // Process each day
         var dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
         
         for (var i = 0; i < 7; i++) {
             var day = week.days[i];
-            html += '<div class="col-md-6 col-lg-4 mb-3">';
-            html += '<div class="card h-100">';
-            html += '<div class="card-header py-2">';
-            html += '<small class="text-muted d-block">' + dayNames[i] + '</small>';
-            html += '<strong>' + day.date + '</strong>';
-            html += '</div>';
-            html += '<div class="card-body py-2">';
+            html += '<div class="col shift-day">';
+            html += '<div class="p-2">';
+            html += '<strong class="day-name">' + dayNames[i] + '</strong>';
+            html += '<br><small class="date-text">' + day.date + '</small>';
+            html += '<div class="shifts-container mt-2">';
             
             // Show shifts
             if (day.shifts && day.shifts.length > 0) {
                 day.shifts.forEach(function(shift) {
-                    html += '<div class="d-flex justify-content-between align-items-center mb-1">';
-                    html += '<div>';
-                    html += '<span class="badge bg-success me-1">' + shift.role + '</span>';
-                    html += '<small class="text-muted">' + shift.user + '</small>';
-                    html += '</div>';
-                    html += '<small class="text-muted">' + shift.time + '</small>';
+                    html += '<div class="shift-item mb-2 p-2 bg-success text-white rounded">';
+                    html += '<small class="d-block"><strong>' + shift.role + '</strong></small>';
+                    html += '<small class="d-block">' + shift.user + '</small>';
+                    html += '<small class="d-block text-light">' + shift.time + '</small>';
                     html += '</div>';
                 });
             }
             
-            // Show missing roles
+            // Show missing roles - ALERT ROSSI COME ORIGINALE
             if (day.missing_roles && day.missing_roles.length > 0) {
                 day.missing_roles.forEach(function(missing) {
-                    html += '<div class="alert alert-danger py-1 px-2 mb-1">';
-                    html += '<i class="fas fa-exclamation-triangle me-1"></i>';
-                    html += '<small>' + missing + '</small>';
+                    html += '<div class="shift-item mb-2 p-2 bg-danger text-white rounded">';
+                    html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
+                    html += '<small class="d-block">' + missing + '</small>';
                     html += '</div>';
                 });
             }
