@@ -5,6 +5,8 @@ from app import app, db
 from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
 import json
 import logging
+from utils import split_coverage_into_segments_by_user_capacity
+from new_shift_generation import calculate_shift_duration
 
 # Setup logging for API routes
 logger = logging.getLogger(__name__)
@@ -88,33 +90,77 @@ def api_get_shifts_for_template(template_id):
                     logger.debug(f" Error parsing roles: {e}")
                     required_roles = []
                 
-                time_slot = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
+                # NUOVA LOGICA: Controlla se la copertura deve essere spezzata
+                shift_duration = calculate_shift_duration(coverage.start_time, coverage.end_time)
                 
-                # Verifica ogni ruolo richiesto
-                for required_role in required_roles:
-                    logger.debug(f" Looking for role '{required_role}' in time slot {time_slot}")
+                if shift_duration > 8.0:
+                    # Copertura lunga: spezza in segmenti
+                    print(f"API SPLIT: Copertura {coverage.start_time}-{coverage.end_time} durata {shift_duration}h > 8h, spezzamento per missing roles", file=sys.stderr, flush=True)
                     
-                    # Conta ruoli esistenti che coprono questa fascia oraria
-                    role_found = False
-                    for shift in day_data['shifts']:
-                        logger.debug(f" Checking shift: {shift['role']} at {shift['time']}")
-                        if shift['role'] == required_role:
-                            shift_times = shift['time'].split('-')
-                            shift_start = shift_times[0]
-                            shift_end = shift_times[1]
+                    # Ottieni utenti per ruolo (mock list per spezzamento)
+                    mock_users = []  # La funzione di split ha bisogno solo della copertura
+                    segments = split_coverage_into_segments_by_user_capacity(coverage, mock_users)
+                    
+                    print(f"API SPLIT: Creati {len(segments)} segmenti da verificare", file=sys.stderr, flush=True)
+                    
+                    # Verifica ogni segmento separatamente
+                    for segment_idx, (seg_start, seg_end, suggested_count) in enumerate(segments):
+                        segment_time_slot = f"{seg_start.strftime('%H:%M')}-{seg_end.strftime('%H:%M')}"
+                        print(f"API SPLIT: Verificando segmento {segment_idx + 1}: {segment_time_slot}", file=sys.stderr, flush=True)
+                        
+                        # Verifica ogni ruolo richiesto per questo segmento
+                        for required_role in required_roles:
+                            logger.debug(f" Looking for role '{required_role}' in segment {segment_time_slot}")
                             
-                            # Verifica sovrapposizione oraria
-                            if shift_start <= coverage.end_time.strftime('%H:%M') and shift_end >= coverage.start_time.strftime('%H:%M'):
-                                logger.debug(f" Role {required_role} found - overlap detected")
-                                role_found = True
-                                break
+                            # Conta ruoli esistenti che coprono questo segmento
+                            role_found = False
+                            for shift in day_data['shifts']:
+                                if shift['role'] == required_role:
+                                    shift_times = shift['time'].split('-')
+                                    shift_start = shift_times[0]
+                                    shift_end = shift_times[1]
+                                    
+                                    # Verifica sovrapposizione con questo segmento
+                                    if shift_start < seg_end.strftime('%H:%M') and shift_end > seg_start.strftime('%H:%M'):
+                                        logger.debug(f" Role {required_role} found in segment - overlap detected")
+                                        role_found = True
+                                        break
+                            
+                            # Se ruolo non trovato per questo segmento, aggiungi a missing_roles
+                            if not role_found:
+                                missing_text = f"{required_role} mancante ({segment_time_slot})"
+                                if missing_text not in day_data['missing_roles']:
+                                    day_data['missing_roles'].append(missing_text)
+                                    print(f"API SPLIT: ADDED MISSING SEGMENT: {missing_text}", file=sys.stderr, flush=True)
+                else:
+                    # Copertura normale (≤ 8h): logica originale
+                    time_slot = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
                     
-                    # Se ruolo non trovato, aggiungi a missing_roles
-                    if not role_found:
-                        missing_text = f"{required_role} mancante ({time_slot})"
-                        if missing_text not in day_data['missing_roles']:
-                            day_data['missing_roles'].append(missing_text)
-                            logger.debug(f" ADDED MISSING ROLE: {missing_text}")
+                    # Verifica ogni ruolo richiesto
+                    for required_role in required_roles:
+                        logger.debug(f" Looking for role '{required_role}' in time slot {time_slot}")
+                        
+                        # Conta ruoli esistenti che coprono questa fascia oraria
+                        role_found = False
+                        for shift in day_data['shifts']:
+                            logger.debug(f" Checking shift: {shift['role']} at {shift['time']}")
+                            if shift['role'] == required_role:
+                                shift_times = shift['time'].split('-')
+                                shift_start = shift_times[0]
+                                shift_end = shift_times[1]
+                                
+                                # Verifica sovrapposizione oraria
+                                if shift_start <= coverage.end_time.strftime('%H:%M') and shift_end >= coverage.start_time.strftime('%H:%M'):
+                                    logger.debug(f" Role {required_role} found - overlap detected")
+                                    role_found = True
+                                    break
+                        
+                        # Se ruolo non trovato, aggiungi a missing_roles
+                        if not role_found:
+                            missing_text = f"{required_role} mancante ({time_slot})"
+                            if missing_text not in day_data['missing_roles']:
+                                day_data['missing_roles'].append(missing_text)
+                                logger.debug(f" ADDED MISSING ROLE: {missing_text}")
     
     # STEP 4: Ordina e restituisci
     sorted_weeks = sorted(weeks_data.items())
