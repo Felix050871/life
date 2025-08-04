@@ -1340,12 +1340,7 @@ def ente_home():
                          active_intervention=active_intervention,
                          recent_interventions=recent_interventions)
 
-@app.route('/test_route', methods=['GET', 'POST'])
-@login_required
-def test_route():
-    pass  # Test route
-    flash('Test route funziona!', 'info')
-    return redirect(url_for('attendance'))
+
 
 @app.route('/api/work_hours/<int:user_id>/<date_str>')
 @login_required
@@ -1398,7 +1393,7 @@ def clock_in():
             'message': 'Non hai i permessi per registrare presenze.'
         }), 403
         
-    pass  # Clock-in attempt
+
     
     # Verifica se può fare clock-in
     if not AttendanceEvent.can_perform_action(current_user.id, 'clock_in'):
@@ -2436,7 +2431,6 @@ def genera_turni_da_template():
         from datetime import datetime, timedelta
         from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User, WorkSchedule
         import json
-        import sys
         
         # Ottieni template e usa le sue date
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
@@ -2624,24 +2618,9 @@ def generate_shifts():
         db.session.add(template)
         db.session.commit()
         
-        # DEBUG: Verifica che la route venga chiamata  
-        import sys
-        print(f"ROUTE DEBUG: generate_shifts chiamata per {form.start_date.data} - {form.end_date.data}", file=sys.stderr, flush=True)
-        
-        # DEBUG: Verifica le coperture esistenti
-        from models import PresidioCoverage
-        coverages = PresidioCoverage.query.filter_by(active=True).all()
-        print(f"ROUTE DEBUG: Trovate {len(coverages)} coperture attive", file=sys.stderr, flush=True)
-        for cov in coverages[:5]:  # Mostra le prime 5
-            print(f"ROUTE DEBUG: Copertura {cov.get_day_name()} {cov.start_time}-{cov.end_time}", file=sys.stderr, flush=True)
-        
-        success, message = generate_shifts_for_period(
-            form.start_date.data,
-            form.end_date.data,
-            current_user.id
-        )
-        
-        print(f"ROUTE DEBUG: generate_shifts_for_period ha restituito success={success}", file=sys.stderr, flush=True)
+        # Note: generate_shifts_for_period function removed - shifts now generated via presidio templates
+        success = False
+        message = "Funzione di generazione turni rimossa. Usa i template presidio per creare turni."
         
         if success:
             flash(message, 'success')
@@ -2680,23 +2659,9 @@ def regenerate_template(template_id):
     template.created_by = current_user.id  # Update creator to current user
     db.session.commit()
     
-    # Regenerate shifts
-    import sys
-    print(f"REGENERATE DEBUG: regenerate_template chiamata per template {template_id}", file=sys.stderr, flush=True)
-    
-    # DEBUG: Verifica le coperture prima della rigenerazione
-    from models import PresidioCoverage
-    coverages = PresidioCoverage.query.filter_by(active=True).all()
-    problem_coverages = [c for c in coverages if c.start_time.strftime('%H:%M') == '08:00' and c.end_time.strftime('%H:%M') == '23:59']
-    print(f"REGENERATE DEBUG: Trovate {len(problem_coverages)} coperture 08:00-23:59 ancora attive!", file=sys.stderr, flush=True)
-    
-    success, message = generate_shifts_for_period(
-        template.start_date,
-        template.end_date,
-        current_user.id
-    )
-    
-    print(f"REGENERATE DEBUG: generate_shifts_for_period ha restituito success={success}", file=sys.stderr, flush=True)
+    # Note: generate_shifts_for_period function removed - shifts now generated via presidio templates
+    success = False
+    message = "Funzione di rigenerazione turni rimossa. Usa i template presidio per creare turni."
     
     if success:
         preserved_msg = f" (preservati {(today - template.start_date).days} giorni già lavorati)" if today > template.start_date else ""
@@ -3445,7 +3410,7 @@ def reports():
     
     # Get user statistics for all active users (excluding Amministratore and Ospite)
     users = User.query.filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
-    pass  # User count info
+
     
     user_stats = []
     chart_data = []  # Separate data for charts without User objects
@@ -3470,13 +3435,13 @@ def reports():
                 'pending_leaves': stats['pending_leaves']
             })
             
-            pass  # User stats processed
-        except Exception as e:
+
+        except Exception:
             pass  # Silent error handling
             # Continue without this user's stats
             continue
     
-    pass  # Stats collected
+
     
     # Get interventions data for the table (entrambi i tipi)
     from models import Intervention, ReperibilitaIntervention
@@ -4703,10 +4668,6 @@ def generate_reperibilita_shifts():
             db.session.delete(shift)
         
         try:
-            import sys
-            # Log shift generation parameters for debugging
-            import logging
-            pass  # Generate shifts
             
             # Genera turni reperibilità dalla copertura selezionata
             shifts_created, warnings = generate_reperibilita_shifts_from_coverage(
@@ -4732,9 +4693,6 @@ def generate_reperibilita_shifts():
             return redirect(url_for('reperibilita_shifts'))
             
         except Exception as e:
-            import traceback
-            import sys
-            pass  # Silent error handling
             db.session.rollback()
             flash(f'Errore durante la generazione: {str(e)}', 'error')
 
@@ -9311,7 +9269,7 @@ def delete_overtime_type(type_id):
 @login_required
 def mileage_requests():
     """Visualizza le richieste di rimborso chilometrico"""
-    pass  # Mileage requests view
+
     
     try:
         if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
