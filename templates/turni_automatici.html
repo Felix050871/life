@@ -262,35 +262,43 @@ function loadShiftsForTemplate(templateId, templateName) {
 
 function displayShiftsFromAPI(data, templateName) {
     console.log('=== displayShiftsFromAPI START ===');
-    console.log('API RESPONSE - DEBUG COUNT:', data.debug_missing_count);
-    console.log('API RESPONSE - SUCCESS:', data.success);
-    if (data.error) {
-        console.error('API ERROR:', data.error);
-    }
     
-    // VERIFICA MANUALE MISSING_ROLES - CORRETTA PER STRUTTURA DIZIONARIO
-    let totalMissing = 0;
+    // CALCOLO MISSING_ROLES NEL FRONTEND - APPROCCIO DIRETTO
     if (data.weeks) {
-        // data.weeks è un dizionario, non un array
         Object.keys(data.weeks).forEach(function(weekKey) {
             let week = data.weeks[weekKey];
             if (week.days && Array.isArray(week.days)) {
                 week.days.forEach(function(day, dayIndex) {
-                    if (day.missing_roles && day.missing_roles.length > 0) {
-                        totalMissing += day.missing_roles.length;
-                        console.log('FOUND MISSING ROLES:', day.date, day.missing_roles);
+                    // Reset missing_roles
+                    day.missing_roles = [];
+                    
+                    // REGOLA SEMPLICE: ogni giorno dovrebbe avere 3 turni (00:00-07:59, 08:00-16:00, 16:00-23:59)
+                    let requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59'];
+                    let existingSlots = [];
+                    
+                    if (day.shifts) {
+                        day.shifts.forEach(function(shift) {
+                            existingSlots.push(shift.time);
+                        });
                     }
-                    // Debug specifico per 2 ottobre (giovedì!)
+                    
+                    // Verifica slot mancanti
+                    requiredSlots.forEach(function(slot) {
+                        if (!existingSlots.includes(slot)) {
+                            day.missing_roles.push('Operatore mancante (' + slot + ')');
+                        }
+                    });
+                    
+                    // Debug per 2 ottobre
                     if (day.date === '02/10') {
-                        console.log('2 OTTOBRE DEBUG (GIOVEDÌ) - Shifts:', day.shifts);
-                        console.log('2 OTTOBRE DEBUG (GIOVEDÌ) - Missing:', day.missing_roles);
-                        console.log('2 OTTOBRE DEBUG (GIOVEDÌ) - Dovrebbe avere 3 turni ma ne ha:', day.shifts ? day.shifts.length : 0);
+                        console.log('2 OTTOBRE - Required slots:', requiredSlots);
+                        console.log('2 OTTOBRE - Existing slots:', existingSlots);
+                        console.log('2 OTTOBRE - Missing:', day.missing_roles);
                     }
                 });
             }
         });
     }
-    console.log('TOTAL MISSING FOUND IN CLIENT:', totalMissing);
     
     // Update template name - RIPRISTINO LAYOUT ORIGINALE
     document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong>';
