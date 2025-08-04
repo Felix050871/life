@@ -238,6 +238,18 @@ function loadShiftsForTemplate(templateId, templateName) {
             console.log('Full data:', data);
             console.log('Weeks count:', data.weeks ? Object.keys(data.weeks).length : 0);
             
+            // DEBUG: Controlla se ci sono missing_roles nei dati
+            if (data.weeks) {
+                Object.keys(data.weeks).forEach(function(weekKey) {
+                    var week = data.weeks[weekKey];
+                    for (var i = 0; i < 7; i++) {
+                        if (week.days[i] && week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
+                            console.log('Missing roles found for day', i, ':', week.days[i].missing_roles);
+                        }
+                    }
+                });
+            }
+            
             // DISPLAY DIRECTLY FROM API DATA - NO COMPLEX LOGIC
             displayShiftsFromAPI(data, templateName);
             return; // EXIT HERE - NO MORE COMPLEX PROCESSING

@@ -100,16 +100,17 @@ def api_get_shifts_for_template(template_id):
                     
                     # Conta ruoli esistenti che coprono questa fascia oraria ESATTA
                     role_found = False
+                    required_start = coverage.start_time.strftime('%H:%M')
+                    required_end = coverage.end_time.strftime('%H:%M')
+                    
                     for shift in day_data['shifts']:
                         if shift['role'] == required_role:
                             shift_times = shift['time'].split('-')
                             shift_start = shift_times[0]
                             shift_end = shift_times[1]
                             
-                            # Verifica copertura ESATTA della fascia oraria (non sovrapposizione parziale)
-                            if (shift_start <= coverage.start_time.strftime('%H:%M') and 
-                                shift_end >= coverage.end_time.strftime('%H:%M')):
-                                logger.debug(f" Role {required_role} found - exact coverage detected")
+                            # Verifica copertura ESATTA della fascia oraria
+                            if (shift_start == required_start and shift_end == required_end):
                                 role_found = True
                                 break
                     
@@ -120,13 +121,10 @@ def api_get_shifts_for_template(template_id):
                             day_data['missing_roles'].append(missing_text)
                             print(f"API: MISSING COVERAGE: {missing_text}", file=sys.stderr, flush=True)
     
-    # STEP 4: Ordina e restituisci
-    sorted_weeks = sorted(weeks_data.items())
-    processed_weeks = [week_data for _, week_data in sorted_weeks]
-    
+    # STEP 4: Ordina e restituisci - MANTIENI COME DIZIONARIO PER FRONTEND
     return jsonify({
         'success': True,
-        'weeks': processed_weeks,
+        'weeks': weeks_data,  # Restituisci come dizionario, non array
         'template_name': template.name,
         'period': template.get_period_display()
     })
