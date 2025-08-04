@@ -285,7 +285,7 @@ function displayShiftsFromAPI(data, templateName) {
                         // Il sistema ora deve leggere coperture dal database per ogni template
                         // let requiredSlots = ['00:00-07:59', '08:00-16:00', '16:00-23:59']; // HARDCODED RIMOSSO
                         // CALCOLO DINAMICO MISSING_ROLES DAL DATABASE
-                        loadCoverageRequirementsForDay(templateName, day, dayDate, startDate, endDate);
+                        loadCoverageRequirementsForDaySync(templateName, day, dayDate, startDate, endDate);
                     }
                 });
             }
@@ -303,9 +303,12 @@ function parseTemplateDate(dateStr) {
     return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
 }
 
-// Funzione per caricare coperture dinamicamente e calcolare missing roles
-function loadCoverageRequirementsForDay(templateName, day, dayDate, startDate, endDate) {
-    // Estrai templateId dal nome (assume formato "Presidio [Mese] 2025 - Sede Turni")
+// Cache per coperture per evitare chiamate multiple 
+var templateCoverageCache = {};
+
+// Funzione per caricare coperture dinamicamente con cache
+function loadCoverageRequirementsForDaySync(templateName, day, dayDate, startDate, endDate) {
+    // Estrai templateId dal nome
     let templateId = null;
     if (templateName.includes('Settembre')) templateId = 3;
     else if (templateName.includes('Ottobre')) templateId = 5;
@@ -314,9 +317,13 @@ function loadCoverageRequirementsForDay(templateName, day, dayDate, startDate, e
     
     if (!templateId) return;
     
-    // Converte da domenica=0 a lunedì=0 per il database
-    let normalizedDayOfWeek = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
+    // Se già in cache, applica subito
+    if (templateCoverageCache[templateId]) {
+        applyMissingRolesFromCache(day, dayDate, templateCoverageCache[templateId]);
+        return;
+    }
     
+    // Carica dal server e metti in cache
     fetch('/api/get_coverage_requirements/' + templateId, {
         credentials: 'same-origin',
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -324,32 +331,44 @@ function loadCoverageRequirementsForDay(templateName, day, dayDate, startDate, e
     .then(response => response.json())
     .then(data => {
         if (data.success && data.coverages) {
-            // Filtra coperture per questo giorno della settimana
-            let dayCoverages = data.coverages.filter(c => c.day_of_week === normalizedDayOfWeek);
-            
-            dayCoverages.forEach(function(coverage) {
-                let timeSlot = coverage.start_time + '-' + coverage.end_time;
-                
-                coverage.required_roles.forEach(function(requiredRole) {
-                    // Verifica se esiste un turno con questo ruolo per questo slot
-                    let roleFound = day.shifts && day.shifts.some(function(shift) {
-                        return shift.role === requiredRole && shift.time === timeSlot;
-                    });
-                    
-                    if (!roleFound) {
-                        let missingText = requiredRole + ' mancante (' + timeSlot + ')';
-                        if (!day.missing_roles) day.missing_roles = [];
-                        if (day.missing_roles.indexOf(missingText) === -1) {
-                            day.missing_roles.push(missingText);
-                        }
-                    }
-                });
-            });
-            
-            console.log(day.date + ' - Missing roles calculated:', day.missing_roles);
+            templateCoverageCache[templateId] = data.coverages;
+            applyMissingRolesFromCache(day, dayDate, data.coverages);
+            console.log('Template', templateId, 'coverages loaded and cached');
         }
     })
-    .catch(error => console.log('Error loading coverage for', day.date, ':', error));
+    .catch(error => console.log('Error loading coverage for', templateName, ':', error));
+}
+
+// Funzione per applicare missing_roles da cache
+function applyMissingRolesFromCache(day, dayDate, coverages) {
+    // Converte da domenica=0 a lunedì=0 per il database
+    let normalizedDayOfWeek = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
+    
+    // Filtra coperture per questo giorno della settimana
+    let dayCoverages = coverages.filter(c => c.day_of_week === normalizedDayOfWeek);
+    
+    // Reset e calcola missing_roles
+    if (!day.missing_roles) day.missing_roles = [];
+    
+    dayCoverages.forEach(function(coverage) {
+        let timeSlot = coverage.start_time + '-' + coverage.end_time;
+        
+        coverage.required_roles.forEach(function(requiredRole) {
+            // Verifica se esiste un turno con questo ruolo per questo slot
+            let roleFound = day.shifts && day.shifts.some(function(shift) {
+                return shift.role === requiredRole && shift.time === timeSlot;
+            });
+            
+            if (!roleFound) {
+                let missingText = requiredRole + ' mancante (' + timeSlot + ')';
+                if (day.missing_roles.indexOf(missingText) === -1) {
+                    day.missing_roles.push(missingText);
+                }
+            }
+        });
+    });
+    
+    console.log(day.date + ' - Missing roles calculated:', day.missing_roles);
 }
     
     // Update template name - RIPRISTINO LAYOUT ORIGINALE
