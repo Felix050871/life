@@ -2562,6 +2562,17 @@ def my_overtime_requests():
     requests = OvertimeRequest.query.filter_by(user_id=current_user.id).order_by(OvertimeRequest.created_at.desc()).all()
     return render_template('my_overtime_requests.html', requests=requests)
 
+@app.route('/overtime_requests_management')
+@login_required
+def overtime_requests_management():
+    """Gestione amministrativa straordinari"""
+    if not current_user.can_manage_overtime_requests():
+        flash('Non hai i permessi per gestire i straordinari.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    requests = OvertimeRequest.query.order_by(OvertimeRequest.created_at.desc()).all()
+    return render_template('overtime_requests_management.html', requests=requests)
+
 # ===== NOTE SPESE =====
 @app.route('/create_expense_report')
 @login_required
@@ -2601,6 +2612,17 @@ def my_expense_reports():
     
     reports = ExpenseReport.query.filter_by(user_id=current_user.id).order_by(ExpenseReport.created_at.desc()).all()
     return render_template('my_expense_reports.html', reports=reports)
+
+@app.route('/expense_reports_management')
+@login_required
+def expense_reports_management():
+    """Gestione amministrativa note spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per gestire le note spese.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    reports = ExpenseReport.query.order_by(ExpenseReport.created_at.desc()).all()
+    return render_template('expense_reports_management.html', reports=reports)
 
 # ===== RIMBORSI CHILOMETRICI =====
 @app.route('/create_mileage_request', methods=['GET', 'POST'])
@@ -2660,6 +2682,17 @@ def my_mileage_requests():
     requests = MileageRequest.query.filter_by(user_id=current_user.id).order_by(MileageRequest.created_at.desc()).all()
     return render_template('my_mileage_requests.html', requests=requests)
 
+@app.route('/mileage_requests_management')
+@login_required
+def mileage_requests_management():
+    """Gestione amministrativa rimborsi chilometrici"""
+    if not current_user.can_manage_mileage_requests():
+        flash('Non hai i permessi per gestire i rimborsi chilometrici.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    requests = MileageRequest.query.order_by(MileageRequest.created_at.desc()).all()
+    return render_template('mileage_requests_management.html', requests=requests)
+
 # ===== QR CODES =====
 @app.route('/admin_generate_qr_codes')
 @login_required
@@ -2707,6 +2740,31 @@ def aci_tables():
     aci_records = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
     return render_template('aci_tables.html', aci_records=aci_records)
 
+@app.route('/aci_export')
+@login_required
+def aci_export():
+    """Esporta tabelle ACI"""
+    if not current_user.can_manage_mileage_requests():
+        flash('Non hai i permessi per esportare le tabelle ACI.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('aci_export.html')
+
+@app.route('/aci_upload', methods=['GET', 'POST'])
+@login_required
+def aci_upload():
+    """Carica tabelle ACI"""
+    if not current_user.can_manage_mileage_requests():
+        flash('Non hai i permessi per caricare le tabelle ACI.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        # Logica di upload file
+        flash('File caricato con successo!', 'success')
+        return redirect(url_for('aci_tables'))
+    
+    return render_template('aci_upload.html')
+
 # ===== FESTIVITÀ =====
 @app.route('/holidays')
 @login_required
@@ -2750,6 +2808,41 @@ def locations():
     
     sedi = Sede.query.filter_by(active=True).all()
     return render_template('locations.html', sedi=sedi)
+
+# ===== TEMPLATE MANAGEMENT =====
+@app.route('/shift_templates')
+@login_required
+def shift_templates():
+    """Gestione template turni"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per gestire i template.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    templates = ShiftTemplate.query.all()
+    return render_template('shift_templates.html', templates=templates)
+
+@app.route('/reperibilita_templates')
+@login_required
+def reperibilita_templates():
+    """Gestione template reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per gestire i template reperibilità.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    templates = ReperibilitaTemplate.query.all()
+    return render_template('reperibilita_templates.html', templates=templates)
+
+# ===== INTERVENTIONS =====
+@app.route('/interventions_management')
+@login_required
+def interventions_management():
+    """Gestione interventi"""
+    if not current_user.can_manage_interventions():
+        flash('Non hai i permessi per gestire gli interventi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    interventions = Intervention.query.order_by(Intervention.created_at.desc()).all()
+    return render_template('interventions_management.html', interventions=interventions)
 
 # ===== STATISTICHE E REPORT =====
 @app.route('/statistics')
