@@ -371,6 +371,11 @@ function loadShiftsForTemplate(templateId, templateName) {
                                         return cov.day_of_week === dayIndex;
                                     });
                                     
+                                    console.log('DAY COVERAGE DEBUG: Day', dayIndex, '(' + dayData.date + ') has', dayCoverages.length, 'coverages');
+                                    dayCoverages.forEach(function(cov) {
+                                        console.log('  - Coverage:', cov.start_time + '-' + cov.end_time, 'roles:', cov.required_roles);
+                                    });
+                                    
                                     // Per ogni copertura richiesta, verifica se è soddisfatta
                                     dayCoverages.forEach(function(coverage) {
                                         console.log('COVERAGE DEBUG: Checking coverage', coverage.start_time + '-' + coverage.end_time, 'for roles', coverage.required_roles);
@@ -404,13 +409,15 @@ function loadShiftsForTemplate(templateId, templateName) {
                                             }
                                             
                                             // Se il ruolo è insufficiente, aggiungi a missing_roles
-                                            console.log('ROLE COUNT DEBUG: Found', roleCount, 'roles, required', coverage.role_count);
+                                            console.log('ROLE COUNT DEBUG: Found', roleCount, 'roles, required', coverage.role_count, 'for coverage', coverage.start_time + '-' + coverage.end_time);
                                             if (roleCount < coverage.role_count) {
                                                 var missingText = requiredRole + ' mancante (' + coverage.start_time + '-' + coverage.end_time + ')';
                                                 console.log('MISSING DEBUG: Adding missing role:', missingText);
                                                 if (!dayData.missing_roles.includes(missingText)) {
                                                     dayData.missing_roles.push(missingText);
                                                 }
+                                            } else {
+                                                console.log('COVERAGE OK: Coverage', coverage.start_time + '-' + coverage.end_time, 'satisfied with', roleCount, 'roles');
                                             }
                                         });
                                     });
