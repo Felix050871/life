@@ -13,7 +13,7 @@ from new_shift_generation import calculate_shift_duration
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.route('/api/get_shifts_for_template/<int:template_id>')
+@app.route('/api/get_shifts_for_template/<int:template_id>', methods=['GET'])
 @login_required  
 def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
