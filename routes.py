@@ -2551,6 +2551,17 @@ def overtime_requests():
     
     return render_template('overtime_requests.html', requests=requests, view_type=view_type)
 
+@app.route('/my_overtime_requests')
+@login_required
+def my_overtime_requests():
+    """Le mie richieste straordinari"""
+    if not current_user.can_view_my_overtime_requests():
+        flash('Non hai i permessi per visualizzare i tuoi straordinari.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    requests = OvertimeRequest.query.filter_by(user_id=current_user.id).order_by(OvertimeRequest.created_at.desc()).all()
+    return render_template('my_overtime_requests.html', requests=requests)
+
 # ===== NOTE SPESE =====
 @app.route('/create_expense_report')
 @login_required
@@ -2579,6 +2590,17 @@ def expense_reports():
         reports = ExpenseReport.query.order_by(ExpenseReport.created_at.desc()).all()
     
     return render_template('expense_reports.html', reports=reports, view_type=view_type)
+
+@app.route('/my_expense_reports')
+@login_required
+def my_expense_reports():
+    """Le mie note spese"""
+    if not current_user.can_view_my_expense_reports():
+        flash('Non hai i permessi per visualizzare le tue note spese.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    reports = ExpenseReport.query.filter_by(user_id=current_user.id).order_by(ExpenseReport.created_at.desc()).all()
+    return render_template('my_expense_reports.html', reports=reports)
 
 # ===== RIMBORSI CHILOMETRICI =====
 @app.route('/create_mileage_request', methods=['GET', 'POST'])
@@ -2626,6 +2648,17 @@ def mileage_requests():
         requests = MileageRequest.query.order_by(MileageRequest.created_at.desc()).all()
     
     return render_template('mileage_requests.html', requests=requests, view_type=view_type)
+
+@app.route('/my_mileage_requests')
+@login_required
+def my_mileage_requests():
+    """Le mie richieste rimborso chilometrici"""
+    if not current_user.can_view_my_mileage_requests():
+        flash('Non hai i permessi per visualizzare i tuoi rimborsi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    requests = MileageRequest.query.filter_by(user_id=current_user.id).order_by(MileageRequest.created_at.desc()).all()
+    return render_template('my_mileage_requests.html', requests=requests)
 
 # ===== QR CODES =====
 @app.route('/admin_generate_qr_codes')
@@ -2696,6 +2729,27 @@ def qr_codes():
         return redirect(url_for('dashboard'))
     
     return render_template('qr_codes.html')
+
+@app.route('/view_qr_codes')
+@login_required
+def view_qr_codes():
+    """Visualizza QR codes del sistema"""
+    if not current_user.can_view_qr():
+        flash('Non hai i permessi per visualizzare i QR codes.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('view_qr_codes.html')
+
+@app.route('/locations')
+@login_required
+def locations():
+    """Gestione ubicazioni/sedi"""
+    if not current_user.can_view_sedi():
+        flash('Non hai i permessi per visualizzare le sedi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sedi = Sede.query.filter_by(active=True).all()
+    return render_template('locations.html', sedi=sedi)
 
 # ===== STATISTICHE E REPORT =====
 @app.route('/statistics')
