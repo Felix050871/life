@@ -2340,6 +2340,40 @@ def create_role():
     
     return render_template('create_role.html', form=form)
 
+@app.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
+@login_required
+def edit_role(role_id):
+    """Modifica ruolo"""
+    if not current_user.can_manage_roles():
+        flash('Non hai i permessi per modificare ruoli.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    role = UserRole.query.get_or_404(role_id)
+    form = RoleForm(obj=role)
+    
+    if form.validate_on_submit():
+        role.name = form.name.data
+        role.description = form.description.data
+        db.session.commit()
+        flash('Ruolo modificato con successo!', 'success')
+        return redirect(url_for('manage_roles'))
+    
+    return render_template('edit_role.html', form=form, role=role)
+
+@app.route('/delete_role/<int:role_id>', methods=['POST'])
+@login_required
+def delete_role(role_id):
+    """Elimina ruolo"""
+    if not current_user.can_manage_roles():
+        flash('Non hai i permessi per eliminare ruoli.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    role = UserRole.query.get_or_404(role_id)
+    db.session.delete(role)
+    db.session.commit()
+    flash('Ruolo eliminato con successo!', 'success')
+    return redirect(url_for('manage_roles'))
+
 @app.route('/create_sede', methods=['GET', 'POST'])
 @login_required
 def create_sede():
@@ -2363,6 +2397,42 @@ def create_sede():
         return redirect(url_for('manage_sedi'))
     
     return render_template('create_sede.html', form=form)
+
+@app.route('/edit_sede/<int:sede_id>', methods=['GET', 'POST'])
+@login_required
+def edit_sede(sede_id):
+    """Modifica sede"""
+    if not current_user.can_manage_sedi():
+        flash('Non hai i permessi per modificare sedi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    form = SedeForm(obj=sede)
+    
+    if form.validate_on_submit():
+        sede.name = form.name.data
+        sede.address = form.address.data
+        sede.city = form.city.data
+        sede.active = form.active.data
+        db.session.commit()
+        flash('Sede modificata con successo!', 'success')
+        return redirect(url_for('manage_sedi'))
+    
+    return render_template('edit_sede.html', form=form, sede=sede)
+
+@app.route('/delete_sede/<int:sede_id>', methods=['POST'])
+@login_required
+def delete_sede(sede_id):
+    """Elimina sede"""
+    if not current_user.can_manage_sedi():
+        flash('Non hai i permessi per eliminare sedi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sede = Sede.query.get_or_404(sede_id)
+    db.session.delete(sede)
+    db.session.commit()
+    flash('Sede eliminata con successo!', 'success')
+    return redirect(url_for('manage_sedi'))
 
 @app.route('/create_holiday', methods=['GET', 'POST'])
 @login_required
@@ -2410,6 +2480,42 @@ def create_work_schedule():
         return redirect(url_for('manage_work_schedules'))
     
     return render_template('create_work_schedule.html', form=form)
+
+@app.route('/edit_work_schedule/<int:schedule_id>', methods=['GET', 'POST'])
+@login_required
+def edit_work_schedule(schedule_id):
+    """Modifica orario di lavoro"""
+    if not current_user.can_manage_work_schedules():
+        flash('Non hai i permessi per modificare orari di lavoro.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    schedule = WorkSchedule.query.get_or_404(schedule_id)
+    form = WorkScheduleForm(obj=schedule)
+    
+    if form.validate_on_submit():
+        schedule.name = form.name.data
+        schedule.start_time = form.start_time.data
+        schedule.end_time = form.end_time.data
+        schedule.active = form.active.data
+        db.session.commit()
+        flash('Orario modificato con successo!', 'success')
+        return redirect(url_for('manage_work_schedules'))
+    
+    return render_template('edit_work_schedule.html', form=form, schedule=schedule)
+
+@app.route('/delete_work_schedule/<int:schedule_id>', methods=['POST'])
+@login_required
+def delete_work_schedule(schedule_id):
+    """Elimina orario di lavoro"""
+    if not current_user.can_manage_work_schedules():
+        flash('Non hai i permessi per eliminare orari di lavoro.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    schedule = WorkSchedule.query.get_or_404(schedule_id)
+    db.session.delete(schedule)
+    db.session.commit()
+    flash('Orario eliminato con successo!', 'success')
+    return redirect(url_for('manage_work_schedules'))
 
 # ===== ALTRE ROUTE CRUD MANCANTI =====
 @app.route('/delete_leave/<int:request_id>', methods=['POST'])
