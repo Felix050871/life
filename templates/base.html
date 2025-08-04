@@ -96,12 +96,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_roles() %}
-                        <li><a href="#" onclick="alert('Gestione ruoli in sviluppo')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Ruoli
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_roles() %}
-                        <li><a href="#" onclick="alert('Visualizzazione ruoli in sviluppo')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Ruoli
                         </a></li>
                         {% endif %}
@@ -120,12 +120,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_users() %}
-                        <li><a href="#" onclick="alert('Gestione utenti in sviluppo')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('user_management') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Utenti
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_users() %}
-                        <li><a href="#" onclick="alert('Visualizzazione utenti in sviluppo')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('user_management') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Utenti
                         </a></li>
                         {% endif %}
@@ -144,12 +144,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_sedi() %}
-                        <li><a href="#" onclick="alert('Gestione sedi in sviluppo')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('manage_sedi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Sedi
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_sedi() %}
-                        <li><a href="#" onclick="alert('Visualizzazione sedi in sviluppo')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('manage_sedi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Sedi
                         </a></li>
                         {% endif %}
@@ -168,12 +168,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_schedules() %}
-                        <li><a href="#" onclick="alert('Gestione orari in sviluppo')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('manage_work_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Orari
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_schedules() %}
-                        <li><a href="#" onclick="alert('Visualizzazione orari in sviluppo')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('manage_work_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Orari
                         </a></li>
                         {% endif %}

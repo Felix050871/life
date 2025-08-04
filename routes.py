@@ -12,8 +12,8 @@ from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from config import get_config
 from sqlalchemy.orm import joinedload
-from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable, MileageRequest
-from forms import LoginForm, UserForm, UserProfileForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm, MileageRequestForm, ApproveMileageForm, MileageFilterForm
+from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable, MileageRequest, InternalMessage
+from forms import LoginForm, UserForm, UserProfileForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm, MileageRequestForm, ApproveMileageForm, MileageFilterForm, SendMessageForm
 from utils import get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
 
 # Inject configuration into all templates
@@ -2232,6 +2232,435 @@ def turni_automatici():
                          timedelta=timedelta,
                          can_manage_shifts=current_user.can_manage_shifts())
 
-# Rimosse tutte le route stub "in sviluppo" - ripristinate le funzioni reali
+# ===== GESTIONE UTENTI =====
+@app.route('/users')
+@login_required
+def users():
+    """Lista utenti"""
+    if not current_user.can_view_users():
+        flash('Non hai i permessi per visualizzare gli utenti.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    users = User.query.filter_by(active=True).order_by(User.first_name, User.last_name).all()
+    return render_template('users.html', users=users)
+
+@app.route('/user_management')
+@login_required  
+def user_management():
+    """Gestione utenti"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per gestire gli utenti.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    users = User.query.order_by(User.first_name, User.last_name).all()
+    return render_template('user_management.html', users=users)
+
+@app.route('/user_profile', methods=['GET', 'POST'])
+@login_required
+def user_profile():
+    """Profilo utente personale"""
+    form = UserProfileForm(original_email=current_user.email, obj=current_user)
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data  
+        current_user.email = form.email.data
+        
+        if form.password.data:
+            current_user.password_hash = generate_password_hash(form.password.data)
+        
+        db.session.commit()
+        flash('Profilo aggiornato con successo!', 'success')
+        return redirect(url_for('user_profile'))
+    
+    return render_template('user_profile.html', form=form)
+
+# ===== GESTIONE RUOLI =====
+@app.route('/manage_roles')
+@login_required
+def manage_roles():
+    """Gestione ruoli"""
+    if not current_user.can_manage_roles():
+        flash('Non hai i permessi per gestire i ruoli.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    roles = UserRole.query.all()
+    return render_template('manage_roles.html', roles=roles)
+
+# ===== GESTIONE SEDI =====
+@app.route('/manage_sedi')
+@login_required
+def manage_sedi():
+    """Gestione sedi"""
+    if not current_user.can_manage_sedi():
+        flash('Non hai i permessi per gestire le sedi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    sedi = Sede.query.all()
+    return render_template('manage_sedi.html', sedi=sedi)
+
+# ===== GESTIONE ORARI =====
+@app.route('/manage_work_schedules')
+@login_required
+def manage_work_schedules():
+    """Gestione orari di lavoro"""
+    if not current_user.can_manage_schedules():
+        flash('Non hai i permessi per gestire gli orari.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    schedules = WorkSchedule.query.all()
+    return render_template('manage_work_schedules.html', schedules=schedules)
+
+# ===== MESSAGGI =====
+@app.route('/send_message', methods=['GET', 'POST'])
+@login_required
+def send_message():
+    """Invio messaggi interni"""
+    if not current_user.can_send_messages():
+        flash('Non hai i permessi per inviare messaggi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = SendMessageForm()
+    # Popola la lista destinatari
+    form.recipients.choices = [(u.id, u.get_full_name()) for u in User.query.filter_by(active=True).all()]
+    
+    if form.validate_on_submit():
+        # Crea e invia il messaggio
+        for recipient_id in form.recipients.data:
+            message = InternalMessage(
+                sender_id=current_user.id,
+                recipient_id=recipient_id,
+                subject=form.subject.data,
+                body=form.body.data
+            )
+            db.session.add(message)
+        
+        db.session.commit()
+        flash('Messaggio inviato con successo!', 'success')
+        return redirect(url_for('internal_messages'))
+    
+    return render_template('send_message.html', form=form)
+
+@app.route('/internal_messages')
+@login_required
+def internal_messages():
+    """Visualizza messaggi interni"""
+    if not current_user.can_view_messages():
+        flash('Non hai i permessi per visualizzare i messaggi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Messaggi ricevuti
+    received = InternalMessage.query.filter_by(recipient_id=current_user.id).order_by(InternalMessage.created_at.desc()).all()
+    # Messaggi inviati
+    sent = InternalMessage.query.filter_by(sender_id=current_user.id).order_by(InternalMessage.created_at.desc()).all()
+    
+    return render_template('internal_messages.html', received=received, sent=sent)
+
+# ===== GESTIONE FERIE =====
+@app.route('/leave_requests')
+@login_required
+def leave_requests():
+    """Gestione richieste ferie"""
+    view_type = request.args.get('view', 'my')
+    
+    if view_type == 'my':
+        # Le mie richieste
+        requests = LeaveRequest.query.filter_by(user_id=current_user.id).order_by(LeaveRequest.created_at.desc()).all()
+    elif view_type == 'approve':
+        # Richieste da approvare
+        if not current_user.can_manage_leave():
+            flash('Non hai i permessi per approvare le richieste.', 'danger')
+            return redirect(url_for('dashboard'))
+        requests = LeaveRequest.query.filter_by(status='Pending').order_by(LeaveRequest.created_at.desc()).all()
+    else:
+        # Visualizza tutte
+        if not current_user.can_view_leave():
+            flash('Non hai i permessi per visualizzare le richieste.', 'danger')
+            return redirect(url_for('dashboard'))
+        requests = LeaveRequest.query.order_by(LeaveRequest.created_at.desc()).all()
+    
+    return render_template('leave_requests.html', requests=requests, view_type=view_type)
+
+@app.route('/create_leave_request_page')
+@login_required
+def create_leave_request_page():
+    """Pagina creazione richiesta ferie"""
+    if not current_user.can_request_leave():
+        flash('Non hai i permessi per richiedere ferie.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = LeaveRequestForm()
+    
+    if form.validate_on_submit():
+        leave_request = LeaveRequest(
+            user_id=current_user.id,
+            leave_type=form.leave_type.data,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+            reason=form.reason.data,
+            status='Pending'
+        )
+        db.session.add(leave_request)
+        db.session.commit()
+        flash('Richiesta inviata con successo!', 'success')
+        return redirect(url_for('leave_requests'))
+    
+    return render_template('create_leave_request.html', form=form)
+
+# ===== ALTRI MODULI PRINCIPALI =====
+@app.route('/presidio_coverage')
+@login_required
+def presidio_coverage():
+    """Gestione coperture presidio"""
+    if not current_user.can_manage_coverage():
+        flash('Non hai i permessi per gestire le coperture.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    templates = PresidioCoverageTemplate.query.order_by(PresidioCoverageTemplate.start_date.desc()).all()
+    return render_template('presidio_coverage.html', templates=templates)
+
+@app.route('/view_presidi')
+@login_required
+def view_presidi():
+    """Visualizza presidi"""
+    if not current_user.can_view_coverage():
+        flash('Non hai i permessi per visualizzare i presidi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    templates = PresidioCoverageTemplate.query.order_by(PresidioCoverageTemplate.start_date.desc()).all()
+    return render_template('view_presidi.html', templates=templates)
+
+@app.route('/visualizza_turni')
+@login_required
+def visualizza_turni():
+    """Visualizza turni"""
+    if not current_user.can_view_shifts():
+        flash('Non hai i permessi per visualizzare i turni.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Ottieni turni recenti
+    from datetime import date, timedelta
+    start_date = date.today() - timedelta(days=30)
+    end_date = date.today() + timedelta(days=30)
+    
+    shifts = Shift.query.filter(
+        Shift.date >= start_date,
+        Shift.date <= end_date
+    ).order_by(Shift.date, Shift.start_time).all()
+    
+    return render_template('visualizza_turni.html', shifts=shifts, start_date=start_date, end_date=end_date)
+
+# ===== REPERIBILITÀ =====
+@app.route('/generate_reperibilita_shifts')
+@login_required
+def generate_reperibilita_shifts():
+    """Genera turni reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per gestire la reperibilità.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    templates = ReperibilitaTemplate.query.all()
+    return render_template('generate_reperibilita_shifts.html', templates=templates)
+
+@app.route('/reperibilita_shifts')
+@login_required
+def reperibilita_shifts():
+    """Visualizza turni reperibilità"""
+    if not current_user.can_view_reperibilita():
+        flash('Non hai i permessi per visualizzare la reperibilità.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    shifts = ReperibilitaShift.query.order_by(ReperibilitaShift.date.desc()).limit(100).all()
+    return render_template('reperibilita_shifts.html', shifts=shifts)
+
+@app.route('/reperibilita_coverage')
+@login_required
+def reperibilita_coverage():
+    """Gestione coperture reperibilità"""
+    if not current_user.can_manage_coverage():
+        flash('Non hai i permessi per gestire le coperture reperibilità.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    coverages = ReperibilitaCoverage.query.all()
+    return render_template('reperibilita_coverage.html', coverages=coverages)
+
+@app.route('/my_interventions')
+@login_required
+def my_interventions():
+    """I miei interventi"""
+    if not current_user.can_view_interventions():
+        flash('Non hai i permessi per visualizzare gli interventi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    interventions = Intervention.query.filter_by(user_id=current_user.id).order_by(Intervention.created_at.desc()).all()
+    return render_template('my_interventions.html', interventions=interventions)
+
+# ===== STRAORDINARI =====
+@app.route('/create_overtime_request', methods=['GET', 'POST'])
+@login_required
+def create_overtime_request():
+    """Crea richiesta straordinario"""
+    if not current_user.can_create_overtime_requests():
+        flash('Non hai i permessi per creare richieste straordinari.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = OvertimeRequestForm()
+    form.overtime_type.choices = [(ot.name, ot.name) for ot in OvertimeType.query.filter_by(active=True).all()]
+    
+    if form.validate_on_submit():
+        overtime_request = OvertimeRequest(
+            user_id=current_user.id,
+            overtime_type=form.overtime_type.data,
+            date=form.date.data,
+            hours=form.hours.data,
+            description=form.description.data,
+            status='Pending'
+        )
+        db.session.add(overtime_request)
+        db.session.commit()
+        flash('Richiesta straordinario inviata con successo!', 'success')
+        return redirect(url_for('overtime_requests'))
+    
+    return render_template('create_overtime_request.html', form=form)
+
+@app.route('/overtime_requests')
+@login_required
+def overtime_requests():
+    """Visualizza richieste straordinari"""
+    if not current_user.can_view_overtime_requests():
+        flash('Non hai i permessi per visualizzare i straordinari.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    view_type = request.args.get('view', 'my')
+    
+    if view_type == 'my':
+        requests = OvertimeRequest.query.filter_by(user_id=current_user.id).order_by(OvertimeRequest.created_at.desc()).all()
+    else:
+        requests = OvertimeRequest.query.order_by(OvertimeRequest.created_at.desc()).all()
+    
+    return render_template('overtime_requests.html', requests=requests, view_type=view_type)
+
+# ===== NOTE SPESE =====
+@app.route('/create_expense_report')
+@login_required
+def create_expense_report():
+    """Crea nota spese"""
+    if not current_user.can_create_expense_reports():
+        flash('Non hai i permessi per creare note spese.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    categories = ExpenseCategory.query.filter_by(active=True).all()
+    return render_template('create_expense_report.html', categories=categories)
+
+@app.route('/expense_reports')
+@login_required
+def expense_reports():
+    """Visualizza note spese"""
+    if not current_user.can_view_expense_reports():
+        flash('Non hai i permessi per visualizzare le note spese.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    view_type = request.args.get('view', 'my')
+    
+    if view_type == 'my':
+        reports = ExpenseReport.query.filter_by(user_id=current_user.id).order_by(ExpenseReport.created_at.desc()).all()
+    else:
+        reports = ExpenseReport.query.order_by(ExpenseReport.created_at.desc()).all()
+    
+    return render_template('expense_reports.html', reports=reports, view_type=view_type)
+
+# ===== RIMBORSI CHILOMETRICI =====
+@app.route('/create_mileage_request', methods=['GET', 'POST'])
+@login_required
+def create_mileage_request():
+    """Crea richiesta rimborso chilometrico"""
+    if not current_user.can_create_mileage_requests():
+        flash('Non hai i permessi per crear richieste rimborso.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = MileageRequestForm()
+    
+    if form.validate_on_submit():
+        mileage_request = MileageRequest(
+            user_id=current_user.id,
+            date=form.date.data,
+            departure=form.departure.data,
+            destination=form.destination.data,
+            distance=form.distance.data,
+            rate=form.rate.data,
+            amount=form.amount.data,
+            reason=form.reason.data,
+            status='Pending'
+        )
+        db.session.add(mileage_request)
+        db.session.commit()
+        flash('Richiesta rimborso inviata con successo!', 'success')
+        return redirect(url_for('mileage_requests'))
+    
+    return render_template('create_mileage_request.html', form=form)
+
+@app.route('/mileage_requests')
+@login_required
+def mileage_requests():
+    """Visualizza richieste rimborso chilometrici"""
+    if not current_user.can_view_mileage_requests():
+        flash('Non hai i permessi per visualizzare i rimborsi.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    view_type = request.args.get('view', 'my')
+    
+    if view_type == 'my':
+        requests = MileageRequest.query.filter_by(user_id=current_user.id).order_by(MileageRequest.created_at.desc()).all()
+    else:
+        requests = MileageRequest.query.order_by(MileageRequest.created_at.desc()).all()
+    
+    return render_template('mileage_requests.html', requests=requests, view_type=view_type)
+
+# ===== QR CODES =====
+@app.route('/admin_generate_qr_codes')
+@login_required
+def admin_generate_qr_codes():
+    """Amministrazione QR codes"""
+    if not current_user.can_manage_qr():
+        flash('Non hai i permessi per gestire i QR codes.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('admin_qr_codes.html')
+
+# ===== ACI =====
+@app.route('/aci_create', methods=['GET', 'POST'])
+@login_required
+def aci_create():
+    """Crea record ACI"""
+    if not current_user.can_manage_mileage_requests():
+        flash('Non hai i permessi per gestire le tabelle ACI.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    form = ACIRecordForm()
+    
+    if form.validate_on_submit():
+        aci_record = ACITable(
+            tipologia=form.tipologia.data,
+            marca=form.marca.data,
+            modello=form.modello.data,
+            costo_per_km=form.costo_per_km.data
+        )
+        db.session.add(aci_record)
+        db.session.commit()
+        flash('Record ACI creato con successo!', 'success')
+        return redirect(url_for('aci_tables'))
+    
+    return render_template('aci_create.html', form=form)
+
+@app.route('/aci_tables')
+@login_required
+def aci_tables():
+    """Visualizza tabelle ACI"""
+    if not current_user.can_view_mileage_requests():
+        flash('Non hai i permessi per visualizzare le tabelle ACI.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    aci_records = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
+    return render_template('aci_tables.html', aci_records=aci_records)
 
 
