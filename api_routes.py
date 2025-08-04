@@ -19,6 +19,7 @@ def api_get_shifts_for_template(template_id):
     # DEBUG: Aggiungo logging per verificare chiamate API
     import sys
     print(f"API DEBUG: get_shifts_for_template chiamata per template_id={template_id}", file=sys.stderr, flush=True)
+    print(f"API DEBUG: Template {template.name}, periodo {template.start_date} - {template.end_date}", file=sys.stderr, flush=True)
     
     template = PresidioCoverageTemplate.query.get_or_404(template_id)
     shifts = Shift.query.filter(
@@ -70,16 +71,16 @@ def api_get_shifts_for_template(template_id):
     logger.debug(f" Found {len(coverages)} coverages for template {template_id}")
     
     for coverage in coverages:
-        logger.debug(f" Coverage {coverage.id}: day={coverage.day_of_week}, time={coverage.start_time}-{coverage.end_time}, roles={coverage.required_roles}")
+        print(f"API DEBUG: Coverage {coverage.id}: day={coverage.day_of_week}, time={coverage.start_time}-{coverage.end_time}, roles={coverage.required_roles}", file=sys.stderr, flush=True)
     
     for week_data in weeks_data.values():
         for day_index in range(7):
             day_data = week_data['days'][day_index]
-            logger.debug(f" Processing day {day_index} with {len(day_data['shifts'])} shifts")
+            print(f"API DEBUG: Processing day {day_index} with {len(day_data['shifts'])} shifts", file=sys.stderr, flush=True)
             
             # Trova coperture richieste per questo giorno
             day_coverages = [c for c in coverages if c.day_of_week == day_index]
-            logger.debug(f" Day {day_index} has {len(day_coverages)} coverages")
+            print(f"API DEBUG: Day {day_index} has {len(day_coverages)} coverages", file=sys.stderr, flush=True)
             
             for coverage in day_coverages:
                 # Parse ruoli richiesti
