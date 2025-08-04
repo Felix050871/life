@@ -395,9 +395,10 @@ function loadShiftsForTemplate(templateId, templateName) {
                                                         var shiftEnd = shiftTimes[1];
                                                         
                                                         console.log('TIME DEBUG: Coverage', coverage.start_time + '-' + coverage.end_time, 'vs Shift', shiftStart + '-' + shiftEnd);
-                                                        console.log('OVERLAP DEBUG: Checking if', shiftStart, '<=', coverage.end_time, 'AND', shiftEnd, '>=', coverage.start_time);
+                                                        console.log('OVERLAP DEBUG: Checking if', shiftStart, '<', coverage.end_time, 'AND', shiftEnd, '>', coverage.start_time);
                                                         
-                                                        if (shiftStart <= coverage.end_time && shiftEnd >= coverage.start_time) {
+                                                        // Fix: Usa < e > per evitare sovrapposizioni al limite (08:00-16:00 non copre 16:00-23:59)
+                                                        if (shiftStart < coverage.end_time && shiftEnd > coverage.start_time) {
                                                             roleCount++;
                                                             console.log('OVERLAP DEBUG: ✓ MATCH FOUND! roleCount now =', roleCount);
                                                         } else {
