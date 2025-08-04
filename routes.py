@@ -2407,6 +2407,17 @@ def create_leave_request_page():
     
     return render_template('create_leave_request.html', form=form)
 
+@app.route('/leave_types')
+@login_required
+def leave_types():
+    """Gestione tipi di ferie/permessi"""
+    if not current_user.can_manage_leave():
+        flash('Non hai i permessi per gestire i tipi di ferie.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    leave_types = LeaveType.query.all()
+    return render_template('leave_types.html', leave_types=leave_types)
+
 # ===== ALTRI MODULI PRINCIPALI =====
 @app.route('/presidio_coverage')
 @login_required
@@ -2662,5 +2673,73 @@ def aci_tables():
     
     aci_records = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
     return render_template('aci_tables.html', aci_records=aci_records)
+
+# ===== FESTIVITÀ =====
+@app.route('/holidays')
+@login_required
+def holidays():
+    """Gestione festività"""
+    if not current_user.can_view_holidays():
+        flash('Non hai i permessi per visualizzare le festività.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    holidays = Holiday.query.order_by(Holiday.date.desc()).all()
+    return render_template('holidays.html', holidays=holidays)
+
+# ===== QR CODES =====
+@app.route('/qr_codes')
+@login_required
+def qr_codes():
+    """Visualizza QR codes"""
+    if not current_user.can_view_qr():
+        flash('Non hai i permessi per visualizzare i QR codes.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('qr_codes.html')
+
+# ===== STATISTICHE E REPORT =====
+@app.route('/statistics')
+@login_required
+def statistics():
+    """Statistiche sistema"""
+    if not current_user.can_view_reports():
+        flash('Non hai i permessi per visualizzare le statistiche.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('statistics.html')
+
+@app.route('/reports')
+@login_required
+def reports():
+    """Report sistema"""
+    if not current_user.can_view_reports():
+        flash('Non hai i permessi per visualizzare i report.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('reports.html')
+
+# ===== OVERTIME TYPES =====
+@app.route('/overtime_types')
+@login_required
+def overtime_types():
+    """Gestione tipi straordinari"""
+    if not current_user.can_manage_overtime_requests():
+        flash('Non hai i permessi per gestire i tipi straordinari.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    overtime_types = OvertimeType.query.all()
+    return render_template('overtime_types.html', overtime_types=overtime_types)
+
+# ===== EXPENSE CATEGORIES =====
+@app.route('/expense_categories')
+@login_required
+def expense_categories():
+    """Gestione categorie spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per gestire le categorie spese.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    categories = ExpenseCategory.query.all()
+    return render_template('expense_categories.html', categories=categories)
 
 
