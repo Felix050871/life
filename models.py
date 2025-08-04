@@ -428,6 +428,39 @@ class User(UserMixin, db.Model):
     def can_view_my_mileage_requests(self):
         return self.has_permission('can_view_my_mileage_requests')
     
+    # === METODI ALIAS PER COMPATIBILITÀ TEMPLATE ===
+    def can_manage_work_schedules(self):
+        """Alias per can_manage_schedules per compatibilità template"""
+        return self.can_manage_schedules()
+    
+    def can_request_overtime(self):
+        """Alias per can_create_overtime_requests per compatibilità template"""
+        return self.can_create_overtime_requests()
+    
+    def can_use_qr_code(self):
+        """Permesso per utilizzare QR code"""
+        return self.can_view_qr() or self.can_manage_qr()
+    
+    def can_view_leave_requests(self):
+        """Permesso per visualizzare richieste ferie"""
+        return self.can_view_leave() or self.can_manage_leave()
+    
+    def can_create_interventions(self):
+        """Permesso per creare interventi"""
+        return self.can_manage_interventions()
+    
+    def can_view_aci(self):
+        """Permesso per visualizzare tabelle ACI"""
+        return self.has_permission('can_view_aci') or self.role == 'Admin'
+    
+    def can_manage_aci(self):
+        """Permesso per gestire tabelle ACI"""
+        return self.has_permission('can_manage_aci') or self.role == 'Admin'
+        return self.has_permission('can_manage_mileage_requests')
+    
+    def can_view_my_mileage_requests(self):
+        return self.has_permission('can_view_my_mileage_requests')
+    
     def can_access_turni(self):
         """Verifica se l'utente può accedere alla gestione turni"""
         return self.has_permission('can_manage_shifts') or self.has_permission('can_view_shifts')
