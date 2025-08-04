@@ -2535,12 +2535,31 @@ def genera_turni_da_template():
                         WorkSchedule.name == 'Turni'  # Solo utenti con orario speciale "Turni"
                     ).all()
                     
-                    if len(available_users) < coverage.role_count:
-                        # Usa tutti gli utenti disponibili se insufficienti
-                        selected_users = available_users
+                    # IMPROVEMENT: Filtra utenti già assegnati in questo giorno prima della selezione
+                    users_without_conflicts = []
+                    for user in available_users:
+                        existing_shifts_user = Shift.query.filter_by(
+                            user_id=user.id,
+                            date=current_date
+                        ).all()
+                        
+                        has_conflict = False
+                        for existing in existing_shifts_user:
+                            # Controlla sovrapposizione temporale
+                            if not (coverage.end_time <= existing.start_time or coverage.start_time >= existing.end_time):
+                                has_conflict = True
+                                break
+                        
+                        if not has_conflict:
+                            users_without_conflicts.append(user)
+                    
+                    # Usa utenti senza conflitti per selezione
+                    if len(users_without_conflicts) < coverage.role_count:
+                        # Usa tutti gli utenti disponibili senza conflitti
+                        selected_users = users_without_conflicts
                     else:
-                        # Seleziona casualmente il numero richiesto
-                        selected_users = random.sample(available_users, coverage.role_count)
+                        # Seleziona casualmente il numero richiesto dai non-conflittuali
+                        selected_users = random.sample(users_without_conflicts, coverage.role_count)
                     
                     if not selected_users:
                         continue
@@ -2549,14 +2568,22 @@ def genera_turni_da_template():
                     
                     # Crea turni per ogni utente selezionato
                     for user in selected_users:
-                        # Controlla se esiste già un turno per questo utente in questa data/ora
-                        existing_shift = Shift.query.filter_by(
+                        # CRITICAL: Controlla sovrapposizioni temporali complete, non solo start_time identico
+                        existing_shifts_user = Shift.query.filter_by(
                             user_id=user.id,
-                            date=current_date,
-                            start_time=coverage.start_time
-                        ).first()
+                            date=current_date
+                        ).all()
                         
-                        if not existing_shift:
+                        has_time_overlap = False
+                        for existing in existing_shifts_user:
+                            # Controlla sovrapposizione temporale O consecutività senza pausa
+                            if not (coverage.end_time <= existing.start_time or coverage.start_time >= existing.end_time):
+                                has_time_overlap = True
+                                import sys
+                                print(f"OVERLAP PREVENTED: User {user.username} ha già turno {existing.start_time}-{existing.end_time}, SKIP {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
+                                break
+                        
+                        if not has_time_overlap:
                             new_shift = Shift(
                                 user_id=user.id,
                                 date=current_date,
@@ -2567,6 +2594,8 @@ def genera_turni_da_template():
                             )
                             db.session.add(new_shift)
                             turni_creati += 1
+                            import sys
+                            print(f"SHIFT CREATED: User {user.username} assegnato {coverage.start_time}-{coverage.end_time}", file=sys.stderr, flush=True)
                 
                 except json.JSONDecodeError:
                     continue
