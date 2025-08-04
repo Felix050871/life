@@ -207,8 +207,10 @@ def api_update_shift(shift_id):
             return jsonify({'error': 'Utente non trovato'}), 404
         
         # Verifica che il nuovo utente abbia il ruolo appropriato
-        if new_user.role != shift.role:
-            return jsonify({'error': f'Il nuovo utente deve avere il ruolo {shift.role}'}), 400
+        # Il ruolo del turno è determinato dal ruolo dell'utente originale
+        current_shift_role = shift.user.role if shift.user else None
+        if current_shift_role and new_user.role != current_shift_role:
+            return jsonify({'error': f'Il nuovo utente deve avere il ruolo {current_shift_role}'}), 400
         
         # Verifica sovrapposizioni
         overlapping_shift = Shift.query.filter(

@@ -469,7 +469,7 @@ function renderTurniLayout(data, templateName) {
                     // Icona di modifica
                     html += '<button type="button" class="btn btn-link btn-sm p-0 position-absolute" ';
                     html += 'style="top: 2px; right: 2px; color: rgba(255,255,255,0.8);" ';
-                    html += 'onclick="editShift(' + shift.id + ', \'' + shift.user + '\', \'' + shift.role + '\', \'' + shift.time + '\')" ';
+                    html += 'onclick="editShift(' + shift.id + ', \'' + shift.user.replace(/'/g, "\\'") + '\', \'' + shift.role + '\', \'' + shift.time + '\')" ';
                     html += 'title="Modifica turno">';
                     html += '<i class="fas fa-edit" style="font-size: 12px;"></i>';
                     html += '</button>';
