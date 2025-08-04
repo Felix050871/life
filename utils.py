@@ -727,11 +727,12 @@ def generate_shifts_for_period(start_date, end_date, created_by_id):
         # Check existing shifts for this day to avoid duplicates
         existing_shifts = db.session.query(Shift).filter(Shift.date == current_date).all()
         for existing_shift in existing_shifts:
-            daily_assigned_users.add(existing_shift.user_id)
-            # CRITICAL: Also track the time slots of existing shifts to prevent overlaps
+            # CRITICAL: Instead of blocking ALL shifts for user, only track TIME SLOTS
+            # This allows different time slots for same user but prevents overlaps
             if existing_shift.user_id not in daily_user_assignments:
                 daily_user_assignments[existing_shift.user_id] = []
             daily_user_assignments[existing_shift.user_id].append((existing_shift.start_time, existing_shift.end_time))
+            print(f"EXISTING DEBUG: User {existing_shift.user_id} ha turno {existing_shift.start_time}-{existing_shift.end_time}", file=sys.stderr, flush=True)
         
         # Get coverage requirements for this day
         day_coverages = [c for c in coverage_configs if c.day_of_week == day_of_week]
