@@ -54,8 +54,9 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
         
         print(f"OPTIMIZED: Processo data {current_date}, {len(day_coverages)} coperture", file=sys.stderr, flush=True)
         
-        # Ordina coperture per PRIORITÀ: prima turni difficili da coprire
-        day_coverages.sort(key=lambda c: get_coverage_priority(c, current_date, available_users, user_assignments))
+        # Ordina coperture per ORARIO CRONOLOGICO: prima turni mattutini, poi pomeridiani, poi serali
+        # Questo è FONDAMENTALE per applicare correttamente le regole di riposo dopo turni notturni
+        day_coverages.sort(key=lambda c: (c.start_time, c.end_time))
         
         for coverage in day_coverages:
             try:
