@@ -460,10 +460,19 @@ function renderTurniLayout(data, templateName) {
             // Show shifts
             if (day.shifts && day.shifts.length > 0) {
                 day.shifts.forEach(function(shift) {
-                    html += '<div class="shift-item mb-2 p-2 bg-success text-white rounded">';
+                    html += '<div class="shift-item mb-2 p-2 bg-success text-white rounded position-relative">';
                     html += '<small class="d-block"><strong>' + shift.role + '</strong></small>';
                     html += '<small class="d-block">' + shift.user + '</small>';
                     html += '<small class="d-block text-light">' + shift.time + '</small>';
+                    
+                    // Icona di modifica
+                    html += '<button type="button" class="btn btn-link btn-sm p-0 position-absolute" ';
+                    html += 'style="top: 2px; right: 2px; color: rgba(255,255,255,0.8);" ';
+                    html += 'onclick="editShift(' + shift.id + ', \'' + shift.user + '\', \'' + shift.role + '\', \'' + shift.time + '\')" ';
+                    html += 'title="Modifica turno">';
+                    html += '<i class="fas fa-edit" style="font-size: 12px;"></i>';
+                    html += '</button>';
+                    
                     html += '</div>';
                 });
             }
@@ -493,6 +502,131 @@ function renderTurniLayout(data, templateName) {
     
     container.innerHTML = html;
     console.log('=== renderTurniLayout COMPLETE ===');
+}
+
+// Funzione per modificare un turno
+function editShift(shiftId, currentUser, currentRole, currentTime) {
+    // Mostra modal per modifica turno
+    const modalHtml = `
+        <div class="modal fade" id="editShiftModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Modifica Turno</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editShiftForm">
+                            <div class="mb-3">
+                                <label class="form-label">Turno ID: ${shiftId}</label>
+                                <div class="form-text">Orario: ${currentTime}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Utente Attuale</label>
+                                <input type="text" class="form-control" value="${currentUser}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newUser" class="form-label">Nuovo Utente</label>
+                                <select class="form-select" id="newUser" required>
+                                    <option value="">Seleziona utente...</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="button" class="btn btn-primary" onclick="saveShiftEdit(${shiftId})">Salva Modifiche</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Rimuovi modal esistente se presente
+    const existingModal = document.getElementById('editShiftModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Aggiungi modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Carica lista utenti
+    loadUsersForEdit(currentRole);
+    
+    // Mostra modal
+    const modal = new bootstrap.Modal(document.getElementById('editShiftModal'));
+    modal.show();
+}
+
+// Funzione per caricare utenti con il ruolo appropriato
+function loadUsersForEdit(requiredRole) {
+    fetch('/api/users_by_role/' + encodeURIComponent(requiredRole), {
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const select = document.getElementById('newUser');
+        if (data.users && data.users.length > 0) {
+            data.users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.username;
+                select.appendChild(option);
+            });
+        } else {
+            select.innerHTML = '<option value="">Nessun utente disponibile</option>';
+        }
+    })
+    .catch(error => {
+        console.error('Errore caricamento utenti:', error);
+        document.getElementById('newUser').innerHTML = '<option value="">Errore caricamento</option>';
+    });
+}
+
+// Funzione per salvare le modifiche al turno
+function saveShiftEdit(shiftId) {
+    const newUserId = document.getElementById('newUser').value;
+    
+    if (!newUserId) {
+        alert('Seleziona un utente');
+        return;
+    }
+    
+    // Chiamata API per aggiornare il turno
+    fetch('/api/update_shift/' + shiftId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            new_user_id: newUserId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Chiudi modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editShiftModal'));
+            modal.hide();
+            
+            // Ricarica i turni per mostrare le modifiche
+            const templateId = document.getElementById('template_id').value;
+            const templateName = document.getElementById('template_id').selectedOptions[0].text;
+            loadShiftsForTemplate(templateId, templateName);
+            
+            alert('Turno aggiornato con successo');
+        } else {
+            alert('Errore nell\'aggiornamento: ' + (data.error || 'Errore sconosciuto'));
+        }
+    })
+    .catch(error => {
+        console.error('Errore salvataggio:', error);
+        alert('Errore durante il salvataggio');
+    });
 }
 
 // End of simplified API-only logic

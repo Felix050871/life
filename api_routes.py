@@ -137,6 +137,115 @@ def api_get_coverage_requirements(template_id):
         'coverages': coverage_data
     })
 
+@app.route('/api/users_by_role/<role>')
+@login_required
+def api_users_by_role(role):
+    """API per ottenere utenti con un ruolo specifico"""
+    try:
+        if not current_user.can_access_turni():
+            return jsonify({'error': 'Non autorizzato'}), 403
+        
+        # Ottieni utenti attivi con il ruolo richiesto nella sede dell'utente corrente
+        query = User.query.filter(
+            User.role == role,
+            User.active == True
+        )
+        
+        # Se l'utente non è admin, filtra per sede
+        if current_user.role != 'Amministratore' and current_user.sede_obj:
+            query = query.filter(User.sede_id == current_user.sede_obj.id)
+        
+        users = query.order_by(User.first_name, User.last_name).all()
+        
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'username': user.username,
+                'full_name': user.get_full_name(),
+                'role': user.role
+            })
+        
+        return jsonify({
+            'success': True,
+            'users': users_data
+        })
+        
+    except Exception as e:
+        print(f"Errore API users_by_role: {e}")
+        return jsonify({'error': 'Errore interno del server'}), 500
+
+@app.route('/api/update_shift/<int:shift_id>', methods=['POST'])
+@login_required
+def api_update_shift(shift_id):
+    """API per aggiornare l'assegnazione di un turno"""
+    try:
+        if not current_user.can_access_turni():
+            return jsonify({'error': 'Non autorizzato'}), 403
+        
+        shift = Shift.query.get_or_404(shift_id)
+        
+        # Verifica che il turno non sia passato
+        if shift.date < date.today():
+            return jsonify({'error': 'Non è possibile modificare turni passati'}), 400
+        
+        # Verifica permessi sulla sede (se non admin)
+        if current_user.role != 'Amministratore':
+            if not current_user.sede_obj or current_user.sede_obj.id != shift.user.sede_id:
+                return jsonify({'error': 'Non hai i permessi per modificare turni per questa sede'}), 403
+        
+        data = request.get_json()
+        new_user_id = data.get('new_user_id')
+        
+        if not new_user_id:
+            return jsonify({'error': 'ID utente richiesto'}), 400
+        
+        new_user = User.query.get(new_user_id)
+        if not new_user:
+            return jsonify({'error': 'Utente non trovato'}), 404
+        
+        # Verifica che il nuovo utente abbia il ruolo appropriato
+        if new_user.role != shift.role:
+            return jsonify({'error': f'Il nuovo utente deve avere il ruolo {shift.role}'}), 400
+        
+        # Verifica sovrapposizioni
+        overlapping_shift = Shift.query.filter(
+            Shift.user_id == new_user_id,
+            Shift.date == shift.date,
+            Shift.id != shift.id,
+            # Controlla sovrapposizione oraria
+            db.or_(
+                db.and_(Shift.start_time <= shift.start_time, Shift.end_time > shift.start_time),
+                db.and_(Shift.start_time < shift.end_time, Shift.end_time >= shift.end_time),
+                db.and_(Shift.start_time >= shift.start_time, Shift.end_time <= shift.end_time)
+            )
+        ).first()
+        
+        if overlapping_shift:
+            return jsonify({
+                'error': f'Sovrapposizione rilevata: l\'utente selezionato ha già un turno dalle {overlapping_shift.start_time.strftime("%H:%M")} alle {overlapping_shift.end_time.strftime("%H:%M")}'
+            }), 400
+        
+        # Salva i valori originali per il log
+        old_user = shift.user.get_full_name()
+        
+        # Aggiorna il turno
+        shift.user_id = new_user_id
+        db.session.commit()
+        
+        # Log dell'operazione
+        print(f"Turno {shift_id} aggiornato: {old_user} -> {new_user.get_full_name()}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Turno aggiornato da {old_user} a {new_user.get_full_name()}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Errore API update_shift: {e}")
+        return jsonify({'error': 'Errore interno del server'}), 500
+
 @app.route('/api/aci/marche/<tipo>')
 @login_required
 def api_aci_marche_by_tipo(tipo):
