@@ -13,12 +13,12 @@
     --header-height: 60px;
 }
 
-/* Dark theme overrides */
-[data-bs-theme="dark"] {
-    --bs-body-bg: #1a1a1a;
-    --bs-body-color: #e9ecef;
-    --bs-card-bg: #2d2d2d;
-    --bs-border-color: #404040;
+/* Light theme overrides */
+[data-bs-theme="light"] {
+    --bs-body-bg: #f8f9fa;
+    --bs-body-color: #212529;
+    --bs-card-bg: #ffffff;
+    --bs-border-color: #dee2e6;
 }
 
 body {
@@ -51,8 +51,9 @@ body {
 /* Sidebar Styles */
 .sidebar {
     width: var(--sidebar-width);
-    background: #2d2d2d;
-    border-right: 1px solid #404040;
+    background: #ffffff;
+    border-right: 1px solid #dee2e6;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     position: fixed;
     top: var(--header-height);
     left: 0;
@@ -68,14 +69,15 @@ body {
 
 .sidebar-header {
     padding: 1rem;
-    border-bottom: 1px solid #404040;
+    border-bottom: 1px solid #dee2e6;
+    background: #f8f9fa;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .sidebar-header .brand {
-    color: white;
+    color: #212529;
     text-decoration: none;
     font-weight: 600;
     font-size: 1.1rem;
@@ -88,13 +90,13 @@ body {
 .sidebar-toggle {
     background: none;
     border: none;
-    color: #adb5bd;
+    color: #6c757d;
     padding: 0.25rem;
     margin-left: auto;
 }
 
 .sidebar-toggle:hover {
-    color: white;
+    color: #212529;
 }
 
 /* Sidebar Navigation */
@@ -105,22 +107,22 @@ body {
 }
 
 .sidebar-nav-item {
-    border-bottom: 1px solid #404040;
+    border-bottom: 1px solid #dee2e6;
 }
 
 .sidebar-nav-link {
     display: flex;
     align-items: center;
     padding: 0.875rem 1rem;
-    color: #adb5bd;
+    color: #6c757d;
     text-decoration: none;
     transition: all 0.2s ease;
     position: relative;
 }
 
 .sidebar-nav-link:hover {
-    background-color: #404040;
-    color: white;
+    background-color: #f8f9fa;
+    color: #212529;
 }
 
 .sidebar-nav-link.active {
@@ -148,7 +150,7 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    background-color: #242424;
+    background-color: #f1f3f4;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease;
@@ -162,15 +164,15 @@ body {
     display: flex;
     align-items: center;
     padding: 0.625rem 1rem 0.625rem 3rem;
-    color: #6c757d;
+    color: #495057;
     text-decoration: none;
     font-size: 0.9rem;
     transition: all 0.2s ease;
 }
 
 .sidebar-submenu-link:hover {
-    background-color: #404040;
-    color: white;
+    background-color: #e9ecef;
+    color: #212529;
 }
 
 .sidebar-submenu-link i {
@@ -200,9 +202,10 @@ body {
 }
 
 .card-header {
-    background-color: #353535;
+    background-color: #f8f9fa;
     border-bottom: 1px solid var(--bs-border-color);
-    color: white;
+    color: #212529;
+    font-weight: 600;
 }
 
 /* Buttons */
