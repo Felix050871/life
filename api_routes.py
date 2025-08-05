@@ -35,10 +35,16 @@ def api_get_shifts_for_template(template_id):
         # DEBUG: Log tutti i turni trovati
         import sys
         print(f">>> API DEBUG: FOUND {len(fresh_shifts)} shifts for template {template_id} from {template.start_date} to {template.end_date}", file=sys.stderr, flush=True)
-        for shift in fresh_shifts:
-            print(f">>> SHIFT FOUND: {shift.id} date={shift.date} time={shift.start_time}-{shift.end_time} user_id={shift.user_id}", file=sys.stderr, flush=True)
+        
+        # DEBUG: Focus sui turni del 01/10
+        oct_01_shifts = [s for s in fresh_shifts if s.date.strftime('%d/%m') == '01/10']
+        print(f">>> SPECIFIC DEBUG: Found {len(oct_01_shifts)} shifts for 01/10", file=sys.stderr, flush=True)
+        for shift in oct_01_shifts:
+            print(f">>> 01/10 SHIFT: {shift.id} time={shift.start_time}-{shift.end_time} user_id={shift.user_id}", file=sys.stderr, flush=True)
             if shift.user:
-                print(f"    USER: {shift.user.first_name} {shift.user.last_name} role={shift.user.role}", file=sys.stderr, flush=True)
+                print(f"    01/10 USER: {shift.user.first_name} {shift.user.last_name} role={shift.user.role}", file=sys.stderr, flush=True)
+            else:
+                print(f"    01/10 ERROR: No user found for shift {shift.id}", file=sys.stderr, flush=True)
         
         # STEP 2: Crea struttura settimane dal database date range
         start_date = template.start_date
@@ -103,7 +109,7 @@ def api_get_shifts_for_template(template_id):
                         week_data['shift_count'] += 1
                         week_data['unique_users'].add(shift.user.username if shift.user else "unknown")
                         placed = True
-                        print(f">>> SUCCESS: Added shift {shift.id} to week {week_key} day {day_idx} ({shift_date_str})", file=sys.stderr, flush=True)
+                        print(f">>> SUCCESS: Added shift {shift.id} to week {week_key} day {day_idx} ({shift_date_str}) - {user_name} {shift.start_time}-{shift.end_time}", file=sys.stderr, flush=True)
                         break
                 if placed:
                     break
