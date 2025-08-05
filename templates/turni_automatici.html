@@ -171,6 +171,34 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Modal per modificare/assegnare turni -->
+<div class="modal fade" id="shiftEditModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shiftEditModalTitle">Modifica Turno</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="shift-details-info" class="mb-3"></div>
+                <div id="available-users-container">
+                    <h6>Utenti disponibili per questo ruolo:</h6>
+                    <div id="available-users-list">
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Caricamento...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Nascondi la sezione turni all'avvio
@@ -463,10 +491,15 @@ function renderTurniLayout(data, templateName) {
             // Show shifts
             if (day.shifts && day.shifts.length > 0) {
                 day.shifts.forEach(function(shift) {
-                    html += '<div class="shift-item mb-2 p-2 bg-success text-white rounded">';
+                    html += '<div class="shift-item mb-2 p-2 bg-success text-white rounded d-flex justify-content-between align-items-center">';
+                    html += '<div>';
                     html += '<small class="d-block"><strong>' + shift.role + '</strong></small>';
                     html += '<small class="d-block">' + shift.user + '</small>';
                     html += '<small class="d-block text-light">' + shift.time + '</small>';
+                    html += '</div>';
+                    html += '<button class="btn btn-sm btn-outline-light p-1" onclick="editShift(' + shift.id + ', \'' + shift.role + '\', \'' + shift.time + '\', \'' + day.date + '\', ' + shift.user_id + ', \'' + shift.user + '\')" title="Modifica assegnazione">';
+                    html += '<i class="fas fa-edit" style="font-size: 8px;"></i>';
+                    html += '</button>';
                     html += '</div>';
                 });
             }
@@ -474,9 +507,19 @@ function renderTurniLayout(data, templateName) {
             // Show missing roles - ALERT ROSSI COME ORIGINALE
             if (day.missing_roles && day.missing_roles.length > 0) {
                 day.missing_roles.forEach(function(missing) {
-                    html += '<div class="shift-item mb-2 p-2 bg-danger text-white rounded">';
+                    // Estrai ruolo e orario dal missing role
+                    var missingParts = missing.match(/(\w+) mancante \((.+)\)/);
+                    var missingRole = missingParts ? missingParts[1] : 'Unknown';
+                    var missingTime = missingParts ? missingParts[2] : 'Unknown';
+                    
+                    html += '<div class="shift-item mb-2 p-2 bg-danger text-white rounded d-flex justify-content-between align-items-center">';
+                    html += '<div>';
                     html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
                     html += '<small class="d-block">' + missing + '</small>';
+                    html += '</div>';
+                    html += '<button class="btn btn-sm p-0 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="background: none; border: none; color: white;">';
+                    html += '<i class="fas fa-plus" style="font-size: 6px;"></i>';
+                    html += '</button>';
                     html += '</div>';
                 });
             }
@@ -499,5 +542,252 @@ function renderTurniLayout(data, templateName) {
 }
 
 // End of simplified API-only logic
+
+// === FUNZIONI PER MODAL MODIFICA TURNI ===
+
+// Variabili globali per il modal
+var currentShiftData = {};
+
+// Funzione per modificare un turno esistente
+function editShift(shiftId, role, time, date, userId, userName) {
+    currentShiftData = {
+        id: shiftId,
+        role: role,
+        time: time,
+        date: date,
+        userId: userId,
+        userName: userName,
+        isNew: false
+    };
+    
+    document.getElementById('shiftEditModalTitle').textContent = 'Modifica Turno';
+    document.getElementById('shift-details-info').innerHTML = 
+        '<div class="alert alert-info">' +
+        '<strong>Turno:</strong> ' + role + ' - ' + time + '<br>' +
+        '<strong>Data:</strong> ' + date + '<br>' +
+        '<strong>Utente attuale:</strong> ' + userName +
+        '</div>';
+    
+    loadUsersForRole(role);
+    
+    var modal = new bootstrap.Modal(document.getElementById('shiftEditModal'));
+    modal.show();
+}
+
+// Funzione per assegnare un turno mancante
+function assignMissingShift(role, time, date) {
+    currentShiftData = {
+        role: role,
+        time: time,
+        date: date,
+        isNew: true
+    };
+    
+    document.getElementById('shiftEditModalTitle').textContent = 'Assegna Turno';
+    document.getElementById('shift-details-info').innerHTML = 
+        '<div class="alert alert-warning">' +
+        '<strong>Nuovo turno:</strong> ' + role + ' - ' + time + '<br>' +
+        '<strong>Data:</strong> ' + date +
+        '</div>';
+    
+    loadUsersForRole(role);
+    
+    var modal = new bootstrap.Modal(document.getElementById('shiftEditModal'));
+    modal.show();
+}
+
+// Funzione per caricare utenti per un ruolo specifico
+function loadUsersForRole(role) {
+    document.getElementById('available-users-list').innerHTML = 
+        '<div class="text-center">' +
+        '<div class="spinner-border spinner-border-sm" role="status">' +
+        '<span class="visually-hidden">Caricamento...</span>' +
+        '</div>' +
+        '</div>';
+    
+    fetch('/api/get_users_by_role/' + encodeURIComponent(role))
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.users && data.users.length > 0) {
+                var html = '';
+                data.users.forEach(function(user) {
+                    var isCurrentUser = currentShiftData.userId == user.id;
+                    var buttonClass = isCurrentUser ? 'btn-secondary' : 'btn-primary';
+                    var buttonText = isCurrentUser ? 'Attuale' : 'Seleziona';
+                    var disabled = isCurrentUser ? 'disabled' : '';
+                    
+                    html += '<div class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">';
+                    html += '<div>';
+                    html += '<strong>' + user.full_name + '</strong><br>';
+                    html += '<small class="text-muted">@' + user.username + ' - ' + user.role + '</small>';
+                    html += '</div>';
+                    html += '<button class="btn btn-sm ' + buttonClass + '" ' + disabled + ' onclick="selectUser(' + user.id + ', \'' + user.full_name + '\')">';
+                    html += buttonText;
+                    html += '</button>';
+                    html += '</div>';
+                });
+                document.getElementById('available-users-list').innerHTML = html;
+            } else {
+                document.getElementById('available-users-list').innerHTML = 
+                    '<div class="alert alert-warning">' +
+                    '<i class="fas fa-exclamation-triangle me-2"></i>' +
+                    'Nessun utente disponibile per il ruolo "' + role + '"' +
+                    '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            document.getElementById('available-users-list').innerHTML = 
+                '<div class="alert alert-danger">' +
+                '<i class="fas fa-exclamation-triangle me-2"></i>' +
+                'Errore nel caricamento degli utenti: ' + error.message +
+                '</div>';
+        });
+}
+
+// Funzione per selezionare un utente
+function selectUser(userId, fullName) {
+    if (currentShiftData.isNew) {
+        // Crea nuovo turno
+        createNewShift(userId, fullName);
+    } else {
+        // Aggiorna turno esistente
+        updateExistingShift(userId, fullName);
+    }
+}
+
+// Funzione per aggiornare un turno esistente
+function updateExistingShift(userId, fullName) {
+    var loadingHtml = '<div class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Aggiornamento in corso...</div>';
+    document.getElementById('available-users-list').innerHTML = loadingHtml;
+    
+    fetch('/api/update_shift/' + currentShiftData.id, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Chiudi modal
+            var modal = bootstrap.Modal.getInstance(document.getElementById('shiftEditModal'));
+            modal.hide();
+            
+            // Mostra messaggio di successo
+            showToast('Turno aggiornato con successo!', 'success');
+            
+            // Ricarica i turni
+            var templateId = document.getElementById('template_id').value;
+            if (templateId) {
+                var templateName = document.getElementById('template_id').selectedOptions[0].text;
+                loadShiftsForTemplate(templateId, templateName);
+            }
+        } else {
+            throw new Error(data.message || 'Errore nell\'aggiornamento del turno');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating shift:', error);
+        document.getElementById('available-users-list').innerHTML = 
+            '<div class="alert alert-danger">' +
+            '<i class="fas fa-exclamation-triangle me-2"></i>' +
+            'Errore: ' + error.message +
+            '</div>';
+    });
+}
+
+// Funzione per creare un nuovo turno
+function createNewShift(userId, fullName) {
+    var loadingHtml = '<div class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Creazione in corso...</div>';
+    document.getElementById('available-users-list').innerHTML = loadingHtml;
+    
+    // Converti data e orario in formato corretto
+    var dateParts = currentShiftData.date.split('/');
+    var shiftDate = '2025-' + dateParts[1].padStart(2, '0') + '-' + dateParts[0].padStart(2, '0');
+    var timeParts = currentShiftData.time.split('-');
+    var startTime = timeParts[0];
+    var endTime = timeParts[1];
+    
+    fetch('/api/create_shift', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            date: shiftDate,
+            start_time: startTime,
+            end_time: endTime
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Chiudi modal
+            var modal = bootstrap.Modal.getInstance(document.getElementById('shiftEditModal'));
+            modal.hide();
+            
+            // Mostra messaggio di successo
+            showToast('Nuovo turno creato con successo!', 'success');
+            
+            // Ricarica i turni
+            var templateId = document.getElementById('template_id').value;
+            if (templateId) {
+                var templateName = document.getElementById('template_id').selectedOptions[0].text;
+                loadShiftsForTemplate(templateId, templateName);
+            }
+        } else {
+            throw new Error(data.message || 'Errore nella creazione del turno');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating shift:', error);
+        document.getElementById('available-users-list').innerHTML = 
+            '<div class="alert alert-danger">' +
+            '<i class="fas fa-exclamation-triangle me-2"></i>' +
+            'Errore: ' + error.message +
+            '</div>';
+    });
+}
+
+// Funzione helper per mostrare toast messages
+function showToast(message, type) {
+    // Crea elemento toast se non esiste
+    var toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    var toastId = 'toast-' + Date.now();
+    var bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+    
+    var toastHtml = 
+        '<div id="' + toastId + '" class="toast ' + bgClass + ' text-white" role="alert">' +
+        '<div class="toast-header ' + bgClass + ' text-white">' +
+        '<strong class="me-auto">Workly</strong>' +
+        '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>' +
+        '</div>' +
+        '<div class="toast-body">' + message + '</div>' +
+        '</div>';
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    var toastElement = document.getElementById(toastId);
+    var toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Rimuovi toast dopo che si è nascosto
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+
 </script>
 {% endblock %}
