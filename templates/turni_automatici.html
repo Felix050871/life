@@ -237,25 +237,38 @@ function loadShiftsForTemplate(templateId, templateName) {
     console.log('>>> NUOVO CODICE DEBUG ATTIVO! templateId=' + templateId);
     alert('DEBUG: API call starting for template ' + templateId);
     
-    // TEST DIRETTO - Bypassiamo completamente il resto del codice per ora
-    console.log('>>> TESTING DIRECT API CALL...');
+    // API FUNZIONA! Ora controlliamo i dati del 01/10
+    console.log('>>> API WORKS! Testing data for 01/10...');
     
     fetch('/api/get_shifts_for_template/' + templateId)
-        .then(response => {
-            console.log('>>> DIRECT TEST: Response status:', response.status);
-            alert('DIRECT API Response: ' + response.status);
-            return response.text(); // text invece di json per debug
-        })
-        .then(text => {
-            console.log('>>> DIRECT TEST: Response text:', text.substring(0, 200));
-            alert('Response preview: ' + text.substring(0, 100));
+        .then(response => response.json())
+        .then(data => {
+            console.log('>>> API SUCCESS - Full data:', data);
+            
+            // Debug specifico per 01/10
+            data.weeks.forEach((week, weekIdx) => {
+                week.days.forEach((day, dayIdx) => {
+                    if (day.date === '01/10') {
+                        console.log(`>>> 01/10 FOUND: ${day.shifts.length} shifts, missing: ${day.missing_roles.length}`);
+                        day.shifts.forEach(shift => {
+                            console.log(`>>> 01/10 SHIFT: ${shift.time} ${shift.role} ${shift.user}`);
+                        });
+                        day.missing_roles.forEach(missing => {
+                            console.log(`>>> 01/10 MISSING: ${missing}`);
+                        });
+                    }
+                });
+            });
+            
+            // CONTINUA con display normale
+            displayShiftsFromAPI(data, templateName);
         })
         .catch(error => {
-            console.error('>>> DIRECT TEST: Error:', error);
-            alert('DIRECT API Error: ' + error.message);
+            console.error('>>> API Error:', error);
+            alert('API Error: ' + error.message);
         });
     
-    return; // EXIT EARLY per test
+    return; // EXIT per analisi dati
     
     // Mostra loading
     document.getElementById('no-template-message').style.display = 'none';

@@ -42,7 +42,7 @@ db.init_app(app)
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login'  # Fixed LSP error
 login_manager.login_message = 'Effettua il login per accedere a questa pagina.'
 
 @login_manager.user_loader
