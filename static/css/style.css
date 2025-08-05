@@ -284,18 +284,18 @@ body {
     color: #000 !important;
 }
 
-/* Loading Overlay - Fixed positioning */
-.loading-overlay {
+/* Loading Overlay - COMPLETELY DISABLED */
+.loading-overlay, #globalLoadingOverlay {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background-color: rgba(0, 0, 0, 0.7) !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    z-index: 9999 !important;
+    top: -9999px !important;
+    left: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    z-index: -9999 !important;
+    pointer-events: none !important;
 }
 
 .loading-content {

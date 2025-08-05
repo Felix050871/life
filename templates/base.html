@@ -634,8 +634,8 @@
 
         console.log('Workforce Management App initialized');
     </script>
-    <!-- Global Loading Overlay -->
-    <div id="globalLoadingOverlay" class="loading-overlay d-none">
+    <!-- Global Loading Overlay - FORCE HIDDEN -->
+    <div id="globalLoadingOverlay" class="d-none" style="display: none !important; visibility: hidden !important; opacity: 0 !important; position: fixed; top: -9999px; left: -9999px; width: 0; height: 0; z-index: -1;">
         <div class="loading-content">
             <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Loading...</span>
@@ -670,32 +670,39 @@
         </div>
     </div>
 
-    <!-- New Simple Loading System -->
+    <!-- DISABLED Loading System - Completely Safe -->
     <script>
-        // Simple Loading Overlay - Non-blocking
-        let loadingTimeout;
-        
+        // Loading functions - DISABLED for safety
         function showLoading() {
-            const overlay = document.getElementById('globalLoadingOverlay');
-            if (overlay) {
-                overlay.classList.remove('d-none');
-                // Auto-hide after 2 seconds maximum
-                clearTimeout(loadingTimeout);
-                loadingTimeout = setTimeout(hideLoading, 2000);
-            }
+            // DISABLED - do nothing
+            console.log('Loading overlay disabled for safety');
+            return false;
         }
         
         function hideLoading() {
+            // Force hide any overlay that might exist
             const overlay = document.getElementById('globalLoadingOverlay');
             if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.visibility = 'hidden';
+                overlay.style.opacity = '0';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '-9999px';
+                overlay.style.left = '-9999px';
+                overlay.style.zIndex = '-1';
                 overlay.classList.add('d-none');
-                clearTimeout(loadingTimeout);
             }
         }
         
-        // Hide loading immediately when page loads
+        // Aggressive hiding on all page events
         document.addEventListener('DOMContentLoaded', hideLoading);
         window.addEventListener('load', hideLoading);
+        document.addEventListener('visibilitychange', hideLoading);
+        window.addEventListener('focus', hideLoading);
+        window.addEventListener('pageshow', hideLoading);
+        
+        // Hide every 500ms as safety
+        setInterval(hideLoading, 500);
         
         // Global access
         window.showLoading = showLoading;
