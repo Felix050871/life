@@ -83,7 +83,7 @@ body {
     width: 280px;
     background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
     border-right: 1px solid #dee2e6;
-    height: 100vh;
+    height: calc(100vh - 60px);
     position: fixed;
     left: 0;
     top: 60px;
@@ -92,6 +92,9 @@ body {
     box-shadow: var(--shadow-sm);
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+    scroll-padding-bottom: 2rem;
 }
 
 /* Custom scrollbar for sidebar */
@@ -140,8 +143,9 @@ body {
 
 .sidebar-nav {
     list-style: none;
-    padding: 0 0 2rem 0;
+    padding: 0 0 4rem 0;
     margin: 0;
+    min-height: calc(100vh - 120px);
 }
 
 .sidebar-nav-item {
