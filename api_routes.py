@@ -19,28 +19,31 @@ def api_get_shifts_for_template(template_id):
     
     try:
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
-        shifts = Shift.query.filter(
-            Shift.date >= template.start_date,
-            Shift.date <= template.end_date
-        ).all()
         
         # STEP 1: Organizza turni per settimana - USA FRESH DATA DAL DATABASE
         weeks_data = {}
-        # Ricarica fresh shifts con join esplicito per evitare cache
-        # Usa expire_all per forzare refresh da database
+        # Forza refresh completo sessione database
         db.session.expire_all()
-        fresh_shifts = db.session.query(Shift).join(User).filter(
+        db.session.commit()
+        
+        # Query SEMPLICE senza doppi join che possono causare problemi
+        fresh_shifts = Shift.query.filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
         
         # DEBUG: Log tutti i turni trovati
-        logger.info(f"Found {len(fresh_shifts)} shifts for template {template_id}")
+        logger.info(f"FOUND {len(fresh_shifts)} shifts for template {template_id} from {template.start_date} to {template.end_date}")
         for shift in fresh_shifts:
-            logger.info(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} user_id={shift.user_id}")
+            logger.info(f"SHIFT {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} user_id={shift.user_id}")
+            if shift.user:
+                logger.info(f"  USER: {shift.user.first_name} {shift.user.last_name} role={shift.user.role}")
         
-        for shift in fresh_shifts:
-            week_start = shift.date - timedelta(days=shift.date.weekday())
+        # STEP 2: Crea struttura settimane PRIMA di processare i turni
+        # Crea settimane per tutto il periodo del template
+        current_date = template.start_date
+        while current_date <= template.end_date:
+            week_start = current_date - timedelta(days=current_date.weekday())
             week_key = week_start.strftime('%Y-%m-%d')
             
             if week_key not in weeks_data:
@@ -54,37 +57,49 @@ def api_get_shifts_for_template(template_id):
                 }
                 # Inizializza i 7 giorni della settimana
                 for i in range(7):
+                    week_date = week_start + timedelta(days=i)
                     weeks_data[week_key]['days'].append({
-                        'date': (week_start + timedelta(days=i)).strftime('%d/%m'),
+                        'date': week_date.strftime('%d/%m'),
                         'shifts': [],
                         'missing_roles': []
                     })
-            
+            current_date += timedelta(days=7)
+        
+        # STEP 3: Processa i turni nella struttura già creata
+        for shift in fresh_shifts:
+            week_start = shift.date - timedelta(days=shift.date.weekday())
+            week_key = week_start.strftime('%Y-%m-%d')
             day_index = shift.date.weekday()
+            
             # DEBUG: Log per capire dove vanno i turni
             shift_date_str = shift.date.strftime('%d/%m')
-            logger.info(f"Processing shift {shift.id} for date {shift_date_str} (weekday {day_index})")
-            # Usa il nome completo invece del username per migliore visualizzazione
-            user_name = shift.user.get_full_name() if hasattr(shift.user, 'get_full_name') else f"{shift.user.first_name} {shift.user.last_name}"
-            # Usa la stringa role invece dell'oggetto role
-            user_role = shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'Senza ruolo')
+            logger.info(f"PROCESSING shift {shift.id} for date {shift_date_str} (weekday {day_index}) in week {week_key}")
             
-            shift_data = {
-                'id': shift.id,
-                'user': user_name,
-                'user_id': shift.user.id,
-                'role': user_role,
-                'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
-            }
-            weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
-            weeks_data[week_key]['shift_count'] += 1
-            weeks_data[week_key]['unique_users'].add(shift.user.username)
+            if week_key in weeks_data and day_index < len(weeks_data[week_key]['days']):
+                # Usa il nome completo invece del username
+                user_name = f"{shift.user.first_name} {shift.user.last_name}" if shift.user else "Utente sconosciuto"
+                user_role = shift.user.role if shift.user and isinstance(shift.user.role, str) else (shift.user.role.name if shift.user and shift.user.role else 'Senza ruolo')
+                
+                shift_data = {
+                    'id': shift.id,
+                    'user': user_name,
+                    'user_id': shift.user.id if shift.user else None,
+                    'role': user_role,
+                    'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
+                }
+                weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
+                weeks_data[week_key]['shift_count'] += 1
+                weeks_data[week_key]['unique_users'].add(shift.user.username if shift.user else "unknown")
+                
+                logger.info(f"ADDED shift to week {week_key} day {day_index}: {shift_data}")
+            else:
+                logger.error(f"Could not find week {week_key} or invalid day index {day_index}")
         
-        # STEP 2: Converti set in count
+        # STEP 4: Converti set in count
         for week_data in weeks_data.values():
             week_data['unique_users'] = len(week_data['unique_users'])
         
-        # STEP 3: CALCOLA MISSING_ROLES - LOGICA SEMPLIFICATA
+        # STEP 5: CALCOLA MISSING_ROLES - LOGICA SEMPLIFICATA
         coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
         total_missing = 0
         
