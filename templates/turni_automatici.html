@@ -369,7 +369,7 @@ function loadCoverageRequirementsForDaySync(templateName, day, dayDate, startDat
     .catch(error => console.log('Error loading coverage for', templateName, ':', error));
 }
 
-// Funzione per applicare missing_roles da cache
+// Funzione per applicare missing_roles da cache - VERSIONE AGGIORNATA
 function applyMissingRolesFromCache(day, dayDate, coverages) {
     // Converte da domenica=0 a lunedì=0 per il database
     let normalizedDayOfWeek = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
@@ -377,8 +377,8 @@ function applyMissingRolesFromCache(day, dayDate, coverages) {
     // Filtra coperture per questo giorno della settimana
     let dayCoverages = coverages.filter(c => c.day_of_week === normalizedDayOfWeek);
     
-    // Reset e calcola missing_roles
-    if (!day.missing_roles) day.missing_roles = [];
+    // RESET COMPLETO missing_roles - FONDAMENTALE
+    day.missing_roles = [];
     
     dayCoverages.forEach(function(coverage) {
         let timeSlot = coverage.start_time + '-' + coverage.end_time;
@@ -391,14 +391,12 @@ function applyMissingRolesFromCache(day, dayDate, coverages) {
             
             if (!roleFound) {
                 let missingText = requiredRole + ' mancante (' + timeSlot + ')';
-                if (day.missing_roles.indexOf(missingText) === -1) {
-                    day.missing_roles.push(missingText);
-                }
+                day.missing_roles.push(missingText);
             }
         });
     });
     
-    console.log(day.date + ' - Missing roles calculated:', day.missing_roles);
+    console.log(day.date + ' - Missing roles RECALCULATED:', day.missing_roles);
     
     // FORZA RE-RENDER dopo calcolo missing_roles
     updateDayDisplay(day);
@@ -700,17 +698,26 @@ function updateExistingShift(userId, fullName) {
             // Mostra messaggio di successo
             showToast('Turno aggiornato con successo!', 'success');
             
-            // RELOAD IMMEDIATO E FORZATO
+            // RELOAD AGGRESSIVO - PULISCE CACHE E RICARICA
             var templateId = document.getElementById('template_id').value;
             if (templateId) {
                 var templateName = document.getElementById('template_id').selectedOptions[0].text;
-                console.log('IMMEDIATE RELOAD after shift update');
+                console.log('AGGRESSIVE RELOAD after shift update - clearing cache');
                 
-                // Reload immediato + uno ritardato per essere sicuri
+                // PULISCI la cache delle coperture per forzare ricalcolo
+                templateCoverageCache = {};
+                console.log('Coverage cache cleared');
+                
+                // Triplo reload con timing staggered
                 loadShiftsForTemplate(templateId, templateName);
                 setTimeout(() => {
+                    console.log('Second reload with cleared cache...');
                     loadShiftsForTemplate(templateId, templateName);
-                }, 1000);
+                }, 800);
+                setTimeout(() => {
+                    console.log('Final reload...');
+                    loadShiftsForTemplate(templateId, templateName);
+                }, 2000);
             }
         } else {
             throw new Error(data.message || 'Errore nell\'aggiornamento del turno');
