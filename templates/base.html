@@ -39,12 +39,12 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             {% if current_user.can_send_messages() %}
-                            <li><a class="dropdown-item" href="#" onclick="alert('Messaging system will be available in Phase 3')"
+                            <li><a class="dropdown-item" href="{{ url_for('send_message') }}">
                                 <i class="fas fa-paper-plane me-1"></i>Invia Messaggio
                             </a></li>
                             {% endif %}
                             {% if current_user.can_view_messages() %}
-                            <li><a class="dropdown-item" href="#" onclick="alert('Messaging system will be available in Phase 3')"
+                            <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
                                 <i class="fas fa-inbox me-1"></i>Visualizza Messaggi
                             </a></li>
                             {% endif %}
@@ -58,7 +58,7 @@
                             <i class="fas fa-user me-1"></i>{{ current_user.first_name or current_user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#" onclick="alert('This feature will be available in Phase 3')">
+                            <li><a class="dropdown-item" href="{{ url_for('user_profile') }}">
                                 <i class="fas fa-user-edit me-1"></i>Profilo
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -231,32 +231,32 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_reperibilita() %}
-                        <li><a href="#" onclick="alert('Reperibilità generation will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('generate_reperibilita_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Reperibilità
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_reperibilita() %}
-                        <li><a href="#" onclick="alert('Reperibilità shifts will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Reperibilità
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_coverage() %}
-                        <li><a href="#" onclick="alert('Reperibilità coverage will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('create_reperibilita_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Coperture Reperibilità
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_coverage() %}
-                        <li><a href="#" onclick="alert('Reperibilità coverage will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Coperture Reperibilità
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_interventions() %}
-                        <li><a href="#" onclick="alert('Interventions will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('my_interventions') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Interventi
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_interventions() %}
-                        <li><a href="#" onclick="alert('Interventions will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('my_interventions') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Interventi
                         </a></li>
                         {% endif %}
@@ -275,17 +275,17 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_access_attendance() %}
-                        <li><a href="#" onclick="alert('This feature will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('attendance.attendance') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user-clock"></i>Le Mie Presenze
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_sede_attendance() %}
-                        <li><a href="#" onclick="alert('This feature will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('attendance.attendance') }}" class="sidebar-submenu-link">
                             <i class="fas fa-users"></i>Presenze Sede
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_attendance() %}
-                        <li><a href="#" onclick="alert('Team dashboard will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('dashboard_team') }}" class="sidebar-submenu-link">
                             <i class="fas fa-chart-line"></i>Dashboard Presenze
                         </a></li>
                         {% endif %}
@@ -304,25 +304,25 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_request_leave() %}
-                        <li><a href="#" onclick="alert('Leave requests will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('create_leave_request_page') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Richiedi Ferie/Permessi
                         </a></li>
-                        <li><a href="#" onclick="alert('Leave requests will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user"></i>Le Mie Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_leave_types() %}
-                        <li><a href="#" onclick="alert('Leave types will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave_types') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list-alt"></i>Gestire Tipologie
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_leave() %}
-                        <li><a href="#" onclick="alert('Leave requests will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-check"></i>Approva Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_leave() %}
-                        <li><a href="#" onclick="alert('Leave requests will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizza Richieste
                         </a></li>
                         {% endif %}
@@ -341,22 +341,22 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_create_overtime_requests() %}
-                        <li><a href="#" onclick="alert('Overtime requests will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('create_overtime_request') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Nuova Richiesta
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_my_overtime_requests() %}
-                        <li><a href="#" onclick="alert('Overtime requests will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('my_overtime_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user-clock"></i>Le Mie Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_overtime_requests() or current_user.can_approve_overtime_requests() %}
-                        <li><a href="#" onclick="alert('Overtime management will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('overtime_requests_management') }}" class="sidebar-submenu-link">
                             <i class="fas fa-tasks"></i>Gestisci Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_overtime_types() %}
-                        <li><a href="#" onclick="alert('Overtime types will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('overtime_types') }}" class="sidebar-submenu-link">
                             <i class="fas fa-tags"></i>Tipologie Straordinario
                         </a></li>
                         {% endif %}
@@ -375,22 +375,22 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_create_expense_reports() %}
-                        <li><a href="#" onclick="alert('Expense reports will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('create_expense_report') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Crea Nota Spese
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_my_expense_reports() %}
-                        <li><a href="#" onclick="alert('Expense reports will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense_reports') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user"></i>Le Mie Note Spese
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() %}
-                        <li><a href="#" onclick="alert('Expense reports will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense_reports') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list"></i>Visualizza Note Spese
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_expense_reports() %}
-                        <li><a href="#" onclick="alert('Expense categories will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense_categories') }}" class="sidebar-submenu-link">
                             <i class="fas fa-tags"></i>Gestisci Categorie
                         </a></li>
                         {% endif %}
@@ -409,17 +409,17 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_create_mileage_requests() %}
-                        <li><a href="#" onclick="alert('Mileage requests will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('create_mileage_request') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Nuova Richiesta
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_my_mileage_requests() %}
-                        <li><a href="#" onclick="alert('Mileage requests will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('my_mileage_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user"></i>Le Mie Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests() %}
-                        <li><a href="#" onclick="alert('Mileage management will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('mileage_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list"></i>Visualizza Richieste
                         </a></li>
                         {% endif %}
@@ -438,12 +438,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_holidays() %}
-                        <li><a href="#" onclick="alert('Holidays will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('holidays') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Festività
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_holidays() %}
-                        <li><a href="#" onclick="alert('Holidays will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('holidays') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Festività
                         </a></li>
                         {% endif %}
@@ -455,7 +455,7 @@
                 {% set has_qr_permission = current_user.can_manage_qr() %}
                 {% if has_qr_permission %}
                 <li class="sidebar-nav-item">
-                    <a href="#" onclick="alert('QR code generation will be available in Phase 3')" class="sidebar-nav-link">
+                    <a href="{{ url_for('qr_codes') }}" class="sidebar-nav-link">
                         <i class="fas fa-qrcode"></i>
                         <span>Gestione QR</span>
                     </a>
@@ -471,16 +471,16 @@
                         <i class="fas fa-chevron-right dropdown-arrow"></i>
                     </a>
                     <ul class="sidebar-submenu">
-                        <li><a href="#" onclick="alert('ACI tables will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('aci_tables') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list"></i>Visualizza Tabelle
                         </a></li>
-                        <li><a href="#" onclick="alert('ACI upload will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('aci_upload') }}" class="sidebar-submenu-link">
                             <i class="fas fa-upload"></i>Carica Excel
                         </a></li>
-                        <li><a href="#" onclick="alert('ACI creation will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('aci_create') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Nuovo Record
                         </a></li>
-                        <li><a href="#" onclick="alert('ACI export will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('aci_export') }}" class="sidebar-submenu-link">
                             <i class="fas fa-download"></i>Export Excel
                         </a></li>
                     </ul>

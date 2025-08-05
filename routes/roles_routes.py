@@ -14,20 +14,20 @@ roles_bp = Blueprint('roles', __name__, url_prefix='/roles')
 @login_required
 @require_login
 def manage_roles():
-    """Manage roles page"""
+    """Manage roles page - redirect to main roles management"""
     if not current_user.can_manage_roles():
         flash('Non hai i permessi per gestire i ruoli.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('manage_roles.html')
+    return redirect(url_for('manage_roles'))
 
 @roles_bp.route('/view')
 @login_required 
 @require_login
 def view_roles():
-    """View roles page"""
+    """View roles page - redirect to main roles management"""
     if not current_user.can_view_roles():
         flash('Non hai i permessi per visualizzare i ruoli.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('manage_roles.html')
+    return redirect(url_for('manage_roles'))
