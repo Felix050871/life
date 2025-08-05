@@ -480,6 +480,9 @@ let sortDirection = {};
 document.addEventListener('DOMContentLoaded', function() {
     initializeFilters();
     initializeSorting();
+    
+    // Role-based part-time percentage visibility and sede management
+    initializeUserFormHandlers();
 });
 
 function initializeFilters() {
@@ -676,15 +679,15 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-
 });
 
-// Role-based part-time percentage visibility and sede management  
-document.addEventListener('DOMContentLoaded', function() {
+function initializeUserFormHandlers() {
     const roleSelect = document.querySelector('select[name="role"]');
-    const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
+    const partTimeGroup = document.querySelector('input[name="part_time_percentage"]')?.closest('.col-md-4');
     const allSediCheck = document.getElementById('allSediCheckNew');
     const sedeSelect = document.getElementById('sedeSelectNew');
+    
+    if (!roleSelect) return; // Exit if elements not found
 
     function toggleSedeSelect() {
         if (allSediCheck && allSediCheck.checked) {
