@@ -243,22 +243,36 @@ function loadShiftsForTemplate(templateId, templateName) {
     fetch('/api/get_shifts_for_template/' + templateId)
         .then(response => response.json())
         .then(data => {
-            console.log('>>> API SUCCESS - Full data:', data);
+            console.log('>>> API SUCCESS - Data received');
             
-            // Debug specifico per 01/10
-            data.weeks.forEach((week, weekIdx) => {
-                week.days.forEach((day, dayIdx) => {
-                    if (day.date === '01/10') {
-                        console.log(`>>> 01/10 FOUND: ${day.shifts.length} shifts, missing: ${day.missing_roles.length}`);
-                        day.shifts.forEach(shift => {
-                            console.log(`>>> 01/10 SHIFT: ${shift.time} ${shift.role} ${shift.user}`);
-                        });
-                        day.missing_roles.forEach(missing => {
-                            console.log(`>>> 01/10 MISSING: ${missing}`);
+            // Debug specifico per 01/10 - WITH SAFETY CHECKS
+            if (data && data.weeks && Array.isArray(data.weeks)) {
+                data.weeks.forEach((week, weekIdx) => {
+                    if (week && week.days && Array.isArray(week.days)) {
+                        week.days.forEach((day, dayIdx) => {
+                            if (day && day.date === '01/10') {
+                                const shiftsCount = day.shifts ? day.shifts.length : 0;
+                                const missingCount = day.missing_roles ? day.missing_roles.length : 0;
+                                console.log(`>>> 01/10 FOUND: ${shiftsCount} shifts, missing: ${missingCount}`);
+                                
+                                if (day.shifts && Array.isArray(day.shifts)) {
+                                    day.shifts.forEach(shift => {
+                                        console.log(`>>> 01/10 SHIFT: ${shift.time} ${shift.role} ${shift.user}`);
+                                    });
+                                }
+                                
+                                if (day.missing_roles && Array.isArray(day.missing_roles)) {
+                                    day.missing_roles.forEach(missing => {
+                                        console.log(`>>> 01/10 MISSING: ${missing}`);
+                                    });
+                                }
+                            }
                         });
                     }
                 });
-            });
+            } else {
+                console.error('>>> API Data structure invalid:', data);
+            }
             
             // CONTINUA con display normale
             displayShiftsFromAPI(data, templateName);

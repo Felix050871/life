@@ -37,11 +37,23 @@ def api_get_shifts_for_template(template_id):
         db.session.expire_all()
         db.session.commit()
         
-        # Query SEMPLICE senza doppi join che possono causare problemi
+        # Query SEMPLICE - INCLUDE ANCHE UTENTI INATTIVI per debug
         fresh_shifts = Shift.query.filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
+        
+        # DEBUG: Log query specifica per 01/10 nella database
+        import sys
+        from sqlalchemy import text
+        result = db.session.execute(text(
+            "SELECT s.id, s.user_id, s.start_time, s.end_time, u.first_name, u.last_name, u.active "
+            "FROM shift s LEFT JOIN \"user\" u ON s.user_id = u.id "
+            "WHERE s.date = '2025-10-01' ORDER BY s.start_time"
+        )).fetchall()
+        print(f">>> DATABASE DEBUG: Direct query found {len(result)} shifts for 01/10:", file=sys.stderr, flush=True)
+        for row in result:
+            print(f">>> DB ROW: id={row.id} user_id={row.user_id} time={row.start_time}-{row.end_time} user={row.first_name} {row.last_name} active={row.active}", file=sys.stderr, flush=True)
         
         # DEBUG: Log tutti i turni trovati
         import sys
