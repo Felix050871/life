@@ -32,7 +32,7 @@
                                     <label for="template-select" class="form-label">Template di Copertura:</label>
                                     <select id="template-select" name="template_id" class="form-select" onchange="templateChanged()">
                                         <option value="">Seleziona un template...</option>
-                                        {% for template in templates %}
+                                        {% for template in presidio_templates %}
                                         <option value="{{ template.id }}">{{ template.name }}</option>
                                         {% endfor %}
                                     </select>
