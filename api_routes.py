@@ -33,11 +33,12 @@ def api_get_shifts_for_template(template_id):
         ).all()
         
         # DEBUG: Log tutti i turni trovati
-        print(f">>> API DEBUG: FOUND {len(fresh_shifts)} shifts for template {template_id} from {template.start_date} to {template.end_date}")
+        import sys
+        print(f">>> API DEBUG: FOUND {len(fresh_shifts)} shifts for template {template_id} from {template.start_date} to {template.end_date}", file=sys.stderr, flush=True)
         for shift in fresh_shifts:
-            print(f">>> SHIFT FOUND: {shift.id} date={shift.date} time={shift.start_time}-{shift.end_time} user_id={shift.user_id}")
+            print(f">>> SHIFT FOUND: {shift.id} date={shift.date} time={shift.start_time}-{shift.end_time} user_id={shift.user_id}", file=sys.stderr, flush=True)
             if shift.user:
-                print(f"    USER: {shift.user.first_name} {shift.user.last_name} role={shift.user.role}")
+                print(f"    USER: {shift.user.first_name} {shift.user.last_name} role={shift.user.role}", file=sys.stderr, flush=True)
         
         # STEP 2: Crea struttura settimane dal database date range
         start_date = template.start_date
@@ -69,7 +70,7 @@ def api_get_shifts_for_template(template_id):
                     'shifts': [],
                     'missing_roles': []
                 })
-                print(f">>> CREATED day slot: {week_date.strftime('%d/%m')} at week {week_key} index {i}")
+                import sys; print(f">>> CREATED day slot: {week_date.strftime('%d/%m')} at week {week_key} index {i}", file=sys.stderr, flush=True)
             
             current_week_start += timedelta(days=7)
         
@@ -80,18 +81,19 @@ def api_get_shifts_for_template(template_id):
             day_index = shift.date.weekday()
             shift_date_str = shift.date.strftime('%d/%m')
             
-            print(f">>> PROCESSING shift {shift.id} for date {shift_date_str} (weekday {day_index}) in week {week_key}")
+            import sys
+            print(f">>> PROCESSING shift {shift.id} for date {shift_date_str} (weekday {day_index}) in week {week_key}", file=sys.stderr, flush=True)
             
             # TROVA la settimana giusta - cerca in tutte le settimane se necessario
             target_week = None
             for week_key_search, week_data in weeks_data.items():
-                print(f"    Checking week {week_key_search} with {len(week_data['days'])} days")
+                print(f"    Checking week {week_key_search} with {len(week_data['days'])} days", file=sys.stderr, flush=True)
                 for day_idx, day_data in enumerate(week_data['days']):
-                    print(f"      Day {day_idx}: '{day_data['date']}' vs target '{shift_date_str}'")
+                    print(f"      Day {day_idx}: '{day_data['date']}' vs target '{shift_date_str}'", file=sys.stderr, flush=True)
                     if day_data['date'] == shift_date_str:
                         target_week = week_key_search
                         day_index = day_idx
-                        print(f">>> MATCH FOUND: target week {target_week} day {day_index} for date {shift_date_str}")
+                        print(f">>> MATCH FOUND: target week {target_week} day {day_index} for date {shift_date_str}", file=sys.stderr, flush=True)
                         break
                 if target_week:
                     break
@@ -112,10 +114,12 @@ def api_get_shifts_for_template(template_id):
                 weeks_data[target_week]['shift_count'] += 1
                 weeks_data[target_week]['unique_users'].add(shift.user.username if shift.user else "unknown")
                 
-                print(f">>> SUCCESS: ADDED shift {shift.id} to week {target_week} day {day_index}: {shift_data}")
+                import sys
+                print(f">>> SUCCESS: ADDED shift {shift.id} to week {target_week} day {day_index}: {shift_data}", file=sys.stderr, flush=True)
             else:
-                print(f">>> ERROR: Could not place shift {shift.id} for date {shift_date_str}")
-                print(f"    Available weeks: {list(weeks_data.keys())}")
+                import sys
+                print(f">>> ERROR: Could not place shift {shift.id} for date {shift_date_str}", file=sys.stderr, flush=True)
+                print(f"    Available weeks: {list(weeks_data.keys())}", file=sys.stderr, flush=True)
         
         # STEP 4: Converti set in count
         for week_data in weeks_data.values():
