@@ -502,28 +502,25 @@
 
         <!-- Main Content -->
         <div class="main-content" id="main-content">
-                <div class="container-fluid" style="padding: 0;">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
+            <div class="container-fluid p-4">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
 
-                    <div class="content-area">
-                        {% block content %}{% endblock %}
-                    </div>
-                </div>
+                {% block content %}{% endblock %}
             </div>
             
             <!-- Footer -->
-            <footer class="app-footer">
+            <footer class="mt-auto py-3 bg-light border-top">
                 <div class="container-fluid">
-                    <div class="text-center py-2">
+                    <div class="text-center">
                         <small class="text-muted">
                             <strong>WORKLY</strong> Workforce Management Platform by <strong>NS12 S.p.A.</strong>
                         </small>
