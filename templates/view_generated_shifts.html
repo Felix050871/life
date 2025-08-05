@@ -15,10 +15,10 @@
                     </p>
                 </div>
                 <div class="text-end">
-                    <a href=""" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('generate_turnazioni') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Torna alla Generazione
                     </a>
-                    <a href=""" class="btn btn-primary">
+                    <a href="{{ url_for('shifts') }}?sede={{ sede.id }}" class="btn btn-primary">
                         <i class="fas fa-calendar-alt me-1"></i>Gestione Turni
                     </a>
                 </div>
@@ -162,7 +162,7 @@
                             Non sono stati ancora generati turni per questo periodo.
                             <br>Torna alla pagina di generazione per creare i turni basandoti sulle coperture.
                         </p>
-                        <a href=""" class="btn btn-primary">
+                        <a href="{{ url_for('generate_turnazioni') }}" class="btn btn-primary">
                             <i class="fas fa-magic me-1"></i>Genera Turni
                         </a>
                     </div>
@@ -178,7 +178,7 @@ function regenerateShifts() {
         // Crea un form per inviare i dati alla route di rigenerazione
         const form = document.createElement('form');
         form.method = 'POST';
-href="#" onclick="alert('This feature will be available in Phase 3')"
+        form.action = '{{ url_for("regenerate_turni_from_coverage") }}';
         
         // Aggiungi CSRF token
         const csrfToken = document.createElement('input');
@@ -212,7 +212,7 @@ function deleteShifts() {
         // Crea un form per inviare i dati alla route di eliminazione
         const form = document.createElement('form');
         form.method = 'POST';
-href="#" onclick="alert('This feature will be available in Phase 3')"
+        form.action = '{{ url_for("delete_turni_period") }}';
         
         // Aggiungi CSRF token
         const csrfToken = document.createElement('input');
@@ -243,7 +243,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
 
 function editShift(shiftId) {
     // Reindirizza alla pagina di modifica turno
-    window.location.href = `"`.replace('0', shiftId);
+    window.location.href = `{{ url_for('edit_shift', shift_id=0) }}`.replace('0', shiftId);
 }
 
 function deleteShift(shiftId) {
@@ -251,7 +251,7 @@ function deleteShift(shiftId) {
         // Crea un form per inviare la richiesta di eliminazione
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `"`.replace('0', shiftId);
+        form.action = `{{ url_for('delete_shift', shift_id=0) }}`.replace('0', shiftId);
         
         // Aggiungi CSRF token
         const csrfToken = document.createElement('input');

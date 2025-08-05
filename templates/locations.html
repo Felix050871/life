@@ -9,7 +9,7 @@
             <i class="fas fa-map-marker-alt me-2"></i>Gestione Sedi
         </h1>
         {% if current_user.role == 'admin' %}
-href="#" onclick="alert('This feature will be available in Phase 3')"
+        <a href="{{ url_for('new_location') }}" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i>Nuova Sede
         </a>
         {% endif %}
@@ -83,7 +83,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i>Salva
                     </button>
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                    <a href="{{ url_for('locations') }}" class="btn btn-secondary">
                         <i class="fas fa-times me-1"></i>Annulla
                     </a>
                 </div>
@@ -112,7 +112,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                                     </h5>
                                     {% if current_user.role == 'admin' %}
                                     <div class="btn-group btn-group-sm">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                        <a href="{{ url_for('edit_location', id=location.id) }}" class="btn btn-outline-primary">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <button class="btn btn-outline-danger" onclick="confirmDelete({{ location.id }})">
@@ -176,7 +176,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                     <ul class="pagination justify-content-center">
                         {% if locations.has_prev %}
                             <li class="page-item">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                <a class="page-link" href="{{ url_for('locations', page=locations.prev_num) }}">Precedente</a>
                             </li>
                         {% endif %}
                         
@@ -184,7 +184,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                             {% if page_num %}
                                 {% if page_num != locations.page %}
                                     <li class="page-item">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                        <a class="page-link" href="{{ url_for('locations', page=page_num) }}">{{ page_num }}</a>
                                     </li>
                                 {% else %}
                                     <li class="page-item active">
@@ -200,7 +200,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                         
                         {% if locations.has_next %}
                             <li class="page-item">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                <a class="page-link" href="{{ url_for('locations', page=locations.next_num) }}">Successivo</a>
                             </li>
                         {% endif %}
                     </ul>
@@ -212,7 +212,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                     <h5 class="text-muted">Nessuna sede configurata</h5>
                     <p class="text-muted">Crea la prima sede aziendale per iniziare.</p>
                     {% if current_user.role == 'admin' %}
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                    <a href="{{ url_for('new_location') }}" class="btn btn-primary">
                         <i class="fas fa-plus me-1"></i>Crea Prima Sede
                     </a>
                     {% endif %}

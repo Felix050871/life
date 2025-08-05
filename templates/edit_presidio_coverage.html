@@ -9,7 +9,7 @@
         <p class="text-muted">Modifica template {{ start_date.strftime('%d/%m/%Y') }} - {{ end_date.strftime('%d/%m/%Y') }}</p>
     </div>
     <div class="col-auto">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+        <a href="{{ url_for('view_presidio_coverage', period_key=period_key) }}" class="btn btn-secondary">
             <i class="fas fa-eye me-1"></i>Solo Visualizza
         </a>
     </div>
@@ -139,7 +139,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                         <div class="col-12">
                             <div class="d-flex gap-2 justify-content-between">
                                 <div>
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                    <a href="{{ url_for('view_presidio_coverage', period_key=period_key) }}" class="btn btn-outline-secondary">
                                         <i class="fas fa-times me-1"></i>Annulla
                                     </a>
                                 </div>

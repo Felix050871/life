@@ -14,7 +14,7 @@
                 <i class="fas fa-info-circle me-2"></i>
                 {% if is_admin %}
                 Nessuna sede configurata con modalità "Turni". 
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                <a href="{{ url_for('manage_sedi') }}">Configura le sedi</a> per iniziare a gestire i turni.
                 {% else %}
                 La tua sede non è configurata per la modalità "Turni". Contatta l'amministratore per abilitare la gestione turni.
                 {% endif %}
@@ -59,11 +59,11 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                                 <button class="btn btn-sm btn-primary" onclick="createCopertura({{ sede.id }}, '{{ sede.name }}')">
                                     <i class="fas fa-plus me-1"></i>Nuova Copertura
                                 </button>
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                <a href="{{ url_for('view_turni_coverage') }}?sede={{ sede.id }}" 
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-eye me-1"></i>Visualizza Turni
                                 </a>
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                <a href="{{ url_for('generate_turnazioni') }}?sede={{ sede.id }}" 
                                    class="btn btn-sm btn-outline-success">
                                     <i class="fas fa-magic me-1"></i>Genera Turni
                                 </a>
@@ -103,7 +103,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                             <hr>
                             <div class="alert alert-primary mb-0">
                                 <strong>Modalità Admin:</strong> Puoi gestire coperture per tutte le sedi configurate con modalità "Turni".
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                Utilizza la <a href="{{ url_for('manage_sedi') }}" class="alert-link">gestione sedi</a> per modificare la tipologia delle sedi.
                             </div>
                             {% else %}
                             <hr>
@@ -130,7 +130,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                 <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Crea Nuova Copertura Turni</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-href="#" onclick="alert('This feature will be available in Phase 3')"
+            <form id="createCoperturaForm" method="POST" action="{{ url_for('create_shift_coverage') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <input type="hidden" id="sede_id" name="sede_id" value="">

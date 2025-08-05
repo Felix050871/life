@@ -3,7 +3,7 @@
 {% block title %}Dettagli Template Presidio - {{ template.name }}{% endblock %}
 
 {% block extra_css %}
-href="#" onclick="alert('This feature will be available in Phase 3')"
+<link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
 <style>
 /* Tabella coperture migliorata */
 .table th {
@@ -39,7 +39,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
             {% endif %}
         </div>
         <div class="quick-actions">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+            <a href="{{ url_for('view_presidi') }}" class="btn btn-secondary">
                 <i class="fa fa-arrow-left me-1"></i>Torna alla Lista
             </a>
         </div>
@@ -290,5 +290,5 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
 {% endblock %}
 
 {% block extra_js %}
-href="#" onclick="alert('This feature will be available in Phase 3')"
+<script src="{{ url_for('static', filename='js/presidio_scripts.js') }}"></script>
 {% endblock %}

@@ -7,7 +7,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-receipt me-2"></i>{{ page_title or 'Note Spese' }}</h2>
                 {% if current_user.can_create_expense_reports() %}
-                <a href=""" class="btn btn-primary">
+                <a href="{{ url_for('create_expense_report') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-1"></i>Nuova Nota Spese
                 </a>
                 {% endif %}
@@ -53,7 +53,7 @@
                             {{ filter_form.submit(class="btn btn-outline-primary me-2") }}
                             {{ filter_form.reset(class="btn btn-outline-secondary me-2") }}
                             {% if expenses %}
-                            <a href=""" class="btn btn-outline-success export-btn">
+                            <a href="{{ url_for('export_expense_reports_excel') }}" class="btn btn-outline-success export-btn">
                                 <i class="fas fa-file-excel me-1"></i>Export in Excel
                             </a>
                             {% endif %}
@@ -112,7 +112,7 @@
                                     </td>
                                     <td>
                                         {% if expense.receipt_filename %}
-                                        <a href=""" 
+                                        <a href="{{ url_for('download_expense_receipt', expense_id=expense.id) }}" 
                                            class="btn btn-sm btn-outline-primary" title="Scarica documento">
                                             <i class="fas fa-download"></i>
                                         </a>
@@ -124,7 +124,7 @@
                                         <div class="btn-group" role="group">
                                             <!-- Modifica (solo se propria o admin, e solo se in attesa) -->
                                             {% if (expense.employee_id == current_user.id or current_user.can_manage_expense_reports()) and expense.can_be_edited() %}
-                                            <a href=""" 
+                                            <a href="{{ url_for('edit_expense_report', expense_id=expense.id) }}" 
                                                class="btn btn-sm btn-outline-warning" title="Modifica">
                                                 <i class="fas fa-edit"></i>
                                             </a>
@@ -132,7 +132,7 @@
                                             
                                             <!-- Approva/Rifiuta (solo se può approvare e in attesa) -->
                                             {% if expense.can_be_approved_by(current_user) and expense.status == 'pending' %}
-                                            <a href=""" 
+                                            <a href="{{ url_for('approve_expense_report', expense_id=expense.id) }}" 
                                                class="btn btn-sm btn-outline-success" title="Approva/Rifiuta">
                                                 <i class="fas fa-check"></i>
                                             </a>
@@ -140,7 +140,7 @@
                                             
                                             <!-- Elimina (solo se propria o admin, e solo se in attesa) -->
                                             {% if (expense.employee_id == current_user.id or current_user.can_manage_expense_reports()) and expense.status == 'pending' %}
-                                            <form method="POST" action=""" 
+                                            <form method="POST" action="{{ url_for('delete_expense_report', expense_id=expense.id) }}" 
                                                   style="display:inline;" onsubmit="return confirm('Vuoi eliminare definitivamente questa nota spese? Tutti i dati verranno persi per sempre.')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina">
@@ -166,7 +166,7 @@
                         <h4>Nessuna nota spese trovata</h4>
                         <p class="text-muted">Non ci sono note spese che corrispondono ai criteri di ricerca.</p>
                         {% if current_user.can_create_expense_reports() %}
-                        <a href=""" class="btn btn-primary">
+                        <a href="{{ url_for('create_expense_report') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i>Crea la prima nota spese
                         </a>
                         {% endif %}

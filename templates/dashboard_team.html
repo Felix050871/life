@@ -3,7 +3,7 @@
 {% block title %}Dashboard Team - Workly{% endblock %}
 
 {% block scripts %}
-href="#" onclick="alert('This feature will be available in Phase 3')"
+<script src="{{ url_for('static', filename='dashboard_loading.js') }}"></script>
 <script>
 // Sistema semplificato senza overlay - solo feedback su pulsanti
 document.addEventListener('DOMContentLoaded', function() {
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <!-- Controlli temporali semplificati -->
                     <div class="d-flex align-items-center gap-3">
                         <!-- Solo range personalizzato -->
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                        <form method="GET" action="{{ url_for('dashboard_team') }}" class="d-flex align-items-center gap-2" id="customRangeForm">
                             <label class="form-label mb-0 text-muted">Periodo:</label>
                             <input type="date" class="form-control form-control-sm" name="start_date" 
                                    value="{{ start_date.strftime('%Y-%m-%d') }}" style="width: 150px;" required>
@@ -52,7 +52,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                     
                     <!-- Export -->
                     <div class="d-flex align-items-center gap-2">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                        <a href="{{ url_for('dashboard_team', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d'), export='excel') }}" 
                            class="btn btn-outline-success btn-sm export-btn">
                             <i class="fas fa-download me-1"></i>Esporta in Excel
                         </a>

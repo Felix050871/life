@@ -9,13 +9,13 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-car"></i> Tabelle ACI - Back Office</h2>
                 <div class="btn-group">
-                    <a href=""" class="btn btn-primary">
+                    <a href="{{ url_for('aci_upload') }}" class="btn btn-primary">
                         <i class="fas fa-upload"></i> Carica Excel
                     </a>
-                    <a href=""" class="btn btn-success">
+                    <a href="{{ url_for('aci_create') }}" class="btn btn-success">
                         <i class="fas fa-plus"></i> Nuovo Record
                     </a>
-                    <a href=""" class="btn btn-info">
+                    <a href="{{ url_for('aci_export') }}" class="btn btn-info">
                         <i class="fas fa-download"></i> Export Excel
                     </a>
                 </div>
@@ -27,7 +27,7 @@
                     <h5 class="mb-0"><i class="fas fa-filter"></i> Filtri</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action=""">
+                    <form method="POST" action="{{ url_for('aci_tables') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
                             <div class="col-md-3">
@@ -44,7 +44,7 @@
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
                                 {{ form.submit(class="btn btn-outline-primary me-2") }}
-                                <a href=""" class="btn btn-outline-secondary">Reset</a>
+                                <a href="{{ url_for('aci_tables') }}" class="btn btn-outline-secondary">Reset</a>
                             </div>
                         </div>
                     </form>
@@ -141,7 +141,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href=""" 
+                                            <a href="{{ url_for('aci_edit', record_id=table.id) }}" 
                                                class="btn btn-outline-primary btn-sm">
                                                 <i class="fas fa-edit"></i>
                                             </a>
@@ -162,7 +162,7 @@
                             <i class="fas fa-search fa-3x text-muted mb-3"></i>
                             <h4 class="text-muted">Nessun record trovato</h4>
                             <p class="text-muted">I filtri applicati non hanno prodotto risultati. Prova con filtri diversi.</p>
-                            <a href=""" class="btn btn-outline-secondary">
+                            <a href="{{ url_for('aci_tables') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-redo"></i> Azzera Filtri
                             </a>
                         </div>
@@ -188,7 +188,7 @@
             {% if show_results and tables %}
             <div class="mt-4">
                 <h5>Cancellazione in Massa</h5>
-                <form method="POST" action=""" class="d-inline">
+                <form method="POST" action="{{ url_for('aci_bulk_delete') }}" class="d-inline">
                     {{ form.hidden_tag() }}
                     <div class="input-group" style="max-width: 400px;">
                         <select name="tipologia" class="form-select" required>
@@ -299,7 +299,7 @@ function showDeleteModal(recordId, recordName) {
 
 function showBulkDeleteModal() {
     // Cerca la tipologia nel form di cancellazione (NON nel form di filtri)
-href="#" onclick="alert('This feature will be available in Phase 3')"
+    const tipologiaSelect = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"] select[name="tipologia"]');
     const tipologia = tipologiaSelect ? tipologiaSelect.value : '';
     
     if (!tipologia) {
@@ -324,7 +324,7 @@ function executeBulkDelete() {
     bootstrap.Modal.getInstance(document.getElementById('bulkDeleteModal')).hide();
     
     // Invia il form
-href="#" onclick="alert('This feature will be available in Phase 3')"
+    const form = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]');
     if (form) {
         form.submit();
     } else {
@@ -333,7 +333,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
 }
 
 function submitBulkDelete() {
-href="#" onclick="alert('This feature will be available in Phase 3')"
+    const form = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]');
     form.submit();
 }
 

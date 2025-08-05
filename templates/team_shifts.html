@@ -16,7 +16,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href=""" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('team_shifts', date=prev_week.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-chevron-left me-2"></i>Settimana Precedente
                     </a>
                     
@@ -33,7 +33,7 @@
                         {% endif %}
                     </div>
                     
-                    <a href=""" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('team_shifts', date=next_week.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
                         Settimana Successiva<i class="fas fa-chevron-right ms-2"></i>
                     </a>
                 </div>
@@ -48,7 +48,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-calendar-alt me-2"></i>Programmazione Settimanale</h5>
                 <div>
-                    <a href=""" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('shifts') }}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-edit me-1"></i>Gestisci Turni
                     </a>
                 </div>
@@ -99,7 +99,7 @@
                                                                 title="Cambia utente rapidamente">
                                                             <i class="fas fa-user-edit"></i>
                                                         </button>
-                                                        <a href=""" 
+                                                        <a href="{{ url_for('edit_shift', shift_id=shift.id) }}" 
                                                            class="btn btn-sm btn-outline-light" 
                                                            title="Modifica turno completo (utente + orario)">
                                                             <i class="fas fa-edit"></i>
@@ -242,11 +242,11 @@
 <div class="row">
     <div class="col">
         <div class="text-center">
-            <a href=""" class="btn btn-outline-secondary">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
             </a>
             {% if current_user.role != 'Ente' %}
-            <a href=""" class="btn btn-success ms-2">
+            <a href="{{ url_for('generate_shifts') }}" class="btn btn-success ms-2">
                 <i class="fas fa-plus me-1"></i>Genera Nuovi Turni
             </a>
             {% endif %}

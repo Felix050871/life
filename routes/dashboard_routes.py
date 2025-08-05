@@ -43,7 +43,7 @@ def dashboard():
     
     # Ottieni le richieste di permesso recenti per l'utente corrente
     recent_leave_requests = []
-    if hasattr(current_user, 'can_manage_leaves') and current_user.can_manage_leaves():
+    if hasattr(current_user, 'can_view_leaves') and (current_user.can_view_leaves() or current_user.can_manage_leaves()):
         from models import LeaveRequest
         recent_leave_requests = LeaveRequest.query.filter_by(
             user_id=current_user.id
@@ -55,7 +55,8 @@ def dashboard():
         from models import Shift
         upcoming_shifts = Shift.query.filter(
             Shift.user_id == current_user.id,
-            Shift.date >= date.today()
+            Shift.date >= date.today(),
+            Shift.active == True
         ).order_by(Shift.date, Shift.start_time).limit(5).all()
     
     # Ottieni reperibilità future
@@ -64,7 +65,8 @@ def dashboard():
         from models import ReperibilitaShift
         upcoming_reperibilita = ReperibilitaShift.query.filter(
             ReperibilitaShift.user_id == current_user.id,
-            ReperibilitaShift.date >= date.today()
+            ReperibilitaShift.date >= date.today(),
+            ReperibilitaShift.active == True
         ).order_by(ReperibilitaShift.date).limit(5).all()
     
     # Ottieni richieste di rimborso chilometrico recenti  

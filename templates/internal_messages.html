@@ -18,7 +18,7 @@
             
             {% if unread_count > 0 %}
             <div>
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                <form method="POST" action="{{ url_for('mark_all_messages_read') }}" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-primary">
                         <i class="fas fa-check-double me-1"></i>Marca tutto come letto
@@ -82,7 +82,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                                 <div class="ms-3">
                                     <div class="btn-group" role="group">
                                         {% if not message.is_read %}
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                        <a href="{{ url_for('mark_message_read', message_id=message.id) }}" 
                                            class="btn btn-outline-primary btn-sm" title="Segna come letto">
                                             <i class="fas fa-eye"></i>
                                         </a>
@@ -93,7 +93,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                                         {% endif %}
                                         
                                         <!-- Pulsante cancella messaggio -->
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                        <form method="POST" action="{{ url_for('delete_message', message_id=message.id) }}" 
                                               style="display: inline;" 
                                               class="delete-message-form">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

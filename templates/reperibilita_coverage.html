@@ -6,7 +6,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-phone-volume"></i> Coperture Reperibilità</h2>
-        <a href=""" class="btn btn-primary">
+        <a href="{{ url_for('create_reperibilita_coverage') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Nuova Copertura
         </a>
     </div>
@@ -69,11 +69,11 @@
                             <td>{{ reperibilita.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a href=""" 
+                                    <a href="{{ url_for('view_reperibilita_coverage', period_key=period_key) }}" 
                                        class="btn btn-sm btn-outline-info" title="Visualizza dettagli">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href=""" 
+                                    <a href="{{ url_for('reperibilita_replica', period_key=period_key) }}" 
                                        class="btn btn-sm btn-outline-success" title="Duplica">
                                         <i class="fas fa-copy"></i>
                                     </a>
@@ -92,7 +92,7 @@
         <div class="alert alert-info text-center">
             <i class="fas fa-info-circle"></i>
             Nessuna copertura reperibilità configurata. 
-            <a href=""" class="alert-link">Crea la prima copertura</a>.
+            <a href="{{ url_for('create_reperibilita_coverage') }}" class="alert-link">Crea la prima copertura</a>.
         </div>
     {% endif %}
 </div>

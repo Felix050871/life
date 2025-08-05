@@ -630,7 +630,7 @@
 <script>
 // Attendance Chart
 const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
-const attendanceData = [];
+const attendanceData = {{ attendance_data|tojson }};
 
 new Chart(attendanceCtx, {
     type: 'line',
@@ -684,7 +684,7 @@ new Chart(attendanceCtx, {
 
 // Roles Chart
 const rolesCtx = document.getElementById('rolesChart').getContext('2d');
-const chartData = {{ (chart_data or [])|tojson }};
+const chartData = {{ chart_data|tojson }};
 
 // Count roles
 const roleCounts = {};

@@ -25,7 +25,7 @@
                 <h5><i class="fas fa-user-plus me-2"></i>Crea Nuovo Utente</h5>
             </div>
             <div class="card-body">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                <form method="POST" action="{{ url_for('new_user') }}">
                     {{ form.hidden_tag() }}
                     
                     <div class="row">
@@ -298,7 +298,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                                 <td>
                                     {% if current_user.can_manage_users() and current_user.can_view_users() %}
                                     <div class="btn-group btn-group-sm">
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                        <a href="{{ url_for('edit_user', user_id=user.id) }}" 
                                            class="btn btn-outline-primary"
                                            title="Modifica utente">
                                             <i class="fas fa-edit"></i>
@@ -310,7 +310,7 @@ href="#" onclick="alert('This feature will be available in Phase 3')"
                                         </span>
                                         <small class="text-muted ms-2">Protetto</small>
                                         {% elif user.id != current_user.id %}
-href="#" onclick="alert('This feature will be available in Phase 3')"
+                                        <a href="{{ url_for('toggle_user', user_id=user.id) }}" 
                                            class="btn {% if user.active %}btn-outline-danger{% else %}btn-outline-success{% endif %} confirm-link"
                                            data-message="{% if user.active %}Disattivare{% else %}Attivare{% endif %} questo utente?"
                                            title="{% if user.active %}Disattiva{% else %}Attiva{% endif %} utente">
