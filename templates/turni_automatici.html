@@ -700,14 +700,17 @@ function updateExistingShift(userId, fullName) {
             // Mostra messaggio di successo
             showToast('Turno aggiornato con successo!', 'success');
             
-            // Ricarica i turni FORZANDO un refresh completo
+            // RELOAD IMMEDIATO E FORZATO
             var templateId = document.getElementById('template_id').value;
             if (templateId) {
                 var templateName = document.getElementById('template_id').selectedOptions[0].text;
-                // Forza reload completo con timestamp per evitare cache
+                console.log('IMMEDIATE RELOAD after shift update');
+                
+                // Reload immediato + uno ritardato per essere sicuri
+                loadShiftsForTemplate(templateId, templateName);
                 setTimeout(() => {
                     loadShiftsForTemplate(templateId, templateName);
-                }, 500);
+                }, 1000);
             }
         } else {
             throw new Error(data.message || 'Errore nell\'aggiornamento del turno');
