@@ -13,13 +13,20 @@ from datetime import datetime, date, time
 logger = logging.getLogger(__name__)
 
 @app.route('/api/get_shifts_for_template/<int:template_id>')
-@login_required  
 def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
     
-    # IMMEDIATE DEBUG LOG
+    # IMMEDIATE DEBUG LOG - RIMUOVO @login_required per test
     import sys
-    print(f">>> API CALLED: get_shifts_for_template/{template_id}", file=sys.stderr, flush=True)
+    print(f">>> API CALLED: get_shifts_for_template/{template_id} - LOGIN_REQUIRED REMOVED", file=sys.stderr, flush=True)
+    
+    # Verifica manuale dell'autenticazione
+    from flask_login import current_user
+    if not current_user.is_authenticated:
+        print(f">>> API: User not authenticated, returning error", file=sys.stderr, flush=True)
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    print(f">>> API: User authenticated: {current_user.username}", file=sys.stderr, flush=True)
     
     try:
         template = PresidioCoverageTemplate.query.get_or_404(template_id)

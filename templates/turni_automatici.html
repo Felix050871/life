@@ -233,6 +233,10 @@ function loadShiftsForTemplate(templateId, templateName) {
     console.log('=== loadShiftsForTemplate CALLED ===');
     console.log('templateId:', templateId, 'templateName:', templateName);
     
+    // ALERT per essere sicuri che il nuovo codice si esegua
+    console.log('>>> NUOVO CODICE DEBUG ATTIVO! templateId=' + templateId);
+    alert('DEBUG: API call starting for template ' + templateId);
+    
     // Mostra loading
     document.getElementById('no-template-message').style.display = 'none';
     document.getElementById('template-shifts').style.display = 'block';
