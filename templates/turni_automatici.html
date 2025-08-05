@@ -439,25 +439,29 @@ function updateDayDisplay(day) {
 
 // Funzione per renderizzare il layout turni
 function renderTurniLayout(data, templateName) {
+    console.log('=== renderTurniLayout START ===');
+    console.log('Data structure:', data);
+    
     // Update template name - RIPRISTINO LAYOUT ORIGINALE
     document.getElementById('template-name-display').innerHTML = 'Turni esistenti per: <strong>' + templateName + '</strong>';
     
     var container = document.getElementById('weeks-container');
     
-    if (!data.weeks || Object.keys(data.weeks).length === 0) {
+    if (!data.weeks || data.weeks.length === 0) {
         container.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Nessun turno trovato per questo template.</div>';
         document.getElementById('weeks-count').textContent = '0 settimane';
         return;
     }
     
-    var weeksCount = Object.keys(data.weeks).length;
+    var weeksCount = data.weeks.length;
+    console.log('Found ' + weeksCount + ' weeks');
     document.getElementById('weeks-count').textContent = weeksCount + ' settiman' + (weeksCount === 1 ? 'a' : 'e');
     
     var html = '';
     
-    // LAYOUT ORIGINALE: Process each week con struttura tabella
-    Object.keys(data.weeks).forEach(function(weekKey) {
-        var week = data.weeks[weekKey];
+    // FIXED: Process each week - handle both array and object structure
+    var weeks = Array.isArray(data.weeks) ? data.weeks : Object.values(data.weeks);
+    weeks.forEach(function(week, weekIndex) {
         
         // Week card con layout originale
         html += '<div class="week-card">';
@@ -479,15 +483,18 @@ function renderTurniLayout(data, templateName) {
         
         for (var i = 0; i < 7; i++) {
             var day = week.days[i] || {}; // Protezione contro undefined
+            console.log('Day ' + i + ' for week ' + weekIndex + ':', day);
             html += '<div class="col shift-day">';
             html += '<div class="p-2">';
             html += '<strong class="day-name">' + dayNames[i] + '</strong>';
             html += '<br><small class="date-text">' + (day.date || '') + '</small>';
             html += '<div class="shifts-container mt-2">';
             
-            // Show shifts
+            // Show shifts - FIXED RENDERING LOGIC
             if (day.shifts && day.shifts.length > 0) {
+                console.log('RENDERING ' + day.shifts.length + ' shifts for day ' + day.date);
                 day.shifts.forEach(function(shift) {
+                    console.log('  - Shift: ' + shift.user + ' (' + shift.role + ') ' + shift.time);
                     html += '<div class="shift-item mb-2 p-2 bg-success text-white rounded d-flex justify-content-between align-items-center">';
                     html += '<div>';
                     html += '<small class="d-block"><strong>' + shift.role + '</strong></small>';
@@ -499,6 +506,8 @@ function renderTurniLayout(data, templateName) {
                     html += '</button>';
                     html += '</div>';
                 });
+            } else {
+                console.log('NO SHIFTS for day ' + day.date + ' - shifts:', day.shifts);
             }
             
             // Show missing roles - ALERT ROSSI COME ORIGINALE
