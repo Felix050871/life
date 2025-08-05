@@ -514,9 +514,9 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
                     html += '<small class="d-block">' + missing + '</small>';
                     html += '</div>';
-                    html += '<button class="btn btn-sm p-0 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="border: 2px solid #fff !important; background: #dc3545 !important; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">';
-                    html += '<i class="fas fa-plus" style="font-size: 8px; color: #fff !important; font-weight: bold; line-height: 1;"></i>';
-                    html += '</button>';
+                    html += '<span class="btn btn-sm p-0 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="border: 2px solid #fff !important; background: #dc3545 !important; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff !important; font-weight: bold; font-size: 14px;">';
+                    html += '+';
+                    html += '</span>';
                     html += '</div>';
                 });
             }

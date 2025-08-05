@@ -34,6 +34,11 @@ def api_get_shifts_for_template(template_id):
             Shift.date <= template.end_date
         ).all()
         
+        # DEBUG: Log tutti i turni trovati
+        logger.info(f"Found {len(fresh_shifts)} shifts for template {template_id}")
+        for shift in fresh_shifts:
+            logger.info(f"Shift {shift.id}: {shift.date} {shift.start_time}-{shift.end_time} user_id={shift.user_id}")
+        
         for shift in fresh_shifts:
             week_start = shift.date - timedelta(days=shift.date.weekday())
             week_key = week_start.strftime('%Y-%m-%d')
