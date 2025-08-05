@@ -106,14 +106,9 @@ def api_get_shifts_for_template(template_id):
                     if day_data['date'] == shift_date_str:
                         # TROVATO! Aggiungi il turno qui
                         user_name = f"{shift.user.first_name} {shift.user.last_name}" if shift.user else "Utente sconosciuto"
-                        # Gestione sicura del ruolo utente
-                        if shift.user:
-                            if hasattr(shift.user.role, 'name'):
-                                user_role = shift.user.role.name
-                            elif isinstance(shift.user.role, str):
-                                user_role = shift.user.role
-                            else:
-                                user_role = 'Senza ruolo'
+                        # Gestione sicura del ruolo utente - FIXED
+                        if shift.user and shift.user.role:
+                            user_role = str(shift.user.role)  # Forza conversione a string
                         else:
                             user_role = 'Senza ruolo'
                         
@@ -382,15 +377,14 @@ def api_create_shift():
         if existing_shift:
             return jsonify({'success': False, 'message': 'Esiste già un turno per questo utente nello stesso orario'}), 409
         
-        # Crea il nuovo turno
-        new_shift = Shift(
-            user_id=user_id,
-            date=shift_date_obj,
-            start_time=start_time_obj,
-            end_time=end_time_obj,
-            shift_type='presidio',
-            created_by=current_user.id
-        )
+        # Crea il nuovo turno - FIXED CONSTRUCTOR
+        new_shift = Shift()
+        new_shift.user_id = user_id
+        new_shift.date = shift_date_obj
+        new_shift.start_time = start_time_obj
+        new_shift.end_time = end_time_obj
+        new_shift.shift_type = 'presidio'
+        new_shift.created_by = current_user.id
         
         db.session.add(new_shift)
         db.session.commit()

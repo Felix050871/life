@@ -237,6 +237,26 @@ function loadShiftsForTemplate(templateId, templateName) {
     console.log('>>> NUOVO CODICE DEBUG ATTIVO! templateId=' + templateId);
     alert('DEBUG: API call starting for template ' + templateId);
     
+    // TEST DIRETTO - Bypassiamo completamente il resto del codice per ora
+    console.log('>>> TESTING DIRECT API CALL...');
+    
+    fetch('/api/get_shifts_for_template/' + templateId)
+        .then(response => {
+            console.log('>>> DIRECT TEST: Response status:', response.status);
+            alert('DIRECT API Response: ' + response.status);
+            return response.text(); // text invece di json per debug
+        })
+        .then(text => {
+            console.log('>>> DIRECT TEST: Response text:', text.substring(0, 200));
+            alert('Response preview: ' + text.substring(0, 100));
+        })
+        .catch(error => {
+            console.error('>>> DIRECT TEST: Error:', error);
+            alert('DIRECT API Error: ' + error.message);
+        });
+    
+    return; // EXIT EARLY per test
+    
     // Mostra loading
     document.getElementById('no-template-message').style.display = 'none';
     document.getElementById('template-shifts').style.display = 'block';
