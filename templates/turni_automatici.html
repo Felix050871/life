@@ -495,7 +495,7 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block text-light">' + shift.time + '</small>';
                     html += '</div>';
                     html += '<button class="btn btn-sm btn-outline-light p-1" onclick="editShift(' + shift.id + ', \'' + shift.role + '\', \'' + shift.time + '\', \'' + day.date + '\', ' + shift.user_id + ', \'' + shift.user + '\')" title="Modifica assegnazione">';
-                    html += '<i class="fas fa-edit" style="font-size: 6px;"></i>';
+                    html += '<i class="fas fa-edit" style="font-size: 10px;"></i>';
                     html += '</button>';
                     html += '</div>';
                 });
@@ -515,7 +515,7 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block">' + missing + '</small>';
                     html += '</div>';
                     html += '<button class="btn btn-sm btn-outline-light p-1 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="border-color: rgba(255,255,255,0.5);">';
-                    html += '<i class="fas fa-plus" style="font-size: 8px; color: white;"></i>';
+                    html += '<i class="fas fa-plus" style="font-size: 12px; color: white;"></i>';
                     html += '</button>';
                     html += '</div>';
                 });
@@ -672,14 +672,10 @@ function updateExistingShift(userId, fullName) {
     confirmBtn.disabled = true;
     confirmBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Aggiornamento...';
     
-    // Ottieni CSRF token dalla pagina
-    var csrfToken = document.querySelector('input[name="csrf_token"]').value;
-    
     fetch('/api/update_shift/' + currentShiftData.id, {
         method: 'PUT',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             user_id: userId
@@ -730,14 +726,10 @@ function createNewShift(userId, fullName) {
     var startTime = timeParts[0];
     var endTime = timeParts[1];
     
-    // Ottieni CSRF token dalla pagina
-    var csrfToken = document.querySelector('input[name="csrf_token"]').value;
-    
     fetch('/api/create_shift', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             user_id: userId,

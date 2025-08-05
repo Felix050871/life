@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from flask import jsonify, request
 from flask_login import login_required, current_user
-from app import app, db
+from app import app, db, csrf
 from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage, UserRole
 import json
 import logging
@@ -210,6 +210,7 @@ def api_get_users_by_role(role_name):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/update_shift/<int:shift_id>', methods=['PUT'])
+@csrf.exempt
 @login_required
 def api_update_shift(shift_id):
     """API per aggiornare l'assegnazione di un turno esistente"""
@@ -251,6 +252,7 @@ def api_update_shift(shift_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/create_shift', methods=['POST'])
+@csrf.exempt
 @login_required
 def api_create_shift():
     """API per creare un nuovo turno per uno slot scoperto"""
