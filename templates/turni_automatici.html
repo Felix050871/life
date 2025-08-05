@@ -30,7 +30,7 @@
                             <form id="template-selection-form" class="row g-3">
                                 <div class="col-md-6">
                                     <label for="template-select" class="form-label">Template di Copertura:</label>
-                                    <select id="template-select" name="template_id" class="form-select" onchange="templateChanged()">
+                                    <select id="template-select" name="template_id" class="form-select">
                                         <option value="">Seleziona un template...</option>
                                         {% for template in presidio_templates %}
                                         <option value="{{ template.id }}">{{ template.name }}</option>
@@ -182,6 +182,11 @@ function displayShiftsFromAPI(data, templateName) {
         });
     }
 }
+
+// Add event listener to template select
+document.getElementById('template-select').addEventListener('change', function() {
+    templateChanged();
+});
 
 console.log('Workforce Management App initialized');
 </script>
