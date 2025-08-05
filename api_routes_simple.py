@@ -16,7 +16,7 @@ def api_get_shifts_simple(template_id):
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
         
         # STEP 1: Prendi TUTTI i turni del template - QUERY SEMPLICE
-        all_shifts = db.session.query(Shift, User).join(User).filter(
+        all_shifts = db.session.query(Shift, User).join(User, Shift.user_id == User.id).filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
@@ -85,7 +85,7 @@ def api_get_shifts_simple(template_id):
                     
                     # Verifica se c'è già un turno per questo slot
                     has_coverage = any(
-                        shift['time'] == time_slot and coverage.role.lower() in shift['role'].lower()
+                        shift['time'] == time_slot and str(coverage.role).lower() in str(shift['role']).lower()
                         for shift in day['shifts']
                     )
                     
