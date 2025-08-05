@@ -635,7 +635,8 @@
         console.log('Workforce Management App initialized');
     </script>
     <!-- Global Loading Overlay -->
-    <div id="globalLoadingOverlay" class="loading-overlay d-none">
+    <!-- DISABLED Loading overlay -->
+    <div id="globalLoadingOverlay" class="loading-overlay d-none" style="display: none !important;">
         <div class="loading-content">
             <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Loading...</span>
@@ -681,14 +682,8 @@
             }
 
             show() {
-                if (!this.isShowing) {
-                    this.overlay.classList.remove('d-none');
-                    this.isShowing = true;
-                    // Auto-hide dopo 5 secondi come fallback (ridotto da 30)
-                    this.timeoutId = setTimeout(() => {
-                        this.hide();
-                    }, 5000);
-                }
+                // DISABLED - Never show loading overlay
+                return false;
             }
 
             hide() {
@@ -707,8 +702,8 @@
         const loadingManager = new LoadingManager();
         window.loadingManager = loadingManager; // Make globally accessible
 
-        // Auto-attach to forms and buttons that cause navigation/submission
-        document.addEventListener('DOMContentLoaded', function() {
+        // DISABLED - Auto-attach to forms and buttons that cause navigation/submission
+        /*document.addEventListener('DOMContentLoaded', function() {
             // Form submissions (excluding forms inside modals for cancel actions)
             document.querySelectorAll('form').forEach(form => {
                 form.addEventListener('submit', function(e) {
