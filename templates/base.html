@@ -670,129 +670,36 @@
         </div>
     </div>
 
-    <!-- Global Loading Script -->
+    <!-- New Simple Loading System -->
     <script>
-        // Global Loading Overlay System
-        class LoadingManager {
-            constructor() {
-                this.overlay = document.getElementById('globalLoadingOverlay');
-                this.isShowing = false;
-                this.timeoutId = null;
-            }
-
-            show() {
-                if (!this.isShowing) {
-                    this.overlay.classList.remove('d-none');
-                    this.isShowing = true;
-                    // Auto-hide dopo 3 secondi come fallback 
-                    this.timeoutId = setTimeout(() => {
-                        this.hide();
-                    }, 3000);
-                }
-            }
-
-            hide() {
-                if (this.isShowing) {
-                    this.overlay.classList.add('d-none');
-                    this.isShowing = false;
-                    if (this.timeoutId) {
-                        clearTimeout(this.timeoutId);
-                        this.timeoutId = null;
-                    }
-                }
+        // Simple Loading Overlay - Non-blocking
+        let loadingTimeout;
+        
+        function showLoading() {
+            const overlay = document.getElementById('globalLoadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('d-none');
+                // Auto-hide after 2 seconds maximum
+                clearTimeout(loadingTimeout);
+                loadingTimeout = setTimeout(hideLoading, 2000);
             }
         }
-
-        // Initialize global loading manager
-        const loadingManager = new LoadingManager();
-        window.loadingManager = loadingManager; // Make globally accessible
-
-        // Auto-attach to forms and buttons that cause navigation/submission
-        document.addEventListener('DOMContentLoaded', function() {
-            // Form submissions (excluding forms inside modals for cancel actions)
-            document.querySelectorAll('form').forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    // Check if the form is being submitted by a modal dismiss button
-                    const activeElement = document.activeElement;
-                    if (activeElement && activeElement.hasAttribute('data-bs-dismiss')) {
-                        return; // Don't show overlay for modal dismiss actions
-                    }
-                    
-                    // Delay slightly to allow form processing
-                    setTimeout(() => {
-                        loadingManager.show();
-                    }, 100);
-                });
-            });
-
-            // Links that cause navigation (excluding anchors, modals, export links, and modal dismiss buttons)
-            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle]):not([href*="export"]):not([data-bs-dismiss])').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const href = this.getAttribute('href');
-                    // Only show loading for internal navigation
-                    if (href && !href.startsWith('http') && !href.startsWith('mailto') && !href.startsWith('tel')) {
-                        setTimeout(() => {
-                            loadingManager.show();
-                        }, 100);
-                    }
-                });
-            });
-
-            // Disable overlay for all modal dismiss buttons (Annulla, Close)
-            document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(dismissBtn => {
-                dismissBtn.addEventListener('click', function(e) {
-                    // Never show loading overlay for modal dismiss actions
-                    e.stopPropagation();
-                });
-            });
-
-            // Also disable overlay for buttons with "Annulla" text (backup protection)
-            document.querySelectorAll('button').forEach(btn => {
-                if (btn.textContent.trim().toLowerCase().includes('annulla')) {
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                    });
-                }
-            });
-
-            // Export buttons - Solo feedback sul pulsante senza overlay
-            document.querySelectorAll('a[href*="export"], .export-btn').forEach(exportBtn => {
-                exportBtn.addEventListener('click', function(e) {
-                    // Cambia il testo del pulsante per indicare generazione in corso
-                    const originalHTML = this.innerHTML;
-                    const originalClass = this.className;
-                    
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generazione in corso...';
-                    this.classList.add('disabled');
-                    this.style.pointerEvents = 'none';
-                    
-                    // Ripristina dopo 5 secondi (tempo ragionevole per download)
-                    setTimeout(() => {
-                        this.innerHTML = originalHTML;
-                        this.className = originalClass;
-                        this.style.pointerEvents = 'auto';
-                    }, 5000);
-                });
-            });
-
-            // Hide loading on page load (in case of back navigation)
-            loadingManager.hide();
-        });
-
-        // Hide loading on page visibility change or beforeunload
-        document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible') {
-                loadingManager.hide();
+        
+        function hideLoading() {
+            const overlay = document.getElementById('globalLoadingOverlay');
+            if (overlay) {
+                overlay.classList.add('d-none');
+                clearTimeout(loadingTimeout);
             }
-        });
-
-        window.addEventListener('beforeunload', function() {
-            loadingManager.hide();
-        });
-
-        // Expose globally for manual control
-        window.showLoading = () => loadingManager.show();
-        window.hideLoading = () => loadingManager.hide();
+        }
+        
+        // Hide loading immediately when page loads
+        document.addEventListener('DOMContentLoaded', hideLoading);
+        window.addEventListener('load', hideLoading);
+        
+        // Global access
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
 
         // Global Confirmation Modal System
         class ConfirmationManager {
