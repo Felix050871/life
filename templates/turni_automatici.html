@@ -1,18 +1,9 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestione Turni Automatici - Workly</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    {% include 'partials/sidebar.html' %}
-    
-    <div class="main-content">
-        <div class="container-fluid">
+{% extends "base.html" %}
+
+{% block title %}Gestione Turni Automatici{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
             <!-- Header Row -->
             <div class="row mb-4">
                 <div class="col-md-12">
@@ -98,89 +89,100 @@
                 <div id="weeks-container">
                     <!-- Weeks will be loaded here -->
                 </div>
-            </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Global state
-        let currentTemplate = null;
-        let currentTemplateName = null;
+{% endblock %}
 
-        function templateChanged() {
-            const select = document.getElementById('template-select');
-            const templateId = select.value;
-            const templateName = select.options[select.selectedIndex].text;
-            
-            currentTemplate = templateId;
-            currentTemplateName = templateName;
-            
-            const generateBtn = document.getElementById('generate-btn');
-            
-            if (templateId) {
-                // Abilita pulsante
-                generateBtn.disabled = false;
-                generateBtn.className = 'btn btn-primary w-100';
-                
-                // Carica turni per il template selezionato
-                loadShiftsForTemplate(templateId, templateName);
-            } else {
-                // Disabilita pulsante
-                generateBtn.disabled = true;
-                generateBtn.className = 'btn btn-secondary w-100';
-                
-                // Nascondi turni
-                document.getElementById('no-template-message').style.display = 'block';
-                document.getElementById('template-shifts').style.display = 'none';
-                document.getElementById('weeks-count').textContent = '0 settimane';
-            }
-        }
+{% block extra_js %}
+<script>
+// Global state
+let currentTemplate = null;
+let currentTemplateName = null;
 
-        function loadShiftsForTemplate(templateId, templateName) {
-            console.log('Loading shifts for template:', templateId, templateName);
-            
-            // Mostra loading
-            document.getElementById('no-template-message').style.display = 'none';
-            document.getElementById('template-shifts').style.display = 'block';
-            document.getElementById('template-name-display').innerHTML = 'Caricamento turni per: <strong>' + templateName + '</strong>...';
-            document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
-            
-            // Richiesta AJAX
-            fetch('/api/get_shifts_for_template/' + templateId, {
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                .then(response => {
-                    console.log('API Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error('HTTP ' + response.status);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('API Success - data received');
-                    console.log('Data structure:', data);
-                    
-                    // Display data
-                    displayShiftsFromAPI(data, templateName);
-                })
-                .catch(error => {
-                    console.error('API Error:', error);
-                    document.getElementById('weeks-container').innerHTML = 
-                        '<div class="alert alert-danger">Errore caricamento: ' + error.message + '</div>';
-                });
-        }
-
-        function displayShiftsFromAPI(data, templateName) {
-            // Implementation here...
-            document.getElementById('template-name-display').innerHTML = templateName;
-            document.getElementById('weeks-container').innerHTML = '<div class="alert alert-success">Turni caricati correttamente!</div>';
-        }
+function templateChanged() {
+    const select = document.getElementById('template-select');
+    const templateId = select.value;
+    const templateName = select.options[select.selectedIndex].text;
+    
+    currentTemplate = templateId;
+    currentTemplateName = templateName;
+    
+    const generateBtn = document.getElementById('generate-btn');
+    
+    if (templateId) {
+        // Abilita pulsante
+        generateBtn.disabled = false;
+        generateBtn.className = 'btn btn-primary w-100';
         
-        console.log('Workforce Management App initialized');
-    </script>
-</body>
-</html>
+        // Carica turni per il template selezionato
+        loadShiftsForTemplate(templateId, templateName);
+    } else {
+        // Disabilita pulsante
+        generateBtn.disabled = true;
+        generateBtn.className = 'btn btn-secondary w-100';
+        
+        // Nascondi turni
+        document.getElementById('no-template-message').style.display = 'block';
+        document.getElementById('template-shifts').style.display = 'none';
+        document.getElementById('weeks-count').textContent = '0 settimane';
+    }
+}
+
+function loadShiftsForTemplate(templateId, templateName) {
+    console.log('Loading shifts for template:', templateId, templateName);
+    
+    // Mostra loading
+    document.getElementById('no-template-message').style.display = 'none';
+    document.getElementById('template-shifts').style.display = 'block';
+    document.getElementById('template-name-display').innerHTML = 'Caricamento turni per: <strong>' + templateName + '</strong>...';
+    document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
+    
+    // Richiesta AJAX - SEMPLICE
+    fetch('/api/get_shifts_for_template/' + templateId, {
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+        .then(response => {
+            console.log('API Response status:', response.status);
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API Success - data received');
+            
+            // Display data
+            displayShiftsFromAPI(data, templateName);
+        })
+        .catch(error => {
+            console.error('API Error:', error);
+            document.getElementById('weeks-container').innerHTML = 
+                '<div class="alert alert-danger">Errore caricamento: ' + error.message + '</div>';
+        });
+}
+
+function displayShiftsFromAPI(data, templateName) {
+    document.getElementById('template-name-display').innerHTML = templateName;
+    document.getElementById('weeks-container').innerHTML = '<div class="alert alert-success">Turni caricati correttamente!</div>';
+    
+    // Debug per 01/10
+    if (data.weeks) {
+        data.weeks.forEach((week) => {
+            week.days.forEach((day) => {
+                if (day.date === '01/10') {
+                    console.log('01/10 from API:', day.shifts.length, 'shifts, missing:', day.missing_roles.length);
+                    day.shifts.forEach(shift => {
+                        console.log('01/10 SHIFT:', shift.time, shift.role, shift.user);
+                    });
+                }
+            });
+        });
+    }
+}
+
+console.log('Workforce Management App initialized');
+</script>
+{% endblock %}
