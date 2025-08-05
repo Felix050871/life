@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
     
+    # IMMEDIATE DEBUG LOG
+    import sys
+    print(f">>> API CALLED: get_shifts_for_template/{template_id}", file=sys.stderr, flush=True)
+    
     try:
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
         
