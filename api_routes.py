@@ -74,52 +74,37 @@ def api_get_shifts_for_template(template_id):
             
             current_week_start += timedelta(days=7)
         
-        # STEP 3: Processa i turni nella struttura già creata
+        # STEP 3: Processa i turni nella struttura già creata - LOGICA SEMPLICE E DIRETTA
         for shift in fresh_shifts:
-            week_start = shift.date - timedelta(days=shift.date.weekday())
-            week_key = week_start.strftime('%Y-%m-%d')
-            day_index = shift.date.weekday()
             shift_date_str = shift.date.strftime('%d/%m')
             
-            import sys
-            print(f">>> PROCESSING shift {shift.id} for date {shift_date_str} (weekday {day_index}) in week {week_key}", file=sys.stderr, flush=True)
-            
-            # TROVA la settimana giusta - cerca in tutte le settimane se necessario
-            target_week = None
-            for week_key_search, week_data in weeks_data.items():
-                print(f"    Checking week {week_key_search} with {len(week_data['days'])} days", file=sys.stderr, flush=True)
+            # CERCA DIRETTAMENTE il giorno giusto in tutte le settimane
+            placed = False
+            for week_key, week_data in weeks_data.items():
                 for day_idx, day_data in enumerate(week_data['days']):
-                    print(f"      Day {day_idx}: '{day_data['date']}' vs target '{shift_date_str}'", file=sys.stderr, flush=True)
                     if day_data['date'] == shift_date_str:
-                        target_week = week_key_search
-                        day_index = day_idx
-                        print(f">>> MATCH FOUND: target week {target_week} day {day_index} for date {shift_date_str}", file=sys.stderr, flush=True)
+                        # TROVATO! Aggiungi il turno qui
+                        user_name = f"{shift.user.first_name} {shift.user.last_name}" if shift.user else "Utente sconosciuto"
+                        user_role = shift.user.role if shift.user and isinstance(shift.user.role, str) else (shift.user.role.name if shift.user and shift.user.role else 'Senza ruolo')
+                        
+                        shift_data = {
+                            'id': shift.id,
+                            'user': user_name,
+                            'user_id': shift.user.id if shift.user else None,
+                            'role': user_role,
+                            'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
+                        }
+                        
+                        week_data['days'][day_idx]['shifts'].append(shift_data)
+                        week_data['shift_count'] += 1
+                        week_data['unique_users'].add(shift.user.username if shift.user else "unknown")
+                        placed = True
                         break
-                if target_week:
+                if placed:
                     break
             
-            if target_week and target_week in weeks_data:
-                # Usa il nome completo invece del username
-                user_name = f"{shift.user.first_name} {shift.user.last_name}" if shift.user else "Utente sconosciuto"
-                user_role = shift.user.role if shift.user and isinstance(shift.user.role, str) else (shift.user.role.name if shift.user and shift.user.role else 'Senza ruolo')
-                
-                shift_data = {
-                    'id': shift.id,
-                    'user': user_name,
-                    'user_id': shift.user.id if shift.user else None,
-                    'role': user_role,
-                    'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
-                }
-                weeks_data[target_week]['days'][day_index]['shifts'].append(shift_data)
-                weeks_data[target_week]['shift_count'] += 1
-                weeks_data[target_week]['unique_users'].add(shift.user.username if shift.user else "unknown")
-                
-                import sys
-                print(f">>> SUCCESS: ADDED shift {shift.id} to week {target_week} day {day_index}: {shift_data}", file=sys.stderr, flush=True)
-            else:
-                import sys
-                print(f">>> ERROR: Could not place shift {shift.id} for date {shift_date_str}", file=sys.stderr, flush=True)
-                print(f"    Available weeks: {list(weeks_data.keys())}", file=sys.stderr, flush=True)
+            if not placed:
+                print(f"ERROR: Could not place shift {shift.id} for date {shift_date_str}", file=sys.stderr, flush=True)
         
         # STEP 4: Converti set in count
         for week_data in weeks_data.values():
