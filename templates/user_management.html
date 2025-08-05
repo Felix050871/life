@@ -199,20 +199,87 @@
                 </div>
             </div>
             <div class="card-body">
+                <!-- Filtri e Ricerca -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="searchUsers" class="form-control" placeholder="Cerca per nome, username o email...">
+                        </div>
+                        <small class="text-muted mt-1">
+                            <span id="filterCount">{{ users|length }}</span> utenti visualizzati
+                        </small>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterRole" class="form-select">
+                            <option value="">Tutti i ruoli</option>
+                            <option value="Amministratore">Amministratore</option>
+                            <option value="Responsabile">Responsabile</option>
+                            <option value="Supervisore">Supervisore</option>
+                            <option value="Operatore">Operatore</option>
+                            <option value="Ospite">Ospite</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterStatus" class="form-select">
+                            <option value="">Tutti gli stati</option>
+                            <option value="active">Solo attivi</option>
+                            <option value="inactive">Solo inattivi</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterSede" class="form-select">
+                            <option value="">Tutte le sedi</option>
+                            <option value="all_sedi">Accesso totale</option>
+                            {% if users %}
+                                {% set sede_names = [] %}
+                                {% for user in users %}
+                                    {% if user.sede_obj and user.sede_obj.name not in sede_names %}
+                                        {% set _ = sede_names.append(user.sede_obj.name) %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% for sede_name in sede_names|sort %}
+                                    <option value="{{ sede_name }}">{{ sede_name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-times me-1"></i>Cancella
+                        </button>
+                    </div>
+                </div>
                 {% if users %}
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped" id="usersTable">
                         <thead>
                             <tr>
-                                <th>Utente</th>
-                                <th>Contatto</th>
-                                <th>Ruolo</th>
-                                <th>Sedi</th>
-                                <th>Orario</th>
+                                <th class="sortable" data-column="0">
+                                    Utente <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="1">
+                                    Contatto <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="2">
+                                    Ruolo <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="3">
+                                    Sedi <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="4">
+                                    Orario <i class="fas fa-sort ms-1"></i>
+                                </th>
                                 <th>Veicolo ACI</th>
-                                <th>% Lavoro</th>
-                                <th>Stato</th>
-                                <th>Registrato</th>
+                                <th class="sortable" data-column="6">
+                                    % Lavoro <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="7">
+                                    Stato <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="8">
+                                    Registrato <i class="fas fa-sort ms-1"></i>
+                                </th>
                                 <th>Azioni</th>
                             </tr>
                         </thead>
@@ -406,7 +473,213 @@
 
 {% block scripts %}
 <script>
-// Role-based part-time percentage visibility and sede management
+// User Table Filtering and Sorting
+let sortDirection = {};
+
+// Initialize filters
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFilters();
+    initializeSorting();
+});
+
+function initializeFilters() {
+    const searchInput = document.getElementById('searchUsers');
+    const roleFilter = document.getElementById('filterRole');
+    const statusFilter = document.getElementById('filterStatus');
+    const sedeFilter = document.getElementById('filterSede');
+    const clearButton = document.getElementById('clearFilters');
+
+    // Add event listeners
+    searchInput.addEventListener('input', filterTable);
+    roleFilter.addEventListener('change', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+    sedeFilter.addEventListener('change', filterTable);
+    clearButton.addEventListener('click', clearAllFilters);
+}
+
+function initializeSorting() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    sortableHeaders.forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', function() {
+            const column = parseInt(this.getAttribute('data-column'));
+            sortTable(column);
+        });
+    });
+}
+
+function filterTable() {
+    const searchTerm = document.getElementById('searchUsers').value.toLowerCase();
+    const roleFilter = document.getElementById('filterRole').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const sedeFilter = document.getElementById('filterSede').value;
+    
+    const table = document.getElementById('usersTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 0) return;
+        
+        // Get text content for filtering
+        const userName = cells[0].textContent.toLowerCase();
+        const userEmail = cells[1].textContent.toLowerCase();
+        const userRole = cells[2].textContent.trim();
+        const userSede = cells[3].textContent.trim();
+        const userStatus = cells[7].textContent.trim();
+        
+        // Search filter
+        const matchesSearch = searchTerm === '' || 
+            userName.includes(searchTerm) || 
+            userEmail.includes(searchTerm);
+        
+        // Role filter
+        const matchesRole = roleFilter === '' || userRole.includes(roleFilter);
+        
+        // Status filter
+        let matchesStatus = true;
+        if (statusFilter === 'active') {
+            matchesStatus = userStatus.includes('Attivo');
+        } else if (statusFilter === 'inactive') {
+            matchesStatus = userStatus.includes('Inattivo');
+        }
+        
+        // Sede filter
+        let matchesSede = true;
+        if (sedeFilter === 'all_sedi') {
+            matchesSede = userSede.includes('Tutte le sedi');
+        } else if (sedeFilter !== '') {
+            matchesSede = userSede.includes(sedeFilter);
+        }
+        
+        // Show/hide row
+        if (matchesSearch && matchesRole && matchesStatus && matchesSede) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update visible count
+    updateFilterCount(visibleCount);
+}
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('usersTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Determine sort direction
+    if (!sortDirection[columnIndex]) {
+        sortDirection[columnIndex] = 'asc';
+    } else {
+        sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+    }
+    
+    // Update header icons
+    updateSortIcons(columnIndex);
+    
+    // Sort rows
+    rows.sort((a, b) => {
+        const aCell = a.cells[columnIndex];
+        const bCell = b.cells[columnIndex];
+        
+        if (!aCell || !bCell) return 0;
+        
+        let aValue = aCell.textContent.trim();
+        let bValue = bCell.textContent.trim();
+        
+        // Handle different data types
+        if (columnIndex === 6) { // Percentage column
+            aValue = parseFloat(aValue.replace('%', '')) || 0;
+            bValue = parseFloat(bValue.replace('%', '')) || 0;
+        } else if (columnIndex === 8) { // Date column
+            aValue = aValue === 'N/A' ? new Date(0) : new Date(aValue.split('/').reverse().join('-'));
+            bValue = bValue === 'N/A' ? new Date(0) : new Date(bValue.split('/').reverse().join('-'));
+        }
+        
+        // Compare values
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+            return sortDirection[columnIndex] === 'asc' ? aValue - bValue : bValue - aValue;
+        } else if (aValue instanceof Date && bValue instanceof Date) {
+            return sortDirection[columnIndex] === 'asc' ? aValue - bValue : bValue - aValue;
+        } else {
+            aValue = aValue.toString().toLowerCase();
+            bValue = bValue.toString().toLowerCase();
+            if (sortDirection[columnIndex] === 'asc') {
+                return aValue.localeCompare(bValue);
+            } else {
+                return bValue.localeCompare(aValue);
+            }
+        }
+    });
+    
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function updateSortIcons(activeColumn) {
+    const headers = document.querySelectorAll('.sortable');
+    headers.forEach((header, index) => {
+        const icon = header.querySelector('i');
+        const columnIndex = parseInt(header.getAttribute('data-column'));
+        
+        if (columnIndex === activeColumn) {
+            icon.className = sortDirection[activeColumn] === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+        } else {
+            icon.className = 'fas fa-sort ms-1';
+        }
+    });
+}
+
+function clearAllFilters() {
+    document.getElementById('searchUsers').value = '';
+    document.getElementById('filterRole').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterSede').value = '';
+    
+    // Reset sort direction
+    sortDirection = {};
+    updateSortIcons(-1);
+    
+    // Show all rows
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    rows.forEach(row => row.style.display = '');
+    
+    // Update count
+    updateFilterCount(rows.length);
+}
+
+function updateFilterCount(count) {
+    const countElement = document.getElementById('filterCount');
+    if (countElement) {
+        countElement.textContent = count;
+    }
+}
+
+// Add CSS for sortable headers
+const style = document.createElement('style');
+style.textContent = `
+    .sortable {
+        user-select: none;
+        transition: background-color 0.2s;
+    }
+    .sortable:hover {
+        background-color: rgba(0,0,0,0.1);
+    }
+    .table-responsive {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+`;
+document.head.appendChild(style);
+
+});
+
+// Role-based part-time percentage visibility and sede management  
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.querySelector('select[name="role"]');
     const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
