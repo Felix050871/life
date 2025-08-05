@@ -451,17 +451,6 @@
                 </li>
                 {% endif %}
 
-                <!-- GESTIONE QR - Solo se ha almeno un permesso QR -->
-                {% set has_qr_permission = current_user.can_manage_qr() %}
-                {% if has_qr_permission %}
-                <li class="sidebar-nav-item">
-                    <a href="{{ url_for('admin_generate_qr_codes') }}" class="sidebar-nav-link">
-                        <i class="fas fa-qrcode"></i>
-                        <span>Gestione QR</span>
-                    </a>
-                </li>
-                {% endif %}
-
                 <!-- TABELLE ACI - Solo per amministratori -->
                 {% if current_user.has_role('Amministratore') %}
                 <li class="sidebar-nav-item">
@@ -484,6 +473,17 @@
                             <i class="fas fa-download"></i>Export Excel
                         </a></li>
                     </ul>
+                </li>
+                {% endif %}
+
+                <!-- GESTIONE QR - Solo se ha almeno un permesso QR -->
+                {% set has_qr_permission = current_user.can_manage_qr() %}
+                {% if has_qr_permission %}
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('admin_generate_qr_codes') }}" class="sidebar-nav-link">
+                        <i class="fas fa-qrcode"></i>
+                        <span>Gestione QR</span>
+                    </a>
                 </li>
                 {% endif %}
 
