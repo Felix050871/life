@@ -230,8 +230,19 @@ def api_update_shift(shift_id):
         shift = Shift.query.get_or_404(shift_id)
         
         # Aggiorna l'assegnazione
+        old_user_id = shift.user_id
         shift.user_id = user_id
-        db.session.commit()
+        
+        # Log dell'aggiornamento
+        logger.info(f"Updating shift {shift_id}: user_id {old_user_id} -> {user_id}")
+        
+        try:
+            db.session.commit()
+            logger.info(f"Successfully updated shift {shift_id}")
+        except Exception as commit_error:
+            db.session.rollback()
+            logger.error(f"Error committing shift update: {str(commit_error)}")
+            raise
         
         return jsonify({
             'success': True,
