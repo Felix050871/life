@@ -474,427 +474,370 @@
 {% block scripts %}
 <script>
 // User Table Filtering and Sorting
-let sortDirection = {};
-
-// Initialize filters
 document.addEventListener('DOMContentLoaded', function() {
+    let sortDirection = {};
+
+    // Initialize filters
     initializeFilters();
     initializeSorting();
     
-    // Role-based part-time percentage visibility and sede management
+    // Initialize user form handlers if form exists
     initializeUserFormHandlers();
-});
 
-function initializeFilters() {
-    const searchInput = document.getElementById('searchUsers');
-    const roleFilter = document.getElementById('filterRole');
-    const statusFilter = document.getElementById('filterStatus');
-    const sedeFilter = document.getElementById('filterSede');
-    const clearButton = document.getElementById('clearFilters');
+    function initializeFilters() {
+        const searchInput = document.getElementById('searchUsers');
+        const roleFilter = document.getElementById('filterRole');
+        const statusFilter = document.getElementById('filterStatus');
+        const sedeFilter = document.getElementById('filterSede');
+        const clearButton = document.getElementById('clearFilters');
 
-    // Add event listeners
-    searchInput.addEventListener('input', filterTable);
-    roleFilter.addEventListener('change', filterTable);
-    statusFilter.addEventListener('change', filterTable);
-    sedeFilter.addEventListener('change', filterTable);
-    clearButton.addEventListener('click', clearAllFilters);
-}
+        if (!searchInput) return; // Exit if elements not found
 
-function initializeSorting() {
-    const sortableHeaders = document.querySelectorAll('.sortable');
-    sortableHeaders.forEach(header => {
-        header.style.cursor = 'pointer';
-        header.addEventListener('click', function() {
-            const column = parseInt(this.getAttribute('data-column'));
-            sortTable(column);
+        // Add event listeners
+        searchInput.addEventListener('input', filterTable);
+        roleFilter.addEventListener('change', filterTable);
+        statusFilter.addEventListener('change', filterTable);
+        sedeFilter.addEventListener('change', filterTable);
+        clearButton.addEventListener('click', clearAllFilters);
+    }
+
+    function initializeSorting() {
+        const sortableHeaders = document.querySelectorAll('.sortable');
+        sortableHeaders.forEach(header => {
+            header.style.cursor = 'pointer';
+            header.addEventListener('click', function() {
+                const column = parseInt(this.getAttribute('data-column'));
+                sortTable(column);
+            });
         });
-    });
-}
-
-function filterTable() {
-    const searchTerm = document.getElementById('searchUsers').value.toLowerCase();
-    const roleFilter = document.getElementById('filterRole').value;
-    const statusFilter = document.getElementById('filterStatus').value;
-    const sedeFilter = document.getElementById('filterSede').value;
-    
-    const table = document.getElementById('usersTable');
-    const rows = table.querySelectorAll('tbody tr');
-    
-    let visibleCount = 0;
-    
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length === 0) return;
-        
-        // Get text content for filtering
-        const userName = cells[0].textContent.toLowerCase();
-        const userEmail = cells[1].textContent.toLowerCase();
-        const userRole = cells[2].textContent.trim();
-        const userSede = cells[3].textContent.trim();
-        const userStatus = cells[7].textContent.trim();
-        
-        // Search filter
-        const matchesSearch = searchTerm === '' || 
-            userName.includes(searchTerm) || 
-            userEmail.includes(searchTerm);
-        
-        // Role filter
-        const matchesRole = roleFilter === '' || userRole.includes(roleFilter);
-        
-        // Status filter
-        let matchesStatus = true;
-        if (statusFilter === 'active') {
-            matchesStatus = userStatus.includes('Attivo');
-        } else if (statusFilter === 'inactive') {
-            matchesStatus = userStatus.includes('Inattivo');
-        }
-        
-        // Sede filter
-        let matchesSede = true;
-        if (sedeFilter === 'all_sedi') {
-            matchesSede = userSede.includes('Tutte le sedi');
-        } else if (sedeFilter !== '') {
-            matchesSede = userSede.includes(sedeFilter);
-        }
-        
-        // Show/hide row
-        if (matchesSearch && matchesRole && matchesStatus && matchesSede) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-    
-    // Update visible count
-    updateFilterCount(visibleCount);
-}
-
-function sortTable(columnIndex) {
-    const table = document.getElementById('usersTable');
-    const tbody = table.querySelector('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    
-    // Determine sort direction
-    if (!sortDirection[columnIndex]) {
-        sortDirection[columnIndex] = 'asc';
-    } else {
-        sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
     }
-    
-    // Update header icons
-    updateSortIcons(columnIndex);
-    
-    // Sort rows
-    rows.sort((a, b) => {
-        const aCell = a.cells[columnIndex];
-        const bCell = b.cells[columnIndex];
+
+    function filterTable() {
+        const searchTerm = document.getElementById('searchUsers').value.toLowerCase();
+        const roleFilter = document.getElementById('filterRole').value;
+        const statusFilter = document.getElementById('filterStatus').value;
+        const sedeFilter = document.getElementById('filterSede').value;
         
-        if (!aCell || !bCell) return 0;
+        const table = document.getElementById('usersTable');
+        const rows = table.querySelectorAll('tbody tr');
         
-        let aValue = aCell.textContent.trim();
-        let bValue = bCell.textContent.trim();
+        let visibleCount = 0;
         
-        // Handle different data types
-        if (columnIndex === 6) { // Percentage column
-            aValue = parseFloat(aValue.replace('%', '')) || 0;
-            bValue = parseFloat(bValue.replace('%', '')) || 0;
-        } else if (columnIndex === 8) { // Date column
-            aValue = aValue === 'N/A' ? new Date(0) : new Date(aValue.split('/').reverse().join('-'));
-            bValue = bValue === 'N/A' ? new Date(0) : new Date(bValue.split('/').reverse().join('-'));
-        }
-        
-        // Compare values
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-            return sortDirection[columnIndex] === 'asc' ? aValue - bValue : bValue - aValue;
-        } else if (aValue instanceof Date && bValue instanceof Date) {
-            return sortDirection[columnIndex] === 'asc' ? aValue - bValue : bValue - aValue;
-        } else {
-            aValue = aValue.toString().toLowerCase();
-            bValue = bValue.toString().toLowerCase();
-            if (sortDirection[columnIndex] === 'asc') {
-                return aValue.localeCompare(bValue);
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length === 0) return;
+            
+            // Get text content for filtering
+            const userName = cells[0].textContent.toLowerCase();
+            const userEmail = cells[1].textContent.toLowerCase();
+            const userRole = cells[2].textContent.trim();
+            const userSede = cells[3].textContent.trim();
+            const userStatus = cells[7].textContent.trim();
+            
+            // Search filter
+            const matchesSearch = searchTerm === '' || 
+                userName.includes(searchTerm) || 
+                userEmail.includes(searchTerm);
+            
+            // Role filter
+            const matchesRole = roleFilter === '' || userRole.includes(roleFilter);
+            
+            // Status filter
+            let matchesStatus = true;
+            if (statusFilter === 'active') {
+                matchesStatus = userStatus.includes('Attivo');
+            } else if (statusFilter === 'inactive') {
+                matchesStatus = userStatus.includes('Inattivo');
+            }
+            
+            // Sede filter
+            let matchesSede = true;
+            if (sedeFilter === 'all_sedi') {
+                matchesSede = userSede.includes('Tutte le sedi');
+            } else if (sedeFilter !== '') {
+                matchesSede = userSede.includes(sedeFilter);
+            }
+            
+            // Show/hide row
+            if (matchesSearch && matchesRole && matchesStatus && matchesSede) {
+                row.style.display = '';
+                visibleCount++;
             } else {
-                return bValue.localeCompare(aValue);
+                row.style.display = 'none';
             }
-        }
-    });
-    
-    // Re-append sorted rows
-    rows.forEach(row => tbody.appendChild(row));
-}
-
-function updateSortIcons(activeColumn) {
-    const headers = document.querySelectorAll('.sortable');
-    headers.forEach((header, index) => {
-        const icon = header.querySelector('i');
-        const columnIndex = parseInt(header.getAttribute('data-column'));
+        });
         
-        if (columnIndex === activeColumn) {
-            icon.className = sortDirection[activeColumn] === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+        // Update visible count
+        updateFilterCount(visibleCount);
+    }
+
+    function sortTable(columnIndex) {
+        const table = document.getElementById('usersTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        // Determine sort direction
+        if (!sortDirection[columnIndex]) {
+            sortDirection[columnIndex] = 'asc';
         } else {
-            icon.className = 'fas fa-sort ms-1';
+            sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
         }
-    });
-}
-
-function clearAllFilters() {
-    document.getElementById('searchUsers').value = '';
-    document.getElementById('filterRole').value = '';
-    document.getElementById('filterStatus').value = '';
-    document.getElementById('filterSede').value = '';
-    
-    // Reset sort direction
-    sortDirection = {};
-    updateSortIcons(-1);
-    
-    // Show all rows
-    const rows = document.querySelectorAll('#usersTable tbody tr');
-    rows.forEach(row => row.style.display = '');
-    
-    // Update count
-    updateFilterCount(rows.length);
-}
-
-function updateFilterCount(count) {
-    const countElement = document.getElementById('filterCount');
-    if (countElement) {
-        countElement.textContent = count;
-    }
-}
-
-// Add CSS for sortable headers
-const style = document.createElement('style');
-style.textContent = `
-    .sortable {
-        user-select: none;
-        transition: background-color 0.2s;
-    }
-    .sortable:hover {
-        background-color: rgba(0,0,0,0.1);
-    }
-    .table-responsive {
-        max-height: 600px;
-        overflow-y: auto;
-    }
-`;
-document.head.appendChild(style);
-});
-
-function initializeUserFormHandlers() {
-    const roleSelect = document.querySelector('select[name="role"]');
-    const partTimeGroup = document.querySelector('input[name="part_time_percentage"]')?.closest('.col-md-4');
-    const allSediCheck = document.getElementById('allSediCheckNew');
-    const sedeSelect = document.getElementById('sedeSelectNew');
-    
-    if (!roleSelect) return; // Exit if elements not found
-
-    function toggleSedeSelect() {
-        if (allSediCheck && allSediCheck.checked) {
-            sedeSelect.disabled = true;
-            sedeSelect.value = -1; // Imposta su "Seleziona una sede"
-            const workScheduleGroupNew = document.getElementById('workScheduleGroupNew');
-            if (workScheduleGroupNew) {
-                workScheduleGroupNew.style.display = 'none';
+        
+        // Update header icons
+        updateSortIcons(columnIndex);
+        
+        // Sort rows
+        rows.sort((a, b) => {
+            const aCell = a.cells[columnIndex];
+            const bCell = b.cells[columnIndex];
+            
+            if (!aCell || !bCell) return 0;
+            
+            let aValue = aCell.textContent.trim();
+            let bValue = bCell.textContent.trim();
+            
+            // Handle different data types
+            if (columnIndex === 6) { // Percentage column
+                aValue = parseFloat(aValue.replace('%', '')) || 0;
+                bValue = parseFloat(bValue.replace('%', '')) || 0;
+            } else if (columnIndex === 8) { // Date column
+                aValue = aValue === 'N/A' ? new Date(0) : new Date(aValue.split('/').reverse().join('-'));
+                bValue = bValue === 'N/A' ? new Date(0) : new Date(bValue.split('/').reverse().join('-'));
             }
-        } else {
-            sedeSelect.disabled = false;
-            updateWorkSchedulesNew();
-        }
-    }
-    
-    function updateWorkSchedulesNew() {
-        const sedeSelect = document.getElementById('sedeSelectNew');
-        const workScheduleGroup = document.getElementById('workScheduleGroupNew');
-        const workScheduleSelect = document.getElementById('workScheduleSelectNew');
-        
-        if (!sedeSelect || !workScheduleGroup || !workScheduleSelect) return;
-        
-        const sedeId = sedeSelect.value;
-        
-        if (sedeId <= 0) {
-            workScheduleGroup.style.display = 'none';
-            return;
-        }
-        
-        // Chiamata API per ottenere gli orari della sede
-        fetch(`/api/sede/${sedeId}/work_schedules`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.has_schedules) {
-                    // Popola il select con gli orari disponibili
-                    workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
-                    data.work_schedules.forEach(schedule => {
-                        const option = document.createElement('option');
-                        option.value = schedule.id;
-                        if (schedule.name === 'Turni') {
-                            option.textContent = `${schedule.name} (Modalità Turnazioni)`;
-                        } else {
-                            option.textContent = `${schedule.name} (${schedule.start_time}-${schedule.end_time})`;
-                        }
-                        workScheduleSelect.appendChild(option);
-                    });
-                    workScheduleGroup.style.display = 'block';
+            
+            // Compare values
+            if (typeof aValue === 'number' && typeof bValue === 'number') {
+                return sortDirection[columnIndex] === 'asc' ? aValue - bValue : bValue - aValue;
+            } else if (aValue instanceof Date && bValue instanceof Date) {
+                return sortDirection[columnIndex] === 'asc' ? aValue - bValue : bValue - aValue;
+            } else {
+                aValue = aValue.toString().toLowerCase();
+                bValue = bValue.toString().toLowerCase();
+                if (sortDirection[columnIndex] === 'asc') {
+                    return aValue.localeCompare(bValue);
                 } else {
-                    workScheduleGroup.style.display = 'none';
+                    return bValue.localeCompare(aValue);
                 }
-            })
-            .catch(error => {
-                console.error('Errore nel caricamento orari:', error);
+            }
+        });
+        
+        // Re-append sorted rows
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    function updateSortIcons(activeColumn) {
+        const headers = document.querySelectorAll('.sortable');
+        headers.forEach((header, index) => {
+            const icon = header.querySelector('i');
+            const columnIndex = parseInt(header.getAttribute('data-column'));
+            
+            if (columnIndex === activeColumn) {
+                icon.className = sortDirection[activeColumn] === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+            } else {
+                icon.className = 'fas fa-sort ms-1';
+            }
+        });
+    }
+
+    function clearAllFilters() {
+        document.getElementById('searchUsers').value = '';
+        document.getElementById('filterRole').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterSede').value = '';
+        
+        // Reset sort direction
+        sortDirection = {};
+        updateSortIcons(-1);
+        
+        // Show all rows
+        const rows = document.querySelectorAll('#usersTable tbody tr');
+        rows.forEach(row => row.style.display = '');
+        
+        // Update count
+        updateFilterCount(rows.length);
+    }
+
+    function updateFilterCount(count) {
+        const countElement = document.getElementById('filterCount');
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    }
+
+    // Add CSS for sortable headers
+    const style = document.createElement('style');
+    style.textContent = `
+        .sortable {
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .sortable:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+    `;
+    document.head.appendChild(style);
+
+    function initializeUserFormHandlers() {
+        const roleSelect = document.querySelector('select[name="role"]');
+        const partTimeGroup = document.querySelector('input[name="part_time_percentage"]')?.closest('.col-md-4');
+        const allSediCheck = document.getElementById('allSediCheckNew');
+        const sedeSelect = document.getElementById('sedeSelectNew');
+        
+        if (!roleSelect) return; // Exit if elements not found
+        
+        // Role-based part-time percentage visibility
+        function togglePartTimePercentage() {
+            if (partTimeGroup) {
+                if (roleSelect.value === 'Operatore') {
+                    partTimeGroup.style.display = 'block';
+                } else {
+                    partTimeGroup.style.display = 'none';
+                    const partTimeInput = partTimeGroup.querySelector('input[name="part_time_percentage"]');
+                    if (partTimeInput) partTimeInput.value = 100;
+                }
+            }
+        }
+        
+        // Add event listeners
+        roleSelect.addEventListener('change', togglePartTimePercentage);
+        
+        if (allSediCheck) {
+            allSediCheck.addEventListener('change', toggleSedeSelect);
+        }
+        
+        if (sedeSelect) {
+            sedeSelect.addEventListener('change', updateWorkSchedulesNew);
+        }
+        
+        // Initialize ACI vehicle selects
+        initializeAciSelects();
+        
+        // Initial call
+        togglePartTimePercentage();
+        toggleSedeSelect();
+        
+        function toggleSedeSelect() {
+            if (allSediCheck && allSediCheck.checked) {
+                sedeSelect.disabled = true;
+                sedeSelect.value = -1;
+                const workScheduleGroupNew = document.getElementById('workScheduleGroupNew');
+                if (workScheduleGroupNew) {
+                    workScheduleGroupNew.style.display = 'none';
+                }
+            } else {
+                sedeSelect.disabled = false;
+                updateWorkSchedulesNew();
+            }
+        }
+        
+        function updateWorkSchedulesNew() {
+            const workScheduleGroup = document.getElementById('workScheduleGroupNew');
+            const workScheduleSelect = document.getElementById('workScheduleSelectNew');
+            
+            if (!sedeSelect || !workScheduleGroup || !workScheduleSelect) return;
+            
+            const sedeId = sedeSelect.value;
+            
+            if (sedeId <= 0) {
                 workScheduleGroup.style.display = 'none';
-            });
-    }
-    
-    function togglePartTimeField() {
-        // Campo % Lavoro sempre visibile per tutti i ruoli
-        // Nessuna azione necessaria, campo sempre visibile
-    }
-    
-    function togglePartTimeFieldNew() {
-        // Campo % Lavoro sempre visibile per tutti i ruoli
-        // Nessuna azione necessaria, campo sempre visibile
-    }
-    
-    // Event listeners
-    if (roleSelect) {
-        roleSelect.addEventListener('change', togglePartTimeField);
-        togglePartTimeField(); // Initial call
-    }
-    
-    // Event listener for new user form
-    const roleSelectNew = document.getElementById('roleSelectNew');
-    if (roleSelectNew) {
-        roleSelectNew.addEventListener('change', togglePartTimeFieldNew);
-        togglePartTimeFieldNew(); // Initial call
-    }
-    
-    if (allSediCheck && sedeSelect) {
-        allSediCheck.addEventListener('change', toggleSedeSelect);
-        sedeSelect.addEventListener('change', updateWorkSchedulesNew);
-        toggleSedeSelect(); // Chiamata iniziale
-    }
-    
-    // Gestione modal di conferma personalizzato per evitare "una pagina incorporata"
-    document.querySelectorAll('.confirm-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const message = this.dataset.message || 'Sei sicuro di voler procedere?';
-            const href = this.href;
-            
-            showCustomConfirm(message, () => {
-                window.location.href = href;
-            });
-        });
-    });
-});
-
-function showCustomConfirm(message, onConfirm) {
-    let modal = document.getElementById('customConfirmModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.innerHTML = `
-            <div class="modal fade" id="customConfirmModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Conferma</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body" id="customConfirmBody">
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                            <button type="button" class="btn btn-primary" id="customConfirmOk">Conferma</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal = document.getElementById('customConfirmModal');
-    }
-    
-    document.getElementById('customConfirmBody').textContent = message;
-    
-    const okBtn = document.getElementById('customConfirmOk');
-    okBtn.onclick = function() {
-        const modalInstance = bootstrap.Modal.getInstance(modal);
-        modalInstance.hide();
-        if (onConfirm) onConfirm();
-    };
-    
-    new bootstrap.Modal(modal).show();
-}
-
-// ACI Vehicle Progressive Selection for New User Form
-document.addEventListener('DOMContentLoaded', function() {
-    const tipoSelectNew = document.getElementById('tipoVeicoloSelectNew');
-    const marcaSelectNew = document.getElementById('marcaVeicoloSelectNew');
-    const modelloSelectNew = document.getElementById('modelloVeicoloSelectNew');
-
-    if (tipoSelectNew) {
-        tipoSelectNew.addEventListener('change', function() {
-            const tipo = this.value;
-            marcaSelectNew.disabled = true;
-            modelloSelectNew.disabled = true;
-            marcaSelectNew.innerHTML = '<option value="">Caricamento...</option>';
-            modelloSelectNew.innerHTML = '<option value="">Seleziona prima marca</option>';
-
-            if (tipo) {
-                fetch(`/api/aci/marche/${encodeURIComponent(tipo)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        marcaSelectNew.innerHTML = '<option value="">Seleziona marca</option>';
-                        if (data.success && data.marche.length > 0) {
-                            data.marche.forEach(marca => {
-                                const option = document.createElement('option');
-                                option.value = marca;
-                                option.textContent = marca;
-                                marcaSelectNew.appendChild(option);
-                            });
-                            marcaSelectNew.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading marche:', error);
-                        marcaSelectNew.innerHTML = '<option value="">Errore caricamento</option>';
-                    });
-            } else {
-                marcaSelectNew.innerHTML = '<option value="">Seleziona prima il tipo</option>';
-                modelloSelectNew.innerHTML = '<option value="">Seleziona prima marca</option>';
+                return;
             }
-        });
-
-        marcaSelectNew.addEventListener('change', function() {
-            const tipo = tipoSelectNew.value;
-            const marca = this.value;
-            modelloSelectNew.disabled = true;
-            modelloSelectNew.innerHTML = '<option value="">Caricamento...</option>';
-
-            if (tipo && marca) {
-                fetch(`/api/aci/modelli/${encodeURIComponent(tipo)}/${encodeURIComponent(marca)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        modelloSelectNew.innerHTML = '<option value="">Seleziona modello</option>';
-                        if (data.success && data.modelli.length > 0) {
-                            data.modelli.forEach(modello => {
-                                const option = document.createElement('option');
-                                option.value = modello[0];
-                                option.textContent = modello[1];
-                                modelloSelectNew.appendChild(option);
-                            });
-                            modelloSelectNew.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading modelli:', error);
-                        modelloSelectNew.innerHTML = '<option value="">Errore caricamento</option>';
-                    });
-            } else {
+            
+            fetch(`/api/sede/${sedeId}/work_schedules`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.has_schedules) {
+                        workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
+                        data.work_schedules.forEach(schedule => {
+                            const option = document.createElement('option');
+                            option.value = schedule.id;
+                            option.textContent = schedule.name;
+                            workScheduleSelect.appendChild(option);
+                        });
+                        workScheduleGroup.style.display = 'block';
+                    } else {
+                        workScheduleGroup.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading work schedules:', error);
+                    workScheduleGroup.style.display = 'none';
+                });
+        }
+        
+        function initializeAciSelects() {
+            const tipoSelectNew = document.getElementById('tipoSelectNew');
+            const marcaSelectNew = document.getElementById('marcaSelectNew');
+            const modelloSelectNew = document.getElementById('modelloSelectNew');
+            
+            if (!tipoSelectNew || !marcaSelectNew || !modelloSelectNew) return;
+            
+            tipoSelectNew.addEventListener('change', function() {
+                const tipo = this.value;
+                marcaSelectNew.disabled = true;
+                modelloSelectNew.disabled = true;
+                marcaSelectNew.innerHTML = '<option value="">Caricamento...</option>';
                 modelloSelectNew.innerHTML = '<option value="">Seleziona prima marca</option>';
-            }
-        });
+                
+                if (tipo) {
+                    fetch(`/api/aci/marche/${encodeURIComponent(tipo)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            marcaSelectNew.innerHTML = '<option value="">Seleziona marca</option>';
+                            if (data.success && data.marche.length > 0) {
+                                data.marche.forEach(marca => {
+                                    const option = document.createElement('option');
+                                    option.value = marca[0];
+                                    option.textContent = marca[1];
+                                    marcaSelectNew.appendChild(option);
+                                });
+                                marcaSelectNew.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading marche:', error);
+                            marcaSelectNew.innerHTML = '<option value="">Errore caricamento</option>';
+                        });
+                } else {
+                    marcaSelectNew.innerHTML = '<option value="">Seleziona prima il tipo</option>';
+                    modelloSelectNew.innerHTML = '<option value="">Seleziona prima marca</option>';
+                }
+            });
+            
+            marcaSelectNew.addEventListener('change', function() {
+                const tipo = tipoSelectNew.value;
+                const marca = this.value;
+                modelloSelectNew.disabled = true;
+                modelloSelectNew.innerHTML = '<option value="">Caricamento...</option>';
+                
+                if (tipo && marca) {
+                    fetch(`/api/aci/modelli/${encodeURIComponent(tipo)}/${encodeURIComponent(marca)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            modelloSelectNew.innerHTML = '<option value="">Seleziona modello</option>';
+                            if (data.success && data.modelli.length > 0) {
+                                data.modelli.forEach(modello => {
+                                    const option = document.createElement('option');
+                                    option.value = modello[0];
+                                    option.textContent = modello[1];
+                                    modelloSelectNew.appendChild(option);
+                                });
+                                modelloSelectNew.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading modelli:', error);
+                            modelloSelectNew.innerHTML = '<option value="">Errore caricamento</option>';
+                        });
+                } else {
+                    modelloSelectNew.innerHTML = '<option value="">Seleziona prima marca</option>';
+                }
+            });
+        }
     }
 });
 </script>
