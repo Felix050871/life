@@ -22,9 +22,61 @@ def inject_config():
     config = get_config()
     return dict(config=config)
 
-# Note: Shared utilities moved to routes/shared_utils.py
+# Define require_login decorator
+def require_login(f):
+    """Decorator to require login for routes"""
+    from functools import wraps
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    
+    return decorated_function
 
-# Note: Authentication routes moved to auth_routes.py blueprint
+def is_safe_url(target):
+    """Check if a URL is safe for redirect (same domain only)"""
+    if not target:
+        return False
+    
+    # Parse the target URL
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    
+    # Check if the scheme and netloc match (same domain)
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+@app.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and user.active and check_password_hash(user.password_hash, form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            next_page = request.args.get('next')
+            if next_page and is_safe_url(next_page):
+                return redirect(next_page)
+            return redirect(url_for('dashboard'))
+        flash('Username o password non validi', 'danger')
+    
+    return render_template('login.html', form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logout effettuato con successo', 'info')
+    return redirect(url_for('login'))
 
 @app.route('/dashboard')
 @login_required
@@ -1288,7 +1340,12 @@ def ente_home():
                          active_intervention=active_intervention,
                          recent_interventions=recent_interventions)
 
-
+@app.route('/test_route', methods=['GET', 'POST'])
+@login_required
+def test_route():
+    pass  # Test route
+    flash('Test route funziona!', 'info')
+    return redirect(url_for('attendance'))
 
 @app.route('/api/work_hours/<int:user_id>/<date_str>')
 @login_required
@@ -1341,7 +1398,7 @@ def clock_in():
             'message': 'Non hai i permessi per registrare presenze.'
         }), 403
         
-
+    pass  # Clock-in attempt
     
     # Verifica se può fare clock-in
     if not AttendanceEvent.can_perform_action(current_user.id, 'clock_in'):
@@ -2379,6 +2436,7 @@ def genera_turni_da_template():
         from datetime import datetime, timedelta
         from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User, WorkSchedule
         import json
+        import sys
         
         # Ottieni template e usa le sue date
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
@@ -2566,9 +2624,24 @@ def generate_shifts():
         db.session.add(template)
         db.session.commit()
         
-        # Note: generate_shifts_for_period function removed - shifts now generated via presidio templates
-        success = False
-        message = "Funzione di generazione turni rimossa. Usa i template presidio per creare turni."
+        # DEBUG: Verifica che la route venga chiamata  
+        import sys
+        print(f"ROUTE DEBUG: generate_shifts chiamata per {form.start_date.data} - {form.end_date.data}", file=sys.stderr, flush=True)
+        
+        # DEBUG: Verifica le coperture esistenti
+        from models import PresidioCoverage
+        coverages = PresidioCoverage.query.filter_by(active=True).all()
+        print(f"ROUTE DEBUG: Trovate {len(coverages)} coperture attive", file=sys.stderr, flush=True)
+        for cov in coverages[:5]:  # Mostra le prime 5
+            print(f"ROUTE DEBUG: Copertura {cov.get_day_name()} {cov.start_time}-{cov.end_time}", file=sys.stderr, flush=True)
+        
+        success, message = generate_shifts_for_period(
+            form.start_date.data,
+            form.end_date.data,
+            current_user.id
+        )
+        
+        print(f"ROUTE DEBUG: generate_shifts_for_period ha restituito success={success}", file=sys.stderr, flush=True)
         
         if success:
             flash(message, 'success')
@@ -2607,9 +2680,23 @@ def regenerate_template(template_id):
     template.created_by = current_user.id  # Update creator to current user
     db.session.commit()
     
-    # Note: generate_shifts_for_period function removed - shifts now generated via presidio templates
-    success = False
-    message = "Funzione di rigenerazione turni rimossa. Usa i template presidio per creare turni."
+    # Regenerate shifts
+    import sys
+    print(f"REGENERATE DEBUG: regenerate_template chiamata per template {template_id}", file=sys.stderr, flush=True)
+    
+    # DEBUG: Verifica le coperture prima della rigenerazione
+    from models import PresidioCoverage
+    coverages = PresidioCoverage.query.filter_by(active=True).all()
+    problem_coverages = [c for c in coverages if c.start_time.strftime('%H:%M') == '08:00' and c.end_time.strftime('%H:%M') == '23:59']
+    print(f"REGENERATE DEBUG: Trovate {len(problem_coverages)} coperture 08:00-23:59 ancora attive!", file=sys.stderr, flush=True)
+    
+    success, message = generate_shifts_for_period(
+        template.start_date,
+        template.end_date,
+        current_user.id
+    )
+    
+    print(f"REGENERATE DEBUG: generate_shifts_for_period ha restituito success={success}", file=sys.stderr, flush=True)
     
     if success:
         preserved_msg = f" (preservati {(today - template.start_date).days} giorni già lavorati)" if today > template.start_date else ""
@@ -3152,11 +3239,176 @@ def new_user():
     
     return render_template('users.html', form=form, editing=False)
 
-# Note: User management route moved to auth_routes.py blueprint
+@app.route('/user_management')
+@login_required
+def user_management():
+    if not (current_user.can_manage_users() or current_user.can_view_users()):
+        flash('Non hai i permessi per accedere alla gestione utenti', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Applica filtro automatico per sede usando il metodo helper
+    users_query = User.get_visible_users_query(current_user).options(joinedload(User.sede_obj))
+    users = users_query.order_by(User.created_at.desc()).all()
+    
+    # Determina il nome della sede per il titolo
+    sede_name = None if current_user.all_sedi else (current_user.sede_obj.name if current_user.sede_obj else None)
+    form = UserForm(is_edit=False)
+    
+    # Aggiungi statistiche team per le statistiche utenti dinamiche
+    team_stats = None
+    if current_user.can_view_team_stats_widget():
+        team_stats = get_team_statistics()
+    
+    return render_template('user_management.html', users=users, form=form, 
+                         sede_name=sede_name, is_multi_sede=current_user.all_sedi,
+                         team_stats=team_stats)
 
-# Note: User profile route moved to auth_routes.py blueprint
+@app.route('/user_profile', methods=['GET', 'POST'])
+@login_required
+def user_profile():
+    """Route per la gestione del profilo personale dell'utente"""
+    form = UserProfileForm(original_email=current_user.email, obj=current_user)
+    
+    if request.method == 'GET':
+        # Popola i campi con i dati attuali dell'utente
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.email.data = current_user.email
+        form.username.data = current_user.username
+    
+    if form.validate_on_submit():
+        # Aggiorna i dati del profilo
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.email = form.email.data
+        
+        # Aggiorna la password solo se fornita
+        if form.password.data:
+            current_user.password_hash = generate_password_hash(form.password.data)
+            flash('Password aggiornata con successo', 'success')
+        
+        try:
+            db.session.commit()
+            flash('Profilo aggiornato con successo', 'success')
+            return redirect(url_for('user_profile'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Errore durante l\'aggiornamento del profilo', 'danger')
+            return redirect(url_for('user_profile'))
+    
+    return render_template('user_profile.html', form=form)
 
-# Note: Edit user and toggle user routes moved to auth_routes.py blueprint
+@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per modificare gli utenti', 'danger')
+        return redirect(url_for('user_management'))
+    
+    user = User.query.get_or_404(user_id)
+    form = UserForm(original_username=user.username, is_edit=True, obj=user)
+    
+    if request.method == 'GET':
+        # Popola i campi sede e all_sedi con i valori attuali
+        form.all_sedi.data = user.all_sedi
+        if user.sede_id:
+            form.sede.data = user.sede_id
+        
+        if user.work_schedule_id:
+            # Aggiungi l'orario corrente alle scelte se non già presente
+            if user.work_schedule:
+                schedule_choice = (user.work_schedule.id, f"{user.work_schedule.name} ({user.work_schedule.start_time.strftime('%H:%M') if user.work_schedule.start_time else ''}-{user.work_schedule.end_time.strftime('%H:%M') if user.work_schedule.end_time else ''})")
+                if schedule_choice not in form.work_schedule.choices:
+                    form.work_schedule.choices.append(schedule_choice)
+            form.work_schedule.data = user.work_schedule_id
+        else:
+            # Se non ha un orario, imposta il valore di default
+            form.work_schedule.data = ''
+        
+        # Gestione del veicolo ACI con campi progressivi
+        if user.aci_vehicle_id and user.aci_vehicle:
+            # Popola i campi progressivi basati sul veicolo esistente
+            form.aci_vehicle_tipo.data = user.aci_vehicle.tipologia
+            form.aci_vehicle_marca.data = user.aci_vehicle.marca
+            form.aci_vehicle.data = user.aci_vehicle_id
+            
+            # Aggiorna le scelte per rendere i dropdown funzionali
+            from models import ACITable
+            aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
+            
+            # Aggiorna le scelte delle marche per il tipo selezionato
+            marche = list(set([v.marca for v in aci_vehicles if v.tipologia == user.aci_vehicle.tipologia and v.marca]))
+            form.aci_vehicle_marca.choices = [('', 'Seleziona marca')] + [(marca, marca) for marca in sorted(marche)]
+            
+            # Aggiorna le scelte dei modelli per tipo e marca selezionati
+            modelli = ACITable.query.filter(
+                ACITable.tipologia == user.aci_vehicle.tipologia,
+                ACITable.marca == user.aci_vehicle.marca
+            ).order_by(ACITable.modello).all()
+            form.aci_vehicle.choices = [('', 'Seleziona modello')] + [
+                (v.id, f"{v.modello} (€{v.costo_km:.4f}/km)") for v in modelli
+            ]
+        else:
+            form.aci_vehicle_tipo.data = ''
+            form.aci_vehicle_marca.data = ''
+            form.aci_vehicle.data = ''
+    
+    if form.validate_on_submit():
+        # Impedisce la disattivazione dell'amministratore
+        if user.role == 'Amministratore' and not form.active.data:
+            flash('Non è possibile disattivare l\'utente amministratore', 'danger')
+            return render_template('edit_user.html', form=form, user=user)
+        
+        user.username = form.username.data
+        user.email = form.email.data
+        user.role = form.role.data
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.all_sedi = form.all_sedi.data
+        user.sede_id = form.sede.data if not form.all_sedi.data else None
+        user.work_schedule_id = form.work_schedule.data
+        user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
+        user.part_time_percentage = form.get_part_time_percentage_as_float()
+        user.active = form.active.data
+        
+        # Update password only if provided
+        if form.password.data:
+            user.password_hash = generate_password_hash(form.password.data)
+        
+        # Non c'è più gestione sedi multiple
+        
+        db.session.commit()
+        flash(f'Utente {user.username} modificato con successo', 'success')
+        return redirect(url_for('user_management'))
+    else:
+        # Populate the percentage field manually only on GET request
+        form.part_time_percentage.data = str(user.part_time_percentage)
+    
+    return render_template('edit_user.html', form=form, user=user)
+
+@app.route('/toggle_user/<int:user_id>')
+@login_required
+def toggle_user(user_id):
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per modificare utenti', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('Non puoi disattivare il tuo account', 'warning')
+        return redirect(url_for('user_management'))
+    
+    # Impedisce la disattivazione dell'amministratore
+    if user.role == 'Amministratore':
+        flash('Non è possibile disattivare l\'utente amministratore', 'danger')
+        return redirect(url_for('user_management'))
+    
+    user.active = not user.active
+    db.session.commit()
+    
+    status = 'attivato' if user.active else 'disattivato'
+    flash(f'Utente {status} con successo', 'success')
+    return redirect(url_for('user_management'))
 
 @app.route('/reports')
 @login_required
@@ -3193,7 +3445,7 @@ def reports():
     
     # Get user statistics for all active users (excluding Amministratore and Ospite)
     users = User.query.filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
-
+    pass  # User count info
     
     user_stats = []
     chart_data = []  # Separate data for charts without User objects
@@ -3218,13 +3470,13 @@ def reports():
                 'pending_leaves': stats['pending_leaves']
             })
             
-
-        except Exception:
+            pass  # User stats processed
+        except Exception as e:
             pass  # Silent error handling
             # Continue without this user's stats
             continue
     
-
+    pass  # Stats collected
     
     # Get interventions data for the table (entrambi i tipi)
     from models import Intervention, ReperibilitaIntervention
@@ -3439,9 +3691,83 @@ def change_password():
     
     return render_template('change_password.html', form=form)
 
-# Note: Forgot password route moved to auth_routes.py blueprint
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    """Richiesta reset password"""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    from forms import ForgotPasswordForm
+    from models import User, PasswordResetToken
+    import secrets
+    from datetime import timedelta
+    
+    form = ForgotPasswordForm()
+    
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            # Invalida token precedenti
+            old_tokens = PasswordResetToken.query.filter_by(user_id=user.id, used=False).all()
+            for token in old_tokens:
+                token.used = True
+            
+            # Crea nuovo token - salva in UTC per evitare problemi timezone
+            from datetime import datetime
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token=secrets.token_urlsafe(32),
+                expires_at=datetime.utcnow() + timedelta(hours=1)  # Salva in UTC
+            )
+            
+            db.session.add(reset_token)
+            db.session.commit()
+            
+            # In una versione completa, qui invieresti l'email
+            # Per ora mostriamo il link direttamente
+            reset_url = url_for('reset_password', token=reset_token.token, _external=True)
+            flash(f'Link per il reset della password: {reset_url}', 'info')
+        else:
+            # Per sicurezza, non rivelare se l'email esiste o meno
+            flash('Se l\'email esiste nel sistema, riceverai un link per il reset della password', 'info')
+        
+        return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html', form=form)
 
-# Note: Reset password route moved to auth_routes.py blueprint
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Reset password con token"""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    from forms import ResetPasswordForm
+    from models import PasswordResetToken
+    from werkzeug.security import generate_password_hash
+    
+    # Trova il token
+    reset_token = PasswordResetToken.query.filter_by(token=token).first()
+    
+
+    if not reset_token or not reset_token.is_valid:
+        flash('Token non valido o scaduto', 'danger')
+        return redirect(url_for('forgot_password'))
+    
+    form = ResetPasswordForm()
+    
+    if form.validate_on_submit():
+        # Aggiorna password
+        reset_token.user.password_hash = generate_password_hash(form.new_password.data)
+        
+        # Marca token come usato
+        reset_token.used = True
+        
+        db.session.commit()
+        
+        flash('Password reimpostata con successo. Puoi ora accedere con la nuova password', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', form=form, token=token)
 
 @app.errorhandler(404)
 def not_found_error(error):
@@ -4377,6 +4703,10 @@ def generate_reperibilita_shifts():
             db.session.delete(shift)
         
         try:
+            import sys
+            # Log shift generation parameters for debugging
+            import logging
+            pass  # Generate shifts
             
             # Genera turni reperibilità dalla copertura selezionata
             shifts_created, warnings = generate_reperibilita_shifts_from_coverage(
@@ -4402,6 +4732,9 @@ def generate_reperibilita_shifts():
             return redirect(url_for('reperibilita_shifts'))
             
         except Exception as e:
+            import traceback
+            import sys
+            pass  # Silent error handling
             db.session.rollback()
             flash(f'Errore durante la generazione: {str(e)}', 'error')
 
@@ -8978,7 +9311,7 @@ def delete_overtime_type(type_id):
 @login_required
 def mileage_requests():
     """Visualizza le richieste di rimborso chilometrico"""
-
+    pass  # Mileage requests view
     
     try:
         if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
