@@ -628,6 +628,15 @@
 
 {% block scripts %}
 <script>
+// Hide any loading overlay immediately when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('globalLoadingOverlay');
+    if (overlay && !overlay.classList.contains('d-none')) {
+        overlay.classList.add('d-none');
+    }
+});
+</script>
+<script>
 // Attendance Chart
 const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
 const attendanceData = [];

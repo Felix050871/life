@@ -684,10 +684,10 @@
                 if (!this.isShowing) {
                     this.overlay.classList.remove('d-none');
                     this.isShowing = true;
-                    // Auto-hide dopo 30 secondi come fallback
+                    // Auto-hide dopo 5 secondi come fallback (ridotto da 30)
                     this.timeoutId = setTimeout(() => {
                         this.hide();
-                    }, 30000);
+                    }, 5000);
                 }
             }
 
