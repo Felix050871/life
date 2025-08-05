@@ -126,7 +126,7 @@
                         <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                         <h5 class="text-warning">Nessun template disponibile</h5>
                         <p class="text-muted">Non ci sono template presidio attivi da visualizzare.</p>
-                        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-primary">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                             <i class="fas fa-plus me-1"></i>Crea Template
                         </a>
                     </div>
@@ -388,7 +388,7 @@ function renderVisualizeTurniWithMissingRoles(data, templateId) {
             '<i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>' +
             '<h5 class="text-muted">Nessun turno presente</h5>' +
             '<p class="text-muted">Non ci sono turni per questo template.</p>' +
-            '<a href="{{ url_for("turni_automatici") }}?suggest=' + templateId + '" class="btn btn-success">' +
+href="#" onclick="alert('This feature will be available in Phase 3')"
             '<i class="fas fa-magic me-1"></i>Vai a Genera Turni' +
             '</a>' +
             '</div>';

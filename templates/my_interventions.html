@@ -14,7 +14,7 @@
                         I Miei Interventi
                     {% endif %}
                 </h2>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                     <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
                 </a>
             </div>
@@ -29,7 +29,7 @@
                     <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filtro per Periodo</h6>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ url_for('my_interventions') }}" class="row g-3">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                         <div class="col-md-4">
                             <label for="start_date" class="form-label">Data Inizio</label>
                             <input type="date" class="form-control" id="start_date" name="start_date" 
@@ -44,7 +44,7 @@
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fas fa-search me-1"></i>Filtra
                             </button>
-                            <a href="{{ url_for('my_interventions') }}" class="btn btn-outline-secondary">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                 <i class="fas fa-undo me-1"></i>Reset
                             </a>
                         </div>
@@ -94,7 +94,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Interventi Generici</h5>
                     {% if general_interventions %}
-                    <a href="{{ url_for('export_general_interventions_excel', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                        class="btn btn-outline-success btn-sm">
                         <i class="fas fa-download me-1"></i>Export in Excel
                     </a>
@@ -194,7 +194,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-phone me-2"></i>Interventi Reperibilità</h5>
                     {% if reperibilita_interventions %}
-                    <a href="{{ url_for('export_reperibilita_interventions_excel', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                        class="btn btn-outline-success btn-sm">
                         <i class="fas fa-download me-1"></i>Export in Excel
                     </a>
@@ -312,7 +312,7 @@
                     <i class="fas fa-tools fa-3x text-muted mb-3"></i>
                     <h4 class="text-muted">Nessun Intervento Registrato</h4>
                     <p class="text-muted">Non hai ancora registrato nessun intervento. Gli interventi che registrerai appariranno qui.</p>
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                         <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
                     </a>
                 </div>

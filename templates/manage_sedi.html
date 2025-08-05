@@ -16,7 +16,7 @@
                     <h5><i class="fas fa-plus me-2"></i>Aggiungi Nuova Sede</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('create_sede') }}">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                         {{ form.hidden_tag() }}
                         <div class="row">
                             <div class="col-md-3">
@@ -119,11 +119,11 @@
                                     <td>
                                         {% if current_user.can_manage_sedi() and current_user.can_view_sedi() %}
                                         <div class="btn-group" role="group">
-                                            <a href="{{ url_for('edit_sede', sede_id=sede.id) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                                class="btn btn-sm btn-outline-primary" title="Modifica">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <a href="{{ url_for('toggle_sede', sede_id=sede.id) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                                class="btn btn-sm btn-outline-{% if sede.active %}warning{% else %}success{% endif %}" 
                                                title="{% if sede.active %}Disattiva{% else %}Attiva{% endif %}">
                                                 <i class="fas fa-{% if sede.active %}pause{% else %}play{% endif %}"></i>

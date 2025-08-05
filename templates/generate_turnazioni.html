@@ -14,7 +14,7 @@
                 <i class="fas fa-info-circle me-2"></i>
                 {% if is_admin %}
                 Nessuna sede configurata con modalità "Turni". 
-                <a href="{{ url_for('manage_sedi') }}">Configura le sedi</a> per iniziare a generare turni.
+href="#" onclick="alert('This feature will be available in Phase 3')"
                 {% else %}
                 La tua sede non è configurata per la modalità "Turni". Contatta l'amministratore per abilitare la generazione turni.
                 {% endif %}
@@ -69,7 +69,7 @@
                                             <i class="fas fa-eye me-2"></i>Visualizza
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('manage_turni') }}">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                             <i class="fas fa-edit me-2"></i>Modifica Coperture
                                         </a></li>
                                         <li><a class="dropdown-item text-warning" href="#" onclick="disableCoveragePeriod('{{ period_data.period_id }}')">
@@ -126,7 +126,7 @@
                         <div class="text-center py-4">
                             <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
                             <p class="text-muted mb-2">Nessuna copertura creata per questa sede</p>
-                            <a href="{{ url_for('manage_turni') }}" class="btn btn-primary btn-sm">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                 <i class="fas fa-plus me-1"></i>Crea Copertura
                             </a>
                         </div>

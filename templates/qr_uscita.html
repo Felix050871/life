@@ -108,7 +108,7 @@
                                 {% endif %}
                             {% endwith %}
                             
-                            <form method="POST" action="{{ url_for('qr_login', action='uscita') }}">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                 <div class="mb-3">
                                     <input type="text" name="username" class="form-control" placeholder="Username" required>
                                 </div>
@@ -144,7 +144,7 @@
     
     <script>
         // Generate QR Code
-        const qrCodeUrl = window.location.origin + "{{ url_for('qr_login', action='uscita') }}";
+href="#" onclick="alert('This feature will be available in Phase 3')"
         
         QRCode.toCanvas(document.getElementById('qrcode'), qrCodeUrl, {
             width: 200,

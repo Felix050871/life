@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-tasks"></i> Gestione Richieste Straordinario</h2>
         <div class="btn-group">
-            <a href="{{ url_for('create_overtime_request') }}" class="btn btn-primary">
+            <a href=""" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nuova Richiesta
             </a>
             <button class="btn btn-success" onclick="exportToExcel()">
@@ -45,7 +45,7 @@
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="fas fa-filter"></i> Filtra
                         </button>
-                        <a href="{{ url_for('overtime_requests_management') }}" class="btn btn-secondary">
+                        <a href=""" class="btn btn-secondary">
                             <i class="fas fa-times"></i> Reset
                         </a>
                     </div>
@@ -185,7 +185,7 @@
                 <h5 class="modal-title">Approva Richiesta</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('approve_overtime_request', request_id=request.id) }}">
+            <form method="POST" action=""">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <p>Vuoi approvare la richiesta di straordinario di <strong>{{ request.employee.get_full_name() }}</strong>?</p>
@@ -211,7 +211,7 @@
                 <h5 class="modal-title">Rifiuta Richiesta</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('reject_overtime_request', request_id=request.id) }}">
+            <form method="POST" action=""">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <p>Vuoi rifiutare la richiesta di straordinario di <strong>{{ request.employee.get_full_name() }}</strong>?</p>
@@ -233,7 +233,7 @@
 
 <script>
 function exportToExcel() {
-    window.location.href = '{{ url_for("overtime_requests_excel") }}?' + $('#filterForm').serialize();
+href="#" onclick="alert('This feature will be available in Phase 3')"
 }
 </script>
 {% endblock %}

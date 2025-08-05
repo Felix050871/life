@@ -111,10 +111,10 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-info">
+            <a href=""" class="btn btn-info">
                 <i class="fas fa-shield-alt me-1"></i>Gestisci Copertura Reperibilità
             </a>
-            <a href="{{ url_for('create_reperibilita_coverage') }}" class="btn btn-outline-primary">
+            <a href=""" class="btn btn-outline-primary">
                 <i class="fas fa-plus me-1"></i>Nuova Copertura
             </a>
         </div>
@@ -145,7 +145,7 @@
                 <h5><i class="fas fa-plus me-2"></i>Crea Turno Singolo</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('create_shift') }}">
+                <form method="POST" action=""">
                     {{ shift_form.hidden_tag() }}
                     
                     <div class="row">
@@ -184,7 +184,7 @@
                 <h5><i class="fas fa-magic me-2"></i>Genera Turnazioni Automatiche</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('generate_shifts') }}">
+                <form method="POST" action=""">
                     {{ template_form.hidden_tag() }}
                     
                     <div class="mb-3">
@@ -221,7 +221,7 @@
                     
                     <div class="alert alert-info mt-3 mb-0" role="alert">
                         <strong>Nota:</strong> Prima di generare turni, assicurati di aver configurato la 
-                        <a href="{{ url_for('reperibilita_coverage') }}" class="alert-link">copertura reperibilità</a> 
+                        <a href=""" class="alert-link">copertura reperibilità</a> 
                         per definire quando ogni ruolo deve essere presente.
                     </div>
                 </form>
@@ -240,7 +240,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-layer-group me-2"></i>Template di Turnazione</h5>
                 {% if selected_template %}
-                <a href="{{ url_for('shifts') }}" class="btn btn-outline-secondary btn-sm">
+                <a href=""" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-arrow-left me-1"></i>Torna alla Lista Template
                 </a>
                 {% endif %}
@@ -276,12 +276,12 @@
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <!-- View button -->
-                                        <a href="{{ url_for('view_template', template_id=template.id) }}" class="btn btn-primary" title="Visualizza turni">
+                                        <a href=""" class="btn btn-primary" title="Visualizza turni">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         
                                         <!-- Regenerate button -->
-                                        <form method="POST" action="{{ url_for('regenerate_template', template_id=template.id) }}" style="display: inline;" class="confirm-form" data-message="Rigenerare tutti i turni per questo template? I turni esistenti nel periodo verranno sostituiti.">
+                                        <form method="POST" action=""" style="display: inline;" class="confirm-form" data-message="Rigenerare tutti i turni per questo template? I turni esistenti nel periodo verranno sostituiti.">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                             <button type="submit" class="btn btn-warning" title="Rigenera turni">
                                                 <i class="fas fa-refresh"></i>
@@ -289,7 +289,7 @@
                                         </form>
                                         
                                         <!-- Delete button -->
-                                        <form method="POST" action="{{ url_for('delete_template', template_id=template.id) }}" style="display: inline;" class="confirm-form" data-message="Eliminare questo template e tutti i turni associati?">
+                                        <form method="POST" action=""" style="display: inline;" class="confirm-form" data-message="Eliminare questo template e tutti i turni associati?">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                             <button type="submit" class="btn btn-danger" title="Elimina template">
                                                 <i class="fas fa-trash"></i>
@@ -361,7 +361,7 @@
                                 <td>{{ template.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
                                 <td>
                                     <!-- Only view button for regular users -->
-                                    <a href="{{ url_for('view_template', template_id=template.id) }}" class="btn btn-primary btn-sm" title="Visualizza turni">
+                                    <a href=""" class="btn btn-primary btn-sm" title="Visualizza turni">
                                         <i class="fas fa-eye me-1"></i>Visualizza
                                     </a>
                                 </td>
@@ -434,20 +434,20 @@
                 <div class="d-flex justify-content-center mb-3">
                     <div class="btn-group" role="group">
                         {% if selected_template %}
-                        <a href="{{ url_for('view_template', template_id=selected_template.id, view='all') }}" 
+                        <a href=""" 
                            class="btn {% if view_mode == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             <i class="fas fa-users me-1"></i>Tutti i Turni
                         </a>
-                        <a href="{{ url_for('view_template', template_id=selected_template.id, view='personal') }}" 
+                        <a href=""" 
                            class="btn {% if view_mode == 'personal' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             <i class="fas fa-user me-1"></i>I Miei Turni
                         </a>
                         {% else %}
-                        <a href="{{ url_for('shifts', view='all') }}" 
+                        <a href=""" 
                            class="btn {% if view_mode == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             <i class="fas fa-users me-1"></i>Tutti i Turni
                         </a>
-                        <a href="{{ url_for('shifts', view='personal') }}" 
+                        <a href=""" 
                            class="btn {% if view_mode == 'personal' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                             <i class="fas fa-user me-1"></i>I Miei Turni
                         </a>
@@ -566,7 +566,7 @@
                                 {% if can_manage %}
                                 <td>
                                     {% if shift.date >= today %}
-                                    <a href="{{ url_for('edit_shift', shift_id=shift.id) }}" 
+                                    <a href=""" 
                                        class="btn btn-sm btn-outline-primary" 
                                        title="Modifica turno">
                                         <i class="fas fa-edit"></i>
@@ -898,7 +898,7 @@ function setupExportButtons(calendar) {
                 my_shifts: showMyShifts.toString()
             });
             
-            window.open(`{{ url_for('export_shifts_pdf') }}?${params.toString()}`, '_blank');
+            window.open(`"?${params.toString()}`, '_blank');
         });
         
         // Excel Export (for table view)
@@ -913,7 +913,7 @@ function setupExportButtons(calendar) {
                 my_shifts: showMyShifts.toString()
             });
             
-            window.location.href = `{{ url_for('export_shifts_excel') }}?${params.toString()}`;
+            window.location.href = `"?${params.toString()}`;
         });
         
         // Update button visibility based on view

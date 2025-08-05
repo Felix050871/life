@@ -128,7 +128,7 @@ h2, h4 {
     box-shadow: none !important;
 }
 </style>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
+href="#" onclick="alert('This feature will be available in Phase 3')"
 {% endblock %}
 
 {% block content %}
@@ -210,11 +210,11 @@ h2, h4 {
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{{ url_for('presidio_coverage_edit', template_id=template.id) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                                class="btn btn-outline-warning btn-sm" title="Modifica template">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <form method="POST" action="{{ url_for('delete_presidio_template', template_id=template.id) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                                   style="display: inline;" onsubmit="return confirmDelete('Sei sicuro di voler eliminare questo template?')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Elimina template">
@@ -328,7 +328,7 @@ h2, h4 {
                         <button type="submit" class="btn btn-primary">
                             <i class="fa fa-save me-1"></i>Aggiorna Template
                         </button>
-                        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-secondary">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                             <i class="fa fa-arrow-left me-1"></i>Torna alla Lista
                         </a>
                     </div>
@@ -506,7 +506,7 @@ h2, h4 {
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <form method="POST" action="{{ url_for('delete_presidio_coverage', coverage_id=coverage.id) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                                       style="display: inline;" onsubmit="return confirm('Vuoi eliminare definitivamente questa copertura presidio? Tutti i turni associati verranno rimossi.')">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina copertura">
@@ -605,7 +605,7 @@ h2, h4 {
 {% block extra_js %}
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script src="{{ url_for('static', filename='js/presidio_scripts.js') }}"></script>
+href="#" onclick="alert('This feature will be available in Phase 3')"
 <script>
 // Inizializza DataTable per la tabella template
 $(document).ready(function() {

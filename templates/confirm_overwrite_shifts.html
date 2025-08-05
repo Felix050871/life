@@ -41,7 +41,7 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <form method="POST" action="{{ url_for('process_generate_turni_from_coverage') }}">
+                            <form method="POST" action=""">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="sede_id" value="{{ sede.id }}">
                                 <input type="hidden" name="coverage_period_id" value="{{ period_id }}">
@@ -60,7 +60,7 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <a href="{{ url_for('generate_turnazioni') }}" class="btn btn-secondary btn-lg w-100">
+                            <a href=""" class="btn btn-secondary btn-lg w-100">
                                 <i class="fas fa-times me-2"></i>
                                 Annulla Operazione
                             </a>
@@ -76,7 +76,7 @@
                         <h6><i class="fas fa-lightbulb me-2"></i>Suggerimento</h6>
                         <p class="mb-0">
                             Se vuoi vedere i turni esistenti prima di decidere, puoi 
-                            <a href="{{ url_for('view_generated_shifts') }}?sede={{ sede.id }}&start_date={{ start_date.strftime('%Y-%m-%d') }}&end_date={{ end_date.strftime('%Y-%m-%d') }}" 
+                            <a href=""" 
                                class="alert-link" target="_blank">visualizzarli qui</a>.
                         </p>
                     </div>

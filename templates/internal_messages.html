@@ -18,7 +18,7 @@
             
             {% if unread_count > 0 %}
             <div>
-                <form method="POST" action="{{ url_for('mark_all_messages_read') }}" style="display: inline;">
+href="#" onclick="alert('This feature will be available in Phase 3')"
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-primary">
                         <i class="fas fa-check-double me-1"></i>Marca tutto come letto
@@ -82,7 +82,7 @@
                                 <div class="ms-3">
                                     <div class="btn-group" role="group">
                                         {% if not message.is_read %}
-                                        <a href="{{ url_for('mark_message_read', message_id=message.id) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                            class="btn btn-outline-primary btn-sm" title="Segna come letto">
                                             <i class="fas fa-eye"></i>
                                         </a>
@@ -93,7 +93,7 @@
                                         {% endif %}
                                         
                                         <!-- Pulsante cancella messaggio -->
-                                        <form method="POST" action="{{ url_for('delete_message', message_id=message.id) }}" 
+href="#" onclick="alert('This feature will be available in Phase 3')"
                                               style="display: inline;" 
                                               class="delete-message-form">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
