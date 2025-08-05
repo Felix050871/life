@@ -2,6 +2,11 @@
 
 {% block title %}Report - Gestione Presenze{% endblock %}
 
+{% block head %}
+<!-- Chart.js per i grafici -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col">
@@ -57,7 +62,7 @@
         <div class="card bg-success">
             <div class="card-body text-center">
                 <i class="fas fa-clock fa-2x mb-2"></i>
-                <h4>{{ team_stats.total_hours }}</h4>
+                <h4>{{ team_stats.total_hours|default(0) }}</h4>
                 <small>Ore Totali</small>
             </div>
         </div>
@@ -66,7 +71,7 @@
         <div class="card bg-warning">
             <div class="card-body text-center">
                 <i class="fas fa-hourglass-half fa-2x mb-2"></i>
-                <h4>{{ team_stats.pending_leaves }}</h4>
+                <h4>{{ team_stats.pending_leaves|default(0) }}</h4>
                 <small>Ferie Pendenti</small>
             </div>
         </div>
@@ -632,6 +637,9 @@
 const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
 const attendanceData = {{ attendance_data|tojson }};
 
+console.log('Attendance Data:', attendanceData);
+
+if (attendanceData && attendanceData.length > 0) {
 new Chart(attendanceCtx, {
     type: 'line',
     data: {
@@ -681,19 +689,27 @@ new Chart(attendanceCtx, {
         }
     }
 });
+} else {
+    // Mostra messaggio se non ci sono dati
+    document.getElementById('attendanceChart').parentElement.innerHTML = 
+        '<div class="text-center py-4"><i class="fas fa-info-circle fa-3x text-muted mb-3"></i><h5 class="text-muted">Nessun dato di presenza disponibile per il periodo selezionato</h5></div>';
+}
 
 // Roles Chart
 const rolesCtx = document.getElementById('rolesChart').getContext('2d');
 const chartData = {{ chart_data|tojson }};
 
-// Count roles
-const roleCounts = {};
-chartData.forEach(stat => {
-    const role = stat.role;
-    roleCounts[role] = (roleCounts[role] || 0) + 1;
-});
+console.log('Chart Data:', chartData);
 
-new Chart(rolesCtx, {
+if (chartData && chartData.length > 0) {
+    // Count roles
+    const roleCounts = {};
+    chartData.forEach(stat => {
+        const role = stat.role;
+        roleCounts[role] = (roleCounts[role] || 0) + 1;
+    });
+
+    new Chart(rolesCtx, {
     type: 'doughnut',
     data: {
         labels: Object.keys(roleCounts),
@@ -718,7 +734,12 @@ new Chart(rolesCtx, {
             }
         }
     }
-});
+    });
+} else {
+    // Mostra messaggio se non ci sono dati per il grafico ruoli
+    document.getElementById('rolesChart').parentElement.innerHTML = 
+        '<div class="text-center py-4"><i class="fas fa-info-circle fa-3x text-muted mb-3"></i><h5 class="text-muted">Nessun dato ruoli disponibile</h5></div>';
+}
 
 // Export general interventions table to Excel
 function exportInterventionsTable() {
