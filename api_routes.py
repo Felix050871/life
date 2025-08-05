@@ -1,156 +1,68 @@
 from datetime import datetime, timedelta
 from flask import jsonify, request
 from flask_login import login_required, current_user
-from app import app, db, csrf
-from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage, UserRole
+from app import app, db
+from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
 import json
 import logging
 from utils import split_coverage_into_segments_by_user_capacity
 from new_shift_generation import calculate_shift_duration
-from datetime import datetime, date, time
 
 # Setup logging for API routes
 logger = logging.getLogger(__name__)
 
 @app.route('/api/get_shifts_for_template/<int:template_id>')
+@login_required  
 def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
     
-    # IMMEDIATE DEBUG LOG - DEVE APPARIRE SEMPRE
-    import sys
-    print(f">>> API CALLED: get_shifts_for_template/{template_id}", file=sys.stderr, flush=True)
-    print(f">>> API START TIME: {datetime.now()}", file=sys.stderr, flush=True)
-    
-    # SKIP AUTHENTICATION PER DEBUG - TEMPORANEO
-    print(f">>> API: Authentication SKIPPED for debug", file=sys.stderr, flush=True)
-    
     try:
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
-        
-        # STEP 1: Organizza turni per settimana - USA FRESH DATA DAL DATABASE
-        weeks_data = {}
-        # Forza refresh completo sessione database
-        db.session.expire_all()
-        db.session.commit()
-        
-        # Query SEMPLICE - INCLUDE ANCHE UTENTI INATTIVI per debug
-        fresh_shifts = Shift.query.filter(
+        shifts = Shift.query.filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
         
-        # DEBUG: Log query specifica per 01/10 nella database
-        import sys
-        from sqlalchemy import text
-        result = db.session.execute(text(
-            "SELECT s.id, s.user_id, s.start_time, s.end_time, u.first_name, u.last_name, u.active "
-            "FROM shift s LEFT JOIN \"user\" u ON s.user_id = u.id "
-            "WHERE s.date = '2025-10-01' ORDER BY s.start_time"
-        )).fetchall()
-        print(f">>> DATABASE DEBUG: Direct query found {len(result)} shifts for 01/10:", file=sys.stderr, flush=True)
-        for row in result:
-            print(f">>> DB ROW: id={row.id} user_id={row.user_id} time={row.start_time}-{row.end_time} user={row.first_name} {row.last_name} active={row.active}", file=sys.stderr, flush=True)
-        
-        # DEBUG: Log tutti i turni trovati
-        import sys
-        print(f">>> API DEBUG: FOUND {len(fresh_shifts)} shifts for template {template_id} from {template.start_date} to {template.end_date}", file=sys.stderr, flush=True)
-        
-        # DEBUG: Focus sui turni del 01/10
-        oct_01_shifts = [s for s in fresh_shifts if s.date.strftime('%d/%m') == '01/10']
-        print(f">>> SPECIFIC DEBUG: Found {len(oct_01_shifts)} shifts for 01/10", file=sys.stderr, flush=True)
-        for shift in oct_01_shifts:
-            print(f">>> 01/10 SHIFT: {shift.id} time={shift.start_time}-{shift.end_time} user_id={shift.user_id}", file=sys.stderr, flush=True)
-            if shift.user:
-                print(f"    01/10 USER: {shift.user.first_name} {shift.user.last_name} role={shift.user.role}", file=sys.stderr, flush=True)
-            else:
-                print(f"    01/10 ERROR: No user found for shift {shift.id}", file=sys.stderr, flush=True)
-        
-        # STEP 2: Crea struttura settimane dal database date range
-        start_date = template.start_date
-        end_date = template.end_date
-        
-        # Trova la settimana che contiene start_date (lunedì-domenica)
-        first_week_start = start_date - timedelta(days=start_date.weekday())
-        
-        # Trova l'ultima settimana che contiene end_date
-        last_week_start = end_date - timedelta(days=end_date.weekday())
-        
-        current_week_start = first_week_start
-        while current_week_start <= last_week_start:
-            week_key = current_week_start.strftime('%Y-%m-%d')
-            weeks_data[week_key] = {
-                'start': current_week_start.strftime('%d/%m/%Y'),
-                'end': (current_week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
-                'days': [],
-                'shift_count': 0,
-                'unique_users': set(),
-                'total_hours': 0
+        # STEP 1: Organizza turni per settimana
+        weeks_data = {}
+        for shift in shifts:
+            week_start = shift.date - timedelta(days=shift.date.weekday())
+            week_key = week_start.strftime('%Y-%m-%d')
+            
+            if week_key not in weeks_data:
+                weeks_data[week_key] = {
+                    'start': week_start.strftime('%d/%m/%Y'),
+                    'end': (week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
+                    'days': [],
+                    'shift_count': 0,
+                    'unique_users': set(),
+                    'total_hours': 0
+                }
+                # Inizializza i 7 giorni della settimana
+                for i in range(7):
+                    weeks_data[week_key]['days'].append({
+                        'date': (week_start + timedelta(days=i)).strftime('%d/%m'),
+                        'shifts': [],
+                        'missing_roles': []
+                    })
+            
+            day_index = shift.date.weekday()
+            shift_data = {
+                'id': shift.id,
+                'user': shift.user.username,
+                'user_id': shift.user.id,
+                'role': shift.user.role.name if shift.user.role else 'Senza ruolo',
+                'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
             }
-            
-            # Inizializza i 7 giorni della settimana (lunedì=0, domenica=6)
-            for i in range(7):
-                week_date = current_week_start + timedelta(days=i)
-                weeks_data[week_key]['days'].append({
-                    'date': week_date.strftime('%d/%m'),
-                    'shifts': [],
-                    'missing_roles': []
-                })
-                import sys; print(f">>> CREATED day slot: {week_date.strftime('%d/%m')} at week {week_key} index {i}", file=sys.stderr, flush=True)
-            
-            current_week_start += timedelta(days=7)
+            weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
+            weeks_data[week_key]['shift_count'] += 1
+            weeks_data[week_key]['unique_users'].add(shift.user.username)
         
-        # STEP 3: Processa i turni nella struttura già creata - LOGICA SEMPLICE E DIRETTA
-        import sys
-        print(f">>> PROCESSING {len(fresh_shifts)} shifts", file=sys.stderr, flush=True)
-        
-        for shift in fresh_shifts:
-            shift_date_str = shift.date.strftime('%d/%m')
-            print(f">>> Processing shift {shift.id} for date {shift_date_str}", file=sys.stderr, flush=True)
-            
-            # CERCA DIRETTAMENTE il giorno giusto in tutte le settimane
-            placed = False
-            for week_key, week_data in weeks_data.items():
-                for day_idx, day_data in enumerate(week_data['days']):
-                    if day_data['date'] == shift_date_str:
-                        # TROVATO! Aggiungi il turno qui
-                        user_name = f"{shift.user.first_name} {shift.user.last_name}" if shift.user else "Utente sconosciuto"
-                        # Gestione sicura del ruolo utente - FIXED
-                        if shift.user and shift.user.role:
-                            user_role = str(shift.user.role)  # Forza conversione a string
-                        else:
-                            user_role = 'Senza ruolo'
-                        
-                        shift_data = {
-                            'id': shift.id,
-                            'user': user_name,
-                            'user_id': shift.user.id if shift.user else None,
-                            'role': user_role,
-                            'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
-                        }
-                        
-                        week_data['days'][day_idx]['shifts'].append(shift_data)
-                        week_data['shift_count'] += 1
-                        week_data['unique_users'].add(shift.user.username if shift.user else "unknown")
-                        placed = True
-                        print(f">>> SUCCESS: Added shift {shift.id} to week {week_key} day {day_idx} ({shift_date_str}) - {user_name} {shift.start_time}-{shift.end_time}", file=sys.stderr, flush=True)
-                        break
-                if placed:
-                    break
-            
-            if not placed:
-                print(f">>> ERROR: Could not place shift {shift.id} for date {shift_date_str}", file=sys.stderr, flush=True)
-                # Debug: mostra le date disponibili
-                available_dates = []
-                for week_key, week_data in weeks_data.items():
-                    for day_data in week_data['days']:
-                        available_dates.append(day_data['date'])
-                print(f">>> Available dates: {available_dates}", file=sys.stderr, flush=True)
-        
-        # STEP 4: Converti set in count
+        # STEP 2: Converti set in count
         for week_data in weeks_data.values():
             week_data['unique_users'] = len(week_data['unique_users'])
         
-        # STEP 5: CALCOLA MISSING_ROLES - LOGICA SEMPLIFICATA
+        # STEP 3: CALCOLA MISSING_ROLES - LOGICA SEMPLIFICATA
         coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
         total_missing = 0
         
@@ -268,149 +180,3 @@ def api_aci_modelli_by_tipo_marca(tipo, marca):
             'success': False,
             'error': str(e)
         })
-
-@app.route('/api/get_users_by_role/<role_name>')
-@login_required
-def api_get_users_by_role(role_name):
-    """API per ottenere utenti attivi per un ruolo specifico"""
-    try:
-        users = User.query.filter_by(active=True).all()
-        
-        # Filtra utenti che hanno il ruolo richiesto
-        filtered_users = []
-        for user in users:
-            if user.role and user.role == role_name:
-                filtered_users.append({
-                    'id': user.id,
-                    'username': user.username,
-                    'full_name': user.get_full_name(),
-                    'role': user.role
-                })
-        
-        return jsonify({
-            'success': True,
-            'users': filtered_users
-        })
-        
-    except Exception as e:
-        logger.error(f"Error in get_users_by_role: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/update_shift/<int:shift_id>', methods=['PUT'])
-@csrf.exempt
-@login_required
-def api_update_shift(shift_id):
-    """API per aggiornare l'assegnazione di un turno esistente"""
-    try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        
-        if not user_id:
-            return jsonify({'success': False, 'message': 'User ID richiesto'}), 400
-        
-        # Verifica che l'utente esista ed sia attivo
-        user = User.query.filter_by(id=user_id, active=True).first()
-        if not user:
-            return jsonify({'success': False, 'message': 'Utente non trovato o non attivo'}), 404
-        
-        # Trova il turno
-        shift = Shift.query.get_or_404(shift_id)
-        
-        # Aggiorna l'assegnazione
-        old_user_id = shift.user_id
-        shift.user_id = user_id
-        
-        # Log dell'aggiornamento
-        logger.info(f"Updating shift {shift_id}: user_id {old_user_id} -> {user_id}")
-        
-        try:
-            db.session.commit()
-            logger.info(f"Successfully updated shift {shift_id}")
-        except Exception as commit_error:
-            db.session.rollback()
-            logger.error(f"Error committing shift update: {str(commit_error)}")
-            raise
-        
-        return jsonify({
-            'success': True,
-            'message': f'Turno assegnato a {user.get_full_name()}',
-            'shift': {
-                'id': shift.id,
-                'user': user.get_full_name(),
-                'user_id': user.id,
-                'date': shift.date.strftime('%d/%m/%Y'),
-                'start_time': shift.start_time.strftime('%H:%M'),
-                'end_time': shift.end_time.strftime('%H:%M')
-            }
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error in update_shift: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/create_shift', methods=['POST'])
-@csrf.exempt
-@login_required
-def api_create_shift():
-    """API per creare un nuovo turno per uno slot scoperto"""
-    try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        shift_date = data.get('date')
-        start_time = data.get('start_time')
-        end_time = data.get('end_time')
-        
-        if not all([user_id, shift_date, start_time, end_time]):
-            return jsonify({'success': False, 'message': 'Tutti i campi sono richiesti'}), 400
-        
-        # Verifica che l'utente esista ed sia attivo
-        user = User.query.filter_by(id=user_id, active=True).first()
-        if not user:
-            return jsonify({'success': False, 'message': 'Utente non trovato o non attivo'}), 404
-        
-        # Converti stringhe in oggetti datetime
-        shift_date_obj = datetime.strptime(shift_date, '%Y-%m-%d').date()
-        start_time_obj = datetime.strptime(start_time, '%H:%M').time()
-        end_time_obj = datetime.strptime(end_time, '%H:%M').time()
-        
-        # Verifica che non esista già un turno per questo utente nello stesso orario
-        existing_shift = Shift.query.filter_by(
-            user_id=user_id,
-            date=shift_date_obj,
-            start_time=start_time_obj,
-            end_time=end_time_obj
-        ).first()
-        
-        if existing_shift:
-            return jsonify({'success': False, 'message': 'Esiste già un turno per questo utente nello stesso orario'}), 409
-        
-        # Crea il nuovo turno - FIXED CONSTRUCTOR
-        new_shift = Shift()
-        new_shift.user_id = user_id
-        new_shift.date = shift_date_obj
-        new_shift.start_time = start_time_obj
-        new_shift.end_time = end_time_obj
-        new_shift.shift_type = 'presidio'
-        new_shift.created_by = current_user.id
-        
-        db.session.add(new_shift)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Nuovo turno creato per {user.get_full_name()}',
-            'shift': {
-                'id': new_shift.id,
-                'user': user.get_full_name(),
-                'user_id': user.id,
-                'date': new_shift.date.strftime('%d/%m/%Y'),
-                'start_time': new_shift.start_time.strftime('%H:%M'),
-                'end_time': new_shift.end_time.strftime('%H:%M')
-            }
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error in create_shift: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
