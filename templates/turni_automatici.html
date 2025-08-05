@@ -182,18 +182,15 @@
             <div class="modal-body">
                 <div id="shift-details-info" class="mb-3"></div>
                 <div id="available-users-container">
-                    <h6>Utenti disponibili per questo ruolo:</h6>
-                    <div id="available-users-list">
-                        <div class="text-center">
-                            <div class="spinner-border spinner-border-sm" role="status">
-                                <span class="visually-hidden">Caricamento...</span>
-                            </div>
-                        </div>
-                    </div>
+                    <label for="user-select" class="form-label">Seleziona utente:</label>
+                    <select class="form-select" id="user-select" disabled>
+                        <option value="">Caricamento utenti...</option>
+                    </select>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" id="confirm-user-btn" onclick="confirmUserSelection()" disabled>Conferma</button>
             </div>
         </div>
     </div>
@@ -498,7 +495,7 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block text-light">' + shift.time + '</small>';
                     html += '</div>';
                     html += '<button class="btn btn-sm btn-outline-light p-1" onclick="editShift(' + shift.id + ', \'' + shift.role + '\', \'' + shift.time + '\', \'' + day.date + '\', ' + shift.user_id + ', \'' + shift.user + '\')" title="Modifica assegnazione">';
-                    html += '<i class="fas fa-edit" style="font-size: 8px;"></i>';
+                    html += '<i class="fas fa-edit" style="font-size: 6px;"></i>';
                     html += '</button>';
                     html += '</div>';
                 });
@@ -517,8 +514,8 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
                     html += '<small class="d-block">' + missing + '</small>';
                     html += '</div>';
-                    html += '<button class="btn btn-sm p-0 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="background: none; border: none; color: white;">';
-                    html += '<i class="fas fa-plus" style="font-size: 6px;"></i>';
+                    html += '<button class="btn btn-sm btn-outline-light p-1 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="border-color: rgba(255,255,255,0.5);">';
+                    html += '<i class="fas fa-plus" style="font-size: 8px; color: white;"></i>';
                     html += '</button>';
                     html += '</div>';
                 });
@@ -598,73 +595,91 @@ function assignMissingShift(role, time, date) {
 
 // Funzione per caricare utenti per un ruolo specifico
 function loadUsersForRole(role) {
-    document.getElementById('available-users-list').innerHTML = 
-        '<div class="text-center">' +
-        '<div class="spinner-border spinner-border-sm" role="status">' +
-        '<span class="visually-hidden">Caricamento...</span>' +
-        '</div>' +
-        '</div>';
+    var userSelect = document.getElementById('user-select');
+    userSelect.innerHTML = '<option value="">Caricamento utenti...</option>';
+    userSelect.disabled = true;
+    document.getElementById('confirm-user-btn').disabled = true;
     
     fetch('/api/get_users_by_role/' + encodeURIComponent(role))
         .then(response => response.json())
         .then(data => {
+            userSelect.innerHTML = '';
+            
             if (data.success && data.users && data.users.length > 0) {
-                var html = '';
+                // Aggiungi opzione vuota
+                userSelect.innerHTML += '<option value="">-- Seleziona utente --</option>';
+                
                 data.users.forEach(function(user) {
                     var isCurrentUser = currentShiftData.userId == user.id;
-                    var buttonClass = isCurrentUser ? 'btn-secondary' : 'btn-primary';
-                    var buttonText = isCurrentUser ? 'Attuale' : 'Seleziona';
-                    var disabled = isCurrentUser ? 'disabled' : '';
+                    var selected = isCurrentUser ? 'selected' : '';
+                    var currentText = isCurrentUser ? ' (Attuale)' : '';
                     
-                    html += '<div class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">';
-                    html += '<div>';
-                    html += '<strong>' + user.full_name + '</strong><br>';
-                    html += '<small class="text-muted">@' + user.username + ' - ' + user.role + '</small>';
-                    html += '</div>';
-                    html += '<button class="btn btn-sm ' + buttonClass + '" ' + disabled + ' onclick="selectUser(' + user.id + ', \'' + user.full_name + '\')">';
-                    html += buttonText;
-                    html += '</button>';
-                    html += '</div>';
+                    userSelect.innerHTML += '<option value="' + user.id + '" data-name="' + user.full_name + '" ' + selected + '>' + 
+                        user.full_name + ' (@' + user.username + ')' + currentText + '</option>';
                 });
-                document.getElementById('available-users-list').innerHTML = html;
+                
+                userSelect.disabled = false;
+                
+                // Abilita pulsante conferma se c'è una selezione
+                userSelect.addEventListener('change', function() {
+                    document.getElementById('confirm-user-btn').disabled = !this.value;
+                });
+                
+                // Se c'è già un utente selezionato, abilita il pulsante
+                if (userSelect.value) {
+                    document.getElementById('confirm-user-btn').disabled = false;
+                }
             } else {
-                document.getElementById('available-users-list').innerHTML = 
-                    '<div class="alert alert-warning">' +
-                    '<i class="fas fa-exclamation-triangle me-2"></i>' +
-                    'Nessun utente disponibile per il ruolo "' + role + '"' +
-                    '</div>';
+                userSelect.innerHTML = '<option value="">Nessun utente disponibile per il ruolo "' + role + '"</option>';
+                userSelect.disabled = true;
+                document.getElementById('confirm-user-btn').disabled = true;
             }
         })
         .catch(error => {
             console.error('Error loading users:', error);
-            document.getElementById('available-users-list').innerHTML = 
-                '<div class="alert alert-danger">' +
-                '<i class="fas fa-exclamation-triangle me-2"></i>' +
-                'Errore nel caricamento degli utenti: ' + error.message +
-                '</div>';
+            userSelect.innerHTML = '<option value="">Errore nel caricamento degli utenti</option>';
+            userSelect.disabled = true;
+            document.getElementById('confirm-user-btn').disabled = true;
         });
 }
 
-// Funzione per selezionare un utente
-function selectUser(userId, fullName) {
+// Funzione per confermare la selezione dell'utente
+function confirmUserSelection() {
+    var userSelect = document.getElementById('user-select');
+    var selectedUserId = userSelect.value;
+    var selectedOption = userSelect.selectedOptions[0];
+    var fullName = selectedOption.getAttribute('data-name');
+    
+    if (!selectedUserId) {
+        return;
+    }
+    
     if (currentShiftData.isNew) {
         // Crea nuovo turno
-        createNewShift(userId, fullName);
+        createNewShift(selectedUserId, fullName);
     } else {
         // Aggiorna turno esistente
-        updateExistingShift(userId, fullName);
+        updateExistingShift(selectedUserId, fullName);
     }
 }
 
 // Funzione per aggiornare un turno esistente
 function updateExistingShift(userId, fullName) {
-    var loadingHtml = '<div class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Aggiornamento in corso...</div>';
-    document.getElementById('available-users-list').innerHTML = loadingHtml;
+    var userSelect = document.getElementById('user-select');
+    var confirmBtn = document.getElementById('confirm-user-btn');
+    
+    userSelect.disabled = true;
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Aggiornamento...';
+    
+    // Ottieni CSRF token dalla pagina
+    var csrfToken = document.querySelector('input[name="csrf_token"]').value;
     
     fetch('/api/update_shift/' + currentShiftData.id, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({
             user_id: userId
@@ -692,18 +707,21 @@ function updateExistingShift(userId, fullName) {
     })
     .catch(error => {
         console.error('Error updating shift:', error);
-        document.getElementById('available-users-list').innerHTML = 
-            '<div class="alert alert-danger">' +
-            '<i class="fas fa-exclamation-triangle me-2"></i>' +
-            'Errore: ' + error.message +
-            '</div>';
+        userSelect.disabled = false;
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = 'Conferma';
+        showToast('Errore: ' + error.message, 'error');
     });
 }
 
 // Funzione per creare un nuovo turno
 function createNewShift(userId, fullName) {
-    var loadingHtml = '<div class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Creazione in corso...</div>';
-    document.getElementById('available-users-list').innerHTML = loadingHtml;
+    var userSelect = document.getElementById('user-select');
+    var confirmBtn = document.getElementById('confirm-user-btn');
+    
+    userSelect.disabled = true;
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Creazione...';
     
     // Converti data e orario in formato corretto
     var dateParts = currentShiftData.date.split('/');
@@ -712,10 +730,14 @@ function createNewShift(userId, fullName) {
     var startTime = timeParts[0];
     var endTime = timeParts[1];
     
+    // Ottieni CSRF token dalla pagina
+    var csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    
     fetch('/api/create_shift', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({
             user_id: userId,
@@ -746,11 +768,10 @@ function createNewShift(userId, fullName) {
     })
     .catch(error => {
         console.error('Error creating shift:', error);
-        document.getElementById('available-users-list').innerHTML = 
-            '<div class="alert alert-danger">' +
-            '<i class="fas fa-exclamation-triangle me-2"></i>' +
-            'Errore: ' + error.message +
-            '</div>';
+        userSelect.disabled = false;
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = 'Conferma';
+        showToast('Errore: ' + error.message, 'error');
     });
 }
 
