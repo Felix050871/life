@@ -27,6 +27,8 @@ def api_get_shifts_for_template(template_id):
         # STEP 1: Organizza turni per settimana - USA FRESH DATA DAL DATABASE
         weeks_data = {}
         # Ricarica fresh shifts con join esplicito per evitare cache
+        # Usa expire_all per forzare refresh da database
+        db.session.expire_all()
         fresh_shifts = db.session.query(Shift).join(User).filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
@@ -54,6 +56,9 @@ def api_get_shifts_for_template(template_id):
                     })
             
             day_index = shift.date.weekday()
+            # DEBUG: Log per capire dove vanno i turni
+            shift_date_str = shift.date.strftime('%d/%m')
+            logger.info(f"Processing shift {shift.id} for date {shift_date_str} (weekday {day_index})")
             # Usa il nome completo invece del username per migliore visualizzazione
             user_name = shift.user.get_full_name() if hasattr(shift.user, 'get_full_name') else f"{shift.user.first_name} {shift.user.last_name}"
             # Usa la stringa role invece dell'oggetto role
