@@ -105,12 +105,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_roles() %}
-                        <li><a href="#" onclick="alert('Role management will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('roles.manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Ruoli
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_roles() %}
-                        <li><a href="#" onclick="alert('Role management will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('roles.view_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Ruoli
                         </a></li>
                         {% endif %}
@@ -129,12 +129,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_users() %}
-                        <li><a href="#" onclick="alert('This feature will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('users.manage_users') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Utenti
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_users() %}
-                        <li><a href="#" onclick="alert('This feature will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('users.view_users') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Utenti
                         </a></li>
                         {% endif %}
