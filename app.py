@@ -42,7 +42,7 @@ db.init_app(app)
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Effettua il login per accedere a questa pagina.'
 
 @login_manager.user_loader
@@ -55,7 +55,11 @@ with app.app_context():
     import models
     db.create_all()
 
-# Import routes to register them with the app
+# Register blueprints
+from routes import register_blueprints
+register_blueprints(app)
+
+# Import remaining routes (temporary during migration)
 import routes
 import api_routes
 
