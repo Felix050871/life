@@ -153,12 +153,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_sedi() %}
-                        <li><a href="#" onclick="alert('Sedi management will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('sedi.manage_sedi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Sedi
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_sedi() %}
-                        <li><a href="#" onclick="alert('Sedi management will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('sedi.view_sedi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Sedi
                         </a></li>
                         {% endif %}
@@ -177,12 +177,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_schedules() %}
-                        <li><a href="#" onclick="alert('Work schedules will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('schedules.manage_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Orari
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_schedules() %}
-                        <li><a href="#" onclick="alert('Work schedules will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('schedules.view_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Orari
                         </a></li>
                         {% endif %}
@@ -201,18 +201,18 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_shifts() %}
-                        <li><a href="#" onclick="alert('Shift management will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('shifts.manage_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestione Coperture
                         </a></li>
-                        <li><a href="#" onclick="alert('Automatic shifts will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('shifts.manage_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cogs"></i>Gestione Turni
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_shifts() %}
-                        <li><a href="#" onclick="alert('Presidio view will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('shifts.view_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizza Coperture
                         </a></li>
-                        <li><a href="#" onclick="alert('Shifts view will be available in Phase 3')" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('shifts.view_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list"></i>Visualizza Turni
                         </a></li>
                         {% endif %}

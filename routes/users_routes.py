@@ -20,7 +20,7 @@ def manage_users():
         return redirect(url_for('dashboard.dashboard'))
     
     users = User.query.all()
-    return render_template('users/manage.html', users=users)
+    return render_template('user_management.html', users=users)
 
 @users_bp.route('/view')
 @login_required 
@@ -32,7 +32,7 @@ def view_users():
         return redirect(url_for('dashboard.dashboard'))
     
     users = User.query.all()
-    return render_template('users/view.html', users=users)
+    return render_template('users.html', users=users)
 
 @users_bp.route('/create', methods=['GET', 'POST'])
 @login_required

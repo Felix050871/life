@@ -19,7 +19,7 @@ def manage_shifts():
         flash('Non hai i permessi per gestire i turni.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('shifts/manage.html')
+    return render_template('manage_turni.html')
 
 @shifts_bp.route('/view')
 @login_required 
@@ -30,7 +30,7 @@ def view_shifts():
         flash('Non hai i permessi per visualizzare i turni.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('shifts/view.html')
+    return render_template('shifts.html')
 
 @shifts_bp.route('/coverage/manage')
 @login_required
@@ -41,7 +41,7 @@ def manage_coverage():
         flash('Non hai i permessi per gestire le coperture.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('shifts/coverage_manage.html')
+    return render_template('manage_coverage.html')
 
 @shifts_bp.route('/coverage/view')
 @login_required
@@ -52,4 +52,4 @@ def view_coverage():
         flash('Non hai i permessi per visualizzare le coperture.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('shifts/coverage_view.html')
+    return render_template('presidio_coverage.html')

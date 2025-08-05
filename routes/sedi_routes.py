@@ -19,7 +19,7 @@ def manage_sedi():
         flash('Non hai i permessi per gestire le sedi.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('sedi/manage.html')
+    return render_template('manage_sedi.html')
 
 @sedi_bp.route('/view')
 @login_required 
@@ -30,4 +30,4 @@ def view_sedi():
         flash('Non hai i permessi per visualizzare le sedi.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('sedi/view.html')
+    return render_template('locations.html')

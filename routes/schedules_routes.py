@@ -19,7 +19,7 @@ def manage_schedules():
         flash('Non hai i permessi per gestire gli orari.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('schedules/manage.html')
+    return render_template('manage_work_schedules.html')
 
 @schedules_bp.route('/view')
 @login_required 
@@ -30,4 +30,4 @@ def view_schedules():
         flash('Non hai i permessi per visualizzare gli orari.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('schedules/view.html')
+    return render_template('manage_work_schedules.html')

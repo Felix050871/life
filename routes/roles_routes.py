@@ -19,7 +19,7 @@ def manage_roles():
         flash('Non hai i permessi per gestire i ruoli.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('roles/manage.html')
+    return render_template('manage_roles.html')
 
 @roles_bp.route('/view')
 @login_required 
@@ -30,4 +30,4 @@ def view_roles():
         flash('Non hai i permessi per visualizzare i ruoli.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    return render_template('roles/view.html')
+    return render_template('manage_roles.html')
