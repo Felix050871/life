@@ -75,8 +75,12 @@ def api_get_shifts_for_template(template_id):
             current_week_start += timedelta(days=7)
         
         # STEP 3: Processa i turni nella struttura già creata - LOGICA SEMPLICE E DIRETTA
+        import sys
+        print(f">>> PROCESSING {len(fresh_shifts)} shifts", file=sys.stderr, flush=True)
+        
         for shift in fresh_shifts:
             shift_date_str = shift.date.strftime('%d/%m')
+            print(f">>> Processing shift {shift.id} for date {shift_date_str}", file=sys.stderr, flush=True)
             
             # CERCA DIRETTAMENTE il giorno giusto in tutte le settimane
             placed = False
@@ -99,12 +103,19 @@ def api_get_shifts_for_template(template_id):
                         week_data['shift_count'] += 1
                         week_data['unique_users'].add(shift.user.username if shift.user else "unknown")
                         placed = True
+                        print(f">>> SUCCESS: Added shift {shift.id} to week {week_key} day {day_idx} ({shift_date_str})", file=sys.stderr, flush=True)
                         break
                 if placed:
                     break
             
             if not placed:
-                print(f"ERROR: Could not place shift {shift.id} for date {shift_date_str}", file=sys.stderr, flush=True)
+                print(f">>> ERROR: Could not place shift {shift.id} for date {shift_date_str}", file=sys.stderr, flush=True)
+                # Debug: mostra le date disponibili
+                available_dates = []
+                for week_key, week_data in weeks_data.items():
+                    for day_data in week_data['days']:
+                        available_dates.append(day_data['date'])
+                print(f">>> Available dates: {available_dates}", file=sys.stderr, flush=True)
         
         # STEP 4: Converti set in count
         for week_data in weeks_data.values():
