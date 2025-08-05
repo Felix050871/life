@@ -2,11 +2,12 @@ from datetime import datetime, timedelta
 from flask import jsonify, request
 from flask_login import login_required, current_user
 from app import app, db
-from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
+from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage, UserRole
 import json
 import logging
 from utils import split_coverage_into_segments_by_user_capacity
 from new_shift_generation import calculate_shift_duration
+from datetime import datetime, date, time
 
 # Setup logging for API routes
 logger = logging.getLogger(__name__)
@@ -180,3 +181,135 @@ def api_aci_modelli_by_tipo_marca(tipo, marca):
             'success': False,
             'error': str(e)
         })
+
+@app.route('/api/get_users_by_role/<role_name>')
+@login_required
+def api_get_users_by_role(role_name):
+    """API per ottenere utenti attivi per un ruolo specifico"""
+    try:
+        users = User.query.filter_by(active=True).all()
+        
+        # Filtra utenti che hanno il ruolo richiesto
+        filtered_users = []
+        for user in users:
+            if user.role and user.role.name == role_name:
+                filtered_users.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'full_name': user.get_full_name(),
+                    'role': user.role.name
+                })
+        
+        return jsonify({
+            'success': True,
+            'users': filtered_users
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in get_users_by_role: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/update_shift/<int:shift_id>', methods=['PUT'])
+@login_required
+def api_update_shift(shift_id):
+    """API per aggiornare l'assegnazione di un turno esistente"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'message': 'User ID richiesto'}), 400
+        
+        # Verifica che l'utente esista ed sia attivo
+        user = User.query.filter_by(id=user_id, active=True).first()
+        if not user:
+            return jsonify({'success': False, 'message': 'Utente non trovato o non attivo'}), 404
+        
+        # Trova il turno
+        shift = Shift.query.get_or_404(shift_id)
+        
+        # Aggiorna l'assegnazione
+        shift.user_id = user_id
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Turno assegnato a {user.get_full_name()}',
+            'shift': {
+                'id': shift.id,
+                'user': user.get_full_name(),
+                'user_id': user.id,
+                'date': shift.date.strftime('%d/%m/%Y'),
+                'start_time': shift.start_time.strftime('%H:%M'),
+                'end_time': shift.end_time.strftime('%H:%M')
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error in update_shift: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/create_shift', methods=['POST'])
+@login_required
+def api_create_shift():
+    """API per creare un nuovo turno per uno slot scoperto"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        shift_date = data.get('date')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        
+        if not all([user_id, shift_date, start_time, end_time]):
+            return jsonify({'success': False, 'message': 'Tutti i campi sono richiesti'}), 400
+        
+        # Verifica che l'utente esista ed sia attivo
+        user = User.query.filter_by(id=user_id, active=True).first()
+        if not user:
+            return jsonify({'success': False, 'message': 'Utente non trovato o non attivo'}), 404
+        
+        # Converti stringhe in oggetti datetime
+        shift_date_obj = datetime.strptime(shift_date, '%Y-%m-%d').date()
+        start_time_obj = datetime.strptime(start_time, '%H:%M').time()
+        end_time_obj = datetime.strptime(end_time, '%H:%M').time()
+        
+        # Verifica che non esista già un turno per questo utente nello stesso orario
+        existing_shift = Shift.query.filter_by(
+            user_id=user_id,
+            date=shift_date_obj,
+            start_time=start_time_obj,
+            end_time=end_time_obj
+        ).first()
+        
+        if existing_shift:
+            return jsonify({'success': False, 'message': 'Esiste già un turno per questo utente nello stesso orario'}), 409
+        
+        # Crea il nuovo turno
+        new_shift = Shift(
+            user_id=user_id,
+            date=shift_date_obj,
+            start_time=start_time_obj,
+            end_time=end_time_obj
+        )
+        
+        db.session.add(new_shift)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Nuovo turno creato per {user.get_full_name()}',
+            'shift': {
+                'id': new_shift.id,
+                'user': user.get_full_name(),
+                'user_id': user.id,
+                'date': new_shift.date.strftime('%d/%m/%Y'),
+                'start_time': new_shift.start_time.strftime('%H:%M'),
+                'end_time': new_shift.end_time.strftime('%H:%M')
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error in create_shift: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500

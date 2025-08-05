@@ -161,6 +161,42 @@
 
 
 </div>
+<!-- Modal per Modifica/Assegnazione Turno -->
+<div class="modal fade" id="editShiftModal" tabindex="-1" aria-labelledby="editShiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editShiftModalLabel">Modifica Assegnazione Turno</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="shift-details" class="mb-3">
+                    <h6>Dettagli Turno:</h6>
+                    <p id="shift-info" class="text-muted"></p>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="userSelect" class="form-label">Seleziona Utente:</label>
+                    <select class="form-select" id="userSelect">
+                        <option value="">Caricamento...</option>
+                    </select>
+                </div>
+                
+                <div id="shift-warning" class="alert alert-warning d-none">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <span id="warning-text"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" id="saveShiftBtn" onclick="saveShiftAssignment()">
+                    <i class="fas fa-save me-1"></i>Salva Assegnazione
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -416,9 +452,14 @@ function createWeekHtml(week) {
         
         if (week.days[i].shifts && week.days[i].shifts.length > 0) {
             week.days[i].shifts.forEach(function(shift) {
-                html += '<div class="shift-item" title="' + shift.user + ' - ' + shift.time + '">' +
+                html += '<div class="shift-item d-flex justify-content-between align-items-center" title="' + shift.user + ' - ' + shift.time + '">' +
+                        '<div>' +
                         '<div class="fw-bold">' + (shift.user.length > 12 ? shift.user.substring(0, 12) + '...' : shift.user) + '</div>' +
                         '<small>' + shift.time + '</small>' +
+                        '</div>' +
+                        '<button class="btn btn-sm btn-outline-light p-1" onclick="editShift(' + shift.id + ', \'' + shift.role + '\', \'' + shift.time + '\', \'' + week.days[i].date + '\', ' + shift.user_id + ', \'' + shift.user + '\')" title="Modifica assegnazione">' +
+                        '<i class="fas fa-edit" style="font-size: 10px;"></i>' +
+                        '</button>' +
                         '</div>';
             });
         }
@@ -426,8 +467,16 @@ function createWeekHtml(week) {
         // Aggiungi evidenziazione per ruoli richiesti ma mancanti (ROSSO come turni_automatici)
         if (week.days[i].missing_roles && week.days[i].missing_roles.length > 0) {
             week.days[i].missing_roles.forEach(function(missing) {
-                html += '<div class="text-center p-1 rounded mt-1" style="background-color: #f8d7da; border: 1px solid #dc3545; color: #721c24 !important; font-size: 10px; font-weight: bold;">' +
+                // Estrai ruolo e orario dal testo missing
+                var missingParts = missing.match(/(.+) mancante \((.+)\)/);
+                var missingRole = missingParts ? missingParts[1] : 'Unknown';
+                var missingTime = missingParts ? missingParts[2] : 'Unknown';
+                
+                html += '<div class="d-flex justify-content-between align-items-center text-center p-1 rounded mt-1" style="background-color: #f8d7da; border: 1px solid #dc3545; color: #721c24 !important; font-size: 10px; font-weight: bold;">' +
                         '<small style="color: #721c24 !important;"><i class="fas fa-exclamation-triangle me-1" style="color: #721c24 !important;"></i>' + missing + '</small>' +
+                        '<button class="btn btn-sm p-0 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + week.days[i].date + '\')" title="Assegna utente" style="background: none; border: none; color: #721c24;">' +
+                        '<i class="fas fa-plus" style="font-size: 8px;"></i>' +
+                        '</button>' +
                         '</div>';
             });
         }
@@ -443,6 +492,148 @@ function createWeekHtml(week) {
     
     html += '</div></div>';
     return html;
+}
+
+// Variabili globali per il modal
+let currentShiftData = {};
+let currentTemplateId = null;
+
+// Funzione per modificare un turno esistente
+function editShift(shiftId, role, time, date, currentUserId, currentUserName) {
+    currentShiftData = {
+        id: shiftId,
+        role: role,
+        time: time,
+        date: date,
+        isNew: false
+    };
+    
+    document.getElementById('editShiftModalLabel').textContent = 'Modifica Assegnazione Turno';
+    document.getElementById('shift-info').innerHTML = 
+        '<strong>Data:</strong> ' + date + '<br>' +
+        '<strong>Orario:</strong> ' + time + '<br>' +
+        '<strong>Ruolo richiesto:</strong> ' + role + '<br>' +
+        '<strong>Attualmente assegnato a:</strong> ' + currentUserName;
+    
+    loadUsersForRole(role, currentUserId);
+    
+    const modal = new bootstrap.Modal(document.getElementById('editShiftModal'));
+    modal.show();
+}
+
+// Funzione per assegnare un turno mancante
+function assignMissingShift(role, time, date) {
+    currentShiftData = {
+        id: null,
+        role: role,
+        time: time,
+        date: date,
+        isNew: true
+    };
+    
+    document.getElementById('editShiftModalLabel').textContent = 'Assegna Turno Scoperto';
+    document.getElementById('shift-info').innerHTML = 
+        '<strong>Data:</strong> ' + date + '<br>' +
+        '<strong>Orario:</strong> ' + time + '<br>' +
+        '<strong>Ruolo richiesto:</strong> ' + role + '<br>' +
+        '<strong>Stato:</strong> <span class="text-danger">Non assegnato</span>';
+    
+    loadUsersForRole(role, null);
+    
+    const modal = new bootstrap.Modal(document.getElementById('editShiftModal'));
+    modal.show();
+}
+
+// Carica utenti disponibili per il ruolo specifico
+function loadUsersForRole(role, currentUserId) {
+    const userSelect = document.getElementById('userSelect');
+    userSelect.innerHTML = '<option value="">Caricamento...</option>';
+    
+    fetch('/api/get_users_by_role/' + encodeURIComponent(role))
+        .then(response => response.json())
+        .then(data => {
+            userSelect.innerHTML = '<option value="">-- Seleziona Utente --</option>';
+            
+            if (data.success && data.users) {
+                data.users.forEach(user => {
+                    const selected = user.id === currentUserId ? 'selected' : '';
+                    userSelect.innerHTML += '<option value="' + user.id + '" ' + selected + '>' + 
+                        user.full_name + ' (' + user.username + ')</option>';
+                });
+            } else {
+                userSelect.innerHTML = '<option value="">Nessun utente disponibile per questo ruolo</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Errore caricamento utenti:', error);
+            userSelect.innerHTML = '<option value="">Errore nel caricamento</option>';
+        });
+}
+
+// Salva l'assegnazione del turno
+function saveShiftAssignment() {
+    const userId = document.getElementById('userSelect').value;
+    if (!userId) {
+        alert('Seleziona un utente');
+        return;
+    }
+    
+    const saveBtn = document.getElementById('saveShiftBtn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Salvando...';
+    
+    // Converti data da DD/MM a YYYY-MM-DD
+    const dateParts = currentShiftData.date.split('/');
+    const fullDate = '2025-' + dateParts[1].padStart(2, '0') + '-' + dateParts[0].padStart(2, '0');
+    
+    // Estrai start_time e end_time
+    const timeParts = currentShiftData.time.split('-');
+    const startTime = timeParts[0];
+    const endTime = timeParts[1];
+    
+    const requestData = {
+        user_id: parseInt(userId),
+        date: fullDate,
+        start_time: startTime,
+        end_time: endTime,
+        role: currentShiftData.role
+    };
+    
+    const url = currentShiftData.isNew ? '/api/create_shift' : '/api/update_shift/' + currentShiftData.id;
+    const method = currentShiftData.isNew ? 'POST' : 'PUT';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Chiudi modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editShiftModal'));
+            modal.hide();
+            
+            // Ricarica i turni per il template corrente
+            const templateSelect = document.getElementById('template-select');
+            if (templateSelect && templateSelect.value) {
+                loadShiftsForTemplate(templateSelect.value, templateSelect.options[templateSelect.selectedIndex].text);
+            }
+        } else {
+            alert('Errore: ' + (data.message || 'Operazione fallita'));
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        alert('Errore di rete');
+    })
+    .finally(() => {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>Salva Assegnazione';
+    });
 }
 </script>
 {% endblock %}
