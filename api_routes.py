@@ -192,12 +192,12 @@ def api_get_users_by_role(role_name):
         # Filtra utenti che hanno il ruolo richiesto
         filtered_users = []
         for user in users:
-            if user.role and user.role.name == role_name:
+            if user.role and user.role == role_name:
                 filtered_users.append({
                     'id': user.id,
                     'username': user.username,
                     'full_name': user.get_full_name(),
-                    'role': user.role.name
+                    'role': user.role
                 })
         
         return jsonify({
