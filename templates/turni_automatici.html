@@ -240,9 +240,9 @@ function loadShiftsForTemplate(templateId, templateName) {
     document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
     
     // Richiesta AJAX per caricare i turni con credentials
-    console.log('Calling API:', '/api/get_shifts_for_template/' + templateId);
-    console.log('FORCE API CALL - bypassing complex logic');
-    fetch('/api/get_shifts_for_template/' + templateId + '?t=' + Date.now(), {
+    console.log('Calling SIMPLE API:', '/api/get_shifts_simple/' + templateId);
+    console.log('FORCE SIMPLE API CALL - completely new approach');
+    fetch('/api/get_shifts_simple/' + templateId + '?t=' + Date.now(), {
         credentials: 'same-origin',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
