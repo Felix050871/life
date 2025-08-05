@@ -514,8 +514,8 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
                     html += '<small class="d-block">' + missing + '</small>';
                     html += '</div>';
-                    html += '<button class="btn btn-sm p-1 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="border: 2px solid #fff; background: rgba(255,0,0,0.3); min-width: 24px; min-height: 24px;">';
-                    html += '<i class="fas fa-plus" style="font-size: 10px; color: #fff; font-weight: bold; display: block;"></i>';
+                    html += '<button class="btn btn-sm p-1 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="border: 2px solid #fff !important; background: #dc3545 !important; min-width: 26px; min-height: 26px; display: flex; align-items: center; justify-content: center;">';
+                    html += '<i class="fas fa-plus" style="font-size: 12px; color: #fff !important; font-weight: bold;"></i>';
                     html += '</button>';
                     html += '</div>';
                 });

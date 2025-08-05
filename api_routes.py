@@ -24,9 +24,15 @@ def api_get_shifts_for_template(template_id):
             Shift.date <= template.end_date
         ).all()
         
-        # STEP 1: Organizza turni per settimana
+        # STEP 1: Organizza turni per settimana - USA FRESH DATA DAL DATABASE
         weeks_data = {}
-        for shift in shifts:
+        # Ricarica fresh shifts con join esplicito per evitare cache
+        fresh_shifts = db.session.query(Shift).join(User).filter(
+            Shift.date >= template.start_date,
+            Shift.date <= template.end_date
+        ).all()
+        
+        for shift in fresh_shifts:
             week_start = shift.date - timedelta(days=shift.date.weekday())
             week_key = week_start.strftime('%Y-%m-%d')
             
@@ -48,11 +54,16 @@ def api_get_shifts_for_template(template_id):
                     })
             
             day_index = shift.date.weekday()
+            # Usa il nome completo invece del username per migliore visualizzazione
+            user_name = shift.user.get_full_name() if hasattr(shift.user, 'get_full_name') else f"{shift.user.first_name} {shift.user.last_name}"
+            # Usa la stringa role invece dell'oggetto role
+            user_role = shift.user.role if isinstance(shift.user.role, str) else (shift.user.role.name if shift.user.role else 'Senza ruolo')
+            
             shift_data = {
                 'id': shift.id,
-                'user': shift.user.username,
+                'user': user_name,
                 'user_id': shift.user.id,
-                'role': shift.user.role.name if shift.user.role else 'Senza ruolo',
+                'role': user_role,
                 'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
             }
             weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
