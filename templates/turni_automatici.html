@@ -242,7 +242,7 @@ function loadShiftsForTemplate(templateId, templateName) {
     // Richiesta AJAX per caricare i turni con credentials
     console.log('Calling API:', '/api/get_shifts_for_template/' + templateId);
     console.log('FORCE API CALL - bypassing complex logic');
-    fetch('/api/get_shifts_for_template/' + templateId, {
+    fetch('/api/get_shifts_for_template/' + templateId + '?t=' + Date.now(), {
         credentials: 'same-origin',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
@@ -495,7 +495,7 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block text-light">' + shift.time + '</small>';
                     html += '</div>';
                     html += '<button class="btn btn-sm btn-outline-light p-1" onclick="editShift(' + shift.id + ', \'' + shift.role + '\', \'' + shift.time + '\', \'' + day.date + '\', ' + shift.user_id + ', \'' + shift.user + '\')" title="Modifica assegnazione">';
-                    html += '<i class="fas fa-edit" style="font-size: 8px;"></i>';
+                    html += '<i class="fas fa-edit" style="font-size: 6px;"></i>';
                     html += '</button>';
                     html += '</div>';
                 });
@@ -514,8 +514,8 @@ function renderTurniLayout(data, templateName) {
                     html += '<small class="d-block"><i class="fas fa-exclamation-triangle me-1"></i><strong>MANCANTE</strong></small>';
                     html += '<small class="d-block">' + missing + '</small>';
                     html += '</div>';
-                    html += '<button class="btn btn-sm btn-outline-light p-1 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="border: 1px solid white; background: rgba(255,255,255,0.1);">';
-                    html += '<i class="fas fa-plus" style="font-size: 10px; color: white; font-weight: bold;"></i>';
+                    html += '<button class="btn btn-sm p-1 ms-1" onclick="assignMissingShift(\'' + missingRole + '\', \'' + missingTime + '\', \'' + day.date + '\')" title="Assegna utente" style="border: 2px solid #fff; background: rgba(255,0,0,0.3); min-width: 24px; min-height: 24px;">';
+                    html += '<i class="fas fa-plus" style="font-size: 10px; color: #fff; font-weight: bold; display: block;"></i>';
                     html += '</button>';
                     html += '</div>';
                 });
@@ -691,11 +691,14 @@ function updateExistingShift(userId, fullName) {
             // Mostra messaggio di successo
             showToast('Turno aggiornato con successo!', 'success');
             
-            // Ricarica i turni
+            // Ricarica i turni FORZANDO un refresh completo
             var templateId = document.getElementById('template_id').value;
             if (templateId) {
                 var templateName = document.getElementById('template_id').selectedOptions[0].text;
-                loadShiftsForTemplate(templateId, templateName);
+                // Forza reload completo con timestamp per evitare cache
+                setTimeout(() => {
+                    loadShiftsForTemplate(templateId, templateName);
+                }, 500);
             }
         } else {
             throw new Error(data.message || 'Errore nell\'aggiornamento del turno');
@@ -748,11 +751,14 @@ function createNewShift(userId, fullName) {
             // Mostra messaggio di successo
             showToast('Nuovo turno creato con successo!', 'success');
             
-            // Ricarica i turni
+            // Ricarica i turni FORZANDO un refresh completo
             var templateId = document.getElementById('template_id').value;
             if (templateId) {
                 var templateName = document.getElementById('template_id').selectedOptions[0].text;
-                loadShiftsForTemplate(templateId, templateName);
+                // Forza reload completo con timestamp per evitare cache
+                setTimeout(() => {
+                    loadShiftsForTemplate(templateId, templateName);
+                }, 500);
             }
         } else {
             throw new Error(data.message || 'Errore nella creazione del turno');
