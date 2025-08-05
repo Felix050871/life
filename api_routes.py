@@ -39,43 +39,62 @@ def api_get_shifts_for_template(template_id):
             if shift.user:
                 logger.info(f"  USER: {shift.user.first_name} {shift.user.last_name} role={shift.user.role}")
         
-        # STEP 2: Crea struttura settimane PRIMA di processare i turni
-        # Crea settimane per tutto il periodo del template
-        current_date = template.start_date
-        while current_date <= template.end_date:
-            week_start = current_date - timedelta(days=current_date.weekday())
-            week_key = week_start.strftime('%Y-%m-%d')
+        # STEP 2: Crea struttura settimane dal database date range
+        start_date = template.start_date
+        end_date = template.end_date
+        
+        # Trova la settimana che contiene start_date (lunedì-domenica)
+        first_week_start = start_date - timedelta(days=start_date.weekday())
+        
+        # Trova l'ultima settimana che contiene end_date
+        last_week_start = end_date - timedelta(days=end_date.weekday())
+        
+        current_week_start = first_week_start
+        while current_week_start <= last_week_start:
+            week_key = current_week_start.strftime('%Y-%m-%d')
+            weeks_data[week_key] = {
+                'start': current_week_start.strftime('%d/%m/%Y'),
+                'end': (current_week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
+                'days': [],
+                'shift_count': 0,
+                'unique_users': set(),
+                'total_hours': 0
+            }
             
-            if week_key not in weeks_data:
-                weeks_data[week_key] = {
-                    'start': week_start.strftime('%d/%m/%Y'),
-                    'end': (week_start + timedelta(days=6)).strftime('%d/%m/%Y'),
-                    'days': [],
-                    'shift_count': 0,
-                    'unique_users': set(),
-                    'total_hours': 0
-                }
-                # Inizializza i 7 giorni della settimana
-                for i in range(7):
-                    week_date = week_start + timedelta(days=i)
-                    weeks_data[week_key]['days'].append({
-                        'date': week_date.strftime('%d/%m'),
-                        'shifts': [],
-                        'missing_roles': []
-                    })
-            current_date += timedelta(days=7)
+            # Inizializza i 7 giorni della settimana (lunedì=0, domenica=6)
+            for i in range(7):
+                week_date = current_week_start + timedelta(days=i)
+                weeks_data[week_key]['days'].append({
+                    'date': week_date.strftime('%d/%m'),
+                    'shifts': [],
+                    'missing_roles': []
+                })
+                logger.info(f"CREATED day slot: {week_date.strftime('%d/%m')} at week {week_key} index {i}")
+            
+            current_week_start += timedelta(days=7)
         
         # STEP 3: Processa i turni nella struttura già creata
         for shift in fresh_shifts:
             week_start = shift.date - timedelta(days=shift.date.weekday())
             week_key = week_start.strftime('%Y-%m-%d')
             day_index = shift.date.weekday()
-            
-            # DEBUG: Log per capire dove vanno i turni
             shift_date_str = shift.date.strftime('%d/%m')
-            logger.info(f"PROCESSING shift {shift.id} for date {shift_date_str} (weekday {day_index}) in week {week_key}")
             
-            if week_key in weeks_data and day_index < len(weeks_data[week_key]['days']):
+            logger.info(f">>> PROCESSING shift {shift.id} for date {shift_date_str} (weekday {day_index}) in week {week_key}")
+            
+            # TROVA la settimana giusta - cerca in tutte le settimane se necessario
+            target_week = None
+            for week_key_search, week_data in weeks_data.items():
+                for day_idx, day_data in enumerate(week_data['days']):
+                    if day_data['date'] == shift_date_str:
+                        target_week = week_key_search
+                        day_index = day_idx
+                        logger.info(f">>> FOUND target week {target_week} day {day_index} for date {shift_date_str}")
+                        break
+                if target_week:
+                    break
+            
+            if target_week and target_week in weeks_data:
                 # Usa il nome completo invece del username
                 user_name = f"{shift.user.first_name} {shift.user.last_name}" if shift.user else "Utente sconosciuto"
                 user_role = shift.user.role if shift.user and isinstance(shift.user.role, str) else (shift.user.role.name if shift.user and shift.user.role else 'Senza ruolo')
@@ -87,13 +106,13 @@ def api_get_shifts_for_template(template_id):
                     'role': user_role,
                     'time': f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
                 }
-                weeks_data[week_key]['days'][day_index]['shifts'].append(shift_data)
-                weeks_data[week_key]['shift_count'] += 1
-                weeks_data[week_key]['unique_users'].add(shift.user.username if shift.user else "unknown")
+                weeks_data[target_week]['days'][day_index]['shifts'].append(shift_data)
+                weeks_data[target_week]['shift_count'] += 1
+                weeks_data[target_week]['unique_users'].add(shift.user.username if shift.user else "unknown")
                 
-                logger.info(f"ADDED shift to week {week_key} day {day_index}: {shift_data}")
+                logger.info(f">>> SUCCESS: ADDED shift {shift.id} to week {target_week} day {day_index}: {shift_data}")
             else:
-                logger.error(f"Could not find week {week_key} or invalid day index {day_index}")
+                logger.error(f">>> ERROR: Could not place shift {shift.id} for date {shift_date_str}")
         
         # STEP 4: Converti set in count
         for week_data in weeks_data.values():
