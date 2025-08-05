@@ -705,6 +705,7 @@
 
         // Initialize global loading manager
         const loadingManager = new LoadingManager();
+        window.loadingManager = loadingManager; // Make globally accessible
 
         // Auto-attach to forms and buttons that cause navigation/submission
         document.addEventListener('DOMContentLoaded', function() {

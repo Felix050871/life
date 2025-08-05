@@ -628,11 +628,34 @@
 
 {% block scripts %}
 <script>
-// Hide any loading overlay immediately when page loads
-document.addEventListener('DOMContentLoaded', function() {
+// Emergency overlay removal - multiple fallbacks
+function forceHideOverlay() {
+    const overlay = document.getElementById('globalLoadingOverlay');
+    if (overlay) {
+        overlay.classList.add('d-none');
+        overlay.style.display = 'none';
+        // Also reset loading manager state
+        if (window.loadingManager) {
+            window.loadingManager.isShowing = false;
+            if (window.loadingManager.timeoutId) {
+                clearTimeout(window.loadingManager.timeoutId);
+                window.loadingManager.timeoutId = null;
+            }
+        }
+    }
+}
+
+// Multiple triggers to hide overlay
+document.addEventListener('DOMContentLoaded', forceHideOverlay);
+window.addEventListener('load', forceHideOverlay);
+setTimeout(forceHideOverlay, 100);
+setTimeout(forceHideOverlay, 500);
+
+// Click anywhere to dismiss overlay (emergency)
+document.addEventListener('click', function(e) {
     const overlay = document.getElementById('globalLoadingOverlay');
     if (overlay && !overlay.classList.contains('d-none')) {
-        overlay.classList.add('d-none');
+        forceHideOverlay();
     }
 });
 </script>
