@@ -95,7 +95,16 @@ def api_get_shifts_for_template(template_id):
                     if day_data['date'] == shift_date_str:
                         # TROVATO! Aggiungi il turno qui
                         user_name = f"{shift.user.first_name} {shift.user.last_name}" if shift.user else "Utente sconosciuto"
-                        user_role = shift.user.role if shift.user and isinstance(shift.user.role, str) else (shift.user.role.name if shift.user and shift.user.role else 'Senza ruolo')
+                        # Gestione sicura del ruolo utente
+                        if shift.user:
+                            if hasattr(shift.user.role, 'name'):
+                                user_role = shift.user.role.name
+                            elif isinstance(shift.user.role, str):
+                                user_role = shift.user.role
+                            else:
+                                user_role = 'Senza ruolo'
+                        else:
+                            user_role = 'Senza ruolo'
                         
                         shift_data = {
                             'id': shift.id,
@@ -367,7 +376,9 @@ def api_create_shift():
             user_id=user_id,
             date=shift_date_obj,
             start_time=start_time_obj,
-            end_time=end_time_obj
+            end_time=end_time_obj,
+            shift_type='presidio',
+            created_by=current_user.id
         )
         
         db.session.add(new_shift)
