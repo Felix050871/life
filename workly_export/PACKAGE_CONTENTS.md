@@ -27,8 +27,12 @@
 - `nginx.conf` - Configurazione web server
 - `init.sql` - Script inizializzazione database PostgreSQL
 
-### 🚀 Script di Avvio
+### 🚀 Script di Avvio e Setup
 - `run_local.py` - Script avvio sviluppo locale (CONSIGLIATO)
+- `create_database.py` - Script creazione database con dati esempio
+- `setup_database.sh` - Script automatico setup completo (Linux/Mac)
+- `setup_postgres.sh` - Script setup PostgreSQL produzione
+- `create_postgres_db.sql` - Script SQL per creazione database PostgreSQL
 
 ### 📚 Documentazione
 - `README.md` - Panoramica del progetto

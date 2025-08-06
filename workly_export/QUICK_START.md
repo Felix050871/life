@@ -25,7 +25,19 @@ DATABASE_URL=sqlite:///workly.db
 # DATABASE_URL=postgresql://user:pass@host:port/database
 ```
 
-### 3. Installazione Dipendenze
+### 3. Setup Database e Dipendenze
+
+#### Opzione A: Setup Automatico (CONSIGLIATO)
+```bash
+# Script tutto-in-uno (crea DB + installa dipendenze + dati esempio)
+chmod +x setup_database.sh
+./setup_database.sh
+
+# Oppure direttamente con Python:
+python create_database.py
+```
+
+#### Opzione B: Setup Manuale
 ```bash
 # Crea ambiente virtuale
 python -m venv venv
@@ -34,6 +46,16 @@ source venv/bin/activate  # Linux/Mac
 
 # Installa dipendenze
 pip install -r requirements.txt
+
+# Crea database con dati esempio
+python create_database.py
+```
+
+#### Opzione C: PostgreSQL (Produzione)
+```bash
+# Setup PostgreSQL completo
+chmod +x setup_postgres.sh
+./setup_postgres.sh
 ```
 
 ### 4. Avvio Applicazione
