@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Turno{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Modifica Turno
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Informazioni turno corrente -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-secondary border">
+                                <div class="card-body">
+                                    <h6 class="card-title text-white">Informazioni Turno</h6>
+                                    <p class="mb-1 text-white"><strong>Data:</strong> {{ shift.date.strftime('%d/%m/%Y') }}</p>
+                                    <p class="mb-1 text-white"><strong>Orario:</strong> {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}</p>
+                                    <p class="mb-1 text-white"><strong>Tipo:</strong> <span class="badge bg-info">{{ shift.shift_type }}</span></p>
+                                    <p class="mb-0 text-white"><strong>Durata:</strong> {{ "%.1f"|format(shift.get_duration_hours()) }} ore</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-secondary border">
+                                <div class="card-body">
+                                    <h6 class="card-title text-white">Utente Attuale</h6>
+                                    <p class="mb-1 text-white"><strong>Nome:</strong> {{ shift.user.get_full_name() }}</p>
+                                    <p class="mb-1 text-white"><strong>Ruolo:</strong> {{ shift.user.role }}</p>
+                                    <p class="mb-0 text-white"><strong>Email:</strong> {{ shift.user.email }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form di modifica -->
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="user_id" class="form-label">
+                                        <i class="fas fa-user me-1"></i>
+                                        Utente Assegnato
+                                    </label>
+                                    {{ form.user_id(class="form-select") }}
+                                    <div class="form-text">
+                                        Seleziona l'utente per questo turno.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="shift_type" class="form-label">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Tipo Turno
+                                    </label>
+                                    {{ form.shift_type(class="form-select") }}
+                                    <div class="form-text">
+                                        Il tipo di turno determina anche il colore nel calendario.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="start_time" class="form-label">
+                                        <i class="fas fa-play me-1"></i>
+                                        Ora Inizio
+                                    </label>
+                                    {{ form.start_time(class="form-control") }}
+                                    <div class="form-text">
+                                        Formato: HH:MM (es. 08:00)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="end_time" class="form-label">
+                                        <i class="fas fa-stop me-1"></i>
+                                        Ora Fine
+                                    </label>
+                                    {{ form.end_time(class="form-control") }}
+                                    <div class="form-text">
+                                        Formato: HH:MM (es. 16:00)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calcolo durata in tempo reale -->
+                        <div class="mb-3">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Durata calcolata:</strong> <span id="calculatedDuration">{{ "%.1f"|format(shift.get_duration_hours()) }} ore</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('team_shifts') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Annulla
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                Salva Modifiche
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Avviso importante -->
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Nota:</strong> Puoi modificare l'utente assegnato, gli orari e il tipo di turno. 
+                La data rimane fissa. Il sistema controllerà automaticamente eventuali sovrapposizioni 
+                di turni per il nuovo utente negli orari specificati.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Calcola durata in tempo reale quando cambiano gli orari
+function calculateDuration() {
+    const startTime = document.getElementById('start_time').value;
+    const endTime = document.getElementById('end_time').value;
+    const durationElement = document.getElementById('calculatedDuration');
+    
+    if (!durationElement) return; // Evita errori se l'elemento non esiste
+    
+    if (startTime && endTime) {
+        const start = new Date(`2000-01-01T${startTime}:00`);
+        const end = new Date(`2000-01-01T${endTime}:00`);
+        
+        if (end > start) {
+            const diffMs = end - start;
+            const diffHours = diffMs / (1000 * 60 * 60);
+            durationElement.textContent = `${diffHours.toFixed(1)} ore`;
+        } else {
+            durationElement.textContent = 'Orario non valido';
+        }
+    } else {
+        durationElement.textContent = '';
+    }
+}
+
+// Aggiungi event listeners per aggiornamento dinamico
+document.addEventListener('DOMContentLoaded', function() {
+    const startTimeInput = document.getElementById('start_time');
+    const endTimeInput = document.getElementById('end_time');
+    
+    if (startTimeInput && endTimeInput) {
+        startTimeInput.addEventListener('change', calculateDuration);
+        endTimeInput.addEventListener('change', calculateDuration);
+        
+        // Calcola subito la durata iniziale
+        calculateDuration();
+    }
+});
+</script>
+{% endblock %}

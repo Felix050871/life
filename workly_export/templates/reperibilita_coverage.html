@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Coperture Reperibilità{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-phone-volume"></i> Coperture Reperibilità</h2>
+        <a href="{{ url_for('create_reperibilita_coverage') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nuova Copertura
+        </a>
+    </div>
+
+    {% if reperibilita_groups %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Periodo Validità</th>
+                        <th>Coperture</th>
+                        <th>Sedi</th>
+                        <th>Creato da</th>
+                        <th>Data Creazione</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for period_key, reperibilita in reperibilita_groups.items() %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-warning text-dark">
+                                    {{ reperibilita.start_date.strftime('%d/%m/%Y') }} - {{ reperibilita.end_date.strftime('%d/%m/%Y') }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <strong>{{ reperibilita.coverages|length }} coperture</strong><br>
+                                    {% set days = [] %}
+                                    {% for coverage in reperibilita.coverages %}
+                                        {% set day_name = coverage.get_day_name() %}
+                                        {% if day_name not in days %}
+                                            {% set _ = days.append(day_name) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    Giorni: {{ days|join(', ') }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    {% set all_sedi = [] %}
+                                    {% for coverage in reperibilita.coverages %}
+                                        {% set sede_names = coverage.get_sedi_names() %}
+                                        {% if sede_names and sede_names != 'Nessuna sede' %}
+                                            {% for sede_name in sede_names.split(', ') %}
+                                                {% if sede_name not in all_sedi %}
+                                                    {% set _ = all_sedi.append(sede_name) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if all_sedi %}
+                                        <i class="fas fa-building text-info me-1"></i>{{ all_sedi|join(', ') }}
+                                    {% else %}
+                                        <span class="text-muted">Nessuna sede</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>{{ reperibilita.creator.get_full_name() }}</td>
+                            <td>{{ reperibilita.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('view_reperibilita_coverage', period_key=period_key) }}" 
+                                       class="btn btn-sm btn-outline-info" title="Visualizza dettagli">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('reperibilita_replica', period_key=period_key) }}" 
+                                       class="btn btn-sm btn-outline-success" title="Duplica">
+                                        <i class="fas fa-copy"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            title="Elimina" onclick="deleteReperibilita('{{ period_key }}', '{{ reperibilita.start_date.strftime('%d/%m/%Y') }} - {{ reperibilita.end_date.strftime('%d/%m/%Y') }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle"></i>
+            Nessuna copertura reperibilità configurata. 
+            <a href="{{ url_for('create_reperibilita_coverage') }}" class="alert-link">Crea la prima copertura</a>.
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function deleteReperibilita(periodKey, periodName) {
+    if (confirm(`Vuoi eliminare tutte le coperture reperibilità del periodo "${periodName}"?\n\nATTENZIONE: Operazione irreversibile!\n\n• Verranno eliminate TUTTE le coperture del periodo\n• Tutti i turni di reperibilità associati andranno persi\n• Gli interventi collegati perderanno il riferimento\n\nL'operazione NON può essere annullata.`)) {
+        window.location.href = `/reperibilita_coverage/delete_period/${periodKey}`;
+    }
+}
+</script>
+{% endblock %}

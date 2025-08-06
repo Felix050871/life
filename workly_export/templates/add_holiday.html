@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Aggiungi Festività{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-plus-circle"></i> Aggiungi Nuova Festività</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.name.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.day.label(class="form-label") }}
+                                {{ form.day(class="form-select") }}
+                                {% if form.day.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.day.errors %}
+                                            <small>{{ error }}</small><br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.month.label(class="form-label") }}
+                                {{ form.month(class="form-select") }}
+                                {% if form.month.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.month.errors %}
+                                            <small>{{ error }}</small><br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.sede_id.label(class="form-label") }}
+                            {{ form.sede_id(class="form-select") }}
+                            {% if form.sede_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.sede_id.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Seleziona "Nazionale" per applicare la festività a tutte le sedi o una sede specifica
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", placeholder="Descrizione opzionale della festività") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            {{ form.active(class="form-check-input") }}
+                            {{ form.active.label(class="form-check-label") }}
+                            <small class="form-text text-muted d-block">
+                                Le festività disattivate non vengono considerate nella generazione turni
+                            </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('holidays') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Annulla
+                            </a>
+                            {{ form.submit(class="btn btn-success") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Suggerimenti festività italiane -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-lightbulb"></i> Festività Italiane Comuni</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled small">
+                                <li><strong>1 Gennaio</strong> - Capodanno</li>
+                                <li><strong>6 Gennaio</strong> - Epifania</li>
+                                <li><strong>25 Aprile</strong> - Festa della Liberazione</li>
+                                <li><strong>1 Maggio</strong> - Festa del Lavoro</li>
+                                <li><strong>2 Giugno</strong> - Festa della Repubblica</li>
+                                <li><strong>15 Agosto</strong> - Ferragosto</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled small">
+                                <li><strong>1 Novembre</strong> - Ognissanti</li>
+                                <li><strong>8 Dicembre</strong> - Immacolata Concezione</li>
+                                <li><strong>25 Dicembre</strong> - Natale</li>
+                                <li><strong>26 Dicembre</strong> - Santo Stefano</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Nota: Festività mobili come Pasqua e Pasquetta devono essere aggiunte manualmente per ogni anno.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

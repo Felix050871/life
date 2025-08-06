@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Orari di Lavoro{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1><i class="fas fa-clock me-2"></i>Gestione Orari di Lavoro</h1>
+            <p class="text-muted">Configura gli orari di entrata e uscita per ogni sede</p>
+            
+            <!-- Form per aggiungere nuovo orario - Solo per gestione, non per visualizzazione -->
+            {% if current_user.can_manage_schedules() and current_user.can_view_schedules() %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus me-2"></i>Aggiungi Nuovo Orario</h5>
+                </div>
+                <div class="card-body">
+                    {% if form.sede.choices|length > 0 %}
+                    <form method="POST" action="{{ url_for('create_work_schedule') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.sede.label(class="form-label") }}
+                                {{ form.sede(class="form-select") }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control", placeholder="es. Orario Standard") }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.description.label(class="form-label") }}
+                                {{ form.description(class="form-control", placeholder="Descrizione opzionale") }}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Range Entrata</label>
+                                <div class="input-group">
+                                    {{ form.start_time_min(class="form-control", placeholder="Min") }}
+                                    <span class="input-group-text">-</span>
+                                    {{ form.start_time_max(class="form-control", placeholder="Max") }}
+                                </div>
+                                <small class="text-muted">Orario minimo e massimo di entrata</small>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Range Uscita</label>
+                                <div class="input-group">
+                                    {{ form.end_time_min(class="form-control", placeholder="Min") }}
+                                    <span class="input-group-text">-</span>
+                                    {{ form.end_time_max(class="form-control", placeholder="Max") }}
+                                </div>
+                                <small class="text-muted">Orario minimo e massimo di uscita</small>
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.days_preset.label(class="form-label") }}
+                                {{ form.days_preset(class="form-select", id="days_preset") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.days_of_week.label(class="form-label") }}
+                                {{ form.days_of_week(class="form-select", multiple=true, id="days_of_week", style="height: 100px;") }}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.active(class="form-check-input") }}
+                                    {{ form.active.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Nessuna sede attiva disponibile. <a href="{{ url_for('manage_sedi') }}">Crea prima una sede</a> per aggiungere orari di lavoro.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Lista orari esistenti -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list me-2"></i>Orari Esistenti</h5>
+                </div>
+                <div class="card-body">
+                    {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Sede</th>
+                                    <th>Nome Orario</th>
+                                    <th>Giorni</th>
+                                    <th>Entrata</th>
+                                    <th>Uscita</th>
+                                    <th>Durata</th>
+                                    <th>Descrizione</th>
+                                    <th>Stato</th>
+                                    <th>Creato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in schedules %}
+                                <tr class="{% if not schedule.active %}table-secondary{% endif %}">
+                                    <td>
+                                        <span class="badge bg-info">{{ schedule.sede_obj.name }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ schedule.name }}</strong>
+                                        {% if not schedule.active %}
+                                        <span class="badge bg-secondary ms-2">Disattivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-info">{{ schedule.get_days_display() }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ schedule.get_start_range_display() }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ schedule.get_end_range_display() }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ "%.1f"|format(schedule.get_duration_hours()) }}h</span>
+                                    </td>
+                                    <td>{{ schedule.description or "-" }}</td>
+                                    <td>
+                                        {% if schedule.active %}
+                                        <span class="badge bg-success">Attivo</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Disattivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ schedule.created_at.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {% if current_user.can_manage_schedules() and current_user.can_view_schedules() %}
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('edit_work_schedule', schedule_id=schedule.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="Modifica">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('toggle_work_schedule', schedule_id=schedule.id) }}" 
+                                               class="btn btn-sm btn-outline-{% if schedule.active %}warning{% else %}success{% endif %}" 
+                                               title="{% if schedule.active %}Disattiva{% else %}Attiva{% endif %}">
+                                                <i class="fas fa-{% if schedule.active %}pause{% else %}play{% endif %}"></i>
+                                            </a>
+                                            <a href="{{ url_for('delete_work_schedule', schedule_id=schedule.id) }}" 
+                                               class="btn btn-sm btn-outline-danger" 
+                                               title="Elimina definitivamente"
+                                               onclick="return confirm('Vuoi eliminare definitivamente questo orario di lavoro?\n\nATTENZIONE:\n• Gli utenti assegnati a questo orario perderanno la configurazione\n• Non sarà più possibile utilizzarlo per nuovi utenti\n\nL\'operazione NON può essere annullata.')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                        {% elif current_user.can_view_schedules() %}
+                                        <span class="badge bg-info">Solo visualizzazione</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Accesso negato</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nessun orario di lavoro configurato. Aggiungi il primo orario per iniziare.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const daysPreset = document.getElementById('days_preset');
+    const daysOfWeek = document.getElementById('days_of_week');
+    
+    if (daysPreset && daysOfWeek) {
+        // Preset configurations
+        const presets = {
+            'workdays': [0, 1, 2, 3, 4],
+            'weekend': [5, 6],
+            'all_week': [0, 1, 2, 3, 4, 5, 6],
+            'custom': []
+        };
+        
+        // Update days selection when preset changes
+        daysPreset.addEventListener('change', function() {
+            const selectedPreset = this.value;
+            const presetDays = presets[selectedPreset] || [];
+            
+            // Clear all selections
+            for (let option of daysOfWeek.options) {
+                option.selected = false;
+            }
+            
+            // Select preset days (only if not custom)
+            if (selectedPreset !== 'custom') {
+                for (let day of presetDays) {
+                    const option = daysOfWeek.querySelector(`option[value="${day}"]`);
+                    if (option) {
+                        option.selected = true;
+                    }
+                }
+            }
+        });
+        
+        // When manual selection changes, check if it matches a preset
+        daysOfWeek.addEventListener('change', function() {
+            const selectedDays = Array.from(this.selectedOptions).map(opt => parseInt(opt.value)).sort((a, b) => a - b);
+            
+            // Check if selection matches any preset
+            let matchingPreset = 'custom';
+            for (let [preset, days] of Object.entries(presets)) {
+                if (preset !== 'custom' && JSON.stringify(days) === JSON.stringify(selectedDays)) {
+                    matchingPreset = preset;
+                    break;
+                }
+            }
+            
+            daysPreset.value = matchingPreset;
+        });
+        
+        // Initialize preset based on current selection
+        const initialDays = Array.from(daysOfWeek.selectedOptions).map(opt => parseInt(opt.value)).sort((a, b) => a - b);
+        for (let [preset, days] of Object.entries(presets)) {
+            if (preset !== 'custom' && JSON.stringify(days) === JSON.stringify(initialDays)) {
+                daysPreset.value = preset;
+                break;
+            }
+        }
+    }
+    
+    // Helper functions for time range management
+    const startTimeMin = document.querySelector('input[name="start_time_min"]');
+    const startTimeMax = document.querySelector('input[name="start_time_max"]');
+    const endTimeMin = document.querySelector('input[name="end_time_min"]');
+    const endTimeMax = document.querySelector('input[name="end_time_max"]');
+    
+    // Auto-fill suggestions for common schedules
+    if (startTimeMin && startTimeMax && endTimeMin && endTimeMax) {
+        // Set default values if empty
+        if (!startTimeMin.value) startTimeMin.value = '08:00';
+        if (!startTimeMax.value) startTimeMax.value = '09:00';
+        if (!endTimeMin.value) endTimeMin.value = '17:00';
+        if (!endTimeMax.value) endTimeMax.value = '18:00';
+        
+        // Sync min/max when one changes
+        startTimeMin.addEventListener('change', function() {
+            if (startTimeMax.value && startTimeMax.value < this.value) {
+                startTimeMax.value = this.value;
+            }
+        });
+        
+        endTimeMin.addEventListener('change', function() {
+            if (endTimeMax.value && endTimeMax.value < this.value) {
+                endTimeMax.value = this.value;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

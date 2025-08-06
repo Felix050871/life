@@ -1,0 +1,844 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Utenti - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-users me-2"></i>Gestione Utenti{% if sede_name %} - {{ sede_name }}{% endif %}</h2>
+        <p class="text-muted">
+            {% if sede_name %}
+            Utenti della sede {{ sede_name }}{% if not is_multi_sede %} (filtro automatico){% endif %}
+            {% else %}
+            Amministra gli utenti e i loro ruoli nel sistema
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<!-- Create User Form - Solo per gestione, non per visualizzazione -->
+{% if current_user.can_manage_users() and current_user.can_view_users() %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-plus me-2"></i>Crea Nuovo Utente</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('new_user') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {{ form.username(class="form-control") }}
+                            {% if form.username.errors %}
+                            <div class="text-danger">
+                                {% for error in form.username.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control") }}
+                            {% if form.email.errors %}
+                            <div class="text-danger">
+                                {% for error in form.email.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.first_name.label(class="form-label") }}
+                            {{ form.first_name(class="form-control") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.last_name.label(class="form-label") }}
+                            {{ form.last_name(class="form-control") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control") }}
+                            <small class="text-muted">Minimo 6 caratteri</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.role.label(class="form-label") }}
+                            {{ form.role(class="form-select", id="roleSelectNew") }}
+                            {% if form.role.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.role.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.part_time_percentage.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.part_time_percentage(class="form-control") }}
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="text-muted">Es: 100, 75,5, 50 (usa virgola per decimali)</small>
+                            {% if form.part_time_percentage.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.part_time_percentage.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.sede.label(class="form-label") }}
+                            {{ form.sede(class="form-select", id="sedeSelectNew") }}
+                            <small class="text-muted">Sede di assegnazione specifica</small>
+                            {% if form.sede.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.sede.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-check mt-2">
+                                {{ form.all_sedi(class="form-check-input", id="allSediCheckNew") }}
+                                {{ form.all_sedi.label(class="form-check-label") }}
+                            </div>
+                            <small class="text-muted">Se abilitato, può accedere a tutte le sedi</small>
+                        </div>
+                        <div class="col-md-6 mb-3" id="workScheduleGroupNew" style="display: none;">
+                            {{ form.work_schedule.label(class="form-label") }}
+                            {{ form.work_schedule(class="form-select", id="workScheduleSelectNew") }}
+                            <small class="text-muted">Orario specifico per questa sede</small>
+                            {% if form.work_schedule.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.work_schedule.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.aci_vehicle_tipo.label(class="form-label") }}
+                            {{ form.aci_vehicle_tipo(class="form-select", id="tipoVeicoloSelectNew") }}
+                            <small class="text-muted">Tipo di veicolo</small>
+                            {% if form.aci_vehicle_tipo.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.aci_vehicle_tipo.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.aci_vehicle_marca.label(class="form-label") }}
+                            {{ form.aci_vehicle_marca(class="form-select", id="marcaVeicoloSelectNew", disabled=true) }}
+                            <small class="text-muted">Marca del veicolo</small>
+                            {% if form.aci_vehicle_marca.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.aci_vehicle_marca.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.aci_vehicle.label(class="form-label") }}
+                            {{ form.aci_vehicle(class="form-select", id="modelloVeicoloSelectNew", disabled=true) }}
+                            <small class="text-muted">Modello e costo/km</small>
+                            {% if form.aci_vehicle.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.aci_vehicle.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mb-3">
+                                {{ form.active(class="form-check-input") }}
+                                {{ form.active.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3 text-end">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Users List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>Utenti Registrati</h5>
+                <div>
+                    <span class="badge bg-success">{{ users|selectattr('active', 'equalto', True)|list|length }} Attivi</span>
+                    <span class="badge bg-secondary">{{ users|selectattr('active', 'equalto', False)|list|length }} Inattivi</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filtri e Ricerca -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="searchUsers" class="form-control" placeholder="Cerca per nome, username o email...">
+                        </div>
+                        <small class="text-muted mt-1">
+                            <span id="filterCount">{{ users|length }}</span> utenti visualizzati
+                        </small>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterRole" class="form-select">
+                            <option value="">Tutti i ruoli</option>
+                            <option value="Amministratore">Amministratore</option>
+                            <option value="Responsabile">Responsabile</option>
+                            <option value="Supervisore">Supervisore</option>
+                            <option value="Operatore">Operatore</option>
+                            <option value="Ospite">Ospite</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterStatus" class="form-select">
+                            <option value="">Tutti gli stati</option>
+                            <option value="active">Solo attivi</option>
+                            <option value="inactive">Solo inattivi</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterSede" class="form-select">
+                            <option value="">Tutte le sedi</option>
+                            <option value="all_sedi">Accesso totale</option>
+                            {% if users %}
+                                {% set sede_names = [] %}
+                                {% for user in users %}
+                                    {% if user.sede_obj and user.sede_obj.name not in sede_names %}
+                                        {% set _ = sede_names.append(user.sede_obj.name) %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% for sede_name in sede_names|sort %}
+                                    <option value="{{ sede_name }}">{{ sede_name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-times me-1"></i>Cancella
+                        </button>
+                    </div>
+                </div>
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-striped" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-column="0">
+                                    Utente <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="1">
+                                    Contatto <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="2">
+                                    Ruolo <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="3">
+                                    Sedi <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="4">
+                                    Orario <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th>Veicolo ACI</th>
+                                <th class="sortable" data-column="6">
+                                    % Lavoro <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="7">
+                                    Stato <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th class="sortable" data-column="8">
+                                    Registrato <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr class="{% if not user.active %}table-secondary{% endif %}">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            {% if user.active %}
+                                            <i class="fas fa-user-circle fa-2x text-success"></i>
+                                            {% else %}
+                                            <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <strong>{{ user.get_full_name() }}</strong><br>
+                                            <small class="text-muted">@{{ user.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <i class="fas fa-envelope me-1"></i>{{ user.email }}
+                                </td>
+                                <td>
+                                    {% if user.role == 'Amministratore' %}
+                                    <span class="badge bg-danger">{{ user.role }}</span>
+                                    {% elif user.role == 'Responsabile' %}
+                                    <span class="badge bg-warning">{{ user.role }}</span>
+                                    {% elif user.role == 'Supervisore' %}
+                                    <span class="badge bg-info">{{ user.role }}</span>
+                                    {% elif user.role == 'Operatore' %}
+                                    <span class="badge bg-primary">{{ user.role }}</span>
+                                    {% elif user.role == 'Ospite' %}
+                                    <span class="badge bg-secondary">{{ user.role }}</span>
+                                    {% else %}
+                                    <span class="badge bg-dark">{{ user.role }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.all_sedi %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-globe me-1"></i>Tutte le sedi
+                                        </span>
+                                    {% elif user.sede_obj %}
+                                        <span class="badge bg-secondary">{{ user.sede_obj.name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Nessuna sede</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.work_schedule %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-clock me-1"></i>{{ user.work_schedule.name }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">Nessun orario</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.aci_vehicle %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-car me-1"></i>{{ user.aci_vehicle.marca }} {{ user.aci_vehicle.modello }}
+                                        </span>
+                                        <br><small class="text-muted">€{{ "%.4f"|format(user.aci_vehicle.costo_km) }}/km</small>
+                                    {% else %}
+                                        <span class="text-muted">Nessun veicolo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ user.part_time_percentage }}%</span>
+                                </td>
+                                <td>
+                                    {% if user.active %}
+                                    <span class="badge bg-success">Attivo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inattivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    {% if current_user.can_manage_users() and current_user.can_view_users() %}
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('edit_user', user_id=user.id) }}" 
+                                           class="btn btn-outline-primary"
+                                           title="Modifica utente">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if user.role == 'Amministratore' %}
+                                        <span class="btn btn-outline-secondary disabled" 
+                                              title="L'amministratore non può essere disattivato">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </span>
+                                        <small class="text-muted ms-2">Protetto</small>
+                                        {% elif user.id != current_user.id %}
+                                        <a href="{{ url_for('toggle_user', user_id=user.id) }}" 
+                                           class="btn {% if user.active %}btn-outline-danger{% else %}btn-outline-success{% endif %} confirm-link"
+                                           data-message="{% if user.active %}Disattivare{% else %}Attivare{% endif %} questo utente?"
+                                           title="{% if user.active %}Disattiva{% else %}Attiva{% endif %} utente">
+                                            {% if user.active %}
+                                            <i class="fas fa-user-slash"></i>
+                                            {% else %}
+                                            <i class="fas fa-user-check"></i>
+                                            {% endif %}
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                    {% elif current_user.can_view_users() %}
+                                    <span class="badge bg-info">Solo visualizzazione</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Solo lettura</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun utente trovato</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Statistics -->
+{% if users %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Statistiche Utenti</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    {% if team_stats and team_stats.role_stats %}
+                        {% for role_name, count in team_stats.role_stats.items() %}
+                        <div class="col-md-2 mb-3">
+                            {% if role_name == 'Amministratore' %}
+                            <h4 class="text-danger">{{ count }}</h4>
+                            {% elif role_name == 'Responsabile' %}
+                            <h4 class="text-warning">{{ count }}</h4>
+                            {% elif role_name == 'Supervisore' %}
+                            <h4 class="text-info">{{ count }}</h4>
+                            {% elif role_name == 'Operatore' %}
+                            <h4 class="text-primary">{{ count }}</h4>
+                            {% elif role_name == 'Ospite' %}
+                            <h4 class="text-secondary">{{ count }}</h4>
+                            {% else %}
+                            <h4 class="text-dark">{{ count }}</h4>
+                            {% endif %}
+                            <small>{{ role_name }}{% if count != 1 %}i{% endif %}</small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Fallback per compatibilità se team_stats non è disponibile -->
+                        <div class="col-md-2">
+                            <h4 class="text-danger">{{ users|selectattr('role', 'equalto', 'Amministratore')|list|length }}</h4>
+                            <small>Amministratori</small>
+                        </div>
+                        <div class="col-md-2">
+                            <h4 class="text-warning">{{ users|selectattr('role', 'equalto', 'Responsabile')|list|length }}</h4>
+                            <small>Responsabili</small>
+                        </div>
+                        <div class="col-md-2">
+                            <h4 class="text-info">{{ users|selectattr('role', 'equalto', 'Supervisore')|list|length }}</h4>
+                            <small>Supervisori</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-primary">{{ users|selectattr('role', 'equalto', 'Operatore')|list|length }}</h4>
+                            <small>Operatori</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-secondary">{{ users|selectattr('role', 'equalto', 'Ospite')|list|length }}</h4>
+                            <small>Ospiti</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// User Table Filtering and Sorting
+document.addEventListener('DOMContentLoaded', function() {
+    let sortDirection = {};
+
+    // Initialize filters
+    initializeFilters();
+    initializeSorting();
+    
+    // Initialize user form handlers if form exists
+    initializeUserFormHandlers();
+
+    function initializeFilters() {
+        const searchInput = document.getElementById('searchUsers');
+        const roleFilter = document.getElementById('filterRole');
+        const statusFilter = document.getElementById('filterStatus');
+        const sedeFilter = document.getElementById('filterSede');
+        const clearButton = document.getElementById('clearFilters');
+
+        if (!searchInput) return; // Exit if elements not found
+
+        // Add event listeners
+        searchInput.addEventListener('input', filterTable);
+        roleFilter.addEventListener('change', filterTable);
+        statusFilter.addEventListener('change', filterTable);
+        sedeFilter.addEventListener('change', filterTable);
+        clearButton.addEventListener('click', clearAllFilters);
+    }
+
+    function initializeSorting() {
+        const sortableHeaders = document.querySelectorAll('.sortable');
+        sortableHeaders.forEach(header => {
+            header.style.cursor = 'pointer';
+            header.addEventListener('click', function() {
+                const column = parseInt(this.getAttribute('data-column'));
+                sortTable(column);
+            });
+        });
+    }
+
+    function filterTable() {
+        const searchTerm = document.getElementById('searchUsers').value.toLowerCase();
+        const roleFilter = document.getElementById('filterRole').value;
+        const statusFilter = document.getElementById('filterStatus').value;
+        const sedeFilter = document.getElementById('filterSede').value;
+        
+        const table = document.getElementById('usersTable');
+        const rows = table.querySelectorAll('tbody tr');
+        
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length === 0) return;
+            
+            // Get text content for filtering
+            const userName = cells[0].textContent.toLowerCase();
+            const userEmail = cells[1].textContent.toLowerCase();
+            const userRole = cells[2].textContent.trim();
+            const userSede = cells[3].textContent.trim();
+            const userStatus = cells[7].textContent.trim();
+            
+            // Search filter
+            const matchesSearch = searchTerm === '' || 
+                userName.includes(searchTerm) || 
+                userEmail.includes(searchTerm);
+            
+            // Role filter
+            const matchesRole = roleFilter === '' || userRole.includes(roleFilter);
+            
+            // Status filter
+            let matchesStatus = true;
+            if (statusFilter === 'active') {
+                matchesStatus = userStatus.includes('Attivo');
+            } else if (statusFilter === 'inactive') {
+                matchesStatus = userStatus.includes('Inattivo');
+            }
+            
+            // Sede filter
+            let matchesSede = true;
+            if (sedeFilter === 'all_sedi') {
+                matchesSede = userSede.includes('Tutte le sedi');
+            } else if (sedeFilter !== '') {
+                matchesSede = userSede.includes(sedeFilter);
+            }
+            
+            // Show/hide row
+            if (matchesSearch && matchesRole && matchesStatus && matchesSede) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update visible count
+        updateFilterCount(visibleCount);
+    }
+
+    function sortTable(columnIndex) {
+        const table = document.getElementById('usersTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        // Determine sort direction
+        if (!sortDirection[columnIndex]) {
+            sortDirection[columnIndex] = 'asc';
+        } else {
+            sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+        }
+        
+        // Update header icons
+        updateSortIcons(columnIndex);
+        
+        // Sort rows
+        rows.sort((a, b) => {
+            const aCell = a.cells[columnIndex];
+            const bCell = b.cells[columnIndex];
+            
+            if (!aCell || !bCell) return 0;
+            
+            let aValue = aCell.textContent.trim();
+            let bValue = bCell.textContent.trim();
+            
+            // Handle different data types
+            if (columnIndex === 6) { // Percentage column
+                aValue = parseFloat(aValue.replace('%', '')) || 0;
+                bValue = parseFloat(bValue.replace('%', '')) || 0;
+            } else if (columnIndex === 8) { // Date column
+                aValue = aValue === 'N/A' ? new Date(0) : new Date(aValue.split('/').reverse().join('-'));
+                bValue = bValue === 'N/A' ? new Date(0) : new Date(bValue.split('/').reverse().join('-'));
+            }
+            
+            // Compare values
+            if (typeof aValue === 'number' && typeof bValue === 'number') {
+                return sortDirection[columnIndex] === 'asc' ? aValue - bValue : bValue - aValue;
+            } else if (aValue instanceof Date && bValue instanceof Date) {
+                return sortDirection[columnIndex] === 'asc' ? aValue - bValue : bValue - aValue;
+            } else {
+                aValue = aValue.toString().toLowerCase();
+                bValue = bValue.toString().toLowerCase();
+                if (sortDirection[columnIndex] === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else {
+                    return bValue.localeCompare(aValue);
+                }
+            }
+        });
+        
+        // Re-append sorted rows
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    function updateSortIcons(activeColumn) {
+        const headers = document.querySelectorAll('.sortable');
+        headers.forEach((header, index) => {
+            const icon = header.querySelector('i');
+            const columnIndex = parseInt(header.getAttribute('data-column'));
+            
+            if (columnIndex === activeColumn) {
+                icon.className = sortDirection[activeColumn] === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+            } else {
+                icon.className = 'fas fa-sort ms-1';
+            }
+        });
+    }
+
+    function clearAllFilters() {
+        document.getElementById('searchUsers').value = '';
+        document.getElementById('filterRole').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterSede').value = '';
+        
+        // Reset sort direction
+        sortDirection = {};
+        updateSortIcons(-1);
+        
+        // Show all rows
+        const rows = document.querySelectorAll('#usersTable tbody tr');
+        rows.forEach(row => row.style.display = '');
+        
+        // Update count
+        updateFilterCount(rows.length);
+    }
+
+    function updateFilterCount(count) {
+        const countElement = document.getElementById('filterCount');
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    }
+
+    // Add CSS for sortable headers
+    const style = document.createElement('style');
+    style.textContent = `
+        .sortable {
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .sortable:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+    `;
+    document.head.appendChild(style);
+
+    function initializeUserFormHandlers() {
+        const roleSelect = document.querySelector('select[name="role"]');
+        const partTimeGroup = document.querySelector('input[name="part_time_percentage"]')?.closest('.col-md-4');
+        const allSediCheck = document.getElementById('allSediCheckNew');
+        const sedeSelect = document.getElementById('sedeSelectNew');
+        
+        if (!roleSelect) return; // Exit if elements not found
+        
+        // Role-based part-time percentage visibility
+        function togglePartTimePercentage() {
+            if (partTimeGroup) {
+                if (roleSelect.value === 'Operatore') {
+                    partTimeGroup.style.display = 'block';
+                } else {
+                    partTimeGroup.style.display = 'none';
+                    const partTimeInput = partTimeGroup.querySelector('input[name="part_time_percentage"]');
+                    if (partTimeInput) partTimeInput.value = 100;
+                }
+            }
+        }
+        
+        // Add event listeners
+        roleSelect.addEventListener('change', togglePartTimePercentage);
+        
+        if (allSediCheck) {
+            allSediCheck.addEventListener('change', toggleSedeSelect);
+        }
+        
+        if (sedeSelect) {
+            sedeSelect.addEventListener('change', updateWorkSchedulesNew);
+        }
+        
+        // Initialize ACI vehicle selects
+        initializeAciSelects();
+        
+        // Initial call
+        togglePartTimePercentage();
+        toggleSedeSelect();
+        
+        function toggleSedeSelect() {
+            if (allSediCheck && allSediCheck.checked) {
+                sedeSelect.disabled = true;
+                sedeSelect.value = -1;
+                const workScheduleGroupNew = document.getElementById('workScheduleGroupNew');
+                if (workScheduleGroupNew) {
+                    workScheduleGroupNew.style.display = 'none';
+                }
+            } else {
+                sedeSelect.disabled = false;
+                updateWorkSchedulesNew();
+            }
+        }
+        
+        function updateWorkSchedulesNew() {
+            const workScheduleGroup = document.getElementById('workScheduleGroupNew');
+            const workScheduleSelect = document.getElementById('workScheduleSelectNew');
+            
+            if (!sedeSelect || !workScheduleGroup || !workScheduleSelect) return;
+            
+            const sedeId = sedeSelect.value;
+            
+            if (sedeId <= 0) {
+                workScheduleGroup.style.display = 'none';
+                return;
+            }
+            
+            fetch(`/api/sede/${sedeId}/work_schedules`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.has_schedules) {
+                        workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
+                        data.work_schedules.forEach(schedule => {
+                            const option = document.createElement('option');
+                            option.value = schedule.id;
+                            option.textContent = schedule.name;
+                            workScheduleSelect.appendChild(option);
+                        });
+                        workScheduleGroup.style.display = 'block';
+                    } else {
+                        workScheduleGroup.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading work schedules:', error);
+                    workScheduleGroup.style.display = 'none';
+                });
+        }
+        
+        function initializeAciSelects() {
+            const tipoSelectNew = document.getElementById('tipoSelectNew');
+            const marcaSelectNew = document.getElementById('marcaSelectNew');
+            const modelloSelectNew = document.getElementById('modelloSelectNew');
+            
+            if (!tipoSelectNew || !marcaSelectNew || !modelloSelectNew) return;
+            
+            tipoSelectNew.addEventListener('change', function() {
+                const tipo = this.value;
+                marcaSelectNew.disabled = true;
+                modelloSelectNew.disabled = true;
+                marcaSelectNew.innerHTML = '<option value="">Caricamento...</option>';
+                modelloSelectNew.innerHTML = '<option value="">Seleziona prima marca</option>';
+                
+                if (tipo) {
+                    fetch(`/api/aci/marche/${encodeURIComponent(tipo)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            marcaSelectNew.innerHTML = '<option value="">Seleziona marca</option>';
+                            if (data.success && data.marche.length > 0) {
+                                data.marche.forEach(marca => {
+                                    const option = document.createElement('option');
+                                    option.value = marca[0];
+                                    option.textContent = marca[1];
+                                    marcaSelectNew.appendChild(option);
+                                });
+                                marcaSelectNew.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading marche:', error);
+                            marcaSelectNew.innerHTML = '<option value="">Errore caricamento</option>';
+                        });
+                } else {
+                    marcaSelectNew.innerHTML = '<option value="">Seleziona prima il tipo</option>';
+                    modelloSelectNew.innerHTML = '<option value="">Seleziona prima marca</option>';
+                }
+            });
+            
+            marcaSelectNew.addEventListener('change', function() {
+                const tipo = tipoSelectNew.value;
+                const marca = this.value;
+                modelloSelectNew.disabled = true;
+                modelloSelectNew.innerHTML = '<option value="">Caricamento...</option>';
+                
+                if (tipo && marca) {
+                    fetch(`/api/aci/modelli/${encodeURIComponent(tipo)}/${encodeURIComponent(marca)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            modelloSelectNew.innerHTML = '<option value="">Seleziona modello</option>';
+                            if (data.success && data.modelli.length > 0) {
+                                data.modelli.forEach(modello => {
+                                    const option = document.createElement('option');
+                                    option.value = modello[0];
+                                    option.textContent = modello[1];
+                                    modelloSelectNew.appendChild(option);
+                                });
+                                modelloSelectNew.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading modelli:', error);
+                            modelloSelectNew.innerHTML = '<option value="">Errore caricamento</option>';
+                        });
+                } else {
+                    modelloSelectNew.innerHTML = '<option value="">Seleziona prima marca</option>';
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

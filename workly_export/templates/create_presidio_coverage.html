@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Crea Nuova Copertura Presidio{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-plus-circle me-2"></i>Crea Nuova Copertura Presidio</h2>
+                    <p class="text-muted mb-0">Definisci un nuovo periodo di copertura per la sede turni</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('manage_coverage') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alla Gestione
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Creazione -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-plus me-2"></i>Dettagli Copertura</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="start_date" class="form-label">Data Inizio</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="end_date" class="form-label">Data Fine</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Descrizione del periodo di copertura (opzionale)"></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="active" name="active" checked>
+                                <label class="form-check-label" for="active">
+                                    Copertura attiva
+                                </label>
+                                <small class="form-text text-muted d-block">
+                                    Le coperture attive possono essere utilizzate per generare turni
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('manage_coverage') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Annulla
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>Crea Copertura
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Info Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle me-2"></i>Informazioni</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Come funziona</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Periodo:</strong> Definisci data inizio e fine</li>
+                            <li><strong>Template automatici:</strong> Viene creato un template per ogni giorno</li>
+                            <li><strong>Orari default:</strong> 08:00-17:00 con pausa 12:00-13:00</li>
+                            <li><strong>Ruolo default:</strong> Operatore</li>
+                            <li><strong>Personalizzazione:</strong> Modifica i template dopo la creazione</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Attenzione</h6>
+                        <p class="small mb-0">Non è possibile creare coperture che si sovrappongono con periodi esistenti.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Imposta data minima a oggi
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start_date').min = today;
+    
+    // Aggiorna data fine quando cambia data inizio
+    document.getElementById('start_date').addEventListener('change', function() {
+        const startDate = new Date(this.value);
+        const nextDay = new Date(startDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        document.getElementById('end_date').min = nextDay.toISOString().split('T')[0];
+        
+        // Se data fine è precedente a data inizio, resettala
+        const endDate = document.getElementById('end_date').value;
+        if (endDate && new Date(endDate) <= startDate) {
+            document.getElementById('end_date').value = '';
+        }
+    });
+});
+</script>
+{% endblock %}

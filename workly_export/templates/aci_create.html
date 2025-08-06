@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Nuovo Record ACI{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus"></i> Nuovo Record ACI</h2>
+                <a href="{{ url_for('aci_tables') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Torna alle Tabelle
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-car"></i> Dettagli Veicolo</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                {{ form.tipologia.label(class="form-label") }}
+                                {{ form.tipologia(class="form-control") }}
+                                <div class="form-text">Sarà utilizzato automaticamente il nome del file Excel se non specificato</div>
+                                {% if form.tipologia.errors %}
+                                    <div class="text-danger small">{{ form.tipologia.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.marca.label(class="form-label") }}
+                                {{ form.marca(class="form-control") }}
+                                {% if form.marca.errors %}
+                                    <div class="text-danger small">{{ form.marca.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.modello.label(class="form-label") }}
+                                {{ form.modello(class="form-control") }}
+                                {% if form.modello.errors %}
+                                    <div class="text-danger small">{{ form.modello.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                {{ form.costo_km.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.costo_km(class="form-control") }}
+                                    <span class="input-group-text">€/km</span>
+                                </div>
+                                <div class="form-text">Costo per chilometro a 4 decimali (es: 0.4862)</div>
+                                {% if form.costo_km.errors %}
+                                    <div class="text-danger small">{{ form.costo_km.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('aci_tables') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Annulla
+                            </a>
+                            {{ form.submit(class="btn btn-success btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Card con esempi -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Esempi di Compilazione</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Esempio Plug-in:</h6>
+                            <ul class="list-unstyled small">
+                                <li><strong>Tipologia:</strong> Plug-in IN 2025</li>
+                                <li><strong>Marca:</strong> ALFA ROMEO</li>
+                                <li><strong>Modello:</strong> Giulia 2.0 Turbo 200 CV AT8</li>
+                                <li><strong>Costo KM:</strong> 0.3985</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Esempio Elettrica:</h6>
+                            <ul class="list-unstyled small">
+                                <li><strong>Tipologia:</strong> Elettriche ACI 2025</li>
+                                <li><strong>Marca:</strong> TESLA</li>
+                                <li><strong>Modello:</strong> Model 3 Standard Range Plus</li>
+                                <li><strong>Costo KM:</strong> 0.4521</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

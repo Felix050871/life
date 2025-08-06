@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova Tipologia Straordinario{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-plus"></i> Nuova Tipologia Straordinario</h2>
+        <a href="{{ url_for('overtime_types') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Torna alle Tipologie
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3", placeholder="Descrizione della tipologia di straordinario...") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.hourly_rate_multiplier.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text">x</span>
+                                {{ form.hourly_rate_multiplier(class="form-control") }}
+                            </div>
+                            {% if form.hourly_rate_multiplier.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.hourly_rate_multiplier.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Moltiplicatore della paga oraria (es: 1.5 per il 50% in più)
+                            </small>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            {{ form.active(class="form-check-input") }}
+                            {{ form.active.label(class="form-check-label") }}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('overtime_types') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Annulla
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informazioni</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Esempi di Tipologie:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-sun text-warning"></i> <strong>Giornaliero:</strong> x1.2 (20% in più)</li>
+                        <li><i class="fas fa-moon text-info"></i> <strong>Notturno:</strong> x1.3 (30% in più)</li>
+                        <li><i class="fas fa-calendar text-danger"></i> <strong>Festivo:</strong> x1.5 (50% in più)</li>
+                        <li><i class="fas fa-weekend text-success"></i> <strong>Weekend:</strong> x1.25 (25% in più)</li>
+                    </ul>
+                    
+                    <div class="alert alert-info mt-3">
+                        <small>
+                            <i class="fas fa-lightbulb"></i>
+                            Il moltiplicatore determina quanto viene pagato lo straordinario rispetto alla paga oraria normale.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

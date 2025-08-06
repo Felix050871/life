@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action.title() }} Registrata - QR Code</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .success-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .success-icon.entrata {
+            color: #28a745;
+        }
+        
+        .success-icon.uscita {
+            color: #dc3545;
+        }
+        
+        .success-icon.error {
+            color: #ffc107;
+        }
+        
+        .success-message {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .timestamp {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .auto-redirect {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 20px;
+        }
+        
+        .action-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .btn-dashboard {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+            min-width: 160px;
+        }
+        
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+        
+
+    </style>
+</head>
+<body>
+    <div class="success-card">
+        <div class="success-icon {{ 'error' if error else action }}">
+            {% if error %}
+                <i class="fas fa-exclamation-triangle"></i>
+            {% elif action == 'entrata' %}
+                <i class="fas fa-sign-in-alt"></i>
+            {% else %}
+                <i class="fas fa-sign-out-alt"></i>
+            {% endif %}
+        </div>
+        
+        <div class="success-message">
+            {{ message }}
+        </div>
+        
+        {% if not error %}
+            <div class="user-info">
+                <h5><i class="fas fa-user me-2"></i>{{ user.first_name }} {{ user.last_name }}</h5>
+                <p class="mb-0 text-muted">{{ user.username }}</p>
+                <div class="timestamp">{{ timestamp }}</div>
+            </div>
+        {% endif %}
+        
+        <div class="action-buttons">
+            <a href="{{ url_for('index') }}" class="btn-dashboard">
+                <i class="fas fa-home me-2"></i>Dashboard
+            </a>
+        </div>
+        
+        <div class="auto-redirect">
+            <i class="fas fa-clock me-1"></i>
+            Chiusura automatica in <span id="countdown">8</span> secondi
+        </div>
+    </div>
+    
+    <script>
+        // Funzione per chiudere l'app
+        function closeApp() {
+            console.log('🔄 Tentativo di chiusura app...');
+            
+            // Previeni qualsiasi comportamento di default
+            event.preventDefault();
+            event.stopPropagation();
+            
+            let closed = false;
+            
+            // Metodo 1: Prova window.close() (funziona su finestre aperte da script)
+            try {
+                window.close();
+                console.log('✅ window.close() eseguito');
+                closed = true;
+            } catch(e) {
+                console.log('❌ window.close() fallito:', e);
+            }
+            
+            // Aspetta 500ms e controlla se la finestra si è chiusa
+            setTimeout(() => {
+                if (!closed || !window.closed) {
+                    console.log('🔄 Tentativo metodo 2: history navigation');
+                    
+                    try {
+                        if (history.length > 1) {
+                            history.back();
+                            console.log('✅ history.back() eseguito');
+                        } else {
+                            // Metodo 3: Redirect a pagina vuota
+                            console.log('🔄 Redirect a about:blank');
+                            window.location.href = 'about:blank';
+                        }
+                    } catch(e) {
+                        console.log('❌ Navigation fallita:', e);
+                        
+                        // Metodo 4: Fallback finale - nascondi contenuto
+                        try {
+                            document.body.innerHTML = `
+                                <div style="
+                                    display: flex; 
+                                    align-items: center; 
+                                    justify-content: center; 
+                                    min-height: 100vh; 
+                                    background: #2c3e50; 
+                                    color: white; 
+                                    font-family: Arial, sans-serif;
+                                    text-align: center;
+                                    padding: 20px;
+                                ">
+                                    <div>
+                                        <i class="fas fa-check-circle" style="font-size: 3rem; color: #27ae60; margin-bottom: 20px;"></i>
+                                        <h2>✅ Operazione completata</h2>
+                                        <p>Puoi chiudere questa scheda del browser</p>
+                                        <button onclick="window.close()" style="
+                                            background: #e74c3c; 
+                                            color: white; 
+                                            border: none; 
+                                            padding: 10px 20px; 
+                                            border-radius: 5px; 
+                                            margin-top: 20px;
+                                            cursor: pointer;
+                                            font-size: 16px;
+                                        ">Chiudi scheda</button>
+                                    </div>
+                                </div>
+                            `;
+                            console.log('✅ Fallback UI mostrata');
+                        } catch(fe) {
+                            console.log('❌ Anche il fallback è fallito:', fe);
+                        }
+                    }
+                }
+            }, 500);
+        }
+        
+        // Auto chiusura dopo 8 secondi
+        let countdown = 8;
+        const countdownElement = document.getElementById('countdown');
+        console.log('⏰ Countdown iniziato:', countdown, 'secondi');
+        
+        const timer = setInterval(() => {
+            countdown--;
+            console.log('⏰ Countdown:', countdown);
+            
+            if (countdownElement) {
+                countdownElement.textContent = countdown;
+            }
+            
+            if (countdown <= 0) {
+                clearInterval(timer);
+                console.log('⏰ Countdown terminato - avvio chiusura automatica');
+                closeApp();
+            }
+        }, 1000);
+        
+        // Debug info all'avvio
+        console.log('📱 QR Success page caricata');
+        console.log('🌐 User Agent:', navigator.userAgent);
+        console.log('📍 Current URL:', window.location.href);
+        console.log('🔗 History length:', history.length);
+        
+        // Rimuovi il click automatico per evitare chiusure accidentali
+        // Solo i pulsanti specifici eseguono azioni
+    </script>
+</body>
+</html>

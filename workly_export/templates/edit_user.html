@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Utente{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-edit me-2"></i>Modifica Utente</h2>
+                <a href="{{ url_for('user_management') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Torna alla Lista
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-edit me-2"></i>Modifica {{ user.get_full_name() }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.username.label(class="form-label") }}
+                                {{ form.username(class="form-control") }}
+                                {% if form.username.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.username.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.email.label(class="form-label") }}
+                                {{ form.email(class="form-control") }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.email.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.first_name.label(class="form-label") }}
+                                {{ form.first_name(class="form-control") }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.first_name.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.last_name.label(class="form-label") }}
+                                {{ form.last_name(class="form-control") }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.last_name.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.password.label(class="form-label") }}
+                                {{ form.password(class="form-control", placeholder="Lascia vuoto per non modificare") }}
+                                <small class="text-muted">Lascia vuoto per mantenere la password attuale</small>
+                                {% if form.password.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.password.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.role.label(class="form-label") }}
+                                {{ form.role(class="form-select", id="role") }}
+                                {% if form.role.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.role.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.part_time_percentage.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.part_time_percentage(class="form-control") }}
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted">Es: 100, 75,5, 50 (usa virgola per decimali)</small>
+                                {% if form.part_time_percentage.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.part_time_percentage.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.sede.label(class="form-label") }}
+                                {{ form.sede(class="form-select", id="sedeSelect") }}
+                                <small class="text-muted">Sede di assegnazione specifica</small>
+                                {% if form.sede.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.sede.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-check mt-2">
+                                    {{ form.all_sedi(class="form-check-input", id="allSediCheck") }}
+                                    {{ form.all_sedi.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Se abilitato, può accedere a tutte le sedi</small>
+                            </div>
+                            <div class="col-md-6 mb-3" id="workScheduleGroup" style="{% if user.work_schedule_id %}display: block;{% else %}display: none;{% endif %}">
+                                {{ form.work_schedule.label(class="form-label") }}
+                                {{ form.work_schedule(class="form-select", id="workScheduleSelect") }}
+                                <small class="text-muted">Seleziona "Turni" per modalità turnazioni, orario specifico per modalità ORARIA, o "Nessun orario" per accesso senza controlli</small>
+                                {% if form.work_schedule.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.work_schedule.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.aci_vehicle_tipo.label(class="form-label") }}
+                                {{ form.aci_vehicle_tipo(class="form-select", id="tipoVeicoloSelect") }}
+                                <small class="text-muted">Tipo di veicolo</small>
+                                {% if form.aci_vehicle_tipo.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.aci_vehicle_tipo.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.aci_vehicle_marca.label(class="form-label") }}
+                                {{ form.aci_vehicle_marca(class="form-select", id="marcaVeicoloSelect", disabled=true) }}
+                                <small class="text-muted">Marca del veicolo</small>
+                                {% if form.aci_vehicle_marca.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.aci_vehicle_marca.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.aci_vehicle.label(class="form-label") }}
+                                {{ form.aci_vehicle(class="form-select", id="modelloVeicoloSelect", disabled=true) }}
+                                <small class="text-muted">Modello e costo/km</small>
+                                {% if form.aci_vehicle.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.aci_vehicle.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="form-check">
+                                    {% if user.role == 'Amministratore' %}
+                                        {{ form.active(class="form-check-input", disabled=true, checked=true) }}
+                                        {{ form.active.label(class="form-check-label text-muted") }}
+                                        <input type="hidden" name="active" value="True">
+                                        <small class="text-muted d-block">L'amministratore non può essere disattivato</small>
+                                    {% else %}
+                                        {{ form.active(class="form-check-input") }}
+                                        {{ form.active.label(class="form-check-label") }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3 text-end">
+                                <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='{{ url_for('user_management') }}'">
+                                    Annulla
+                                </button>
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Role-based part-time percentage visibility and sede management
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('role');
+    const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
+    const allSediCheck = document.getElementById('allSediCheck');
+    const sedeSelect = document.getElementById('sedeSelect');
+    
+    function toggleSedeSelect() {
+        if (allSediCheck && allSediCheck.checked) {
+            sedeSelect.disabled = true;
+            sedeSelect.value = ''; // Imposta valore vuoto per evitare validazione
+            const workScheduleGroup = document.getElementById('workScheduleGroup');
+            if (workScheduleGroup) {
+                workScheduleGroup.style.display = 'none';
+            }
+        } else {
+            sedeSelect.disabled = false;
+            updateWorkSchedules();
+        }
+    }
+    
+    function updateWorkSchedules() {
+        const sedeSelect = document.getElementById('sedeSelect');
+        const workScheduleGroup = document.getElementById('workScheduleGroup');
+        const workScheduleSelect = document.getElementById('workScheduleSelect');
+        
+        if (!sedeSelect || !workScheduleGroup || !workScheduleSelect) return;
+        
+        const sedeId = sedeSelect.value;
+        
+        if (sedeId <= 0) {
+            workScheduleGroup.style.display = 'none';
+            return;
+        }
+        
+        // Chiamata API per ottenere gli orari della sede
+        fetch(`/api/sede/${sedeId}/work_schedules`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.has_schedules) {
+                    // Mantieni la selezione corrente se presente
+                    const currentValue = workScheduleSelect.value;
+                    
+                    // Popola il select con gli orari disponibili
+                    workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
+                    data.work_schedules.forEach(schedule => {
+                        const option = document.createElement('option');
+                        option.value = schedule.id;
+                        if (schedule.name === 'Turni') {
+                            option.textContent = `${schedule.name} (Modalità Turnazioni)`;
+                        } else {
+                            option.textContent = `${schedule.name} (${schedule.start_time}-${schedule.end_time})`;
+                        }
+                        workScheduleSelect.appendChild(option);
+                    });
+                    
+                    // Ripristina la selezione se era valida
+                    if (currentValue && workScheduleSelect.querySelector(`option[value="${currentValue}"]`)) {
+                        workScheduleSelect.value = currentValue;
+                    }
+                    
+                    workScheduleGroup.style.display = 'block';
+                } else {
+                    workScheduleGroup.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento orari:', error);
+                workScheduleGroup.style.display = 'none';
+            });
+    }
+    
+    function togglePartTimeField() {
+        // Campo % Lavoro sempre visibile per tutti i ruoli
+        // Nessuna azione necessaria, campo sempre visibile
+    }
+    
+    // Event listeners
+    if (roleSelect) {
+        roleSelect.addEventListener('change', togglePartTimeField);
+        togglePartTimeField(); // Initial call
+    }
+    
+    if (allSediCheck && sedeSelect) {
+        allSediCheck.addEventListener('change', toggleSedeSelect);
+        sedeSelect.addEventListener('change', updateWorkSchedules);
+        toggleSedeSelect(); // Chiamata iniziale
+        
+        // Carica inizialmente gli orari se c'è già una sede selezionata
+        if (sedeSelect.value > 0) {
+            setTimeout(() => {
+                updateWorkSchedules();
+            }, 100); // Piccolo delay per permettere al DOM di essere pronto
+        }
+    }
+    
+    // Gestisce il submit del form per campo sede disabilitato
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Se all_sedi è checked, riabilita temporaneamente il campo sede per l'invio
+            if (allSediCheck && allSediCheck.checked && sedeSelect && sedeSelect.disabled) {
+                sedeSelect.disabled = false;
+                sedeSelect.value = ''; // Assicurati che sia vuoto
+            }
+        });
+    }
+
+    // ACI Vehicle Progressive Selection
+    const tipoSelect = document.getElementById('tipoVeicoloSelect');
+    const marcaSelect = document.getElementById('marcaVeicoloSelect');
+    const modelloSelect = document.getElementById('modelloVeicoloSelect');
+
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', function() {
+            const tipo = this.value;
+            marcaSelect.disabled = true;
+            modelloSelect.disabled = true;
+            marcaSelect.innerHTML = '<option value="">Caricamento...</option>';
+            modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+
+            if (tipo) {
+                fetch(`/api/aci/marche/${encodeURIComponent(tipo)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        marcaSelect.innerHTML = '<option value="">Seleziona marca</option>';
+                        if (data.success && data.marche.length > 0) {
+                            data.marche.forEach(marca => {
+                                const option = document.createElement('option');
+                                option.value = marca;
+                                option.textContent = marca;
+                                marcaSelect.appendChild(option);
+                            });
+                            marcaSelect.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading marche:', error);
+                        marcaSelect.innerHTML = '<option value="">Errore caricamento</option>';
+                    });
+            } else {
+                marcaSelect.innerHTML = '<option value="">Seleziona prima il tipo</option>';
+                modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+            }
+        });
+
+        marcaSelect.addEventListener('change', function() {
+            const tipo = tipoSelect.value;
+            const marca = this.value;
+            modelloSelect.disabled = true;
+            modelloSelect.innerHTML = '<option value="">Caricamento...</option>';
+
+            if (tipo && marca) {
+                fetch(`/api/aci/modelli/${encodeURIComponent(tipo)}/${encodeURIComponent(marca)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        modelloSelect.innerHTML = '<option value="">Seleziona modello</option>';
+                        if (data.success && data.modelli.length > 0) {
+                            data.modelli.forEach(modello => {
+                                const option = document.createElement('option');
+                                option.value = modello[0];
+                                option.textContent = modello[1];
+                                modelloSelect.appendChild(option);
+                            });
+                            modelloSelect.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading modelli:', error);
+                        modelloSelect.innerHTML = '<option value="">Errore caricamento</option>';
+                    });
+            } else {
+                modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

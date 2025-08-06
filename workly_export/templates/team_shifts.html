@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block title %}Turni Team - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-calendar-week me-2"></i>Turni Team</h2>
+        <p class="text-muted">Visualizza i turni assegnati al team per la settimana {{ week_start.strftime('%d/%m/%Y') }} - {{ week_end.strftime('%d/%m/%Y') }}</p>
+    </div>
+</div>
+
+<!-- Navigazione settimanale -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ url_for('team_shifts', date=prev_week.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-chevron-left me-2"></i>Settimana Precedente
+                    </a>
+                    
+                    <div class="text-center">
+                        <h5 class="mb-0">
+                            {{ week_start.strftime('%d/%m/%Y') }} - {{ week_end.strftime('%d/%m/%Y') }}
+                        </h5>
+                        {% if target_date == today %}
+                            <small class="text-muted">Settimana Corrente</small>
+                        {% elif target_date < today %}
+                            <small class="text-muted">Settimana Passata</small>
+                        {% else %}
+                            <small class="text-muted">Settimana Futura</small>
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{{ url_for('team_shifts', date=next_week.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
+                        Settimana Successiva<i class="fas fa-chevron-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-calendar-alt me-2"></i>Programmazione Settimanale</h5>
+                <div>
+                    <a href="{{ url_for('shifts') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit me-1"></i>Gestisci Turni
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if shifts_by_day or week_dates %}
+                    <div class="row">
+                        {% for day_info in week_dates %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 
+                                {% if day_info.is_today %}border-warning border-3{% endif %}">
+                                <div class="card-header text-center
+                                    {% if day_info.is_today %}bg-warning text-dark{% else %}bg-light{% endif %}">
+                                    <h6 class="mb-0 {% if not day_info.is_today %}text-dark{% else %}fw-bold{% endif %}">
+                                        {{ day_info.weekday }}<br>
+                                        <small>{{ day_info.date.strftime('%d/%m') }}</small>
+                                    </h6>
+                                </div>
+                                <div class="card-body p-2 bg-white">
+                                    {% if day_info.date in shifts_by_day %}
+                                        {% for shift in shifts_by_day[day_info.date] %}
+                                        <div class="mb-2 p-2 border rounded shadow-sm bg-primary bg-opacity-75">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <div class="d-flex align-items-center">
+                                                        <div>
+                                                            <strong class="text-white">{{ shift.user.get_full_name() }}</strong>
+                                                            {% if shift.presence_info %}
+                                                                <i class="fas fa-circle text-{{ shift.presence_info.color }} ms-1" 
+                                                                   title="{{ shift.presence_info.message }}"></i>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% if shift.has_leave_request %}
+                                                        <div class="ms-2">
+                                                            <span class="text-warning" title="Richiesta {{ shift.leave_request.leave_type }}: {{ shift.leave_request.start_date.strftime('%d/%m') }}-{{ shift.leave_request.end_date.strftime('%d/%m') }} ({{ shift.leave_request.status }})">
+                                                                <i class="fas fa-exclamation-triangle"></i>
+                                                            </span>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <small class="text-white">{{ shift.user.role }}</small>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="badge bg-info me-2">{{ shift.shift_type }}</span>
+                                                    {% if current_user.can_manage_shifts() and shift.date >= today %}
+                                                        <button class="btn btn-sm btn-outline-light me-1" 
+                                                                onclick="changeShiftUser({{ shift.id }}, '{{ shift.user.get_full_name() }}')"
+                                                                title="Cambia utente rapidamente">
+                                                            <i class="fas fa-user-edit"></i>
+                                                        </button>
+                                                        <a href="{{ url_for('edit_shift', shift_id=shift.id) }}" 
+                                                           class="btn btn-sm btn-outline-light" 
+                                                           title="Modifica turno completo (utente + orario)">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="mt-1">
+                                                <div class="mb-1">
+                                                    <i class="fas fa-clock text-secondary me-1"></i>
+                                                    <small class="text-white"><strong>Turno:</strong> {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}</small>
+                                                    <span class="badge bg-light text-dark border ms-2">{{ "%.1f"|format(shift.get_duration_hours()) }}h</span>
+                                                </div>
+                                                {% if shift.presence_info and (shift.presence_info.actual_start or shift.presence_info.actual_end) %}
+                                                <div class="mb-1">
+                                                    <i class="fas fa-user-clock text-secondary me-1"></i>
+                                                    <small class="text-dark">
+                                                        <strong>Effettivo:</strong> 
+                                                        {% if shift.presence_info.actual_start %}
+                                                            {{ shift.presence_info.actual_start.strftime('%H:%M') }}
+                                                        {% else %}
+                                                            --:--
+                                                        {% endif %}
+                                                        - 
+                                                        {% if shift.presence_info.actual_end %}
+                                                            {{ shift.presence_info.actual_end.strftime('%H:%M') }}
+                                                        {% else %}
+                                                            --:--
+                                                        {% endif %}
+                                                    </small>
+                                                    <span class="badge bg-{{ shift.presence_info.color }} text-white ms-2">
+                                                        {{ shift.presence_info.message }}
+                                                    </span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-center text-muted py-3">
+                                            <i class="fas fa-calendar-times fa-2x mb-2"></i><br>
+                                            <small>Nessun turno programmato</small>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Sezione Reperibilità -->
+                                    {% if day_info.date in reperibilita_by_date %}
+                                        <div class="mt-2 pt-2 border-top">
+                                            <h6 class="text-info mb-2"><i class="fas fa-phone-volume me-1"></i>Reperibilità</h6>
+                                            {% for rep_shift in reperibilita_by_date[day_info.date] %}
+                                            <div class="mb-2 p-2 bg-info bg-opacity-75 border border-info rounded">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <strong class="text-white">{{ rep_shift.user.get_full_name() }}</strong>
+                                                        <br><small class="text-white">{{ rep_shift.user.role }}</small>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-1">
+                                                    <i class="fas fa-phone text-white me-1"></i>
+                                                    <small class="text-white"><strong>Reperibilità:</strong> {{ rep_shift.start_time.strftime('%H:%M') }} - {{ rep_shift.end_time.strftime('%H:%M') }}</small>
+                                                    {% if rep_shift.description %}
+                                                        <br><small class="text-white">{{ rep_shift.description }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nessun turno programmato per questa settimana</h5>
+                        <p class="text-muted">I turni possono essere creati dalla sezione Turnazioni</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiche rapide della settimana -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h5>{{ users|length }}</h5>
+                <small class="text-muted">Dipendenti Attivi</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-calendar-check fa-2x text-success mb-2"></i>
+                <h5>{{ shifts_by_day|length }}</h5>
+                <small class="text-muted">Giorni con Turni</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                <h5>
+                    {% set total_shifts = 0 %}
+                    {% for day_shifts in shifts_by_day.values() %}
+                        {% set total_shifts = total_shifts + day_shifts|length %}
+                    {% endfor %}
+                    {{ total_shifts }}
+                </h5>
+                <small class="text-muted">Turni Totali</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-hourglass-half fa-2x text-warning mb-2"></i>
+                <h5>
+                    {% set total_hours = 0 %}
+                    {% for day_shifts in shifts_by_day.values() %}
+                        {% for shift in day_shifts %}
+                            {% set total_hours = total_hours + shift.get_duration_hours() %}
+                        {% endfor %}
+                    {% endfor %}
+                    {{ "%.1f"|format(total_hours) }}h
+                </h5>
+                <small class="text-muted">Ore Programmate</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="text-center">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
+            </a>
+            {% if current_user.role != 'Ente' %}
+            <a href="{{ url_for('generate_shifts') }}" class="btn btn-success ms-2">
+                <i class="fas fa-plus me-1"></i>Genera Nuovi Turni
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal per cambio utente -->
+<div class="modal fade" id="changeUserModal" tabindex="-1" aria-labelledby="changeUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeUserModalLabel">
+                    <i class="fas fa-user-edit me-2"></i>Cambia Utente Assegnato
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <p>Stai per modificare l'assegnazione del turno attualmente assegnato a: <strong id="currentUserName"></strong></p>
+                </div>
+                <div class="mb-3">
+                    <label for="newUserSelect" class="form-label">Seleziona nuovo utente:</label>
+                    <select class="form-select" id="newUserSelect">
+                        <option value="">-- Seleziona utente --</option>
+                        {% for user in users %}
+                        {% if user.active and user.role != 'Ente' %}
+                        <option value="{{ user.id }}">{{ user.get_full_name() }} ({{ user.role }})</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div id="changeUserAlert" class="alert d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" id="confirmChangeUser">
+                    <i class="fas fa-save me-1"></i>Conferma Cambio
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentShiftId = null;
+
+function changeShiftUser(shiftId, currentUserName) {
+    currentShiftId = shiftId;
+    document.getElementById('currentUserName').textContent = currentUserName;
+    document.getElementById('newUserSelect').value = '';
+    document.getElementById('changeUserAlert').className = 'alert d-none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('changeUserModal'));
+    modal.show();
+}
+
+document.getElementById('confirmChangeUser').addEventListener('click', function() {
+    const newUserId = document.getElementById('newUserSelect').value;
+    
+    if (!newUserId) {
+        showAlert('Seleziona un utente dalla lista', 'danger');
+        return;
+    }
+    
+    // Disabilita il pulsante durante la richiesta
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Aggiornamento...';
+    
+    fetch(`/team-shifts/change-user/${currentShiftId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user_id: parseInt(newUserId)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showAlert(data.message, 'danger');
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-save me-1"></i>Conferma Cambio';
+        }
+    })
+    .catch(error => {
+        showAlert('Errore durante la comunicazione con il server', 'danger');
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-save me-1"></i>Conferma Cambio';
+    });
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.getElementById('changeUserAlert');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.textContent = message;
+}
+</script>
+{% endblock %}

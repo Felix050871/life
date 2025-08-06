@@ -1,0 +1,917 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Turni{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1><i class="fas fa-calendar-alt me-2"></i>Gestione Turni</h1>
+            <p class="text-muted">Gestisci i turni per le sedi configurate con modalità "Turni"</p>
+            
+            {% if not sedi_turni %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                {% if is_admin %}
+                Nessuna sede configurata con modalità "Turni". 
+                <a href="{{ url_for('manage_sedi') }}">Configura le sedi</a> per iniziare a gestire i turni.
+                {% else %}
+                La tua sede non è configurata per la modalità "Turni". Contatta l'amministratore per abilitare la gestione turni.
+                {% endif %}
+            </div>
+            {% else %}
+            
+            <!-- Lista sedi con turni -->
+            <div class="row">
+                {% for sede in sedi_turni %}
+                {% set stats = sede_stats.get(sede.id, {}) %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-building me-2"></i>{{ sede.name }}
+                            </h5>
+                            <span class="badge bg-primary">Turni</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <h6 class="text-muted">Utenti</h6>
+                                    <span class="badge bg-info fs-6">{{ stats.get('users_count', 0) }}</span>
+                                </div>
+                                <div class="col-4">
+                                    <h6 class="text-muted">Turni</h6>
+                                    <span class="badge bg-primary fs-6">{{ stats.get('turni_count', 0) }}</span>
+                                </div>
+                                <div class="col-4">
+                                    <h6 class="text-muted">Coperture</h6>
+                                    <span class="badge bg-success fs-6">{{ stats.get('coperture_count', 0) }}</span>
+                                </div>
+                            </div>
+                            
+                            {% if sede.description %}
+                            <hr>
+                            <p class="text-muted small mb-0">{{ sede.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                <button class="btn btn-sm btn-primary" onclick="createCopertura({{ sede.id }}, '{{ sede.name }}')">
+                                    <i class="fas fa-plus me-1"></i>Nuova Copertura
+                                </button>
+                                <a href="{{ url_for('view_turni_coverage') }}?sede={{ sede.id }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>Visualizza Turni
+                                </a>
+                                <a href="{{ url_for('generate_turnazioni') }}?sede={{ sede.id }}" 
+                                   class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-magic me-1"></i>Genera Turni
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Sezione informativa -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-info-circle me-2"></i>Informazioni Gestione Turni</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-calendar-alt me-2"></i>Turni Regolari</h6>
+                                    <p class="text-muted small">
+                                        I turni regolari sono assegnazioni di lavoro standard per gli utenti.
+                                        Possono essere creati manualmente o generati automaticamente.
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-users me-2"></i>Copertura Turni</h6>
+                                    <p class="text-muted small">
+                                        Le coperture definiscono chi lavora in determinati orari e giorni.
+                                        Possono essere create per garantire presenza continua.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {% if is_admin %}
+                            <hr>
+                            <div class="alert alert-primary mb-0">
+                                <strong>Modalità Admin:</strong> Puoi gestire coperture per tutte le sedi configurate con modalità "Turni".
+                                Utilizza la <a href="{{ url_for('manage_sedi') }}" class="alert-link">gestione sedi</a> per modificare la tipologia delle sedi.
+                            </div>
+                            {% else %}
+                            <hr>
+                            <div class="alert alert-info mb-0">
+                                <strong>Modalità Management:</strong> Puoi gestire coperture solo per la tua sede di competenza.
+                                Per modifiche alla tipologia della sede, contatta l'amministratore.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal per creare nuova copertura -->
+<div class="modal fade" id="createCoperturaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Crea Nuova Copertura Turni</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createCoperturaForm" method="POST" action="{{ url_for('create_shift_coverage') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <input type="hidden" id="sede_id" name="sede_id" value="">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Sede</label>
+                            <input type="text" id="sede_name" class="form-control" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Periodo di validità -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="start_date">Data Inizio Validità *</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="end_date">Data Fine Validità *</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Orari di base -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Orari di Base *</label>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label" for="base_start_time">Ora Inizio *</label>
+                                            <input type="time" class="form-control" id="base_start_time" name="base_start_time" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label" for="base_end_time">Ora Fine *</label>
+                                            <input type="time" class="form-control" id="base_end_time" name="base_end_time" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label" for="base_break_start">Pausa Inizio</label>
+                                            <input type="time" class="form-control" id="base_break_start" name="base_break_start">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label" for="base_break_end">Pausa Fine</label>
+                                            <input type="time" class="form-control" id="base_break_end" name="base_break_end">
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-12">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="applyToAllDays()">
+                                                <i class="fas fa-copy me-1"></i>Applica a tutti i giorni selezionati
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selezione giorni e personalizzazione -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Giorni della Settimana *</label>
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectWeekDays()">Lun-Ven</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectWeekend()">Sab-Dom</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAllDays()">Tutti</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllDays()">Nessuno</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" id="day_0" name="days_of_week" value="0">
+                                        <label class="form-check-label" for="day_0">
+                                            <strong>Lunedì</strong>
+                                            <small class="d-block text-muted day-schedule" id="schedule_0">Orario non impostato</small>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info btn-sm customize-btn" onclick="customizeDay(0)" style="display: none;">
+                                        <i class="fas fa-edit"></i> Personalizza
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" id="day_1" name="days_of_week" value="1">
+                                        <label class="form-check-label" for="day_1">
+                                            <strong>Martedì</strong>
+                                            <small class="d-block text-muted day-schedule" id="schedule_1">Orario non impostato</small>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info btn-sm customize-btn" onclick="customizeDay(1)" style="display: none;">
+                                        <i class="fas fa-edit"></i> Personalizza
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" id="day_2" name="days_of_week" value="2">
+                                        <label class="form-check-label" for="day_2">
+                                            <strong>Mercoledì</strong>
+                                            <small class="d-block text-muted day-schedule" id="schedule_2">Orario non impostato</small>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info btn-sm customize-btn" onclick="customizeDay(2)" style="display: none;">
+                                        <i class="fas fa-edit"></i> Personalizza
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" id="day_3" name="days_of_week" value="3">
+                                        <label class="form-check-label" for="day_3">
+                                            <strong>Giovedì</strong>
+                                            <small class="d-block text-muted day-schedule" id="schedule_3">Orario non impostato</small>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info btn-sm customize-btn" onclick="customizeDay(3)" style="display: none;">
+                                        <i class="fas fa-edit"></i> Personalizza
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" id="day_4" name="days_of_week" value="4">
+                                        <label class="form-check-label" for="day_4">
+                                            <strong>Venerdì</strong>
+                                            <small class="d-block text-muted day-schedule" id="schedule_4">Orario non impostato</small>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info btn-sm customize-btn" onclick="customizeDay(4)" style="display: none;">
+                                        <i class="fas fa-edit"></i> Personalizza
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" id="day_5" name="days_of_week" value="5">
+                                        <label class="form-check-label" for="day_5">
+                                            <strong>Sabato</strong>
+                                            <small class="d-block text-muted day-schedule" id="schedule_5">Orario non impostato</small>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info btn-sm customize-btn" onclick="customizeDay(5)" style="display: none;">
+                                        <i class="fas fa-edit"></i> Personalizza
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" id="day_6" name="days_of_week" value="6">
+                                        <label class="form-check-label" for="day_6">
+                                            <strong>Domenica</strong>
+                                            <small class="d-block text-muted day-schedule" id="schedule_6">Orario non impostato</small>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info btn-sm customize-btn" onclick="customizeDay(6)" style="display: none;">
+                                        <i class="fas fa-edit"></i> Personalizza
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input day-checkbox" type="checkbox" id="day_7" name="days_of_week" value="7">
+                                        <label class="form-check-label" for="day_7">
+                                            <strong>Festivi</strong>
+                                            <small class="d-block text-muted day-schedule" id="schedule_7">Orario non impostato</small>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info btn-sm customize-btn" onclick="customizeDay(7)" style="display: none;">
+                                        <i class="fas fa-edit"></i> Personalizza
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Campi nascosti per orari personalizzati -->
+                    <div style="display: none;" id="hidden-schedule-fields">
+                        <!-- Questi campi verranno popolati dinamicamente -->
+                    </div>
+                    
+                    <!-- Ruoli richiesti con numerosità -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Ruoli Richiesti e Numerosità *</label>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div id="roles-container">
+                                        <!-- I ruoli verranno caricati dinamicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Descrizione -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label" for="description">Descrizione Copertura</label>
+                            <textarea class="form-control" id="description" name="description" rows="2" placeholder="Descrizione della copertura..."></textarea>
+                        </div>
+                    </div>
+                    
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Crea Copertura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funzioni globali
+function createCopertura(sedeId, sedeName) {
+    // Imposta i valori nel modal
+    document.getElementById('sede_id').value = sedeId;
+    document.getElementById('sede_name').value = sedeName;
+    
+    // Carica i ruoli disponibili
+    loadAvailableRoles();
+    
+    // Mostra il modal
+    const modal = new bootstrap.Modal(document.getElementById('createCoperturaModal'));
+    modal.show();
+}
+
+function loadAvailableRoles() {
+    fetch('/api/roles')
+        .then(response => response.json())
+        .then(roles => {
+            const container = document.getElementById('roles-container');
+            container.innerHTML = '';
+            
+            roles.forEach((role, index) => {
+                const div = document.createElement('div');
+                div.className = 'row mb-3';
+                div.innerHTML = `
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input role-checkbox" type="checkbox" id="role_${index}" 
+                                   name="role_${index}" value="${role}" onchange="toggleRoleCount('${role}', ${index})">
+                            <label class="form-check-label" for="role_${index}">
+                                <strong>${role}</strong>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group" id="count_group_${index}" style="display: none;">
+                            <span class="input-group-text">Numero risorse:</span>
+                            <input type="number" class="form-control" name="role_count_${role}" 
+                                   id="role_count_${index}" min="1" max="10" value="1" 
+                                   placeholder="1" style="max-width: 80px;">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        })
+        .catch(error => {
+            console.error('Errore caricamento ruoli:', error);
+            // Fallback con ruoli di default
+            const defaultRoles = ['Management', 'Redattore', 'Sviluppatore', 'Operatore', 'Ente'];
+            const container = document.getElementById('roles-container');
+            container.innerHTML = '';
+            
+            defaultRoles.forEach((role, index) => {
+                const div = document.createElement('div');
+                div.className = 'row mb-3';
+                div.innerHTML = `
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input role-checkbox" type="checkbox" id="role_${index}" 
+                                   value="${role}" onchange="toggleRoleCount('${role}', ${index})">
+                            <label class="form-check-label" for="role_${index}">
+                                <strong>${role}</strong>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group" id="count_group_${index}" style="display: none;">
+                            <span class="input-group-text">Numero risorse:</span>
+                            <input type="number" class="form-control" name="role_count_${role}" 
+                                   id="role_count_${index}" min="1" max="10" value="1" 
+                                   placeholder="1" style="max-width: 80px;">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        });
+}
+
+function toggleRoleCount(role, index) {
+    const checkbox = document.getElementById(`role_${index}`);
+    const countGroup = document.getElementById(`count_group_${index}`);
+    const countInput = document.getElementById(`role_count_${index}`);
+    
+    if (checkbox.checked) {
+        countGroup.style.display = 'flex';
+        countInput.required = true;
+    } else {
+        countGroup.style.display = 'none';
+        countInput.required = false;
+        countInput.value = '1'; // Reset a valore di default
+    }
+}
+
+// Funzioni per selezione rapida giorni
+function selectWeekDays() {
+    [0, 1, 2, 3, 4].forEach(day => {
+        const checkbox = document.getElementById(`day_${day}`);
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+function selectWeekend() {
+    [5, 6].forEach(day => {
+        const checkbox = document.getElementById(`day_${day}`);
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+function selectAllDays() {
+    [0, 1, 2, 3, 4, 5, 6, 7].forEach(day => {
+        const checkbox = document.getElementById(`day_${day}`);
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+function clearAllDays() {
+    [0, 1, 2, 3, 4, 5, 6, 7].forEach(day => {
+        const checkbox = document.getElementById(`day_${day}`);
+        checkbox.checked = false;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+// Applica orario di base a tutti i giorni selezionati
+function applyToAllDays() {
+    const baseStart = document.getElementById('base_start_time').value;
+    const baseEnd = document.getElementById('base_end_time').value;
+    const baseBreakStart = document.getElementById('base_break_start').value;
+    const baseBreakEnd = document.getElementById('base_break_end').value;
+    
+    if (!baseStart || !baseEnd) {
+        alert('Imposta prima gli orari di base');
+        return;
+    }
+    
+    // Applica a tutti i giorni selezionati
+    document.querySelectorAll('.day-checkbox:checked').forEach(checkbox => {
+        const day = checkbox.value;
+        applyBaseScheduleToDay(day);
+        checkbox.dataset.customized = '';
+    });
+}
+
+// Applica orario di base a un giorno specifico
+function applyBaseScheduleToDay(day) {
+    const baseStart = document.getElementById('base_start_time').value;
+    const baseEnd = document.getElementById('base_end_time').value;
+    const baseBreakStart = document.getElementById('base_break_start').value;
+    const baseBreakEnd = document.getElementById('base_break_end').value;
+    
+    if (!baseStart || !baseEnd) return;
+    
+    // Crea/aggiorna campi nascosti per questo giorno
+    createHiddenFields(day, baseStart, baseEnd, baseBreakStart, baseBreakEnd);
+    
+    // Aggiorna visualizzazione
+    updateScheduleDisplay(day, baseStart, baseEnd, baseBreakStart, baseBreakEnd);
+}
+
+// Crea campi nascosti per un giorno
+function createHiddenFields(day, startTime, endTime, breakStart, breakEnd) {
+    const container = document.getElementById('hidden-schedule-fields');
+    
+    // Rimuovi campi esistenti per questo giorno
+    removeHiddenFields(day);
+    
+    // Crea nuovi campi
+    const fields = [
+        { name: `start_time_${day}`, value: startTime },
+        { name: `end_time_${day}`, value: endTime },
+        { name: `break_start_${day}`, value: breakStart || '' },
+        { name: `break_end_${day}`, value: breakEnd || '' }
+    ];
+    
+    fields.forEach(field => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = field.name;
+        input.value = field.value;
+        input.id = field.name;
+        container.appendChild(input);
+    });
+}
+
+// Rimuovi campi nascosti per un giorno
+function removeHiddenFields(day) {
+    const fields = [`start_time_${day}`, `end_time_${day}`, `break_start_${day}`, `break_end_${day}`];
+    fields.forEach(fieldName => {
+        const field = document.getElementById(fieldName);
+        if (field) field.remove();
+    });
+}
+
+// Aggiorna visualizzazione orario per un giorno
+function updateScheduleDisplay(day, startTime, endTime, breakStart, breakEnd) {
+    const scheduleEl = document.getElementById(`schedule_${day}`);
+    let scheduleText = `${startTime} - ${endTime}`;
+    if (breakStart && breakEnd) {
+        scheduleText += ` (Pausa: ${breakStart}-${breakEnd})`;
+    }
+    scheduleEl.textContent = scheduleText;
+}
+
+// Personalizza orario per un giorno specifico
+function customizeDay(day) {
+    const dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica', 'Festivi'];
+    const dayName = dayNames[day] || `Giorno ${day}`;
+    
+    // Valori attuali
+    const currentStart = document.getElementById(`start_time_${day}`)?.value || '';
+    const currentEnd = document.getElementById(`end_time_${day}`)?.value || '';
+    const currentBreakStart = document.getElementById(`break_start_${day}`)?.value || '';
+    const currentBreakEnd = document.getElementById(`break_end_${day}`)?.value || '';
+    
+    // Crea modal dinamico per personalizzazione
+    const modalHtml = `
+        <div class="modal fade" id="customizeModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Personalizza Orario - ${dayName}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Ora Inizio *</label>
+                                <input type="time" class="form-control" id="custom_start" value="${currentStart}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ora Fine *</label>
+                                <input type="time" class="form-control" id="custom_end" value="${currentEnd}" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Pausa Inizio</label>
+                                <input type="time" class="form-control" id="custom_break_start" value="${currentBreakStart}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Pausa Fine</label>
+                                <input type="time" class="form-control" id="custom_break_end" value="${currentBreakEnd}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="button" class="btn btn-primary" onclick="saveCustomSchedule(${day})">Salva</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Rimuovi modal esistente
+    const existingModal = document.getElementById('customizeModal');
+    if (existingModal) existingModal.remove();
+    
+    // Aggiungi nuovo modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Mostra modal
+    const modal = new bootstrap.Modal(document.getElementById('customizeModal'));
+    modal.show();
+}
+
+// Salva personalizzazione orario
+function saveCustomSchedule(day) {
+    const startTime = document.getElementById('custom_start').value;
+    const endTime = document.getElementById('custom_end').value;
+    const breakStart = document.getElementById('custom_break_start').value;
+    const breakEnd = document.getElementById('custom_break_end').value;
+    
+    if (!startTime || !endTime) {
+        alert('Orario inizio e fine sono obbligatori');
+        return;
+    }
+    
+    if (startTime >= endTime) {
+        alert('L\'orario di inizio deve essere precedente all\'orario di fine');
+        return;
+    }
+    
+    // Validazione pausa
+    if (breakStart && breakEnd) {
+        if (breakStart >= breakEnd) {
+            alert('L\'orario di inizio pausa deve essere precedente all\'orario di fine pausa');
+            return;
+        }
+        if (!(startTime <= breakStart && breakEnd <= endTime)) {
+            alert('La pausa deve essere compresa nell\'orario di copertura');
+            return;
+        }
+    }
+    
+    // Salva personalizzazione
+    createHiddenFields(day, startTime, endTime, breakStart, breakEnd);
+    updateScheduleDisplay(day, startTime, endTime, breakStart, breakEnd);
+    
+    // Marca come personalizzato
+    document.getElementById(`day_${day}`).dataset.customized = 'true';
+    
+    // Chiudi modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('customizeModal'));
+    modal.hide();
+}
+
+// Inizializzazione al caricamento pagina
+document.addEventListener('DOMContentLoaded', function() {
+    // Imposta data minima a oggi
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start_date').min = today;
+    document.getElementById('end_date').min = today;
+    
+    // Imposta data fine minima quando cambia data inizio
+    document.getElementById('start_date').addEventListener('change', function() {
+        document.getElementById('end_date').min = this.value;
+    });
+    
+    // Gestione checkbox giorni della settimana
+    document.querySelectorAll('.day-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const day = this.value;
+            const customizeBtn = this.parentElement.parentElement.querySelector('.customize-btn');
+            const scheduleEl = document.getElementById(`schedule_${day}`);
+            
+            if (this.checked) {
+                customizeBtn.style.display = 'inline-block';
+                // Applica orario di base se non già personalizzato
+                if (!this.dataset.customized) {
+                    applyBaseScheduleToDay(day);
+                }
+            } else {
+                customizeBtn.style.display = 'none';
+                scheduleEl.textContent = 'Orario non impostato';
+                // Rimuovi campi nascosti
+                removeHiddenFields(day);
+                this.dataset.customized = '';
+            }
+        });
+    });
+});
+
+// Funzioni per selezione rapida giorni
+function selectWeekDays() {
+    [0, 1, 2, 3, 4].forEach(day => {
+        const checkbox = document.getElementById(`day_${day}`);
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+function selectWeekend() {
+    [5, 6].forEach(day => {
+        const checkbox = document.getElementById(`day_${day}`);
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+function selectAllDays() {
+    [0, 1, 2, 3, 4, 5, 6, 7].forEach(day => {
+        const checkbox = document.getElementById(`day_${day}`);
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+function clearAllDays() {
+    [0, 1, 2, 3, 4, 5, 6, 7].forEach(day => {
+        const checkbox = document.getElementById(`day_${day}`);
+        checkbox.checked = false;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+// Applica orario di base a tutti i giorni selezionati
+function applyToAllDays() {
+    const baseStart = document.getElementById('base_start_time').value;
+    const baseEnd = document.getElementById('base_end_time').value;
+    const baseBreakStart = document.getElementById('base_break_start').value;
+    const baseBreakEnd = document.getElementById('base_break_end').value;
+    
+    if (!baseStart || !baseEnd) {
+        alert('Imposta prima gli orari di base');
+        return;
+    }
+    
+    // Applica a tutti i giorni selezionati
+    document.querySelectorAll('.day-checkbox:checked').forEach(checkbox => {
+        const day = checkbox.value;
+        applyBaseScheduleToDay(day);
+        checkbox.dataset.customized = '';
+    });
+}
+
+// Applica orario di base a un giorno specifico
+function applyBaseScheduleToDay(day) {
+    const baseStart = document.getElementById('base_start_time').value;
+    const baseEnd = document.getElementById('base_end_time').value;
+    const baseBreakStart = document.getElementById('base_break_start').value;
+    const baseBreakEnd = document.getElementById('base_break_end').value;
+    
+    if (!baseStart || !baseEnd) return;
+    
+    // Crea/aggiorna campi nascosti per questo giorno
+    createHiddenFields(day, baseStart, baseEnd, baseBreakStart, baseBreakEnd);
+    
+    // Aggiorna visualizzazione
+    updateScheduleDisplay(day, baseStart, baseEnd, baseBreakStart, baseBreakEnd);
+}
+
+// Crea campi nascosti per un giorno
+function createHiddenFields(day, startTime, endTime, breakStart, breakEnd) {
+    const container = document.getElementById('hidden-schedule-fields');
+    
+    // Rimuovi campi esistenti per questo giorno
+    removeHiddenFields(day);
+    
+    // Crea nuovi campi
+    const fields = [
+        { name: `start_time_${day}`, value: startTime },
+        { name: `end_time_${day}`, value: endTime },
+        { name: `break_start_${day}`, value: breakStart || '' },
+        { name: `break_end_${day}`, value: breakEnd || '' }
+    ];
+    
+    fields.forEach(field => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = field.name;
+        input.value = field.value;
+        input.id = field.name;
+        container.appendChild(input);
+    });
+}
+
+// Rimuovi campi nascosti per un giorno
+function removeHiddenFields(day) {
+    const fields = [`start_time_${day}`, `end_time_${day}`, `break_start_${day}`, `break_end_${day}`];
+    fields.forEach(fieldName => {
+        const field = document.getElementById(fieldName);
+        if (field) field.remove();
+    });
+}
+
+// Aggiorna visualizzazione orario per un giorno
+function updateScheduleDisplay(day, startTime, endTime, breakStart, breakEnd) {
+    const scheduleEl = document.getElementById(`schedule_${day}`);
+    let scheduleText = `${startTime} - ${endTime}`;
+    if (breakStart && breakEnd) {
+        scheduleText += ` (Pausa: ${breakStart}-${breakEnd})`;
+    }
+    scheduleEl.textContent = scheduleText;
+}
+
+// Personalizza orario per un giorno specifico
+function customizeDay(day) {
+    const dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica', 'Festivi'];
+    const dayName = dayNames[day] || `Giorno ${day}`;
+    
+    // Valori attuali
+    const currentStart = document.getElementById(`start_time_${day}`)?.value || '';
+    const currentEnd = document.getElementById(`end_time_${day}`)?.value || '';
+    const currentBreakStart = document.getElementById(`break_start_${day}`)?.value || '';
+    const currentBreakEnd = document.getElementById(`break_end_${day}`)?.value || '';
+    
+    // Crea modal dinamico per personalizzazione
+    const modalHtml = `
+        <div class="modal fade" id="customizeModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Personalizza Orario - ${dayName}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Ora Inizio *</label>
+                                <input type="time" class="form-control" id="custom_start" value="${currentStart}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ora Fine *</label>
+                                <input type="time" class="form-control" id="custom_end" value="${currentEnd}" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Pausa Inizio</label>
+                                <input type="time" class="form-control" id="custom_break_start" value="${currentBreakStart}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Pausa Fine</label>
+                                <input type="time" class="form-control" id="custom_break_end" value="${currentBreakEnd}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="button" class="btn btn-primary" onclick="saveCustomSchedule(${day})">Salva</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Rimuovi modal esistente
+    const existingModal = document.getElementById('customizeModal');
+    if (existingModal) existingModal.remove();
+    
+    // Aggiungi nuovo modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Mostra modal
+    const modal = new bootstrap.Modal(document.getElementById('customizeModal'));
+    modal.show();
+}
+
+// Salva personalizzazione orario
+function saveCustomSchedule(day) {
+    const startTime = document.getElementById('custom_start').value;
+    const endTime = document.getElementById('custom_end').value;
+    const breakStart = document.getElementById('custom_break_start').value;
+    const breakEnd = document.getElementById('custom_break_end').value;
+    
+    if (!startTime || !endTime) {
+        alert('Orario inizio e fine sono obbligatori');
+        return;
+    }
+    
+    if (startTime >= endTime) {
+        alert('L\'orario di inizio deve essere precedente all\'orario di fine');
+        return;
+    }
+    
+    // Validazione pausa
+    if (breakStart && breakEnd) {
+        if (breakStart >= breakEnd) {
+            alert('L\'orario di inizio pausa deve essere precedente all\'orario di fine pausa');
+            return;
+        }
+        if (!(startTime <= breakStart && breakEnd <= endTime)) {
+            alert('La pausa deve essere compresa nell\'orario di copertura');
+            return;
+        }
+    }
+    
+    // Salva personalizzazione
+    createHiddenFields(day, startTime, endTime, breakStart, breakEnd);
+    updateScheduleDisplay(day, startTime, endTime, breakStart, breakEnd);
+    
+    // Marca come personalizzato
+    document.getElementById(`day_${day}`).dataset.customized = 'true';
+    
+    // Chiudi modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('customizeModal'));
+    modal.hide();
+}
+
+</script>
+
+{% endblock %}

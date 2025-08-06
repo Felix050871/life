@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Visualizza Presidi - {{ super() }}{% endblock %}
+
+{% block head %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<style>
+.template-info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.template-info-card .card-body {
+    padding: 1.5rem;
+}
+
+/* Tabella coperture migliorata */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--bs-light);
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-eye me-2"></i>Visualizza Presidi</h2>
+        <p class="text-muted">Visualizza i template di copertura presidio configurati</p>
+    </div>
+</div>
+
+<!-- Templates Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>Template di Copertura Presidio</h5>
+                {% if templates %}
+                <span class="badge bg-info">{{ templates|length }} template</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if templates %}
+                <div class="table-responsive">
+                    <table class="table table-striped" id="templatesTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nome Template</th>
+                                <th>Periodo</th>
+                                <th>Descrizione</th>
+                                <th>Sede</th>
+                                <th>Coperture</th>
+                                <th>Creato da</th>
+                                <th>Data Creazione</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                            <tr>
+                                <td><strong>{{ template.name }}</strong></td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ template.start_date.strftime('%d/%m/%Y') }} - {{ template.end_date.strftime('%d/%m/%Y') }}
+                                    </span>
+                                </td>
+                                <td>{{ template.description or 'Nessuna descrizione' }}</td>
+                                <td>
+                                    {% if template.sede %}
+                                    <span class="badge bg-primary">{{ template.sede.name }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Tutte le sedi</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ template.coverages.count() }} fasce</span>
+                                </td>
+                                <td>{{ template.creator.get_full_name() }}</td>
+                                <td>{{ template.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    {% if template.active %}
+                                    <span class="badge bg-success">Attivo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inattivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('presidio_detail', template_id=template.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i> Dettagli
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun template presidio configurato</h5>
+                    <p class="text-muted">Non sono presenti template di copertura presidio nel sistema.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Details Modal for each template -->
+{% for template in templates %}
+<div class="modal fade" id="templateModal{{ template.id }}" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header template-info-card">
+                <h5 class="modal-title">
+                    <i class="fas fa-clipboard-list me-2"></i>{{ template.name }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card template-info-card">
+                            <div class="card-body">
+                                <h6><i class="fas fa-info-circle me-2"></i>Informazioni Template</h6>
+                                <hr class="text-white-50">
+                                <p><strong>Periodo:</strong> {{ template.get_period_display() }}</p>
+                                <p><strong>Descrizione:</strong> {{ template.description or 'Nessuna descrizione' }}</p>
+                                <p><strong>Creato da:</strong> {{ template.creator.get_full_name() }}</p>
+                                <p><strong>Data creazione:</strong> {{ template.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6><i class="fas fa-chart-bar me-2"></i>Statistiche Copertura</h6>
+                                <hr>
+                                <p><strong>Fasce orarie:</strong> {{ template.coverages.count() }}</p>
+                                <p><strong>Ore totali/settimana:</strong> {{ "%.1f"|format(template.get_total_hours_per_week()) }}h</p>
+                                <p><strong>Giorni coperti:</strong> {{ template.get_covered_days_count() }}/7</p>
+                                <p><strong>Ruoli coinvolti:</strong> {{ template.get_involved_roles()|length }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coperture per giorno - Tabella strutturata -->
+                <h6><i class="fas fa-calendar-week me-2"></i>Coperture Definite</h6>
+                {% set coverages_by_day = {} %}
+                {% for coverage in template.coverages.filter_by(active=True).order_by('day_of_week', 'start_time') %}
+                    {% if coverage.day_of_week not in coverages_by_day %}
+                        {% set _ = coverages_by_day.update({coverage.day_of_week: []}) %}
+                    {% endif %}
+                    {% set _ = coverages_by_day[coverage.day_of_week].append(coverage) %}
+                {% endfor %}
+                
+                {% if coverages_by_day %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 12%;">Giorno</th>
+                                <th style="width: 18%;">Orario Turno</th>
+                                <th style="width: 15%;">Pausa</th>
+                                <th style="width: 25%;">Ruoli Richiesti</th>
+                                <th style="width: 10%;">Quantità</th>
+                                <th style="width: 20%;">Descrizione</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day_num in range(7) %}
+                                {% if day_num in coverages_by_day %}
+                                    {% for coverage in coverages_by_day[day_num] %}
+                                    <tr>
+                                        <td>
+                                            <strong class="text-primary">{{ coverage.get_day_name() }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold">{{ coverage.get_time_range() }}</span>
+                                        </td>
+                                        <td>
+                                            {% if coverage.get_break_range() %}
+                                            <span class="text-warning">{{ coverage.get_break_range() }}</span>
+                                            {% else %}
+                                            <span class="text-muted">Nessuna</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% for role in coverage.get_required_roles() %}
+                                            <span class="badge bg-info me-1">{{ role }}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">{{ coverage.role_count or 1 }} persone</span>
+                                        </td>
+                                        <td>
+                                            {% if coverage.description %}
+                                            <small class="text-muted">{{ coverage.description }}</small>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fa fa-info-circle fa-2x mb-2"></i>
+                    <h6>Nessuna copertura definita</h6>
+                    <p class="mb-0">Questo template non contiene ancora coperture.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#templatesTable').DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/Italian.json"
+        },
+        "order": [[ 5, "desc" ]], // Ordina per data creazione
+        "pageLength": 10,
+        "responsive": true
+    });
+});
+</script>
+{% endblock %}

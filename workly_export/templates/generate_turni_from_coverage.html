@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Genera Turni da Coperture - {{ sede.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2><i class="fas fa-magic me-2"></i>Genera Turni - {{ sede.name }}</h2>
+                    <p class="text-muted mb-0">
+                        Crea turni automaticamente basandoti sulle coperture configurate
+                    </p>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('generate_turnazioni') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alla Generazione
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted mb-1">Coperture Totali</h5>
+                    <h3 class="text-primary mb-0">{{ total_coperture }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted mb-1">Coperture Attive</h5>
+                    <h3 class="text-success mb-0">{{ active_coperture }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted mb-1">Utenti Attivi</h5>
+                    <h3 class="text-info mb-0">{{ sede.users|selectattr('active')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coperture disponibili per generazione -->
+    {% if coperture_grouped %}
+        {% for period_key, period_data in coperture_grouped.items() %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Periodo: {{ period_data.start_date.strftime('%d/%m/%Y') }} - {{ period_data.end_date.strftime('%d/%m/%Y') }}
+                    </h5>
+                    {% if period_data.active %}
+                        <span class="badge bg-success">ATTIVO</span>
+                    {% else %}
+                        {% if period_data.end_date < today %}
+                            <span class="badge bg-secondary">SCADUTO</span>
+                        {% else %}
+                            <span class="badge bg-warning">FUTURO</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div>
+                    {% if period_data.end_date >= today %}
+                    <button class="btn btn-success" onclick="showGenerateModal('{{ period_data.period_id }}', '{{ period_key }}', {{ sede.id }})">
+                        <i class="fas fa-magic me-1"></i>Genera Turni
+                    </button>
+                    {% else %}
+                    <span class="text-muted">Periodo scaduto</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for copertura in period_data.coperture %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-left-{{ 'success' if copertura.is_valid_for_date(today) else 'secondary' }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-1">{{ copertura.get_day_name() }}</h6>
+                                    {% if copertura.is_valid_for_date(today) %}
+                                        <span class="badge bg-success">Attiva</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inattiva</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-clock me-1"></i>{{ copertura.get_time_range() }}
+                                </p>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-users me-1"></i>{{ copertura.get_required_roles_display() }}
+                                </p>
+                                {% if copertura.description %}
+                                <p class="text-muted small mb-0">{{ copertura.description }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <!-- Stato vuoto -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">Nessuna Copertura Trovata</h4>
+                        <p class="text-muted">
+                            Non sono state create coperture per questa sede.
+                            <br>Prima di generare turni, devi creare delle coperture.
+                        </p>
+                        <a href="{{ url_for('manage_turni') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Crea Coperture
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal per generazione turni -->
+<div class="modal fade" id="generateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-magic me-2"></i>Genera Turni</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('process_generate_turni_from_coverage') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" id="sede_id" name="sede_id" value="{{ sede.id }}">
+                <input type="hidden" id="coverage_period_id" name="coverage_period_id" value="">
+                
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Periodo Copertura:</strong> <span id="display_period"></span>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="generate_start_date">Data Inizio Generazione *</label>
+                            <input type="date" class="form-control" id="generate_start_date" name="generate_start_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="generate_end_date">Data Fine Generazione *</label>
+                            <input type="date" class="form-control" id="generate_end_date" name="generate_end_date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="replace_existing" name="replace_existing">
+                            <label class="form-check-label" for="replace_existing">
+                                Sostituisci turni esistenti nel periodo
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Attenzione:</strong> La generazione creerà turni per tutti i giorni nel periodo specificato 
+                        basandosi sulle coperture configurate. Verifica sempre i turni generati.
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-magic me-1"></i>Genera Turni
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showGenerateModal(periodId, periodDisplay, sedeId) {
+    console.log('DEBUG: showGenerateModal called with:', {periodId, periodDisplay, sedeId});
+    
+    // Imposta period ID
+    const hiddenInput = document.getElementById('coverage_period_id');
+    if (hiddenInput) {
+        hiddenInput.value = periodId;
+        console.log('DEBUG: Hidden input value set to:', hiddenInput.value);
+    } else {
+        console.error('DEBUG: Hidden input coverage_period_id not found');
+        return;
+    }
+    
+    // Imposta sede ID (backup)
+    const sedeInput = document.getElementById('sede_id');
+    if (sedeInput) {
+        sedeInput.value = sedeId;
+    }
+    
+    document.getElementById('display_period').textContent = periodDisplay;
+    
+    // Imposta date predefinite
+    const today = new Date().toISOString().split('T')[0];
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+    
+    document.getElementById('generate_start_date').value = today;
+    document.getElementById('generate_start_date').min = today;
+    document.getElementById('generate_end_date').value = nextWeekStr;
+    document.getElementById('generate_end_date').min = today;
+    
+    // Aggiorna data fine minima quando cambia data inizio
+    document.getElementById('generate_start_date').addEventListener('change', function() {
+        document.getElementById('generate_end_date').min = this.value;
+    });
+    
+    // Mostra il modal
+    const modal = new bootstrap.Modal(document.getElementById('generateModal'));
+    modal.show();
+    
+    // Debug finale prima dell'invio form (rimuovi listener esistenti prima)
+    const form = document.querySelector('#generateModal form');
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    newForm.addEventListener('submit', function(e) {
+        const periodIdValue = document.getElementById('coverage_period_id').value;
+        console.log('DEBUG: Form submission - coverage_period_id:', periodIdValue);
+        if (!periodIdValue || periodIdValue.trim() === '') {
+            console.error('DEBUG: coverage_period_id is empty!');
+            e.preventDefault();
+            alert('Errore: ID periodo copertura mancante. Valore: "' + periodIdValue + '"');
+            return false;
+        }
+        return true;
+    });
+}
+</script>
+
+<style>
+.border-left-success {
+    border-left: 3px solid #28a745 !important;
+}
+
+.border-left-secondary {
+    border-left: 3px solid #6c757d !important;
+}
+</style>
+
+{% endblock %}

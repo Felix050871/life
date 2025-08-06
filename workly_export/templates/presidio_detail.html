@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Dettagli Template Presidio - {{ template.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/presidio_styles.css') }}">
+<style>
+/* Tabella coperture migliorata */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--bs-light);
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="presidio-container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fa fa-shield-alt me-2"></i>{{ template.name }}</h2>
+            <p class="text-muted mb-0">{{ template.get_period_display() }}</p>
+            {% if template.sede %}
+            <p class="text-info mb-0"><i class="fa fa-building me-1"></i>{{ template.sede.name }}</p>
+            {% endif %}
+        </div>
+        <div class="quick-actions">
+            <a href="{{ url_for('view_presidi') }}" class="btn btn-secondary">
+                <i class="fa fa-arrow-left me-1"></i>Torna alla Lista
+            </a>
+        </div>
+    </div>
+
+    <!-- Informazioni template -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="presidio-template-card">
+                <div class="template-stats">
+                    <div class="stat-item">
+                        <i class="fa fa-clock"></i>
+                        <span>{{ "%.1f"|format(template.get_total_hours_per_week()) }} ore/settimana</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-calendar-day"></i>
+                        <span>{{ template.get_covered_days_count() }} giorni coperti</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-users"></i>
+                        <span>{{ template.get_involved_roles()|length }} ruoli coinvolti</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-list"></i>
+                        <span>{{ template.coverages.count() }} coperture totali</span>
+                    </div>
+                </div>
+                
+                {% if template.description %}
+                <div class="mt-3">
+                    <strong>Descrizione:</strong> {{ template.description }}
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <strong>Ruoli coinvolti:</strong>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        {% for role in template.get_involved_roles() %}
+                        <span class="badge bg-primary">{{ role }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Informazioni Template</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Creato da:</strong> {{ template.creator.full_name if template.creator else 'N/A' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Sede:</strong> {{ template.sede.name if template.sede else 'N/A' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Data creazione:</strong> {{ template.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Ultima modifica:</strong> {{ template.updated_at.strftime('%d/%m/%Y %H:%M') if template.updated_at else 'Mai' }}
+                    </div>
+                    <div>
+                        <strong>Stato:</strong>
+                        <span class="badge {% if template.active %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if template.active %}Attivo{% else %}Inattivo{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dettagli coperture per giorno - Tabella strutturata -->
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Dettaglio Coperture per Giorno</h4>
+            
+            {% if coverages_by_day %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 12%;">Giorno</th>
+                            <th style="width: 18%;">Orario Turno</th>
+                            <th style="width: 15%;">Pausa</th>
+                            <th style="width: 25%;">Ruoli Richiesti</th>
+                            <th style="width: 10%;">Quantità</th>
+                            <th style="width: 20%;">Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day_num in range(7) %}
+                            {% if day_num in coverages_by_day %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-primary">{{ coverage.get_day_name() }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">{{ coverage.get_time_range() }}</span>
+                                    </td>
+                                    <td>
+                                        {% if coverage.get_break_range() %}
+                                        <span class="text-warning">{{ coverage.get_break_range() }}</span>
+                                        {% else %}
+                                        <span class="text-muted">Nessuna</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for role in coverage.get_required_roles() %}
+                                        <span class="badge bg-info me-1">{{ role }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ coverage.role_count or 1 }} persone</span>
+                                    </td>
+                                    <td>
+                                        {% if coverage.description %}
+                                        <small class="text-muted">{{ coverage.description }}</small>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle me-2"></i>
+                Nessuna copertura definita per questo template.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Riepilogo settimanale -->
+    {% if coverages_by_day %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4 class="mb-3">Riepilogo Settimanale</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Giorno</th>
+                            <th>Coperture</th>
+                            <th>Ore Totali</th>
+                            <th>Ore Effettive</th>
+                            <th>Ruoli Coinvolti</th>
+                            <th>Persone Richieste</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day_num in range(7) %}
+                        {% set day_name = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'][day_num] %}
+                        <tr>
+                            <td>{{ day_name }}</td>
+                            {% if day_num in coverages_by_day %}
+                            <td>{{ coverages_by_day[day_num]|length }}</td>
+                            <td>
+                                {% set ns = namespace(day_total_hours=0) %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                  {% set ns.day_total_hours = ns.day_total_hours + coverage.get_duration_hours() %}
+                                {% endfor %}
+                                {{ "%.1f"|format(ns.day_total_hours) }}h
+                            </td>
+                            <td>
+                                {% set ns = namespace(day_effective_hours=0) %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                  {% set ns.day_effective_hours = ns.day_effective_hours + coverage.get_effective_work_hours() %}
+                                {% endfor %}
+                                {{ "%.1f"|format(ns.day_effective_hours) }}h
+                            </td>
+                            <td>
+                                {% set day_roles = [] %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                    {% for role in coverage.get_required_roles() %}
+                                        {% if role not in day_roles %}
+                                            {% set _ = day_roles.append(role) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ day_roles|length }}
+                            </td>
+                            <td>
+                                {% set ns = namespace(day_people_count=0) %}
+                                {% for coverage in coverages_by_day[day_num] %}
+                                  {% set ns.day_people_count = ns.day_people_count + coverage.role_count %}
+                                {% endfor %}
+                                {{ ns.day_people_count }}
+                            </td>
+                            {% else %}
+                            <td colspan="5" class="text-muted text-center">Nessuna copertura</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-info">
+                            <th>Totale Settimana</th>
+                            <th>{{ template.coverages.count() }}</th>
+                            <th>
+                                {% set ns = namespace(week_total_hours=0) %}
+                                {% for coverage in template.coverages %}
+                                  {% set ns.week_total_hours = ns.week_total_hours + coverage.get_duration_hours() %}
+                                {% endfor %}
+                                {{ "%.1f"|format(ns.week_total_hours) }}h
+                            </th>
+                            <th>
+                                {% set ns = namespace(week_effective_hours=0) %}
+                                {% for coverage in template.coverages %}
+                                  {% set ns.week_effective_hours = ns.week_effective_hours + coverage.get_effective_work_hours() %}
+                                {% endfor %}
+                                {{ "%.1f"|format(ns.week_effective_hours) }}h
+                            </th>
+                            <th>
+                                {% set all_roles = [] %}
+                                {% for coverage in template.coverages %}
+                                    {% for role in coverage.get_required_roles() %}
+                                        {% if role not in all_roles %}
+                                            {% set _ = all_roles.append(role) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ all_roles|length }}
+                            </th>
+                            <th>
+                                {% set ns = namespace(total_people=0) %}
+                                {% for coverage in template.coverages %}
+                                  {% set ns.total_people = ns.total_people + coverage.role_count %}
+                                {% endfor %}
+                                {{ ns.total_people }}
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/presidio_scripts.js') }}"></script>
+{% endblock %}

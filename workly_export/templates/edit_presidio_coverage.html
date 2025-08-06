@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Template Copertura Presidio{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-edit me-2"></i>Modifica Template Copertura Presidio</h2>
+        <p class="text-muted">Modifica template {{ start_date.strftime('%d/%m/%Y') }} - {{ end_date.strftime('%d/%m/%Y') }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('view_presidio_coverage', period_key=period_key) }}" class="btn btn-secondary">
+            <i class="fas fa-eye me-1"></i>Solo Visualizza
+        </a>
+    </div>
+</div>
+
+<!-- Avviso -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Attenzione:</strong> Le modifiche al template di copertura influenzeranno la generazione dei turni futuri.
+            I turni già generati non saranno modificati automaticamente.
+        </div>
+    </div>
+</div>
+
+<!-- Form di modifica -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-week me-2"></i>Coperture del Template</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="editCoverageForm">
+                    {{ csrf_token() if csrf_token }}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    {% if coverages %}
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="coveragesTable">
+                            <thead>
+                                <tr>
+                                    <th>Giorno</th>
+                                    <th>Orario Inizio</th>
+                                    <th>Orario Fine</th>
+                                    <th>Pausa Inizio</th>
+                                    <th>Pausa Fine</th>
+                                    <th width="200">Ruoli Richiesti</th>
+                                    <th>Descrizione</th>
+                                    <th>Stato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for coverage in coverages %}
+                                <tr data-coverage-id="{{ coverage.id }}">
+                                    <td>
+                                        <strong>{{ coverage.get_day_name() }}</strong>
+                                        <input type="hidden" name="coverage_{{ coverage.id }}_day" value="{{ coverage.day_of_week }}">
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               name="coverage_{{ coverage.id }}_start_time" 
+                                               value="{{ coverage.start_time.strftime('%H:%M') if coverage.start_time else '' }}" 
+                                               class="form-control form-control-sm" 
+                                               required>
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               name="coverage_{{ coverage.id }}_end_time" 
+                                               value="{{ coverage.end_time.strftime('%H:%M') if coverage.end_time else '' }}" 
+                                               class="form-control form-control-sm" 
+                                               required>
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               name="coverage_{{ coverage.id }}_break_start_time" 
+                                               value="{{ coverage.break_start_time.strftime('%H:%M') if coverage.break_start_time else '' }}" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Inizio pausa">
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               name="coverage_{{ coverage.id }}_break_end_time" 
+                                               value="{{ coverage.break_end_time.strftime('%H:%M') if coverage.break_end_time else '' }}" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Fine pausa">
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                                    data-bs-toggle="dropdown" 
+                                                    id="rolesBtn_{{ coverage.id }}">
+                                                <i class="fas fa-users me-1"></i>Seleziona Ruoli
+                                            </button>
+                                            <div class="dropdown-menu p-3" style="min-width: 250px;">
+                                                <div id="rolesContainer_{{ coverage.id }}">
+                                                    <!-- I ruoli verranno popolati via JavaScript -->
+                                                </div>
+                                                <hr>
+                                                <small class="text-muted">Seleziona ruoli e quantità per questa copertura</small>
+                                            </div>
+                                        </div>
+                                        <!-- Hidden field per i ruoli selezionati -->
+                                        <input type="hidden" 
+                                               name="coverage_{{ coverage.id }}_roles" 
+                                               id="rolesInput_{{ coverage.id }}"
+                                               value="{{ coverage.get_required_roles_display() }}">
+                                    </td>
+                                    <td>
+                                        <input type="text" 
+                                               name="coverage_{{ coverage.id }}_description" 
+                                               value="{{ coverage.description or '' }}" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Descrizione opzionale">
+                                    </td>
+                                    <td>
+                                        <select name="coverage_{{ coverage.id }}_active" class="form-select form-select-sm">
+                                            <option value="1" {{ 'selected' if coverage.active else '' }}>Attiva</option>
+                                            <option value="0" {{ 'selected' if not coverage.active else '' }}>Inattiva</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="deleteCoverageRow({{ coverage.id }})" 
+                                                title="Elimina copertura">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-between">
+                                <div>
+                                    <a href="{{ url_for('view_presidio_coverage', period_key=period_key) }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-1"></i>Annulla
+                                    </a>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-success" name="action" value="save">
+                                        <i class="fas fa-save me-1"></i>Salva Modifiche
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <h5 class="text-muted">Nessuna copertura trovata per questo template</h5>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Ruoli disponibili dal backend
+const availableRoles = {{ available_roles|tojson }};
+
+// Inizializza i dropdown dei ruoli per ogni copertura
+document.addEventListener('DOMContentLoaded', function() {
+    {% for coverage in coverages %}
+    initializeRolesDropdown({{ coverage.id }}, '{{ coverage.get_required_roles_display() }}');
+    {% endfor %}
+});
+
+function initializeRolesDropdown(coverageId, currentRoles) {
+    const container = document.getElementById(`rolesContainer_${coverageId}`);
+    const hiddenInput = document.getElementById(`rolesInput_${coverageId}`);
+    const btn = document.getElementById(`rolesBtn_${coverageId}`);
+    
+    // Parse dei ruoli correnti (formato: "Operatore, 2 Tecnico")
+    const currentRolesMap = {};
+    if (currentRoles && currentRoles.trim()) {
+        const parts = currentRoles.split(',');
+        parts.forEach(part => {
+            const trimmed = part.trim();
+            const match = trimmed.match(/^(\d+)\s+(.+)$/) || trimmed.match(/^(.+)\s+(\d+)$/);
+            if (match) {
+                const [, first, second] = match;
+                if (isNaN(first)) {
+                    currentRolesMap[first] = parseInt(second);
+                } else {
+                    currentRolesMap[second] = parseInt(first);
+                }
+            } else {
+                currentRolesMap[trimmed] = 1;
+            }
+        });
+    }
+    
+    // Crea interfaccia per ogni ruolo
+    container.innerHTML = '';
+    availableRoles.forEach(role => {
+        const roleDiv = document.createElement('div');
+        roleDiv.className = 'mb-2 d-flex align-items-center';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `role_${coverageId}_${role.name}`;
+        checkbox.className = 'form-check-input me-2';
+        checkbox.checked = currentRolesMap[role.name] > 0;
+        
+        const label = document.createElement('label');
+        label.htmlFor = checkbox.id;
+        label.className = 'form-check-label me-2 flex-grow-1';
+        label.textContent = role.display_name;
+        
+        const countInput = document.createElement('input');
+        countInput.type = 'number';
+        countInput.min = '1';
+        countInput.max = '10';
+        countInput.value = currentRolesMap[role.name] || 1;
+        countInput.className = 'form-control form-control-sm';
+        countInput.style.width = '60px';
+        countInput.disabled = !checkbox.checked;
+        
+        // Event listeners
+        checkbox.addEventListener('change', function() {
+            countInput.disabled = !this.checked;
+            updateRolesDisplay(coverageId);
+        });
+        
+        countInput.addEventListener('input', function() {
+            updateRolesDisplay(coverageId);
+        });
+        
+        roleDiv.appendChild(checkbox);
+        roleDiv.appendChild(label);
+        roleDiv.appendChild(countInput);
+        container.appendChild(roleDiv);
+    });
+    
+    updateRolesDisplay(coverageId);
+}
+
+function updateRolesDisplay(coverageId) {
+    const container = document.getElementById(`rolesContainer_${coverageId}`);
+    const hiddenInput = document.getElementById(`rolesInput_${coverageId}`);
+    const btn = document.getElementById(`rolesBtn_${coverageId}`);
+    
+    const selectedRoles = [];
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(checkbox => {
+        const roleDiv = checkbox.closest('.mb-2');
+        const countInput = roleDiv.querySelector('input[type="number"]');
+        const roleName = availableRoles.find(r => checkbox.id.includes(r.name))?.name;
+        const count = parseInt(countInput.value) || 1;
+        
+        if (roleName) {
+            if (count > 1) {
+                selectedRoles.push(`${count} ${roleName}`);
+            } else {
+                selectedRoles.push(roleName);
+            }
+        }
+    });
+    
+    const rolesText = selectedRoles.join(', ');
+    hiddenInput.value = rolesText;
+    
+    // Aggiorna il testo del pulsante
+    if (selectedRoles.length > 0) {
+        btn.innerHTML = `<i class="fas fa-users me-1"></i>${selectedRoles.length} ruoli`;
+        btn.className = 'btn btn-success btn-sm dropdown-toggle';
+    } else {
+        btn.innerHTML = '<i class="fas fa-users me-1"></i>Seleziona Ruoli';
+        btn.className = 'btn btn-outline-secondary btn-sm dropdown-toggle';
+    }
+}
+
+function deleteCoverageRow(coverageId) {
+    if (confirm('Vuoi eliminare definitivamente questa copertura presidio?\n\nTutti i turni generati da questa copertura verranno eliminati e le assegnazioni del personale andranno perse.')) {
+        const row = document.querySelector(`tr[data-coverage-id="${coverageId}"]`);
+        if (row) {
+            // Aggiungi campo hidden per marcare come eliminata
+            const deleteInput = document.createElement('input');
+            deleteInput.type = 'hidden';
+            deleteInput.name = `coverage_${coverageId}_delete`;
+            deleteInput.value = '1';
+            row.appendChild(deleteInput);
+            
+            // Nascondi la riga
+            row.style.display = 'none';
+        }
+    }
+}
+
+// Validazione form
+document.getElementById('editCoverageForm').addEventListener('submit', function(e) {
+    const rows = document.querySelectorAll('tr[data-coverage-id]');
+    
+    for (let row of rows) {
+        if (row.style.display !== 'none') {
+            const startTime = row.querySelector('input[name$="_start_time"]').value;
+            const endTime = row.querySelector('input[name$="_end_time"]').value;
+            const breakStart = row.querySelector('input[name$="_break_start_time"]').value;
+            const breakEnd = row.querySelector('input[name$="_break_end_time"]').value;
+            
+            // Validazione orario principale
+            if (startTime >= endTime) {
+                alert('L\'orario di fine deve essere successivo all\'orario di inizio');
+                e.preventDefault();
+                row.querySelector('input[name$="_start_time"]').focus();
+                return;
+            }
+            
+            // Validazione pause (se specificate)
+            if (breakStart && breakEnd) {
+                if (breakStart >= breakEnd) {
+                    alert('L\'orario di fine pausa deve essere successivo all\'inizio pausa');
+                    e.preventDefault();
+                    row.querySelector('input[name$="_break_start_time"]').focus();
+                    return;
+                }
+                
+                // Controllo che la pausa sia all'interno dell'orario di lavoro
+                if (breakStart < startTime || breakEnd > endTime) {
+                    alert('La pausa deve essere compresa nell\'orario di lavoro');
+                    e.preventDefault();
+                    row.querySelector('input[name$="_break_start_time"]').focus();
+                    return;
+                }
+            }
+            
+            // Se solo uno dei campi pausa è compilato
+            if ((breakStart && !breakEnd) || (!breakStart && breakEnd)) {
+                alert('Specificare entrambi gli orari della pausa o lasciarli vuoti');
+                e.preventDefault();
+                row.querySelector('input[name$="_break_start_time"]').focus();
+                return;
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

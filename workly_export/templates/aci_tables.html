@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block title %}Tabelle ACI - Back Office{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-car"></i> Tabelle ACI - Back Office</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('aci_upload') }}" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Carica Excel
+                    </a>
+                    <a href="{{ url_for('aci_create') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Nuovo Record
+                    </a>
+                    <a href="{{ url_for('aci_export') }}" class="btn btn-info">
+                        <i class="fas fa-download"></i> Export Excel
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtri -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Filtri</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('aci_tables') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="row">
+                            <div class="col-md-3">
+                                {{ form.tipologia.label(class="form-label") }}
+                                {{ form.tipologia(class="form-select", id="tipologia-filter") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.marca.label(class="form-label") }}
+                                {{ form.marca(class="form-select", id="marca-filter") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.modello.label(class="form-label") }}
+                                {{ form.modello(class="form-select", id="modello-filter") }}
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                {{ form.submit(class="btn btn-outline-primary me-2") }}
+                                <a href="{{ url_for('aci_tables') }}" class="btn btn-outline-secondary">Reset</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistiche Database -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ total_records }}</h5>
+                            <p class="card-text">Record nel DB</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-info">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">{{ tables|length }}</h5>
+                            <p class="card-text">Record Filtrati</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-success">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">{{ tables|groupby('tipologia')|list|length }}</h5>
+                            <p class="card-text">Tipologie</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">{{ tables|groupby('marca')|list|length }}</h5>
+                            <p class="card-text">Marche</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Tabella -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Record ACI</h5>
+                    {% if tables %}
+                    <small class="text-muted">{{ tables|length }} record trovati</small>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if show_results %}
+                        {% if tables %}
+                        <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="aciTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th class="sortable" onclick="sortTable(1)" style="cursor: pointer;">
+                                        Tipologia <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable(2)" style="cursor: pointer;">
+                                        Marca <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable(3)" style="cursor: pointer;">
+                                        Modello <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable(4)" style="cursor: pointer;">
+                                        Costo KM <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable(5)" style="cursor: pointer;">
+                                        Aggiornato <i class="fas fa-sort text-muted"></i>
+                                    </th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for table in tables %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">{{ table.id }}</span></td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ table.tipologia }}</span>
+                                    </td>
+                                    <td><strong>{{ table.marca }}</strong></td>
+                                    <td>{{ table.modello }}</td>
+                                    <td>
+                                        <span class="badge bg-success">{{ "%.4f"|format(table.costo_km) }}€</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ table.updated_at.strftime('%d/%m/%Y') if table.updated_at else '-' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('aci_edit', record_id=table.id) }}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    onclick="showDeleteModal('{{ table.id }}', '{{ table.marca }} {{ table.modello }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">Nessun record trovato</h4>
+                            <p class="text-muted">I filtri applicati non hanno prodotto risultati. Prova con filtri diversi.</p>
+                            <a href="{{ url_for('aci_tables') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo"></i> Azzera Filtri
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-filter fa-3x text-primary mb-3"></i>
+                        <h4 class="text-primary">Sistema Caricamento Ottimizzato</h4>
+                        <p class="text-muted mb-4">
+                            <strong>{{ total_records }}</strong> record presenti nel database.<br>
+                            Per migliorare le performance, seleziona almeno un filtro e clicca "Filtra" per visualizzare i dati.
+                        </p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Caricamento Lazy:</strong> I record vengono caricati solo quando necessario per evitare rallentamenti.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cancellazione in massa per tipologia -->
+            {% if show_results and tables %}
+            <div class="mt-4">
+                <h5>Cancellazione in Massa</h5>
+                <form method="POST" action="{{ url_for('aci_bulk_delete') }}" class="d-inline">
+                    {{ form.hidden_tag() }}
+                    <div class="input-group" style="max-width: 400px;">
+                        <select name="tipologia" class="form-select" required>
+                            <option value="">Seleziona tipologia da cancellare</option>
+                            {% for tipologia in tables|groupby('tipologia')|sort %}
+                            <option value="{{ tipologia.0 }}">{{ tipologia.0 }} ({{ tipologia.1|list|length }} record)</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-danger" onclick="showBulkDeleteModal()">
+                            <i class="fas fa-trash-alt"></i> Cancella Tipologia
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancellazione Record -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma Cancellazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler cancellare il record ACI:</p>
+                <p><strong id="deleteRecordName"></strong></p>
+                <p class="text-muted">Questa operazione non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="POST" id="deleteForm" class="d-inline">
+                    {{ form.hidden_tag() }}
+                    <button type="submit" class="btn btn-danger">Cancella Record</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancellazione in Massa -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma Cancellazione in Massa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler cancellare <strong>TUTTI i record</strong> della tipologia selezionata?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Questa operazione cancellerà definitivamente tutti i veicoli della tipologia e non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-danger" onclick="submitBulkDelete()">Conferma Cancellazione</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancellazione in Massa -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Conferma Cancellazione Tipologia
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attenzione!</strong> Stai per cancellare definitivamente tutti i record della tipologia.
+                </div>
+                
+                <p>Confermi di voler cancellare <strong><span id="bulkDeleteCount">?</span> record</strong> della tipologia:</p>
+                <div class="text-center p-3 bg-light rounded">
+                    <strong class="text-danger h5" id="bulkDeleteTipologia">-</strong>
+                </div>
+                
+                <p class="text-danger mt-3">
+                    <i class="fas fa-exclamation-circle"></i> 
+                    <strong>Questa operazione non può essere annullata.</strong>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Annulla
+                </button>
+                <button type="button" class="btn btn-danger" onclick="executeBulkDelete()">
+                    <i class="fas fa-trash-alt"></i> Cancella Tutti i Record
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDeleteModal(recordId, recordName) {
+    document.getElementById('deleteRecordName').textContent = recordName;
+    document.getElementById('deleteForm').action = '/aci_tables/' + recordId + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function showBulkDeleteModal() {
+    // Cerca la tipologia nel form di cancellazione (NON nel form di filtri)
+    const tipologiaSelect = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"] select[name="tipologia"]');
+    const tipologia = tipologiaSelect ? tipologiaSelect.value : '';
+    
+    if (!tipologia) {
+        alert('Seleziona una tipologia da cancellare');
+        return;
+    }
+    
+    // Conta i record per questa tipologia dalla option selezionata
+    const selectedOption = tipologiaSelect.querySelector(`option[value="${tipologia}"]`);
+    const count = selectedOption ? selectedOption.textContent.match(/\((\d+) record\)/)?.[1] || '?' : '?';
+    
+    // Aggiorna il testo della modal
+    document.getElementById('bulkDeleteTipologia').textContent = tipologia;
+    document.getElementById('bulkDeleteCount').textContent = count;
+    
+    // Mostra la modal
+    new bootstrap.Modal(document.getElementById('bulkDeleteModal')).show();
+}
+
+function executeBulkDelete() {
+    // Chiudi la modal
+    bootstrap.Modal.getInstance(document.getElementById('bulkDeleteModal')).hide();
+    
+    // Invia il form
+    const form = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]');
+    if (form) {
+        form.submit();
+    } else {
+        alert('Errore: form di cancellazione non trovato');
+    }
+}
+
+function submitBulkDelete() {
+    const form = document.querySelector('form[action="{{ url_for("aci_bulk_delete") }}"]');
+    form.submit();
+}
+
+// Filtri a cascata
+document.addEventListener('DOMContentLoaded', function() {
+    const tipologiaSelect = document.getElementById('tipologia-filter');
+    const marcaSelect = document.getElementById('marca-filter');
+    const modelloSelect = document.getElementById('modello-filter');
+    
+    // Update marca and modello dropdowns based on tipologia selection
+    tipologiaSelect.addEventListener('change', function() {
+        const selectedTipologia = this.value;
+        
+        // Reset marca and modello
+        marcaSelect.innerHTML = '<option value="">Tutte le marche</option>';
+        modelloSelect.innerHTML = '<option value="">Tutti i modelli</option>';
+        
+        if (selectedTipologia) {
+            // Load marcas for selected tipologia
+            fetch(`/api/aci/marcas?tipologia=${encodeURIComponent(selectedTipologia)}`)
+                .then(response => response.json())
+                .then(marcas => {
+                    marcas.forEach(marca => {
+                        const option = new Option(marca, marca);
+                        marcaSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error loading marcas:', error));
+                
+            // Load modelos for selected tipologia
+            fetch(`/api/aci/modelos?tipologia=${encodeURIComponent(selectedTipologia)}`)
+                .then(response => response.json())
+                .then(modelos => {
+                    modelos.forEach(modelo => {
+                        const option = new Option(modelo, modelo);
+                        modelloSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error loading modelos:', error));
+        }
+    });
+    
+    // Update modello dropdown based on marca selection
+    marcaSelect.addEventListener('change', function() {
+        const selectedTipologia = tipologiaSelect.value;
+        const selectedMarca = this.value;
+        
+        // Reset modello
+        modelloSelect.innerHTML = '<option value="">Tutti i modelli</option>';
+        
+        if (selectedTipologia && selectedMarca) {
+            // Load modelos for selected tipologia and marca
+            fetch(`/api/aci/modelos?tipologia=${encodeURIComponent(selectedTipologia)}&marca=${encodeURIComponent(selectedMarca)}`)
+                .then(response => response.json())
+                .then(modelos => {
+                    modelos.forEach(modelo => {
+                        const option = new Option(modelo, modelo);
+                        modelloSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error loading modelos:', error));
+        } else if (selectedTipologia) {
+            // Load all modelos for tipologia if no marca selected
+            fetch(`/api/aci/modelos?tipologia=${encodeURIComponent(selectedTipologia)}`)
+                .then(response => response.json())
+                .then(modelos => {
+                    modelos.forEach(modelo => {
+                        const option = new Option(modelo, modelo);
+                        modelloSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error loading modelos:', error));
+        }
+    });
+});
+
+// Funzione di ordinamento tabella
+let sortDirection = {};
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('aciTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = Array.from(tbody.rows);
+    
+    // Determina direzione ordinamento
+    const isAsc = sortDirection[columnIndex] !== 'asc';
+    sortDirection[columnIndex] = isAsc ? 'asc' : 'desc';
+    
+    // Aggiorna icone
+    document.querySelectorAll('.sortable i').forEach(icon => {
+        icon.className = 'fas fa-sort text-muted';
+    });
+    
+    const currentIcon = document.querySelector(`th:nth-child(${columnIndex + 1}) i`);
+    if (currentIcon) {
+        currentIcon.className = isAsc ? 'fas fa-sort-up text-white' : 'fas fa-sort-down text-white';
+    }
+    
+    // Ordina righe
+    rows.sort((a, b) => {
+        let aValue = a.cells[columnIndex].textContent.trim();
+        let bValue = b.cells[columnIndex].textContent.trim();
+        
+        // Gestione speciale per colonna costo (rimuovi € e converti a numero)
+        if (columnIndex === 4) {
+            aValue = parseFloat(aValue.replace('€', '').replace(',', '.'));
+            bValue = parseFloat(bValue.replace('€', '').replace(',', '.'));
+        }
+        
+        // Gestione date per colonna Aggiornato
+        if (columnIndex === 5) {
+            if (aValue === '-') aValue = '01/01/1900';
+            if (bValue === '-') bValue = '01/01/1900';
+            
+            // Converti date DD/MM/YYYY in formato confrontabile
+            const [dayA, monthA, yearA] = aValue.split('/');
+            const [dayB, monthB, yearB] = bValue.split('/');
+            aValue = new Date(yearA, monthA - 1, dayA);
+            bValue = new Date(yearB, monthB - 1, dayB);
+        }
+        
+        let comparison = 0;
+        if (aValue > bValue) comparison = 1;
+        if (aValue < bValue) comparison = -1;
+        
+        return isAsc ? comparison : -comparison;
+    });
+    
+    // Ricostruisci tabella
+    rows.forEach(row => tbody.appendChild(row));
+}
+</script>
+{% endblock %}
