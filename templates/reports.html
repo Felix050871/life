@@ -637,7 +637,6 @@
 const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
 const attendanceData = {{ attendance_data|tojson }};
 
-console.log('Attendance Data:', attendanceData);
 
 if (attendanceData && attendanceData.length > 0) {
 new Chart(attendanceCtx, {
@@ -699,7 +698,6 @@ new Chart(attendanceCtx, {
 const rolesCtx = document.getElementById('rolesChart').getContext('2d');
 const chartData = {{ chart_data|tojson }};
 
-console.log('Chart Data:', chartData);
 
 if (chartData && chartData.length > 0) {
     // Count roles

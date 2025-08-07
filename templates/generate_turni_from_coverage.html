@@ -191,13 +191,11 @@
 
 <script>
 function showGenerateModal(periodId, periodDisplay, sedeId) {
-    console.log('DEBUG: showGenerateModal called with:', {periodId, periodDisplay, sedeId});
     
     // Imposta period ID
     const hiddenInput = document.getElementById('coverage_period_id');
     if (hiddenInput) {
         hiddenInput.value = periodId;
-        console.log('DEBUG: Hidden input value set to:', hiddenInput.value);
     } else {
         console.error('DEBUG: Hidden input coverage_period_id not found');
         return;
@@ -238,7 +236,6 @@ function showGenerateModal(periodId, periodDisplay, sedeId) {
     
     newForm.addEventListener('submit', function(e) {
         const periodIdValue = document.getElementById('coverage_period_id').value;
-        console.log('DEBUG: Form submission - coverage_period_id:', periodIdValue);
         if (!periodIdValue || periodIdValue.trim() === '') {
             console.error('DEBUG: coverage_period_id is empty!');
             e.preventDefault();

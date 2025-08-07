@@ -2630,24 +2630,26 @@ def generate_shifts():
         db.session.add(template)
         db.session.commit()
         
-        # DEBUG: Verifica che la route venga chiamata  
-        import sys
-        print(f"ROUTE DEBUG: generate_shifts chiamata per {form.start_date.data} - {form.end_date.data}", file=sys.stderr, flush=True)
+        from new_shift_generation import generate_shifts_advanced
+        from models import PresidioCoverageTemplate
         
-        # DEBUG: Verifica le coperture esistenti
-        from models import PresidioCoverage
-        coverages = PresidioCoverage.query.filter_by(active=True).all()
-        print(f"ROUTE DEBUG: Trovate {len(coverages)} coperture attive", file=sys.stderr, flush=True)
-        for cov in coverages[:5]:  # Mostra le prime 5
-            print(f"ROUTE DEBUG: Copertura {cov.get_day_name()} {cov.start_time}-{cov.end_time}", file=sys.stderr, flush=True)
+        # Find active template for the period
+        template = PresidioCoverageTemplate.query.filter(
+            PresidioCoverageTemplate.start_date <= form.end_date.data,
+            PresidioCoverageTemplate.end_date >= form.start_date.data
+        ).first()
         
-        success, message = generate_shifts_for_period(
+        if not template:
+            flash('Nessun template di copertura trovato per il periodo specificato', 'warning')
+            return redirect(url_for('manage_turni'))
+        
+        turni_creati, message = generate_shifts_advanced(
+            template.id,
             form.start_date.data,
             form.end_date.data,
             current_user.id
         )
-        
-        print(f"ROUTE DEBUG: generate_shifts_for_period ha restituito success={success}", file=sys.stderr, flush=True)
+        success = turni_creati > 0
         
         if success:
             flash(message, 'success')
@@ -2687,22 +2689,26 @@ def regenerate_template(template_id):
     db.session.commit()
     
     # Regenerate shifts
-    import sys
-    print(f"REGENERATE DEBUG: regenerate_template chiamata per template {template_id}", file=sys.stderr, flush=True)
+    from new_shift_generation import generate_shifts_advanced
+    from models import PresidioCoverageTemplate
     
-    # DEBUG: Verifica le coperture prima della rigenerazione
-    from models import PresidioCoverage
-    coverages = PresidioCoverage.query.filter_by(active=True).all()
-    problem_coverages = [c for c in coverages if c.start_time.strftime('%H:%M') == '08:00' and c.end_time.strftime('%H:%M') == '23:59']
-    print(f"REGENERATE DEBUG: Trovate {len(problem_coverages)} coperture 08:00-23:59 ancora attive!", file=sys.stderr, flush=True)
+    # Find active template for the period
+    coverage_template = PresidioCoverageTemplate.query.filter(
+        PresidioCoverageTemplate.start_date <= template.end_date,
+        PresidioCoverageTemplate.end_date >= template.start_date
+    ).first()
     
-    success, message = generate_shifts_for_period(
+    if not coverage_template:
+        flash('Nessun template di copertura trovato per rigenerare i turni', 'warning')
+        return redirect(url_for('manage_turni'))
+    
+    turni_creati, message = generate_shifts_advanced(
+        coverage_template.id,
         template.start_date,
         template.end_date,
         current_user.id
     )
-    
-    print(f"REGENERATE DEBUG: generate_shifts_for_period ha restituito success={success}", file=sys.stderr, flush=True)
+    success = turni_creati > 0
     
     if success:
         preserved_msg = f" (preservati {(today - template.start_date).days} giorni già lavorati)" if today > template.start_date else ""

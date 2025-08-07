@@ -1,0 +1,71 @@
+Obiettivo: Eseguire un controllo completo dell’intera applicazione Flask per identificare ed eliminare ridondanze, codice morto, valori hardcoded, migliorando l’organizzazione senza compromettere alcuna funzionalità esistente.
+
+📦 Analisi strutturale del progetto
+
+Controlla tutte le cartelle e file del progetto Flask:
+
+/app, /templates, /static, /config, /instance, /tests, ecc.
+
+Mappa i moduli importati, le route, i blueprint, le funzioni e le dipendenze reali.
+
+🧹 Pulizia e riorganizzazione
+Effettua un'analisi accurata e:
+
+Rimuovi con prudenza:
+
+Funzioni, file Python, template HTML e asset statici non utilizzati.
+
+Variabili e costanti dichiarate ma mai usate.
+
+Duplicazioni di codice (es. view identiche, funzioni ripetute).
+
+Valori hardcoded (es. stringhe, URL, parametri) che dovrebbero stare in config o .env.
+
+Segnala ma NON cancellare se:
+
+Il codice potrebbe essere chiamato dinamicamente.
+
+Il file è sospetto ma non hai certezza del suo disuso.
+
+Mantieni l’integrità delle route:
+
+Verifica che tutte le route registrate siano effettivamente attive e raggiungibili.
+
+Rimuovi route morte o duplicate, ma solo se sicuro.
+
+⚙️ Ottimizzazione del codice
+
+Migliora la leggibilità e la manutenibilità:
+
+Rinomina variabili e funzioni in modo coerente e descrittivo.
+
+Uniforma formattazione, indentazione e commenti.
+
+Sposta config e segreti in .env o file dedicati (senza esporli).
+
+Riduci la logica nelle view: sposta codice ripetuto in helper o service.
+
+🧪 Verifica delle funzionalità
+
+Esegui un check post-pulizia:
+
+L’app deve funzionare esattamente come prima.
+
+Tutte le route devono rispondere correttamente.
+
+Se esistono test automatici: eseguili e assicurati che passino.
+
+Se non ci sono test: verifica manualmente almeno i flussi principali.
+
+📄 Report finale
+Genera un file CLEANUP_REPORT.md con:
+
+Elenco puntuale delle modifiche effettuate.
+
+File rimossi e motivazione.
+
+Suggerimenti per miglioramenti futuri (es. modularizzazione, logging, test).
+
+⚠️ IMPORTANTE:
+Non eliminare nulla che non sia chiaramente non utilizzato.
+In caso di dubbio, commenta e segnala nel report.

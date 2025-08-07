@@ -18,7 +18,6 @@ window.WorkforceApp = {
         this.setupEventListeners();
         this.initializeComponents();
         this.startPeriodicUpdates();
-        console.log('Workforce Management App initialized');
     },
 
     // Set up global event listeners

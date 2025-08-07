@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, time
 from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User, WorkSchedule
 import json
-import sys
 from app import db
 from utils import split_coverage_into_segments_by_user_capacity
 
@@ -28,7 +27,6 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
     if not available_users:
         return 0, "Nessun utente disponibile per i turni"
     
-    print(f"OPTIMIZED: Inizio generazione per {len(available_users)} utenti con algoritmo greedy", file=sys.stderr, flush=True)
     
     # Lista per tracciare turni scoperti
     uncovered_shifts = []
@@ -52,7 +50,6 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
         day_of_week = current_date.weekday()
         day_coverages = [c for c in coverages if c.day_of_week == day_of_week]
         
-        print(f"OPTIMIZED: Processo data {current_date}, {len(day_coverages)} coperture", file=sys.stderr, flush=True)
         
         # Ordina coperture per ORARIO CRONOLOGICO: prima turni mattutini, poi pomeridiani, poi serali
         # Questo è FONDAMENTALE per applicare correttamente le regole di riposo dopo turni notturni
@@ -69,15 +66,12 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                 shift_duration = calculate_shift_duration(coverage.start_time, coverage.end_time)
                 
                 if shift_duration > 8.0:
-                    print(f"SPLIT: Copertura {coverage.start_time}-{coverage.end_time} durata {shift_duration}h > 8h, spezzamento necessario", file=sys.stderr, flush=True)
                     
                     # Spezza la copertura in segmenti da massimo 8 ore
                     segments = split_coverage_into_segments_by_user_capacity(coverage, role_users)
-                    print(f"SPLIT: Creati {len(segments)} segmenti", file=sys.stderr, flush=True)
                     
                     # Processa ogni segmento separatamente
                     for segment_idx, (seg_start, seg_end, suggested_count) in enumerate(segments):
-                        print(f"SPLIT: Processando segmento {segment_idx + 1}: {seg_start}-{seg_end}", file=sys.stderr, flush=True)
                         
                         # Verifica utenti idonei per questo segmento
                         eligible_users = []
@@ -85,7 +79,6 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                             if is_user_eligible_real_time(user.id, current_date, seg_start, seg_end, user_assignments):
                                 eligible_users.append(user)
                         
-                        print(f"SPLIT: Segmento {seg_start}-{seg_end}, {len(eligible_users)}/{len(role_users)} utenti idonei", file=sys.stderr, flush=True)
                         
                         if not eligible_users:
                             # Segmento scoperto
@@ -97,7 +90,6 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                                 'day_of_week': current_date.weekday()
                             }
                             uncovered_shifts.append(uncovered_shift_info)
-                            print(f"⚠️ SEGMENTO SCOPERTO: {current_date} {seg_start}-{seg_end}", file=sys.stderr, flush=True)
                             continue
                         
                         # Seleziona miglior utente per questo segmento
@@ -127,7 +119,6 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                                 # Traccia assegnamento segmento
                                 user_assignments[selected_user.id].append((current_date, seg_start, seg_end))
                                 
-                                print(f"SPLIT: User {selected_user.username} assegnato segmento {seg_start}-{seg_end}, turni totali: {len(user_assignments[selected_user.id])}", file=sys.stderr, flush=True)
                 else:
                     # Copertura <= 8 ore: logica normale
                     # Verifica in tempo reale i conflitti prima dell'assegnazione
@@ -136,7 +127,6 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                         if is_user_eligible_real_time(user.id, current_date, coverage.start_time, coverage.end_time, user_assignments):
                             eligible_users.append(user)
                     
-                    print(f"NORMAL: Copertura {coverage.start_time}-{coverage.end_time}, {len(eligible_users)}/{len(role_users)} utenti idonei", file=sys.stderr, flush=True)
                     
                     if not eligible_users:
                         # NESSUN UTENTE DISPONIBILE - TURNO SCOPERTO
@@ -148,7 +138,6 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                             'day_of_week': current_date.weekday()
                         }
                         uncovered_shifts.append(uncovered_shift_info)
-                        print(f"⚠️ TURNO SCOPERTO: {current_date} {coverage.start_time}-{coverage.end_time} - Ruoli richiesti: {required_roles} - NESSUN UTENTE IDONEO", file=sys.stderr, flush=True)
                         continue
                     
                     # Algoritmo GREEDY: seleziona utente con meno turni e migliori preferenze
@@ -176,22 +165,15 @@ def generate_shifts_advanced(template_id, start_date, end_date, created_by_user_
                             # Traccia assegnamento per regole future
                             user_assignments[selected_user.id].append((current_date, coverage.start_time, coverage.end_time))
                             
-                            print(f"NORMAL: User {selected_user.username} assegnato {coverage.start_time}-{coverage.end_time}, turni totali: {len(user_assignments[selected_user.id])}", file=sys.stderr, flush=True)
             
             except json.JSONDecodeError:
                 continue
         
         current_date += timedelta(days=1)
     
-    # Statistiche finali
-    for user in available_users:
-        print(f"STATS: User {user.username} -> {len(user_assignments[user.id])} turni totali", file=sys.stderr, flush=True)
+    # Statistiche finali rimossi per pulizia codice
     
-    # Report turni scoperti
-    if uncovered_shifts:
-        print(f"\n⚠️ REPORT TURNI SCOPERTI ({len(uncovered_shifts)} turni):", file=sys.stderr, flush=True)
-        for uncovered in uncovered_shifts:
-            print(f"   • {uncovered['date']} {uncovered['start_time']}-{uncovered['end_time']} - {uncovered['required_roles']}", file=sys.stderr, flush=True)
+    # Report turni scoperti rimossi per pulizia codice
     
     return turni_creati, f"Creati {turni_creati} turni con algoritmo greedy ottimizzato ({len(uncovered_shifts)} turni scoperti)"
 
@@ -275,7 +257,6 @@ def is_user_eligible_real_time(user_id, date, start_time, end_time, user_assignm
             new_start_datetime = datetime.combine(date, start_time)
             
             if new_start_datetime < rest_end:
-                print(f"REGOLA 3 VIOLATA: User {user_id} ha turno notturno {shift_date} {shift_start}-{shift_end}, riposo fino {rest_end}, nuovo turno {new_start_datetime}", file=sys.stderr, flush=True)
                 return False
     
     return True

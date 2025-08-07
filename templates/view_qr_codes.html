@@ -128,13 +128,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing QR codes...');
     
     {% if qr_exist and static_qr_urls %}
-        console.log('Using static QR codes');
         // QR statici già impostati nel template
     {% else %}
-        console.log('Using dynamic QR codes');
         // Genera QR dinamicamente
         generateQRCodeImage('{{ qr_urls.entrata }}', 'qrcode-entrata');
         generateQRCodeImage('{{ qr_urls.uscita }}', 'qrcode-uscita');
@@ -159,11 +156,8 @@ function generateQRCodeImage(url, elementId) {
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
     const img = document.getElementById(elementId);
     
-    console.log('Generating QR for URL:', url);
-    console.log('QR API URL:', qrApiUrl);
     
     img.onload = function() {
-        console.log('QR code loaded successfully for', elementId);
         img.style.display = 'block';
     };
     

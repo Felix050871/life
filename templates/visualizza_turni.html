@@ -181,8 +181,6 @@ function loadTemplateShifts() {
         fetch('/api/get_shifts_for_template/' + templateId)
             .then(response => response.json())
             .then(data => {
-                console.log('*** VISUALIZZA_TURNI - CALCOLO MISSING_ROLES DINAMICO ***');
-                console.log('Template ID:', templateId, 'Data period:', data.period);
                 
                 // CARICA COPERTURE UNA VOLTA PER TUTTO IL TEMPLATE
                 fetch('/api/get_coverage_requirements/' + templateId, {
@@ -191,7 +189,6 @@ function loadTemplateShifts() {
                 })
                 .then(response => response.json())
                 .then(coverageData => {
-                    console.log('Coverage data loaded:', coverageData);
                     
                     if (coverageData.success && coverageData.coverages && data.weeks && data.period) {
                         // Estrai date periodo template
@@ -258,7 +255,6 @@ function applyMissingRolesWithCoverage(day, startDate, endDate, coverages) {
             return c.day_of_week === normalizedDayOfWeek; 
         });
         
-        console.log('Day', day.date, 'normalized DOW:', normalizedDayOfWeek, 'coverages:', dayCoverages.length);
         
         dayCoverages.forEach(function(coverage) {
             var timeSlot = coverage.start_time + '-' + coverage.end_time;
@@ -278,7 +274,6 @@ function applyMissingRolesWithCoverage(day, startDate, endDate, coverages) {
             });
         });
         
-        console.log('Day', day.date, 'final missing_roles:', day.missing_roles);
     }
 }
 
@@ -319,7 +314,6 @@ function loadCoverageRequirementsForDay(templateId, dayOfWeek, dayData) {
             updateDayMissingRoles(dayData);
         }
     })
-    .catch(error => console.log('Error loading coverage requirements:', error));
 }
 
 // Funzione per aggiornare la visualizzazione missing_roles di un giorno  
@@ -357,7 +351,6 @@ function parseTemplateDate(dateStr) {
 }
 
 function renderVisualizeTurniWithMissingRoles(data, templateId) {
-    console.log('*** RENDERING VISUALIZZA_TURNI WITH MISSING_ROLES ***');
     
     var weeksCount = 0;
     var weeksHtml = '';

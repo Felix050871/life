@@ -205,8 +205,6 @@ function showTemplateInfo() {
 }
 
 function loadShiftsForTemplate(templateId, templateName) {
-    console.log('=== loadShiftsForTemplate CALLED ===');
-    console.log('templateId:', templateId, 'templateName:', templateName);
     
     // Mostra loading
     document.getElementById('no-template-message').style.display = 'none';
@@ -215,8 +213,6 @@ function loadShiftsForTemplate(templateId, templateName) {
     document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
     
     // Richiesta AJAX per caricare i turni con credentials
-    console.log('Calling API:', '/api/get_shifts_for_template/' + templateId);
-    console.log('FORCE API CALL - bypassing complex logic');
     fetch('/api/get_shifts_for_template/' + templateId, {
         credentials: 'same-origin',
         headers: {
@@ -224,7 +220,6 @@ function loadShiftsForTemplate(templateId, templateName) {
         }
     })
         .then(response => {
-            console.log('API Response status:', response.status);
             if (response.status === 302) {
                 throw new Error('Sessione scaduta - ricarica la pagina');
             }
@@ -234,9 +229,6 @@ function loadShiftsForTemplate(templateId, templateName) {
             return response.json();
         })
         .then(data => {
-            console.log('=== API DATA RECEIVED ===');
-            console.log('Full data:', data);
-            console.log('Weeks count:', data.weeks ? Object.keys(data.weeks).length : 0);
             
             // DEBUG: Controlla se ci sono missing_roles nei dati
             if (data.weeks) {
@@ -245,7 +237,6 @@ function loadShiftsForTemplate(templateId, templateName) {
                     if (week.days && Array.isArray(week.days)) {
                         week.days.forEach(function(day, i) {
                             if (day && day.missing_roles && day.missing_roles.length > 0) {
-                                console.log('Missing roles found for day', i, ':', day.missing_roles);
                             }
                         });
                     }
@@ -263,7 +254,6 @@ function loadShiftsForTemplate(templateId, templateName) {
 }
 
 function displayShiftsFromAPI(data, templateName) {
-    console.log('=== displayShiftsFromAPI START ===');
     
     // CALCOLO MISSING_ROLES NEL FRONTEND - SOLO PER GIORNI NEL PERIODO TEMPLATE
     if (data.weeks && data.period) {
@@ -338,10 +328,8 @@ function loadCoverageRequirementsForDaySync(templateName, day, dayDate, startDat
         if (data.success && data.coverages) {
             templateCoverageCache[templateId] = data.coverages;
             applyMissingRolesFromCache(day, dayDate, data.coverages);
-            console.log('Template', templateId, 'coverages loaded and cached');
         }
     })
-    .catch(error => console.log('Error loading coverage for', templateName, ':', error));
 }
 
 // Funzione per applicare missing_roles da cache
@@ -373,7 +361,6 @@ function applyMissingRolesFromCache(day, dayDate, coverages) {
         });
     });
     
-    console.log(day.date + ' - Missing roles calculated:', day.missing_roles);
     
     // FORZA RE-RENDER dopo calcolo missing_roles
     updateDayDisplay(day);
@@ -495,7 +482,6 @@ function renderTurniLayout(data, templateName) {
     });
     
     container.innerHTML = html;
-    console.log('=== renderTurniLayout COMPLETE ===');
 }
 
 // End of simplified API-only logic
