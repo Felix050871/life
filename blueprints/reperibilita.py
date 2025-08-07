@@ -197,6 +197,18 @@ def my_reperibilita():
                          selected_month=month_filter,
                          selected_status=status_filter)
 
+@reperibilita_bp.route('/generate_shifts', methods=['GET', 'POST'])
+@login_required
+@require_reperibilita_permissions
+def generate_shifts():
+    """Generazione turni reperibilità (placeholder)"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per generare turni', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    flash('Funzione generazione automatica turni in sviluppo', 'info')
+    return redirect(url_for('reperibilita.reperibilita_coverage'))
+
 @reperibilita_bp.route('/api/get_reperibilita_data')
 @login_required
 def get_reperibilita_data():

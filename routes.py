@@ -3510,17 +3510,10 @@ def reperibilita_replica(period_key):
                          start_date=start_date,
                          end_date=end_date)
 
-@app.route('/reperibilita_shifts/generate', methods=['GET', 'POST'])
-@require_login
-def generate_reperibilita_shifts():
-    """Genera turnazioni reperibilità"""
-    if not current_user.can_manage_reperibilita():
-        flash('Non hai i permessi per generare turni di reperibilità', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    from forms import ReperibilitaTemplateForm
-    from models import ReperibilitaTemplate, ReperibilitaShift
-    from utils import generate_reperibilita_shifts_from_coverage
+# ROUTE DISABLED - MOVED TO BLUEPRINT
+# @app.route('/reperibilita_shifts/generate', methods=['GET', 'POST'])
+# @require_login 
+# def generate_reperibilita_shifts():
     
     form = ReperibilitaTemplateForm()
     
