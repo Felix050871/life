@@ -5,8 +5,8 @@ from config import Config
 import routes
 
 # Register Flask Blueprints after routes are imported
-from routes.auth import auth_bp
-from routes.holidays import holidays_bp
+from blueprints.auth import auth_bp
+from blueprints.holidays import holidays_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(holidays_bp)
