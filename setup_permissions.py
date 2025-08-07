@@ -49,6 +49,7 @@ def create_default_roles():
                 # Sistema e configurazione
                 'can_manage_system': True,
                 'can_manage_roles': True,
+                'can_view_roles': True,  # Aggiunto permesso mancante
                 'can_manage_permissions': True,
                 'can_manage_settings': True,
                 'can_view_system_logs': True,
