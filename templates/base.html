@@ -303,10 +303,10 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_request_leave() %}
-                        <li><a href="{{ url_for('create_leave_request_page') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave.create_leave_request') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Richiedi Ferie/Permessi
                         </a></li>
-                        <li><a href="{{ url_for('leave_requests', view='my') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave.leave_requests', view='my') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user"></i>Le Mie Richieste
                         </a></li>
                         {% endif %}
@@ -316,12 +316,12 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_approve_leave() %}
-                        <li><a href="{{ url_for('leave_requests', view='approve') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave.leave_requests', view='approve') }}" class="sidebar-submenu-link">
                             <i class="fas fa-check"></i>Approva Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_leave() %}
-                        <li><a href="{{ url_for('leave_requests', view='view') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave.leave_requests', view='view') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizza Richieste
                         </a></li>
                         {% endif %}

@@ -1733,9 +1733,7 @@ def delete_leave_type(id):
     
     return redirect(url_for('leave_types'))
 
-@app.route('/leave_requests')
-@login_required
-def leave_requests():
+# ROUTE MOVED TO leave_bp blueprint
     # Ottieni il parametro view per determinare la modalità di visualizzazione
     view_mode = request.args.get('view', 'default')
     
@@ -1806,9 +1804,7 @@ def leave_requests():
                          view_mode=view_mode,
                          today=date.today())
 
-@app.route('/create_leave_request', methods=['GET', 'POST'])
-@login_required
-def create_leave_request_page():
+# ROUTE MOVED TO leave_bp blueprint
     if not current_user.can_request_leave():
         flash('Non hai i permessi per richiedere ferie/permessi', 'danger')
         return redirect(url_for('leave_requests'))
