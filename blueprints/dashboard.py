@@ -237,12 +237,12 @@ def dashboard():
     # Widget overtime requests
     recent_overtime_requests = []
     my_overtime_requests = []
-    if current_user.can_view_my_overtime():
+    if current_user.can_view_my_overtime_requests():
         my_overtime_requests = OvertimeRequest.query.filter(
             OvertimeRequest.user_id == current_user.id
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
     
-    if current_user.can_approve_overtime():
+    if current_user.can_approve_overtime_requests():
         recent_overtime_requests = OvertimeRequest.query.filter(
             OvertimeRequest.status == 'pending'
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
@@ -250,12 +250,12 @@ def dashboard():
     # Widget mileage requests
     recent_mileage_requests = []
     my_mileage_requests = []
-    if current_user.can_view_my_mileage():
+    if current_user.can_view_my_mileage_requests():
         my_mileage_requests = MileageRequest.query.filter(
             MileageRequest.user_id == current_user.id
         ).order_by(MileageRequest.created_at.desc()).limit(5).all()
     
-    if current_user.can_approve_mileage():
+    if current_user.can_approve_mileage_requests():
         recent_mileage_requests = MileageRequest.query.filter(
             MileageRequest.status == 'pending'
         ).order_by(MileageRequest.created_at.desc()).limit(5).all()
