@@ -1,38 +1,10 @@
-# =============================================================================
-# WORKLY - DATABASE MODELS
-# Organized by functional areas for better maintainability
-# =============================================================================
-#
-# MODEL ORGANIZATION:
-# 1. Global Utilities & Associations
-# 2. User Management Models (UserRole, User)
-# 3. Attendance & Time Tracking Models (AttendanceEvent)
-# 4. Leave Management Models (LeaveType, LeaveRequest)
-# 5. Shift Management Models (Shift, ShiftTemplate, PresidioCoverageTemplate, PresidioCoverage)
-# 6. Reperibilità Models (ReperibilitaCoverage, ReperibilitaShift, ReperibilitaIntervention, ReperibilitaTemplate)
-# 7. Intervention Models (Intervention)
-# 8. Administrative Models (Holiday, InternalMessage, PasswordResetToken)
-# 9. Expense Management Models (ExpenseCategory, ExpenseReport)
-# 10. Overtime Management Models (OvertimeType, OvertimeRequest)
-# 11. Mileage Management Models (MileageRequest)
-# 12. System Configuration Models (Sede, WorkSchedule, ACITable)
-#
-# Total Models: 25
-# =============================================================================
-
-# Core imports
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 from flask_login import UserMixin
 from app import db
 
-
-# =============================================================================
-# GLOBAL UTILITIES & ASSOCIATIONS
-# =============================================================================
-
+# Funzione helper per timestamp italiano
 def italian_now():
-    """Funzione helper per timestamp italiano"""
     return datetime.now(ZoneInfo('Europe/Rome'))
 
 def convert_to_italian_time(timestamp):
@@ -53,10 +25,6 @@ user_sede_association = db.Table('user_sede_association',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('sede_id', db.Integer, db.ForeignKey('sede.id'), primary_key=True)
 )
-
-# =============================================================================
-# USER MANAGEMENT MODELS
-# =============================================================================
 
 class UserRole(db.Model):
     """Modello per la gestione dinamica dei ruoli utente"""
@@ -718,10 +686,6 @@ class User(UserMixin, db.Model):
 
 
 
-# =============================================================================
-# ATTENDANCE & TIME TRACKING MODELS
-# =============================================================================
-
 class AttendanceEvent(db.Model):
     """Modello per registrare eventi multipli di entrata/uscita nella stessa giornata"""
     id = db.Column(db.Integer, primary_key=True)
@@ -1286,10 +1250,6 @@ class AttendanceEvent(db.Model):
         
         return issues
 
-# =============================================================================
-# LEAVE MANAGEMENT MODELS
-# =============================================================================
-
 class LeaveType(db.Model):
     """Modello per la gestione delle tipologie di permesso configurabili dall'amministratore"""
     id = db.Column(db.Integer, primary_key=True)
@@ -1376,10 +1336,6 @@ class LeaveRequest(db.Model):
             return self.leave_type_ref.requires_approval
         # Fallback: malattia non richiede approvazione, resto sì
         return self.leave_type != 'Malattia' if self.leave_type else True
-
-# =============================================================================
-# SHIFT MANAGEMENT MODELS  
-# =============================================================================
 
 class Shift(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1669,10 +1625,6 @@ def get_required_roles_for_time_slot(day_of_week, time_slot, target_date=None):
     return list(required_roles)
 
 
-# =============================================================================
-# REPERIBILITÀ MODELS
-# =============================================================================
-
 class ReperibilitaCoverage(db.Model):
     """Definisce la copertura reperibilità per giorno della settimana e fascia oraria con periodo di validità"""
     id = db.Column(db.Integer, primary_key=True)
@@ -1818,10 +1770,6 @@ class ReperibilitaIntervention(db.Model):
         return f'<ReperibilitaIntervention {self.user.username} at {self.start_datetime}>'
 
 
-# =============================================================================
-# INTERVENTION MODELS
-# =============================================================================
-
 class Intervention(db.Model):
     """Interventi generici registrati dagli utenti (non di reperibilità)"""
     id = db.Column(db.Integer, primary_key=True)
@@ -1865,10 +1813,6 @@ class ReperibilitaTemplate(db.Model):
     
     creator = db.relationship('User', backref='reperibilita_templates')
 
-
-# =============================================================================
-# ADMINISTRATIVE MODELS
-# =============================================================================
 
 class Holiday(db.Model):
     """Festività gestibili dagli amministratori - nazionali e per sede"""
@@ -1973,10 +1917,6 @@ class PasswordResetToken(db.Model):
         now_utc = datetime.utcnow()
         return now_utc > self.expires_at
 
-
-# =============================================================================
-# EXPENSE MANAGEMENT MODELS
-# =============================================================================
 
 class ExpenseCategory(db.Model):
     """Categorie per le note spese"""
@@ -2129,9 +2069,9 @@ class ExpenseReport(db.Model):
         return result or 0
     
 
-# =============================================================================
-# OVERTIME MANAGEMENT MODELS
-# =============================================================================
+# ============================================================================
+# SISTEMA STRAORDINARI
+# ============================================================================
 
 class OvertimeType(db.Model):
     """Tipologie di straordinario"""
@@ -2322,9 +2262,9 @@ class OvertimeRequest(db.Model):
         return round(total_hours, 2)
 
 
-# =============================================================================
-# MILEAGE MANAGEMENT MODELS
-# =============================================================================
+# ============================================================================
+# SISTEMA RIMBORSI CHILOMETRICI
+# ============================================================================
 
 class MileageRequest(db.Model):
     """Richieste di rimborso chilometrico dei dipendenti"""
@@ -2524,10 +2464,6 @@ class MileageRequest(db.Model):
             'total_amount': sum([req.total_amount for req in pending + approved + rejected])
         }
 
-
-# =============================================================================
-# SYSTEM CONFIGURATION MODELS
-# =============================================================================
 
 class Sede(db.Model):
     """Modello per le sedi aziendali"""
