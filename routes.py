@@ -2956,7 +2956,7 @@ def leave_requests():
         can_approve = False
         page_title = "Le Mie Richieste Ferie/Permessi"
         
-    elif view_mode == 'approve' and current_user.can_approve_leave():
+    elif view_mode == 'approve' and (current_user.can_manage_leave() or current_user.can_approve_leave()):
         # Modalità approvazione - solo richieste pending da approvare
         if current_user.role == 'Responsabili':
             requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).filter(
@@ -2983,7 +2983,7 @@ def leave_requests():
         can_approve = False
         page_title = "Visualizza Richieste Ferie/Permessi"
         
-    elif current_user.can_approve_leave():
+    elif current_user.can_manage_leave() or current_user.can_approve_leave():
         # Modalità gestione completa per manager
         if current_user.role == 'Responsabili':
             requests = LeaveRequest.query.join(User, LeaveRequest.user_id == User.id).filter(
@@ -8991,7 +8991,7 @@ def delete_expense_report(expense_id):
 @login_required
 def overtime_types():
     """Visualizzazione e gestione tipologie straordinari"""
-    if not current_user.can_view_overtime_types():
+    if not (current_user.can_manage_overtime_types() or current_user.can_view_overtime_types()):
         flash('Non hai i permessi per visualizzare le tipologie di straordinario.', 'warning')
         return redirect(url_for('dashboard'))
     
