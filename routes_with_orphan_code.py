@@ -74,6 +74,7 @@ from utils import (
 
 # Blueprint registration will be handled at the end of this file
 
+
 # =============================================================================
 # GLOBAL CONFIGURATION AND UTILITY FUNCTIONS
 # =============================================================================
@@ -108,6 +109,7 @@ def is_safe_url(target):
     # Check if the scheme and netloc match (same domain)
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
+
 # =============================================================================
 # CORE NAVIGATION ROUTES
 # =============================================================================
@@ -119,10 +121,12 @@ def index():
         return redirect(url_for('dashboard.dashboard'))
     return redirect(url_for('auth.login'))
 
+
 # =============================================================================
 # AUTHENTICATION ROUTES - MOVED TO routes/auth.py BLUEPRINT
 # =============================================================================
 # Authentication routes now handled by auth_bp blueprint
+
 
 # =============================================================================
 # DASHBOARD ROUTES - MOVED TO blueprints/dashboard.py BLUEPRINT
@@ -134,6 +138,1271 @@ def index():
 # =============================================================================
 # ATTENDANCE & CLOCK IN/OUT ROUTES 
 # =============================================================================
+    # Verifica permessi di accesso alla dashboard
+    if not current_user.can_access_dashboard():
+        flash('Non hai i permessi per accedere alla dashboard.', 'danger')
+        return redirect(url_for('login'))
+    
+    stats = get_user_statistics(current_user.id)
+    
+    # Widget statistics team (solo per utenti autorizzati)
+    team_stats = None
+    if current_user.can_view_team_stats_widget():
+        team_stats = get_team_statistics()
+    
+    # Get today's attendance events
+    today_events_check = AttendanceEvent.query.filter(
+        AttendanceEvent.user_id == current_user.id,
+        AttendanceEvent.date == date.today()
+    ).first()
+    today_attendance = today_events_check  # Per compatibilità con il template
+    
+    # Get daily status variables for the status section
+    today_date = date.today()
+    
+    # Initialize variables for all users
+    user_status = 'out'
+    today_work_hours = 0
+    today_events = []
+    
+    # Get current user's status and today's events (for regular users only, PM will be handled separately)
+    if current_user.can_view_attendance() and not current_user.has_role('Amministratore'):
+        user_status, _ = AttendanceEvent.get_user_status(current_user.id, today_date)
+        today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
+        today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
+    
+    # Get presidio coverage templates for shifts widget
+    upcoming_shifts = []
+    if current_user.can_view_shifts():
+        # Show active presidio coverage templates
+        upcoming_shifts = PresidioCoverageTemplate.query.filter_by(active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
+    
+    # Get upcoming reperibilità shifts for authorized users
+    upcoming_reperibilita_shifts = []
+    active_intervention = None
+    recent_interventions = []
+    current_time = italian_now().time()
+    if current_user.can_view_reperibilita():
+        # Show active reperibilità coverage grouped by period
+        upcoming_reperibilita_shifts = db.session.query(ReperibilitaCoverage)\
+            .filter(ReperibilitaCoverage.active == True)\
+            .order_by(ReperibilitaCoverage.start_date.desc())\
+            .all()
+        
+        # Group by period (start_date, end_date) to avoid duplicates
+        coverage_periods = {}
+        for coverage in upcoming_reperibilita_shifts:
+            period_key = (coverage.start_date, coverage.end_date)
+            if period_key not in coverage_periods:
+                coverage_periods[period_key] = {
+                    'start_date': coverage.start_date,
+                    'end_date': coverage.end_date,
+                    'description': coverage.description,
+                    'sedi_names': coverage.get_sedi_names(),
+                    'coverage_count': 0
+                }
+            coverage_periods[period_key]['coverage_count'] += 1
+        
+        # Convert to list for template
+        upcoming_reperibilita_shifts = list(coverage_periods.values())
+        
+        # Get active intervention for this user
+        active_intervention = ReperibilitaIntervention.query.filter_by(
+            user_id=current_user.id,
+            end_datetime=None
+        ).first()
+        
+        # Get recent interventions for timeline (last 7 days)
+        seven_days_ago = italian_now() - timedelta(days=7)
+        recent_interventions = ReperibilitaIntervention.query.filter(
+            ReperibilitaIntervention.user_id == current_user.id,
+            ReperibilitaIntervention.start_datetime >= seven_days_ago
+        ).order_by(ReperibilitaIntervention.start_datetime.desc()).limit(10).all()
+    
+    # Get active general intervention for this user
+    active_general_intervention = Intervention.query.filter_by(
+        user_id=current_user.id,
+        end_datetime=None
+    ).first()
+    
+    # Get recent leave requests for widget
+    recent_leaves = []
+    if current_user.can_view_leave_requests_widget():
+        if current_user.can_manage_leave() or current_user.can_approve_leave():
+            # Managers see all requests
+            recent_leaves = LeaveRequest.query.order_by(LeaveRequest.created_at.desc()).limit(10).all()
+        else:
+            # Regular users see only their own
+            recent_leaves = LeaveRequest.query.filter_by(
+                user_id=current_user.id
+            ).order_by(LeaveRequest.created_at.desc()).limit(3).all()
+    
+    # Get recent overtime requests for widget
+    recent_overtime_requests = []
+    my_overtime_requests = []
+    if current_user.can_view_overtime_widget():
+        if current_user.can_manage_overtime_requests() or current_user.can_approve_overtime_requests():
+            # Managers see all requests
+            recent_overtime_requests = OvertimeRequest.query.options(
+                joinedload(OvertimeRequest.employee),
+                joinedload(OvertimeRequest.overtime_type)
+            ).order_by(OvertimeRequest.created_at.desc()).limit(10).all()
+    
+    # Get my overtime requests for personal widget  
+    if current_user.can_view_my_overtime_widget():
+        my_overtime_requests = OvertimeRequest.query.filter_by(
+            employee_id=current_user.id
+        ).options(
+            joinedload(OvertimeRequest.overtime_type)
+        ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
+    
+    # Get recent mileage requests for widget
+    recent_mileage_requests = []
+    my_mileage_requests = []
+    if current_user.can_view_mileage_widget():
+        if current_user.can_manage_mileage_requests() or current_user.can_approve_mileage_requests():
+            # Managers see all requests
+            recent_mileage_requests = MileageRequest.query.options(
+                joinedload(MileageRequest.user),
+                joinedload(MileageRequest.vehicle)
+            ).order_by(MileageRequest.created_at.desc()).limit(10).all()
+    
+    # Get my mileage requests for personal widget  
+    if current_user.can_view_my_mileage_widget():
+        my_mileage_requests = MileageRequest.query.filter_by(
+            user_id=current_user.id
+        ).options(
+            joinedload(MileageRequest.vehicle)
+        ).order_by(MileageRequest.created_at.desc()).limit(5).all()
+    
+    # Get weekly calendar data (Monday to Sunday)
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())  # Monday
+    weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+    
+    weekly_calendar = []
+    for i in range(7):
+        day_date = week_start + timedelta(days=i)
+        
+        # Get shifts for this day (only show shifts, not attendance info)
+        day_shifts = Shift.query.filter(
+            Shift.user_id == current_user.id,
+            Shift.date == day_date
+        ).all()
+        
+        weekly_calendar.append({
+            'date': day_date,
+            'weekday': weekdays[i],
+            'is_today': day_date == today,
+            'shifts': day_shifts
+        })
+    
+
+    
+    # Add personal attendance data for PM
+    if current_user.can_manage_users() and current_user.can_view_attendance():
+        # Get manager's personal attendance data (same as regular users)
+        user_status = AttendanceEvent.get_user_status(current_user.id)
+        today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
+        today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
+
+
+    # Widget data for daily attendance by sede
+    daily_attendance_data = {}
+    if current_user.can_view_daily_attendance_widget():
+        from collections import defaultdict
+        attendance_by_sede = defaultdict(lambda: {'present_users': [], 'total_users': 0, 'coverage_rate': 0})
+        
+        # Get today's attendance events grouped by sede
+        today_attendances = AttendanceEvent.query.filter_by(date=date.today()).all()
+        present_user_ids = set()
+        
+        for attendance in today_attendances:
+            if attendance.event_type == 'clock_in':
+                present_user_ids.add(attendance.user_id)
+            elif attendance.event_type == 'clock_out':
+                present_user_ids.discard(attendance.user_id)
+        
+        # Group present users by sede
+        if present_user_ids:
+            present_users = User.query.filter(User.id.in_(present_user_ids)).all()
+            for user in present_users:
+                sede_name = user.get_sede_name()
+                attendance_by_sede[sede_name]['present_users'].append(user)
+        
+        # Calculate totals per sede
+        accessible_sedi = current_user.get_accessible_sedi() if hasattr(current_user, 'get_accessible_sedi') else []
+        for sede in accessible_sedi:
+            total_sede_users = User.query.filter_by(sede_id=sede.id, active=True).count()
+            present_count = len(attendance_by_sede[sede.name]['present_users'])
+            attendance_by_sede[sede.name]['total_users'] = total_sede_users
+            attendance_by_sede[sede.name]['coverage_rate'] = (present_count / total_sede_users * 100) if total_sede_users > 0 else 0
+        
+        daily_attendance_data = dict(attendance_by_sede)
+    
+    # Widget data for shifts coverage alerts
+    shifts_coverage_alerts = []
+    if current_user.can_view_shifts_coverage_widget():
+        # Get today's shifts with missing coverage
+        today_shifts = Shift.query.filter_by(date=date.today()).all()
+        for shift in today_shifts:
+            if not shift.user_id:  # Uncovered shift
+                shifts_coverage_alerts.append({
+                    'shift': shift,
+                    'alert_type': 'uncovered',
+                    'message': f'Turno {shift.start_time.strftime("%H:%M")}-{shift.end_time.strftime("%H:%M")} non coperto'
+                })
+    
+    # Widget data for team management quick access
+    team_management_data = {}
+    if current_user.can_view_team_management_widget():
+        # Get quick stats about team
+        # Usa il metodo helper per filtrare automaticamente per sede
+        visible_users_query = User.get_visible_users_query(current_user)
+        total_team_members = visible_users_query.filter_by(active=True).count()
+        pending_users = visible_users_query.filter_by(active=False).count()
+        recent_additions = visible_users_query.order_by(User.id.desc()).limit(3).all()
+        
+        team_management_data = {
+            'total_members': total_team_members,
+            'pending_users': pending_users,
+            'recent_additions': recent_additions,
+            'is_multi_sede': current_user.all_sedi
+        }
+
+    # Ottieni dati per i nuovi widget personali
+    my_leave_requests = []
+    my_shifts = []
+    my_reperibilita = []
+    
+    if current_user.can_view_my_leave_requests_widget():
+        my_leave_requests = LeaveRequest.query.filter_by(user_id=current_user.id).order_by(LeaveRequest.created_at.desc()).limit(5).all()
+    
+    if current_user.can_view_my_shifts_widget():
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        italy_tz = ZoneInfo('Europe/Rome')
+        today_dt = datetime.now(italy_tz).date()
+        my_shifts = Shift.query.filter_by(user_id=current_user.id).filter(Shift.date >= today_dt).order_by(Shift.date.asc()).limit(5).all()
+    
+    if current_user.can_view_my_reperibilita_widget():
+        my_reperibilita = ReperibilitaShift.query.filter_by(user_id=current_user.id).order_by(ReperibilitaShift.date.desc()).limit(5).all()
+    
+    # Widget Note Spese
+    expense_reports_data = None
+    if current_user.can_view_expense_reports_widget():
+        from models import ExpenseReport
+        
+        # Query base per le note spese
+        expense_query = ExpenseReport.query
+        
+        # Usa i nuovi permessi espliciti per determinare cosa mostrare
+        if current_user.can_view_expense_reports():
+            # Può vedere tutte le note spese (eventualmente filtrate per sede)
+            if not current_user.all_sedi and current_user.sede_id:
+                # Filtra per sede se non ha accesso globale
+                sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+                sede_user_ids = [u.id for u in sede_users]
+                expense_query = expense_query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        elif current_user.can_view_my_expense_reports():
+            # Può vedere solo le proprie note spese
+            expense_query = expense_query.filter(ExpenseReport.employee_id == current_user.id)
+        else:
+            # Nessun permesso - non dovrebbe mai succedere se ha il widget
+            expense_query = expense_query.filter(ExpenseReport.employee_id == current_user.id)
+        
+        # Statistiche note spese
+        total_expenses = expense_query.count()
+        pending_expenses = expense_query.filter(ExpenseReport.status == 'pending').count()
+        approved_expenses = expense_query.filter(ExpenseReport.status == 'approved').count()
+        rejected_expenses = expense_query.filter(ExpenseReport.status == 'rejected').count()
+        
+        # Note spese recenti (ultime 5)
+        recent_expenses = expense_query.order_by(ExpenseReport.expense_date.desc()).limit(5).all()
+        
+        # Total importo note spese approvate del mese corrente
+        current_month_start = date.today().replace(day=1)
+        monthly_total_query = db.session.query(db.func.sum(ExpenseReport.amount)).filter(
+            ExpenseReport.status == 'approved',
+            ExpenseReport.expense_date >= current_month_start
+        )
+        
+        if not current_user.all_sedi and current_user.sede_id:
+            sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+            sede_user_ids = [u.id for u in sede_users]
+            monthly_total_query = monthly_total_query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        
+        monthly_total = monthly_total_query.scalar() or 0
+        
+        expense_reports_data = {
+            'total_expenses': total_expenses,
+            'pending_expenses': pending_expenses,
+            'approved_expenses': approved_expenses,
+            'rejected_expenses': rejected_expenses,
+            'recent_expenses': recent_expenses,
+            'monthly_total': monthly_total
+        }
+
+    # Get all sedi for multi-sede users
+    all_sedi_list = []
+    if current_user.all_sedi:
+        all_sedi_list = Sede.query.filter_by(active=True).all()
+
+    return render_template('dashboard.html', 
+                         stats=stats, 
+                         team_stats=team_stats,
+                         today_attendance=today_attendance,
+                         upcoming_shifts=upcoming_shifts,
+                         team_management_data=team_management_data,
+                         upcoming_reperibilita_shifts=upcoming_reperibilita_shifts,
+                         active_intervention=active_intervention,
+                         active_general_intervention=active_general_intervention,
+                         recent_interventions=recent_interventions,
+                         recent_leaves=recent_leaves,
+                         weekly_calendar=weekly_calendar,
+                         all_sedi_list=all_sedi_list,
+                         today=today,
+                         today_date=today_date,
+                         current_time=current_time,
+                         user_status=user_status,
+                         today_events=today_events,
+                         today_work_hours=today_work_hours,
+                         daily_attendance_data=daily_attendance_data,
+                         shifts_coverage_alerts=shifts_coverage_alerts,
+                         my_leave_requests=my_leave_requests,
+                         my_shifts=my_shifts,
+                         my_reperibilita=my_reperibilita,
+                         expense_reports_data=expense_reports_data,
+                         recent_overtime_requests=recent_overtime_requests,
+                         my_overtime_requests=my_overtime_requests,
+                         recent_mileage_requests=recent_mileage_requests,
+                         my_mileage_requests=my_mileage_requests,
+                         format_hours=format_hours)
+
+@app.route('/dashboard_team')
+@login_required
+def dashboard_team():
+    """Dashboard per visualizzare le presenze di tutte le sedi - per Management"""
+    if not current_user.can_view_all_attendance():
+        flash('Non hai i permessi per visualizzare questo contenuto.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Get users visible to current user based on role and sede access - consistent with attendance logic
+    if current_user.role == 'Amministratore':
+        # Amministratori vedono tutti gli utenti di tutte le sedi
+        all_users = User.query.filter(
+            User.active.is_(True),
+            ~User.role.in_(['Admin', 'Staff'])
+        ).all()
+    elif current_user.role in ['Responsabile', 'Management']:
+        # Responsabili e Management vedono solo utenti della propria sede
+        all_users = User.query.filter(
+            User.sede_id == current_user.sede_id,
+            User.active.is_(True),
+            ~User.role.in_(['Admin', 'Staff'])
+        ).all()
+    elif current_user.all_sedi:
+        # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
+        all_users = User.query.filter(
+            User.active.is_(True),
+            ~User.role.in_(['Admin', 'Staff'])
+        ).all()
+    else:
+        # Altri utenti vedono solo utenti della propria sede se specificata
+        if current_user.sede_id:
+            all_users = User.query.filter(
+                User.sede_id == current_user.sede_id,
+                User.active.is_(True),
+                ~User.role.in_(['Admin', 'Staff'])
+            ).all()
+        else:
+            all_users = []
+    
+    # Get sedi visible to current user 
+    if current_user.role == 'Amministratore' or current_user.all_sedi:
+        # Amministratori e utenti multi-sede vedono tutte le sedi
+        all_sedi = Sede.query.filter(Sede.active == True).all()
+    elif current_user.sede_id:
+        # Altri utenti vedono solo la propria sede
+        all_sedi = [current_user.sede_obj] if current_user.sede_obj and current_user.sede_obj.active else []
+    else:
+        all_sedi = []
+    
+    # Parametri di visualizzazione semplificati
+    export_format = request.args.get('export')
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    today = date.today()
+    
+    # Range di date - mantieni i valori passati o usa oggi come default
+    if start_date_str and start_date_str.strip():
+        try:
+            start_date = datetime.strptime(start_date_str.strip(), '%Y-%m-%d').date()
+        except ValueError:
+            start_date = today
+    else:
+        start_date = today
+        
+    if end_date_str and end_date_str.strip():
+        try:
+            end_date = datetime.strptime(end_date_str.strip(), '%Y-%m-%d').date()
+        except ValueError:
+            end_date = today
+    else:
+        end_date = today
+        
+    # Assicurati che start_date <= end_date
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+    
+    # Etichetta periodo
+    if start_date == end_date:
+        period_label = f"Giorno {start_date.strftime('%d/%m/%Y')}"
+    else:
+        period_label = f"Periodo {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
+    
+    # Funzione helper per verificare se un giorno è lavorativo
+    def is_working_day(check_date, user):
+        """Verifica se una data è un giorno lavorativo per l'utente"""
+        # Verifica se è un giorno festivo
+        holiday = Holiday.query.filter(
+            Holiday.month == check_date.month,
+            Holiday.day == check_date.day,
+            Holiday.active == True
+        ).first()
+        if holiday:
+            return False
+        
+        # Verifica gli orari di lavoro dell'utente
+        if user.work_schedule:
+            # Se l'utente ha un orario definito, controlla i giorni della settimana
+            if user.work_schedule.days_of_week:
+                weekday = check_date.weekday()  # 0=lunedì, 6=domenica
+                # Gestisci sia stringa che lista per days_of_week
+                if isinstance(user.work_schedule.days_of_week, str):
+                    allowed_days = [int(d) for d in user.work_schedule.days_of_week.split(',')]
+                elif isinstance(user.work_schedule.days_of_week, list):
+                    allowed_days = [int(d) for d in user.work_schedule.days_of_week]
+                else:
+                    # Default lun-ven se formato non riconosciuto
+                    allowed_days = [0, 1, 2, 3, 4]
+                    
+                if weekday not in allowed_days:
+                    return False
+        else:
+            # Se non ha orario definito (modalità turni), controlla solo weekend di default
+            weekday = check_date.weekday()
+            if weekday >= 5:  # sabato=5, domenica=6
+                return False
+        
+        return True
+    
+    # Get attendance data for the period - OTTIMIZZATO
+    attendance_data = {}
+    
+    # Pre-carica tutti i dati necessari con query ottimizzate
+    user_ids = [user.id for user in all_users]
+    
+    # Query batch per richieste di congedo nel periodo
+    leave_requests = LeaveRequest.query.filter(
+        LeaveRequest.user_id.in_(user_ids),
+        LeaveRequest.status == 'Approved',
+        LeaveRequest.start_date <= end_date,
+        LeaveRequest.end_date >= start_date
+    ).all()
+    
+    # Organizza leave requests per user_id e date
+    leave_by_user_date = {}
+    for leave in leave_requests:
+        if leave.user_id not in leave_by_user_date:
+            leave_by_user_date[leave.user_id] = {}
+        
+        # Aggiungi la richiesta per ogni giorno coperto
+        current = max(leave.start_date, start_date)
+        end = min(leave.end_date, end_date)
+        while current <= end:
+            leave_by_user_date[leave.user_id][current] = leave
+            current += timedelta(days=1)
+    
+    # Query batch per eventi di presenza nel periodo
+    attendance_events = AttendanceEvent.query.filter(
+        AttendanceEvent.user_id.in_(user_ids),
+        AttendanceEvent.date >= start_date,
+        AttendanceEvent.date <= end_date
+    ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+    
+    # Organizza eventi per user_id e date
+    events_by_user_date = {}
+    for event in attendance_events:
+        if event.user_id not in events_by_user_date:
+            events_by_user_date[event.user_id] = {}
+        if event.date not in events_by_user_date[event.user_id]:
+            events_by_user_date[event.user_id][event.date] = []
+        events_by_user_date[event.user_id][event.date].append(event)
+
+    for user in all_users:
+        if start_date == end_date:
+            # Vista giornaliera singola
+            is_working = is_working_day(start_date, user)
+            leave_request = leave_by_user_date.get(user.id, {}).get(start_date)
+            
+            if is_working or leave_request:
+                # Usa dati pre-caricati invece di query separate
+                user_events = events_by_user_date.get(user.id, {}).get(start_date, [])
+                status, last_event = AttendanceEvent.calculate_status_from_events(user_events)
+                daily_summary = AttendanceEvent.calculate_summary_from_events(user_events)
+                
+                attendance_data[user.id] = {
+                    'user': user,
+                    'status': status,
+                    'last_event': last_event,
+                    'daily_summary': daily_summary,
+                    'leave_request': leave_request
+                }
+        else:
+            # Periodo multi-giorno ottimizzato
+            daily_details = []
+            current_date = start_date
+            
+            while current_date <= min(end_date, date.today()):
+                is_working = is_working_day(current_date, user)
+                leave_request = leave_by_user_date.get(user.id, {}).get(current_date)
+                
+                if is_working or leave_request:
+                    user_events = events_by_user_date.get(user.id, {}).get(current_date, [])
+                    status, last_event = AttendanceEvent.calculate_status_from_events(user_events)
+                    daily_summary = AttendanceEvent.calculate_summary_from_events(user_events)
+                    
+                    if not daily_summary and not leave_request and not last_event:
+                        status = 'out'
+                    
+                    daily_details.append({
+                        'date': current_date,
+                        'status': status,
+                        'daily_summary': daily_summary,
+                        'last_event': last_event,
+                        'leave_request': leave_request
+                    })
+                
+                current_date += timedelta(days=1)
+            
+            if daily_details:
+                attendance_data[user.id] = {
+                    'user': user,
+                    'daily_details': daily_details
+                }
+                
+    # Handle export
+    if export_format == 'excel':
+        return generate_attendance_excel_export(attendance_data, 'custom', period_label, all_sedi, start_date, end_date)
+    
+    return render_template('dashboard_team.html',
+                         all_users=all_users,
+                         all_sedi=all_sedi,
+                         attendance_data=attendance_data,
+                         today=today,
+                         period_label=period_label,
+                         start_date=start_date,
+                         end_date=end_date,
+                         current_user=current_user)
+
+def generate_attendance_excel_export(attendance_data, period_mode, period_label, all_sedi, start_date=None, end_date=None):
+    """Genera export Excel delle presenze con un foglio per ogni sede"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from datetime import datetime as dt
+    import tempfile
+    import os
+    from flask import make_response
+    
+    # Raggruppa utenti per sede
+    sedi_data = {}
+    for user_id, data in attendance_data.items():
+        user = data['user']
+        if user.sede_id:
+            from models import Sede
+            sede = Sede.query.get(user.sede_id)
+            sede_name = sede.name if sede else 'Sede Non Definita'
+        else:
+            sede_name = 'Sede Non Definita'
+        
+        if sede_name not in sedi_data:
+            sedi_data[sede_name] = {}
+        sedi_data[sede_name][user_id] = data
+    
+    # Crea workbook Excel
+    wb = Workbook()
+    # Rimuovi il foglio di default
+    wb.remove(wb.active)
+    
+    # Crea un foglio per ogni sede
+    for sede_name, sede_attendance in sedi_data.items():
+        # Nome foglio sicuro (max 31 caratteri per Excel)
+        safe_sheet_name = sede_name.replace('/', '_').replace('\\', '_').replace('?', '_').replace('*', '_').replace('[', '_').replace(']', '_')[:31]
+        ws = wb.create_sheet(title=safe_sheet_name)
+        
+        # Header con stile
+        ws.append([f'Report Presenze - {sede_name}'])
+        ws.append([period_label])
+        ws.append([])  # Riga vuota
+        
+        # Intestazione colonne
+        headers = ['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note']
+        ws.append(headers)
+        
+        # Stile header
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=4, column=col_num)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Dati presenze
+        if start_date == end_date:
+            # Single day
+            for user_id, data in sede_attendance.items():
+                user = data['user']
+                
+                # Determina stato
+                if data.get('leave_request'):
+                    lr = data['leave_request']
+                    stato = lr.leave_type
+                    entrata = uscita = '-'
+                    ore_lavorate = '-'
+                    note = lr.reason[:50] if lr.reason else ''
+                else:
+                    ds = data.get('daily_summary')
+                    le = data.get('last_event')
+                    status = data.get('status')
+                    
+                    if status == 'in':
+                        stato = 'Presente'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'break':
+                        stato = 'In Pausa'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'out':
+                        if ds and ds.clock_in:
+                            stato = 'Uscito'
+                            entrata = ds.clock_in.strftime('%H:%M')
+                            uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                            ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                            note = le.notes[:50] if le and le.notes else ''
+                        else:
+                            stato = 'Assente'
+                            entrata = uscita = '-'
+                            ore_lavorate = '0h'
+                            note = ''
+                    else:
+                        stato = 'Non registrato'
+                        entrata = uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                
+                ws.append([
+                    start_date.strftime('%d/%m/%Y'),
+                    user.get_full_name(),
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',
+                    stato,
+                    entrata,
+                    uscita,
+                    ore_lavorate,
+                    note
+                ])
+        else:
+            # Multi-periodo
+            all_entries = []
+            for user_id, data in sede_attendance.items():
+                user = data['user']
+                if 'daily_details' in data:
+                    for daily in data['daily_details']:
+                        all_entries.append((daily['date'], user, daily))
+            
+            all_entries.sort(key=lambda x: x[0])
+            
+            for date_val, user, daily in all_entries:
+                if daily.get('leave_request'):
+                    lr = daily['leave_request']
+                    stato = lr.leave_type
+                    entrata = uscita = '-'
+                    ore_lavorate = '-'
+                    note = lr.reason[:50] if lr.reason else ''
+                else:
+                    ds = daily.get('daily_summary')
+                    le = daily.get('last_event')
+                    status = daily.get('status')
+                    
+                    if status == 'in':
+                        stato = 'Presente'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'break':
+                        stato = 'In Pausa'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'out':
+                        if ds and ds.clock_in:
+                            stato = 'Uscito'
+                            entrata = ds.clock_in.strftime('%H:%M')
+                            uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                            ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                            note = le.notes[:50] if le and le.notes else ''
+                        else:
+                            stato = 'Assente'
+                            entrata = uscita = '-'
+                            ore_lavorate = '0h'
+                            note = ''
+                    else:
+                        stato = 'Non definito'
+                        entrata = uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                
+                ws.append([
+                    date_val.strftime('%d/%m/%Y'),
+                    user.get_full_name(),
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',
+                    stato,
+                    entrata,
+                    uscita,
+                    ore_lavorate,
+                    note
+                ])
+        
+        # Auto-dimensiona colonne
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Salva file temporaneo
+    temp_dir = tempfile.mkdtemp()
+    excel_path = os.path.join(temp_dir, f'presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx')
+    wb.save(excel_path)
+    
+    # Leggi file per response
+    with open(excel_path, 'rb') as f:
+        excel_data = f.read()
+    
+    # Pulizia
+    os.remove(excel_path)
+    os.rmdir(temp_dir)
+    
+    response = make_response(excel_data)
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx"'
+    
+    return response
+
+def generate_single_sede_excel(attendance_data, period_label, start_date, end_date, sede_name, return_content=False):
+    """Genera CSV per una singola sede"""
+    from io import StringIO
+    import csv
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Header con nome sede
+    writer.writerow([f'Report Presenze - {sede_name}'])
+    writer.writerow([period_label])
+    writer.writerow([])  # Riga vuota
+    writer.writerow(['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
+    
+    # Determina la logica in base al periodo
+    if start_date == end_date:
+        # Single day
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            
+            # Determina stato
+            if data.get('leave_request'):
+                lr = data['leave_request']
+                if lr.leave_type == 'Ferie':
+                    stato = 'Ferie'
+                elif lr.leave_type == 'Permesso':
+                    stato = 'Permesso'
+                elif lr.leave_type == 'Malattia':
+                    stato = 'Malattia'
+                else:
+                    stato = f"In {lr.leave_type}"
+                entrata = '-'
+                uscita = '-'
+                ore_lavorate = '-'
+                note = lr.reason[:50] if lr.reason else ''
+            else:
+                ds = data.get('daily_summary')
+                le = data.get('last_event')
+                status = data.get('status')
+                
+                if status == 'in':
+                    stato = 'Presente'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'break':
+                    stato = 'In Pausa'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'out':
+                    if ds and ds.clock_in:
+                        stato = 'Uscito'
+                        entrata = ds.clock_in.strftime('%H:%M')
+                        uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    else:
+                        stato = 'Assente'
+                        entrata = '-'
+                        uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                else:
+                    stato = 'Non registrato'
+                    entrata = '-'
+                    uscita = '-'
+                    ore_lavorate = '0h'
+                    note = ''
+            
+            writer.writerow([
+                start_date.strftime('%d/%m/%Y'),
+                user.get_full_name(),
+                user.role if hasattr(user, 'role') and user.role else 'N/A',
+                stato,
+                entrata,
+                uscita,
+                ore_lavorate,
+                note
+            ])
+    else:
+        # Multi-periodo
+        all_entries = []
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            if 'daily_details' in data:
+                for daily in data['daily_details']:
+                    all_entries.append((daily['date'], user, daily))
+        
+        all_entries.sort(key=lambda x: x[0])
+        
+        for date_val, user, daily in all_entries:
+            if daily.get('leave_request'):
+                lr = daily['leave_request']
+                if lr.leave_type == 'Ferie':
+                    stato = 'Ferie'
+                elif lr.leave_type == 'Permesso':
+                    stato = 'Permesso'
+                elif lr.leave_type == 'Malattia':
+                    stato = 'Malattia'
+                else:
+                    stato = f"In {lr.leave_type}"
+                entrata = '-'
+                uscita = '-'
+                ore_lavorate = '-'
+                note = lr.reason[:50] if lr.reason else ''
+            else:
+                ds = daily.get('daily_summary')
+                le = daily.get('last_event')
+                status = daily.get('status')
+                
+                if status == 'in':
+                    stato = 'Presente'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'break':
+                    stato = 'In Pausa'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'out':
+                    if ds and ds.clock_in:
+                        stato = 'Uscito'
+                        entrata = ds.clock_in.strftime('%H:%M')
+                        uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    else:
+                        stato = 'Assente'
+                        entrata = '-'
+                        uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                else:
+                    stato = 'Non definito'
+                    entrata = '-'
+                    uscita = '-'  
+                    ore_lavorate = '0h'
+                    note = ''
+            
+            writer.writerow([
+                date_val.strftime('%d/%m/%Y'),
+                user.get_full_name(),
+                user.role if hasattr(user, 'role') and user.role else 'N/A',
+                stato,
+                entrata,
+                uscita,
+                ore_lavorate,
+                note
+            ])
+    
+    output.seek(0)
+    content = output.getvalue()
+    
+    if return_content:
+        return content
+    
+    from datetime import datetime as dt
+    from flask import make_response
+    response = make_response(content)
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    safe_sede_name = sede_name.replace(' ', '_').replace('/', '_')
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_{safe_sede_name}_{dt.now().strftime("%Y%m%d")}.csv"'
+    
+    return response
+
+@app.route('/dashboard_sede')
+@login_required
+def dashboard_sede():
+    """Dashboard per visualizzare le presenze della propria sede - per Responsabili"""
+    if not current_user.can_view_sede_attendance():
+        flash('Non hai i permessi per visualizzare questo contenuto.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Get users from the same sede (esclusi Admin e Management)
+    sede_users = User.query.filter(
+        User.sede_id == current_user.sede_id,
+        User.active == True,
+        ~User.role.in_(['Admin', 'Staff'])
+    ).all()
+    
+    # Get attendance data for today
+    today = date.today()
+    today_attendance = {}
+    
+    for user in sede_users:
+        status, last_event = AttendanceEvent.get_user_status(user.id, today)
+        daily_summary = AttendanceEvent.get_daily_summary(user.id, today)
+        
+        # Check for approved leave requests
+        leave_request = LeaveRequest.query.filter(
+            LeaveRequest.user_id == user.id,
+            LeaveRequest.status == 'Approved',
+            LeaveRequest.start_date <= today,
+            LeaveRequest.end_date >= today
+        ).first()
+        
+        today_attendance[user.id] = {
+            'user': user,
+            'status': status,
+            'last_event': last_event,
+            'daily_summary': daily_summary,
+            'leave_request': leave_request
+        }
+    
+    # Get current user's sede
+    current_sede = current_user.sede_obj
+    
+    return render_template('dashboard_sede.html',
+                         sede_users=sede_users,
+                         current_sede=current_sede,
+                         today_attendance=today_attendance,
+                         today=today,
+                         current_user=current_user)
+
+@app.route('/ente-home')
+@login_required
+def ente_home():
+    """Home page per gestori team con vista team e navigazione settimanale"""
+    if not (current_user.can_manage_users() or current_user.can_view_all_attendance()):
+        flash('Accesso non autorizzato.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Usa l'orario italiano
+    from zoneinfo import ZoneInfo
+    italy_tz = ZoneInfo('Europe/Rome')
+    today = datetime.now(italy_tz)
+    
+    # Get currently present users
+    present_users = []
+    
+    # Get all active users (excluding Ente role but including current user if not Ente)
+    try:
+        users = User.query.filter(
+            User.active == True,
+            ~User.role.in_(['Ente', 'Admin', 'Staff'])
+        ).all()
+        
+        # Check who is currently present (simplified check)
+        for user in users:
+            try:
+                # Get user's current status using today's date in Italian timezone
+                today_date = today.date()
+                status, last_event = AttendanceEvent.get_user_status(user.id, today_date)
+                
+                if status == 'in':
+                    # Get all events for today to show complete timeline
+                    today_events = db.session.query(AttendanceEvent).filter(
+                        AttendanceEvent.user_id == user.id,
+                        AttendanceEvent.date == today_date
+                    ).order_by(AttendanceEvent.timestamp.asc()).all()
+                    
+                    # Find the last clock_in event (when they entered)
+                    last_clock_in = None
+                    for event in reversed(today_events):
+                        if event.event_type == 'clock_in':
+                            last_clock_in = event
+                            break
+                    
+                    user.last_event = last_clock_in or last_event
+                    user.today_events = today_events
+                    present_users.append(user)
+            except Exception as e:
+                # Skip users with database issues but log the error
+                pass  # Silent error handling
+                continue
+    except:
+        # Handle database errors gracefully
+        present_users = []
+    
+    # Get week offset parameter (default to 0 for current week)
+    week_offset = request.args.get('week_offset', 0, type=int)
+    
+    # Calculate week dates based on offset
+    today_date = today.date()
+    base_week_start = today_date - timedelta(days=today_date.weekday())
+    week_start = base_week_start + timedelta(weeks=week_offset)
+    week_end = week_start + timedelta(days=6)
+    
+    # Get all shifts for the week
+    weekly_shifts = Shift.query.filter(
+        Shift.date >= week_start,
+        Shift.date <= week_end
+    ).order_by(Shift.date, Shift.start_time).all()
+    
+    # Get all reperibilità shifts for the week
+    from models import ReperibilitaShift, ReperibilitaIntervention
+    weekly_reperibilita = ReperibilitaShift.query.filter(
+        ReperibilitaShift.date >= week_start,
+        ReperibilitaShift.date <= week_end
+    ).order_by(ReperibilitaShift.date, ReperibilitaShift.start_time).all()
+    
+    # Create a dictionary of reperibilità shifts by date
+    reperibilita_by_date = {}
+    for rep_shift in weekly_reperibilita:
+        if rep_shift.date not in reperibilita_by_date:
+            reperibilita_by_date[rep_shift.date] = []
+        reperibilita_by_date[rep_shift.date].append(rep_shift)
+    
+    # Organize shifts by day and add leave request info
+    shifts_by_day = {}
+    for shift in weekly_shifts:
+        if shift.date not in shifts_by_day:
+            shifts_by_day[shift.date] = []
+        
+        # Check for overlapping leave requests
+        overlapping_leave = LeaveRequest.query.filter(
+            LeaveRequest.user_id == shift.user_id,
+            LeaveRequest.start_date <= shift.date,
+            LeaveRequest.end_date >= shift.date,
+            LeaveRequest.status.in_(['Pending', 'Approved'])
+        ).first()
+        
+        shift.has_leave_request = overlapping_leave is not None
+        shift.leave_request = overlapping_leave
+        
+        shifts_by_day[shift.date].append(shift)
+    
+    # Get attendance data for the week
+    attendance_by_date = {}
+    all_users = User.query.filter(
+        User.active == True,
+        User.role != 'Ente'
+    ).all()
+    
+    # Get all attendance events for the week
+    events_by_date = {}
+    all_events = AttendanceEvent.query.filter(
+        AttendanceEvent.date >= week_start,
+        AttendanceEvent.date <= week_end
+    ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+    
+    for event in all_events:
+        if event.date not in events_by_date:
+            events_by_date[event.date] = {}
+        if event.user_id not in events_by_date[event.date]:
+            events_by_date[event.date][event.user_id] = []
+        events_by_date[event.date][event.user_id].append(event)
+    
+    # Get all reperibilità interventions for the week
+    interventions_by_date = {}
+    week_start_datetime = italian_now().replace(year=week_start.year, month=week_start.month, day=week_start.day, hour=0, minute=0, second=0, microsecond=0)
+    week_end_datetime = week_start_datetime + timedelta(days=7)
+    
+    all_interventions = ReperibilitaIntervention.query.filter(
+        ReperibilitaIntervention.start_datetime >= week_start_datetime,
+        ReperibilitaIntervention.start_datetime < week_end_datetime
+    ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
+    
+    for intervention in all_interventions:
+        intervention_date = intervention.start_datetime.date()
+        if intervention_date not in interventions_by_date:
+            interventions_by_date[intervention_date] = []
+        interventions_by_date[intervention_date].append(intervention)
+    
+    for day_date in [week_start + timedelta(days=i) for i in range(7)]:
+        attendance_by_date[day_date] = {}
+        for user in all_users:
+            # Get daily summary for this user and date
+            try:
+                daily_summary = AttendanceEvent.get_daily_summary(user.id, day_date)
+                if daily_summary:
+                    # Check for shifts on this date for this user
+                    user_shifts = [s for s in weekly_shifts if s.user_id == user.id and s.date == day_date]
+                    shift_status = 'normale'
+                    
+                    if user_shifts and daily_summary.clock_in:
+                        shift = user_shifts[0]  # Take first shift if multiple
+                        
+                        from zoneinfo import ZoneInfo
+                        italy_tz = ZoneInfo('Europe/Rome')
+                        
+                        # Create shift start time in Italian timezone
+                        shift_start_datetime = datetime.combine(day_date, shift.start_time)
+                        shift_start_datetime = shift_start_datetime.replace(tzinfo=italy_tz)
+                        # Limiti più ragionevoli: anticipo oltre 30min, ritardo oltre 15min
+                        early_limit = shift_start_datetime - timedelta(minutes=30)
+                        late_limit = shift_start_datetime + timedelta(minutes=15)
+                        
+                        # Convert daily_summary.clock_in to Italian timezone if needed
+                        clock_in_time = daily_summary.clock_in
+                        if clock_in_time.tzinfo is None:
+                            # Assume UTC and convert to Italian time
+                            utc_tz = ZoneInfo('UTC')
+                            clock_in_time = clock_in_time.replace(tzinfo=utc_tz).astimezone(italy_tz)
+                        
+                        if clock_in_time < early_limit:
+                            shift_status = 'anticipo'
+                        elif clock_in_time > late_limit:
+                            shift_status = 'ritardo'
+                    
+                    attendance_by_date[day_date][user.id] = {
+                        'user': user,
+                        'clock_in': daily_summary.clock_in,
+                        'clock_out': daily_summary.clock_out,
+                        'status': 'Presente' if daily_summary.clock_in and not daily_summary.clock_out else 'Assente',
+                        'work_hours': daily_summary.get_work_hours() if daily_summary.clock_in else 0,
+                        'shift_status': shift_status
+                    }
+                else:
+                    attendance_by_date[day_date][user.id] = {
+                        'user': user,
+                        'clock_in': None,
+                        'clock_out': None,
+                        'status': 'Assente',
+                        'work_hours': 0
+                    }
+            except:
+                attendance_by_date[day_date][user.id] = {
+                    'user': user,
+                    'clock_in': None,
+                    'clock_out': None,
+                    'status': 'Assente',
+                    'work_hours': 0
+                }
+    
+    # Add personal attendance data for PM (similar to dashboard logic)
+    user_status = 'out'
+    today_work_hours = 0
+    today_events = []
+    today_date = today.date()
+    
+    if current_user.role == 'Management':
+        user_status, last_event = AttendanceEvent.get_user_status(current_user.id)
+        today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
+        today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
+    
+    # Get shifts and intervention data for PM
+    upcoming_reperibilita_shifts = []
+    active_intervention = None
+    recent_interventions = []
+    
+    if current_user.role == 'Management':
+        
+        # Get upcoming reperibilità shifts for PM
+        upcoming_reperibilita_shifts = ReperibilitaShift.query.filter(
+            ReperibilitaShift.user_id == current_user.id,
+            ReperibilitaShift.date >= today_date
+        ).order_by(ReperibilitaShift.date, ReperibilitaShift.start_time).limit(5).all()
+        
+        # Get active intervention for PM
+        active_intervention = ReperibilitaIntervention.query.filter_by(
+            user_id=current_user.id,
+            end_datetime=None
+        ).first()
+        
+        # Get recent interventions for PM (last 7 days)
+        seven_days_ago = italian_now() - timedelta(days=7)
+        recent_interventions = ReperibilitaIntervention.query.filter(
+            ReperibilitaIntervention.user_id == current_user.id,
+            ReperibilitaIntervention.start_datetime >= seven_days_ago
+        ).order_by(ReperibilitaIntervention.start_datetime.desc()).limit(10).all()
+    
+    # Create week dates info
+    week_dates = []
+    italian_weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+    
+    for i in range(7):
+        day_date = week_start + timedelta(days=i)
+        week_dates.append({
+            'date': day_date,
+            'weekday': italian_weekdays[i],
+            'is_today': day_date == today_date
+        })
+    
+    return render_template('ente_home.html',
+                         present_users=present_users,
+                         today=today,
+                         week_start=week_start,
+                         week_end=week_end,
+                         week_offset=week_offset,
+                         shifts_by_day=shifts_by_day,
+                         reperibilita_by_date=reperibilita_by_date,
+                         week_dates=week_dates,
+                         attendance_by_date=attendance_by_date,
+                         events_by_date=events_by_date,
+                         interventions_by_date=interventions_by_date,
+                         user_status=user_status,
+                         today_events=today_events,
+                         today_work_hours=today_work_hours,
+                         today_date=today_date,
+
+                         upcoming_reperibilita_shifts=upcoming_reperibilita_shifts,
+                         active_intervention=active_intervention,
+                         recent_interventions=recent_interventions)
+
 @app.route('/test_route', methods=['GET', 'POST'])
 @login_required
 def test_route():
@@ -2662,6 +3931,7 @@ def reset_password(token):
 def not_found_error(error):
     return render_template('404.html'), 404
 
+
 @app.route('/edit_shift/<int:shift_id>', methods=['GET', 'POST'])
 @login_required
 def edit_shift(shift_id):
@@ -2747,6 +4017,8 @@ def edit_shift(shift_id):
         form.end_time.data = shift.end_time
     
     return render_template('edit_shift.html', shift=shift, users=users, form=form)
+
+
 
 def calculate_shift_presence(shift):
     """Calcola lo stato di presenza per un turno specifico"""
@@ -2927,6 +4199,8 @@ def team_shifts():
                          today=today,
                          week_dates=week_dates)
 
+
+
 @app.route('/team-shifts/change-user/<int:shift_id>', methods=['POST'])
 @login_required
 @csrf.exempt
@@ -2982,10 +4256,12 @@ def change_shift_user(shift_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Errore durante la modifica: {str(e)}'})
 
+
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
+
 
 # =============================================================================
 # REPERIBILITÀ (ON-CALL) ROUTES
@@ -3037,6 +4313,7 @@ def reperibilita_coverage():
     
     return render_template('reperibilita_coverage.html', reperibilita_groups=reperibilita_groups)
 
+
 @app.route('/reperibilita_coverage/create', methods=['GET', 'POST'])
 @require_login
 def create_reperibilita_coverage():
@@ -3080,6 +4357,7 @@ def create_reperibilita_coverage():
             flash(f'Errore durante la creazione: {str(e)}', 'error')
     
     return render_template('create_reperibilita_coverage.html', form=form)
+
 
 @app.route('/reperibilita_coverage/edit/<int:coverage_id>', methods=['GET', 'POST'])
 @require_login
@@ -3126,6 +4404,7 @@ def edit_reperibilita_coverage(coverage_id):
     
     return render_template('edit_reperibilita_coverage.html', form=form, coverage=coverage)
 
+
 @app.route('/reperibilita_coverage/delete/<int:coverage_id>', methods=['GET'])
 @require_login
 def delete_reperibilita_coverage(coverage_id):
@@ -3147,6 +4426,7 @@ def delete_reperibilita_coverage(coverage_id):
         flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
     
     return redirect(url_for('reperibilita_coverage'))
+
 
 @app.route('/reperibilita_coverage/view/<period_key>')
 @require_login
@@ -3178,6 +4458,7 @@ def view_reperibilita_coverage(period_key):
                          start_date=start_date, 
                          end_date=end_date,
                          period_key=period_key)
+
 
 @app.route('/reperibilita_coverage/delete_period/<period_key>')
 @require_login  
@@ -3223,6 +4504,7 @@ def delete_reperibilita_period(period_key):
         flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
     
     return redirect(url_for('reperibilita_shifts'))
+
 
 @app.route('/reperibilita_shifts')
 @require_login
@@ -3374,6 +4656,7 @@ def reperibilita_shifts():
                          view_mode=view_mode,
                          display_mode=display_mode)
 
+
 @app.route('/reperibilita_template/<start_date>/<end_date>')
 @require_login
 def reperibilita_template_detail(start_date, end_date):
@@ -3419,6 +4702,7 @@ def reperibilita_template_detail(start_date, end_date):
                          start_date=start_date,
                          end_date=end_date,
                          period_key=period_key)
+
 
 @app.route('/reperibilita_replica/<period_key>', methods=['GET', 'POST'])
 @require_login
@@ -3535,6 +4819,7 @@ def reperibilita_replica(period_key):
                          start_date=start_date,
                          end_date=end_date)
 
+
 @app.route('/reperibilita_shifts/generate', methods=['GET', 'POST'])
 @require_login
 def generate_reperibilita_shifts():
@@ -3616,6 +4901,7 @@ def generate_reperibilita_shifts():
     
     return render_template('generate_reperibilita_shifts.html', form=form)
 
+
 @app.route('/reperibilita_shifts/regenerate/<int:template_id>', methods=['GET'])
 @require_login
 def regenerate_reperibilita_template(template_id):
@@ -3670,6 +4956,7 @@ def regenerate_reperibilita_template(template_id):
     
     return redirect(url_for('reperibilita_shifts'))
 
+
 @app.route('/start-intervention', methods=['POST'])
 @login_required
 def start_intervention():
@@ -3717,6 +5004,7 @@ def start_intervention():
     flash('Intervento di reperibilità iniziato con successo.', 'success')
     return redirect(url_for('reperibilita_shifts'))
 
+
 @app.route('/end-intervention', methods=['POST'])
 @login_required
 def end_intervention():
@@ -3748,6 +5036,7 @@ def end_intervention():
         return redirect(url_for('ente_home'))
     else:
         return redirect(url_for('reperibilita_shifts'))
+
 
 @app.route('/reperibilita_template/delete/<template_id>')
 @require_login
@@ -3783,6 +5072,7 @@ def delete_reperibilita_template(template_id):
     
     return redirect(url_for('reperibilita_shifts'))
 
+
 # QR Code Authentication Routes
 @app.route('/qr_login/<action>', methods=['GET', 'POST'])
 def qr_login(action):
@@ -3807,6 +5097,7 @@ def qr_login(action):
     
     return render_template('qr_login_standalone.html', form=form, action=action)
 
+
 @app.route('/qr_fresh/<action>')
 def qr_fresh(action):
     """Route per QR dal browser - forza logout e redirect a qr_login"""
@@ -3821,6 +5112,7 @@ def qr_fresh(action):
     
     # Redirect alla pagina QR login
     return redirect(url_for('qr_login', action=action))
+
 
 @app.route('/quick_attendance/<action>', methods=['GET', 'POST'])
 @require_login
@@ -3922,6 +5214,7 @@ def quick_attendance(action):
                              user=current_user,
                              timestamp=now.strftime('%H:%M'),
                              error=True)
+
 
 @app.route('/generate_qr_codes')
 def generate_qr_codes():
@@ -4260,6 +5553,8 @@ def export_shifts_pdf():
     
     return response
 
+
+
 @app.route('/export_attendance_excel')
 @login_required  
 def export_attendance_excel():
@@ -4345,6 +5640,10 @@ def export_attendance_excel():
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     
     return response
+
+
+
+
 
 @app.route('/start_general_intervention', methods=['POST'])
 @login_required
@@ -4785,6 +6084,7 @@ def export_reperibilita_interventions_excel():
     
     return response
 
+
 @app.route('/qr/<action>')
 def qr_page(action):
     """Pagine dedicate per QR Code di entrata e uscita"""
@@ -4796,6 +6096,7 @@ def qr_page(action):
     qr_url = f"{base_url}/qr_login/{action}"
     
     return render_template('qr_page.html', action=action, qr_url=qr_url)
+
 
 # =============================================================================
 # ADMIN & SYSTEM MANAGEMENT ROUTES
@@ -4833,6 +6134,7 @@ def admin_generate_qr_codes():
                          static_qr_urls=static_qr_urls,
                          can_manage=True,
                          config=config)
+
 
 @app.route('/view/qr_codes')
 @require_login
@@ -5133,6 +6435,7 @@ def export_expense_reports_excel():
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     
     return response
+
 
 # ===============================
 # GESTIONE TURNI PER SEDI
@@ -5575,6 +6878,8 @@ def process_generate_turni_from_coverage():
         return redirect(url_for('generate_turnazioni'))
     
     return redirect(url_for('generate_turnazioni'))
+
+
 
 @app.route('/admin/turni/visualizza-generati')
 @login_required
@@ -6042,6 +7347,7 @@ def api_roles():
     except Exception as e:
         return jsonify(['Responsabile', 'Supervisore', 'Operatore', 'Ospite'])
 
+
 # ===============================
 # GESTIONE SEDI E ORARI DI LAVORO
 # ===============================
@@ -6300,6 +7606,7 @@ def delete_work_schedule(schedule_id):
         
     return redirect(url_for('manage_work_schedules'))
 
+
 # GESTIONE RUOLI DINAMICI
 
 @app.route('/admin/roles')
@@ -6319,6 +7626,7 @@ def manage_roles():
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     return response
+
 
 @app.route('/admin/roles/create', methods=['GET', 'POST'])
 @login_required
@@ -6345,6 +7653,7 @@ def create_role():
         return redirect(url_for('manage_roles'))
     
     return render_template('create_role.html', form=form)
+
 
 @app.route('/admin/roles/edit/<int:role_id>', methods=['GET', 'POST'])
 @login_required
@@ -6421,6 +7730,7 @@ def edit_role(role_id):
                          is_admin_editing_admin_role=is_admin_editing_admin_role,
                          protected_permissions=protected_permissions)
 
+
 @app.route('/admin/roles/toggle/<int:role_id>')
 @login_required
 def toggle_role(role_id):
@@ -6443,6 +7753,7 @@ def toggle_role(role_id):
     status = 'attivato' if role.active else 'disattivato'
     flash(f'Ruolo "{role.display_name}" {status} con successo', 'success')
     return redirect(url_for('manage_roles'))
+
 
 @app.route('/admin/roles/delete/<int:role_id>')
 @login_required
@@ -6637,6 +7948,7 @@ def send_message():
     
     return render_template('send_message.html', form=form)
 
+
 # =====================================
 # NUOVO SISTEMA TURNI - 3 FUNZIONALITÀ
 # =====================================
@@ -6806,6 +8118,7 @@ def edit_presidio_coverage(period_key):
                          period_key=period_key,
                          available_roles=roles_data)
 
+
 @app.route('/admin/coverage/presidio/create', methods=['GET', 'POST'])
 @login_required
 def create_presidio_coverage():
@@ -6870,6 +8183,7 @@ def create_presidio_coverage():
             flash(f'Errore durante la creazione: {str(e)}', 'danger')
     
     return render_template('create_presidio_coverage.html')
+
 
 @app.route('/admin/coverage/presidio/generate/<period_key>')
 @login_required
@@ -7055,6 +8369,7 @@ def view_turni_for_period():
                          accessible_sedi=accessible_sedi,
                          total_turni=len(turni_periodo),
                          today=date.today())
+
 
 # =====================================
 # NUOVO SISTEMA PRESIDIO - PACCHETTO COMPLETO
@@ -7485,6 +8800,8 @@ def create_presidio_shift_from_template(template, target_week_start, users_by_ro
             'errors': errors + [f"Errore database: {str(e)}"]
         }
 
+
+
 @app.route('/delete_presidio_coverage/<int:coverage_id>', methods=['POST'])
 @login_required
 def delete_presidio_coverage(coverage_id):
@@ -7507,6 +8824,7 @@ def delete_presidio_coverage(coverage_id):
     
     flash('Copertura eliminata con successo', 'success')
     return redirect(url_for('presidio_coverage_edit', template_id=template_id))
+
 
 # =============================================================================
 # EXPENSE MANAGEMENT ROUTES
@@ -7572,6 +8890,7 @@ def expense_reports():
                          page_title=page_title,
                          view_mode=view_mode)
 
+
 @app.route('/expenses/create', methods=['GET', 'POST'])
 @login_required
 def create_expense_report():
@@ -7624,6 +8943,7 @@ def create_expense_report():
         return redirect(url_for('expense_reports'))
     
     return render_template('create_expense_report.html', form=form)
+
 
 @app.route('/expenses/edit/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
@@ -7691,6 +9011,7 @@ def edit_expense_report(expense_id):
     
     return render_template('edit_expense_report.html', form=form, expense=expense)
 
+
 @app.route('/expenses/approve/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
 def approve_expense_report(expense_id):
@@ -7724,6 +9045,7 @@ def approve_expense_report(expense_id):
     
     return render_template('approve_expense_report.html', form=form, expense=expense)
 
+
 @app.route('/expenses/download/<int:expense_id>')
 @login_required
 def download_expense_receipt(expense_id):
@@ -7754,6 +9076,7 @@ def download_expense_receipt(expense_id):
     return send_file(file_path, as_attachment=True, 
                     download_name=f"ricevuta_{expense.id}_{expense.expense_date.strftime('%Y%m%d')}.{expense.receipt_filename.split('.')[-1]}")
 
+
 @app.route('/expenses/categories')
 @login_required
 def expense_categories():
@@ -7766,6 +9089,7 @@ def expense_categories():
     categories = ExpenseCategory.query.order_by(ExpenseCategory.name).all()
     
     return render_template('expense_categories.html', categories=categories)
+
 
 @app.route('/expenses/categories/create', methods=['GET', 'POST'])
 @login_required
@@ -7800,6 +9124,7 @@ def create_expense_category():
     
     return render_template('create_expense_category.html', form=form)
 
+
 @app.route('/expenses/categories/<int:category_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_expense_category(category_id):
@@ -7829,6 +9154,7 @@ def edit_expense_category(category_id):
     
     return render_template('edit_expense_category.html', form=form, category=category)
 
+
 @app.route('/expenses/categories/<int:category_id>/delete', methods=['POST'])
 @login_required
 def delete_expense_category(category_id):
@@ -7856,6 +9182,7 @@ def delete_expense_category(category_id):
         flash('Errore nell\'eliminazione della categoria', 'danger')
     
     return redirect(url_for('expense_categories'))
+
 
 @app.route('/expenses/delete/<int:expense_id>', methods=['POST'])
 @login_required
@@ -7887,6 +9214,7 @@ def delete_expense_report(expense_id):
     
     flash('Nota spese eliminata con successo', 'success')
     return redirect(url_for('expense_reports'))
+
 
 # =============================================================================
 # OVERTIME MANAGEMENT ROUTES
@@ -8156,6 +9484,14 @@ def overtime_requests_excel():
     
     return response
 
+
+
+
+
+
+
+
+
 @app.route("/overtime_types/<int:type_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_overtime_type(type_id):
@@ -8199,6 +9535,7 @@ def delete_overtime_type(type_id):
     db.session.commit()
     flash("Tipologia straordinario cancellata.", "info")
     return redirect(url_for("overtime_types"))
+
 
 # =============================================================================
 # MILEAGE REIMBURSEMENT ROUTES
@@ -8605,6 +9942,7 @@ def export_mileage_requests():
         flash(f'Errore durante l\'esportazione: {str(e)}', 'danger')
         return redirect(url_for('mileage_requests'))
 
+
 # =============================================
 # SISTEMA ACI - BACK OFFICE AMMINISTRATORE
 # =============================================
@@ -8623,6 +9961,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     
     return decorated_function
+
 
 @app.route("/aci_tables", methods=["GET", "POST"])
 @login_required
@@ -8664,6 +10003,10 @@ def aci_tables():
                          total_records=total_records,
                          show_results=(request.method == "POST"))
 
+
+
+
+
 @app.route("/api/aci/marcas")
 @login_required
 @admin_required
@@ -8678,6 +10021,7 @@ def api_aci_marcas():
     
     marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
     return jsonify(marcas)
+
 
 @app.route("/api/aci/modelos")
 @login_required
@@ -8696,6 +10040,7 @@ def api_aci_modelos():
     
     modelos = [row.modello for row in query.order_by(ACITable.modello).all()]
     return jsonify(modelos)
+
 
 @app.route("/aci_tables/upload", methods=["GET", "POST"])
 @login_required
@@ -8819,6 +10164,7 @@ def aci_upload():
     
     return render_template("aci_upload.html", form=form)
 
+
 @app.route("/aci_tables/create", methods=["GET", "POST"])
 @login_required
 @admin_required
@@ -8846,6 +10192,7 @@ def aci_create():
     
     return render_template("aci_create.html", form=form)
 
+
 @app.route("/aci_tables/<int:record_id>/edit", methods=["GET", "POST"])
 @login_required
 @admin_required
@@ -8871,6 +10218,7 @@ def aci_edit(record_id):
     
     return render_template("aci_edit.html", form=form, record=aci_record)
 
+
 @app.route("/aci_tables/<int:record_id>/delete", methods=["POST"])
 @login_required
 @admin_required
@@ -8887,6 +10235,7 @@ def aci_delete(record_id):
         flash(f"Errore durante la cancellazione: {str(e)}", "danger")
     
     return redirect(url_for("aci_tables"))
+
 
 @app.route("/aci_tables/export")
 @login_required
@@ -8968,6 +10317,7 @@ def aci_export():
         flash(f"Errore durante l'export: {str(e)}", "danger")
         return redirect(url_for("aci_tables"))
 
+
 @app.route("/aci_tables/bulk_delete", methods=["POST"])
 @login_required
 @admin_required
@@ -9003,6 +10353,9 @@ def aci_bulk_delete():
         logging.error(f"Errore cancellazione bulk ACI: {str(e)}")
     
     return redirect(url_for("aci_tables"))
+
+
+
 
 # =============================================================================
 # BLUEPRINT REGISTRATION

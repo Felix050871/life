@@ -74,6 +74,7 @@ from utils import (
 
 # Blueprint registration will be handled at the end of this file
 
+
 # =============================================================================
 # GLOBAL CONFIGURATION AND UTILITY FUNCTIONS
 # =============================================================================
@@ -108,6 +109,7 @@ def is_safe_url(target):
     # Check if the scheme and netloc match (same domain)
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
+
 # =============================================================================
 # CORE NAVIGATION ROUTES
 # =============================================================================
@@ -119,10 +121,12 @@ def index():
         return redirect(url_for('dashboard.dashboard'))
     return redirect(url_for('auth.login'))
 
+
 # =============================================================================
 # AUTHENTICATION ROUTES - MOVED TO routes/auth.py BLUEPRINT
 # =============================================================================
 # Authentication routes now handled by auth_bp blueprint
+
 
 # =============================================================================
 # DASHBOARD ROUTES - MOVED TO blueprints/dashboard.py BLUEPRINT
@@ -130,10 +134,531 @@ def index():
 # Dashboard routes now handled by dashboard_bp blueprint
 
 # NEXT ROUTES TO MIGRATE: ATTENDANCE & CLOCK IN/OUT ROUTES
+@login_required
+@login_required
+    def is_working_day(check_date, user):
+        """Verifica se una data è un giorno lavorativo per l'utente"""
+        # Verifica se è un giorno festivo
+        holiday = Holiday.query.filter(
+            Holiday.month == check_date.month,
+            Holiday.day == check_date.day,
+            Holiday.active == True
+        ).first()
+        if holiday:
+            return False
+        
+        # Verifica gli orari di lavoro dell'utente
+        if user.work_schedule:
+            # Se l'utente ha un orario definito, controlla i giorni della settimana
+            if user.work_schedule.days_of_week:
+                weekday = check_date.weekday()  # 0=lunedì, 6=domenica
+                # Gestisci sia stringa che lista per days_of_week
+                if isinstance(user.work_schedule.days_of_week, str):
+                    allowed_days = [int(d) for d in user.work_schedule.days_of_week.split(',')]
+                elif isinstance(user.work_schedule.days_of_week, list):
+                    allowed_days = [int(d) for d in user.work_schedule.days_of_week]
+                else:
+                    # Default lun-ven se formato non riconosciuto
+                    allowed_days = [0, 1, 2, 3, 4]
+                    
+                if weekday not in allowed_days:
+                    return False
+        else:
+            # Se non ha orario definito (modalità turni), controlla solo weekend di default
+            weekday = check_date.weekday()
+            if weekday >= 5:  # sabato=5, domenica=6
+                return False
+        
+        return True
+    
+    # Get attendance data for the period - OTTIMIZZATO
+    attendance_data = {}
+    
+    # Pre-carica tutti i dati necessari con query ottimizzate
+    user_ids = [user.id for user in all_users]
+    
+    # Query batch per richieste di congedo nel periodo
+    leave_requests = LeaveRequest.query.filter(
+        LeaveRequest.user_id.in_(user_ids),
+        LeaveRequest.status == 'Approved',
+        LeaveRequest.start_date <= end_date,
+        LeaveRequest.end_date >= start_date
+    ).all()
+    
+    # Organizza leave requests per user_id e date
+    leave_by_user_date = {}
+    for leave in leave_requests:
+        if leave.user_id not in leave_by_user_date:
+            leave_by_user_date[leave.user_id] = {}
+        
+        # Aggiungi la richiesta per ogni giorno coperto
+        current = max(leave.start_date, start_date)
+        end = min(leave.end_date, end_date)
+        while current <= end:
+            leave_by_user_date[leave.user_id][current] = leave
+            current += timedelta(days=1)
+    
+    # Query batch per eventi di presenza nel periodo
+    attendance_events = AttendanceEvent.query.filter(
+        AttendanceEvent.user_id.in_(user_ids),
+        AttendanceEvent.date >= start_date,
+        AttendanceEvent.date <= end_date
+    ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+    
+    # Organizza eventi per user_id e date
+    events_by_user_date = {}
+    for event in attendance_events:
+        if event.user_id not in events_by_user_date:
+            events_by_user_date[event.user_id] = {}
+        if event.date not in events_by_user_date[event.user_id]:
+            events_by_user_date[event.user_id][event.date] = []
+        events_by_user_date[event.user_id][event.date].append(event)
 
-# =============================================================================
-# ATTENDANCE & CLOCK IN/OUT ROUTES 
-# =============================================================================
+    for user in all_users:
+        if start_date == end_date:
+            # Vista giornaliera singola
+            is_working = is_working_day(start_date, user)
+            leave_request = leave_by_user_date.get(user.id, {}).get(start_date)
+            
+            if is_working or leave_request:
+                # Usa dati pre-caricati invece di query separate
+                user_events = events_by_user_date.get(user.id, {}).get(start_date, [])
+                status, last_event = AttendanceEvent.calculate_status_from_events(user_events)
+                daily_summary = AttendanceEvent.calculate_summary_from_events(user_events)
+                
+                attendance_data[user.id] = {
+                    'user': user,
+                    'status': status,
+                    'last_event': last_event,
+                    'daily_summary': daily_summary,
+                    'leave_request': leave_request
+                }
+        else:
+            # Periodo multi-giorno ottimizzato
+            daily_details = []
+            current_date = start_date
+            
+            while current_date <= min(end_date, date.today()):
+                is_working = is_working_day(current_date, user)
+                leave_request = leave_by_user_date.get(user.id, {}).get(current_date)
+                
+                if is_working or leave_request:
+                    user_events = events_by_user_date.get(user.id, {}).get(current_date, [])
+                    status, last_event = AttendanceEvent.calculate_status_from_events(user_events)
+                    daily_summary = AttendanceEvent.calculate_summary_from_events(user_events)
+                    
+                    if not daily_summary and not leave_request and not last_event:
+                        status = 'out'
+                    
+                    daily_details.append({
+                        'date': current_date,
+                        'status': status,
+                        'daily_summary': daily_summary,
+                        'last_event': last_event,
+                        'leave_request': leave_request
+                    })
+                
+                current_date += timedelta(days=1)
+            
+            if daily_details:
+                attendance_data[user.id] = {
+                    'user': user,
+                    'daily_details': daily_details
+                }
+                
+    # Handle export
+    if export_format == 'excel':
+        return generate_attendance_excel_export(attendance_data, 'custom', period_label, all_sedi, start_date, end_date)
+    
+    return render_template('dashboard_team.html',
+                         all_users=all_users,
+                         all_sedi=all_sedi,
+                         attendance_data=attendance_data,
+                         today=today,
+                         period_label=period_label,
+                         start_date=start_date,
+                         end_date=end_date,
+                         current_user=current_user)
+
+def generate_attendance_excel_export(attendance_data, period_mode, period_label, all_sedi, start_date=None, end_date=None):
+    """Genera export Excel delle presenze con un foglio per ogni sede"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from datetime import datetime as dt
+    import tempfile
+    import os
+    from flask import make_response
+    
+    # Raggruppa utenti per sede
+    sedi_data = {}
+    for user_id, data in attendance_data.items():
+        user = data['user']
+        if user.sede_id:
+            from models import Sede
+            sede = Sede.query.get(user.sede_id)
+            sede_name = sede.name if sede else 'Sede Non Definita'
+        else:
+            sede_name = 'Sede Non Definita'
+        
+        if sede_name not in sedi_data:
+            sedi_data[sede_name] = {}
+        sedi_data[sede_name][user_id] = data
+    
+    # Crea workbook Excel
+    wb = Workbook()
+    # Rimuovi il foglio di default
+    wb.remove(wb.active)
+    
+    # Crea un foglio per ogni sede
+    for sede_name, sede_attendance in sedi_data.items():
+        # Nome foglio sicuro (max 31 caratteri per Excel)
+        safe_sheet_name = sede_name.replace('/', '_').replace('\\', '_').replace('?', '_').replace('*', '_').replace('[', '_').replace(']', '_')[:31]
+        ws = wb.create_sheet(title=safe_sheet_name)
+        
+        # Header con stile
+        ws.append([f'Report Presenze - {sede_name}'])
+        ws.append([period_label])
+        ws.append([])  # Riga vuota
+        
+        # Intestazione colonne
+        headers = ['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note']
+        ws.append(headers)
+        
+        # Stile header
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=4, column=col_num)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Dati presenze
+        if start_date == end_date:
+            # Single day
+            for user_id, data in sede_attendance.items():
+                user = data['user']
+                
+                # Determina stato
+                if data.get('leave_request'):
+                    lr = data['leave_request']
+                    stato = lr.leave_type
+                    entrata = uscita = '-'
+                    ore_lavorate = '-'
+                    note = lr.reason[:50] if lr.reason else ''
+                else:
+                    ds = data.get('daily_summary')
+                    le = data.get('last_event')
+                    status = data.get('status')
+                    
+                    if status == 'in':
+                        stato = 'Presente'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'break':
+                        stato = 'In Pausa'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'out':
+                        if ds and ds.clock_in:
+                            stato = 'Uscito'
+                            entrata = ds.clock_in.strftime('%H:%M')
+                            uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                            ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                            note = le.notes[:50] if le and le.notes else ''
+                        else:
+                            stato = 'Assente'
+                            entrata = uscita = '-'
+                            ore_lavorate = '0h'
+                            note = ''
+                    else:
+                        stato = 'Non registrato'
+                        entrata = uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                
+                ws.append([
+                    start_date.strftime('%d/%m/%Y'),
+                    user.get_full_name(),
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',
+                    stato,
+                    entrata,
+                    uscita,
+                    ore_lavorate,
+                    note
+                ])
+        else:
+            # Multi-periodo
+            all_entries = []
+            for user_id, data in sede_attendance.items():
+                user = data['user']
+                if 'daily_details' in data:
+                    for daily in data['daily_details']:
+                        all_entries.append((daily['date'], user, daily))
+            
+            all_entries.sort(key=lambda x: x[0])
+            
+            for date_val, user, daily in all_entries:
+                if daily.get('leave_request'):
+                    lr = daily['leave_request']
+                    stato = lr.leave_type
+                    entrata = uscita = '-'
+                    ore_lavorate = '-'
+                    note = lr.reason[:50] if lr.reason else ''
+                else:
+                    ds = daily.get('daily_summary')
+                    le = daily.get('last_event')
+                    status = daily.get('status')
+                    
+                    if status == 'in':
+                        stato = 'Presente'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'break':
+                        stato = 'In Pausa'
+                        entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                        uscita = '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    elif status == 'out':
+                        if ds and ds.clock_in:
+                            stato = 'Uscito'
+                            entrata = ds.clock_in.strftime('%H:%M')
+                            uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                            ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                            note = le.notes[:50] if le and le.notes else ''
+                        else:
+                            stato = 'Assente'
+                            entrata = uscita = '-'
+                            ore_lavorate = '0h'
+                            note = ''
+                    else:
+                        stato = 'Non definito'
+                        entrata = uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                
+                ws.append([
+                    date_val.strftime('%d/%m/%Y'),
+                    user.get_full_name(),
+                    user.role if hasattr(user, 'role') and user.role else 'N/A',
+                    stato,
+                    entrata,
+                    uscita,
+                    ore_lavorate,
+                    note
+                ])
+        
+        # Auto-dimensiona colonne
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Salva file temporaneo
+    temp_dir = tempfile.mkdtemp()
+    excel_path = os.path.join(temp_dir, f'presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx')
+    wb.save(excel_path)
+    
+    # Leggi file per response
+    with open(excel_path, 'rb') as f:
+        excel_data = f.read()
+    
+    # Pulizia
+    os.remove(excel_path)
+    os.rmdir(temp_dir)
+    
+    response = make_response(excel_data)
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_per_sede_{dt.now().strftime("%Y%m%d")}.xlsx"'
+    
+    return response
+
+def generate_single_sede_excel(attendance_data, period_label, start_date, end_date, sede_name, return_content=False):
+    """Genera CSV per una singola sede"""
+    from io import StringIO
+    import csv
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Header con nome sede
+    writer.writerow([f'Report Presenze - {sede_name}'])
+    writer.writerow([period_label])
+    writer.writerow([])  # Riga vuota
+    writer.writerow(['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note'])
+    
+    # Determina la logica in base al periodo
+    if start_date == end_date:
+        # Single day
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            
+            # Determina stato
+            if data.get('leave_request'):
+                lr = data['leave_request']
+                if lr.leave_type == 'Ferie':
+                    stato = 'Ferie'
+                elif lr.leave_type == 'Permesso':
+                    stato = 'Permesso'
+                elif lr.leave_type == 'Malattia':
+                    stato = 'Malattia'
+                else:
+                    stato = f"In {lr.leave_type}"
+                entrata = '-'
+                uscita = '-'
+                ore_lavorate = '-'
+                note = lr.reason[:50] if lr.reason else ''
+            else:
+                ds = data.get('daily_summary')
+                le = data.get('last_event')
+                status = data.get('status')
+                
+                if status == 'in':
+                    stato = 'Presente'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'break':
+                    stato = 'In Pausa'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'out':
+                    if ds and ds.clock_in:
+                        stato = 'Uscito'
+                        entrata = ds.clock_in.strftime('%H:%M')
+                        uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    else:
+                        stato = 'Assente'
+                        entrata = '-'
+                        uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                else:
+                    stato = 'Non registrato'
+                    entrata = '-'
+                    uscita = '-'
+                    ore_lavorate = '0h'
+                    note = ''
+            
+            writer.writerow([
+                start_date.strftime('%d/%m/%Y'),
+                user.get_full_name(),
+                user.role if hasattr(user, 'role') and user.role else 'N/A',
+                stato,
+                entrata,
+                uscita,
+                ore_lavorate,
+                note
+            ])
+    else:
+        # Multi-periodo
+        all_entries = []
+        for user_id, data in attendance_data.items():
+            user = data['user']
+            if 'daily_details' in data:
+                for daily in data['daily_details']:
+                    all_entries.append((daily['date'], user, daily))
+        
+        all_entries.sort(key=lambda x: x[0])
+        
+        for date_val, user, daily in all_entries:
+            if daily.get('leave_request'):
+                lr = daily['leave_request']
+                if lr.leave_type == 'Ferie':
+                    stato = 'Ferie'
+                elif lr.leave_type == 'Permesso':
+                    stato = 'Permesso'
+                elif lr.leave_type == 'Malattia':
+                    stato = 'Malattia'
+                else:
+                    stato = f"In {lr.leave_type}"
+                entrata = '-'
+                uscita = '-'
+                ore_lavorate = '-'
+                note = lr.reason[:50] if lr.reason else ''
+            else:
+                ds = daily.get('daily_summary')
+                le = daily.get('last_event')
+                status = daily.get('status')
+                
+                if status == 'in':
+                    stato = 'Presente'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'break':
+                    stato = 'In Pausa'
+                    entrata = ds.clock_in.strftime('%H:%M') if ds and ds.clock_in else '-'
+                    uscita = '-'
+                    ore_lavorate = f"{ds.total_hours:.1f}h" if ds and ds.total_hours else '0h'
+                    note = le.notes[:50] if le and le.notes else ''
+                elif status == 'out':
+                    if ds and ds.clock_in:
+                        stato = 'Uscito'
+                        entrata = ds.clock_in.strftime('%H:%M')
+                        uscita = ds.clock_out.strftime('%H:%M') if ds.clock_out else '-'
+                        ore_lavorate = f"{ds.total_hours:.1f}h" if ds.total_hours else '0h'
+                        note = le.notes[:50] if le and le.notes else ''
+                    else:
+                        stato = 'Assente'
+                        entrata = '-'
+                        uscita = '-'
+                        ore_lavorate = '0h'
+                        note = ''
+                else:
+                    stato = 'Non definito'
+                    entrata = '-'
+                    uscita = '-'  
+                    ore_lavorate = '0h'
+                    note = ''
+            
+            writer.writerow([
+                date_val.strftime('%d/%m/%Y'),
+                user.get_full_name(),
+                user.role if hasattr(user, 'role') and user.role else 'N/A',
+                stato,
+                entrata,
+                uscita,
+                ore_lavorate,
+                note
+            ])
+    
+    output.seek(0)
+    content = output.getvalue()
+    
+    if return_content:
+        return content
+    
+    from datetime import datetime as dt
+    from flask import make_response
+    response = make_response(content)
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    safe_sede_name = sede_name.replace(' ', '_').replace('/', '_')
+    response.headers['Content-Disposition'] = f'attachment; filename="presenze_{safe_sede_name}_{dt.now().strftime("%Y%m%d")}.csv"'
+    
+    return response
+
+@login_required
+@login_required
 @app.route('/test_route', methods=['GET', 'POST'])
 @login_required
 def test_route():
@@ -2662,6 +3187,7 @@ def reset_password(token):
 def not_found_error(error):
     return render_template('404.html'), 404
 
+
 @app.route('/edit_shift/<int:shift_id>', methods=['GET', 'POST'])
 @login_required
 def edit_shift(shift_id):
@@ -2747,6 +3273,8 @@ def edit_shift(shift_id):
         form.end_time.data = shift.end_time
     
     return render_template('edit_shift.html', shift=shift, users=users, form=form)
+
+
 
 def calculate_shift_presence(shift):
     """Calcola lo stato di presenza per un turno specifico"""
@@ -2927,6 +3455,8 @@ def team_shifts():
                          today=today,
                          week_dates=week_dates)
 
+
+
 @app.route('/team-shifts/change-user/<int:shift_id>', methods=['POST'])
 @login_required
 @csrf.exempt
@@ -2982,10 +3512,12 @@ def change_shift_user(shift_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Errore durante la modifica: {str(e)}'})
 
+
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
+
 
 # =============================================================================
 # REPERIBILITÀ (ON-CALL) ROUTES
@@ -3037,6 +3569,7 @@ def reperibilita_coverage():
     
     return render_template('reperibilita_coverage.html', reperibilita_groups=reperibilita_groups)
 
+
 @app.route('/reperibilita_coverage/create', methods=['GET', 'POST'])
 @require_login
 def create_reperibilita_coverage():
@@ -3080,6 +3613,7 @@ def create_reperibilita_coverage():
             flash(f'Errore durante la creazione: {str(e)}', 'error')
     
     return render_template('create_reperibilita_coverage.html', form=form)
+
 
 @app.route('/reperibilita_coverage/edit/<int:coverage_id>', methods=['GET', 'POST'])
 @require_login
@@ -3126,6 +3660,7 @@ def edit_reperibilita_coverage(coverage_id):
     
     return render_template('edit_reperibilita_coverage.html', form=form, coverage=coverage)
 
+
 @app.route('/reperibilita_coverage/delete/<int:coverage_id>', methods=['GET'])
 @require_login
 def delete_reperibilita_coverage(coverage_id):
@@ -3147,6 +3682,7 @@ def delete_reperibilita_coverage(coverage_id):
         flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
     
     return redirect(url_for('reperibilita_coverage'))
+
 
 @app.route('/reperibilita_coverage/view/<period_key>')
 @require_login
@@ -3178,6 +3714,7 @@ def view_reperibilita_coverage(period_key):
                          start_date=start_date, 
                          end_date=end_date,
                          period_key=period_key)
+
 
 @app.route('/reperibilita_coverage/delete_period/<period_key>')
 @require_login  
@@ -3223,6 +3760,7 @@ def delete_reperibilita_period(period_key):
         flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
     
     return redirect(url_for('reperibilita_shifts'))
+
 
 @app.route('/reperibilita_shifts')
 @require_login
@@ -3374,6 +3912,7 @@ def reperibilita_shifts():
                          view_mode=view_mode,
                          display_mode=display_mode)
 
+
 @app.route('/reperibilita_template/<start_date>/<end_date>')
 @require_login
 def reperibilita_template_detail(start_date, end_date):
@@ -3419,6 +3958,7 @@ def reperibilita_template_detail(start_date, end_date):
                          start_date=start_date,
                          end_date=end_date,
                          period_key=period_key)
+
 
 @app.route('/reperibilita_replica/<period_key>', methods=['GET', 'POST'])
 @require_login
@@ -3535,6 +4075,7 @@ def reperibilita_replica(period_key):
                          start_date=start_date,
                          end_date=end_date)
 
+
 @app.route('/reperibilita_shifts/generate', methods=['GET', 'POST'])
 @require_login
 def generate_reperibilita_shifts():
@@ -3616,6 +4157,7 @@ def generate_reperibilita_shifts():
     
     return render_template('generate_reperibilita_shifts.html', form=form)
 
+
 @app.route('/reperibilita_shifts/regenerate/<int:template_id>', methods=['GET'])
 @require_login
 def regenerate_reperibilita_template(template_id):
@@ -3670,6 +4212,7 @@ def regenerate_reperibilita_template(template_id):
     
     return redirect(url_for('reperibilita_shifts'))
 
+
 @app.route('/start-intervention', methods=['POST'])
 @login_required
 def start_intervention():
@@ -3717,6 +4260,7 @@ def start_intervention():
     flash('Intervento di reperibilità iniziato con successo.', 'success')
     return redirect(url_for('reperibilita_shifts'))
 
+
 @app.route('/end-intervention', methods=['POST'])
 @login_required
 def end_intervention():
@@ -3748,6 +4292,7 @@ def end_intervention():
         return redirect(url_for('ente_home'))
     else:
         return redirect(url_for('reperibilita_shifts'))
+
 
 @app.route('/reperibilita_template/delete/<template_id>')
 @require_login
@@ -3783,6 +4328,7 @@ def delete_reperibilita_template(template_id):
     
     return redirect(url_for('reperibilita_shifts'))
 
+
 # QR Code Authentication Routes
 @app.route('/qr_login/<action>', methods=['GET', 'POST'])
 def qr_login(action):
@@ -3807,6 +4353,7 @@ def qr_login(action):
     
     return render_template('qr_login_standalone.html', form=form, action=action)
 
+
 @app.route('/qr_fresh/<action>')
 def qr_fresh(action):
     """Route per QR dal browser - forza logout e redirect a qr_login"""
@@ -3821,6 +4368,7 @@ def qr_fresh(action):
     
     # Redirect alla pagina QR login
     return redirect(url_for('qr_login', action=action))
+
 
 @app.route('/quick_attendance/<action>', methods=['GET', 'POST'])
 @require_login
@@ -3922,6 +4470,7 @@ def quick_attendance(action):
                              user=current_user,
                              timestamp=now.strftime('%H:%M'),
                              error=True)
+
 
 @app.route('/generate_qr_codes')
 def generate_qr_codes():
@@ -4260,6 +4809,8 @@ def export_shifts_pdf():
     
     return response
 
+
+
 @app.route('/export_attendance_excel')
 @login_required  
 def export_attendance_excel():
@@ -4345,6 +4896,10 @@ def export_attendance_excel():
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     
     return response
+
+
+
+
 
 @app.route('/start_general_intervention', methods=['POST'])
 @login_required
@@ -4785,6 +5340,7 @@ def export_reperibilita_interventions_excel():
     
     return response
 
+
 @app.route('/qr/<action>')
 def qr_page(action):
     """Pagine dedicate per QR Code di entrata e uscita"""
@@ -4796,6 +5352,7 @@ def qr_page(action):
     qr_url = f"{base_url}/qr_login/{action}"
     
     return render_template('qr_page.html', action=action, qr_url=qr_url)
+
 
 # =============================================================================
 # ADMIN & SYSTEM MANAGEMENT ROUTES
@@ -4833,6 +5390,7 @@ def admin_generate_qr_codes():
                          static_qr_urls=static_qr_urls,
                          can_manage=True,
                          config=config)
+
 
 @app.route('/view/qr_codes')
 @require_login
@@ -5133,6 +5691,7 @@ def export_expense_reports_excel():
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     
     return response
+
 
 # ===============================
 # GESTIONE TURNI PER SEDI
@@ -5575,6 +6134,8 @@ def process_generate_turni_from_coverage():
         return redirect(url_for('generate_turnazioni'))
     
     return redirect(url_for('generate_turnazioni'))
+
+
 
 @app.route('/admin/turni/visualizza-generati')
 @login_required
@@ -6042,6 +6603,7 @@ def api_roles():
     except Exception as e:
         return jsonify(['Responsabile', 'Supervisore', 'Operatore', 'Ospite'])
 
+
 # ===============================
 # GESTIONE SEDI E ORARI DI LAVORO
 # ===============================
@@ -6300,6 +6862,7 @@ def delete_work_schedule(schedule_id):
         
     return redirect(url_for('manage_work_schedules'))
 
+
 # GESTIONE RUOLI DINAMICI
 
 @app.route('/admin/roles')
@@ -6319,6 +6882,7 @@ def manage_roles():
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     return response
+
 
 @app.route('/admin/roles/create', methods=['GET', 'POST'])
 @login_required
@@ -6345,6 +6909,7 @@ def create_role():
         return redirect(url_for('manage_roles'))
     
     return render_template('create_role.html', form=form)
+
 
 @app.route('/admin/roles/edit/<int:role_id>', methods=['GET', 'POST'])
 @login_required
@@ -6421,6 +6986,7 @@ def edit_role(role_id):
                          is_admin_editing_admin_role=is_admin_editing_admin_role,
                          protected_permissions=protected_permissions)
 
+
 @app.route('/admin/roles/toggle/<int:role_id>')
 @login_required
 def toggle_role(role_id):
@@ -6443,6 +7009,7 @@ def toggle_role(role_id):
     status = 'attivato' if role.active else 'disattivato'
     flash(f'Ruolo "{role.display_name}" {status} con successo', 'success')
     return redirect(url_for('manage_roles'))
+
 
 @app.route('/admin/roles/delete/<int:role_id>')
 @login_required
@@ -6637,6 +7204,7 @@ def send_message():
     
     return render_template('send_message.html', form=form)
 
+
 # =====================================
 # NUOVO SISTEMA TURNI - 3 FUNZIONALITÀ
 # =====================================
@@ -6806,6 +7374,7 @@ def edit_presidio_coverage(period_key):
                          period_key=period_key,
                          available_roles=roles_data)
 
+
 @app.route('/admin/coverage/presidio/create', methods=['GET', 'POST'])
 @login_required
 def create_presidio_coverage():
@@ -6870,6 +7439,7 @@ def create_presidio_coverage():
             flash(f'Errore durante la creazione: {str(e)}', 'danger')
     
     return render_template('create_presidio_coverage.html')
+
 
 @app.route('/admin/coverage/presidio/generate/<period_key>')
 @login_required
@@ -7055,6 +7625,7 @@ def view_turni_for_period():
                          accessible_sedi=accessible_sedi,
                          total_turni=len(turni_periodo),
                          today=date.today())
+
 
 # =====================================
 # NUOVO SISTEMA PRESIDIO - PACCHETTO COMPLETO
@@ -7485,6 +8056,8 @@ def create_presidio_shift_from_template(template, target_week_start, users_by_ro
             'errors': errors + [f"Errore database: {str(e)}"]
         }
 
+
+
 @app.route('/delete_presidio_coverage/<int:coverage_id>', methods=['POST'])
 @login_required
 def delete_presidio_coverage(coverage_id):
@@ -7507,6 +8080,7 @@ def delete_presidio_coverage(coverage_id):
     
     flash('Copertura eliminata con successo', 'success')
     return redirect(url_for('presidio_coverage_edit', template_id=template_id))
+
 
 # =============================================================================
 # EXPENSE MANAGEMENT ROUTES
@@ -7572,6 +8146,7 @@ def expense_reports():
                          page_title=page_title,
                          view_mode=view_mode)
 
+
 @app.route('/expenses/create', methods=['GET', 'POST'])
 @login_required
 def create_expense_report():
@@ -7624,6 +8199,7 @@ def create_expense_report():
         return redirect(url_for('expense_reports'))
     
     return render_template('create_expense_report.html', form=form)
+
 
 @app.route('/expenses/edit/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
@@ -7691,6 +8267,7 @@ def edit_expense_report(expense_id):
     
     return render_template('edit_expense_report.html', form=form, expense=expense)
 
+
 @app.route('/expenses/approve/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
 def approve_expense_report(expense_id):
@@ -7724,6 +8301,7 @@ def approve_expense_report(expense_id):
     
     return render_template('approve_expense_report.html', form=form, expense=expense)
 
+
 @app.route('/expenses/download/<int:expense_id>')
 @login_required
 def download_expense_receipt(expense_id):
@@ -7754,6 +8332,7 @@ def download_expense_receipt(expense_id):
     return send_file(file_path, as_attachment=True, 
                     download_name=f"ricevuta_{expense.id}_{expense.expense_date.strftime('%Y%m%d')}.{expense.receipt_filename.split('.')[-1]}")
 
+
 @app.route('/expenses/categories')
 @login_required
 def expense_categories():
@@ -7766,6 +8345,7 @@ def expense_categories():
     categories = ExpenseCategory.query.order_by(ExpenseCategory.name).all()
     
     return render_template('expense_categories.html', categories=categories)
+
 
 @app.route('/expenses/categories/create', methods=['GET', 'POST'])
 @login_required
@@ -7800,6 +8380,7 @@ def create_expense_category():
     
     return render_template('create_expense_category.html', form=form)
 
+
 @app.route('/expenses/categories/<int:category_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_expense_category(category_id):
@@ -7829,6 +8410,7 @@ def edit_expense_category(category_id):
     
     return render_template('edit_expense_category.html', form=form, category=category)
 
+
 @app.route('/expenses/categories/<int:category_id>/delete', methods=['POST'])
 @login_required
 def delete_expense_category(category_id):
@@ -7856,6 +8438,7 @@ def delete_expense_category(category_id):
         flash('Errore nell\'eliminazione della categoria', 'danger')
     
     return redirect(url_for('expense_categories'))
+
 
 @app.route('/expenses/delete/<int:expense_id>', methods=['POST'])
 @login_required
@@ -7887,6 +8470,7 @@ def delete_expense_report(expense_id):
     
     flash('Nota spese eliminata con successo', 'success')
     return redirect(url_for('expense_reports'))
+
 
 # =============================================================================
 # OVERTIME MANAGEMENT ROUTES
@@ -8156,6 +8740,14 @@ def overtime_requests_excel():
     
     return response
 
+
+
+
+
+
+
+
+
 @app.route("/overtime_types/<int:type_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_overtime_type(type_id):
@@ -8199,6 +8791,7 @@ def delete_overtime_type(type_id):
     db.session.commit()
     flash("Tipologia straordinario cancellata.", "info")
     return redirect(url_for("overtime_types"))
+
 
 # =============================================================================
 # MILEAGE REIMBURSEMENT ROUTES
@@ -8605,6 +9198,7 @@ def export_mileage_requests():
         flash(f'Errore durante l\'esportazione: {str(e)}', 'danger')
         return redirect(url_for('mileage_requests'))
 
+
 # =============================================
 # SISTEMA ACI - BACK OFFICE AMMINISTRATORE
 # =============================================
@@ -8623,6 +9217,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     
     return decorated_function
+
 
 @app.route("/aci_tables", methods=["GET", "POST"])
 @login_required
@@ -8664,6 +9259,10 @@ def aci_tables():
                          total_records=total_records,
                          show_results=(request.method == "POST"))
 
+
+
+
+
 @app.route("/api/aci/marcas")
 @login_required
 @admin_required
@@ -8678,6 +9277,7 @@ def api_aci_marcas():
     
     marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
     return jsonify(marcas)
+
 
 @app.route("/api/aci/modelos")
 @login_required
@@ -8696,6 +9296,7 @@ def api_aci_modelos():
     
     modelos = [row.modello for row in query.order_by(ACITable.modello).all()]
     return jsonify(modelos)
+
 
 @app.route("/aci_tables/upload", methods=["GET", "POST"])
 @login_required
@@ -8819,6 +9420,7 @@ def aci_upload():
     
     return render_template("aci_upload.html", form=form)
 
+
 @app.route("/aci_tables/create", methods=["GET", "POST"])
 @login_required
 @admin_required
@@ -8846,6 +9448,7 @@ def aci_create():
     
     return render_template("aci_create.html", form=form)
 
+
 @app.route("/aci_tables/<int:record_id>/edit", methods=["GET", "POST"])
 @login_required
 @admin_required
@@ -8871,6 +9474,7 @@ def aci_edit(record_id):
     
     return render_template("aci_edit.html", form=form, record=aci_record)
 
+
 @app.route("/aci_tables/<int:record_id>/delete", methods=["POST"])
 @login_required
 @admin_required
@@ -8887,6 +9491,7 @@ def aci_delete(record_id):
         flash(f"Errore durante la cancellazione: {str(e)}", "danger")
     
     return redirect(url_for("aci_tables"))
+
 
 @app.route("/aci_tables/export")
 @login_required
@@ -8968,6 +9573,7 @@ def aci_export():
         flash(f"Errore durante l'export: {str(e)}", "danger")
         return redirect(url_for("aci_tables"))
 
+
 @app.route("/aci_tables/bulk_delete", methods=["POST"])
 @login_required
 @admin_required
@@ -9003,6 +9609,9 @@ def aci_bulk_delete():
         logging.error(f"Errore cancellazione bulk ACI: {str(e)}")
     
     return redirect(url_for("aci_tables"))
+
+
+
 
 # =============================================================================
 # BLUEPRINT REGISTRATION
