@@ -209,22 +209,22 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_reperibilita() %}
-                        <li><a href="{{ url_for('generate_reperibilita_shifts') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita.generate_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Reperibilità
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_reperibilita() %}
-                        <li><a href="{{ url_for('reperibilita_shifts') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita.reperibilita_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Reperibilità
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_coverage() %}
-                        <li><a href="{{ url_for('reperibilita_coverage') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita.reperibilita_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Coperture Reperibilità
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_coverage() %}
-                        <li><a href="{{ url_for('reperibilita_coverage') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita.reperibilita_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Coperture Reperibilità
                         </a></li>
                         {% endif %}
