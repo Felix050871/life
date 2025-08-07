@@ -934,6 +934,42 @@
             replaceConfirmForms();
         });
         observer.observe(document.body, { childList: true, subtree: true });
+
+        // Global confirmDelete function for consistent deletion confirmations
+        window.confirmDelete = function(itemName, deleteUrl, itemType = 'elemento') {
+            let title = 'Conferma Eliminazione';
+            let message = `<p><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Vuoi eliminare definitivamente <strong>${itemName}</strong>?</p>` +
+                         `<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>` +
+                         `<strong>Attenzione:</strong> Questa operazione non può essere annullata.</small></div>`;
+            
+            // Customize based on item type
+            if (itemType === 'categoria' || deleteUrl.includes('categories')) {
+                title = 'Elimina Categoria';
+                message = `<p><i class="fas fa-tags me-2 text-danger"></i>Vuoi eliminare definitivamente la categoria <strong>${itemName}</strong>?</p>` +
+                         `<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>` +
+                         `<strong>Attenzione:</strong> Non sarà più possibile utilizzarla per nuove voci.</small></div>`;
+            }
+            
+            confirmationManager.show(title, message, () => {
+                // Create a form and submit it
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = deleteUrl;
+                
+                // Add CSRF token if available
+                const csrfToken = document.querySelector('meta[name=csrf-token]');
+                if (csrfToken) {
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrf_token';
+                    csrfInput.value = csrfToken.getAttribute('content');
+                    form.appendChild(csrfInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+            }, 'Elimina', 'btn-danger');
+        };
     </script>
 
     {% block scripts %}{% endblock %}

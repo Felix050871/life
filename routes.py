@@ -8951,6 +8951,65 @@ def create_expense_category():
     return render_template('create_expense_category.html', form=form)
 
 
+@app.route('/expenses/categories/<int:category_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_expense_category(category_id):
+    """Modifica categoria nota spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per modificare le categorie', 'danger')
+        return redirect(url_for('expense_categories'))
+    
+    from models import ExpenseCategory
+    from forms import ExpenseCategoryForm
+    
+    category = ExpenseCategory.query.get_or_404(category_id)
+    form = ExpenseCategoryForm(obj=category)
+    
+    if form.validate_on_submit():
+        category.name = form.name.data
+        category.description = form.description.data
+        category.active = form.active.data
+        
+        try:
+            db.session.commit()
+            flash('Categoria modificata con successo', 'success')
+            return redirect(url_for('expense_categories'))
+        except:
+            db.session.rollback()
+            flash('Errore: nome categoria già esistente', 'danger')
+    
+    return render_template('edit_expense_category.html', form=form, category=category)
+
+
+@app.route('/expenses/categories/<int:category_id>/delete', methods=['POST'])
+@login_required
+def delete_expense_category(category_id):
+    """Elimina categoria nota spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per eliminare le categorie', 'danger')
+        return redirect(url_for('expense_categories'))
+    
+    from models import ExpenseCategory
+    
+    category = ExpenseCategory.query.get_or_404(category_id)
+    
+    # Verifica se ci sono note spese associate
+    if category.expense_reports and len(category.expense_reports) > 0:
+        flash('Non è possibile eliminare una categoria con note spese associate', 'warning')
+        return redirect(url_for('expense_categories'))
+    
+    try:
+        name = category.name
+        db.session.delete(category)
+        db.session.commit()
+        flash(f'Categoria "{name}" eliminata con successo', 'success')
+    except:
+        db.session.rollback()
+        flash('Errore nell\'eliminazione della categoria', 'danger')
+    
+    return redirect(url_for('expense_categories'))
+
+
 @app.route('/expenses/delete/<int:expense_id>', methods=['POST'])
 @login_required
 def delete_expense_report(expense_id):
