@@ -893,13 +893,15 @@ class RoleForm(FlaskForm):
     
     # Reperibilità
     can_manage_reperibilita = BooleanField('Gestire Reperibilità')
-    can_view_reperibilita = BooleanField('Visualizzare Reperibilità')
+    can_view_reperibilita = BooleanField('Visualizzare Tutte le Reperibilità')
+    can_view_my_reperibilita = BooleanField('Visualizzare Le Mie Reperibilità')
     can_manage_coverage = BooleanField('Gestire Coperture Reperibilità')
     can_view_coverage = BooleanField('Visualizzare Coperture Reperibilità')
     
     # Gestione presenze
     can_manage_attendance = BooleanField('Gestire Presenze')
-    can_view_attendance = BooleanField('Visualizzare Presenze')
+    can_view_attendance = BooleanField('Visualizzare Tutte le Presenze')
+    can_view_my_attendance = BooleanField('Visualizzare Le Mie Presenze')
     can_access_attendance = BooleanField('Accedere alle Presenze', default=True)
     can_view_sede_attendance = BooleanField('Visualizzare Presenze Sede')
     
@@ -907,7 +909,8 @@ class RoleForm(FlaskForm):
     can_manage_leave = BooleanField('Gestire Ferie/Permessi')
     can_approve_leave = BooleanField('Approvare Ferie/Permessi')
     can_request_leave = BooleanField('Richiedere Ferie/Permessi')
-    can_view_leave = BooleanField('Visualizzare Ferie/Permessi')
+    can_view_leave = BooleanField('Visualizzare Tutte le Ferie/Permessi')
+    can_view_my_leave = BooleanField('Visualizzare Le Mie Ferie/Permessi')
     
     # Gestione interventi
     can_manage_interventions = BooleanField('Gestire Interventi')
@@ -933,7 +936,7 @@ class RoleForm(FlaskForm):
     # Note spese
     can_manage_expense_reports = BooleanField('Gestire Note Spese')
     can_view_expense_reports = BooleanField('Visualizzare Note Spese')
-    can_view_my_expense_reports = BooleanField('Widget Le Mie Note Spese')
+    can_view_my_expense_reports = BooleanField('Visualizzare Le Mie Note Spese')
     can_approve_expense_reports = BooleanField('Approvare Note Spese')
     can_create_expense_reports = BooleanField('Creare Note Spese')
     
@@ -1031,12 +1034,14 @@ class RoleForm(FlaskForm):
             # Reperibilità
             'can_manage_reperibilita': self.can_manage_reperibilita.data,
             'can_view_reperibilita': self.can_view_reperibilita.data,
+            'can_view_my_reperibilita': self.can_view_my_reperibilita.data,
             'can_manage_coverage': self.can_manage_coverage.data,
             'can_view_coverage': self.can_view_coverage.data,
             
             # Gestione presenze
             'can_manage_attendance': self.can_manage_attendance.data,
             'can_view_attendance': self.can_view_attendance.data,
+            'can_view_my_attendance': self.can_view_my_attendance.data,
             'can_access_attendance': self.can_access_attendance.data,
             'can_view_sede_attendance': self.can_view_sede_attendance.data,
             
@@ -1045,6 +1050,7 @@ class RoleForm(FlaskForm):
             'can_approve_leave': self.can_approve_leave.data,
             'can_request_leave': self.can_request_leave.data,
             'can_view_leave': self.can_view_leave.data,
+            'can_view_my_leave': self.can_view_my_leave.data,
             
             # Gestione interventi
             'can_manage_interventions': self.can_manage_interventions.data,
@@ -1137,10 +1143,14 @@ class RoleForm(FlaskForm):
         # Reperibilità
         self.can_manage_reperibilita.data = permissions_dict.get('can_manage_reperibilita', False)
         self.can_view_reperibilita.data = permissions_dict.get('can_view_reperibilita', False)
+        self.can_view_my_reperibilita.data = permissions_dict.get('can_view_my_reperibilita', False)
+        self.can_manage_coverage.data = permissions_dict.get('can_manage_coverage', False)
+        self.can_view_coverage.data = permissions_dict.get('can_view_coverage', False)
         
         # Gestione presenze
         self.can_manage_attendance.data = permissions_dict.get('can_manage_attendance', False)
         self.can_view_attendance.data = permissions_dict.get('can_view_attendance', False)
+        self.can_view_my_attendance.data = permissions_dict.get('can_view_my_attendance', False)
         self.can_access_attendance.data = permissions_dict.get('can_access_attendance', True)
         self.can_view_sede_attendance.data = permissions_dict.get('can_view_sede_attendance', False)
         
@@ -1149,6 +1159,7 @@ class RoleForm(FlaskForm):
         self.can_approve_leave.data = permissions_dict.get('can_approve_leave', False)
         self.can_request_leave.data = permissions_dict.get('can_request_leave', False)
         self.can_view_leave.data = permissions_dict.get('can_view_leave', False)
+        self.can_view_my_leave.data = permissions_dict.get('can_view_my_leave', False)
         
         # Gestione interventi
         self.can_manage_interventions.data = permissions_dict.get('can_manage_interventions', False)
