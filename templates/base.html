@@ -75,7 +75,7 @@
         <!-- Sidebar -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <a href="{% if current_user.can_access_dashboard() %}{{ url_for('dashboard') }}{% else %}{{ url_for('index') }}{% endif %}" class="brand">
+                <a href="{% if current_user.can_access_dashboard() %}{{ url_for('dashboard.dashboard') }}{% else %}{{ url_for('index') }}{% endif %}" class="brand">
                     <i class="fas fa-briefcase me-2"></i><span>Workly</span>
                 </a>
                 <button class="sidebar-toggle" onclick="toggleSidebar()">
@@ -87,7 +87,7 @@
                 <!-- DASHBOARD -->
                 {% if current_user.can_access_dashboard() %}
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('dashboard') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('dashboard.dashboard') }}" class="sidebar-nav-link">
                         <i class="fas fa-tachometer-alt"></i>
                         <span>Dashboard</span>
                     </a>
@@ -284,7 +284,7 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_attendance() %}
-                        <li><a href="{{ url_for('dashboard_team') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('dashboard.dashboard_team') }}" class="sidebar-submenu-link">
                             <i class="fas fa-chart-line"></i>Dashboard Presenze
                         </a></li>
                         {% endif %}

@@ -111,7 +111,7 @@ def dashboard():
         # Active intervention for current user
         active_intervention = Intervention.query.filter(
             Intervention.user_id == current_user.id,
-            Intervention.end_time.is_(None)
+            Intervention.end_datetime.is_(None)
         ).first()
         
         # Recent interventions (last 7 days)
@@ -124,7 +124,7 @@ def dashboard():
     # Active general intervention (per tutti gli utenti)
     active_general_intervention = Intervention.query.filter(
         Intervention.user_id.is_(None),  # Intervento generale
-        Intervention.end_time.is_(None)
+        Intervention.end_datetime.is_(None)
     ).first()
     
     # Widget leave requests
