@@ -12,6 +12,7 @@ from blueprints.attendance import attendance_bp
 from blueprints.shifts import shifts_bp
 from blueprints.leave import leave_bp
 from blueprints.messages import messages_bp
+from blueprints.reperibilita import reperibilita_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(holidays_bp)
@@ -20,6 +21,7 @@ app.register_blueprint(attendance_bp)
 app.register_blueprint(shifts_bp)
 app.register_blueprint(leave_bp)
 app.register_blueprint(messages_bp)
+app.register_blueprint(reperibilita_bp)
 
 if __name__ == '__main__':
     app.run(debug=Config.FLASK_DEBUG, host=Config.SERVER_HOST, port=Config.SERVER_PORT)
