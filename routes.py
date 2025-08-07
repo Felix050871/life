@@ -7457,7 +7457,13 @@ def manage_roles():
         return redirect(url_for('dashboard'))
     
     roles = UserRole.query.order_by(UserRole.name).all()
-    return render_template('manage_roles.html', roles=roles)
+    
+    # Force cache refresh with headers
+    response = make_response(render_template('manage_roles.html', roles=roles))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/admin/roles/create', methods=['GET', 'POST'])
