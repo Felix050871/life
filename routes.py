@@ -3673,6 +3673,66 @@ def delete_holiday(holiday_id):
     flash(f'Festività "{holiday_name}" eliminata con successo', 'success')
     return redirect(url_for('holidays'))
 
+@app.route('/api/generate_holidays', methods=['POST'])
+@login_required
+def api_generate_holidays():
+    """API per generare automaticamente le festività nazionali italiane"""
+    if not current_user.can_manage_holidays():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        from models import Holiday
+        
+        # Lista delle festività nazionali italiane
+        national_holidays = [
+            {'name': 'Capodanno', 'day': 1, 'month': 1, 'description': 'Primo giorno dell\'anno'},
+            {'name': 'Epifania', 'day': 6, 'month': 1, 'description': 'Festa dell\'Epifania'},
+            {'name': 'Festa della Liberazione', 'day': 25, 'month': 4, 'description': 'Liberazione d\'Italia'},
+            {'name': 'Festa del Lavoro', 'day': 1, 'month': 5, 'description': 'Festa dei Lavoratori'},
+            {'name': 'Festa della Repubblica', 'day': 2, 'month': 6, 'description': 'Festa della Repubblica Italiana'},
+            {'name': 'Ferragosto', 'day': 15, 'month': 8, 'description': 'Assunzione di Maria'},
+            {'name': 'Ognissanti', 'day': 1, 'month': 11, 'description': 'Festa di Tutti i Santi'},
+            {'name': 'Immacolata Concezione', 'day': 8, 'month': 12, 'description': 'Immacolata Concezione di Maria'},
+            {'name': 'Natale', 'day': 25, 'month': 12, 'description': 'Nascita di Gesù Cristo'},
+            {'name': 'Santo Stefano', 'day': 26, 'month': 12, 'description': 'Festa di Santo Stefano'}
+        ]
+        
+        added_holidays = 0
+        skipped_holidays = 0
+        
+        for holiday_data in national_holidays:
+            # Controlla se esiste già una festività nazionale nello stesso giorno
+            existing = Holiday.query.filter_by(
+                month=holiday_data['month'],
+                day=holiday_data['day'],
+                sede_id=None,  # Nazionale
+                active=True
+            ).first()
+            
+            if not existing:
+                holiday = Holiday(
+                    name=holiday_data['name'],
+                    month=holiday_data['month'],
+                    day=holiday_data['day'],
+                    sede_id=None,  # Nazionale
+                    description=holiday_data['description'],
+                    active=True,
+                    created_by=current_user.id
+                )
+                db.session.add(holiday)
+                added_holidays += 1
+            else:
+                skipped_holidays += 1
+        
+        db.session.commit()
+        
+        message = f'Operazione completata. {added_holidays} festività aggiunte, {skipped_holidays} già esistenti.'
+        return jsonify({'success': True, 'message': message, 'added': added_holidays, 'skipped': skipped_holidays})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Errore durante la generazione: {str(e)}'}), 500
+
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
 def change_password():

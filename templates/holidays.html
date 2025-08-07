@@ -9,9 +9,14 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-calendar-day"></i> Gestione Festività</h2>
                 {% if current_user.can_manage_holidays() %}
-                <a href="{{ url_for('add_holiday') }}" class="btn btn-success">
-                    <i class="fas fa-plus"></i> Aggiungi Festività
-                </a>
+                <div class="btn-group">
+                    <a href="{{ url_for('add_holiday') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Aggiungi Festività
+                    </a>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateHolidaysModal">
+                        <i class="fas fa-magic"></i> Genera Festività
+                    </button>
+                </div>
                 {% endif %}
             </div>
 
@@ -107,6 +112,63 @@
     </div>
 </div>
 
+<!-- Modal per generazione festività automatiche -->
+<div class="modal fade" id="generateHolidaysModal" tabindex="-1" aria-labelledby="generateHolidaysModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="generateHolidaysModalLabel">Genera Festività Nazionali</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Questa funzione aggiungerà automaticamente le festività nazionali italiane standard:</p>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Capodanno <span class="badge bg-primary rounded-pill">1 Gen</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Epifania <span class="badge bg-primary rounded-pill">6 Gen</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Festa della Liberazione <span class="badge bg-primary rounded-pill">25 Apr</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Festa del Lavoro <span class="badge bg-primary rounded-pill">1 Mag</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Festa della Repubblica <span class="badge bg-primary rounded-pill">2 Giu</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Ferragosto <span class="badge bg-primary rounded-pill">15 Ago</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Ognissanti <span class="badge bg-primary rounded-pill">1 Nov</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Immacolata Concezione <span class="badge bg-primary rounded-pill">8 Dec</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Natale <span class="badge bg-primary rounded-pill">25 Dec</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Santo Stefano <span class="badge bg-primary rounded-pill">26 Dec</span>
+                    </li>
+                </ul>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Nota:</strong> Le festività già esistenti non verranno duplicate.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-success" onclick="generateHolidays()">
+                    <i class="fas fa-magic me-1"></i>Genera Festività
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal per conferma eliminazione -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -133,6 +195,40 @@ function confirmDelete(holidayName, deleteUrl) {
     document.getElementById('confirmDeleteBtn').href = deleteUrl;
     var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     deleteModal.show();
+}
+
+function generateHolidays() {
+    // Mostra overlay di caricamento
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generando...';
+    btn.disabled = true;
+    
+    fetch('/api/generate_holidays', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Chiudi modal e ricarica pagina
+            const modal = bootstrap.Modal.getInstance(document.getElementById('generateHolidaysModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Errore durante la generazione: ' + data.message);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Errore durante la generazione delle festività');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
 }
 </script>
 {% endblock %}
