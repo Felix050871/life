@@ -380,6 +380,25 @@
                                 </div>
                             </div>
 
+                            <!-- Tabelle ACI -->
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-table me-1"></i>Tabelle ACI</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_aci_tables() }}
+                                            {{ form.can_manage_aci_tables.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_aci_tables() }}
+                                            {{ form.can_view_aci_tables.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Note Spese -->
                             <div class="col-lg-4 col-md-6 mb-3">
                                 <div class="card border h-100">

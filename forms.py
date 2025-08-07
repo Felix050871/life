@@ -966,10 +966,6 @@ class RoleForm(FlaskForm):
     can_view_overtime_widget = BooleanField('Widget Straordinari')
     can_view_my_overtime_widget = BooleanField('Widget I Miei Straordinari')
     
-    # Widget Rimborsi Chilometrici
-    can_view_mileage_widget = BooleanField('Widget Rimborsi Chilometrici')
-    can_view_my_mileage_widget = BooleanField('Widget I Miei Rimborsi Km')
-    
     # Gestione Rimborsi Chilometrici
     can_create_mileage_requests = BooleanField('Creare Richieste Rimborso Km')
     can_view_mileage_requests = BooleanField('Visualizzare Richieste Rimborso Km')
@@ -980,6 +976,10 @@ class RoleForm(FlaskForm):
     # Widget Rimborsi Chilometrici
     can_view_mileage_widget = BooleanField('Widget Rimborsi Chilometrici')
     can_view_my_mileage_widget = BooleanField('Widget I Miei Rimborsi')
+    
+    # Gestione Tabelle ACI
+    can_manage_aci_tables = BooleanField('Gestire Tabelle ACI')
+    can_view_aci_tables = BooleanField('Visualizzare Tabelle ACI')
     
     active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')

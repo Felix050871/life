@@ -155,7 +155,11 @@ class UserRole(db.Model):
             'can_approve_mileage_requests': 'Approvare Richieste Rimborso Km',
             'can_manage_mileage_requests': 'Gestire Richieste Rimborso Km',
             'can_view_mileage_widget': 'Widget Rimborsi Chilometrici',
-            'can_view_my_mileage_widget': 'Widget I Miei Rimborsi'
+            'can_view_my_mileage_widget': 'Widget I Miei Rimborsi',
+            
+            # Tabelle ACI
+            'can_manage_aci_tables': 'Gestire Tabelle ACI',
+            'can_view_aci_tables': 'Visualizzare Tabelle ACI'
         }
 
 class User(UserMixin, db.Model):
@@ -626,6 +630,19 @@ class User(UserMixin, db.Model):
     def can_view_my_mileage_widget(self):
         """Può visualizzare widget dei propri rimborsi chilometrici"""
         return self.has_permission('can_view_my_mileage_widget')
+    
+    # === TABELLE ACI ===
+    def can_manage_aci_tables(self):
+        """Può gestire le tabelle ACI"""
+        return self.has_permission('can_manage_aci_tables')
+    
+    def can_view_aci_tables(self):
+        """Può visualizzare le tabelle ACI"""
+        return self.has_permission('can_view_aci_tables')
+    
+    def can_access_aci_tables_menu(self):
+        """Accesso al menu Tabelle ACI"""
+        return self.can_manage_aci_tables() or self.can_view_aci_tables()
     
     def get_sede_name(self):
         """Ottieni il nome della sede associata all'utente"""
