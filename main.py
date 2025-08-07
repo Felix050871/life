@@ -9,11 +9,13 @@ from blueprints.auth import auth_bp
 from blueprints.holidays import holidays_bp
 from blueprints.dashboard import dashboard_bp
 from blueprints.attendance import attendance_bp
+from blueprints.shifts import shifts_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(holidays_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(attendance_bp)
+app.register_blueprint(shifts_bp)
 
 if __name__ == '__main__':
     app.run(debug=Config.FLASK_DEBUG, host=Config.SERVER_HOST, port=Config.SERVER_PORT)

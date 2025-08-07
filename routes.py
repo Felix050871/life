@@ -922,9 +922,7 @@ def attendance():
                          show_team_data=show_team_data,
                          is_multi_sede=current_user.all_sedi)
 
-@app.route('/turni_automatici')
-@login_required
-def turni_automatici():
+# ROUTE MOVED TO shifts_bp blueprint
     """Sistema nuovo: Creazione automatica turni da template presidio"""
     if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
         flash('Non hai i permessi per accedere ai turni', 'danger')
@@ -1109,9 +1107,7 @@ def get_shifts_for_template_api(template_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/visualizza_turni')
-@login_required
-def visualizza_turni():
+# ROUTE MOVED TO shifts_bp blueprint
     """Visualizza turni - Solo visualizzazione senza generazione"""
     if not current_user.can_view_shifts():
         flash('Non hai i permessi per visualizzare i turni', 'danger')
@@ -1210,9 +1206,7 @@ def visualizza_turni():
                          today=date.today(),
                          timedelta=timedelta)
 
-@app.route('/genera_turni_da_template', methods=['POST'])
-@login_required  
-def genera_turni_da_template():
+# ROUTE MOVED TO shifts_bp blueprint
     """Genera turni automaticamente da template presidio con approccio metodico 24/7"""
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per creare turni', 'danger')
@@ -1326,9 +1320,7 @@ def genera_turni_da_template():
     
     return redirect(url_for('turni_automatici'))
 
-@app.route('/create_shift', methods=['POST'])
-@login_required
-def create_shift():
+# ROUTE MOVED TO shifts_bp blueprint
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per creare turni', 'danger')
         return redirect(url_for('manage_turni'))
