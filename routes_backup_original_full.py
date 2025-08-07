@@ -1,88 +1,28 @@
-# =============================================================================
-# WORKLY - WORKFORCE MANAGEMENT ROUTES
-# Organized by functional areas for better maintainability
-# =============================================================================
-#
-# ROUTE ORGANIZATION:
-# 1. Global Configuration & Utilities
-# 2. Core Navigation Routes
-# 3. Authentication Routes
-# 4. Dashboard Routes
-# 5. Attendance & Clock In/Out Routes
-# 6. Shift Management Routes
-# 7. Leave Management Routes
-# 8. User Management Routes
-# 9. Reports Routes
-# 10. Holiday Management Routes
-# 11. Reperibilità (On-Call) Routes
-# 12. Expense Management Routes
-# 13. Overtime Management Routes
-# 14. Mileage Reimbursement Routes
-# 15. Admin & System Management Routes
-# 16. API Endpoints
-#
-# Total Routes: 169+
-# =============================================================================
-
-# Flask Core Imports
 from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
-
-# Standard Library Imports
 from datetime import datetime, date, timedelta, time
-from urllib.parse import urlparse, urljoin
-from io import BytesIO, StringIO
 import re
 import qrcode
+from io import BytesIO, StringIO
 import base64
 import json
 from defusedcsv import csv
-
-# Application Imports
+from urllib.parse import urlparse, urljoin
 from app import app, db, csrf
 from config import get_config
-
-# SQLAlchemy Imports
 from sqlalchemy.orm import joinedload
+from models import User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention, Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate, ReperibilitaCoverage, Holiday, PasswordResetToken, italian_now, get_active_presidio_templates, get_presidio_coverage_for_day, OvertimeType, OvertimeRequest, ExpenseCategory, ExpenseReport, ACITable, MileageRequest
+from forms import LoginForm, UserForm, UserProfileForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm, ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm, ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm, MileageRequestForm, ApproveMileageForm, MileageFilterForm
+from utils import get_user_statistics, get_team_statistics, format_hours, check_user_schedule_with_permissions, send_overtime_request_message
 
-# Model Imports
-from models import (
-    User, AttendanceEvent, LeaveRequest, LeaveType, Shift, ShiftTemplate, 
-    ReperibilitaShift, ReperibilitaTemplate, ReperibilitaIntervention, Intervention,
-    Sede, WorkSchedule, UserRole, PresidioCoverage, PresidioCoverageTemplate,
-    ReperibilitaCoverage, Holiday, PasswordResetToken, OvertimeType, OvertimeRequest,
-    ExpenseCategory, ExpenseReport, ACITable, MileageRequest,
-    italian_now, get_active_presidio_templates, get_presidio_coverage_for_day
-)
-
-# Form Imports
-from forms import (
-    LoginForm, UserForm, UserProfileForm, AttendanceForm, LeaveRequestForm, LeaveTypeForm,
-    ShiftForm, ShiftTemplateForm, SedeForm, WorkScheduleForm, RoleForm,
-    PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm,
-    ForgotPasswordForm, ResetPasswordForm, OvertimeTypeForm, OvertimeRequestForm,
-    ApproveOvertimeForm, OvertimeFilterForm, ACIUploadForm, ACIRecordForm, ACIFilterForm,
-    MileageRequestForm, ApproveMileageForm, MileageFilterForm
-)
-
-# Utility Imports
-from utils import (
-    get_user_statistics, get_team_statistics, format_hours, 
-    check_user_schedule_with_permissions, send_overtime_request_message
-)
-
-
-# =============================================================================
-# GLOBAL CONFIGURATION AND UTILITY FUNCTIONS
-# =============================================================================
-
+# Inject configuration into all templates
 @app.context_processor
 def inject_config():
-    """Inject configuration into all templates"""
     config = get_config()
     return dict(config=config)
 
+# Define require_login decorator
 def require_login(f):
     """Decorator to require login for routes"""
     from functools import wraps
@@ -107,22 +47,11 @@ def is_safe_url(target):
     # Check if the scheme and netloc match (same domain)
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
-
-# =============================================================================
-# CORE NAVIGATION ROUTES
-# =============================================================================
-
 @app.route('/')
 def index():
-    """Main entry point - redirect to appropriate dashboard"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
-
-
-# =============================================================================
-# AUTHENTICATION ROUTES
-# =============================================================================
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -148,11 +77,6 @@ def logout():
     logout_user()
     flash('Logout effettuato con successo', 'info')
     return redirect(url_for('login'))
-
-
-# =============================================================================
-# DASHBOARD ROUTES
-# =============================================================================
 
 @app.route('/dashboard')
 @login_required
@@ -1445,10 +1369,6 @@ def get_work_hours(user_id, date_str):
         pass  # Silent error handling
         return jsonify({'work_hours': 0})
 
-# =============================================================================
-# ATTENDANCE & CLOCK IN/OUT ROUTES
-# =============================================================================
-
 @app.route('/check_shift_before_clock_in', methods=['POST'])
 @login_required  
 def check_shift_before_clock_in():
@@ -2321,10 +2241,6 @@ def turni_automatici():
                          timedelta=timedelta,
                          can_manage_shifts=current_user.can_manage_shifts())
 
-# =============================================================================
-# SHIFT MANAGEMENT ROUTES
-# =============================================================================
-
 @app.route('/api/get_shifts_for_template/<int:template_id>')
 @login_required
 def get_shifts_for_template_api(template_id):
@@ -2925,10 +2841,7 @@ def view_template(template_id):
                          can_manage=can_manage,
                          view_mode=view_mode)
 
-# =============================================================================
-# LEAVE MANAGEMENT ROUTES
-# =============================================================================
-
+# Route per gestione tipologie permessi
 @app.route('/leave_types')
 @login_required
 def leave_types():
@@ -3291,10 +3204,6 @@ def delete_leave(request_id):
     else:
         return redirect(url_for('leave_requests'))
 
-# =============================================================================
-# USER MANAGEMENT ROUTES
-# =============================================================================
-
 @app.route('/users')
 @login_required
 def users():
@@ -3513,10 +3422,6 @@ def toggle_user(user_id):
     flash(f'Utente {status} con successo', 'success')
     return redirect(url_for('user_management'))
 
-# =============================================================================
-# REPORTS ROUTES
-# =============================================================================
-
 @app.route('/reports')
 @login_required
 def reports():
@@ -3644,10 +3549,6 @@ def reports():
                          reperibilita_interventions=reperibilita_interventions,
                          start_date=start_date,
                          end_date=end_date)
-
-# =============================================================================
-# HOLIDAY MANAGEMENT ROUTES
-# =============================================================================
 
 @app.route('/holidays')
 @login_required
@@ -4282,9 +4183,7 @@ def internal_error(error):
     return render_template('500.html'), 500
 
 
-# =============================================================================
-# REPERIBILITÀ (ON-CALL) ROUTES
-# =============================================================================
+# ============ REPERIBILITÀ ROUTES ============
 
 @app.route('/reperibilita_coverage')
 @require_login
@@ -6117,10 +6016,6 @@ def qr_page(action):
     return render_template('qr_page.html', action=action, qr_url=qr_url)
 
 
-# =============================================================================
-# ADMIN & SYSTEM MANAGEMENT ROUTES
-# =============================================================================
-
 @app.route('/admin/qr_codes')
 @require_login
 def admin_generate_qr_codes():
@@ -7268,10 +7163,6 @@ def generate_turnazioni():
                          sedi_with_coverage=sedi_with_coverage,
                          today=date.today(),
                          is_admin=(current_user.role == 'Admin'))
-
-# =============================================================================
-# API ENDPOINTS
-# =============================================================================
 
 @app.route('/api/sede/<int:sede_id>/users')
 @login_required
@@ -8845,9 +8736,9 @@ def delete_presidio_coverage(coverage_id):
     return redirect(url_for('presidio_coverage_edit', template_id=template_id))
 
 
-# =============================================================================
-# EXPENSE MANAGEMENT ROUTES
-# =============================================================================
+# ============================================================================
+# NOTE SPESE ROUTES
+# ============================================================================
 
 @app.route('/expenses', methods=['GET', 'POST'])
 @login_required
@@ -9235,9 +9126,9 @@ def delete_expense_report(expense_id):
     return redirect(url_for('expense_reports'))
 
 
-# =============================================================================
-# OVERTIME MANAGEMENT ROUTES
-# =============================================================================
+# ============================================================================
+# ROUTE STRAORDINARI
+# ============================================================================
 
 @app.route('/overtime_types')
 @login_required
@@ -9556,9 +9447,9 @@ def delete_overtime_type(type_id):
     return redirect(url_for("overtime_types"))
 
 
-# =============================================================================
-# MILEAGE REIMBURSEMENT ROUTES
-# =============================================================================
+# =============================================
+# SISTEMA RIMBORSI CHILOMETRICI
+# =============================================
 
 @app.route('/mileage_requests')
 @login_required
