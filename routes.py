@@ -3554,9 +3554,9 @@ def holidays():
 @login_required
 def add_holiday():
     """Aggiunta nuova festività"""
-    if current_user.role != 'Admin':
-        flash('Solo gli amministratori possono gestire le festività', 'danger')
-        return redirect(url_for('dashboard'))
+    if not current_user.can_manage_holidays():
+        flash('Non hai i permessi per gestire le festività', 'danger')
+        return redirect(url_for('holidays'))
     
     from forms import HolidayForm
     from models import Holiday
@@ -3602,9 +3602,9 @@ def add_holiday():
 @login_required
 def edit_holiday(holiday_id):
     """Modifica festività esistente"""
-    if current_user.role != 'Admin':
-        flash('Solo gli amministratori possono gestire le festività', 'danger')
-        return redirect(url_for('dashboard'))
+    if not current_user.can_manage_holidays():
+        flash('Non hai i permessi per gestire le festività', 'danger')
+        return redirect(url_for('holidays'))
     
     from forms import HolidayForm
     from models import Holiday
@@ -3652,9 +3652,9 @@ def edit_holiday(holiday_id):
 @login_required
 def delete_holiday(holiday_id):
     """Elimina festività"""
-    if current_user.role != 'Admin':
-        flash('Solo gli amministratori possono gestire le festività', 'danger')
-        return redirect(url_for('dashboard'))
+    if not current_user.can_manage_holidays():
+        flash('Non hai i permessi per gestire le festività', 'danger')
+        return redirect(url_for('holidays'))
     
     from models import Holiday
     
