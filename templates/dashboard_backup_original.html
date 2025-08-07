@@ -2,26 +2,6 @@
 
 {% block title %}Dashboard - Gestione Presenze{% endblock %}
 
-{#
-=============================================================================
-DASHBOARD.HTML - WORKLY WORKFORCE MANAGEMENT SYSTEM
-Main dashboard template with comprehensive widget system organized in sections.
-
-SECTIONS (1207 lines total):
-1. Header & Introduction
-2. Attendance Management Widget 
-3. Leave Requests Widget
-4. Shift Management Widget
-5. On-call Duty Widget
-6. Overtime Requests Widget
-7. Expense Reports Widget
-8. Mileage Requests Widget
-9. Team Management Widgets
-10. System Reports Widget
-11. JavaScript Components
-=============================================================================
-#}
-
 {% block content %}
 <div class="row mb-4">
     <div class="col">
@@ -30,16 +10,8 @@ SECTIONS (1207 lines total):
     </div>
 </div>
 
-{# ============================================================================= #}
-{# DASHBOARD WIDGETS GRID #}
-{# ============================================================================= #}
-
 <!-- Dashboard Widgets Grid -->
 <div class="row">
-    {# ========================================================================= #}
-    {# ATTENDANCE MANAGEMENT WIDGET #}
-    {# ========================================================================= #}
-    
     <!-- Widget: Le Mie Presenze (Gestione Entrata/Uscita/Pausa) -->
     {% if current_user.can_view_my_attendance_widget() %}
     <div class="col-12 mb-4">
@@ -177,10 +149,6 @@ SECTIONS (1207 lines total):
     </div>
     {% endif %}
 
-    {# ========================================================================= #}
-    {# LEAVE REQUESTS WIDGET #}
-    {# ========================================================================= #}
-    
     <!-- Widget: Le Mie Richieste Ferie/Permessi/Malattie -->
     {% if current_user.can_view_my_leave_requests_widget() %}
     <div class="col-12 mb-4">
@@ -291,10 +259,6 @@ SECTIONS (1207 lines total):
     </div>
     {% endif %}
 
-    {# ========================================================================= #}
-    {# SHIFT MANAGEMENT WIDGET #}
-    {# ========================================================================= #}
-    
     <!-- Widget: I Miei Turni -->
     {% if current_user.can_view_my_shifts_widget() %}
     <div class="col-12 mb-4">
@@ -337,10 +301,6 @@ SECTIONS (1207 lines total):
     </div>
     {% endif %}
 
-    {# ========================================================================= #}
-    {# ON-CALL DUTY WIDGET #}
-    {# ========================================================================= #}
-    
     <!-- Widget: La Mia Reperibilità -->
     {% if current_user.can_view_my_reperibilita_widget() %}
     <div class="col-12 mb-4">
@@ -381,10 +341,6 @@ SECTIONS (1207 lines total):
     </div>
     {% endif %}
 
-    {# ========================================================================= #}
-    {# OVERTIME REQUESTS WIDGET #}
-    {# ========================================================================= #}
-    
     <!-- Widget: I Miei Straordinari -->
     {% if current_user.can_view_my_overtime_widget() %}
     <div class="col-12 mb-4">
@@ -497,10 +453,6 @@ SECTIONS (1207 lines total):
 
 
 
-    {# ========================================================================= #}
-    {# TEAM MANAGEMENT WIDGETS #}
-    {# ========================================================================= #}
-    
     <!-- Widget: Team Stats -->
     {% if current_user.can_view_team_stats_widget() and team_stats %}
     <div class="col-md-6 col-lg-4 mb-4">
@@ -776,10 +728,6 @@ SECTIONS (1207 lines total):
     </div>
     {% endif %}
 
-    {# ========================================================================= #}
-    {# EXPENSE REPORTS WIDGET #}
-    {# ========================================================================= #}
-    
     <!-- Widget: Note Spese -->
     {% if current_user.can_view_expense_reports_widget() and expense_reports_data %}
     <div class="col-12 mb-4">
@@ -870,10 +818,6 @@ SECTIONS (1207 lines total):
     </div>
     {% endif %}
 
-    {# ========================================================================= #}
-    {# MILEAGE REQUESTS WIDGET #}
-    {# ========================================================================= #}
-    
     <!-- Widget: I Miei Rimborsi Chilometrici -->
     {% if current_user.can_view_my_mileage_widget() %}
     <div class="col-12 mb-4">
@@ -989,10 +933,6 @@ SECTIONS (1207 lines total):
     </div>
     {% endif %}
 </div>
-
-{# ============================================================================= #}
-{# JAVASCRIPT COMPONENTS #}
-{# ============================================================================= #}
 
 <script>
 // Current time display

@@ -1,34 +1,8 @@
-# =============================================================================
-# FORMS.PY - WORKLY WORKFORCE MANAGEMENT SYSTEM
-# Comprehensive WTForms collection organized in logical sections for
-# maintaining a scalable and organized form management system.
-#
-# SECTIONS (39 forms total):
-# 1. Authentication & User Management (8 forms)
-# 2. Attendance & Time Tracking (3 forms)
-# 3. Leave Management (6 forms) 
-# 4. Shift Management (4 forms)
-# 5. Presidio Coverage Forms (4 forms)
-# 6. Reperibilità Forms (4 forms)
-# 7. Holiday Management Forms (1 form)
-# 8. Internal Messaging Forms (1 form)
-# 9. Expense Management Forms (3 forms)
-# 10. Administrative Forms (4 forms)
-# 11. Overtime Management Forms (4 forms)
-# 12. Mileage Reimbursement Forms (5 forms)
-# 13. ACI Tables Management Forms (2 forms)
-# =============================================================================
-
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, SelectMultipleField, FloatField, DateField, TimeField, TextAreaField, SubmitField, BooleanField, IntegerField, DecimalField, ValidationError
 from wtforms.validators import DataRequired, Email, Length, NumberRange, EqualTo, Optional
 from models import User, Sede, UserRole
 from flask_wtf.file import FileField, FileAllowed
-
-
-# =============================================================================
-# AUTHENTICATION FORMS
-# =============================================================================
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
@@ -61,10 +35,6 @@ class UserProfileForm(FlaskForm):
     def validate_password(self, password):
         if password.data and len(password.data) < 6:
             raise ValidationError('La password deve essere di almeno 6 caratteri.')
-
-# =============================================================================
-# USER MANAGEMENT FORMS
-# =============================================================================
 
 class UserForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
@@ -203,10 +173,6 @@ class UserForm(FlaskForm):
                 return 100.0
         return 100.0
 
-# =============================================================================
-# ATTENDANCE FORMS
-# =============================================================================
-
 class AttendanceForm(FlaskForm):
     sede_id = SelectField('Sede', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()])
     notes = TextAreaField('Note')
@@ -228,10 +194,6 @@ class AttendanceForm(FlaskForm):
         else:
             # Nascondi il campo se non applicabile
             self.sede_id.choices = []
-
-# =============================================================================
-# LEAVE MANAGEMENT FORMS
-# =============================================================================
 
 class LeaveTypeForm(FlaskForm):
     """Form per la gestione delle tipologie di permesso"""
@@ -301,10 +263,6 @@ class LeaveRequestForm(FlaskForm):
             return LeaveType.query.get(self.leave_type_id.data)
         return None
 
-# =============================================================================
-# SHIFT MANAGEMENT FORMS
-# =============================================================================
-
 class ShiftForm(FlaskForm):
     user_id = SelectField('Utente', coerce=int, validators=[DataRequired()])
     date = DateField('Data', validators=[DataRequired()])
@@ -334,10 +292,6 @@ class ShiftTemplateForm(FlaskForm):
         if end_date.data < self.start_date.data:
             raise ValidationError('La data di fine deve essere successiva alla data di inizio.')
 
-
-# =============================================================================
-# PRESIDIO COVERAGE FORMS
-# =============================================================================
 
 class PresidioCoverageForm(FlaskForm):
     # Periodo di validità
@@ -397,10 +351,6 @@ class PresidioReplicaForm(FlaskForm):
         if end_date.data <= self.start_date.data:
             raise ValidationError('La data di fine deve essere successiva alla data di inizio')
 
-
-# =============================================================================
-# REPERIBILITÀ FORMS
-# =============================================================================
 
 class ReperibilitaCoverageForm(FlaskForm):
     """Form per creare/modificare coperture reperibilità"""
@@ -590,10 +540,6 @@ class ReperibilitaTemplateForm(FlaskForm):
             raise ValidationError('Specifica una data di inizio personalizzata.')
 
 
-# =============================================================================
-# HOLIDAY MANAGEMENT FORMS
-# =============================================================================
-
 class HolidayForm(FlaskForm):
     """Form per gestire festività"""
     name = StringField('Nome Festività', validators=[DataRequired(), Length(max=100)])
@@ -663,10 +609,6 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField('Imposta Nuova Password')
 
 
-# =============================================================================
-# INTERNAL MESSAGING FORMS
-# =============================================================================
-
 class SendMessageForm(FlaskForm):
     """Form per inviare messaggi interni"""
     recipient_ids = SelectMultipleField('Destinatari', coerce=int, validators=[DataRequired()])
@@ -709,10 +651,6 @@ class SendMessageForm(FlaskForm):
             if not self.recipient_ids.choices:
                 self.recipient_ids.choices = [(0, 'Nessun utente disponibile')]
 
-
-# =============================================================================
-# EXPENSE MANAGEMENT FORMS
-# =============================================================================
 
 class ExpenseCategoryForm(FlaskForm):
     """Form per gestire le categorie di spesa"""
@@ -805,10 +743,6 @@ class ExpenseFilterForm(FlaskForm):
             (cat.id, cat.name) for cat in categories
         ]
 
-
-# =============================================================================
-# ADMINISTRATIVE FORMS
-# =============================================================================
 
 class SedeForm(FlaskForm):
     """Form per gestire le sedi aziendali"""
@@ -1479,9 +1413,9 @@ class PresidioCoverageSearchForm(FlaskForm):
     submit = SubmitField('Cerca')
 
 
-# =============================================================================
-# OVERTIME MANAGEMENT FORMS
-# =============================================================================
+# ============================================================================
+# FORM STRAORDINARI
+# ============================================================================
 
 class OvertimeTypeForm(FlaskForm):
     name = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)])
@@ -1570,9 +1504,9 @@ class OvertimeFilterForm(FlaskForm):
             self.overtime_type_id.choices = [('', 'Tutte le tipologie')]
 
 
-# =============================================================================
-# MILEAGE REIMBURSEMENT FORMS
-# =============================================================================
+# ============================================================================
+# FORM RIMBORSI CHILOMETRICI
+# ============================================================================
 
 class MileageRequestForm(FlaskForm):
     """Form per creare/modificare richieste di rimborso chilometrico"""
@@ -1745,10 +1679,6 @@ def validate_file_size(form, field):
         max_size = 50 * 1024 * 1024  # 50MB in bytes
         if size > max_size:
             raise ValidationError(f'File troppo grande: {size//1024//1024}MB. Massimo consentito: 50MB')
-
-# =============================================================================
-# ACI TABLES MANAGEMENT FORMS
-# =============================================================================
 
 class ACIUploadForm(FlaskForm):
     """Form per caricare file Excel delle tabelle ACI"""

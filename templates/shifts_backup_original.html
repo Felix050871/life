@@ -2,22 +2,6 @@
 
 {% block title %}Turnazioni - Gestione Presenze{% endblock %}
 
-{#
-=============================================================================
-SHIFTS.HTML - WORKLY WORKFORCE MANAGEMENT SYSTEM
-Comprehensive shift management template with calendar and table views.
-
-SECTIONS (1016 lines total):
-1. CSS Styles & Head Section
-2. Quick Actions & Controls  
-3. Template Management (Staff)
-4. Template Viewing (Regular Users)
-5. Shifts Table & Calendar Views
-6. Modals & Forms
-7. JavaScript Components
-=============================================================================
-#}
-
 {% block head %}
 <!-- DataTables CSS -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
@@ -122,10 +106,6 @@ SECTIONS (1016 lines total):
 </div>
 
 {% if can_manage and current_user.role != 'Ente' %}
-{# ============================================================================= #}
-{# QUICK ACTIONS & CONTROLS #}
-{# ============================================================================= #}
-
 <!-- Quick Actions -->
 {% if has_turni_access %}
 <div class="row mb-4">
@@ -155,10 +135,6 @@ SECTIONS (1016 lines total):
     </div>
 </div>
 {% endif %}
-
-{# ============================================================================= #}
-{# TEMPLATE MANAGEMENT (STAFF) #}
-{# ============================================================================= #}
 
 <!-- Staff Controls -->
 {% if has_turni_access and can_manage %}
@@ -349,10 +325,6 @@ SECTIONS (1016 lines total):
 </div>
 {% endif %}
 
-{# ============================================================================= #}
-{# TEMPLATE VIEWING (REGULAR USERS) #}
-{# ============================================================================= #}
-
 <!-- Template Viewing for Regular Users -->
 {% if not can_manage and view_mode == 'all' and shift_templates %}
 <div class="row mb-4">
@@ -403,10 +375,6 @@ SECTIONS (1016 lines total):
     </div>
 </div>
 {% endif %}
-
-{# ============================================================================= #}
-{# SHIFTS TABLE & CALENDAR VIEWS #}
-{# ============================================================================= #}
 
 <!-- Shifts Table -->
 {% if shifts is not none %}
@@ -737,10 +705,6 @@ SECTIONS (1016 lines total):
 {% endif %}
 {% endif %}
 {% endblock %}
-
-{# ============================================================================= #}
-{# JAVASCRIPT COMPONENTS #}
-{# ============================================================================= #}
 
 {% block scripts %}
 <!-- jQuery (required for DataTables) -->

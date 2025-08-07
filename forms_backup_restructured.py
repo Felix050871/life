@@ -1,4 +1,30 @@
 # =============================================================================
+# WORKLY - FORM DEFINITIONS
+# Organized by functional areas for better maintainability
+# =============================================================================
+#
+# FORM ORGANIZATION:
+# 1. Core Imports
+# 2. Authentication Forms (LoginForm, UserProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm)
+# 3. User Management Forms (UserForm, RoleForm)
+# 4. Attendance Forms (AttendanceForm)
+# 5. Leave Management Forms (LeaveTypeForm, LeaveRequestForm)
+# 6. Shift Management Forms (ShiftForm, EditShiftForm, ShiftTemplateForm)
+# 7. Presidio Coverage Forms (PresidioCoverageForm, PresidioCoverageTemplateForm, PresidioCoverageSearchForm, PresidioReplicaForm)
+# 8. Reperibilità Forms (ReperibilitaCoverageForm, ReperibilitaTemplateForm, ReperibilitaReplicaForm)
+# 9. Holiday Management Forms (HolidayForm)
+# 10. Internal Messaging Forms (SendMessageForm)
+# 11. Expense Management Forms (ExpenseCategoryForm, ExpenseReportForm, ExpenseApprovalForm, ExpenseFilterForm)
+# 12. Overtime Management Forms (OvertimeTypeForm, OvertimeRequestForm, ApproveOvertimeForm, OvertimeFilterForm)
+# 13. Mileage Management Forms (MileageRequestForm, ApproveMileageForm, MileageFilterForm)
+# 14. System Configuration Forms (SedeForm, WorkScheduleForm)
+# 15. ACI Tables Management Forms (ACIUploadForm, ACIRecordForm, ACIFilterForm)
+#
+# Total Forms: 39
+# =============================================================================
+
+# Core imports
+# =============================================================================
 # FORMS.PY - WORKLY WORKFORCE MANAGEMENT SYSTEM
 # Comprehensive WTForms collection organized in logical sections for
 # maintaining a scalable and organized form management system.

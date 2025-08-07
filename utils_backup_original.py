@@ -1,19 +1,3 @@
-# =============================================================================
-# UTILS.PY - WORKLY WORKFORCE MANAGEMENT SYSTEM
-# Comprehensive utility functions organized in logical sections for
-# maintaining a scalable and organized codebase.
-#
-# SECTIONS (22 functions total):
-# 1. Core Imports
-# 2. Holiday & Date Management (2 functions)
-# 3. QR Code Management (3 functions)
-# 4. Time & Format Utilities (3 functions)
-# 5. Shift Validation & Compliance (6 functions)
-# 6. Statistics & Analytics (2 functions)
-# 7. User Schedule Management (1 function)
-# 8. Reperibilità Management (5 functions)
-# =============================================================================
-
 from datetime import datetime, date, timedelta, time
 from models import User, LeaveRequest, AttendanceEvent, PresidioCoverage, Shift, WorkSchedule, italian_now
 from app import db
@@ -24,10 +8,6 @@ from io import BytesIO
 import base64
 import os
 from flask import url_for, request
-
-# =============================================================================
-# HOLIDAY & DATE MANAGEMENT
-# =============================================================================
 
 def is_italian_holiday(check_date):
     """
@@ -67,10 +47,6 @@ def format_hours(hours_decimal):
     minutes = round((hours_decimal - total_hours) * 60)
     
     return f"{total_hours}h {minutes:02d}'"
-
-# =============================================================================
-# QR CODE MANAGEMENT
-# =============================================================================
 
 def generate_static_qr_codes():
     """
@@ -151,10 +127,6 @@ def get_qr_code_urls():
         }
     return None
 
-# =============================================================================
-# TIME & FORMAT UTILITIES  
-# =============================================================================
-
 def round_to_half_hour(hour_decimal):
     """
     Arrotonda un orario decimale alla mezz'ora più vicina.
@@ -185,10 +157,6 @@ def get_shift_type_from_time(start_time, end_time):
         return 'sera'
     else:  # 23:00-06:00
         return 'notte'
-
-# =============================================================================
-# SHIFT VALIDATION & COMPLIANCE
-# =============================================================================
 
 def check_weekly_rest_compliance(user_id, week_start_date, new_shift_date):
     """
@@ -599,10 +567,6 @@ def split_coverage_into_max_7h_segments(coverage):
     
     return segments
 
-# =============================================================================
-# STATISTICS & ANALYTICS
-# =============================================================================
-
 def get_user_statistics(user_id, start_date=None, end_date=None):
     """
     Get comprehensive statistics for a user
@@ -839,10 +803,6 @@ def get_team_statistics(start_date=None, end_date=None):
         
         return TeamStats()
 
-# =============================================================================
-# USER SCHEDULE MANAGEMENT
-# =============================================================================
-
 def check_user_schedule_with_permissions(user_id, check_datetime=None):
     """
     Controlla gli orari di lavoro dell'utente basandosi sulla sede e sui permessi approvati.
@@ -988,10 +948,6 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
         'message': None
     }
 
-
-# =============================================================================
-# REPERIBILITÀ MANAGEMENT
-# =============================================================================
 
 def generate_reperibilita_shifts(start_date, end_date, created_by_id):
     """
