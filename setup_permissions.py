@@ -14,30 +14,58 @@ def create_default_roles():
         'Amministratore': {
             'description': 'Amministratore del sistema con accesso completo',
             'permissions': {
-                # Dashboard
+                # Dashboard e widget
                 'can_access_dashboard': True,
+                'can_view_team_stats_widget': True,
+                'can_view_personal_leave_widget': True,
+                'can_view_shifts_widget': True,
+                'can_view_reperibilita_widget': True,
+                'can_view_mileage_widget': True,
                 # Gestione utenti
                 'can_manage_users': True,
                 'can_view_users': True,
                 'can_edit_users': True,
                 'can_delete_users': True,
+                'can_create_users': True,
                 # Gestione presenze
                 'can_view_attendance': True,
                 'can_manage_attendance': True,
                 'can_view_all_attendance': True,
+                'can_edit_attendance': True,
                 # Gestione permessi
                 'can_manage_leave_requests': True,
                 'can_approve_leave_requests': True,
                 'can_view_leave_requests': True,
+                'can_create_leave_requests': True,
                 # Gestione turni
                 'can_manage_shifts': True,
                 'can_view_shifts': True,
+                'can_create_shifts': True,
+                'can_edit_shifts': True,
+                'can_delete_shifts': True,
                 # Report
                 'can_view_reports': True,
                 'can_export_reports': True,
-                # Sistema
+                # Sistema e configurazione
                 'can_manage_system': True,
-                'can_manage_roles': True
+                'can_manage_roles': True,
+                'can_manage_permissions': True,
+                'can_manage_settings': True,
+                'can_view_system_logs': True,
+                # Gestione sedi
+                'can_manage_sedi': True,
+                'can_view_sedi': True,
+                # Gestione reperibilità
+                'can_manage_reperibilita': True,
+                'can_view_reperibilita': True,
+                # Gestione note spese
+                'can_manage_expenses': True,
+                'can_view_expenses': True,
+                'can_approve_expenses': True,
+                # Straordinari
+                'can_manage_overtime': True,
+                'can_view_overtime': True,
+                'can_approve_overtime': True
             }
         },
         'Responsabile': {
