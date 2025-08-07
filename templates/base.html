@@ -318,7 +318,7 @@
                         {% endif %}
                         {% if current_user.can_manage_leave() %}
                         <li><a href="{{ url_for('leave_requests', view='approve') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-check"></i>Approva Richieste
+                            <i class="fas fa-check"></i>Gestisci Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_leave() %}
