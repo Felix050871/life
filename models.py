@@ -94,7 +94,8 @@ class UserRole(db.Model):
             
             # Gestione interventi
             'can_manage_interventions': 'Gestire Interventi',
-            'can_view_interventions': 'Visualizzare Interventi',
+            'can_view_interventions': 'Visualizzare Tutti gli Interventi',
+            'can_view_my_interventions': 'Visualizzare I Miei Interventi',
             
             # Gestione festività
             'can_manage_holidays': 'Gestire Festività',
@@ -306,7 +307,8 @@ class User(UserMixin, db.Model):
         """Permesso per accedere al menu reperibilità"""
         return (self.can_manage_reperibilita() or self.can_view_reperibilita() or 
                 self.can_view_my_reperibilita() or self.can_manage_coverage() or 
-                self.can_view_coverage() or self.can_view_interventions())
+                self.can_view_coverage() or self.can_view_interventions() or 
+                self.can_view_my_interventions())
     
     # === PRESENZE ===
     def can_manage_attendance(self):
@@ -353,6 +355,10 @@ class User(UserMixin, db.Model):
     
     def can_view_interventions(self):
         return self.has_permission('can_view_interventions')
+    
+    def can_view_my_interventions(self):
+        """Può visualizzare i propri interventi"""
+        return self.has_permission('can_view_my_interventions')
     
     # === FESTIVITÀ ===
     def can_manage_holidays(self):
@@ -520,7 +526,7 @@ class User(UserMixin, db.Model):
     
     def can_access_interventions_menu(self):
         """Accesso al menu Interventi"""
-        return self.can_manage_interventions() or self.can_view_interventions()
+        return self.can_manage_interventions() or self.can_view_interventions() or self.can_view_my_interventions()
     
     def can_access_holidays_menu(self):
         """Accesso al menu Festività"""
