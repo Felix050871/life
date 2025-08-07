@@ -108,7 +108,8 @@
                         <li><a href="{{ url_for('manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Ruoli
                         </a></li>
-                        {% elif current_user.can_view_roles() and not current_user.can_manage_roles() %}
+                        {% endif %}
+                        {% if current_user.can_view_roles() %}
                         <li><a href="{{ url_for('manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Ruoli
                         </a></li>
@@ -131,7 +132,8 @@
                         <li><a href="{{ url_for('user_management') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Utenti
                         </a></li>
-                        {% elif current_user.can_view_users() and not current_user.can_manage_users() %}
+                        {% endif %}
+                        {% if current_user.can_view_users() %}
                         <li><a href="{{ url_for('user_management') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Utenti
                         </a></li>
@@ -154,7 +156,8 @@
                         <li><a href="{{ url_for('manage_sedi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Sedi
                         </a></li>
-                        {% elif current_user.can_view_sedi() and not current_user.can_manage_sedi() %}
+                        {% endif %}
+                        {% if current_user.can_view_sedi() %}
                         <li><a href="{{ url_for('manage_sedi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Sedi
                         </a></li>
@@ -177,7 +180,8 @@
                         <li><a href="{{ url_for('manage_work_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Orari
                         </a></li>
-                        {% elif current_user.can_view_schedules() and not current_user.can_manage_schedules() %}
+                        {% endif %}
+                        {% if current_user.can_view_schedules() %}
                         <li><a href="{{ url_for('manage_work_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Orari
                         </a></li>
@@ -203,7 +207,8 @@
                         <li><a href="{{ url_for('turni_automatici') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cogs"></i>Gestione Turni
                         </a></li>
-                        {% elif current_user.can_view_shifts() and not current_user.can_manage_shifts() %}
+                        {% endif %}
+                        {% if current_user.can_view_shifts() %}
                         <li><a href="{{ url_for('view_presidi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizza Coperture
                         </a></li>
@@ -229,7 +234,8 @@
                         <li><a href="{{ url_for('generate_reperibilita_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Reperibilità
                         </a></li>
-                        {% elif current_user.can_view_reperibilita() and not current_user.can_manage_reperibilita() %}
+                        {% endif %}
+                        {% if current_user.can_view_reperibilita() %}
                         <li><a href="{{ url_for('reperibilita_shifts') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Reperibilità
                         </a></li>
@@ -238,7 +244,8 @@
                         <li><a href="{{ url_for('reperibilita_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Coperture Reperibilità
                         </a></li>
-                        {% elif current_user.can_view_coverage() and not current_user.can_manage_coverage() %}
+                        {% endif %}
+                        {% if current_user.can_view_coverage() %}
                         <li><a href="{{ url_for('reperibilita_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Coperture Reperibilità
                         </a></li>
@@ -247,7 +254,8 @@
                         <li><a href="{{ url_for('my_interventions') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Interventi
                         </a></li>
-                        {% elif current_user.can_view_interventions() and not current_user.can_manage_interventions() %}
+                        {% endif %}
+                        {% if current_user.can_view_interventions() %}
                         <li><a href="{{ url_for('my_interventions') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Interventi
                         </a></li>
@@ -312,7 +320,8 @@
                         <li><a href="{{ url_for('leave_requests', view='approve') }}" class="sidebar-submenu-link">
                             <i class="fas fa-check"></i>Approva Richieste
                         </a></li>
-                        {% elif current_user.can_view_leave() and not current_user.can_manage_leave() %}
+                        {% endif %}
+                        {% if current_user.can_view_leave() %}
                         <li><a href="{{ url_for('leave_requests', view='view') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizza Richieste
                         </a></li>
