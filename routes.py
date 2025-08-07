@@ -2843,7 +2843,7 @@ def leave_types():
 @app.route('/leave_types/add', methods=['GET', 'POST'])
 @login_required
 def add_leave_type_page():
-    if not current_user.can_manage_leave_types():
+    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
         flash('Non hai i permessi per aggiungere tipologie di permesso', 'danger')
         return redirect(url_for('leave_types'))
     
@@ -2881,7 +2881,7 @@ def add_leave_type_page():
 @app.route('/leave_types/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_leave_type_page(id):
-    if not current_user.can_manage_leave_types():
+    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
         flash('Non hai i permessi per modificare tipologie di permesso', 'danger')
         return redirect(url_for('leave_types'))
     
@@ -2917,7 +2917,7 @@ def edit_leave_type_page(id):
 @app.route('/leave_types/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_leave_type(id):
-    if not current_user.can_manage_leave_types():
+    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
         flash('Non hai i permessi per eliminare tipologie di permesso', 'danger')
         return redirect(url_for('leave_types'))
     
