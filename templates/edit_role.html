@@ -220,12 +220,12 @@
                                             {{ form.can_manage_reperibilita.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_reperibilita() }}
-                                            {{ form.can_view_reperibilita.label(class="form-check-label") }}
-                                        </div>
-                                        <div class="form-check mb-2">
                                             {{ form.can_view_my_reperibilita() }}
                                             {{ form.can_view_my_reperibilita.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_reperibilita() }}
+                                            {{ form.can_view_reperibilita.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_coverage() }}
@@ -251,12 +251,12 @@
                                             {{ form.can_manage_attendance.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_attendance() }}
-                                            {{ form.can_view_attendance.label(class="form-check-label") }}
-                                        </div>
-                                        <div class="form-check mb-2">
                                             {{ form.can_view_my_attendance() }}
                                             {{ form.can_view_my_attendance.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_attendance() }}
+                                            {{ form.can_view_attendance.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_access_attendance() }}
@@ -282,8 +282,8 @@
                                             {{ form.can_manage_leave.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_approve_leave() }}
-                                            {{ form.can_approve_leave.label(class="form-check-label") }}
+                                            {{ form.can_view_my_leave() }}
+                                            {{ form.can_view_my_leave.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_request_leave() }}
@@ -294,8 +294,8 @@
                                             {{ form.can_view_leave.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_my_leave() }}
-                                            {{ form.can_view_my_leave.label(class="form-check-label") }}
+                                            {{ form.can_approve_leave() }}
+                                            {{ form.can_approve_leave.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -315,8 +315,8 @@
                                             {{ form.can_manage_overtime_requests.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_approve_overtime_requests() }}
-                                            {{ form.can_approve_overtime_requests.label(class="form-check-label") }}
+                                            {{ form.can_view_my_overtime_requests() }}
+                                            {{ form.can_view_my_overtime_requests.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_create_overtime_requests() }}
@@ -327,8 +327,8 @@
                                             {{ form.can_view_overtime_requests.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_my_overtime_requests() }}
-                                            {{ form.can_view_my_overtime_requests.label(class="form-check-label") }}
+                                            {{ form.can_approve_overtime_requests() }}
+                                            {{ form.can_approve_overtime_requests.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_overtime_types() }}
@@ -350,8 +350,8 @@
                                             {{ form.can_manage_mileage_requests.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_approve_mileage_requests() }}
-                                            {{ form.can_approve_mileage_requests.label(class="form-check-label") }}
+                                            {{ form.can_view_my_mileage_requests() }}
+                                            {{ form.can_view_my_mileage_requests.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_create_mileage_requests() }}
@@ -362,8 +362,8 @@
                                             {{ form.can_view_mileage_requests.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_my_mileage_requests() }}
-                                            {{ form.can_view_my_mileage_requests.label(class="form-check-label") }}
+                                            {{ form.can_approve_mileage_requests() }}
+                                            {{ form.can_approve_mileage_requests.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -381,20 +381,20 @@
                                             {{ form.can_manage_expense_reports.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_expense_reports() }}
-                                            {{ form.can_view_expense_reports.label(class="form-check-label") }}
-                                        </div>
-                                        <div class="form-check mb-2">
                                             {{ form.can_view_my_expense_reports() }}
                                             {{ form.can_view_my_expense_reports.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_approve_expense_reports() }}
-                                            {{ form.can_approve_expense_reports.label(class="form-check-label") }}
-                                        </div>
-                                        <div class="form-check mb-2">
                                             {{ form.can_create_expense_reports() }}
                                             {{ form.can_create_expense_reports.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_expense_reports() }}
+                                            {{ form.can_view_expense_reports.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_approve_expense_reports() }}
+                                            {{ form.can_approve_expense_reports.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
@@ -410,6 +410,10 @@
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_interventions() }}
                                             {{ form.can_manage_interventions.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_my_interventions() }}
+                                            {{ form.can_view_my_interventions.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_interventions() }}

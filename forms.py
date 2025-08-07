@@ -914,7 +914,8 @@ class RoleForm(FlaskForm):
     
     # Gestione interventi
     can_manage_interventions = BooleanField('Gestire Interventi')
-    can_view_interventions = BooleanField('Visualizzare Interventi')
+    can_view_interventions = BooleanField('Visualizzare Tutti gli Interventi')
+    can_view_my_interventions = BooleanField('Visualizzare I Miei Interventi')
     
     # Gestione festività
     can_manage_holidays = BooleanField('Gestire Festività')
@@ -1055,6 +1056,7 @@ class RoleForm(FlaskForm):
             # Gestione interventi
             'can_manage_interventions': self.can_manage_interventions.data,
             'can_view_interventions': self.can_view_interventions.data,
+            'can_view_my_interventions': self.can_view_my_interventions.data,
             
             # Gestione festività
             'can_manage_holidays': self.can_manage_holidays.data,
@@ -1164,6 +1166,7 @@ class RoleForm(FlaskForm):
         # Gestione interventi
         self.can_manage_interventions.data = permissions_dict.get('can_manage_interventions', False)
         self.can_view_interventions.data = permissions_dict.get('can_view_interventions', False)
+        self.can_view_my_interventions.data = permissions_dict.get('can_view_my_interventions', False)
         
         # Gestione festività
         self.can_manage_holidays.data = permissions_dict.get('can_manage_holidays', False)
