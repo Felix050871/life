@@ -72,13 +72,15 @@ class UserRole(db.Model):
             
             # Reperibilità
             'can_manage_reperibilita': 'Gestire Reperibilità',
-            'can_view_reperibilita': 'Visualizzare Reperibilità',
+            'can_view_reperibilita': 'Visualizzare Tutte le Reperibilità',
+            'can_view_my_reperibilita': 'Visualizzare Le Mie Reperibilità',
             'can_manage_coverage': 'Gestire Coperture Reperibilità',
             'can_view_coverage': 'Visualizzare Coperture Reperibilità',
             
             # Gestione presenze
             'can_manage_attendance': 'Gestire Presenze',
-            'can_view_attendance': 'Visualizzare Presenze',
+            'can_view_attendance': 'Visualizzare Tutte le Presenze',
+            'can_view_my_attendance': 'Visualizzare Le Mie Presenze',
             'can_access_attendance': 'Accedere alle Presenze',
             'can_view_sede_attendance': 'Visualizzare Presenze Sede',
             
@@ -87,7 +89,8 @@ class UserRole(db.Model):
             'can_manage_leave_types': 'Gestire Tipologie Permessi',
             'can_approve_leave': 'Approvare Ferie/Permessi',
             'can_request_leave': 'Richiedere Ferie/Permessi',
-            'can_view_leave': 'Visualizzare Ferie/Permessi',
+            'can_view_leave': 'Visualizzare Tutte le Ferie/Permessi',
+            'can_view_my_leave': 'Visualizzare Le Mie Ferie/Permessi',
             
             # Gestione interventi
             'can_manage_interventions': 'Gestire Interventi',
@@ -112,20 +115,20 @@ class UserRole(db.Model):
             
             # Note spese
             'can_manage_expense_reports': 'Gestire Note Spese',
-            'can_view_expense_reports': 'Visualizzare Note Spese',
+            'can_view_expense_reports': 'Visualizzare Tutte le Note Spese',
+            'can_view_my_expense_reports': 'Visualizzare Le Mie Note Spese',
             'can_approve_expense_reports': 'Approvare Note Spese',
             'can_create_expense_reports': 'Creare Note Spese',
-            'can_view_my_expense_reports': 'Visualizzare Le Mie Note Spese',
             
             # Straordinari
             'can_create_overtime_requests': 'Creare Richieste Straordinario',
-            'can_view_overtime_requests': 'Visualizzare Richieste Straordinario',
+            'can_view_overtime_requests': 'Visualizzare Tutte le Richieste Straordinario',
+            'can_view_my_overtime_requests': 'Visualizzare Le Mie Richieste Straordinario',
             'can_manage_overtime_requests': 'Gestire Richieste Straordinario',
             'can_approve_overtime_requests': 'Approvare Richieste Straordinario',
             'can_create_overtime_types': 'Creare Tipologie Straordinario',
             'can_view_overtime_types': 'Visualizzare Tipologie Straordinario',
             'can_manage_overtime_types': 'Gestisci Tipologie Straordinari',
-            'can_view_my_overtime_requests': 'Visualizzare Le Mie Richieste Straordinario',
             
             # Dashboard Widget Permissions
             'can_view_team_stats_widget': 'Widget Statistiche Team',
@@ -146,10 +149,10 @@ class UserRole(db.Model):
             
             # Rimborsi chilometrici
             'can_create_mileage_requests': 'Creare Richieste Rimborso Km',
-            'can_view_mileage_requests': 'Visualizzare Richieste Rimborso Km',
+            'can_view_mileage_requests': 'Visualizzare Tutte le Richieste Rimborso Km',
+            'can_view_my_mileage_requests': 'Visualizzare Le Mie Richieste Rimborso Km',
             'can_approve_mileage_requests': 'Approvare Richieste Rimborso Km',
             'can_manage_mileage_requests': 'Gestire Richieste Rimborso Km',
-            'can_view_my_mileage_requests': 'Visualizzare Le Mie Richieste Rimborso Km',
             'can_view_mileage_widget': 'Widget Rimborsi Chilometrici',
             'can_view_my_mileage_widget': 'Widget I Miei Rimborsi'
         }
@@ -287,6 +290,10 @@ class User(UserMixin, db.Model):
     def can_view_reperibilita(self):
         return self.has_permission('can_view_reperibilita')
     
+    def can_view_my_reperibilita(self):
+        """Può visualizzare le proprie reperibilità"""
+        return self.has_permission('can_view_my_reperibilita')
+    
     def can_manage_coverage(self):
         """Permesso per gestire coperture reperibilità"""
         return self.has_permission('can_manage_coverage')
@@ -298,8 +305,8 @@ class User(UserMixin, db.Model):
     def can_access_reperibilita_menu(self):
         """Permesso per accedere al menu reperibilità"""
         return (self.can_manage_reperibilita() or self.can_view_reperibilita() or 
-                self.can_manage_coverage() or self.can_view_coverage() or 
-                self.can_view_interventions())
+                self.can_view_my_reperibilita() or self.can_manage_coverage() or 
+                self.can_view_coverage() or self.can_view_interventions())
     
     # === PRESENZE ===
     def can_manage_attendance(self):
@@ -307,6 +314,10 @@ class User(UserMixin, db.Model):
     
     def can_view_attendance(self):
         return self.has_permission('can_view_attendance')
+    
+    def can_view_my_attendance(self):
+        """Può visualizzare le proprie presenze"""
+        return self.has_permission('can_view_my_attendance')
     
     def can_access_attendance(self):
         return self.has_permission('can_access_attendance')
@@ -331,6 +342,10 @@ class User(UserMixin, db.Model):
     
     def can_view_leave(self):
         return self.has_permission('can_view_leave')
+    
+    def can_view_my_leave(self):
+        """Può visualizzare le proprie ferie/permessi"""
+        return self.has_permission('can_view_my_leave')
     
     # === INTERVENTI ===
     def can_manage_interventions(self):

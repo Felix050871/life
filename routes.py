@@ -339,14 +339,20 @@ def dashboard():
         # Query base per le note spese
         expense_query = ExpenseReport.query
         
-        # Se l'utente non può vedere tutte le note spese, mostra solo le sue
-        if not (current_user.can_view_expense_reports() or current_user.can_approve_expense_reports()):
+        # Usa i nuovi permessi espliciti per determinare cosa mostrare
+        if current_user.can_view_expense_reports():
+            # Può vedere tutte le note spese (eventualmente filtrate per sede)
+            if not current_user.all_sedi and current_user.sede_id:
+                # Filtra per sede se non ha accesso globale
+                sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+                sede_user_ids = [u.id for u in sede_users]
+                expense_query = expense_query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        elif current_user.can_view_my_expense_reports():
+            # Può vedere solo le proprie note spese
             expense_query = expense_query.filter(ExpenseReport.employee_id == current_user.id)
-        elif not current_user.all_sedi and current_user.sede_id:
-            # Filtra per sede se non ha accesso globale
-            sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
-            sede_user_ids = [u.id for u in sede_users]
-            expense_query = expense_query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        else:
+            # Nessun permesso - non dovrebbe mai succedere se ha il widget
+            expense_query = expense_query.filter(ExpenseReport.employee_id == current_user.id)
         
         # Statistiche note spese
         total_expenses = expense_query.count()
@@ -8675,8 +8681,8 @@ def expense_reports():
     # Check view mode from URL parameter
     view_mode = request.args.get('view', 'all')
     
-    # Controllo permessi per determinare cosa può vedere l'utente
-    if view_mode == 'my' or not (current_user.can_view_expense_reports() or current_user.can_approve_expense_reports()):
+    # Usa i nuovi permessi espliciti per determinare cosa può vedere l'utente
+    if view_mode == 'my' or current_user.can_view_my_expense_reports() and not current_user.can_view_expense_reports():
         # Mostra solo le note spese dell'utente corrente
         query = query.filter(ExpenseReport.employee_id == current_user.id)
         page_title = "Le Mie Note Spese"
