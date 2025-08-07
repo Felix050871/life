@@ -50,13 +50,41 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <div class="d-flex flex-wrap gap-1">
-                                            {% for permission, value in role.permissions.items() %}
-                                                {% if value %}
-                                                {% set permission_display = permission | get_permission_display %}
-                                                <span class="badge bg-info">{{ permission_display or permission }}</span>
-                                                {% endif %}
-                                            {% endfor %}
+                                        <!-- Separazione grafica tra Permessi Funzionali e Widget -->
+                                        <div class="permission-container">
+                                            <!-- Sezione Permessi Funzionali -->
+                                            <div class="mb-2">
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <small class="text-success fw-bold me-2">
+                                                        <i class="fas fa-shield-alt me-1"></i>Funzionali
+                                                    </small>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    {% for permission, value in role.permissions.items() %}
+                                                        {% if value and 'widget' not in permission %}
+                                                        {% set permission_display = permission | get_permission_display %}
+                                                        <span class="badge bg-success text-white">{{ permission_display or permission }}</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Sezione Widget Dashboard -->
+                                            <div class="mb-1">
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <small class="text-info fw-bold me-2">
+                                                        <i class="fas fa-tachometer-alt me-1"></i>Widget
+                                                    </small>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    {% for permission, value in role.permissions.items() %}
+                                                        {% if value and 'widget' in permission %}
+                                                        {% set permission_display = permission | get_permission_display %}
+                                                        <span class="badge bg-info text-white">{{ permission_display or permission }}</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td>
