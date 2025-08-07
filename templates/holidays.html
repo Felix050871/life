@@ -183,7 +183,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Elimina</a>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Elimina</button>
+                </form>
             </div>
         </div>
     </div>
@@ -192,7 +194,7 @@
 <script>
 function confirmDelete(holidayName, deleteUrl) {
     document.getElementById('holidayName').textContent = holidayName;
-    document.getElementById('confirmDeleteBtn').href = deleteUrl;
+    document.getElementById('deleteForm').action = deleteUrl;
     var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     deleteModal.show();
 }

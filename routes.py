@@ -3654,7 +3654,7 @@ def edit_holiday(holiday_id):
     
     return render_template('edit_holiday.html', form=form, holiday=holiday)
 
-@app.route('/holidays/delete/<int:holiday_id>')
+@app.route('/holidays/delete/<int:holiday_id>', methods=['POST'])
 @login_required
 def delete_holiday(holiday_id):
     """Elimina festività"""
