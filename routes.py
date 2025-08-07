@@ -7445,6 +7445,7 @@ def delete_work_schedule(schedule_id):
 @login_required
 def manage_roles():
     """Gestisce i ruoli dinamici del sistema (solo Admin)"""
+    # Chi può gestire può automaticamente visualizzare
     if not (current_user.has_permission('can_manage_roles') or current_user.has_permission('can_view_roles')):
         flash('Non hai i permessi per accedere ai ruoli', 'danger')
         return redirect(url_for('dashboard'))

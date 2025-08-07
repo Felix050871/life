@@ -219,10 +219,22 @@ class User(UserMixin, db.Model):
         return UserRole.query.filter_by(name=self.role).first()
     
     def has_permission(self, permission):
-        """Verifica se l'utente ha un determinato permesso tramite il suo ruolo"""
+        """Verifica se l'utente ha un determinato permesso tramite il suo ruolo
+        Implementa la logica: chi può gestire (manage) può automaticamente visualizzare (view)"""
         role_obj = self.get_role_obj()
         if role_obj:
-            return role_obj.has_permission(permission)
+            # Prima controlla il permesso diretto
+            if role_obj.has_permission(permission):
+                return True
+            
+            # Logica manage-include-view: se chiede view ma ha manage, concedi accesso
+            if permission.startswith('can_view_'):
+                # Deriva il permesso manage corrispondente
+                manage_permission = permission.replace('can_view_', 'can_manage_')
+                if role_obj.has_permission(manage_permission):
+                    return True
+            
+            return False
         # Fallback per compatibilità con ruoli legacy
         return self._legacy_permissions(permission)
     
