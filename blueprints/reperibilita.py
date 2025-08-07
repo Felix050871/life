@@ -67,8 +67,8 @@ def reperibilita_coverage():
     
     # Query per recuperare shifts reperibilità nel periodo
     query = ReperibilitaShift.query.filter(
-        ReperibilitaShift.shift_date >= start_date,
-        ReperibilitaShift.shift_date <= end_date
+        ReperibilitaShift.date >= start_date,
+        ReperibilitaShift.date <= end_date
     )
     
     # Filtro sede se non multi-sede
@@ -78,7 +78,7 @@ def reperibilita_coverage():
         query = query.filter(ReperibilitaShift.user_id.in_(user_ids))
     
     shifts = query.order_by(
-        ReperibilitaShift.shift_date,
+        ReperibilitaShift.date,
         ReperibilitaShift.start_time
     ).all()
     
@@ -109,8 +109,8 @@ def reperibilita_shifts():
         try:
             year, month = month_filter.split('-')
             query = query.filter(
-                db.extract('year', ReperibilitaShift.shift_date) == int(year),
-                db.extract('month', ReperibilitaShift.shift_date) == int(month)
+                db.extract('year', ReperibilitaShift.date) == int(year),
+                db.extract('month', ReperibilitaShift.date) == int(month)
             )
         except ValueError:
             pass
@@ -118,8 +118,8 @@ def reperibilita_shifts():
         # Mese corrente di default
         now = italian_now()
         query = query.filter(
-            db.extract('year', ReperibilitaShift.shift_date) == now.year,
-            db.extract('month', ReperibilitaShift.shift_date) == now.month
+            db.extract('year', ReperibilitaShift.date) == now.year,
+            db.extract('month', ReperibilitaShift.date) == now.month
         )
     
     # Filtro utente
@@ -138,7 +138,7 @@ def reperibilita_shifts():
     
     # Esecuzione query
     shifts = query.join(User, ReperibilitaShift.user_id == User.id).order_by(
-        ReperibilitaShift.shift_date.desc(),
+        ReperibilitaShift.date.desc(),
         ReperibilitaShift.start_time
     ).all()
     
@@ -175,20 +175,20 @@ def my_reperibilita():
         try:
             year, month = month_filter.split('-')
             query = query.filter(
-                db.extract('year', ReperibilitaShift.shift_date) == int(year),
-                db.extract('month', ReperibilitaShift.shift_date) == int(month)
+                db.extract('year', ReperibilitaShift.date) == int(year),
+                db.extract('month', ReperibilitaShift.date) == int(month)
             )
         except ValueError:
             pass
     
     # Ordinamento
-    shifts = query.order_by(ReperibilitaShift.shift_date.desc()).all()
+    shifts = query.order_by(ReperibilitaShift.date.desc()).all()
     
     # Statistiche personali
     stats = {
         'total_shifts': len(shifts),
-        'upcoming_shifts': len([s for s in shifts if s.shift_date >= italian_now().date()]),
-        'past_shifts': len([s for s in shifts if s.shift_date < italian_now().date()]),
+        'upcoming_shifts': len([s for s in shifts if s.date >= italian_now().date()]),
+        'past_shifts': len([s for s in shifts if s.date < italian_now().date()]),
     }
     
     return render_template('my_reperibilita.html',
@@ -225,8 +225,8 @@ def get_reperibilita_data():
         
         # Query shifts nel periodo
         query = ReperibilitaShift.query.filter(
-            ReperibilitaShift.shift_date >= start_date,
-            ReperibilitaShift.shift_date <= end_date
+            ReperibilitaShift.date >= start_date,
+            ReperibilitaShift.date <= end_date
         )
         
         # Controllo sede
@@ -243,7 +243,7 @@ def get_reperibilita_data():
             shifts_data.append({
                 'id': shift.id,
                 'user_name': shift.user.get_full_name(),
-                'shift_date': shift.shift_date.isoformat(),
+                'date': shift.date.isoformat(),
                 'start_time': shift.start_time.strftime('%H:%M'),
                 'end_time': shift.end_time.strftime('%H:%M'),
                 'type': getattr(shift, 'shift_type', 'Standard')
