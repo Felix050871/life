@@ -161,9 +161,11 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                <button type="button" class="btn btn-success" onclick="generateHolidays()">
-                    <i class="fas fa-magic me-1"></i>Genera Festività
-                </button>
+                <form action="{{ url_for('generate_holidays') }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-magic me-1"></i>Genera Festività
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -199,38 +201,6 @@ function confirmDelete(holidayName, deleteUrl) {
     deleteModal.show();
 }
 
-function generateHolidays() {
-    // Mostra overlay di caricamento
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generando...';
-    btn.disabled = true;
-    
-    fetch('/api/generate_holidays', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Chiudi modal e ricarica pagina
-            const modal = bootstrap.Modal.getInstance(document.getElementById('generateHolidaysModal'));
-            modal.hide();
-            location.reload();
-        } else {
-            alert('Errore durante la generazione: ' + data.message);
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Errore durante la generazione delle festività');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
-}
+// Rimossa funzione generateHolidays() - ora usa form POST direttamente
 </script>
 {% endblock %}

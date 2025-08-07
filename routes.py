@@ -3673,12 +3673,13 @@ def delete_holiday(holiday_id):
     flash(f'Festività "{holiday_name}" eliminata con successo', 'success')
     return redirect(url_for('holidays'))
 
-@app.route('/api/generate_holidays', methods=['POST'])
+@app.route('/holidays/generate', methods=['POST'])
 @login_required
-def api_generate_holidays():
-    """API per generare automaticamente le festività nazionali italiane"""
+def generate_holidays():
+    """Genera automaticamente le festività nazionali italiane"""
     if not current_user.can_manage_holidays():
-        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+        flash('Non hai i permessi per gestire le festività', 'danger')
+        return redirect(url_for('holidays'))
     
     try:
         from models import Holiday
@@ -3726,12 +3727,17 @@ def api_generate_holidays():
         
         db.session.commit()
         
-        message = f'Operazione completata. {added_holidays} festività aggiunte, {skipped_holidays} già esistenti.'
-        return jsonify({'success': True, 'message': message, 'added': added_holidays, 'skipped': skipped_holidays})
+        if added_holidays > 0:
+            flash(f'Operazione completata con successo! {added_holidays} festività aggiunte, {skipped_holidays} già esistenti.', 'success')
+        else:
+            flash(f'Tutte le {skipped_holidays} festività nazionali sono già presenti nel sistema.', 'info')
+        
+        return redirect(url_for('holidays'))
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': f'Errore durante la generazione: {str(e)}'}), 500
+        flash(f'Errore durante la generazione delle festività: {str(e)}', 'danger')
+        return redirect(url_for('holidays'))
 
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
