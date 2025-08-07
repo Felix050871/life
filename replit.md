@@ -9,7 +9,7 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Core Technologies
-- **Backend**: Flask (Python) with SQLAlchemy ORM, supporting SQLite (development) and PostgreSQL (production). Authentication via Flask-Login with role-based access control. WTForms for form handling.
+- **Backend**: Flask (Python) with SQLAlchemy ORM using PostgreSQL exclusively. Authentication via Flask-Login with role-based access control. WTForms for form handling.
 - **Frontend**: Jinja2 templating, Bootstrap 5 (dark theme) with custom CSS, vanilla JavaScript for interactivity, and Font Awesome for icons. Mobile-first responsive design.
 - **Deployment**: Gunicorn WSGI server.
 
@@ -27,8 +27,7 @@ Preferred communication style: Simple, everyday language.
 - **User Profile Management**: Separate user profile system allowing users to modify personal details independently.
 
 ## External Dependencies
-- **PostgreSQL**: Production database.
-- **SQLite**: Development database.
+- **PostgreSQL**: Database (required).
 - **Font Awesome**: Icon library.
 - **Bootstrap 5**: Frontend framework.
 - **Flask-Login**: User session management.
@@ -40,5 +39,6 @@ Preferred communication style: Simple, everyday language.
 - **SheetJS (XLSX)**: JavaScript library for client-side Excel handling.
 
 ## Recent Changes
+- August 7, 2025: **Sistema Database Semplificato per Solo PostgreSQL** - Rimosso supporto SQLite e semplificato sistema per usare esclusivamente PostgreSQL. Aggiornati config.py, app.py e create_database.py per richiedere DATABASE_URL obbligatoriamente. Script di creazione database ottimizzato per PostgreSQL con controlli di validazione. Sistema ora più robusto e adatto per deployment professionale.
 - August 5, 2025: **Reports Charts Functionality Restored** - Risolto problema grafici vuoti "Andamento presenze" e "Distribuzione ruoli" nella pagina reports. Aggiunta libreria Chart.js mancante nel template, implementata gestione errori per dati vuoti, aggiunti console.log per debug e messaggi informativi per grafici senza dati. Corrette variabili template per compatibilità con chart_data. Grafici ora mostrano correttamente dati di presenza giornaliera e distribuzione ruoli utenti attivi.
 - August 4, 2025: **Sistema Missing Coverage Dinamico Completato** - Implementato sistema completamente dinamico che legge coperture dal database per ogni template specifico. Sostituito sistema hardcoded con fetch API che carica coperture da /api/get_coverage_requirements/{template_id} e calcola missing_roles in tempo reale. Sistema ora supporta template con coperture diverse: Settembre (09:00-18:00 Operatore + Responsabile), Ottobre (00:00-07:59, 08:00-16:00, 16:00-23:59 Operatori). Frontend mostra alert rossi dinamici basati su dati reali database senza alcun hardcoding.

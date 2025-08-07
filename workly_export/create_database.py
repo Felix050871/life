@@ -1,30 +1,32 @@
 #!/usr/bin/env python3
 """
-Script per la creazione e inizializzazione del database Workly
-Supporta sia SQLite (sviluppo) che PostgreSQL (produzione)
+Script per inizializzare il database PostgreSQL di Workly con dati di esempio
 """
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
-# Aggiungi la directory corrente al PYTHONPATH
-current_dir = Path(__file__).parent.absolute()
-sys.path.insert(0, str(current_dir))
+# Directory corrente
+current_dir = Path(__file__).parent
 
 def setup_environment():
-    """Configura variabili d'ambiente di base"""
-    if 'FLASK_SECRET_KEY' not in os.environ:
-        os.environ['FLASK_SECRET_KEY'] = 'dev-secret-key-for-database-creation'
-    
-    if 'DATABASE_URL' not in os.environ:
-        # Default SQLite per sviluppo
-        db_path = current_dir / 'workly.db'
-        os.environ['DATABASE_URL'] = f'sqlite:///{db_path}'
+    """Configura l'ambiente per l'applicazione"""
+    # Verifica che DATABASE_URL sia presente
+    if not os.environ.get('DATABASE_URL'):
+        print("❌ ERRORE: DATABASE_URL non trovata!")
+        print("🔧 Assicurati che la variabile di ambiente DATABASE_URL sia configurata per PostgreSQL.")
+        sys.exit(1)
+        
+    database_url = os.environ.get('DATABASE_URL')
+    if 'postgresql' not in database_url:
+        print("❌ ERRORE: Solo PostgreSQL è supportato!")
+        print(f"🔧 DATABASE_URL trovata: {database_url}")
+        sys.exit(1)
 
 def create_admin_user(db):
-    """Crea l'utente amministratore di default"""
+    """Crea l'utente amministratore"""
     from models import User
     from werkzeug.security import generate_password_hash
     
@@ -98,8 +100,8 @@ def create_sample_users(db, sedi):
             'name': 'Mario',
             'surname': 'Rossi',
             'role': 'Responsabile',
-            'sede_id': sedi[0].id,  # Milano
-            'all_sedi': True  # Responsabile può accedere a tutte le sedi
+            'sede_id': sedi[0].id,
+            'all_sedi': True
         },
         {
             'username': 'supervisore1',
@@ -108,7 +110,7 @@ def create_sample_users(db, sedi):
             'name': 'Laura',
             'surname': 'Bianchi',
             'role': 'Supervisore',
-            'sede_id': sedi[0].id,  # Milano
+            'sede_id': sedi[0].id,
             'all_sedi': False
         },
         {
@@ -118,7 +120,7 @@ def create_sample_users(db, sedi):
             'name': 'Giuseppe',
             'surname': 'Verdi',
             'role': 'Operatore',
-            'sede_id': sedi[0].id,  # Milano
+            'sede_id': sedi[0].id,
             'all_sedi': False
         },
         {
@@ -128,7 +130,7 @@ def create_sample_users(db, sedi):
             'name': 'Anna',
             'surname': 'Neri',
             'role': 'Operatore',
-            'sede_id': sedi[1].id,  # Torino
+            'sede_id': sedi[1].id,
             'all_sedi': False
         },
         {
@@ -138,7 +140,7 @@ def create_sample_users(db, sedi):
             'name': 'Francesco',
             'surname': 'Blu',
             'role': 'Operatore',
-            'sede_id': sedi[2].id,  # Roma
+            'sede_id': sedi[2].id,
             'all_sedi': False
         }
     ]
@@ -157,7 +159,7 @@ def create_sample_users(db, sedi):
             all_sedi=user_data['all_sedi'],
             active=True,
             created_at=datetime.utcnow(),
-            part_time_percentage=100  # Full time di default
+            part_time_percentage=100
         )
         
         db.session.add(user)
@@ -167,197 +169,6 @@ def create_sample_users(db, sedi):
     print("✅ Utenti di esempio creati!")
     return created_users
 
-def create_sample_work_schedules(db, sedi):
-    """Crea orari di lavoro di esempio"""
-    from models import WorkSchedule
-    
-    print("⏰ Creazione orari di lavoro...")
-    
-    schedules = []
-    
-    for sede in sedi:
-        # Orario standard diurno
-        schedule_diurno = WorkSchedule(
-            name=f'Diurno {sede.name}',
-            sede_id=sede.id,
-            start_time='08:00',
-            end_time='17:00',
-            break_duration=60,  # 1 ora di pausa
-            active=True,
-            work_type='ORARIA'
-        )
-        schedules.append(schedule_diurno)
-        
-        # Orario part-time mattino
-        schedule_mattino = WorkSchedule(
-            name=f'Part-time Mattino {sede.name}',
-            sede_id=sede.id,
-            start_time='08:00',
-            end_time='13:00',
-            break_duration=0,
-            active=True,
-            work_type='ORARIA'
-        )
-        schedules.append(schedule_mattino)
-        
-        # Turno notturno (solo per sede principale)
-        if sede.name == 'Sede Principale':
-            schedule_notturno = WorkSchedule(
-                name=f'Notturno {sede.name}',
-                sede_id=sede.id,
-                start_time='22:00',
-                end_time='06:00',
-                break_duration=30,
-                active=True,
-                work_type='TURNI'
-            )
-            schedules.append(schedule_notturno)
-    
-    for schedule in schedules:
-        db.session.add(schedule)
-    
-    db.session.commit()
-    print("✅ Orari di lavoro creati!")
-    return schedules
-
-def create_sample_holidays(db, sedi):
-    """Crea festività di esempio"""
-    from models import Holiday
-    
-    print("🎄 Creazione festività...")
-    
-    current_year = datetime.now().year
-    holidays_data = [
-        {'name': 'Capodanno', 'date': f'{current_year}-01-01'},
-        {'name': 'Epifania', 'date': f'{current_year}-01-06'},
-        {'name': 'Festa della Liberazione', 'date': f'{current_year}-04-25'},
-        {'name': 'Festa del Lavoro', 'date': f'{current_year}-05-01'},
-        {'name': 'Festa della Repubblica', 'date': f'{current_year}-06-02'},
-        {'name': 'Ferragosto', 'date': f'{current_year}-08-15'},
-        {'name': 'Ognissanti', 'date': f'{current_year}-11-01'},
-        {'name': 'Immacolata Concezione', 'date': f'{current_year}-12-08'},
-        {'name': 'Natale', 'date': f'{current_year}-12-25'},
-        {'name': 'Santo Stefano', 'date': f'{current_year}-12-26'}
-    ]
-    
-    for sede in sedi:
-        for holiday_data in holidays_data:
-            parsed_date = datetime.strptime(holiday_data['date'], '%Y-%m-%d').date()
-            holiday = Holiday(
-                name=holiday_data['name'],
-                month=parsed_date.month,
-                day=parsed_date.day,
-                sede_id=sede.id,
-                active=True,
-                created_by=1  # Admin user ID
-            )
-            db.session.add(holiday)
-    
-    db.session.commit()
-    print("✅ Festività create!")
-
-def create_sample_vehicles(db):
-    """Crea veicoli aziendali di esempio"""
-    from models import Vehicle
-    
-    print("🚗 Creazione veicoli aziendali...")
-    
-    vehicles = [
-        Vehicle(
-            targa='AB123CD',
-            marca='Fiat',
-            modello='Punto',
-            alimentazione='Benzina',
-            active=True
-        ),
-        Vehicle(
-            targa='EF456GH',
-            marca='Ford',
-            modello='Focus',
-            alimentazione='Diesel',
-            active=True
-        ),
-        Vehicle(
-            targa='IJ789KL',
-            marca='Volkswagen',
-            modello='Golf',
-            alimentazione='Benzina',
-            active=True
-        )
-    ]
-    
-    for vehicle in vehicles:
-        db.session.add(vehicle)
-    
-    db.session.commit()
-    print("✅ Veicoli creati!")
-    return vehicles
-
-def create_sample_attendance_events(db, users):
-    """Crea eventi presenza di esempio per gli ultimi giorni"""
-    from models import AttendanceEvent
-    
-    print("📊 Creazione presenze di esempio...")
-    
-    # Crea presenze per gli ultimi 5 giorni lavorativi
-    today = datetime.now().date()
-    events = []
-    
-    for i in range(5):
-        work_date = today - timedelta(days=i)
-        
-        # Skip weekend
-        if work_date.weekday() >= 5:
-            continue
-            
-        for user in users[:3]:  # Solo primi 3 utenti
-            # Entrata
-            entry_time = datetime.combine(work_date, datetime.min.time().replace(hour=8, minute=0)) + timedelta(minutes=i*5)
-            entry_event = AttendanceEvent(
-                user_id=user.id,
-                event_type='entry',
-                timestamp=entry_time,
-                location='Sede Principale',
-                notes=f'Marcatura automatica giorno {work_date}'
-            )
-            events.append(entry_event)
-            
-            # Pausa pranzo inizio
-            break_start = entry_time + timedelta(hours=4)
-            break_event = AttendanceEvent(
-                user_id=user.id,
-                event_type='break_start',
-                timestamp=break_start,
-                location='Sede Principale'
-            )
-            events.append(break_event)
-            
-            # Pausa pranzo fine
-            break_end = break_start + timedelta(hours=1)
-            break_end_event = AttendanceEvent(
-                user_id=user.id,
-                event_type='break_end',
-                timestamp=break_end,
-                location='Sede Principale'
-            )
-            events.append(break_end_event)
-            
-            # Uscita
-            exit_time = entry_time + timedelta(hours=8)
-            exit_event = AttendanceEvent(
-                user_id=user.id,
-                event_type='exit',
-                timestamp=exit_time,
-                location='Sede Principale'
-            )
-            events.append(exit_event)
-    
-    for event in events:
-        db.session.add(event)
-    
-    db.session.commit()
-    print(f"✅ {len(events)} eventi presenza creati!")
-
 def create_qr_code():
     """Crea il QR code statico per le marcature"""
     print("🔲 Generazione QR code per marcature...")
@@ -365,9 +176,8 @@ def create_qr_code():
     try:
         import qrcode
         from PIL import Image
-        import io
         
-        # URL per le marcature (statico)
+        # URL per le marcature
         qr_url = "http://localhost:5000/qr_attendance"
         
         # Genera QR code
@@ -399,18 +209,19 @@ def create_qr_code():
         print(f"❌ Errore nella generazione QR code: {e}")
 
 def main():
-    """Funzione principale"""
-    print("🗄️  Workly - Creazione Database")
-    print("=" * 40)
+    """Funzione principale per creare il database PostgreSQL"""
+    print("🗄️  Workly - Creazione Database PostgreSQL")
+    print("========================================")
     
     # Setup ambiente
     setup_environment()
     
+    database_url = os.environ.get('DATABASE_URL')
+    print(f"📊 Database URL: {database_url}")
+    
     try:
-        # Importa l'app dopo la configurazione dell'ambiente
+        # Import app dopo aver verificato l'ambiente
         from app import app, db
-        
-        print(f"📊 Database URL: {os.environ.get('DATABASE_URL', 'Non configurato')}")
         
         with app.app_context():
             print("🔄 Eliminazione tabelle esistenti...")
@@ -428,33 +239,37 @@ def main():
             # Genera QR code
             create_qr_code()
             
-            print("\n🎉 Database inizializzato con successo!")
-            print("=" * 40)
-            print("🔑 CREDENZIALI DI ACCESSO:")
-            print("   Username: admin")
-            print("   Password: admin123")
-            print("   Email: admin@workly.local")
-            print("\n👥 UTENTI DI ESEMPIO CREATI:")
-            print("   responsabile1 / resp123")
-            print("   supervisore1 / super123")  
-            print("   operatore1 / op123")
-            print("   operatore2 / op123")
-            print("   operatore3 / op123")
-            print("\n🏢 SEDI CREATE:")
-            print("   - Sede Principale (Milano)")
-            print("   - Filiale Nord (Torino)")
-            print("   - Ufficio Sud (Roma)")
-            print("\n⚠️  IMPORTANTE:")
-            print("   - Cambia le password di default dopo il primo accesso!")
-            print("   - Configura le tue sedi e orari di lavoro")
-            print("   - Personalizza ruoli e permessi secondo necessità")
-            print("\n🚀 Il sistema è pronto per essere utilizzato!")
-            
+        print("\n🎉 Database PostgreSQL inizializzato con successo!")
+        print("========================================")
+        print("🔑 CREDENZIALI DI ACCESSO:")
+        print("   Username: admin")
+        print("   Password: admin123")
+        print("   Email: admin@workly.local")
+        print("\n👥 UTENTI DI ESEMPIO CREATI:")
+        print("   responsabile1 / resp123")
+        print("   supervisore1 / super123")
+        print("   operatore1 / op123")
+        print("   operatore2 / op123")
+        print("   operatore3 / op123")
+        print("\n🏢 SEDI CREATE:")
+        print("   - Sede Principale (Milano)")
+        print("   - Filiale Nord (Torino)")
+        print("   - Ufficio Sud (Roma)")
+        print("\n⚠️  IMPORTANTE:")
+        print("   - Cambia le password di default dopo il primo accesso!")
+        print("   - Configura le tue sedi e orari di lavoro")
+        print("   - Personalizza ruoli e permessi secondo necessità")
+        print("\n🚀 Il sistema è pronto per essere utilizzato!")
+        
+        return True
+        
     except Exception as e:
-        print(f"❌ Errore durante la creazione del database: {e}")
+        print(f"\n❌ ERRORE: {e}")
+        print("🔧 Verifica la configurazione del database PostgreSQL e riprova.")
         import traceback
         traceback.print_exc()
-        sys.exit(1)
+        return False
 
 if __name__ == '__main__':
-    main()
+    success = main()
+    sys.exit(0 if success else 1)

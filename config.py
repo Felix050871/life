@@ -15,8 +15,10 @@ class Config:
     SECRET_KEY = os.environ.get('SESSION_SECRET') or 'dev-secret-key-please-change-in-production'
     FLASK_DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
-    # Database Configuration
-    DATABASE_URL = os.environ.get('DATABASE_URL') or 'sqlite:///instance/workly.db'
+    # Database Configuration - Solo PostgreSQL
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable is required for PostgreSQL connection")
     DATABASE_POOL_RECYCLE = int(os.environ.get('DATABASE_POOL_RECYCLE', '300'))  # 5 minutes
     DATABASE_POOL_PRE_PING = os.environ.get('DATABASE_POOL_PRE_PING', 'True').lower() == 'true'
     
@@ -79,18 +81,18 @@ class Config:
 class DevelopmentConfig(Config):
     """Development environment configuration"""
     FLASK_DEBUG = True
-    DATABASE_URL = os.environ.get('DATABASE_URL') or 'sqlite:///instance/workly_dev.db'
+    # Development uses PostgreSQL too
+    pass
 
 class ProductionConfig(Config):
     """Production environment configuration"""
     FLASK_DEBUG = False
-    # Production should use PostgreSQL
-    DATABASE_URL = os.environ.get('DATABASE_URL') or 'postgresql://user:pass@localhost/workly'
+    # Production uses PostgreSQL (inherited from Config)
 
 class TestingConfig(Config):
     """Testing environment configuration"""
     TESTING = True
-    DATABASE_URL = 'sqlite:///:memory:'
+    # For testing, still require PostgreSQL or override DATABASE_URL explicitly
     WTF_CSRF_ENABLED = False
 
 # Configuration mapping
