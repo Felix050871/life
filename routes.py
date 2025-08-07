@@ -2833,7 +2833,7 @@ def view_template(template_id):
 @app.route('/leave_types')
 @login_required
 def leave_types():
-    if not current_user.can_manage_leave_types():
+    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
         flash('Non hai i permessi per gestire le tipologie di permesso', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -9002,7 +9002,7 @@ def overtime_types():
 @login_required
 def create_overtime_type():
     """Creazione nuova tipologia straordinario"""
-    if not current_user.can_create_overtime_types():
+    if not (current_user.can_manage_overtime_types() or current_user.can_create_overtime_types()):
         flash('Non hai i permessi per creare tipologie di straordinario.', 'warning')
         return redirect(url_for('overtime_types'))
     

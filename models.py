@@ -83,7 +83,7 @@ class UserRole(db.Model):
             'can_view_sede_attendance': 'Visualizzare Presenze Sede',
             
             # Gestione ferie/permessi
-            'can_manage_leave': 'Gestire Ferie/Permessi',
+            'can_manage_leave': 'Gestisci Tipologie Ferie/Permessi',
             'can_manage_leave_types': 'Gestire Tipologie Permessi',
             'can_approve_leave': 'Approvare Ferie/Permessi',
             'can_request_leave': 'Richiedere Ferie/Permessi',
@@ -124,7 +124,7 @@ class UserRole(db.Model):
             'can_approve_overtime_requests': 'Approvare Richieste Straordinario',
             'can_create_overtime_types': 'Creare Tipologie Straordinario',
             'can_view_overtime_types': 'Visualizzare Tipologie Straordinario',
-            'can_manage_overtime_types': 'Gestire Tipologie Straordinario',
+            'can_manage_overtime_types': 'Gestisci Tipologie Straordinari',
             'can_view_my_overtime_requests': 'Visualizzare Le Mie Richieste Straordinario',
             
             # Dashboard Widget Permissions

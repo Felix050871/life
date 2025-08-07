@@ -311,14 +311,14 @@
                             <i class="fas fa-user"></i>Le Mie Richieste
                         </a></li>
                         {% endif %}
-                        {% if current_user.can_manage_leave_types() %}
+                        {% if current_user.can_manage_leave() %}
                         <li><a href="{{ url_for('leave_types') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-list-alt"></i>Gestire Tipologie
+                            <i class="fas fa-list-alt"></i>Gestisci Tipologie
                         </a></li>
                         {% endif %}
-                        {% if current_user.can_manage_leave() %}
+                        {% if current_user.can_approve_leave() %}
                         <li><a href="{{ url_for('leave_requests', view='approve') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-check"></i>Gestisci Richieste
+                            <i class="fas fa-check"></i>Approva Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_leave() %}
@@ -357,7 +357,7 @@
                         {% endif %}
                         {% if current_user.can_manage_overtime_types() %}
                         <li><a href="{{ url_for('overtime_types') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-tags"></i>Tipologie Straordinario
+                            <i class="fas fa-tags"></i>Gestisci Tipologie
                         </a></li>
                         {% endif %}
                     </ul>
