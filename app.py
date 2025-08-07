@@ -55,6 +55,9 @@ with app.app_context():
     import models
     db.create_all()
 
+# Import routes after app context is set up (must be at module level for gunicorn)
+import routes
+
 # Import routes to register them with the app
 import routes
 import api_routes
