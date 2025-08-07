@@ -11,7 +11,6 @@ from blueprints.dashboard import dashboard_bp
 from blueprints.attendance import attendance_bp
 from blueprints.shifts import shifts_bp
 from blueprints.leave import leave_bp
-
 app.register_blueprint(auth_bp)
 app.register_blueprint(holidays_bp)
 app.register_blueprint(dashboard_bp)

@@ -2033,9 +2033,7 @@ def new_user():
     
     return render_template('users.html', form=form, editing=False)
 
-@app.route('/user_management')
-@login_required
-def user_management():
+# ROUTE MOVED TO user_management_bp blueprint
     if not (current_user.can_manage_users() or current_user.can_view_users()):
         flash('Non hai i permessi per accedere alla gestione utenti', 'danger')
         return redirect(url_for('dashboard'))
@@ -2092,9 +2090,7 @@ def user_profile():
     
     return render_template('user_profile.html', form=form)
 
-@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
-@login_required
-def edit_user(user_id):
+# ROUTE MOVED TO user_management_bp blueprint
     if not current_user.can_manage_users():
         flash('Non hai i permessi per modificare gli utenti', 'danger')
         return redirect(url_for('user_management'))
