@@ -145,11 +145,19 @@ def create_leave_request():
     
     if form.validate_on_submit():
         try:
+            # Verifica che le date siano valide
+            if not form.start_date.data:
+                flash('Data di inizio richiesta', 'danger')
+                return render_template('create_leave_request.html', form=form, today=date.today())
+            
+            # Per permessi orari, usa la stessa data per inizio e fine
+            end_date = form.end_date.data if form.end_date.data else form.start_date.data
+            
             # Verifica sovrapposizioni esistenti
             existing_requests = LeaveRequest.query.filter(
                 LeaveRequest.user_id == current_user.id,
                 LeaveRequest.status.in_(['Pending', 'Approved']),
-                LeaveRequest.start_date <= form.end_date.data,
+                LeaveRequest.start_date <= end_date,
                 LeaveRequest.end_date >= form.start_date.data
             ).first()
             
@@ -157,20 +165,21 @@ def create_leave_request():
                 flash('Hai già una richiesta nel periodo selezionato', 'warning')
                 return render_template('create_leave_request.html', form=form, today=date.today())
             
-            # Calcola giorni lavorativi semplificato
-            delta = form.end_date.data - form.start_date.data
-            working_days = delta.days + 1  # Simplified calculation
-            
             # Crea nuova richiesta
             new_request = LeaveRequest()
             new_request.user_id = current_user.id
             new_request.leave_type_id = form.leave_type_id.data
             new_request.start_date = form.start_date.data
-            new_request.end_date = form.end_date.data
-            new_request.working_days = working_days
+            new_request.end_date = end_date
             new_request.reason = form.reason.data
             new_request.status = 'Pending'
             new_request.created_at = italian_now()
+            
+            # Aggiungi orari se forniti (per permessi orari)
+            if form.start_time.data:
+                new_request.start_time = form.start_time.data
+            if form.end_time.data:
+                new_request.end_time = form.end_time.data
             
             db.session.add(new_request)
             db.session.commit()
@@ -204,7 +213,7 @@ def approve_leave_request(request_id):
             return jsonify({'success': False, 'message': 'La richiesta è già stata processata'}), 400
         
         leave_request.status = 'Approved'
-        leave_request.approved_by_user_id = current_user.id
+        leave_request.approved_by = current_user.id
         leave_request.approved_at = italian_now()
         
         # Aggiungi note di approvazione se fornite
@@ -253,7 +262,7 @@ def reject_leave_request(request_id):
             return jsonify({'success': False, 'message': 'Motivo del rifiuto richiesto'}), 400
         
         leave_request.status = 'Rejected'
-        leave_request.approved_by_user_id = current_user.id
+        leave_request.approved_by = current_user.id
         leave_request.approved_at = italian_now()
         leave_request.approval_notes = rejection_reason
         
