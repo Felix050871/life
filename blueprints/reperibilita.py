@@ -153,12 +153,7 @@ def reperibilita_shifts():
     display_mode = request.args.get('display', 'calendar')
     
     # Crea oggetto navigation per il template
-    from datetime import datetime, timedelta
-    try:
-        from utils import italian_now
-        now = italian_now()
-    except ImportError:
-        now = datetime.now()
+    now = italian_now()
         
     # Calcola navigation date
     if month_filter:
@@ -339,25 +334,14 @@ def start_intervention():
         priority = 'Media'
     
     # Crea nuovo intervento
-    try:
-        from utils import italian_now
-        intervention = ReperibilitaIntervention(
-            user_id=current_user.id,
-            shift_id=shift_id,
-            start_datetime=italian_now(),
-            description=request.form.get('description', ''),
-            priority=priority,
-            is_remote=is_remote
-        )
-    except ImportError:
-        intervention = ReperibilitaIntervention(
-            user_id=current_user.id,
-            shift_id=shift_id,
-            start_datetime=datetime.now(),
-            description=request.form.get('description', ''),
-            priority=priority,
-            is_remote=is_remote
-        )
+    intervention = ReperibilitaIntervention(
+        user_id=current_user.id,
+        shift_id=shift_id,
+        start_datetime=italian_now(),
+        description=request.form.get('description', ''),
+        priority=priority,
+        is_remote=is_remote
+    )
     
     db.session.add(intervention)
     db.session.commit()
@@ -386,11 +370,7 @@ def end_intervention():
         return redirect(url_for('dashboard.dashboard'))
     
     # Termina l'intervento
-    try:
-        from utils import italian_now
-        active_intervention.end_datetime = italian_now()
-    except ImportError:
-        active_intervention.end_datetime = datetime.now()
+    active_intervention.end_datetime = italian_now()
     
     active_intervention.description = request.form.get('description', active_intervention.description)
     
