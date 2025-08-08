@@ -249,6 +249,35 @@ def user_profile():
     return render_template('user_profile.html', user=current_user)
 
 # =============================================================================
+# USER MANAGEMENT MAIN ROUTES
+# =============================================================================
+
+@user_management_bp.route('/users')
+@login_required
+def user_management():
+    """Main user management page"""
+    if not (current_user.can_manage_users() or current_user.can_view_users()):
+        flash('Non hai i permessi per accedere alla gestione utenti', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Get users with their roles and sedi
+    users = User.query.options(
+        joinedload(User.sede_obj)
+    ).all()
+    
+    # Create user form (only for managers)
+    form = UserForm() if current_user.can_manage_users() else None
+    if form:
+        # Populate form choices
+        form.role.choices = [(role.name, role.name) for role in UserRole.query.filter_by(active=True).all()]
+        form.sede_id.choices = [(0, 'Nessuna Sede')] + [(sede.id, sede.name) for sede in Sede.query.filter_by(active=True).all()]
+    
+    return render_template('user_management.html', 
+                         users=users, 
+                         form=form,
+                         can_manage_users=current_user.can_manage_users())
+
+# =============================================================================
 # BLUEPRINT REGISTRATION READY
 # =============================================================================
 # This blueprint is ready to be registered in main.py:
