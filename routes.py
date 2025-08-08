@@ -91,7 +91,7 @@ def require_login(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
-            return redirect(url_for('login'))
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     
     return decorated_function
@@ -2178,7 +2178,7 @@ def forgot_password():
             # Per sicurezza, non rivelare se l'email esiste o meno
             flash('Se l\'email esiste nel sistema, riceverai un link per il reset della password', 'info')
         
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     return render_template('forgot_password.html', form=form)
 
@@ -2212,7 +2212,7 @@ def reset_password(token):
         db.session.commit()
         
         flash('Password reimpostata con successo. Puoi ora accedere con la nuova password', 'success')
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     return render_template('reset_password.html', form=form, token=token)
 
@@ -3340,7 +3340,7 @@ def qr_login(action):
     """Pagina di login con QR code per entrata/uscita rapida"""
     if action not in ['entrata', 'uscita']:
         flash('Azione non valida', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     # Se l'utente è già autenticato, esegui l'azione direttamente
     if current_user.is_authenticated:
@@ -3363,7 +3363,7 @@ def qr_fresh(action):
     """Route per QR dal browser - forza logout e redirect a qr_login"""
     if action not in ['entrata', 'uscita']:
         flash('Azione non valida', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     # Forza logout se utente autenticato (dal browser)
     if current_user.is_authenticated:
@@ -4342,7 +4342,7 @@ def export_reperibilita_interventions_excel():
 def qr_page(action):
     """Pagine dedicate per QR Code di entrata e uscita"""
     if action not in ['entrata', 'uscita']:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     # Genera URL completo per il QR code
     base_url = request.url_root.rstrip('/')
@@ -5599,46 +5599,7 @@ def api_roles():
 # GESTIONE SEDI E ORARI DI LAVORO
 # ===============================
 
-@app.route('/admin/sedi')
-@login_required
-def manage_sedi():
-    """Gestione delle sedi aziendali"""
-    if not (current_user.can_manage_sedi() or current_user.can_view_sedi()):
-        flash('Non hai i permessi per accedere alle sedi', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    sedi = Sede.query.order_by(Sede.created_at.desc()).all()
-    
-    # Calcola statistiche aggiuntive per ogni sede
-    sedi_stats = {}
-    for sede in sedi:
-        stats = {
-            'orari_count': sede.work_schedules.filter_by(active=True).count(),
-            'turni_count': 0,
-            'reperibilita_turni_count': 0
-        }
-        
-        # Conta turni regolari per utenti di questa sede
-        if sede.is_turni_mode():
-            from models import Shift
-            turni_count = db.session.query(Shift).join(User, Shift.user_id == User.id).filter(
-                User.sede_id == sede.id,
-                User.active == True
-            ).count()
-            stats['turni_count'] = turni_count
-            
-            # Conta turni reperibilità per utenti di questa sede
-            from models import ReperibilitaShift
-            reperibilita_count = db.session.query(ReperibilitaShift).join(User, ReperibilitaShift.user_id == User.id).filter(
-                User.sede_id == sede.id,
-                User.active == True
-            ).count()
-            stats['reperibilita_turni_count'] = reperibilita_count
-        
-        sedi_stats[sede.id] = stats
-    
-    form = SedeForm()
-    return render_template('manage_sedi.html', sedi=sedi, sedi_stats=sedi_stats, form=form)
+# ROUTE MOVED TO admin_bp blueprint - manage_sedi
 
 @app.route('/admin/sedi/create', methods=['POST'])
 @login_required
@@ -8170,7 +8131,7 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
-            return redirect(url_for('login'))
+            return redirect(url_for('auth.login'))
         if not current_user.has_role('Amministratore'):
             flash('Accesso negato. Solo gli amministratori possono accedere a questa sezione.', 'danger')
             return redirect(url_for('dashboard'))

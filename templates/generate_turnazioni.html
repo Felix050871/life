@@ -14,7 +14,7 @@
                 <i class="fas fa-info-circle me-2"></i>
                 {% if is_admin %}
                 Nessuna sede configurata con modalità "Turni". 
-                <a href="{{ url_for('manage_sedi') }}">Configura le sedi</a> per iniziare a generare turni.
+                <a href="{{ url_for('admin.manage_sedi') }}">Configura le sedi</a> per iniziare a generare turni.
                 {% else %}
                 La tua sede non è configurata per la modalità "Turni". Contatta l'amministratore per abilitare la generazione turni.
                 {% endif %}

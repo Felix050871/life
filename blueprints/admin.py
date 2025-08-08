@@ -17,7 +17,8 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
-from models import User, italian_now
+from models import User, Sede, Shift, ReperibilitaShift, italian_now
+from forms import SedeForm
 import io
 import os
 
@@ -154,6 +155,50 @@ def generate_qr_codes():
     except Exception as e:
         flash(f'Errore: {str(e)}', 'danger')
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+# =============================================================================
+# SEDE MANAGEMENT ROUTES
+# =============================================================================
+
+@admin_bp.route('/sedi')
+@login_required
+@require_admin_permission
+def manage_sedi():
+    """Gestione delle sedi aziendali"""
+    if not (current_user.can_manage_sedi() or current_user.can_view_sedi()):
+        flash('Non hai i permessi per accedere alle sedi', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    sedi = Sede.query.order_by(Sede.created_at.desc()).all()
+    
+    # Calcola statistiche aggiuntive per ogni sede
+    sedi_stats = {}
+    for sede in sedi:
+        stats = {
+            'orari_count': sede.work_schedules.filter_by(active=True).count(),
+            'turni_count': 0,
+            'reperibilita_turni_count': 0
+        }
+        
+        # Conta turni regolari per utenti di questa sede
+        if sede.is_turni_mode():
+            turni_count = db.session.query(Shift).join(User, Shift.user_id == User.id).filter(
+                User.sede_id == sede.id,
+                User.active == True
+            ).count()
+            stats['turni_count'] = turni_count
+            
+            # Conta turni reperibilità per utenti di questa sede
+            reperibilita_count = db.session.query(ReperibilitaShift).join(User, ReperibilitaShift.user_id == User.id).filter(
+                User.sede_id == sede.id,
+                User.active == True
+            ).count()
+            stats['reperibilita_turni_count'] = reperibilita_count
+        
+        sedi_stats[sede.id] = stats
+    
+    form = SedeForm()
+    return render_template('manage_sedi.html', sedi=sedi, sedi_stats=sedi_stats, form=form)
 
 # =============================================================================
 # SYSTEM SETTINGS ROUTES
