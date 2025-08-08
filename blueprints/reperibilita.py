@@ -66,7 +66,8 @@ def reperibilita_coverage():
             groups[period_key]['end_date'] = coverage.end_date
             groups[period_key]['creator'] = coverage.creator
             groups[period_key]['created_at'] = coverage.created_at
-        groups[period_key]['coverages'].append(coverage)
+        if 'coverages' in groups[period_key] and groups[period_key]['coverages'] is not None:
+            groups[period_key]['coverages'].append(coverage)
     
     # Converte in oggetti simili ai presidi per il template
     reperibilita_groups = {}
@@ -606,7 +607,8 @@ def reperibilita_replica(period_key):
             if form.sede_id.data:
                 from models import Sede
                 sede = Sede.query.get(int(form.sede_id.data))
-                success_msg += f' Sede cambiata in: {sede.name}.'
+                if sede:
+                    success_msg += f' Sede cambiata in: {sede.name}.'
             if existing_coverages:
                 success_msg += f' Aggiunte a {len(existing_coverages)} coperture esistenti.'
             

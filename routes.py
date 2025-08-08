@@ -4049,89 +4049,11 @@ def qr_page(action):
 # ADMIN & SYSTEM MANAGEMENT ROUTES
 # =============================================================================
 
-@app.route('/admin/qr_codes')
-@require_login
-def admin_generate_qr_codes():
-    """Gestione codici QR - Solo per chi può gestire"""
-    if not current_user.can_manage_qr():
-        flash('Non hai i permessi per gestire i codici QR', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    from utils import qr_codes_exist, get_qr_code_urls
-    
-    # Verifica se i QR code statici esistono
-    qr_exist = qr_codes_exist()
-    
-    # Genera URL completi per i QR codes
-    base_url = request.url_root.rstrip('/')
-    qr_urls = {
-        'entrata': f"{base_url}/qr_login/entrata",
-        'uscita': f"{base_url}/qr_login/uscita"
-    }
-    
-    # Se esistono, ottieni gli URL per visualizzarli
-    static_qr_urls = get_qr_code_urls() if qr_exist else None
-    
-    from config import get_config
-    config = get_config()
-    
-    return render_template('admin_qr_codes.html', 
-                         qr_urls=qr_urls,
-                         qr_exist=qr_exist,
-                         static_qr_urls=static_qr_urls,
-                         can_manage=True,
-                         config=config)
+# ROUTE MOVED TO user_management_bp blueprint - admin_qr_codes
 
-@app.route('/view/qr_codes')
-@require_login
-def view_qr_codes():
-    """Visualizzazione codici QR - Solo per chi può visualizzare"""
-    if not current_user.can_view_qr():
-        flash('Non hai i permessi per visualizzare i codici QR', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    from utils import qr_codes_exist, get_qr_code_urls
-    
-    # Verifica se i QR code statici esistono
-    qr_exist = qr_codes_exist()
-    
-    # Genera URL completi per i QR codes
-    base_url = request.url_root.rstrip('/')
-    qr_urls = {
-        'entrata': f"{base_url}/qr_login/entrata",
-        'uscita': f"{base_url}/qr_login/uscita"
-    }
-    
-    # Se esistono, ottieni gli URL per visualizzarli
-    static_qr_urls = get_qr_code_urls() if qr_exist else None
-    
-    from config import get_config
-    config = get_config()
-    
-    return render_template('view_qr_codes.html', 
-                         qr_urls=qr_urls,
-                         qr_exist=qr_exist,
-                         static_qr_urls=static_qr_urls,
-                         can_manage=False,
-                         config=config)
+# ROUTE MOVED TO user_management_bp blueprint - view_qr_codes
 
-@app.route('/admin/generate_static_qr')
-@require_login  
-def generate_static_qr():
-    """Genera QR code statici e li salva su file"""
-    if not current_user.can_manage_qr():
-        flash('Non hai i permessi per generare codici QR', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    from utils import generate_static_qr_codes
-    
-    if generate_static_qr_codes():
-        flash('QR code generati con successo e salvati come file statici', 'success')
-    else:
-        flash('Errore nella generazione dei QR code statici', 'danger')
-    
-    # Forza refresh della pagina per mostrare i nuovi QR code
-    return redirect(url_for('admin_generate_qr_codes') + '?refresh=1')
+# ROUTE MOVED TO user_management_bp blueprint - admin_generate_static_qr
 
 @app.route('/export_leave_requests_excel')
 @login_required
@@ -4386,9 +4308,7 @@ def export_expense_reports_excel():
 # GESTIONE TURNI PER SEDI
 # ===============================
 
-@app.route('/admin/turni')
-@login_required
-def manage_turni():
+# ROUTE MOVED TO user_management_bp blueprint - admin/turni (manage_turni)
     """Gestione turni per sedi di tipo 'Turni'"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per accedere alla gestione turni', 'danger')
@@ -5777,9 +5697,7 @@ def toggle_presidio_template_status(template_id):
                          page_title=page_title,
                          view_mode=view_mode)
 
-@app.route('/expenses/create', methods=['GET', 'POST'])
-@login_required
-def create_expense_report():
+# ROUTE MOVED TO expense_bp blueprint - create_expense_report
     """Crea nuova nota spese"""
     if not current_user.can_create_expense_reports():
         flash('Non hai i permessi per creare note spese', 'danger')
@@ -5830,9 +5748,7 @@ def create_expense_report():
     
     return render_template('create_expense_report.html', form=form)
 
-@app.route('/expenses/edit/<int:expense_id>', methods=['GET', 'POST'])
-@login_required
-def edit_expense_report(expense_id):
+# ROUTE MOVED TO expense_bp blueprint - edit_expense_report
     """Modifica nota spese esistente"""
     from models import ExpenseReport
     from forms import ExpenseReportForm
@@ -5896,9 +5812,7 @@ def edit_expense_report(expense_id):
     
     return render_template('edit_expense_report.html', form=form, expense=expense)
 
-@app.route('/expenses/approve/<int:expense_id>', methods=['GET', 'POST'])
-@login_required
-def approve_expense_report(expense_id):
+# ROUTE MOVED TO expense_bp blueprint - approve_expense_report
     """Approva/rifiuta nota spese"""
     from models import ExpenseReport
     from forms import ExpenseApprovalForm
@@ -5929,9 +5843,7 @@ def approve_expense_report(expense_id):
     
     return render_template('approve_expense_report.html', form=form, expense=expense)
 
-@app.route('/expenses/download/<int:expense_id>')
-@login_required
-def download_expense_receipt(expense_id):
+# ROUTE MOVED TO expense_bp blueprint - download_expense_receipt
     """Download ricevuta allegata"""
     from models import ExpenseReport
     from flask import send_file
@@ -5959,9 +5871,7 @@ def download_expense_receipt(expense_id):
     return send_file(file_path, as_attachment=True, 
                     download_name=f"ricevuta_{expense.id}_{expense.expense_date.strftime('%Y%m%d')}.{expense.receipt_filename.split('.')[-1]}")
 
-@app.route('/expenses/categories')
-@login_required
-def expense_categories():
+# ROUTE MOVED TO expense_bp blueprint - expense_categories
     """Gestisci categorie note spese"""
     if not current_user.can_manage_expense_reports():
         flash('Non hai i permessi per gestire le categorie', 'danger')
@@ -5972,9 +5882,7 @@ def expense_categories():
     
     return render_template('expense_categories.html', categories=categories)
 
-@app.route('/expenses/categories/create', methods=['GET', 'POST'])
-@login_required
-def create_expense_category():
+# ROUTE MOVED TO expense_bp blueprint - create_expense_category
     """Crea nuova categoria"""
     if not current_user.can_manage_expense_reports():
         flash('Non hai i permessi per creare categorie', 'danger')
@@ -6005,9 +5913,7 @@ def create_expense_category():
     
     return render_template('create_expense_category.html', form=form)
 
-@app.route('/expenses/categories/<int:category_id>/edit', methods=['GET', 'POST'])
-@login_required
-def edit_expense_category(category_id):
+# ROUTE MOVED TO expense_bp blueprint - edit_expense_category
     """Modifica categoria nota spese"""
     if not current_user.can_manage_expense_reports():
         flash('Non hai i permessi per modificare le categorie', 'danger')
@@ -6034,9 +5940,7 @@ def edit_expense_category(category_id):
     
     return render_template('edit_expense_category.html', form=form, category=category)
 
-@app.route('/expenses/categories/<int:category_id>/delete', methods=['POST'])
-@login_required
-def delete_expense_category(category_id):
+# ROUTE MOVED TO expense_bp blueprint - delete_expense_category
     """Elimina categoria nota spese"""
     if not current_user.can_manage_expense_reports():
         flash('Non hai i permessi per eliminare le categorie', 'danger')
@@ -6062,9 +5966,7 @@ def delete_expense_category(category_id):
     
     return redirect(url_for('expense_categories'))
 
-@app.route('/expenses/delete/<int:expense_id>', methods=['POST'])
-@login_required
-def delete_expense_report(expense_id):
+# ROUTE MOVED TO expense_bp blueprint - delete_expense_report
     """Elimina nota spese"""
     from models import ExpenseReport
     import os
@@ -6097,9 +5999,7 @@ def delete_expense_report(expense_id):
 # OVERTIME MANAGEMENT ROUTES
 # =============================================================================
 
-@app.route('/overtime_types')
-@login_required
-def overtime_types():
+# ROUTE MOVED TO expense_bp blueprint - overtime_types
     """Visualizzazione e gestione tipologie straordinari"""
     if not (current_user.can_manage_overtime_types() or current_user.can_view_overtime_types()):
         flash('Non hai i permessi per visualizzare le tipologie di straordinario.', 'warning')
@@ -6108,9 +6008,7 @@ def overtime_types():
     types = OvertimeType.query.all()
     return render_template('overtime_types.html', types=types)
 
-@app.route('/overtime_types/create', methods=['GET', 'POST'])
-@login_required
-def create_overtime_type():
+# ROUTE MOVED TO expense_bp blueprint - create_overtime_type
     """Creazione nuova tipologia straordinario"""
     if not (current_user.can_manage_overtime_types() or current_user.can_create_overtime_types()):
         flash('Non hai i permessi per creare tipologie di straordinario.', 'warning')
@@ -6131,9 +6029,7 @@ def create_overtime_type():
     
     return render_template('create_overtime_type.html', form=form)
 
-@app.route('/overtime_requests')
-@login_required
-def overtime_requests_management():
+# ROUTE MOVED TO expense_bp blueprint - overtime_requests_management
     """Visualizzazione richieste straordinari"""
     if not current_user.can_view_overtime_requests():
         flash('Non hai i permessi per visualizzare le richieste di straordinario.', 'warning')
@@ -6159,9 +6055,7 @@ def overtime_requests_management():
     form = OvertimeFilterForm()
     return render_template('overtime_requests.html', requests=requests, form=form)
 
-@app.route('/overtime_requests/create', methods=['GET', 'POST'])
-@login_required  
-def create_overtime_request():
+# ROUTE MOVED TO expense_bp blueprint - create_overtime_request
     """Creazione richiesta straordinario"""
     if not current_user.can_create_overtime_requests():
         flash('Non hai i permessi per creare richieste di straordinario.', 'warning')
@@ -6195,9 +6089,7 @@ def create_overtime_request():
     
     return render_template('create_overtime_request.html', form=form)
 
-@app.route('/my_overtime_requests')
-@login_required
-def my_overtime_requests():
+# ROUTE MOVED TO expense_bp blueprint - my_overtime_requests
     """Le mie richieste straordinari"""
     if not current_user.can_view_my_overtime_requests():
         flash('Non hai i permessi per visualizzare le tue richieste di straordinario.', 'warning')
@@ -6209,425 +6101,33 @@ def my_overtime_requests():
     
     return render_template('my_overtime_requests.html', requests=requests)
 
-@app.route('/overtime_requests/<int:request_id>/approve', methods=['POST'])
-@login_required
-def approve_overtime_request(request_id):
-    """Approva richiesta straordinario"""
-    if not current_user.can_approve_overtime_requests():
-        flash('Non hai i permessi per approvare richieste di straordinario.', 'warning')
-        return redirect(url_for('overtime_requests_management'))
-    
-    overtime_request = OvertimeRequest.query.get_or_404(request_id)
-    
-    if not current_user.all_sedi and overtime_request.employee.sede_id != current_user.sede_id:
-        flash('Non puoi approvare richieste di altre sedi.', 'warning')
-        return redirect(url_for('overtime_requests_management'))
-    
-    overtime_request.status = 'approved'
-    overtime_request.approval_comment = request.form.get('approval_comment', '')
-    overtime_request.approved_by = current_user.id
-    overtime_request.approved_at = italian_now()
-    
-    db.session.commit()
-    
-    # Invia notifica automatica all'utente
-    send_overtime_request_message(overtime_request, 'approved', current_user)
-    
-    flash('Richiesta straordinario approvata con successo!', 'success')
-    return redirect(url_for('overtime_requests_management'))
+# ROUTE MOVED TO expense_bp blueprint - approve_overtime_request
 
-@app.route('/overtime_requests/<int:request_id>/reject', methods=['POST'])
-@login_required
-def reject_overtime_request(request_id):
-    """Rifiuta richiesta straordinario"""
-    if not current_user.can_approve_overtime_requests():
-        flash('Non hai i permessi per rifiutare richieste di straordinario.', 'warning')
-        return redirect(url_for('overtime_requests_management'))
-    
-    overtime_request = OvertimeRequest.query.get_or_404(request_id)
-    
-    if not current_user.all_sedi and overtime_request.employee.sede_id != current_user.sede_id:
-        flash('Non puoi rifiutare richieste di altre sedi.', 'warning')
-        return redirect(url_for('overtime_requests_management'))
-    
-    overtime_request.status = 'rejected'
-    overtime_request.approval_comment = request.form.get('approval_comment', '')
-    overtime_request.approved_by = current_user.id
-    overtime_request.approved_at = italian_now()
-    
-    db.session.commit()
-    
-    # Invia notifica automatica all'utente
-    send_overtime_request_message(overtime_request, 'rejected', current_user)
-    
-    flash('Richiesta straordinario rifiutata.', 'info')
-    return redirect(url_for('overtime_requests_management'))
+# ROUTE MOVED TO expense_bp blueprint - reject_overtime_request
 
-@app.route('/overtime_requests/<int:request_id>/delete', methods=['POST'])
-@login_required
-def delete_overtime_request(request_id):
-    """Cancella richiesta straordinario"""
-    overtime_request = OvertimeRequest.query.get_or_404(request_id)
-    
-    # Solo il proprietario può cancellare se in stato pending
-    if overtime_request.employee_id != current_user.id:
-        flash('Non puoi cancellare richieste di altri utenti.', 'warning')
-        return redirect(url_for('my_overtime_requests'))
-    
-    if overtime_request.status != 'pending':
-        flash('Non puoi cancellare richieste già approvate o rifiutate.', 'warning')
-        return redirect(url_for('my_overtime_requests'))
-    
-    db.session.delete(overtime_request)
-    db.session.commit()
-    flash('Richiesta straordinario cancellata.', 'info')
-    return redirect(url_for('my_overtime_requests'))
+# ROUTE MOVED TO expense_bp blueprint - delete_overtime_request
 
-@app.route('/overtime_requests/export')
-@login_required
-def overtime_requests_excel():
-    """Export Excel richieste straordinari"""
-    if not current_user.can_view_overtime_requests():
-        flash('Non hai i permessi per esportare le richieste di straordinario.', 'warning')
-        return redirect(url_for('dashboard'))
-    
-    # Query con filtri sede
-    if current_user.all_sedi:
-        requests = OvertimeRequest.query.options(
-            joinedload(OvertimeRequest.employee),
-            joinedload(OvertimeRequest.overtime_type)
-        ).order_by(OvertimeRequest.created_at.desc()).all()
-    else:
-        requests = OvertimeRequest.query.join(User).filter(
-            User.sede_id == current_user.sede_id
-        ).options(
-            joinedload(OvertimeRequest.employee),
-            joinedload(OvertimeRequest.overtime_type)
-        ).order_by(OvertimeRequest.created_at.desc()).all()
-    
-    # Creazione Excel
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill
-    from io import BytesIO
-    
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Richieste Straordinari"
-    
-    # Headers
-    headers = ['Utente', 'Data', 'Orario Inizio', 'Orario Fine', 'Ore', 'Tipologia', 'Moltiplicatore', 'Stato', 'Motivazione', 'Creata il']
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=header)
-        cell.font = Font(bold=True)
-        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-    
-    # Dati
-    for row, req in enumerate(requests, 2):
-        ws.cell(row=row, column=1, value=req.employee.get_full_name())
-        ws.cell(row=row, column=2, value=req.overtime_date.strftime('%d/%m/%Y'))
-        ws.cell(row=row, column=3, value=req.start_time.strftime('%H:%M'))
-        ws.cell(row=row, column=4, value=req.end_time.strftime('%H:%M'))
-        ws.cell(row=row, column=5, value=f"{req.hours:.1f}")
-        ws.cell(row=row, column=6, value=req.overtime_type.name)
-        ws.cell(row=row, column=7, value=f"x{req.overtime_type.hourly_rate_multiplier:.1f}")
-        ws.cell(row=row, column=8, value=req.status.upper())
-        ws.cell(row=row, column=9, value=req.motivation[:100])
-        ws.cell(row=row, column=10, value=req.created_at.strftime('%d/%m/%Y %H:%M'))
-    
-    # Auto-adjust columns
-    for column in ws.columns:
-        max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
-            except:
-                pass
-        adjusted_width = min(max_length + 2, 50)
-        ws.column_dimensions[column_letter].width = adjusted_width
-    
-    # Salva in memoria
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-    
-    today = italian_now().strftime("%Y%m%d")
-    filename = f"richieste_straordinari_{today}.xlsx"
-    
-    response = make_response(output.read())
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    return response
+# ROUTE MOVED TO expense_bp blueprint - overtime_requests_excel
 
-@app.route("/overtime_types/<int:type_id>/edit", methods=["GET", "POST"])
-@login_required
-def edit_overtime_type(type_id):
-    """Modifica tipologia straordinario"""
-    if not current_user.can_manage_overtime_types():
-        flash("Non hai i permessi per modificare le tipologie di straordinario.", "warning")
-        return redirect(url_for("overtime_types"))
-    
-    overtime_type = OvertimeType.query.get_or_404(type_id)
-    form = OvertimeTypeForm(obj=overtime_type)
-    
-    if form.validate_on_submit():
-        overtime_type.name = form.name.data
-        overtime_type.description = form.description.data
-        overtime_type.hourly_rate_multiplier = form.hourly_rate_multiplier.data
-        overtime_type.active = form.active.data
-        
-        db.session.commit()
-        flash("Tipologia straordinario aggiornata con successo!", "success")
-        return redirect(url_for("overtime_types"))
-    
-    return render_template("edit_overtime_type.html", form=form, overtime_type=overtime_type)
+# ROUTE MOVED TO expense_bp blueprint - edit_overtime_type
 
-@app.route("/overtime_types/<int:type_id>/delete", methods=["POST"])
-@login_required
-def delete_overtime_type(type_id):
-    """Cancella tipologia straordinario"""
-    if not current_user.can_manage_overtime_types():
-        flash("Non hai i permessi per cancellare le tipologie di straordinario.", "warning")
-        return redirect(url_for("overtime_types"))
-    
-    overtime_type = OvertimeType.query.get_or_404(type_id)
-    
-    # Controlla se ci sono richieste associate
-    requests_count = OvertimeRequest.query.filter_by(overtime_type_id=type_id).count()
-    if requests_count > 0:
-        flash(f"Impossibile cancellare: ci sono {requests_count} richieste associate a questa tipologia.", "warning")
-        return redirect(url_for("overtime_types"))
-    
-    db.session.delete(overtime_type)
-    db.session.commit()
-    flash("Tipologia straordinario cancellata.", "info")
-    return redirect(url_for("overtime_types"))
+# ROUTE MOVED TO expense_bp blueprint - delete_overtime_type
 
 # =============================================================================
 # MILEAGE REIMBURSEMENT ROUTES
 # =============================================================================
 
-@app.route('/mileage_requests')
-@login_required
-def mileage_requests():
-    """Visualizza le richieste di rimborso chilometrico"""
-    pass  # Mileage requests view
-    
-    try:
-        if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
-            flash('Non hai i permessi per visualizzare le richieste di rimborso chilometrico.', 'warning')
-            return redirect(url_for('dashboard'))
-        
-        # Filtri
-        filter_form = MileageFilterForm(current_user=current_user)
-        
-        # Base query
-        query = MileageRequest.query.options(
-            joinedload(MileageRequest.user),
-            joinedload(MileageRequest.approver),  
-            joinedload(MileageRequest.vehicle)
-        )
-        
-        # Filtri per sede (se l'utente non ha accesso globale)
-        if not current_user.all_sedi and current_user.sede_id:
-            query = query.join(User, MileageRequest.user_id == User.id).filter(User.sede_id == current_user.sede_id)
-        
-        # Applica filtri dal form
-        if request.method == 'POST' and filter_form.validate_on_submit():
-            if filter_form.status.data:
-                query = query.filter(MileageRequest.status == filter_form.status.data)
-            if filter_form.user_id.data:
-                query = query.filter(MileageRequest.user_id == filter_form.user_id.data)
-            if filter_form.date_from.data:
-                query = query.filter(MileageRequest.travel_date >= filter_form.date_from.data)
-            if filter_form.date_to.data:
-                query = query.filter(MileageRequest.travel_date <= filter_form.date_to.data)
-            if filter_form.min_amount.data:
-                query = query.filter(MileageRequest.total_amount >= filter_form.min_amount.data)
-            if filter_form.max_amount.data:
-                query = query.filter(MileageRequest.total_amount <= filter_form.max_amount.data)
-        
-        # Ordina per data più recente
-        requests = query.order_by(MileageRequest.created_at.desc()).all()
-        
-        return render_template('mileage_requests.html', 
-                             requests=requests, 
-                             filter_form=filter_form)
-    except Exception as e:
-        pass  # Silent error handling
-        flash('Errore nel caricamento delle richieste di rimborso chilometrico.', 'error')
-        return redirect(url_for('dashboard'))
+# ROUTE MOVED TO expense_bp blueprint - mileage_requests
 
-@app.route('/mileage_requests/create', methods=['GET', 'POST'])
-@login_required
-def create_mileage_request():
-    """Crea una nuova richiesta di rimborso chilometrico"""
-    if not current_user.can_create_mileage_requests():
-        flash('Non hai i permessi per creare richieste di rimborso chilometrico.', 'warning')
-        return redirect(url_for('dashboard'))
-    
-    # Controlla se l'utente ha un veicolo ACI assegnato
-    if not current_user.aci_vehicle_id:
-        flash('Non puoi creare richieste di rimborso chilometrico senza avere un veicolo ACI assegnato. Contatta l\'amministratore per associare un veicolo al tuo profilo.', 'warning')
-        return redirect(url_for('my_mileage_requests'))
-    
-    form = MileageRequestForm(user=current_user)
-    
-    if form.validate_on_submit():
-        try:
-            # Converti route_addresses da stringa a array
-            route_addresses_list = []
-            if form.route_addresses.data:
-                # Dividi per righe e filtra righe vuote
-                route_addresses_list = [addr.strip() for addr in form.route_addresses.data.split('\n') if addr.strip()]
-            
-            # Crea la richiesta
-            mileage_request = MileageRequest(
-                user_id=current_user.id,
-                travel_date=form.travel_date.data,
-                route_addresses=route_addresses_list,  # Array invece di stringa
-                total_km=form.total_km.data,
-                is_km_manual=form.is_km_manual.data,
-                purpose=form.purpose.data,
-                notes=form.notes.data,
-                vehicle_id=form.vehicle_id.data if form.vehicle_id.data else None,
-                vehicle_description=form.vehicle_description.data if form.vehicle_description.data else None
-            )
-            
-            # Calcola l'importo del rimborso
-            mileage_request.calculate_reimbursement_amount()
-            
-            db.session.add(mileage_request)
-            db.session.commit()
-            
-            flash('Richiesta di rimborso chilometrico inviata con successo!', 'success')
-            return redirect(url_for('my_mileage_requests'))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash('Errore nella creazione della richiesta di rimborso. Riprova più tardi.', 'danger')
-            return render_template('create_mileage_request.html', form=form)
-    
-    return render_template('create_mileage_request.html', form=form)
+# ROUTE MOVED TO expense_bp blueprint - create_mileage_request
 
-@app.route('/my_mileage_requests')
-@login_required
-def my_mileage_requests():
-    """Visualizza le richieste di rimborso chilometrico dell'utente corrente"""
-    try:
-        if not current_user.can_view_my_mileage_requests():
-            flash('Non hai i permessi per visualizzare le tue richieste di rimborso chilometrico.', 'warning')
-            return redirect(url_for('dashboard'))
-        
-        requests = MileageRequest.query.filter_by(user_id=current_user.id)\
-                                      .options(joinedload(MileageRequest.approver),
-                                              joinedload(MileageRequest.vehicle))\
-                                      .order_by(MileageRequest.created_at.desc()).all()
-        
-        return render_template('my_mileage_requests.html', requests=requests)
-    except Exception as e:
-        flash('Errore nel caricamento delle richieste di rimborso.', 'danger')
-        return redirect(url_for('dashboard'))
+# ROUTE MOVED TO expense_bp blueprint - my_mileage_requests
 
-@app.route('/mileage_requests/<int:request_id>/approve', methods=['POST'])
-@login_required
-def approve_mileage_request(request_id):
-    """Approva una richiesta di rimborso chilometrico"""
-    if not current_user.can_approve_mileage_requests():
-        flash('Non hai i permessi per approvare richieste di rimborso chilometrico.', 'warning')
-        return redirect(url_for('mileage_requests'))
-    
-    mileage_request = MileageRequest.query.get_or_404(request_id)
-    
-    # Controllo per sede se necessario
-    if not current_user.all_sedi and current_user.sede_id:
-        if mileage_request.user.sede_id != current_user.sede_id:
-            flash('Non puoi approvare richieste di utenti di altre sedi.', 'warning')
-            return redirect(url_for('mileage_requests'))
-    
-    if mileage_request.status != 'pending':
-        flash('Questa richiesta è già stata processata.', 'warning')
-        return redirect(url_for('mileage_requests'))
-    
-    form = ApproveMileageForm()
-    if form.validate_on_submit():
-        if form.action.data == 'approve':
-            mileage_request.approve(current_user, form.comment.data)
-            flash('Richiesta di rimborso chilometrico approvata!', 'success')
-        else:  # reject
-            mileage_request.reject(current_user, form.comment.data)
-            flash('Richiesta di rimborso chilometrico rifiutata.', 'info')
-        
-        db.session.commit()
-        return redirect(url_for('mileage_requests'))
-    
-    return render_template('approve_mileage_request.html', 
-                         request=mileage_request, 
-                         form=form)
+# ROUTE MOVED TO expense_bp blueprint - approve_mileage_request
 
-@app.route('/mileage_requests/<int:request_id>/delete', methods=['POST'])
-@login_required
-def delete_mileage_request(request_id):
-    """Cancella una richiesta di rimborso chilometrico"""
-    mileage_request = MileageRequest.query.get_or_404(request_id)
-    
-    # Solo l'autore o un manager può cancellare
-    can_delete = (mileage_request.user_id == current_user.id and 
-                  current_user.can_view_my_mileage_requests()) or \
-                 current_user.can_manage_mileage_requests()
-    
-    if not can_delete:
-        flash('Non hai i permessi per cancellare questa richiesta.', 'warning')
-        return redirect(url_for('mileage_requests'))
-    
-    # Non permettere cancellazione se già approvata
-    if mileage_request.status == 'approved':
-        flash('Non è possibile cancellare una richiesta già approvata.', 'warning')
-        return redirect(url_for('mileage_requests'))
-    
-    db.session.delete(mileage_request)
-    db.session.commit()
-    flash('Richiesta di rimborso chilometrico cancellata.', 'info')
-    
-    # Redirect in base a dove si trovava l'utente
-    if mileage_request.user_id == current_user.id:
-        return redirect(url_for('my_mileage_requests'))
-    else:
-        return redirect(url_for('mileage_requests'))
+# ROUTE MOVED TO expense_bp blueprint - delete_mileage_request
 
-@app.route('/api/calculate_distance', methods=['POST'])
-@login_required
-def calculate_distance():
-    """Calcola la distanza tra indirizzi usando API di geocoding"""
-    try:
-        data = request.get_json()
-        addresses = data.get('addresses', [])
-        
-        if len(addresses) < 2:
-            return jsonify({'error': 'Servono almeno 2 indirizzi', 'km': 0})
-        
-        # Per ora simuliamo il calcolo - in produzione usare Google Maps API o simile
-        # Calcolo basato su distanza approssimativa tra città italiane
-        total_km = 0
-        
-        for i in range(len(addresses) - 1):
-            start = addresses[i].lower()
-            end = addresses[i + 1].lower()
-            
-            # Calcolo approssimativo basato su città principali
-            segment_km = calculate_approximate_distance(start, end)
-            total_km += segment_km
-        
-        return jsonify({
-            'success': True,
-            'km': round(total_km, 1),
-            'segments': len(addresses) - 1
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e), 'km': 0})
+# ROUTE MOVED TO expense_bp blueprint - calculate_distance API
 
 def calculate_approximate_distance(start_address, end_address):
     """Calcola distanza approssimativa tra due indirizzi italiani"""
@@ -6706,109 +6206,7 @@ def calculate_approximate_distance(start_address, end_address):
         # Fallback: distanza approssimativa basata sulla lunghezza degli indirizzi
         return max(20, min(100, len(start_address) + len(end_address)))
 
-@app.route('/mileage_requests/export')
-@login_required
-def export_mileage_requests():
-    """Esporta le richieste di rimborso chilometrico in Excel"""
-    if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
-        flash('Non hai i permessi per esportare le richieste di rimborso chilometrico.', 'warning')
-        return redirect(url_for('dashboard'))
-    
-    try:
-        from openpyxl import Workbook
-        from openpyxl.styles import Font, PatternFill, Alignment
-        
-        # Base query
-        query = MileageRequest.query.options(
-            joinedload(MileageRequest.user),
-            joinedload(MileageRequest.approver),
-            joinedload(MileageRequest.vehicle)
-        )
-        
-        # Filtri per sede
-        if not current_user.all_sedi and current_user.sede_id:
-            query = query.join(User).filter(User.sede_id == current_user.sede_id)
-        
-        requests = query.order_by(MileageRequest.travel_date.desc()).all()
-        
-        # Crea workbook
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Rimborsi Chilometrici"
-        
-        # Header con stile
-        headers = [
-            'Data Viaggio', 'Utente', 'Percorso', 'KM Totali', 'Veicolo', 
-            'Importo (€)', 'Stato', 'Motivazione', 'Note', 'Data Richiesta', 
-            'Approvato/Rifiutato da', 'Data Approvazione', 'Commento Approvazione'
-        ]
-        
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
-            cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-            cell.alignment = Alignment(horizontal="center")
-        
-        # Dati
-        for row, req in enumerate(requests, 2):
-            ws.cell(row=row, column=1, value=req.travel_date.strftime('%d/%m/%Y'))
-            ws.cell(row=row, column=2, value=req.user.get_full_name())
-            ws.cell(row=row, column=3, value=req.get_route_summary())
-            ws.cell(row=row, column=4, value=req.total_km)
-            
-            # Veicolo
-            if req.vehicle:
-                vehicle_info = f"{req.vehicle.marca} {req.vehicle.modello}"
-            else:
-                vehicle_info = req.vehicle_description or "Non specificato"
-            ws.cell(row=row, column=5, value=vehicle_info)
-            
-            ws.cell(row=row, column=6, value=req.total_amount or 0)
-            
-            # Stato con colore
-            status_cell = ws.cell(row=row, column=7, value=req.get_status_display())
-            if req.status == 'approved':
-                status_cell.fill = PatternFill(start_color="D4F4DD", end_color="D4F4DD", fill_type="solid")
-            elif req.status == 'rejected':
-                status_cell.fill = PatternFill(start_color="F8D7DA", end_color="F8D7DA", fill_type="solid")
-            
-            ws.cell(row=row, column=8, value=req.purpose)
-            ws.cell(row=row, column=9, value=req.notes or '')
-            ws.cell(row=row, column=10, value=req.created_at.strftime('%d/%m/%Y %H:%M'))
-            
-            if req.approver:
-                ws.cell(row=row, column=11, value=req.approver.get_full_name())
-            if req.approved_at:
-                ws.cell(row=row, column=12, value=req.approved_at.strftime('%d/%m/%Y %H:%M'))
-            ws.cell(row=row, column=13, value=req.approval_comment or '')
-        
-        # Auto-fit colonne
-        for column in ws.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column_letter].width = adjusted_width
-        
-        # Prepara response
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-        
-        response = make_response(output.read())
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response.headers['Content-Disposition'] = f'attachment; filename=rimborsi_chilometrici_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-        
-        return response
-        
-    except Exception as e:
-        flash(f'Errore durante l\'esportazione: {str(e)}', 'danger')
-        return redirect(url_for('mileage_requests'))
+# ROUTE MOVED TO expense_bp blueprint - export_mileage_requests
 
 # =============================================
 # SISTEMA ACI - BACK OFFICE AMMINISTRATORE

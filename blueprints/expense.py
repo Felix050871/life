@@ -14,7 +14,7 @@ import os
 
 # Local imports - Add as needed during migration
 from models import User, ExpenseReport, ExpenseCategory, OvertimeRequest, OvertimeType, MileageRequest
-from forms import ExpenseFilterForm, ExpenseReportForm, OvertimeRequestForm, MileageRequestForm, MileageFilterForm, ExpenseCategoryForm, OvertimeTypeForm
+from forms import ExpenseFilterForm, ExpenseReportForm, OvertimeRequestForm, MileageRequestForm, MileageFilterForm, ExpenseCategoryForm, OvertimeTypeForm, ExpenseApprovalForm
 from app import db, app
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
@@ -187,30 +187,158 @@ def create_expense_report():
 @expense_bp.route('/reports/edit/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
 def edit_expense_report(expense_id):
-    """Edit existing expense report"""
-    flash('Funzione di modifica nota spese in fase di implementazione', 'info')
-    return redirect(url_for('expense.expense_reports'))
+    """Modifica nota spese esistente"""
+    import os
+    from werkzeug.utils import secure_filename
+    import uuid
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    
+    # Verifica permessi
+    if expense.employee_id != current_user.id and not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per modificare questa nota spese', 'danger')
+        return redirect(url_for('expense.expense_reports'))
+    
+    # Verifica se modificabile
+    if not expense.can_be_edited():
+        flash('Questa nota spese non può più essere modificata', 'warning')
+        return redirect(url_for('expense.expense_reports'))
+    
+    form = ExpenseReportForm()
+    
+    if form.validate_on_submit():
+        # Gestione upload file
+        if form.receipt_file.data:
+            # Elimina vecchio file se esiste
+            if expense.receipt_filename:
+                old_file_path = os.path.join(app.root_path, 'static', 'uploads', 'expenses', expense.receipt_filename)
+                if os.path.exists(old_file_path):
+                    os.remove(old_file_path)
+            
+            file = form.receipt_file.data
+            filename = secure_filename(file.filename)
+            
+            # Crea nome file unico
+            file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+            unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+            
+            # Crea directory uploads se non esiste
+            upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'expenses')
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            file_path = os.path.join(upload_dir, unique_filename)
+            file.save(file_path)
+            expense.receipt_filename = unique_filename
+        
+        # Aggiorna dati
+        expense.expense_date = form.expense_date.data
+        expense.description = form.description.data
+        expense.amount = form.amount.data
+        expense.category_id = form.category_id.data
+        
+        db.session.commit()
+        
+        flash('Nota spese aggiornata con successo', 'success')
+        return redirect(url_for('expense.expense_reports'))
+    
+    # Pre-popola il form
+    if request.method == 'GET':
+        form.expense_date.data = expense.expense_date
+        form.description.data = expense.description
+        form.amount.data = expense.amount
+        form.category_id.data = expense.category_id
+    
+    return render_template('edit_expense_report.html', form=form, expense=expense)
 
 @expense_bp.route('/reports/approve/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
 @require_manage_expense_permission
 def approve_expense_report(expense_id):
-    """Approve expense report"""
-    flash('Funzione di approvazione nota spese in fase di implementazione', 'info')
-    return redirect(url_for('expense.expense_reports'))
+    """Approva/rifiuta nota spese"""
+    from forms import ExpenseApprovalForm
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    
+    # Verifica permessi
+    if not expense.can_be_approved_by(current_user):
+        flash('Non hai i permessi per approvare questa nota spese', 'danger')
+        return redirect(url_for('expense.expense_reports'))
+    
+    if expense.status != 'pending':
+        flash('Questa nota spese è già stata processata', 'warning')
+        return redirect(url_for('expense.expense_reports'))
+    
+    form = ExpenseApprovalForm()
+    
+    if form.validate_on_submit():
+        if form.action.data == 'approve':
+            expense.approve(current_user, form.comment.data)
+            flash('Nota spese approvata con successo', 'success')
+        else:
+            expense.reject(current_user, form.comment.data)
+            flash('Nota spese rifiutata', 'info')
+        
+        db.session.commit()
+        return redirect(url_for('expense.expense_reports'))
+    
+    return render_template('approve_expense_report.html', form=form, expense=expense)
 
 @expense_bp.route('/reports/download/<int:expense_id>')
 @login_required
 def download_expense_receipt(expense_id):
-    """Download expense receipt"""
-    flash('Funzione di download ricevuta in fase di implementazione', 'info')
-    return redirect(url_for('expense.expense_reports'))
+    """Download ricevuta allegata"""
+    import os
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    
+    # Verifica permessi
+    if (expense.employee_id != current_user.id and 
+        not current_user.can_view_expense_reports() and 
+        not current_user.can_approve_expense_reports()):
+        flash('Non hai i permessi per scaricare questo documento', 'danger')
+        return redirect(url_for('expense.expense_reports'))
+    
+    if not expense.receipt_filename:
+        flash('Nessun documento allegato a questa nota spese', 'warning')
+        return redirect(url_for('expense.expense_reports'))
+    
+    file_path = os.path.join(app.root_path, 'static', 'uploads', 'expenses', expense.receipt_filename)
+    
+    if not os.path.exists(file_path):
+        flash('File non trovato', 'danger')
+        return redirect(url_for('expense.expense_reports'))
+    
+    return send_file(file_path, as_attachment=True, 
+                    download_name=f"ricevuta_{expense.id}_{expense.expense_date.strftime('%Y%m%d')}.{expense.receipt_filename.split('.')[-1]}")
 
 @expense_bp.route('/reports/delete/<int:expense_id>', methods=['POST'])
 @login_required
 def delete_expense_report(expense_id):
-    """Delete expense report"""
-    flash('Funzione di eliminazione nota spese in fase di implementazione', 'info')
+    """Elimina nota spese"""
+    import os
+    
+    expense = ExpenseReport.query.get_or_404(expense_id)
+    
+    # Verifica permessi
+    if expense.employee_id != current_user.id and not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per eliminare questa nota spese', 'danger')
+        return redirect(url_for('expense.expense_reports'))
+    
+    # Solo note in attesa possono essere eliminate
+    if expense.status != 'pending':
+        flash('Solo le note spese in attesa possono essere eliminate', 'warning')
+        return redirect(url_for('expense.expense_reports'))
+    
+    # Elimina file allegato se esiste
+    if expense.receipt_filename:
+        file_path = os.path.join(app.root_path, 'static', 'uploads', 'expenses', expense.receipt_filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    
+    db.session.delete(expense)
+    db.session.commit()
+    
+    flash('Nota spese eliminata con successo', 'success')
     return redirect(url_for('expense.expense_reports'))
 
 # =============================================================================
@@ -578,9 +706,105 @@ def reject_overtime_request(request_id):
 @expense_bp.route('/overtime/requests/<int:request_id>/delete', methods=['POST'])
 @login_required
 def delete_overtime_request(request_id):
-    """Delete overtime request"""
-    flash('Funzione di eliminazione richiesta straordinario in fase di implementazione', 'info')
-    return redirect(url_for('expense.overtime_requests_management'))
+    """Cancella richiesta straordinario"""
+    overtime_request = OvertimeRequest.query.get_or_404(request_id)
+    
+    # Solo il proprietario può cancellare se in stato pending
+    if overtime_request.employee_id != current_user.id:
+        flash('Non puoi cancellare richieste di altri utenti.', 'warning')
+        return redirect(url_for('expense.my_overtime_requests'))
+    
+    if overtime_request.status != 'pending':
+        flash('Non puoi cancellare richieste già approvate o rifiutate.', 'warning')
+        return redirect(url_for('expense.my_overtime_requests'))
+    
+    db.session.delete(overtime_request)
+    db.session.commit()
+    flash('Richiesta straordinario cancellata.', 'info')
+    return redirect(url_for('expense.my_overtime_requests'))
+
+@expense_bp.route('/overtime/requests/export')
+@login_required
+def overtime_requests_excel():
+    """Export Excel richieste straordinari"""
+    if not current_user.can_view_overtime_requests():
+        flash('Non hai i permessi per esportare le richieste di straordinario.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Query con filtri sede
+    if current_user.all_sedi:
+        requests = OvertimeRequest.query.options(
+            joinedload(OvertimeRequest.employee),
+            joinedload(OvertimeRequest.overtime_type)
+        ).order_by(OvertimeRequest.created_at.desc()).all()
+    else:
+        requests = OvertimeRequest.query.join(User).filter(
+            User.sede_id == current_user.sede_id
+        ).options(
+            joinedload(OvertimeRequest.employee),
+            joinedload(OvertimeRequest.overtime_type)
+        ).order_by(OvertimeRequest.created_at.desc()).all()
+    
+    # Creazione Excel
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Richieste Straordinari"
+    
+    # Headers
+    headers = ['Utente', 'Data', 'Orario Inizio', 'Orario Fine', 'Ore', 'Tipologia', 'Moltiplicatore', 'Stato', 'Motivazione', 'Creata il']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    
+    # Dati
+    for row, req in enumerate(requests, 2):
+        ws.cell(row=row, column=1, value=req.employee.get_full_name())
+        ws.cell(row=row, column=2, value=req.overtime_date.strftime('%d/%m/%Y'))
+        ws.cell(row=row, column=3, value=req.start_time.strftime('%H:%M'))
+        ws.cell(row=row, column=4, value=req.end_time.strftime('%H:%M'))
+        ws.cell(row=row, column=5, value=f"{req.hours:.1f}")
+        ws.cell(row=row, column=6, value=req.overtime_type.name)
+        ws.cell(row=row, column=7, value=f"x{req.overtime_type.hourly_rate_multiplier:.1f}")
+        ws.cell(row=row, column=8, value=req.status.upper())
+        ws.cell(row=row, column=9, value=req.motivation[:100])
+        ws.cell(row=row, column=10, value=req.created_at.strftime('%d/%m/%Y %H:%M'))
+    
+    # Auto-adjust columns
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Salva in memoria
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    try:
+        from utils import italian_now
+        today = italian_now().strftime("%Y%m%d")
+    except ImportError:
+        today = datetime.now().strftime("%Y%m%d")
+    
+    filename = f"richieste_straordinari_{today}.xlsx"
+    
+    response = make_response(output.read())
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    
+    return response
 
 # =============================================================================
 # MILEAGE MANAGEMENT ROUTES
@@ -786,33 +1010,309 @@ def delete_mileage_request(request_id):
     flash('Richiesta di rimborso chilometrico cancellata con successo.', 'success')
     return redirect(url_for('expense.mileage_requests'))
 
-# =============================================================================
-# EXPORT ROUTES
-# =============================================================================
+# Duplicate create_mileage_request function removed - already defined earlier in file
 
-@expense_bp.route('/export/expense_reports_excel')
+@expense_bp.route('/api/calculate_distance', methods=['POST'])
 @login_required
-@require_expense_permission
-def export_expense_reports_excel():
-    """Export expense reports to Excel"""
-    # Placeholder for expense export logic - will be migrated from routes.py
-    pass
+def calculate_distance():
+    """Calcola la distanza tra indirizzi usando API di geocoding"""
+    try:
+        data = request.get_json()
+        addresses = data.get('addresses', [])
+        
+        if len(addresses) < 2:
+            return jsonify({'error': 'Servono almeno 2 indirizzi', 'km': 0})
+        
+        # Per ora simuliamo il calcolo - in produzione usare Google Maps API o simile
+        # Calcolo basato su distanza approssimativa tra città italiane
+        total_km = 0
+        
+        for i in range(len(addresses) - 1):
+            start = addresses[i].lower()
+            end = addresses[i + 1].lower()
+            
+            # Calcolo approssimativo basato su città principali
+            segment_km = calculate_approximate_distance(start, end)
+            total_km += segment_km
+        
+        return jsonify({
+            'success': True,
+            'km': round(total_km, 1),
+            'segments': len(addresses) - 1
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'km': 0})
 
-@expense_bp.route('/export/overtime_requests_excel')
+def calculate_approximate_distance(start_address, end_address):
+    """Calcola distanza approssimativa tra due indirizzi italiani"""
+    
+    # Database semplificato di coordinate delle principali città italiane
+    city_coords = {
+        'roma': (41.9028, 12.4964),
+        'milano': (45.4642, 9.1900),
+        'napoli': (40.8518, 14.2681),
+        'torino': (45.0703, 7.6869),
+        'firenze': (43.7696, 11.2558),
+        'bologna': (44.4949, 11.3426),
+        'genova': (44.4056, 8.9463),
+        'palermo': (38.1157, 13.3613),
+        'bari': (41.1171, 16.8719),
+        'catania': (37.5079, 15.0830),
+        'venezia': (45.4408, 12.3155),
+        'verona': (45.4384, 10.9916),
+        'messina': (38.1938, 15.5540),
+        'padova': (45.4064, 11.8768),
+        'trieste': (45.6495, 13.7768),
+        'brescia': (45.5416, 10.2118),
+        'parma': (44.8015, 10.3279),
+        'modena': (44.6471, 10.9252),
+        'reggio calabria': (38.1059, 15.6219),
+        'perugia': (43.1122, 12.3888)
+    }
+    
+    def extract_city(address):
+        """Estrae il nome della città dall'indirizzo"""
+        address = address.lower().strip()
+        
+        # Cerca la città nell'indirizzo
+        for city in city_coords.keys():
+            if city in address:
+                return city
+        
+        # Se non trova nulla, restituisce None
+        return None
+    
+    def haversine_distance(lat1, lon1, lat2, lon2):
+        """Calcola distanza usando formula haversine"""
+        import math
+        
+        # Raggio della Terra in km
+        R = 6371
+        
+        # Converti in radianti
+        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        
+        # Differenze
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        
+        # Formula haversine
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        
+        return R * c
+    
+    # Estrai città dagli indirizzi
+    start_city = extract_city(start_address)
+    end_city = extract_city(end_address)
+    
+    # Se entrambe le città sono note, calcola distanza reale
+    if start_city and end_city and start_city in city_coords and end_city in city_coords:
+        lat1, lon1 = city_coords[start_city]
+        lat2, lon2 = city_coords[end_city]
+        return haversine_distance(lat1, lon1, lat2, lon2)
+    
+    # Altrimenti, stima generica basata su lunghezza stringa (molto approssimativa)
+    return max(10, len(start_address + end_address) * 2)
+
+@expense_bp.route('/mileage/export')
 @login_required
-@require_overtime_permission
-def overtime_requests_excel():
-    """Export overtime requests to Excel"""
-    # Placeholder for overtime export logic - will be migrated from routes.py
-    pass
+@require_mileage_permission
+def mileage_requests_excel():
+    """Export Excel richieste rimborsi chilometrici"""
+    if not current_user.can_view_mileage_requests():
+        flash('Non hai i permessi per esportare le richieste di rimborso chilometrico.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Query con filtri sede
+    query = MileageRequest.query.options(
+        joinedload(MileageRequest.user),
+        joinedload(MileageRequest.approver),
+        joinedload(MileageRequest.vehicle)
+    )
+    
+    if not current_user.all_sedi and current_user.sede_id:
+        query = query.join(User, MileageRequest.user_id == User.id).filter(User.sede_id == current_user.sede_id)
+    
+    requests = query.order_by(MileageRequest.created_at.desc()).all()
+    
+    # Creazione Excel
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Rimborsi Chilometrici"
+    
+    # Headers
+    headers = ['Utente', 'Data Viaggio', 'Tragitto', 'Km Totali', 'Importo', 'Scopo', 'Stato', 'Approvata da', 'Note', 'Creata il']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    
+    # Dati
+    for row, req in enumerate(requests, 2):
+        route_str = ' → '.join(req.route_addresses) if req.route_addresses else 'N/A'
+        ws.cell(row=row, column=1, value=req.user.get_full_name())
+        ws.cell(row=row, column=2, value=req.travel_date.strftime('%d/%m/%Y'))
+        ws.cell(row=row, column=3, value=route_str[:100])  # Tronca se troppo lungo
+        ws.cell(row=row, column=4, value=f"{req.total_km:.1f}")
+        ws.cell(row=row, column=5, value=f"€{req.total_amount:.2f}")
+        ws.cell(row=row, column=6, value=req.purpose[:50] if req.purpose else '')
+        ws.cell(row=row, column=7, value=req.status.upper())
+        ws.cell(row=row, column=8, value=req.approver.get_full_name() if req.approver else '')
+        ws.cell(row=row, column=9, value=req.notes[:100] if req.notes else '')
+        ws.cell(row=row, column=10, value=req.created_at.strftime('%d/%m/%Y %H:%M'))
+    
+    # Auto-adjust columns
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Salva in memoria
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    try:
+        from utils import italian_now
+        today = italian_now().strftime("%Y%m%d")
+    except ImportError:
+        today = datetime.now().strftime("%Y%m%d")
+    
+    filename = f"rimborsi_chilometrici_{today}.xlsx"
+    
+    response = make_response(output.read())
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    
+    return response
 
-@expense_bp.route('/export/mileage_requests')
+
+@expense_bp.route('/mileage/requests/export')
 @login_required
 @require_mileage_permission
 def export_mileage_requests():
-    """Export mileage requests"""
-    # Placeholder for mileage export logic - will be migrated from routes.py
-    pass
+    """Esporta le richieste di rimborso chilometrico in Excel"""
+    if not (current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests()):
+        flash('Non hai i permessi per esportare le richieste di rimborso chilometrico.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from sqlalchemy.orm import joinedload
+        
+        # Base query
+        query = MileageRequest.query.options(
+            joinedload(MileageRequest.user),
+            joinedload(MileageRequest.approver),
+            joinedload(MileageRequest.vehicle)
+        )
+        
+        # Filtri per sede
+        if not current_user.all_sedi and current_user.sede_id:
+            query = query.join(User).filter(User.sede_id == current_user.sede_id)
+        
+        requests = query.order_by(MileageRequest.travel_date.desc()).all()
+        
+        # Crea workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Rimborsi Chilometrici"
+        
+        # Header con stile
+        headers = [
+            'Data Viaggio', 'Utente', 'Percorso', 'KM Totali', 'Veicolo', 
+            'Importo (€)', 'Stato', 'Motivazione', 'Note', 'Data Richiesta', 
+            'Approvato/Rifiutato da', 'Data Approvazione', 'Commento Approvazione'
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+        
+        # Dati
+        for row, req in enumerate(requests, 2):
+            ws.cell(row=row, column=1, value=req.travel_date.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=2, value=req.user.get_full_name())
+            ws.cell(row=row, column=3, value=req.get_route_summary())
+            ws.cell(row=row, column=4, value=req.total_km)
+            
+            # Veicolo
+            if req.vehicle:
+                vehicle_info = f"{req.vehicle.marca} {req.vehicle.modello}"
+            else:
+                vehicle_info = req.vehicle_description or "Non specificato"
+            ws.cell(row=row, column=5, value=vehicle_info)
+            
+            ws.cell(row=row, column=6, value=req.total_amount or 0)
+            
+            # Stato con colore
+            status_cell = ws.cell(row=row, column=7, value=req.get_status_display())
+            if req.status == 'approved':
+                status_cell.fill = PatternFill(start_color="D4F4DD", end_color="D4F4DD", fill_type="solid")
+            elif req.status == 'rejected':
+                status_cell.fill = PatternFill(start_color="F8D7DA", end_color="F8D7DA", fill_type="solid")
+            
+            ws.cell(row=row, column=8, value=req.purpose)
+            ws.cell(row=row, column=9, value=req.notes or '')
+            ws.cell(row=row, column=10, value=req.created_at.strftime('%d/%m/%Y %H:%M'))
+            
+            if req.approver:
+                ws.cell(row=row, column=11, value=req.approver.get_full_name())
+            if req.approved_at:
+                ws.cell(row=row, column=12, value=req.approved_at.strftime('%d/%m/%Y %H:%M'))
+            ws.cell(row=row, column=13, value=req.approval_comment or '')
+        
+        # Auto-fit colonne
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Prepara response
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        response = make_response(output.read())
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename=rimborsi_chilometrici_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        
+        return response
+        
+    except Exception as e:
+        flash(f'Errore durante l\'esportazione: {str(e)}', 'danger')
+        return redirect(url_for('expense.mileage_requests'))
+
+# =============================================================================
+# ADDITIONAL OVERTIME TYPE ROUTES - Edit and Delete routes for existing overtime types
+# =============================================================================
+
+# NOTE: These routes are duplicates of existing routes in this blueprint.
+# The existing edit and delete routes may conflict with these.
+# Remove duplicate routes and keep these as they have correct URL patterns.
 
 # =============================================================================
 # BLUEPRINT REGISTRATION READY
