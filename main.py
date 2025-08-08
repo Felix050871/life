@@ -18,6 +18,8 @@ from blueprints.expense import expense_bp
 from blueprints.user_management import user_management_bp
 from blueprints.admin import admin_bp
 from blueprints.presidio import presidio_bp
+from blueprints.export import export_bp
+from blueprints.qr import qr_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(holidays_bp)
@@ -32,6 +34,8 @@ app.register_blueprint(expense_bp)
 app.register_blueprint(user_management_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(presidio_bp)
+app.register_blueprint(export_bp)
+app.register_blueprint(qr_bp)
 
 if __name__ == '__main__':
     app.run(debug=Config.FLASK_DEBUG, host=Config.SERVER_HOST, port=Config.SERVER_PORT)

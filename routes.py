@@ -3030,569 +3030,19 @@ def reperibilita_shifts():
     return redirect(url_for('reperibilita_shifts'))
 
 # QR Code Authentication Routes
-@app.route('/qr_login/<action>', methods=['GET', 'POST'])
-def qr_login(action):
-    """Pagina di login con QR code per entrata/uscita rapida"""
-    if action not in ['entrata', 'uscita']:
-        flash('Azione non valida', 'error')
-        return redirect(url_for('auth.login'))
-    
-    # Se l'utente è già autenticato, esegui l'azione direttamente
-    if current_user.is_authenticated:
-        return redirect(url_for('quick_attendance', action=action))
-    
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
-        if user and check_password_hash(user.password_hash, form.password.data):
-            login_user(user, remember=form.remember_me.data)
-            flash(f'Accesso effettuato con successo!', 'success')
-            return redirect(url_for('quick_attendance', action=action))
-        else:
-            flash('Username o password non validi', 'error')
-    
-    return render_template('qr_login_standalone.html', form=form, action=action)
+# QR ROUTE MIGRATED TO qr_bp blueprint - qr_login
 
-@app.route('/qr_fresh/<action>')
-def qr_fresh(action):
-    """Route per QR dal browser - forza logout e redirect a qr_login"""
-    if action not in ['entrata', 'uscita']:
-        flash('Azione non valida', 'error')
-        return redirect(url_for('auth.login'))
-    
-    # Forza logout se utente autenticato (dal browser)
-    if current_user.is_authenticated:
-        logout_user()
-        flash('Disconnesso per accesso QR', 'info')
-    
-    # Redirect alla pagina QR login
-    return redirect(url_for('qr_login', action=action))
+# QR ROUTE MIGRATED TO qr_bp blueprint - qr_fresh
 
-@app.route('/quick_attendance/<action>', methods=['GET', 'POST'])
-@require_login
-def quick_attendance(action):
-    """Gestisce la registrazione rapida di entrata/uscita tramite QR"""
-    if action not in ['entrata', 'uscita']:
-        flash('Azione non valida', 'error')
-        return redirect(url_for('index'))
-    
-    # Se utente multi-sede, mostra form selezione sede
-    if current_user.all_sedi:
-        form = AttendanceForm(user=current_user)
-        if request.method == 'GET':
-            return render_template('qr_sede_selection.html', 
-                                 form=form, 
-                                 action=action,
-                                 user=current_user)
-        
-        # POST: processa selezione sede
-        if form.validate_on_submit():
-            sede_id = form.sede_id.data
-        else:
-            flash('Seleziona una sede valida', 'error')
-            return render_template('qr_sede_selection.html', 
-                                 form=form, 
-                                 action=action,
-                                 user=current_user)
-    else:
-        # Utente con sede specifica
-        sede_id = current_user.sede_id
-    
-    try:
-        now = italian_now()
-        today = now.date()
-        
-        # Controlla lo stato attuale dell'utente
-        current_status, last_event = AttendanceEvent.get_user_status(current_user.id)
-        
-        # Validazione dello stato per evitare registrazioni duplicate
-        if action == 'entrata':
-            if current_status == 'in':
-                error_message = '⚠️ Sei già presente al lavoro. Non puoi registrare una nuova entrata.'
-                return render_template('qr_success.html', 
-                                     action=action, 
-                                     message=error_message,
-                                     user=current_user,
-                                     timestamp=now.strftime('%H:%M'),
-                                     error=True)
-            
-            # Create entry event
-            entry_event = AttendanceEvent(
-                user_id=current_user.id,
-                date=today,
-                event_type='clock_in',
-                timestamp=now,
-                sede_id=sede_id,
-                notes=f'Entrata tramite QR Code - {Sede.query.get(sede_id).name if sede_id else ""}'
-            )
-            db.session.add(entry_event)
-            message = f'✅ Entrata registrata alle {now.strftime("%H:%M")}'
-            
-        else:  # uscita
-            if current_status == 'out':
-                error_message = '⚠️ Non risulti presente al lavoro. Non puoi registrare un\'uscita.'
-                return render_template('qr_success.html', 
-                                     action=action, 
-                                     message=error_message,
-                                     user=current_user,
-                                     timestamp=now.strftime('%H:%M'),
-                                     error=True)
-            
-            # Create exit event
-            exit_event = AttendanceEvent(
-                user_id=current_user.id,
-                date=today,
-                event_type='clock_out',
-                timestamp=now,
-                sede_id=sede_id,
-                notes=f'Uscita tramite QR Code - {Sede.query.get(sede_id).name if sede_id else ""}'
-            )
-            db.session.add(exit_event)
-            message = f'✅ Uscita registrata alle {now.strftime("%H:%M")}'
-        
-        db.session.commit()
-        
-        # Mostra pagina di conferma invece di redirect diretto
-        return render_template('qr_success.html', 
-                             action=action, 
-                             message=message,
-                             user=current_user,
-                             timestamp=now.strftime("%H:%M"))
-        
-    except Exception as e:
-        db.session.rollback()
-        error_message = f'❌ Errore durante la registrazione: {str(e)}'
-        return render_template('qr_success.html', 
-                             action=action, 
-                             message=error_message,
-                             user=current_user,
-                             timestamp=now.strftime('%H:%M'),
-                             error=True)
+# QR ROUTE MIGRATED TO qr_bp blueprint - quick_attendance
 
-@app.route('/generate_qr_codes')
-def generate_qr_codes():
-    """Genera i codici QR per entrata e uscita"""
-    try:
-        base_url = request.url_root.rstrip('/')
-        
-        # URLs per entrata e uscita
-        entry_url = f"{base_url}/qr_login/entrata"
-        exit_url = f"{base_url}/qr_login/uscita"
-        
-        # Genera QR Code per entrata (semplificato)
-        qr_entry = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr_entry.add_data(entry_url)
-        qr_entry.make(fit=True)
-        
-        # Crea immagine con colori default
-        entry_img = qr_entry.make_image(fill_color="black", back_color="white")
-        entry_buffer = BytesIO()
-        entry_img.save(entry_buffer, format='PNG')
-        entry_buffer.seek(0)
-        entry_qr_data = base64.b64encode(entry_buffer.getvalue()).decode()
-        
-        # Genera QR Code per uscita (semplificato)
-        qr_exit = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr_exit.add_data(exit_url)
-        qr_exit.make(fit=True)
-        
-        # Crea immagine con colori default
-        exit_img = qr_exit.make_image(fill_color="black", back_color="white")
-        exit_buffer = BytesIO()
-        exit_img.save(exit_buffer, format='PNG')
-        exit_buffer.seek(0)
-        exit_qr_data = base64.b64encode(exit_buffer.getvalue()).decode()
-        
-        return render_template('qr_codes.html',
-                             entry_qr=entry_qr_data,
-                             exit_qr=exit_qr_data,
-                             entry_url=entry_url,
-                             exit_url=exit_url)
-                             
-    except Exception as e:
-        flash(f'Errore nella generazione dei codici QR: {str(e)}', 'error')
-        return redirect(url_for('index'))
+# QR ROUTE MIGRATED TO qr_bp blueprint - generate_qr_codes
 
-@app.route('/shifts/export/excel')
-@login_required
-def export_shifts_excel():
-    """Export turni in formato Excel"""
-    # Parametri dalla query string
-    view_mode = request.args.get('view', 'month')  # month, week, day
-    show_my_shifts = request.args.get('my_shifts', 'false') == 'true'
-    date_param = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
-    
-    try:
-        current_date = datetime.strptime(date_param, '%Y-%m-%d').date()
-    except:
-        current_date = date.today()
-    
-    # Calcola range di date in base alla vista
-    if view_mode == 'day':
-        start_date = current_date
-        end_date = current_date
-        filename = f"turni_{current_date.strftime('%Y-%m-%d')}.xlsx"
-    elif view_mode == 'week':
-        # Settimana (Lunedì - Domenica)
-        days_since_monday = current_date.weekday()
-        start_date = current_date - timedelta(days=days_since_monday)
-        end_date = start_date + timedelta(days=6)
-        filename = f"turni_settimana_{start_date.strftime('%Y-%m-%d')}.xlsx"
-    else:  # month
-        start_date = current_date.replace(day=1)
-        if current_date.month == 12:
-            end_date = date(current_date.year + 1, 1, 1) - timedelta(days=1)
-        else:
-            end_date = date(current_date.year, current_date.month + 1, 1) - timedelta(days=1)
-        filename = f"turni_{current_date.strftime('%Y-%m')}.xlsx"
-    
-    # Query dei turni
-    shifts_query = Shift.query.filter(
-        Shift.date >= start_date,
-        Shift.date <= end_date
-    )
-    
-    # Filtro per "I Miei Turni" se richiesto
-    if show_my_shifts:
-        shifts_query = shifts_query.filter(Shift.user_id == current_user.id)
-        filename = f"miei_{filename}"
-    
-    shifts = shifts_query.order_by(Shift.date, Shift.start_time).all()
-    
-    # Crea Excel in memoria usando openpyxl
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    import tempfile
-    import os
-    
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Turni"
-    
-    # Header styling
-    header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-    thin_border = Border(
-        left=Side(style='thin'), right=Side(style='thin'),
-        top=Side(style='thin'), bottom=Side(style='thin')
-    )
-    
-    # Header
-    headers = ['Data', 'Utente', 'Ruolo', 'Orario Inizio', 'Orario Fine', 'Tipo Turno', 'Durata (ore)']
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=header)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = Alignment(horizontal='center')
-        cell.border = thin_border
-    
-    # Dati
-    for row_idx, shift in enumerate(shifts, 2):
-        duration = (datetime.combine(date.today(), shift.end_time) - 
-                   datetime.combine(date.today(), shift.start_time)).total_seconds() / 3600
-        
-        row_data = [
-            shift.date.strftime('%d/%m/%Y'),
-            shift.user.get_full_name(),
-            shift.user.role,
-            shift.start_time.strftime('%H:%M'),
-            shift.end_time.strftime('%H:%M'),
-            shift.shift_type,
-            f"{duration:.1f}"
-        ]
-        
-        for col, value in enumerate(row_data, 1):
-            cell = ws.cell(row=row_idx, column=col, value=value)
-            cell.border = thin_border
-            if col in [1, 4, 5]:  # Data e Orari
-                cell.alignment = Alignment(horizontal='center')
-    
-    # Auto-adjust column widths
-    for column in ws.columns:
-        max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
-            except:
-                pass
-        adjusted_width = min(max_length + 2, 50)
-        ws.column_dimensions[column_letter].width = adjusted_width
-    
-    # Save to temporary file
-    temp_dir = tempfile.mkdtemp()
-    excel_path = os.path.join(temp_dir, filename)
-    wb.save(excel_path)
-    
-    # Read file for response
-    with open(excel_path, 'rb') as f:
-        excel_data = f.read()
-    
-    # Cleanup
-    os.remove(excel_path)
-    os.rmdir(temp_dir)
-    
-    response = make_response(excel_data)
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    return response
+# EXPORT ROUTE MIGRATED TO export_bp blueprint - shifts/excel
 
-@app.route('/shifts/export/pdf')
-@login_required  
-def export_shifts_pdf():
-    """Export calendario turni in formato PDF"""
-    from reportlab.lib.pagesizes import letter, A4
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib import colors
-    from reportlab.lib.units import inch
-    from io import BytesIO
-    
-    # Parametri dalla query string
-    view_mode = request.args.get('view', 'month')
-    show_my_shifts = request.args.get('my_shifts', 'false') == 'true'
-    date_param = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
-    
-    try:
-        current_date = datetime.strptime(date_param, '%Y-%m-%d').date()
-    except:
-        current_date = date.today()
-    
-    # Calcola range di date in base alla vista
-    if view_mode == 'day':
-        start_date = current_date
-        end_date = current_date
-        title = f"Turni del {current_date.strftime('%d/%m/%Y')}"
-        filename = f"turni_{current_date.strftime('%Y-%m-%d')}.pdf"
-    elif view_mode == 'week':
-        days_since_monday = current_date.weekday()
-        start_date = current_date - timedelta(days=days_since_monday)
-        end_date = start_date + timedelta(days=6)
-        title = f"Turni settimana {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
-        filename = f"turni_settimana_{start_date.strftime('%Y-%m-%d')}.pdf"
-    else:  # month
-        start_date = current_date.replace(day=1)
-        if current_date.month == 12:
-            end_date = date(current_date.year + 1, 1, 1) - timedelta(days=1)
-        else:
-            end_date = date(current_date.year, current_date.month + 1, 1) - timedelta(days=1)
-        # Get Italian month name
-        month_names = {
-            1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile',
-            5: 'Maggio', 6: 'Giugno', 7: 'Luglio', 8: 'Agosto',
-            9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
-        }
-        month_name = month_names.get(current_date.month, current_date.strftime('%B'))
-        title = f"Turni {month_name} {current_date.year}"
-        filename = f"turni_{current_date.strftime('%Y-%m')}.pdf"
-    
-    # Query dei turni
-    shifts_query = Shift.query.filter(
-        Shift.date >= start_date,
-        Shift.date <= end_date
-    )
-    
-    if show_my_shifts:
-        shifts_query = shifts_query.filter(Shift.user_id == current_user.id)
-        title = f"I Miei {title}"
-        filename = f"miei_{filename}"
-    
-    shifts = shifts_query.order_by(Shift.date, Shift.start_time).all()
-    
-    # Crea PDF in memoria
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*inch, bottomMargin=1*inch)
-    story = []
-    
-    # Stili
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=18,
-        spaceAfter=30,
-        alignment=1  # Center
-    )
-    
-    date_style = ParagraphStyle(
-        'DateHeader',
-        parent=styles['Heading2'],
-        fontSize=14,
-        spaceAfter=10,
-        textColor=colors.darkblue,
-        leftIndent=0
-    )
-    
-    # Titolo
-    story.append(Paragraph(title, title_style))
-    story.append(Paragraph(f"Generato il {datetime.now().strftime('%d/%m/%Y alle %H:%M')}", styles['Normal']))
-    story.append(Spacer(1, 20))
-    
-    # Raggruppa turni per data
-    shifts_by_date = {}
-    for shift in shifts:
-        if shift.date not in shifts_by_date:
-            shifts_by_date[shift.date] = []
-        shifts_by_date[shift.date].append(shift)
-    
-    # Genera calendario giorno per giorno
-    weekday_names = {
-        0: 'Lunedì', 1: 'Martedì', 2: 'Mercoledì', 3: 'Giovedì',
-        4: 'Venerdì', 5: 'Sabato', 6: 'Domenica'
-    }
-    
-    current = start_date
-    while current <= end_date:
-        italian_weekday = weekday_names.get(current.weekday(), current.strftime('%A'))
-        date_header = f"{italian_weekday} {current.strftime('%d/%m/%Y')}"
-        
-        story.append(Paragraph(date_header, date_style))
-        
-        if current in shifts_by_date:
-            # Crea tabella per i turni del giorno
-            data = [['Utente', 'Ruolo', 'Orario', 'Tipo Turno', 'Durata']]
-            
-            for shift in shifts_by_date[current]:
-                duration = f"{shift.get_duration_hours():.1f}h"
-                data.append([
-                    shift.user.get_full_name(),
-                    shift.user.role,
-                    f"{shift.start_time.strftime('%H:%M')} - {shift.end_time.strftime('%H:%M')}",
-                    shift.shift_type,
-                    duration
-                ])
-            
-            table = Table(data, colWidths=[2*inch, 1.5*inch, 1.5*inch, 1*inch, 0.8*inch])
-            table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                ('FONTSIZE', (0, 1), (-1, -1), 9),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
-            ]))
-            
-            story.append(table)
-        else:
-            story.append(Paragraph("Nessun turno programmato", styles['Italic']))
-        
-        story.append(Spacer(1, 15))
-        current += timedelta(days=1)
-    
-    # Genera PDF
-    doc.build(story)
-    buffer.seek(0)
-    
-    # Crea response
-    response = make_response(buffer.getvalue())
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
-    
-    return response
+# EXPORT ROUTE MIGRATED TO export_bp blueprint - shifts/pdf
 
-@app.route('/export_attendance_excel')
-@login_required  
-def export_attendance_excel():
-    """Export presenze in formato CSV"""
-    from io import StringIO
-    from defusedcsv import csv
-    
-    # Controllo permessi
-    if not current_user.can_access_attendance():
-        flash('Non hai i permessi per esportare presenze.', 'danger')
-        return redirect(url_for('manage_turni'))
-    
-    # Handle team/personal view toggle for PM
-    view_mode = request.args.get('view', 'personal')
-    if current_user.role == 'Management':
-        show_team_data = (view_mode == 'team')
-    else:
-        show_team_data = False
-    
-    # Handle date filtering
-    start_date_str = request.args.get('start_date')
-    end_date_str = request.args.get('end_date')
-    
-    if not start_date_str or not end_date_str:
-        end_date = datetime.now().date()
-        from datetime import timedelta
-        start_date = end_date - timedelta(days=30)
-    else:
-        try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            end_date = datetime.now().date()
-            from datetime import timedelta
-        start_date = end_date - timedelta(days=30)
-    
-    if show_team_data:
-        team_users = User.query.filter(
-            User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Management', 'Responsabili']),
-            User.active.is_(True)
-        ).all()
-        
-        records = []
-        for user in team_users:
-            user_records = AttendanceEvent.get_events_as_records(user.id, start_date, end_date)
-            records.extend(user_records)
-    else:
-        records = AttendanceEvent.get_events_as_records(current_user.id, start_date, end_date)
-    
-    records.sort(key=lambda x: x.date, reverse=True)
-    
-    # Create CSV
-    output = StringIO()
-    writer = csv.writer(output)
-    
-    if show_team_data:
-        writer.writerow(['Data', 'Utente', 'Ruolo', 'Entrata', 'Pausa Inizio', 'Pausa Fine', 'Uscita', 'Ore Lavorate', 'Note'])
-    else:
-        writer.writerow(['Data', 'Entrata', 'Pausa Inizio', 'Pausa Fine', 'Uscita', 'Ore Lavorate', 'Note'])
-    
-    for record in records:
-        row = [record.date.strftime('%d/%m/%Y')]
-        
-        if show_team_data and hasattr(record, 'user') and record.user:
-            row.extend([record.user.get_full_name(), record.user.role])
-        elif show_team_data:
-            row.extend(['--', '--'])
-        
-        row.extend([
-            record.clock_in.strftime('%H:%M') if record.clock_in else '--:--',
-            record.break_start.strftime('%H:%M') if record.break_start else '--:--',
-            record.break_end.strftime('%H:%M') if record.break_end else '--:--',
-            record.clock_out.strftime('%H:%M') if record.clock_out else '--:--',
-            f"{record.get_work_hours():.2f}" if record.clock_in and record.clock_out else '0.00',
-            record.notes or ''
-        ])
-        
-        writer.writerow(row)
-    
-    output.seek(0)
-    response = make_response(output.getvalue())
-    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
-    
-    filename = f"presenze_{'team' if show_team_data else 'personali'}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.csv"
-    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
-    
-    return response
+# EXPORT ROUTE MIGRATED TO export_bp blueprint - attendance/excel
 
 @app.route('/start_general_intervention', methods=['POST'])
 @login_required
@@ -3748,9 +3198,10 @@ def my_interventions():
                          start_date=start_date,
                          end_date=end_date)
 
-@app.route('/export_general_interventions_excel')
-@login_required
-def export_general_interventions_excel():
+# EXPORT ROUTE MIGRATED TO export_bp blueprint - interventions/general/excel
+# @app.route('/export_general_interventions_excel')
+# @login_required
+# def export_general_interventions_excel():
     """Export interventi generici in formato Excel"""
     if current_user.role == 'Admin':
         flash('Accesso non autorizzato.', 'danger')
@@ -3888,9 +3339,10 @@ def export_general_interventions_excel():
     
     return response
 
-@app.route('/export_reperibilita_interventions_excel')
-@login_required
-def export_reperibilita_interventions_excel():
+# EXPORT ROUTE MIGRATED TO export_bp blueprint - interventions/reperibilita/excel
+# @app.route('/export_reperibilita_interventions_excel')
+# @login_required
+# def export_reperibilita_interventions_excel():
     """Export interventi reperibilità in formato Excel"""
     if current_user.role == 'Admin':
         flash('Accesso non autorizzato.', 'danger')
@@ -4033,17 +3485,7 @@ def export_reperibilita_interventions_excel():
     
     return response
 
-@app.route('/qr/<action>')
-def qr_page(action):
-    """Pagine dedicate per QR Code di entrata e uscita"""
-    if action not in ['entrata', 'uscita']:
-        return redirect(url_for('auth.login'))
-    
-    # Genera URL completo per il QR code
-    base_url = request.url_root.rstrip('/')
-    qr_url = f"{base_url}/qr_login/{action}"
-    
-    return render_template('qr_page.html', action=action, qr_url=qr_url)
+# QR ROUTE MIGRATED TO qr_bp blueprint - qr_page
 
 # =============================================================================
 # ADMIN & SYSTEM MANAGEMENT ROUTES
@@ -4055,9 +3497,10 @@ def qr_page(action):
 
 # ROUTE MOVED TO user_management_bp blueprint - admin_generate_static_qr
 
-@app.route('/export_leave_requests_excel')
-@login_required
-def export_leave_requests_excel():
+# EXPORT ROUTE MIGRATED TO export_bp blueprint - leave/excel
+# @app.route('/export_leave_requests_excel')
+# @login_required
+# def export_leave_requests_excel():
     """Export delle richieste di ferie/permessi in formato Excel"""
     if not current_user.can_view_leave_requests() and not current_user.can_request_leave():
         flash('Non hai i permessi per esportare le richieste', 'danger')
@@ -4177,9 +3620,10 @@ def export_leave_requests_excel():
     
     return response
 
-@app.route('/export_expense_reports_excel')
-@login_required
-def export_expense_reports_excel():
+# EXPORT ROUTE MIGRATED TO export_bp blueprint - expense/excel
+# @app.route('/export_expense_reports_excel')
+# @login_required
+# def export_expense_reports_excel():
     """Export delle note spese in formato Excel"""
     if not current_user.can_view_expense_reports() and not current_user.can_create_expense_reports():
         flash('Non hai i permessi per esportare le note spese', 'danger')
