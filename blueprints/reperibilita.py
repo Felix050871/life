@@ -257,3 +257,106 @@ def get_reperibilita_data():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# =============================================================================
+# INTERVENTION MANAGEMENT ROUTES
+# =============================================================================
+
+@reperibilita_bp.route('/start-intervention', methods=['POST'])
+@login_required
+@require_reperibilita_permissions
+def start_intervention():
+    """Inizia un intervento di reperibilità"""
+    if current_user.role not in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
+        flash('Non hai i permessi per registrare interventi di reperibilità.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Controlla se c'è già un intervento attivo
+    from models import ReperibilitaIntervention
+    active_intervention = ReperibilitaIntervention.query.filter_by(
+        user_id=current_user.id,
+        end_datetime=None
+    ).first()
+    
+    if active_intervention:
+        flash('Hai già un intervento di reperibilità in corso.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni shift_id dal form se presente
+    shift_id = request.form.get('shift_id')
+    if shift_id:
+        shift_id = int(shift_id)
+    
+    # Ottieni is_remote dal form (default True = remoto)
+    is_remote = request.form.get('is_remote', 'true').lower() == 'true'
+    
+    # Ottieni priorità dal form (default Media)
+    priority = request.form.get('priority', 'Media')
+    if priority not in ['Bassa', 'Media', 'Alta']:
+        priority = 'Media'
+    
+    # Crea nuovo intervento
+    try:
+        from utils import italian_now
+        intervention = ReperibilitaIntervention(
+            user_id=current_user.id,
+            shift_id=shift_id,
+            start_datetime=italian_now(),
+            description=request.form.get('description', ''),
+            priority=priority,
+            is_remote=is_remote
+        )
+    except ImportError:
+        intervention = ReperibilitaIntervention(
+            user_id=current_user.id,
+            shift_id=shift_id,
+            start_datetime=datetime.now(),
+            description=request.form.get('description', ''),
+            priority=priority,
+            is_remote=is_remote
+        )
+    
+    db.session.add(intervention)
+    db.session.commit()
+    
+    flash('Intervento di reperibilità iniziato con successo.', 'success')
+    return redirect(url_for('reperibilita.reperibilita_shifts'))
+
+@reperibilita_bp.route('/end-intervention', methods=['POST'])
+@login_required
+@require_reperibilita_permissions
+def end_intervention():
+    """Termina un intervento di reperibilità"""
+    if current_user.role not in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
+        flash('Non hai i permessi per registrare interventi di reperibilità.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Trova l'intervento attivo
+    from models import ReperibilitaIntervention
+    active_intervention = ReperibilitaIntervention.query.filter_by(
+        user_id=current_user.id,
+        end_datetime=None
+    ).first()
+    
+    if not active_intervention:
+        flash('Nessun intervento di reperibilità attivo da terminare.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Termina l'intervento
+    try:
+        from utils import italian_now
+        active_intervention.end_datetime = italian_now()
+    except ImportError:
+        active_intervention.end_datetime = datetime.now()
+    
+    active_intervention.description = request.form.get('description', active_intervention.description)
+    
+    db.session.commit()
+    
+    flash('Intervento di reperibilità terminato con successo.', 'success')
+    
+    # Redirect to appropriate page
+    if current_user.role == 'Management':
+        return redirect(url_for('dashboard.ente_home'))
+    else:
+        return redirect(url_for('reperibilita.reperibilita_shifts'))

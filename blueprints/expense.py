@@ -221,17 +221,49 @@ def delete_expense_report(expense_id):
 @login_required
 @require_expense_permission
 def expense_categories():
-    """Manage expense categories"""
-    # Placeholder for categories logic - will be migrated from routes.py
-    pass
+    """Gestisci categorie note spese"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per gestire le categorie', 'danger')
+        return redirect(url_for('expense.expense_reports'))
+    
+    from models import ExpenseCategory
+    categories = ExpenseCategory.query.order_by(ExpenseCategory.name).all()
+    
+    return render_template('expense_categories.html', categories=categories)
 
 @expense_bp.route('/categories/create', methods=['GET', 'POST'])
 @login_required
 @require_manage_expense_permission
 def create_expense_category():
-    """Create new expense category"""
-    # Placeholder for create category logic - will be migrated from routes.py
-    pass
+    """Crea nuova categoria"""
+    if not current_user.can_manage_expense_reports():
+        flash('Non hai i permessi per creare categorie', 'danger')
+        return redirect(url_for('expense.expense_reports'))
+    
+    from models import ExpenseCategory
+    from forms import ExpenseCategoryForm
+    
+    form = ExpenseCategoryForm()
+    
+    if form.validate_on_submit():
+        category = ExpenseCategory(
+            name=form.name.data,
+            description=form.description.data,
+            active=form.active.data,
+            created_by=current_user.id
+        )
+        
+        db.session.add(category)
+        
+        try:
+            db.session.commit()
+            flash('Categoria creata con successo', 'success')
+            return redirect(url_for('expense.expense_categories'))
+        except:
+            db.session.rollback()
+            flash('Errore nella creazione della categoria', 'danger')
+    
+    return render_template('create_expense_category.html', form=form)
 
 @expense_bp.route('/categories/<int:category_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -257,9 +289,14 @@ def delete_expense_category(category_id):
 @login_required
 @require_overtime_permission
 def overtime_types():
-    """Manage overtime types"""
-    # Placeholder for overtime types logic - will be migrated from routes.py
-    pass
+    """Visualizzazione e gestione tipologie straordinari"""
+    if not (current_user.can_manage_overtime_types() or current_user.can_view_overtime_types()):
+        flash('Non hai i permessi per visualizzare le tipologie di straordinario.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    from models import OvertimeType
+    types = OvertimeType.query.all()
+    return render_template('overtime_types.html', types=types)
 
 @expense_bp.route('/overtime/types/create', methods=['GET', 'POST'])
 @login_required
@@ -412,9 +449,37 @@ def approve_overtime_request(request_id):
 @expense_bp.route('/overtime/requests/<int:request_id>/reject', methods=['POST'])
 @login_required
 def reject_overtime_request(request_id):
-    """Reject overtime request"""
-    # Placeholder for reject overtime logic - will be migrated from routes.py
-    pass
+    """Rifiuta richiesta straordinario"""
+    if not current_user.can_approve_overtime_requests():
+        flash('Non hai i permessi per rifiutare richieste di straordinario.', 'warning')
+        return redirect(url_for('expense.overtime_requests_management'))
+    
+    overtime_request = OvertimeRequest.query.get_or_404(request_id)
+    
+    if not current_user.all_sedi and overtime_request.employee.sede_id != current_user.sede_id:
+        flash('Non puoi rifiutare richieste di altre sedi.', 'warning')
+        return redirect(url_for('expense.overtime_requests_management'))
+    
+    overtime_request.status = 'rejected'
+    overtime_request.approval_comment = request.form.get('approval_comment', '')
+    overtime_request.approved_by = current_user.id
+    try:
+        from utils import italian_now
+        overtime_request.approved_at = italian_now()
+    except ImportError:
+        overtime_request.approved_at = datetime.now()
+    
+    db.session.commit()
+    
+    # Invia notifica automatica all'utente (se la funzione esiste)
+    try:
+        from utils import send_overtime_request_message
+        send_overtime_request_message(overtime_request, 'rejected', current_user)
+    except ImportError:
+        pass  # Funzione di notifica non disponibile
+    
+    flash('Richiesta straordinario rifiutata.', 'info')
+    return redirect(url_for('expense.overtime_requests_management'))
 
 @expense_bp.route('/overtime/requests/<int:request_id>/delete', methods=['POST'])
 @login_required
@@ -604,9 +669,28 @@ def approve_mileage_request(request_id):
 @expense_bp.route('/mileage/requests/<int:request_id>/delete', methods=['POST'])
 @login_required
 def delete_mileage_request(request_id):
-    """Delete mileage request"""
-    # Placeholder for delete mileage logic - will be migrated from routes.py
-    pass
+    """Cancella una richiesta di rimborso chilometrico"""
+    mileage_request = MileageRequest.query.get_or_404(request_id)
+    
+    # Solo l'autore o un manager può cancellare
+    can_delete = (mileage_request.user_id == current_user.id and 
+                  current_user.can_view_my_mileage_requests()) or \
+                 current_user.can_manage_mileage_requests()
+    
+    if not can_delete:
+        flash('Non hai i permessi per cancellare questa richiesta.', 'warning')
+        return redirect(url_for('expense.mileage_requests'))
+    
+    # Non permettere cancellazione se già approvata
+    if mileage_request.status == 'approved':
+        flash('Non è possibile cancellare una richiesta già approvata.', 'warning')
+        return redirect(url_for('expense.mileage_requests'))
+    
+    db.session.delete(mileage_request)
+    db.session.commit()
+    
+    flash('Richiesta di rimborso chilometrico cancellata con successo.', 'success')
+    return redirect(url_for('expense.mileage_requests'))
 
 # =============================================================================
 # EXPORT ROUTES
