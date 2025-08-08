@@ -134,28 +134,8 @@ def index():
 # =============================================================================
 # ATTENDANCE & CLOCK IN/OUT ROUTES 
 # =============================================================================
-@app.route('/test_route', methods=['GET', 'POST'])
-@login_required
-def test_route():
-    pass  # Test route
-    flash('Test route funziona!', 'info')
-    return redirect(url_for('attendance'))
 
-@app.route('/api/work_hours/<int:user_id>/<date_str>')
-@login_required
-def get_work_hours(user_id, date_str):
-    """API endpoint per ottenere le ore lavorate aggiornate"""
-    from datetime import datetime
-    from flask import jsonify
-    try:
-        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        
-        
-        work_hours = AttendanceEvent.get_daily_work_hours(user_id, target_date)
-        return jsonify({'work_hours': round(work_hours, 1)})
-    except Exception as e:
-        pass  # Silent error handling
-        return jsonify({'work_hours': 0})
+# API work_hours migrated to attendance blueprint
 
 # =============================================================================
 # ATTENDANCE & CLOCK IN/OUT ROUTES - MOVED TO blueprints/attendance.py BLUEPRINT  
@@ -185,104 +165,11 @@ def get_work_hours(user_id, date_str):
 # =============================================================================
 # FINE RIMOZIONE CODICE DUPLICATO
 # =============================================================================
-# Le vere routes iniziano alla riga originale ~939
-        
-    pass  # Clock-in attempt
-    
-    # Verifica se può fare clock-in
-    if not AttendanceEvent.can_perform_action(current_user.id, 'clock_in'):
-        status, _ = AttendanceEvent.get_user_status(current_user.id)
-        if status == 'in':
-            return jsonify({
-                'success': False, 
-                'message': 'Sei già presente. Devi prima registrare l\'uscita.'
-            }), 400
-        elif status == 'break':
-            return jsonify({
-                'success': False, 
-                'message': 'Sei in pausa. Devi prima terminare la pausa.'
-            }), 400
-    
-    # Usa l'orario italiano invece di UTC
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    today = datetime.now(italy_tz).date()
-    
-    # Verifica se ha richieste ferie/permessi/malattia approvate per oggi
-    from models import LeaveRequest
-    approved_leave = LeaveRequest.query.filter(
-        LeaveRequest.user_id == current_user.id,
-        LeaveRequest.start_date <= today,
-        LeaveRequest.end_date >= today,
-        LeaveRequest.status == 'Approved'
-    ).first()
-    
-    if approved_leave:
-        leave_type_display = {
-            'Ferie': 'ferie',
-            'Permesso': 'permesso', 
-            'Malattia': 'malattia'
-        }.get(approved_leave.leave_type, approved_leave.leave_type.lower())
-        
-        return jsonify({
-            'success': False, 
-            'message': f'Hai una richiesta di {leave_type_display} approvata per oggi ({approved_leave.start_date.strftime("%d/%m/%Y")} - {approved_leave.end_date.strftime("%d/%m/%Y")}). Devi prima cancellare la richiesta di {leave_type_display} se vuoi registrare la presenza.'
-        }), 400
-    
-    # Usa l'orario italiano invece di UTC
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    now = datetime.now(italy_tz)
-    
-    # Ottieni sede_id da richiesta JSON o utente
-    data = request.get_json() or {}
-    sede_id = data.get('sede_id')
-    
-    # Se utente multi-sede, sede_id è obbligatorio
-    if current_user.all_sedi and not sede_id:
-        return jsonify({
-            'success': False, 
-            'message': 'Seleziona una sede per registrare la presenza.'
-        }), 400
-    
-    # Se utente con sede specifica, usa quella
-    if not current_user.all_sedi:
-        sede_id = current_user.sede_id
-    
-    # Crea nuovo evento di entrata
-    event = AttendanceEvent()
-    event.user_id = current_user.id
-    event.date = now.date()  # Usa la data italiana
-    event.event_type = 'clock_in'
-    event.timestamp = now
-    event.sede_id = sede_id
-    
-    # Controlla gli orari della sede e permessi per determinare lo stato
-    try:
-        schedule_check = check_user_schedule_with_permissions(current_user.id, now)
-        if schedule_check['has_schedule']:
-            event.shift_status = schedule_check['entry_status']
-        else:
-            event.shift_status = 'normale'
-    except Exception as e:
-        pass  # Silent error handling
-        event.shift_status = 'normale'
-    
-    try:
-        db.session.add(event)
-        db.session.commit()
-        pass  # Event created successfully
-        return jsonify({
-            'success': True, 
-            'message': f'Entrata registrata alle {now.strftime("%H:%M")}'
-        })
-    except Exception as e:
-        pass  # Silent error handling
-        db.session.rollback()
-        return jsonify({
-            'success': False, 
-            'message': 'Errore nel salvare l\'entrata'
-        }), 500
+# Attendance route fragments completely removed - all functions migrated to attendance blueprint
+
+# =============================================================================
+# NEXT SECTIONS: REMAINING ROUTES TO MIGRATE
+# =============================================================================
 
 @app.route('/check_shift_before_clock_out', methods=['POST'])
 @login_required  

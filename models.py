@@ -1301,7 +1301,7 @@ class LeaveType(db.Model):
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
     # Relazione con le richieste di permesso
-    leave_requests = db.relationship('LeaveRequest', backref='leave_type', lazy='dynamic')
+    leave_requests = db.relationship('LeaveRequest', backref='leave_type_obj', lazy='dynamic')
     
     def __repr__(self):
         return f'<LeaveType {self.name}>'
@@ -1365,15 +1365,15 @@ class LeaveRequest(db.Model):
     
     def get_leave_type_name(self):
         """Restituisce il nome della tipologia di permesso"""
-        if self.leave_type:
-            return self.leave_type.name
+        if self.leave_type_obj:
+            return self.leave_type_obj.name
         # Fallback per retrocompatibilità
         return self.leave_type or 'Tipo non specificato'
     
     def requires_approval(self):
         """Verifica se il permesso richiede approvazione"""
-        if self.leave_type:
-            return self.leave_type.requires_approval
+        if self.leave_type_obj:
+            return self.leave_type_obj.requires_approval
         # Fallback: malattia non richiede approvazione, resto sì
         return self.leave_type != 'Malattia' if self.leave_type else True
 
