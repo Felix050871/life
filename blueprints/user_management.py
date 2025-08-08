@@ -270,7 +270,7 @@ def user_management():
     if form:
         # Populate form choices
         form.role.choices = [(role.name, role.name) for role in UserRole.query.filter_by(active=True).all()]
-        form.sede_id.choices = [(0, 'Nessuna Sede')] + [(sede.id, sede.name) for sede in Sede.query.filter_by(active=True).all()]
+        form.sede.choices = [(-1, 'Seleziona una sede')] + [(sede.id, sede.name) for sede in Sede.query.filter_by(active=True).all()]
     
     return render_template('user_management.html', 
                          users=users, 
