@@ -13,7 +13,13 @@
 # 8. delete_template/<template_id> (POST) - Eliminazione template
 # 9. view_template/<template_id> (GET) - Visualizzazione template
 #
-# Total routes: 9+ shift management routes
+# Total routes: 13+ shift management routes
+# NEWLY MIGRATED:
+# - edit_shift/<int:shift_id> (GET/POST) - Modifica singolo turno
+# - team-shifts (GET) - Vista turni team settimanale
+# - team-shifts/change-user/<int:shift_id> (POST) - Cambio utente turno
+# - delete/<int:shift_id> (POST) - Eliminazione singolo turno
+# + calculate_shift_presence() helper function
 # =============================================================================
 
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, make_response
@@ -21,7 +27,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db, csrf
-from models import User, Shift, Sede, PresidioCoverageTemplate, PresidioCoverage, AttendanceEvent, ReperibilitaShift, italian_now
+from models import User, Shift, Sede, PresidioCoverageTemplate, PresidioCoverage, AttendanceEvent, ReperibilitaShift, LeaveRequest, italian_now
 from forms import EditShiftForm
 from collections import defaultdict
 from io import BytesIO

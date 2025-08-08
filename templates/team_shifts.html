@@ -16,7 +16,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="{{ url_for('team_shifts', date=prev_week.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('shifts.team', date=prev_week.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-chevron-left me-2"></i>Settimana Precedente
                     </a>
                     
@@ -33,7 +33,7 @@
                         {% endif %}
                     </div>
                     
-                    <a href="{{ url_for('team_shifts', date=next_week.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('shifts.team', date=next_week.strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
                         Settimana Successiva<i class="fas fa-chevron-right ms-2"></i>
                     </a>
                 </div>
@@ -99,7 +99,7 @@
                                                                 title="Cambia utente rapidamente">
                                                             <i class="fas fa-user-edit"></i>
                                                         </button>
-                                                        <a href="{{ url_for('edit_shift', shift_id=shift.id) }}" 
+                                                        <a href="{{ url_for('shifts.edit_shift', shift_id=shift.id) }}" 
                                                            class="btn btn-sm btn-outline-light" 
                                                            title="Modifica turno completo (utente + orario)">
                                                             <i class="fas fa-edit"></i>

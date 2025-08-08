@@ -243,7 +243,7 @@ function deleteShifts() {
 
 function editShift(shiftId) {
     // Reindirizza alla pagina di modifica turno
-    window.location.href = `{{ url_for('edit_shift', shift_id=0) }}`.replace('0', shiftId);
+    window.location.href = `{{ url_for('shifts.edit_shift', shift_id=0) }}`.replace('0', shiftId);
 }
 
 function deleteShift(shiftId) {
@@ -251,7 +251,7 @@ function deleteShift(shiftId) {
         // Crea un form per inviare la richiesta di eliminazione
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `{{ url_for('delete_shift', shift_id=0) }}`.replace('0', shiftId);
+        form.action = `{{ url_for('shifts.delete', shift_id=0) }}`.replace('0', shiftId);
         
         // Aggiungi CSRF token
         const csrfToken = document.createElement('input');

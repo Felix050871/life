@@ -598,7 +598,7 @@ SECTIONS (1016 lines total):
                                 {% if can_manage %}
                                 <td>
                                     {% if shift.date >= today %}
-                                    <a href="{{ url_for('edit_shift', shift_id=shift.id) }}" 
+                                    <a href="{{ url_for('shifts.edit_shift', shift_id=shift.id) }}" 
                                        class="btn btn-sm btn-outline-primary" 
                                        title="Modifica turno">
                                         <i class="fas fa-edit"></i>
