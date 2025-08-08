@@ -934,7 +934,7 @@ function setupExportButtons(calendar) {
                 my_shifts: showMyShifts.toString()
             });
             
-            window.open(`{{ url_for('export_shifts_pdf') }}?${params.toString()}`, '_blank');
+            window.open(`{{ url_for('export.shifts_pdf') }}?${params.toString()}`, '_blank');
         });
         
         // Excel Export (for table view)
@@ -949,7 +949,7 @@ function setupExportButtons(calendar) {
                 my_shifts: showMyShifts.toString()
             });
             
-            window.location.href = `{{ url_for('export_shifts_excel') }}?${params.toString()}`;
+            window.location.href = `{{ url_for('export.shifts_excel') }}?${params.toString()}`;
         });
         
         // Update button visibility based on view

@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function printQR(action) {
     // Apri la pagina dedicata del QR in una nuova finestra e stampa
-    const url = action === 'entrata' ? '/qr_login/entrata' : '/qr_login/uscita';
+    const url = action === 'entrata' ? '{{ url_for('qr.login', action='entrata') }}' : '{{ url_for('qr.login', action='uscita') }}';
     const win = window.open(url, '_blank');
     win.onload = function() {
         win.print();
