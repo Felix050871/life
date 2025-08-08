@@ -188,30 +188,30 @@ def create_expense_report():
 @login_required
 def edit_expense_report(expense_id):
     """Edit existing expense report"""
-    # Placeholder for edit expense logic - will be migrated from routes.py
-    pass
+    flash('Funzione di modifica nota spese in fase di implementazione', 'info')
+    return redirect(url_for('expense.expense_reports'))
 
 @expense_bp.route('/reports/approve/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
 @require_manage_expense_permission
 def approve_expense_report(expense_id):
     """Approve expense report"""
-    # Placeholder for approve expense logic - will be migrated from routes.py
-    pass
+    flash('Funzione di approvazione nota spese in fase di implementazione', 'info')
+    return redirect(url_for('expense.expense_reports'))
 
 @expense_bp.route('/reports/download/<int:expense_id>')
 @login_required
 def download_expense_receipt(expense_id):
     """Download expense receipt"""
-    # Placeholder for download receipt logic - will be migrated from routes.py
-    pass
+    flash('Funzione di download ricevuta in fase di implementazione', 'info')
+    return redirect(url_for('expense.expense_reports'))
 
 @expense_bp.route('/reports/delete/<int:expense_id>', methods=['POST'])
 @login_required
 def delete_expense_report(expense_id):
     """Delete expense report"""
-    # Placeholder for delete expense logic - will be migrated from routes.py
-    pass
+    flash('Funzione di eliminazione nota spese in fase di implementazione', 'info')
+    return redirect(url_for('expense.expense_reports'))
 
 # =============================================================================
 # EXPENSE CATEGORIES ROUTES
@@ -270,16 +270,16 @@ def create_expense_category():
 @require_manage_expense_permission
 def edit_expense_category(category_id):
     """Edit expense category"""
-    # Placeholder for edit category logic - will be migrated from routes.py
-    pass
+    flash('Funzione di modifica categoria in fase di implementazione', 'info')
+    return redirect(url_for('expense.expense_categories'))
 
 @expense_bp.route('/categories/<int:category_id>/delete', methods=['POST'])
 @login_required
 @require_manage_expense_permission
 def delete_expense_category(category_id):
     """Delete expense category"""
-    # Placeholder for delete category logic - will be migrated from routes.py
-    pass
+    flash('Funzione di eliminazione categoria in fase di implementazione', 'info')
+    return redirect(url_for('expense.expense_categories'))
 
 # =============================================================================
 # OVERTIME MANAGEMENT ROUTES
@@ -302,22 +302,22 @@ def overtime_types():
 @login_required
 def create_overtime_type():
     """Create overtime type"""
-    # Placeholder for create overtime type logic - will be migrated from routes.py
-    pass
+    flash('Funzione di creazione tipologia straordinario in fase di implementazione', 'info')
+    return redirect(url_for('expense.overtime_types'))
 
 @expense_bp.route('/overtime/types/<int:type_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_overtime_type(type_id):
     """Edit overtime type"""
-    # Placeholder for edit overtime type logic - will be migrated from routes.py
-    pass
+    flash('Funzione di modifica tipologia straordinario in fase di implementazione', 'info')
+    return redirect(url_for('expense.overtime_types'))
 
 @expense_bp.route('/overtime/types/<int:type_id>/delete', methods=['POST'])
 @login_required
 def delete_overtime_type(type_id):
     """Delete overtime type"""
-    # Placeholder for delete overtime type logic - will be migrated from routes.py
-    pass
+    flash('Funzione di eliminazione tipologia straordinario in fase di implementazione', 'info')
+    return redirect(url_for('expense.overtime_types'))
 
 @expense_bp.route('/overtime/requests')
 @login_required
@@ -485,8 +485,8 @@ def reject_overtime_request(request_id):
 @login_required
 def delete_overtime_request(request_id):
     """Delete overtime request"""
-    # Placeholder for delete overtime logic - will be migrated from routes.py
-    pass
+    flash('Funzione di eliminazione richiesta straordinario in fase di implementazione', 'info')
+    return redirect(url_for('expense.overtime_requests_management'))
 
 # =============================================================================
 # MILEAGE MANAGEMENT ROUTES
