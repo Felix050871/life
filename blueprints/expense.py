@@ -13,8 +13,8 @@ from defusedcsv import csv
 import os
 
 # Local imports - Add as needed during migration
-# Only import existing models - others will be added during migration
-from models import User
+from models import User, ExpenseReport, ExpenseCategory
+from forms import ExpenseFilterForm
 from app import db
 
 # =============================================================================
@@ -85,9 +85,54 @@ def require_mileage_permission(f):
 @login_required
 @require_expense_permission
 def expense_reports():
-    """Main expense reports page"""
-    # Placeholder for expense reports logic - will be migrated from routes.py
-    pass
+    """Visualizza elenco note spese"""
+    filter_form = ExpenseFilterForm(current_user=current_user)
+    
+    # Query base
+    query = ExpenseReport.query
+    
+    # Check view mode from URL parameter
+    view_mode = request.args.get('view', 'all')
+    
+    # Usa i nuovi permessi espliciti per determinare cosa può vedere l'utente
+    if view_mode == 'my' or current_user.can_view_my_expense_reports() and not current_user.can_view_expense_reports():
+        # Mostra solo le note spese dell'utente corrente
+        query = query.filter(ExpenseReport.employee_id == current_user.id)
+        page_title = "Le Mie Note Spese"
+    elif current_user.can_view_expense_reports() or current_user.can_approve_expense_reports():
+        # Utente può vedere tutte le note spese (eventualmente filtrate per sede)
+        if not current_user.all_sedi and current_user.sede_id:
+            # Filtra per sede se non ha accesso globale
+            sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+            sede_user_ids = [u.id for u in sede_users]
+            query = query.filter(ExpenseReport.employee_id.in_(sede_user_ids))
+        page_title = "Note Spese"
+    else:
+        # Fallback: mostra solo le proprie
+        query = query.filter(ExpenseReport.employee_id == current_user.id)
+        page_title = "Le Mie Note Spese"
+    
+    # Applica filtri se presenti
+    if filter_form.validate_on_submit():
+        if filter_form.employee_id.data:
+            query = query.filter(ExpenseReport.employee_id == filter_form.employee_id.data)
+        if filter_form.category_id.data:
+            query = query.filter(ExpenseReport.category_id == filter_form.category_id.data)
+        if filter_form.status.data:
+            query = query.filter(ExpenseReport.status == filter_form.status.data)
+        if filter_form.date_from.data:
+            query = query.filter(ExpenseReport.expense_date >= filter_form.date_from.data)
+        if filter_form.date_to.data:
+            query = query.filter(ExpenseReport.expense_date <= filter_form.date_to.data)
+    
+    # Ordina per data più recente
+    expenses = query.order_by(ExpenseReport.expense_date.desc(), ExpenseReport.created_at.desc()).all()
+    
+    return render_template('expense_reports.html', 
+                         expenses=expenses, 
+                         filter_form=filter_form,
+                         page_title=page_title,
+                         view_mode=view_mode)
 
 @expense_bp.route('/reports/create', methods=['GET', 'POST'])
 @login_required
@@ -198,9 +243,40 @@ def delete_overtime_type(type_id):
 @login_required
 @require_overtime_permission
 def overtime_requests_management():
-    """Manage overtime requests"""
-    # Placeholder for overtime requests logic - will be migrated from routes.py
-    pass
+    """Gestione richieste straordinario"""
+    from models import OvertimeRequest, OvertimeType
+    from forms import OvertimeFilterForm
+    
+    filter_form = OvertimeFilterForm()
+    
+    # Query base
+    query = OvertimeRequest.query
+    
+    # Filtra per sede se l'utente non ha accesso globale
+    if not current_user.all_sedi and current_user.sede_id:
+        sede_users = User.query.filter(User.sede_id == current_user.sede_id).with_entities(User.id).all()
+        sede_user_ids = [u.id for u in sede_users]
+        query = query.filter(OvertimeRequest.user_id.in_(sede_user_ids))
+    
+    # Applica filtri
+    if filter_form.validate_on_submit():
+        if filter_form.user_id.data:
+            query = query.filter(OvertimeRequest.user_id == filter_form.user_id.data)
+        if filter_form.status.data:
+            query = query.filter(OvertimeRequest.status == filter_form.status.data)
+        if filter_form.overtime_type_id.data:
+            query = query.filter(OvertimeRequest.overtime_type_id == filter_form.overtime_type_id.data)
+        if filter_form.date_from.data:
+            query = query.filter(OvertimeRequest.overtime_date >= filter_form.date_from.data)
+        if filter_form.date_to.data:
+            query = query.filter(OvertimeRequest.overtime_date <= filter_form.date_to.data)
+    
+    # Ordina per data più recente
+    requests = query.order_by(OvertimeRequest.overtime_date.desc()).all()
+    
+    return render_template('overtime_requests.html', 
+                         requests=requests, 
+                         form=filter_form)
 
 @expense_bp.route('/overtime/requests/create', methods=['GET', 'POST'])
 @login_required
