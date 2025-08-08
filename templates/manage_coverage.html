@@ -56,7 +56,7 @@
                 </h5>
                 {% if can_manage %}
                 <div>
-                    <a href="{{ url_for('create_presidio_coverage') }}" class="btn btn-success btn-sm">
+                    <a href="{{ url_for('presidio.create_presidio_coverage') }}" class="btn btn-success btn-sm">
                         <i class="fas fa-plus me-1"></i>Nuova Copertura
                     </a>
                 </div>
@@ -98,12 +98,12 @@
                                 <td>
                                     {% set period_key = coverage.start_date.strftime('%Y%m%d') + '-' + coverage.end_date.strftime('%Y%m%d') %}
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('view_presidio_coverage', period_key=period_key) }}" 
+                                        <a href="{{ url_for('presidio.view_presidio_coverage', period_key=period_key) }}" 
                                            class="btn btn-outline-primary" title="Visualizza template">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         {% if can_manage %}
-                                        <a href="{{ url_for('edit_presidio_coverage', period_key=period_key) }}" 
+                                        <a href="{{ url_for('presidio.edit_presidio_coverage', period_key=period_key) }}" 
                                            class="btn btn-outline-warning" title="Modifica template">
                                             <i class="fas fa-edit"></i>
                                         </a>

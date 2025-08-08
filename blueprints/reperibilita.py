@@ -17,7 +17,10 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
-from models import User, Sede, ReperibilitaShift, italian_now
+from models import User, Sede, ReperibilitaShift, ReperibilitaCoverage, ReperibilitaIntervention, ReperibilitaTemplate, italian_now
+from forms import ReperibilitaCoverageForm, ReperibilitaReplicaForm
+from collections import defaultdict
+from utils import generate_reperibilita_shifts
 
 # Create blueprint
 reperibilita_bp = Blueprint('reperibilita', __name__, url_prefix='/reperibilita')
@@ -39,54 +42,49 @@ def require_reperibilita_permissions(f):
 # REPERIBILITÀ MANAGEMENT ROUTES
 # =============================================================================
 
-@reperibilita_bp.route('/reperibilita_coverage')
+@reperibilita_bp.route('/coverage')
 @login_required
 @require_reperibilita_permissions
 def reperibilita_coverage():
-    """Visualizzazione coperture reperibilità"""
-    if not (current_user.can_manage_reperibilita() or current_user.can_view_reperibilita()):
-        flash('Non hai i permessi per visualizzare le coperture', 'danger')
+    """Lista coperture reperibilità"""
+    if not current_user.can_access_reperibilita():
+        flash('Non hai i permessi per visualizzare le coperture reperibilità', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    # Parametri dalla query string
-    start_date_str = request.args.get('start_date')
-    end_date_str = request.args.get('end_date')
+    # Raggruppa le coperture per periodo + sede per trattare duplicazioni come gruppi separati
+    coverages = ReperibilitaCoverage.query.order_by(ReperibilitaCoverage.start_date.desc()).all()
+    groups = defaultdict(lambda: {'coverages': [], 'start_date': None, 'end_date': None, 'creator': None, 'created_at': None})
     
-    # Date di default (settimana corrente)
-    today = italian_now().date()
-    if not start_date_str:
-        # Lunedì della settimana corrente
-        start_date = today - timedelta(days=today.weekday())
-    else:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    for coverage in coverages:
+        # Include sede nel period_key per separare coperture duplicate con sedi diverse
+        sede_ids = sorted(coverage.get_sedi_ids_list())
+        sede_key = "_".join(map(str, sede_ids)) if sede_ids else "no_sede"
+        period_key = f"{coverage.start_date.strftime('%Y-%m-%d')}_{coverage.end_date.strftime('%Y-%m-%d')}_{sede_key}"
+        
+        if not groups[period_key]['start_date']:
+            groups[period_key]['start_date'] = coverage.start_date
+            groups[period_key]['end_date'] = coverage.end_date
+            groups[period_key]['creator'] = coverage.creator
+            groups[period_key]['created_at'] = coverage.created_at
+        groups[period_key]['coverages'].append(coverage)
     
-    if not end_date_str:
-        end_date = start_date + timedelta(days=6)  # Domenica
-    else:
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    # Converte in oggetti simili ai presidi per il template
+    reperibilita_groups = {}
+    for period_key, data in groups.items():
+        class ReperibilitaGroup:
+            def __init__(self, coverages, start_date, end_date, creator, created_at):
+                self.coverages = coverages
+                self.start_date = start_date
+                self.end_date = end_date
+                self.creator = creator
+                self.created_at = created_at
+        
+        reperibilita_groups[period_key] = ReperibilitaGroup(
+            data['coverages'], data['start_date'], data['end_date'], 
+            data['creator'], data['created_at']
+        )
     
-    # Query per recuperare shifts reperibilità nel periodo
-    query = ReperibilitaShift.query.filter(
-        ReperibilitaShift.date >= start_date,
-        ReperibilitaShift.date <= end_date
-    )
-    
-    # Filtro sede se non multi-sede
-    if not current_user.all_sedi and current_user.sede_obj:
-        sede_users = User.query.filter_by(sede_id=current_user.sede_obj.id).all()
-        user_ids = [u.id for u in sede_users]
-        query = query.filter(ReperibilitaShift.user_id.in_(user_ids))
-    
-    shifts = query.order_by(
-        ReperibilitaShift.date,
-        ReperibilitaShift.start_time
-    ).all()
-    
-    return render_template('reperibilita_coverage.html',
-                         shifts=shifts,
-                         start_date=start_date,
-                         end_date=end_date,
-                         can_manage=current_user.can_manage_reperibilita())
+    return render_template('reperibilita_coverage.html', reperibilita_groups=reperibilita_groups)
 
 @reperibilita_bp.route('/reperibilita_shifts')
 @login_required
@@ -296,6 +294,346 @@ def get_reperibilita_data():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@reperibilita_bp.route('/coverage/create', methods=['GET', 'POST'])
+@login_required
+@require_reperibilita_permissions
+def create_reperibilita_coverage():
+    """Crea nuova copertura reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per creare coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    form = ReperibilitaCoverageForm()
+    
+    if form.validate_on_submit():
+        # Crea una copertura per ogni giorno selezionato
+        import json
+        success_count = 0
+        
+        for day_of_week in (form.days_of_week.data or []):
+            coverage = ReperibilitaCoverage()
+            coverage.day_of_week = day_of_week
+            coverage.start_time = form.start_time.data
+            coverage.end_time = form.end_time.data
+            coverage.set_required_roles_list(form.required_roles.data)
+            coverage.set_sedi_ids_list(form.sedi.data)  # Aggiungi le sedi selezionate
+            coverage.description = form.description.data
+            coverage.active = form.active.data
+            coverage.start_date = form.start_date.data
+            coverage.end_date = form.end_date.data
+            coverage.created_by = current_user.id
+            
+            db.session.add(coverage)
+            success_count += 1
+        
+        try:
+            db.session.commit()
+            flash(f'Copertura reperibilità creata con successo per {success_count} giorni!', 'success')
+            return redirect(url_for('reperibilita.reperibilita_coverage'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore durante la creazione: {str(e)}', 'error')
+    
+    return render_template('create_reperibilita_coverage.html', form=form)
+
+@reperibilita_bp.route('/coverage/edit/<int:coverage_id>', methods=['GET', 'POST'])
+@login_required
+@require_reperibilita_permissions
+def edit_reperibilita_coverage(coverage_id):
+    """Modifica copertura reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per modificare coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    coverage = ReperibilitaCoverage.query.get_or_404(coverage_id)
+    form = ReperibilitaCoverageForm()
+    
+    if form.validate_on_submit():
+        coverage.start_time = form.start_time.data
+        coverage.end_time = form.end_time.data
+        coverage.set_required_roles_list(form.required_roles.data)
+        coverage.set_sedi_ids_list(form.sedi.data)  # Aggiungi le sedi selezionate
+        coverage.description = form.description.data
+        coverage.active = form.active.data
+        coverage.start_date = form.start_date.data
+        coverage.end_date = form.end_date.data
+        
+        try:
+            db.session.commit()
+            flash('Copertura reperibilità aggiornata con successo!', 'success')
+            return redirect(url_for('reperibilita.reperibilita_coverage'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore durante l\'aggiornamento: {str(e)}', 'error')
+    
+    # Pre-popola il form con i dati esistenti
+    if request.method == 'GET':
+        form.start_time.data = coverage.start_time
+        form.end_time.data = coverage.end_time
+        form.required_roles.data = coverage.get_required_roles_list()
+        form.description.data = coverage.description
+        form.active.data = coverage.active
+        form.start_date.data = coverage.start_date
+        form.end_date.data = coverage.end_date
+        form.days_of_week.data = [coverage.day_of_week]  # Single day for edit
+    
+    return render_template('edit_reperibilita_coverage.html', form=form, coverage=coverage)
+
+@reperibilita_bp.route('/coverage/delete/<int:coverage_id>', methods=['GET'])
+@login_required
+@require_reperibilita_permissions
+def delete_reperibilita_coverage(coverage_id):
+    """Elimina copertura reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per eliminare coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    coverage = ReperibilitaCoverage.query.get_or_404(coverage_id)
+    
+    try:
+        db.session.delete(coverage)
+        db.session.commit()
+        flash('Copertura reperibilità eliminata con successo!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
+    
+    return redirect(url_for('reperibilita.reperibilita_coverage'))
+
+@reperibilita_bp.route('/coverage/view/<period_key>')
+@login_required
+@require_reperibilita_permissions
+def view_reperibilita_coverage(period_key):
+    """Visualizza dettagli coperture reperibilità per un periodo"""
+    if not current_user.can_access_reperibilita():
+        flash('Non hai i permessi per visualizzare coperture reperibilità', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Decodifica period_key
+    start_date_str, end_date_str = period_key.split('_')
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    
+    # Trova tutte le coperture per questo periodo
+    coverages = ReperibilitaCoverage.query.filter(
+        ReperibilitaCoverage.start_date == start_date,
+        ReperibilitaCoverage.end_date == end_date
+    ).order_by(ReperibilitaCoverage.day_of_week, ReperibilitaCoverage.start_time).all()
+    
+    if not coverages:
+        flash('Periodo di copertura reperibilità non trovato', 'error')
+        return redirect(url_for('reperibilita.reperibilita_coverage'))
+    
+    return render_template('view_reperibilita_coverage.html', 
+                         coverages=coverages, 
+                         start_date=start_date, 
+                         end_date=end_date,
+                         period_key=period_key)
+
+@reperibilita_bp.route('/coverage/delete_period/<period_key>')
+@login_required
+@require_reperibilita_permissions  
+def delete_reperibilita_period(period_key):
+    """Elimina tutte le coperture reperibilità di un periodo"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per eliminare periodi reperibilità', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Decodifica period_key
+    start_date_str, end_date_str = period_key.split('_')
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    
+    # Trova tutte le coperture per questo periodo
+    coverages = ReperibilitaCoverage.query.filter(
+        ReperibilitaCoverage.start_date == start_date,
+        ReperibilitaCoverage.end_date == end_date
+    ).all()
+    
+    # Trova anche tutti i turni generati per questo periodo
+    shifts = ReperibilitaShift.query.filter(
+        ReperibilitaShift.date >= start_date,
+        ReperibilitaShift.date <= end_date
+    ).all()
+    
+    try:
+        coverage_count = len(coverages)
+        shift_count = len(shifts)
+        
+        # Elimina prima i turni, poi le coperture
+        for shift in shifts:
+            db.session.delete(shift)
+        for coverage in coverages:
+            db.session.delete(coverage)
+            
+        db.session.commit()
+        flash(f'Eliminate {coverage_count} coperture reperibilità e {shift_count} turni del periodo {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
+    
+    return redirect(url_for('reperibilita.reperibilita_shifts'))
+
+@reperibilita_bp.route('/template/<start_date>/<end_date>')
+@login_required
+@require_reperibilita_permissions
+def reperibilita_template_detail(start_date, end_date):
+    """Mostra dettaglio template reperibilità (come shift_template_detail)"""
+    from collections import defaultdict
+    
+    # Parse delle date
+    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    # Trova tutti i turni di reperibilità per questo periodo
+    shifts = ReperibilitaShift.query.filter(
+        ReperibilitaShift.date >= start_date,
+        ReperibilitaShift.date <= end_date
+    ).order_by(ReperibilitaShift.date, ReperibilitaShift.start_time).all()
+    
+    # Organizza per giorno della settimana per la vista calendario
+    shifts_by_day = defaultdict(list)
+    for shift in shifts:
+        shifts_by_day[shift.date].append(shift)
+    
+    # Genera calendario giorni
+    calendar_days = []
+    current_date = start_date
+    weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+    
+    while current_date <= end_date:
+        calendar_days.append({
+            'date': current_date,
+            'weekday': weekdays[current_date.weekday()],
+            'is_today': current_date == italian_now().date()
+        })
+        current_date += timedelta(days=1)
+    
+    period_key = f"{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}"
+    
+    return render_template('reperibilita_template_detail.html', 
+                         shifts=shifts,
+                         shifts_by_day=shifts_by_day,
+                         calendar_days=calendar_days,
+                         start_date=start_date,
+                         end_date=end_date,
+                         period_key=period_key)
+
+@reperibilita_bp.route('/replica/<period_key>', methods=['GET', 'POST'])
+@login_required
+@require_reperibilita_permissions
+def reperibilita_replica(period_key):
+    """Replica template reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per replicare i template di reperibilità', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    from forms import ReperibilitaReplicaForm
+    
+    # Decodifica period_key
+    start_date_str, end_date_str = period_key.split('_')
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    
+    form = ReperibilitaReplicaForm()
+    
+    if form.validate_on_submit():
+        
+        # Ottieni mappatura ruoli dal form
+        role_mapping = form.get_role_mapping_dict()
+        
+        # Trova le coperture originali
+        original_coverages = ReperibilitaCoverage.query.filter(
+            ReperibilitaCoverage.start_date == start_date,
+            ReperibilitaCoverage.end_date == end_date
+        ).all()
+        
+        if not original_coverages:
+            flash('Template di copertura originale non trovato', 'error')
+            return redirect(url_for('reperibilita.reperibilita_coverage'))
+        
+        # Verifica se esistono già coperture per informazione (non blocca la creazione)
+        existing_coverages = ReperibilitaCoverage.query.filter(
+            ReperibilitaCoverage.start_date == form.start_date.data,
+            ReperibilitaCoverage.end_date == form.end_date.data
+        ).all()
+        
+        # Replica le coperture con nuove date e ruoli modificati
+        new_coverages_count = 0
+        for original_coverage in original_coverages:
+            new_coverage = ReperibilitaCoverage()
+            new_coverage.day_of_week = original_coverage.day_of_week
+            new_coverage.start_time = original_coverage.start_time
+            new_coverage.end_time = original_coverage.end_time
+            new_coverage.description = original_coverage.description
+            new_coverage.active = original_coverage.active
+            new_coverage.start_date = form.start_date.data
+            new_coverage.end_date = form.end_date.data
+            new_coverage.created_by = current_user.id
+            
+            # Applica mappatura ruoli se specificata
+            original_roles = original_coverage.get_required_roles_list()
+            if role_mapping:
+                # Sostituisce i ruoli secondo la mappatura
+                new_roles = []
+                for role in original_roles:
+                    if role in role_mapping:
+                        new_roles.append(role_mapping[role])
+                    else:
+                        new_roles.append(role)  # Mantiene il ruolo originale se non mappato
+                new_coverage.set_required_roles_list(new_roles)
+            else:
+                # Mantiene i ruoli originali
+                new_coverage.set_required_roles_list(original_roles)
+            
+            # Gestisce il cambio di sede se specificato
+            if form.sede_id.data:
+                # Assegna la nuova sede specificata
+                new_coverage.set_sedi_ids_list([int(form.sede_id.data)])
+            else:
+                # Mantiene le sedi originali
+                new_coverage.set_sedi_ids_list(original_coverage.get_sedi_ids_list())
+            
+            db.session.add(new_coverage)
+            new_coverages_count += 1
+        
+        try:
+            db.session.commit()
+            
+            success_msg = f'Template reperibilità replicato con successo. Coperture create: {new_coverages_count}.'
+            if role_mapping:
+                success_msg += f' Ruoli sostituiti: {len(role_mapping)}.'
+            if form.sede_id.data:
+                from models import Sede
+                sede = Sede.query.get(int(form.sede_id.data))
+                success_msg += f' Sede cambiata in: {sede.name}.'
+            if existing_coverages:
+                success_msg += f' Aggiunte a {len(existing_coverages)} coperture esistenti.'
+            
+            flash(success_msg, 'success')
+            return redirect(url_for('reperibilita.reperibilita_coverage'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore durante la replica: {str(e)}', 'error')
+    
+    # Pre-popola le date originali come suggerimento
+    if request.method == 'GET':
+        form.start_date.data = start_date
+        form.end_date.data = end_date
+    
+    # Trova le coperture originali per mostrare informazioni nel template
+    original_coverages = ReperibilitaCoverage.query.filter(
+        ReperibilitaCoverage.start_date == start_date,
+        ReperibilitaCoverage.end_date == end_date
+    ).order_by(ReperibilitaCoverage.day_of_week, ReperibilitaCoverage.start_time).all()
+    
+    return render_template('reperibilita_replica.html', 
+                         form=form,
+                         original_coverages=original_coverages,
+                         start_date=start_date,
+                         end_date=end_date)
+
 # =============================================================================
 # INTERVENTION MANAGEMENT ROUTES
 # =============================================================================
@@ -334,14 +672,13 @@ def start_intervention():
         priority = 'Media'
     
     # Crea nuovo intervento
-    intervention = ReperibilitaIntervention(
-        user_id=current_user.id,
-        shift_id=shift_id,
-        start_datetime=italian_now(),
-        description=request.form.get('description', ''),
-        priority=priority,
-        is_remote=is_remote
-    )
+    intervention = ReperibilitaIntervention()
+    intervention.user_id = current_user.id
+    intervention.shift_id = shift_id
+    intervention.start_datetime = italian_now()
+    intervention.description = request.form.get('description', '')
+    intervention.priority = priority
+    intervention.is_remote = is_remote
     
     db.session.add(intervention)
     db.session.commit()
@@ -359,7 +696,6 @@ def end_intervention():
         return redirect(url_for('dashboard.dashboard'))
     
     # Trova l'intervento attivo
-    from models import ReperibilitaIntervention
     active_intervention = ReperibilitaIntervention.query.filter_by(
         user_id=current_user.id,
         end_datetime=None
@@ -383,3 +719,93 @@ def end_intervention():
         return redirect(url_for('dashboard.ente_home'))
     else:
         return redirect(url_for('reperibilita.reperibilita_shifts'))
+
+@reperibilita_bp.route('/shifts/regenerate/<int:template_id>', methods=['GET'])
+@login_required
+@require_reperibilita_permissions
+def regenerate_reperibilita_template(template_id):
+    """Rigenera turni reperibilità da template esistente"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per rigenerare turni di reperibilità', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    from models import ReperibilitaTemplate
+    from utils import generate_reperibilita_shifts
+    
+    # Trova il template esistente
+    template = ReperibilitaTemplate.query.get_or_404(template_id)
+    
+    try:
+        # Elimina turni esistenti nel periodo del template
+        existing_shifts = ReperibilitaShift.query.filter(
+            ReperibilitaShift.date >= template.start_date,
+            ReperibilitaShift.date <= template.end_date
+        ).all()
+        
+        for shift in existing_shifts:
+            db.session.delete(shift)
+        
+        # Rigenera turni con gli stessi parametri del template
+        shifts_created, warnings = generate_reperibilita_shifts(
+            template.start_date,
+            template.end_date,
+            current_user.id
+        )
+        
+        # Aggiorna la data di creazione del template
+        template.created_at = italian_now()
+        
+        db.session.commit()
+        
+        # Costruisci messaggio di successo
+        success_msg = f'Template "{template.name}" rigenerato con successo. Turni reperibilità generati: {shifts_created}.'
+        
+        if warnings:
+            if len(warnings) <= 3:
+                warning_text = " Attenzione: " + "; ".join(warnings)
+            else:
+                warning_text = f" Attenzione: {warnings[0]}; {warnings[1]}; {warnings[2]} e altri {len(warnings) - 3} avvisi."
+            success_msg += warning_text
+        
+        flash(success_msg, 'success' if not warnings else 'warning')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante la rigenerazione: {str(e)}', 'error')
+    
+    return redirect(url_for('reperibilita.reperibilita_shifts'))
+
+@reperibilita_bp.route('/template/delete/<template_id>')
+@login_required
+@require_reperibilita_permissions
+def delete_reperibilita_template(template_id):
+    """Elimina template reperibilità"""
+    if not current_user.can_manage_reperibilita():
+        flash('Non hai i permessi per eliminare template di reperibilità', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    from models import ReperibilitaTemplate
+    
+    template = ReperibilitaTemplate.query.get_or_404(template_id)
+    
+    try:
+        # Elimina tutti i turni del periodo del template
+        shifts = ReperibilitaShift.query.filter(
+            ReperibilitaShift.date >= template.start_date,
+            ReperibilitaShift.date <= template.end_date
+        ).all()
+        
+        for shift in shifts:
+            db.session.delete(shift)
+        
+        # Elimina il template
+        template_name = template.name
+        db.session.delete(template)
+        db.session.commit()
+        
+        flash(f'Template reperibilità "{template_name}" eliminato con successo', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
+    
+    return redirect(url_for('reperibilita.reperibilita_shifts'))

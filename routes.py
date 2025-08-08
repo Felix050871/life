@@ -1919,302 +1919,21 @@ def delete_leave(request_id):
 # HOLIDAY MANAGEMENT ROUTES
 # =============================================================================
 
-@app.route('/holidays')
-@login_required
-def holidays():
-    """Gestione festività"""
-    if not (current_user.can_manage_holidays() or current_user.can_view_holidays()):
-        flash('Non hai i permessi per accedere alle festività', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    from models import Holiday
-    holidays = Holiday.query.order_by(Holiday.month, Holiday.day).all()
-    return render_template('holidays.html', holidays=holidays)
+# ROUTE MOVED TO holidays_bp blueprint - holidays
 
-@app.route('/holidays/add', methods=['GET', 'POST'])
-@login_required
-def add_holiday():
-    """Aggiunta nuova festività"""
-    if not current_user.can_manage_holidays():
-        flash('Non hai i permessi per gestire le festività', 'danger')
-        return redirect(url_for('holidays'))
-    
-    from forms import HolidayForm
-    from models import Holiday
-    
-    form = HolidayForm()
-    
-    if form.validate_on_submit():
-        # Gestisci il campo sede_id correttamente
-        sede_id = form.sede_id.data if form.sede_id.data != '' else None
-        
-        # Controlla se esiste già una festività nello stesso giorno e stesso ambito
-        existing = Holiday.query.filter_by(
-            month=form.month.data,
-            day=form.day.data,
-            sede_id=sede_id,
-            active=True
-        ).first()
-        
-        if existing:
-            scope = existing.scope_display
-            flash(f'Esiste già una festività attiva il {form.day.data}/{form.month.data} per {scope}: {existing.name}', 'warning')
-        else:
-            holiday = Holiday(
-                name=form.name.data,
-                month=form.month.data,
-                day=form.day.data,
-                sede_id=sede_id,
-                description=form.description.data,
-                active=form.active.data,
-                created_by=current_user.id
-            )
-            
-            db.session.add(holiday)
-            db.session.commit()
-            
-            scope = holiday.scope_display
-            flash(f'Festività "{holiday.name}" aggiunta con successo per {scope}', 'success')
-            return redirect(url_for('holidays'))
-    
-    return render_template('add_holiday.html', form=form)
+# ROUTE MOVED TO holidays_bp blueprint - add_holiday
 
-@app.route('/holidays/edit/<int:holiday_id>', methods=['GET', 'POST'])
-@login_required
-def edit_holiday(holiday_id):
-    """Modifica festività esistente"""
-    if not current_user.can_manage_holidays():
-        flash('Non hai i permessi per gestire le festività', 'danger')
-        return redirect(url_for('holidays'))
-    
-    from forms import HolidayForm
-    from models import Holiday
-    
-    holiday = Holiday.query.get_or_404(holiday_id)
-    form = HolidayForm(obj=holiday)
-    
-    # Precompila il campo sede_id correttamente
-    if request.method == 'GET':
-        form.sede_id.data = holiday.sede_id
-    
-    if form.validate_on_submit():
-        # Gestisci il campo sede_id correttamente
-        sede_id = form.sede_id.data if form.sede_id.data != '' else None
-        
-        # Controlla se esiste già un'altra festività nello stesso giorno e stesso ambito
-        existing = Holiday.query.filter(
-            Holiday.month == form.month.data,
-            Holiday.day == form.day.data,
-            Holiday.sede_id == sede_id,
-            Holiday.active == True,
-            Holiday.id != holiday_id
-        ).first()
-        
-        if existing:
-            scope = existing.scope_display
-            flash(f'Esiste già una festività attiva il {form.day.data}/{form.month.data} per {scope}: {existing.name}', 'warning')
-        else:
-            holiday.name = form.name.data
-            holiday.month = form.month.data
-            holiday.day = form.day.data
-            holiday.sede_id = sede_id
-            holiday.description = form.description.data
-            holiday.active = form.active.data
-            
-            db.session.commit()
-            
-            scope = holiday.scope_display
-            flash(f'Festività "{holiday.name}" modificata con successo per {scope}', 'success')
-            return redirect(url_for('holidays'))
-    
-    return render_template('edit_holiday.html', form=form, holiday=holiday)
+# ROUTE MOVED TO holidays_bp blueprint - edit_holiday
 
-@app.route('/holidays/delete/<int:holiday_id>', methods=['POST'])
-@login_required
-def delete_holiday(holiday_id):
-    """Elimina festività"""
-    if not current_user.can_manage_holidays():
-        flash('Non hai i permessi per gestire le festività', 'danger')
-        return redirect(url_for('holidays'))
-    
-    from models import Holiday
-    
-    holiday = Holiday.query.get_or_404(holiday_id)
-    holiday_name = holiday.name
-    
-    db.session.delete(holiday)
-    db.session.commit()
-    
-    flash(f'Festività "{holiday_name}" eliminata con successo', 'success')
-    return redirect(url_for('holidays'))
+# ROUTE MOVED TO holidays_bp blueprint - delete_holiday
 
-@app.route('/holidays/generate', methods=['POST'])
-@login_required
-def generate_holidays():
-    """Genera automaticamente le festività nazionali italiane"""
-    if not current_user.can_manage_holidays():
-        flash('Non hai i permessi per gestire le festività', 'danger')
-        return redirect(url_for('holidays'))
-    
-    try:
-        from models import Holiday
-        
-        # Lista delle festività nazionali italiane
-        national_holidays = [
-            {'name': 'Capodanno', 'day': 1, 'month': 1, 'description': 'Primo giorno dell\'anno'},
-            {'name': 'Epifania', 'day': 6, 'month': 1, 'description': 'Festa dell\'Epifania'},
-            {'name': 'Festa della Liberazione', 'day': 25, 'month': 4, 'description': 'Liberazione d\'Italia'},
-            {'name': 'Festa del Lavoro', 'day': 1, 'month': 5, 'description': 'Festa dei Lavoratori'},
-            {'name': 'Festa della Repubblica', 'day': 2, 'month': 6, 'description': 'Festa della Repubblica Italiana'},
-            {'name': 'Ferragosto', 'day': 15, 'month': 8, 'description': 'Assunzione di Maria'},
-            {'name': 'Ognissanti', 'day': 1, 'month': 11, 'description': 'Festa di Tutti i Santi'},
-            {'name': 'Immacolata Concezione', 'day': 8, 'month': 12, 'description': 'Immacolata Concezione di Maria'},
-            {'name': 'Natale', 'day': 25, 'month': 12, 'description': 'Nascita di Gesù Cristo'},
-            {'name': 'Santo Stefano', 'day': 26, 'month': 12, 'description': 'Festa di Santo Stefano'}
-        ]
-        
-        added_holidays = 0
-        skipped_holidays = 0
-        
-        for holiday_data in national_holidays:
-            # Controlla se esiste già una festività nazionale nello stesso giorno
-            existing = Holiday.query.filter_by(
-                month=holiday_data['month'],
-                day=holiday_data['day'],
-                sede_id=None,  # Nazionale
-                active=True
-            ).first()
-            
-            if not existing:
-                holiday = Holiday(
-                    name=holiday_data['name'],
-                    month=holiday_data['month'],
-                    day=holiday_data['day'],
-                    sede_id=None,  # Nazionale
-                    description=holiday_data['description'],
-                    active=True,
-                    created_by=current_user.id
-                )
-                db.session.add(holiday)
-                added_holidays += 1
-            else:
-                skipped_holidays += 1
-        
-        db.session.commit()
-        
-        if added_holidays > 0:
-            flash(f'Operazione completata con successo! {added_holidays} festività aggiunte, {skipped_holidays} già esistenti.', 'success')
-        else:
-            flash(f'Tutte le {skipped_holidays} festività nazionali sono già presenti nel sistema.', 'info')
-        
-        return redirect(url_for('holidays'))
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Errore durante la generazione delle festività: {str(e)}', 'danger')
-        return redirect(url_for('holidays'))
+# ROUTE MOVED TO holidays_bp blueprint - generate_holidays
 
-@app.route('/change_password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    """Cambio password utente"""
-    from forms import ChangePasswordForm
-    from werkzeug.security import check_password_hash, generate_password_hash
-    
-    form = ChangePasswordForm()
-    
-    if form.validate_on_submit():
-        # Verifica password attuale
-        if not check_password_hash(current_user.password_hash, form.current_password.data):
-            flash('Password attuale non corretta', 'danger')
-            return render_template('change_password.html', form=form)
-        
-        # Aggiorna password
-        current_user.password_hash = generate_password_hash(form.new_password.data)
-        db.session.commit()
-        
-        flash('Password cambiata con successo', 'success')
-        return redirect(url_for('dashboard'))
-    
-    return render_template('change_password.html', form=form)
+# ROUTE MOVED TO auth_bp blueprint - change_password
 
-@app.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
-    """Richiesta reset password"""
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    
-    from forms import ForgotPasswordForm
-    from models import User, PasswordResetToken
-    import secrets
-    from datetime import timedelta
-    
-    form = ForgotPasswordForm()
-    
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user:
-            # Invalida token precedenti
-            old_tokens = PasswordResetToken.query.filter_by(user_id=user.id, used=False).all()
-            for token in old_tokens:
-                token.used = True
-            
-            # Crea nuovo token - salva in UTC per evitare problemi timezone
-            from datetime import datetime
-            reset_token = PasswordResetToken(
-                user_id=user.id,
-                token=secrets.token_urlsafe(32),
-                expires_at=datetime.utcnow() + timedelta(hours=1)  # Salva in UTC
-            )
-            
-            db.session.add(reset_token)
-            db.session.commit()
-            
-            # In una versione completa, qui invieresti l'email
-            # Per ora mostriamo il link direttamente
-            reset_url = url_for('reset_password', token=reset_token.token, _external=True)
-            flash(f'Link per il reset della password: {reset_url}', 'info')
-        else:
-            # Per sicurezza, non rivelare se l'email esiste o meno
-            flash('Se l\'email esiste nel sistema, riceverai un link per il reset della password', 'info')
-        
-        return redirect(url_for('auth.login'))
-    
-    return render_template('forgot_password.html', form=form)
+# ROUTE MOVED TO auth_bp blueprint - forgot_password
 
-@app.route('/reset_password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    """Reset password con token"""
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    
-    from forms import ResetPasswordForm
-    from models import PasswordResetToken
-    from werkzeug.security import generate_password_hash
-    
-    # Trova il token
-    reset_token = PasswordResetToken.query.filter_by(token=token).first()
-    
-
-    if not reset_token or not reset_token.is_valid:
-        flash('Token non valido o scaduto', 'danger')
-        return redirect(url_for('forgot_password'))
-    
-    form = ResetPasswordForm()
-    
-    if form.validate_on_submit():
-        # Aggiorna password
-        reset_token.user.password_hash = generate_password_hash(form.new_password.data)
-        
-        # Marca token come usato
-        reset_token.used = True
-        
-        db.session.commit()
-        
-        flash('Password reimpostata con successo. Puoi ora accedere con la nuova password', 'success')
-        return redirect(url_for('auth.login'))
-    
-    return render_template('reset_password.html', form=form, token=token)
+# ROUTE MOVED TO auth_bp blueprint - reset_password
 
 @app.errorhandler(404)
 def not_found_error(error):
@@ -2549,9 +2268,7 @@ def internal_error(error):
 # REPERIBILITÀ (ON-CALL) ROUTES
 # =============================================================================
 
-@app.route('/reperibilita_coverage')
-@require_login
-def reperibilita_coverage():
+# ROUTE MOVED TO reperibilita_bp blueprint - reperibilita_coverage
     """Lista coperture reperibilità"""
     if not current_user.can_access_reperibilita():
         flash('Non hai i permessi per visualizzare le coperture reperibilità', 'danger')
@@ -2595,9 +2312,7 @@ def reperibilita_coverage():
     
     return render_template('reperibilita_coverage.html', reperibilita_groups=reperibilita_groups)
 
-@app.route('/reperibilita_coverage/create', methods=['GET', 'POST'])
-@require_login
-def create_reperibilita_coverage():
+# ROUTE MOVED TO reperibilita_bp blueprint - create_reperibilita_coverage
     """Crea nuova copertura reperibilità"""
     if not current_user.can_manage_reperibilita():
         flash('Non hai i permessi per creare coperture reperibilità', 'danger')
@@ -2639,9 +2354,7 @@ def create_reperibilita_coverage():
     
     return render_template('create_reperibilita_coverage.html', form=form)
 
-@app.route('/reperibilita_coverage/edit/<int:coverage_id>', methods=['GET', 'POST'])
-@require_login
-def edit_reperibilita_coverage(coverage_id):
+# ROUTE MOVED TO reperibilita_bp blueprint - edit_reperibilita_coverage
     """Modifica copertura reperibilità"""
     if not current_user.can_manage_reperibilita():
         flash('Non hai i permessi per modificare coperture reperibilità', 'danger')
@@ -2684,9 +2397,7 @@ def edit_reperibilita_coverage(coverage_id):
     
     return render_template('edit_reperibilita_coverage.html', form=form, coverage=coverage)
 
-@app.route('/reperibilita_coverage/delete/<int:coverage_id>', methods=['GET'])
-@require_login
-def delete_reperibilita_coverage(coverage_id):
+# ROUTE MOVED TO reperibilita_bp blueprint - delete_reperibilita_coverage
     """Elimina copertura reperibilità"""
     if not current_user.can_manage_reperibilita():
         flash('Non hai i permessi per eliminare coperture reperibilità', 'danger')
@@ -2706,9 +2417,7 @@ def delete_reperibilita_coverage(coverage_id):
     
     return redirect(url_for('reperibilita_coverage'))
 
-@app.route('/reperibilita_coverage/view/<period_key>')
-@require_login
-def view_reperibilita_coverage(period_key):
+# ROUTE MOVED TO reperibilita_bp blueprint - view_reperibilita_coverage
     """Visualizza dettagli coperture reperibilità per un periodo"""
     if not current_user.can_access_reperibilita():
         flash('Non hai i permessi per visualizzare coperture reperibilità', 'danger')
@@ -2737,9 +2446,7 @@ def view_reperibilita_coverage(period_key):
                          end_date=end_date,
                          period_key=period_key)
 
-@app.route('/reperibilita_coverage/delete_period/<period_key>')
-@require_login  
-def delete_reperibilita_period(period_key):
+# ROUTE MOVED TO reperibilita_bp blueprint - delete_reperibilita_period
     """Elimina tutte le coperture reperibilità di un periodo"""
     if not current_user.can_manage_reperibilita():
         flash('Non hai i permessi per eliminare periodi reperibilità', 'danger')
@@ -2932,9 +2639,7 @@ def reperibilita_shifts():
                          view_mode=view_mode,
                          display_mode=display_mode)
 
-@app.route('/reperibilita_template/<start_date>/<end_date>')
-@require_login
-def reperibilita_template_detail(start_date, end_date):
+# ROUTE MOVED TO reperibilita_bp blueprint - reperibilita_template_detail
     """Mostra dettaglio template reperibilità (come shift_template_detail)"""
     from models import ReperibilitaShift
     from datetime import datetime
@@ -2978,9 +2683,7 @@ def reperibilita_template_detail(start_date, end_date):
                          end_date=end_date,
                          period_key=period_key)
 
-@app.route('/reperibilita_replica/<period_key>', methods=['GET', 'POST'])
-@require_login
-def reperibilita_replica(period_key):
+# ROUTE MOVED TO reperibilita_bp blueprint - reperibilita_replica
     """Replica template reperibilità"""
     if not current_user.can_manage_reperibilita():
         flash('Non hai i permessi per replicare i template di reperibilità', 'danger')
@@ -3167,9 +2870,7 @@ def reperibilita_replica(period_key):
     
     return render_template('generate_reperibilita_shifts.html', form=form)
 
-@app.route('/reperibilita_shifts/regenerate/<int:template_id>', methods=['GET'])
-@require_login
-def regenerate_reperibilita_template(template_id):
+# ROUTE MOVED TO reperibilita_bp blueprint - regenerate_reperibilita_template
     """Rigenera turni reperibilità da template esistente"""
     if not current_user.can_manage_reperibilita():
         flash('Non hai i permessi per rigenerare turni di reperibilità', 'danger')
@@ -3221,9 +2922,7 @@ def regenerate_reperibilita_template(template_id):
     
     return redirect(url_for('reperibilita_shifts'))
 
-@app.route('/start-intervention', methods=['POST'])
-@login_required
-def start_intervention():
+# ROUTE MOVED TO reperibilita_bp blueprint - start_intervention
     """Inizia un intervento di reperibilità"""
     if current_user.role not in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
         flash('Non hai i permessi per registrare interventi di reperibilità.', 'danger')
@@ -3268,9 +2967,7 @@ def start_intervention():
     flash('Intervento di reperibilità iniziato con successo.', 'success')
     return redirect(url_for('reperibilita_shifts'))
 
-@app.route('/end-intervention', methods=['POST'])
-@login_required
-def end_intervention():
+# ROUTE MOVED TO reperibilita_bp blueprint - end_intervention
     """Termina un intervento di reperibilità"""
     if current_user.role not in ['Management', 'Operatore', 'Redattore', 'Sviluppatore']:
         flash('Non hai i permessi per registrare interventi di reperibilità.', 'danger')
@@ -3300,9 +2997,7 @@ def end_intervention():
     else:
         return redirect(url_for('reperibilita_shifts'))
 
-@app.route('/reperibilita_template/delete/<template_id>')
-@require_login
-def delete_reperibilita_template(template_id):
+# ROUTE MOVED TO reperibilita_bp blueprint - delete_reperibilita_template
     """Elimina un template reperibilità e tutti i suoi turni"""
     if not current_user.can_manage_reperibilita():
         flash('Non hai i permessi per eliminare template di reperibilità', 'danger')
@@ -5643,313 +5338,15 @@ def api_roles():
 # NUOVO SISTEMA TURNI - 3 FUNZIONALITÀ
 # =====================================
 
-@app.route("/manage_coverage")
-@login_required
-def manage_coverage():
-    """Gestione Coperture - Sistema completo basato su template"""
-    if not current_user.can_manage_coverage():
-        flash("Non hai i permessi per gestire le coperture", "danger")
-        return redirect(url_for("dashboard"))
-    
-    # Reindirizza alla nuova pagina del sistema presidio completo
-    return redirect(url_for('presidio_coverage'))
+# ROUTE MOVED TO presidio_bp blueprint - manage_coverage
 
-@app.route("/view_presidio_coverage/<period_key>")
-@login_required
-def view_presidio_coverage(period_key):
-    """Visualizza dettagli template copertura presidio"""
-    if not current_user.can_view_coverage():
-        flash("Non hai i permessi per visualizzare le coperture", "danger")
-        return redirect(url_for("dashboard"))
-    
-    from models import PresidioCoverage
-    from datetime import datetime
-    
-    try:
-        # Decodifica period_key per ottenere le date
-        start_str, end_str = period_key.split('-')
-        start_date = datetime.strptime(start_str, '%Y%m%d').date()
-        end_date = datetime.strptime(end_str, '%Y%m%d').date()
-    except (ValueError, AttributeError):
-        flash('Periodo non valido specificato', 'danger')
-        return redirect(url_for('manage_coverage'))
-    
-    # Ottieni tutte le coperture del template
-    coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.start_date == start_date,
-        PresidioCoverage.end_date == end_date,
-        PresidioCoverage.active == True
-    ).order_by(PresidioCoverage.day_of_week, PresidioCoverage.start_time).all()
-    
-    if not coverages:
-        flash('Template di copertura non trovato', 'danger')
-        return redirect(url_for('manage_coverage'))
-    
-    return render_template("view_presidio_coverage.html",
-                         coverages=coverages,
-                         start_date=start_date,
-                         end_date=end_date,
-                         period_key=period_key)
+# ROUTE MOVED TO presidio_bp blueprint - view_presidio_coverage
 
-@app.route("/edit_presidio_coverage/<period_key>", methods=['GET', 'POST'])
-@login_required
-def edit_presidio_coverage(period_key):
-    """Modifica template copertura presidio"""
-    if not current_user.can_manage_coverage():
-        flash("Non hai i permessi per modificare le coperture", "danger")
-        return redirect(url_for("dashboard"))
-    
-    from models import PresidioCoverage
-    from datetime import datetime
-    
-    try:
-        # Decodifica period_key per ottenere le date
-        start_str, end_str = period_key.split('-')
-        start_date = datetime.strptime(start_str, '%Y%m%d').date()
-        end_date = datetime.strptime(end_str, '%Y%m%d').date()
-    except (ValueError, AttributeError):
-        flash('Periodo non valido specificato', 'danger')
-        return redirect(url_for('manage_coverage'))
-    
-    # Ottieni tutte le coperture del template
-    coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.start_date == start_date,
-        PresidioCoverage.end_date == end_date
-    ).order_by(PresidioCoverage.day_of_week, PresidioCoverage.start_time).all()
-    
-    if not coverages:
-        flash('Template di copertura non trovato', 'danger')
-        return redirect(url_for('manage_coverage'))
-    
-    # Gestisce POST per salvare le modifiche
-    if request.method == 'POST':
-        try:
-            success_count = 0
-            error_count = 0
-            
-            for coverage in coverages:
-                coverage_id = coverage.id
-                
-                # Controlla se deve essere eliminata
-                if request.form.get(f'coverage_{coverage_id}_delete'):
-                    db.session.delete(coverage)
-                    success_count += 1
-                    continue
-                
-                # Aggiorna i campi
-                start_time_str = request.form.get(f'coverage_{coverage_id}_start_time')
-                end_time_str = request.form.get(f'coverage_{coverage_id}_end_time')
-                break_start_str = request.form.get(f'coverage_{coverage_id}_break_start_time')
-                break_end_str = request.form.get(f'coverage_{coverage_id}_break_end_time')
-                roles_str = request.form.get(f'coverage_{coverage_id}_roles')
-                description = request.form.get(f'coverage_{coverage_id}_description')
-                active_status = request.form.get(f'coverage_{coverage_id}_active') == '1'
-                
-                if start_time_str and end_time_str and roles_str:
-                    coverage.start_time = datetime.strptime(start_time_str, '%H:%M').time()
-                    coverage.end_time = datetime.strptime(end_time_str, '%H:%M').time()
-                    
-                    # Gestione pause opzionali
-                    if break_start_str and break_end_str:
-                        coverage.break_start_time = datetime.strptime(break_start_str, '%H:%M').time()
-                        coverage.break_end_time = datetime.strptime(break_end_str, '%H:%M').time()
-                    else:
-                        coverage.break_start_time = None
-                        coverage.break_end_time = None
-                    
-                    # Parsing ruoli - supporta formato "Operatore, 2 Tecnico"
-                    roles_dict = {}
-                    for role_part in roles_str.split(','):
-                        role_part = role_part.strip()
-                        # Cerca pattern "numero ruolo" o solo "ruolo"
-                        parts = role_part.split()
-                        if len(parts) >= 2 and parts[0].isdigit():
-                            count = int(parts[0])
-                            role_name = ' '.join(parts[1:])
-                        elif len(parts) >= 2 and parts[-1].isdigit():
-                            count = int(parts[-1])
-                            role_name = ' '.join(parts[:-1])
-                        else:
-                            count = 1
-                            role_name = role_part
-                        
-                        if role_name:
-                            roles_dict[role_name] = count
-                    
-                    coverage.set_required_roles_dict(roles_dict)
-                    coverage.description = description.strip() if description else None
-                    coverage.active = active_status
-                    success_count += 1
-                else:
-                    error_count += 1
-            
-            db.session.commit()
-            
-            if error_count == 0:
-                flash(f'Template aggiornato con successo! {success_count} coperture modificate.', 'success')
-            else:
-                flash(f'Template parzialmente aggiornato: {success_count} successi, {error_count} errori.', 'warning')
-                
-            return redirect(url_for('view_presidio_coverage', period_key=period_key))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Errore durante il salvataggio: {str(e)}', 'danger')
-    
-    # Ottieni ruoli disponibili per la selezione
-    from models import UserRole
-    available_roles = UserRole.query.filter(UserRole.active == True).all()
-    roles_data = [{'name': role.name, 'display_name': role.display_name} for role in available_roles]
-    
-    return render_template("edit_presidio_coverage.html",
-                         coverages=coverages,
-                         start_date=start_date,
-                         end_date=end_date,
-                         period_key=period_key,
-                         available_roles=roles_data)
+# ROUTE MOVED TO presidio_bp blueprint - edit_presidio_coverage
 
-@app.route('/admin/coverage/presidio/create', methods=['GET', 'POST'])
-@login_required
-def create_presidio_coverage():
-    """Crea un nuovo template di copertura presidio"""
-    if not current_user.has_permission('can_manage_coverage'):
-        flash('Non hai i permessi per creare coperture', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        try:
-            # Ottieni dati dal form
-            start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
-            end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date()
-            description = request.form.get('description', '')
-            active_status = request.form.get('active') == 'on'
-            
-            # Validazione date
-            if start_date >= end_date:
-                flash('La data di fine deve essere successiva alla data di inizio', 'danger')
-                return render_template('create_presidio_coverage.html')
-            
-            # Verifica sovrapposizioni
-            existing = PresidioCoverage.query.filter(
-                db.or_(
-                    db.and_(PresidioCoverage.start_date <= start_date, PresidioCoverage.end_date >= start_date),
-                    db.and_(PresidioCoverage.start_date <= end_date, PresidioCoverage.end_date >= end_date),
-                    db.and_(PresidioCoverage.start_date >= start_date, PresidioCoverage.end_date <= end_date)
-                )
-            ).first()
-            
-            if existing:
-                flash(f'Esiste già una copertura per il periodo {existing.start_date.strftime("%d/%m/%Y")} - {existing.end_date.strftime("%d/%m/%Y")}', 'danger')
-                return render_template('create_presidio_coverage.html')
-            
-            # Crea template base per ogni giorno del periodo
-            current_date = start_date
-            template_count = 0
-            
-            while current_date <= end_date:
-                coverage = PresidioCoverage(
-                    date=current_date,
-                    start_date=start_date,
-                    end_date=end_date,
-                    start_time=time(8, 0),  # Default 08:00
-                    end_time=time(17, 0),   # Default 17:00
-                    break_start_time=time(12, 0),  # Default 12:00
-                    break_end_time=time(13, 0),    # Default 13:00
-                    required_roles='Operatore',
-                    description=description,
-                    active=active_status
-                )
-                db.session.add(coverage)
-                template_count += 1
-                current_date += timedelta(days=1)
-            
-            db.session.commit()
-            flash(f'Template di copertura creato con successo per {template_count} giorni', 'success')
-            return redirect(url_for('manage_coverage'))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Errore durante la creazione: {str(e)}', 'danger')
-    
-    return render_template('create_presidio_coverage.html')
+# ROUTE MOVED TO presidio_bp blueprint - create_presidio_coverage
 
-@app.route('/admin/coverage/presidio/generate/<period_key>')
-@login_required
-def generate_turnazioni_coverage(period_key):
-    """Genera/Rigenera turnazioni per una copertura presidio"""
-    if not current_user.has_permission('can_manage_coverage'):
-        flash('Non hai i permessi per generare turni', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    try:
-        # Parse period_key (formato: YYYYMMDD-YYYYMMDD)
-        start_str, end_str = period_key.split('-')
-        start_date = datetime.strptime(start_str, '%Y%m%d').date()
-        end_date = datetime.strptime(end_str, '%Y%m%d').date()
-        
-        # Trova le coperture per il periodo
-        coverages = PresidioCoverage.query.filter(
-            PresidioCoverage.start_date == start_date,
-            PresidioCoverage.end_date == end_date
-        ).all()
-        
-        if not coverages:
-            flash('Nessun template di copertura trovato per il periodo specificato', 'danger')
-            return redirect(url_for('manage_coverage'))
-        
-        # Elimina turni esistenti per il periodo
-        from models import Shift
-        existing_shifts = Shift.query.filter(
-            Shift.date >= start_date,
-            Shift.date <= end_date
-        ).all()
-        
-        for shift in existing_shifts:
-            db.session.delete(shift)
-        
-        # Genera nuovi turni basati sui template
-        shifts_created = 0
-        for coverage in coverages:
-            if coverage.active:
-                # Parse ruoli richiesti
-                roles_needed = []
-                if coverage.required_roles:
-                    parts = coverage.required_roles.split(',')
-                    for part in parts:
-                        part = part.strip()
-                        # Gestisce formato "2 Operatore" o "Operatore"
-                        match = re.match(r'^(\d+)\s+(.+)$', part) or re.match(r'^(.+)\s+(\d+)$', part)
-                        if match:
-                            first, second = match.groups()
-                            if first.isdigit():
-                                count, role = int(first), second
-                            else:
-                                role, count = first, int(second)
-                        else:
-                            role, count = part, 1
-                        
-                        roles_needed.extend([role] * count)
-                
-                # Crea turni per ogni ruolo necessario
-                for role in roles_needed:
-                    shift = Shift(
-                        date=coverage.date,
-                        start_time=coverage.start_time,
-                        end_time=coverage.end_time,
-                        shift_type='presidio',
-                        created_by=current_user.id
-                    )
-                    db.session.add(shift)
-                    shifts_created += 1
-        
-        db.session.commit()
-        flash(f'Generati {shifts_created} turni per il periodo {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Errore durante la generazione turni: {str(e)}', 'danger')
-    
-    return redirect(url_for('manage_coverage'))
+# ROUTE MOVED TO presidio_bp blueprint - generate_turnazioni_coverage
 
 @app.route("/view_coverage_templates")
 @login_required  
@@ -6299,216 +5696,21 @@ def toggle_presidio_template_status(template_id):
         'message': f'Template {"attivato" if new_status else "disattivato"} con successo'
     })
 
-@app.route('/presidio_coverage/delete/<int:template_id>', methods=['POST'])
-@login_required
-def delete_presidio_template(template_id):
-    """Elimina template presidio (soft delete)"""
-    if not current_user.can_manage_shifts():
-        return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
-    
-    template = PresidioCoverageTemplate.query.get_or_404(template_id)
-    
-    # Soft delete del template e di tutte le coperture
-    template.active = False
-    coverages_count = 0
-    for coverage in template.coverages:
-        coverage.active = False
-        coverages_count += 1
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': f'Template "{template.name}" eliminato ({coverages_count} coperture)'
-    })
+# ROUTE MOVED TO presidio_bp blueprint - delete_presidio_template
 
-@app.route('/presidio_coverage/duplicate/<int:template_id>', methods=['POST'])
-@login_required
-def duplicate_presidio_template(template_id):
-    """Duplica template presidio con tutte le coperture"""
-    if not current_user.can_manage_shifts():
-        return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
-    
-    source_template = PresidioCoverageTemplate.query.get_or_404(template_id)
-    
-    # Crea nuovo template
-    new_template = PresidioCoverageTemplate(
-        name=f"{source_template.name} (Copia)",
-        start_date=source_template.start_date,
-        end_date=source_template.end_date,
-        description=f"Copia di: {source_template.description}" if source_template.description else None,
-        created_by=current_user.id
-    )
-    db.session.add(new_template)
-    db.session.flush()  # Per ottenere l'ID
-    
-    # Duplica tutte le coperture
-    coverages_count = 0
-    for coverage in source_template.coverages.filter_by(active=True):
-        new_coverage = PresidioCoverage(
-            template_id=new_template.id,
-            day_of_week=coverage.day_of_week,
-            start_time=coverage.start_time,
-            end_time=coverage.end_time,
-            required_roles=coverage.required_roles,
-            role_count=coverage.role_count,
-            description=coverage.description,
-            sede_id=coverage.sede_id,
-            shift_type=coverage.shift_type
-        )
-        db.session.add(new_coverage)
-        coverages_count += 1
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': f'Template duplicato come "{new_template.name}" ({coverages_count} coperture)',
-        'new_template_id': new_template.id
-    })
+# ROUTE MOVED TO presidio_bp blueprint - duplicate_presidio_template
 
 # ============ FUNZIONI UTILITÀ PRESIDIO ============
 
-def get_presidio_coverage_for_period(start_date, end_date):
-    """Ottieni coperture presidio valide per un periodo"""
-    templates = PresidioCoverageTemplate.query.filter(
-        PresidioCoverageTemplate.active == True,
-        PresidioCoverageTemplate.start_date <= end_date,
-        PresidioCoverageTemplate.end_date >= start_date
-    ).all()
-    
-    all_coverages = []
-    for template in templates:
-        for coverage in template.coverages.filter_by(active=True):
-            all_coverages.append(coverage)
-    
-    return all_coverages
+# FUNCTION MOVED TO presidio_bp blueprint - get_presidio_coverage_for_period
 
-def get_required_roles_for_day_time(day_of_week, time_slot):
-    """Ottieni ruoli richiesti per un giorno e orario specifico"""
-    from datetime import datetime, time
-    if isinstance(time_slot, str):
-        time_slot = datetime.strptime(time_slot, '%H:%M').time()
-    
-    coverages = PresidioCoverage.query.filter(
-        PresidioCoverage.active == True,
-        PresidioCoverage.day_of_week == day_of_week,
-        PresidioCoverage.start_time <= time_slot,
-        PresidioCoverage.end_time > time_slot
-    ).all()
-    
-    required_roles = set()
-    for coverage in coverages:
-        required_roles.update(coverage.get_required_roles())
-    
-    return list(required_roles)
+# FUNCTION MOVED TO presidio_bp blueprint - get_required_roles_for_day_time
 
-def get_active_presidio_templates():
-    """Ottieni tutti i template presidio attivi ordinati per data"""
-    return PresidioCoverageTemplate.query.filter_by(active=True).order_by(
-        PresidioCoverageTemplate.start_date.desc()
-    ).all()
+# FUNCTION MOVED TO presidio_bp blueprint - get_active_presidio_templates
 
-def create_presidio_shift_from_template(template, target_week_start, users_by_role):
-    """
-    Crea turni presidio da template per una settimana specifica
-    Args:
-        template: PresidioCoverageTemplate
-        target_week_start: data inizio settimana (date)
-        users_by_role: dict {role_name: [User objects]}
-    Returns:
-        dict con risultati creazione turni
-    """
-    from datetime import timedelta
-    
-    created_shifts = []
-    errors = []
-    
-    for coverage in template.coverages.filter_by(active=True):
-        # Calcola la data specifica per il giorno della settimana
-        target_date = target_week_start + timedelta(days=coverage.day_of_week)
-        
-        # Ottieni utenti disponibili per i ruoli richiesti
-        required_roles = coverage.get_required_roles()
-        available_users = []
-        
-        for role in required_roles:
-            if role in users_by_role:
-                available_users.extend(users_by_role[role])
-        
-        if len(available_users) < coverage.role_count:
-            errors.append(f"Utenti insufficienti per {coverage.get_day_name()} {coverage.get_time_range()}: richiesti {coverage.role_count}, disponibili {len(available_users)}")
-            continue
-        
-        # Seleziona utenti per il turno (semplice: primi N disponibili)
-        selected_users = available_users[:coverage.role_count]
-        
-        # Crea turni per ogni utente selezionato
-        for user in selected_users:
-            # Verifica sovrapposizioni esistenti
-            existing_shift = Shift.query.filter(
-                Shift.user_id == user.id,
-                Shift.date == target_date,
-                Shift.start_time < coverage.end_time,
-                Shift.end_time > coverage.start_time
-            ).first()
-            
-            if existing_shift:
-                errors.append(f"Sovrapposizione per {user.get_full_name()} il {target_date.strftime('%d/%m/%Y')}")
-                continue
-            
-            # Crea il turno
-            shift = Shift(
-                user_id=user.id,
-                date=target_date,
-                start_time=coverage.start_time,
-                end_time=coverage.end_time,
-                shift_type='presidio',
-                created_by=created_by_id
-            )
-            
-            db.session.add(shift)
-            created_shifts.append(shift)
-    
-    try:
-        db.session.commit()
-        return {
-            'success': True,
-            'created_count': len(created_shifts),
-            'errors': errors,
-            'shifts': created_shifts
-        }
-    except Exception as e:
-        db.session.rollback()
-        return {
-            'success': False,
-            'error': str(e),
-            'created_count': 0,
-            'errors': errors + [f"Errore database: {str(e)}"]
-        }
+# FUNCTION MOVED TO presidio_bp blueprint - create_presidio_shift_from_template
 
-@app.route('/delete_presidio_coverage/<int:coverage_id>', methods=['POST'])
-@login_required
-def delete_presidio_coverage(coverage_id):
-    """Elimina singola copertura presidio"""
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per eliminare coperture presidio', 'danger')
-        return redirect(url_for('presidio_coverage'))
-    
-    coverage = PresidioCoverage.query.get_or_404(coverage_id)
-    template_id = coverage.template_id
-    
-    # Controllo di sicurezza
-    if coverage.created_by != current_user.id and not current_user.has_role('Amministratore'):
-        flash('Puoi eliminare solo coperture che hai creato', 'danger')
-        return redirect(url_for('presidio_coverage_edit', template_id=template_id))
-    
-    # Disattiva invece di eliminare
-    coverage.active = False
-    db.session.commit()
-    
-    flash('Copertura eliminata con successo', 'success')
-    return redirect(url_for('presidio_coverage_edit', template_id=template_id))
+# ROUTE MOVED TO presidio_bp blueprint - delete_presidio_coverage
 
 # =============================================================================
 # EXPENSE MANAGEMENT ROUTES

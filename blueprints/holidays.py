@@ -23,7 +23,7 @@ def holidays():
         flash('Non hai i permessi per gestire le festività.', 'danger')
         return redirect(url_for('dashboard'))
     
-    holidays = Holiday.query.order_by(Holiday.date.desc()).all()
+    holidays = Holiday.query.order_by(Holiday.month.desc(), Holiday.day.desc()).all()
     return render_template('holidays.html', holidays=holidays)
 
 @holidays_bp.route('/add', methods=['GET', 'POST'])
@@ -36,19 +36,29 @@ def add_holiday():
     
     form = HolidayForm()
     if form.validate_on_submit():
-        # Check if holiday already exists for this date
-        existing = Holiday.query.filter_by(date=form.date.data).first()
+        # Check if holiday already exists for this month/day and scope
+        sede_id = form.sede_id.data if form.sede_id.data else None
+        existing = Holiday.query.filter_by(
+            month=form.month.data,
+            day=form.day.data,
+            sede_id=sede_id,
+            active=True
+        ).first()
+        
         if existing:
-            flash('Esiste già una festività per questa data.', 'warning')
+            scope = existing.scope_display if hasattr(existing, 'scope_display') else ('Nazionale' if existing.sede_id is None else f'Sede {existing.sede_id}')
+            flash(f'Esiste già una festività attiva il {form.day.data}/{form.month.data} per {scope}: {existing.name}', 'warning')
             return render_template('add_holiday.html', form=form)
         
-        holiday = Holiday(
-            name=form.name.data,
-            date=form.date.data,
-            is_national=form.is_national.data,
-            created_by=current_user.id,
-            created_at=italian_now()
-        )
+        holiday = Holiday()
+        holiday.name = form.name.data
+        holiday.month = form.month.data
+        holiday.day = form.day.data
+        holiday.sede_id = sede_id
+        holiday.description = form.description.data
+        holiday.active = form.active.data
+        holiday.created_by = current_user.id
+        holiday.created_at = italian_now()
         
         db.session.add(holiday)
         db.session.commit()
@@ -69,20 +79,27 @@ def edit_holiday(holiday_id):
     form = HolidayForm(obj=holiday)
     
     if form.validate_on_submit():
-        # Check if another holiday exists for this date (excluding current)
+        # Check if another holiday exists for this month/day and scope (excluding current)
+        sede_id = form.sede_id.data if form.sede_id.data else None
         existing = Holiday.query.filter(
-            Holiday.date == form.date.data,
+            Holiday.month == form.month.data,
+            Holiday.day == form.day.data,
+            Holiday.sede_id == sede_id,
+            Holiday.active == True,
             Holiday.id != holiday_id
         ).first()
         
         if existing:
-            flash('Esiste già una festività per questa data.', 'warning')
+            scope = existing.scope_display if hasattr(existing, 'scope_display') else ('Nazionale' if existing.sede_id is None else f'Sede {existing.sede_id}')
+            flash(f'Esiste già una festività attiva il {form.day.data}/{form.month.data} per {scope}: {existing.name}', 'warning')
             return render_template('edit_holiday.html', form=form, holiday=holiday)
         
         holiday.name = form.name.data
-        holiday.date = form.date.data
-        holiday.is_national = form.is_national.data
-        holiday.updated_at = italian_now()
+        holiday.month = form.month.data
+        holiday.day = form.day.data
+        holiday.sede_id = sede_id
+        holiday.description = form.description.data
+        holiday.active = form.active.data
         
         db.session.commit()
         flash(f'Festività "{holiday.name}" aggiornata con successo.', 'success')
@@ -141,19 +158,26 @@ def api_generate_holidays():
         for name, date_str in standard_holidays:
             holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             
-            # Check if holiday already exists
-            existing = Holiday.query.filter_by(date=holiday_date).first()
+            # Check if holiday already exists (national holiday with same month/day)
+            existing = Holiday.query.filter_by(
+                month=holiday_date.month,
+                day=holiday_date.day,
+                sede_id=None,  # National holiday
+                active=True
+            ).first()
             if existing:
                 skipped_count += 1
                 continue
             
-            holiday = Holiday(
-                name=name,
-                date=holiday_date,
-                is_national=True,
-                created_by=current_user.id,
-                created_at=italian_now()
-            )
+            holiday = Holiday()
+            holiday.name = name
+            holiday.month = holiday_date.month
+            holiday.day = holiday_date.day
+            holiday.sede_id = None  # National holiday
+            holiday.description = 'Festività nazionale'
+            holiday.active = True
+            holiday.created_by = current_user.id
+            holiday.created_at = italian_now()
             
             db.session.add(holiday)
             created_count += 1
