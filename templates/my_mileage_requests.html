@@ -11,7 +11,7 @@
         </h1>
         <div>
             {% if current_user.can_create_mileage_requests() and current_user.aci_vehicle_id %}
-                <a href="{{ url_for('create_mileage_request') }}" class="btn btn-primary">
+                <a href="{{ url_for('expense.create_mileage_request') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-1"></i>Nuova Richiesta
                 </a>
             {% elif current_user.can_create_mileage_requests() and not current_user.aci_vehicle_id %}
@@ -20,7 +20,7 @@
                 </span>
             {% endif %}
             {% if current_user.can_view_mileage_requests() %}
-                <a href="{{ url_for('mileage_requests') }}" class="btn btn-outline-secondary ms-2">
+                <a href="{{ url_for('expense.mileage_requests') }}" class="btn btn-outline-secondary ms-2">
                     <i class="fas fa-list me-1"></i>Tutte le Richieste
                 </a>
             {% endif %}
@@ -228,7 +228,7 @@
                         Inizia a creare le tue richieste per i viaggi di lavoro e ottieni i rimborsi chilometrici.
                     </p>
                     {% if current_user.can_create_mileage_requests() %}
-                        <a href="{{ url_for('create_mileage_request') }}" class="btn btn-primary btn-lg">
+                        <a href="{{ url_for('expense.create_mileage_request') }}" class="btn btn-primary btn-lg">
                             <i class="fas fa-plus me-2"></i>Crea Prima Richiesta
                         </a>
                     {% endif %}

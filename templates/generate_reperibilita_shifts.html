@@ -81,10 +81,10 @@
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('reperibilita_shifts') }}" class="btn btn-secondary">
+                            <a href="{{ url_for('reperibilita.reperibilita_shifts') }}" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left"></i> Annulla
                             </a>
-                            <a href="{{ url_for('reperibilita_coverage') }}" class="btn btn-outline-info">
+                            <a href="{{ url_for('reperibilita.reperibilita_coverage') }}" class="btn btn-outline-info">
                                 <i class="fas fa-cog"></i> Gestisci Coperture
                             </a>
                             {{ form.submit(class="btn btn-primary") }}

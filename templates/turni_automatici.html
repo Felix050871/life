@@ -97,7 +97,7 @@
                 </div>
                 <div class="card-body">
                     {% if presidio_templates %}
-                    <form method="POST" action="{{ url_for('genera_turni_da_template') }}" class="row g-3 align-items-end">
+                    <form method="POST" action="{{ url_for('shifts.genera_turni_da_template') }}" class="row g-3 align-items-end">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="col-md-8">
                             <label for="template_id" class="form-label">Seleziona Template Presidio</label>
@@ -127,7 +127,7 @@
                         <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                         <h5 class="text-warning">Nessun template disponibile</h5>
                         <p class="text-muted">Non ci sono template presidio attivi. Creane uno dalla sezione "Gestione Presidi".</p>
-                        <a href="{{ url_for('presidio_coverage') }}" class="btn btn-primary">
+                        <a href="{{ url_for('presidio.presidio_coverage') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i>Crea Template
                         </a>
                     </div>

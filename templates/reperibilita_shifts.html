@@ -141,7 +141,7 @@
                 <div class="row mb-3">
                     <div class="col-md-3">
                         <div class="btn-group btn-group-sm w-100" role="group">
-                            <a href="{{ url_for('reperibilita_shifts', view=view_mode, period='week', display=display_mode) }}" 
+                            <a href="{{ url_for('reperibilita.reperibilita_shifts', view=view_mode, period='week', display=display_mode) }}" 
                                class="btn btn-outline-secondary {% if period_mode == 'week' %}active{% endif %}">
                                 Settimana
                             </a>
@@ -154,11 +154,11 @@
                     
                     <div class="col-md-3">
                         <div class="btn-group btn-group-sm w-100" role="group">
-                            <a href="{{ url_for('reperibilita_shifts', view=view_mode, period=period_mode, display='table') }}" 
+                            <a href="{{ url_for('reperibilita.reperibilita_shifts', view=view_mode, period=period_mode, display='table') }}" 
                                class="btn btn-outline-secondary {% if display_mode == 'table' %}active{% endif %}">
                                 <i class="fas fa-list"></i> Tabella
                             </a>
-                            <a href="{{ url_for('reperibilita_shifts', view=view_mode, period=period_mode, display='calendar') }}" 
+                            <a href="{{ url_for('reperibilita.reperibilita_shifts', view=view_mode, period=period_mode, display='calendar') }}" 
                                class="btn btn-outline-secondary {% if display_mode == 'calendar' %}active{% endif %}">
                                 <i class="fas fa-calendar"></i> Calendario
                             </a>

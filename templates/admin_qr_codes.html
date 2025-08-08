@@ -55,7 +55,7 @@
             {% if qr_exist %}
                 <i class="fas fa-check-circle me-2"></i>QR code statici disponibili
                 <div class="mt-2">
-                    <a href="{{ url_for('generate_static_qr') }}" class="btn btn-warning btn-sm">
+                    <a href="{{ url_for('user_management.admin_generate_static_qr') }}" class="btn btn-warning btn-sm">
                         <i class="fas fa-sync-alt me-1"></i>Rigenera QR Code
                     </a>
                     <small class="text-muted ms-2">Clicca per aggiornare i QR code se l'app è stata spostata su un altro server</small>
@@ -63,7 +63,7 @@
             {% else %}
                 <i class="fas fa-exclamation-triangle me-2"></i>QR code statici non ancora generati
                 <div class="mt-2">
-                    <a href="{{ url_for('generate_static_qr') }}" class="btn btn-primary btn-sm">
+                    <a href="{{ url_for('user_management.admin_generate_static_qr') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-magic me-1"></i>Genera QR Code Statici
                     </a>
                     <small class="text-muted ms-2">Genera i QR code per il server corrente</small>
