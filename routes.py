@@ -1758,165 +1758,11 @@ def internal_error(error):
         db.session.rollback()
         flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
     
-    return redirect(url_for('reperibilita_shifts'))
+    return redirect(url_for('reperibilita.reperibilita_shifts'))
 
-@app.route('/reperibilita_shifts')
-@require_login
-def reperibilita_shifts():
-    """Gestione turni reperibilità"""
-    from models import ReperibilitaShift, ReperibilitaTemplate
-    from datetime import datetime, timedelta
-    from collections import defaultdict
-    
-    # Get current template list for generation (legacy - ora usiamo coperture) 
-    templates = []  # Svuotato perché ora usiamo le coperture invece dei template
-    
-    # Parametri di visualizzazione basati sui permessi granulari
-    if current_user.can_manage_reperibilita() or current_user.can_view_all_attendance():
-        view_mode = request.args.get('view', 'all')
-    else:
-        view_mode = 'personal'  # Utenti normali vedono solo i propri
-    
-    period_mode = request.args.get('period', 'week')
-    display_mode = request.args.get('display', 'table')
-    
-    # Calcolo periodo di visualizzazione con possibilità di navigazione
-    today = italian_now().date()
-    
-    # Ottieni data di riferimento da parametri URL o usa oggi
-    ref_date_param = request.args.get('date')
-    if ref_date_param:
-        try:
-            ref_date = datetime.strptime(ref_date_param, '%Y-%m-%d').date()
-        except:
-            ref_date = today
-    else:
-        ref_date = today
-    
-    if period_mode == 'month':
-        start_date = ref_date.replace(day=1)
-        next_month = start_date.replace(month=start_date.month + 1) if start_date.month < 12 else start_date.replace(year=start_date.year + 1, month=1)
-        end_date = next_month - timedelta(days=1)
-        # Calcola navigazione mese precedente/successivo
-        prev_month = start_date.replace(month=start_date.month - 1) if start_date.month > 1 else start_date.replace(year=start_date.year - 1, month=12)
-        next_month_date = next_month
-    else:  # week
-        days_until_monday = ref_date.weekday()
-        start_date = ref_date - timedelta(days=days_until_monday)
-        end_date = start_date + timedelta(days=6)
-        # Calcola navigazione settimana precedente/successiva
-        prev_week = start_date - timedelta(days=7)
-        next_week = start_date + timedelta(days=7)
-    
-    # Get existing shifts filtrate per periodo
-    shifts_query = ReperibilitaShift.query.filter(
-        ReperibilitaShift.date >= start_date,
-        ReperibilitaShift.date <= end_date
-    )
-    
-    # Applica filtro utente se necessario
-    if view_mode == 'personal':
-        shifts = shifts_query.filter_by(user_id=current_user.id).order_by(ReperibilitaShift.date.asc()).all()
-    else:
-        shifts = shifts_query.order_by(ReperibilitaShift.date.asc()).all()
-    
-    # Ma nascondiamo completamente la sezione template/coperture se ci sono turni generati
-    hide_coverage_section = len(shifts) > 0
-    
-    # Organizza shifts per giorno (per vista calendario)
-    shifts_by_day = defaultdict(list)
-    for shift in shifts:
-        shifts_by_day[shift.date].append(shift)
-    
-    # Genera calendario giorni
-    calendar_days = []
-    current_date = start_date
-    weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
-    
-    while current_date <= end_date:
-        calendar_days.append({
-            'date': current_date,
-            'weekday': weekdays[current_date.weekday()],
-            'is_today': current_date == today
-        })
-        current_date += timedelta(days=1)
-    
-    # Get active intervention for current user
-    active_intervention = None
-    current_time = italian_now().time()
-    if current_user.can_view_interventions():
-        active_intervention = ReperibilitaIntervention.query.filter_by(
-            user_id=current_user.id,
-            end_datetime=None
-        ).first()
-    
-    # Raggruppa i turni esistenti per periodo per mostrare i periodi generati
-    from collections import OrderedDict
-    shift_periods = OrderedDict()
-    
-    # Ottieni tutti i turni per creare i periodi
-    all_shifts_query = ReperibilitaShift.query.order_by(ReperibilitaShift.date.asc()).all()
-    
-    for shift in all_shifts_query:
-        # Raggruppa per settimana o periodo logico
-        period_start = shift.date - timedelta(days=shift.date.weekday())  # Inizio settimana
-        period_end = period_start + timedelta(days=6)  # Fine settimana
-        period_key = f"{period_start}_{period_end}"
-        
-        if period_key not in shift_periods:
-            shift_periods[period_key] = {
-                'start_date': period_start,
-                'end_date': period_end,
-                'duration_days': (period_end - period_start).days + 1,
-                'shifts': [],
-                'unique_users': set(),
-                'unique_sedi': set()
-            }
-        
-        shift_periods[period_key]['shifts'].append(shift)
-        shift_periods[period_key]['unique_users'].add(shift.user.get_full_name())
-        if shift.user.sede_obj:
-            shift_periods[period_key]['unique_sedi'].add(shift.user.sede_obj.name)
-    
-    # Converti sets in liste ordinate e aggiungi conteggi
-    for period_data in shift_periods.values():
-        period_data['unique_users'] = sorted(list(period_data['unique_users']))
-        period_data['unique_sedi'] = sorted(list(period_data['unique_sedi']))
-        period_data['total_shifts'] = len(period_data['shifts'])
-
-    # Prepara dati di navigazione
-    navigation = {}
-    if period_mode == 'month':
-        navigation['prev_date'] = prev_month
-        navigation['next_date'] = next_month_date
-        navigation['current_period'] = f"{start_date.strftime('%B %Y')}"
-    else:  # week
-        navigation['prev_date'] = prev_week
-        navigation['next_date'] = next_week
-        navigation['current_period'] = f"Settimana {start_date.strftime('%d/%m')} - {end_date.strftime('%d/%m/%Y')}"
-
-    return render_template('reperibilita_shifts.html', 
-                         shifts=shifts, 
-                         templates=templates,
-                         shift_periods=shift_periods,
-                         shifts_by_day=shifts_by_day,
-                         active_intervention=active_intervention,
-                         calendar_days=calendar_days,
-                         today_date=today,
-                         current_time=current_time,
-                         hide_coverage_section=hide_coverage_section,
-                         navigation=navigation,
-                         period_mode=period_mode,
-                         view_mode=view_mode,
-                         display_mode=display_mode)
+# REPERIBILITA_SHIFTS ROUTE MIGRATED TO blueprints/reperibilita.py
 
 # ROUTE MOVED TO reperibilita_bp blueprint - reperibilita_template_detail
-    """Mostra dettaglio template reperibilità (come shift_template_detail)"""
-    from models import ReperibilitaShift
-    from datetime import datetime
-    from collections import defaultdict
-    
-    # Parse delle date
     start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
     end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
     
@@ -2911,114 +2757,10 @@ def reperibilita_shifts():
                          sede_stats=sede_stats,
                          can_manage_all=(current_user.can_manage_shifts()))
 
-@app.route('/admin/turni/coverage/create', methods=['POST'])
-@login_required
-def create_shift_coverage():
-    """Crea nuova copertura turni con supporto numerosità ruoli"""
-    if not current_user.can_access_turni():
-        flash('Non hai i permessi per creare coperture turni', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    try:
-        # Ottieni dati dal form
-        sede_id = request.form.get('sede_id')
-        start_date = request.form.get('start_date')
-        end_date = request.form.get('end_date')
-        base_start_time = request.form.get('base_start_time')
-        base_end_time = request.form.get('base_end_time')
-        description = request.form.get('description', '')
-        
-        # Giorni selezionati
-        days_of_week = request.form.getlist('days_of_week')
-        
-        # Estrai ruoli selezionati e numerosità
-        roles_dict = {}
-        # Cerca i campi role_count_ per determinare ruoli e numerosità
-        for key in request.form.keys():
-            if key.startswith('role_count_'):
-                role_name = key.replace('role_count_', '')
-                # Verifica se il checkbox corrispondente esiste ed è selezionato
-                checkbox_found = False
-                for checkbox_key in request.form.keys():
-                    if checkbox_key.startswith('role_') and request.form.get(checkbox_key) == role_name:
-                        checkbox_found = True
-                        break
-                
-                if checkbox_found:
-                    count = int(request.form.get(key, 1))
-                    if count > 0:
-                        roles_dict[role_name] = count
-        
-        if not roles_dict:
-            flash('Devi selezionare almeno un ruolo con numerosità', 'danger')
-            return redirect(url_for('manage_turni'))
-        
-        from models import PresidioCoverage
-        from datetime import datetime, date
-        
-        # Converti date
-        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
-        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
-        
-        # Converti orari  
-        start_time_obj = datetime.strptime(base_start_time, '%H:%M').time()
-        end_time_obj = datetime.strptime(base_end_time, '%H:%M').time()
-        
-        success_count = 0
-        
-        # Crea copertura per ogni giorno selezionato
-        for day_str in days_of_week:
-            day_of_week = int(day_str)
-            
-            # Controlla orari personalizzati per questo giorno
-            custom_start_key = f'start_time_{day_of_week}'
-            custom_end_key = f'end_time_{day_of_week}'
-            
-            day_start_time = start_time_obj
-            day_end_time = end_time_obj
-            
-            if custom_start_key in request.form and custom_end_key in request.form:
-                custom_start = request.form.get(custom_start_key)
-                custom_end = request.form.get(custom_end_key)
-                if custom_start and custom_end:
-                    day_start_time = datetime.strptime(custom_start, '%H:%M').time()
-                    day_end_time = datetime.strptime(custom_end, '%H:%M').time()
-            
-            # Crea la copertura
-            coverage = PresidioCoverage(
-                day_of_week=day_of_week,
-                start_time=day_start_time,
-                end_time=day_end_time,
-                description=description,
-                active=True,
-                start_date=start_date_obj,
-                end_date=end_date_obj,
-                created_by=current_user.id
-            )
-            
-            # Imposta ruoli con numerosità
-            coverage.set_required_roles_dict(roles_dict)
-            
-            db.session.add(coverage)
-            success_count += 1
-        
-        db.session.commit()
-        
-        if success_count > 0:
-            total_resources = sum(roles_dict.values())
-            flash(f'Copertura creata con successo per {success_count} giorni! Total risorse richieste per turno: {total_resources}', 'success')
-        else:
-            flash('Nessuna nuova copertura creata', 'warning')
-            
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Errore durante la creazione della copertura: {str(e)}', 'danger')
-    
-    return redirect(url_for('manage_turni'))
+# ADMIN TURNI ROUTE MIGRATED TO shifts_bp blueprint
 
-@app.route('/admin/turni/coperture')
-@login_required
-def view_turni_coverage():
+# ADMIN TURNI ROUTE MIGRATED TO shifts_bp blueprint
+# def view_turni_coverage():
     """Visualizza le coperture create per una sede specifica"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per visualizzare le coperture', 'danger')
@@ -3089,9 +2831,8 @@ def view_turni_coverage():
                          today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
 
-@app.route('/admin/turni/genera-da-coperture')
-@login_required
-def generate_turni_from_coverage():
+# ADMIN TURNI ROUTE MIGRATED TO shifts_bp blueprint  
+# def generate_turni_from_coverage():
     """Pagina per generare turni basati sulle coperture create"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per generare turni', 'danger')
@@ -3162,9 +2903,8 @@ def generate_turni_from_coverage():
                          today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
 
-@app.route('/admin/turni/process-generate-from-coverage', methods=['POST'])
-@login_required
-def process_generate_turni_from_coverage():
+# ADMIN TURNI ROUTE MIGRATED TO shifts_bp blueprint
+# def process_generate_turni_from_coverage():
     """Processa la generazione dei turni basata sulle coperture"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per generare turni', 'danger')
@@ -3311,9 +3051,8 @@ def process_generate_turni_from_coverage():
     
     return redirect(url_for('generate_turnazioni'))
 
-@app.route('/admin/turni/visualizza-generati')
-@login_required
-def view_generated_shifts():
+# ADMIN TURNI ROUTE MIGRATED TO shifts_bp blueprint
+# def view_generated_shifts():
     """Visualizza i turni generati per una specifica copertura"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per visualizzare i turni', 'danger')
@@ -3399,9 +3138,8 @@ def view_generated_shifts():
                          today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
 
-@app.route('/admin/turni/regenerate-from-coverage', methods=['POST'])
-@login_required
-def regenerate_turni_from_coverage():
+# ADMIN TURNI ROUTE MIGRATED TO shifts_bp blueprint
+# def regenerate_turni_from_coverage():
     """Rigenera i turni eliminando quelli esistenti da oggi in poi e creandone di nuovi"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per rigenerare turni', 'danger')
@@ -3520,9 +3258,8 @@ def regenerate_turni_from_coverage():
 
 # delete_shift route migrated to shifts blueprint
 
-@app.route('/admin/turni/delete-period', methods=['POST'])
-@login_required
-def delete_turni_period():
+# ADMIN TURNI ROUTE MIGRATED TO shifts_bp blueprint
+# def delete_turni_period():
     """Elimina tutti i turni di un periodo da oggi in poi"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per eliminare turni', 'danger')
@@ -3586,9 +3323,8 @@ def delete_turni_period():
         flash(f'Errore durante l\'eliminazione turni: {str(e)}', 'danger')
         return redirect(url_for('generate_turnazioni'))
 
-@app.route('/admin/turnazioni')
-@login_required
-def generate_turnazioni():
+# ADMIN TURNI ROUTE MIGRATED TO shifts_bp blueprint
+# def generate_turnazioni():
     """Generazione automatica turnazioni con visualizzazione coperture inline"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per generare turnazioni', 'danger')

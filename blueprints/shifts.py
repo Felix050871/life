@@ -1521,4 +1521,4 @@ def regenerate_turni_from_coverage():
     except Exception as e:
         db.session.rollback()
         flash(f'Errore durante la rigenerazione turni: {str(e)}', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('shifts.generate_turnazioni'))

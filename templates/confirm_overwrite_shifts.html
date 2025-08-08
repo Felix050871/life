@@ -41,7 +41,7 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <form method="POST" action="{{ url_for('process_generate_turni_from_coverage') }}">
+                            <form method="POST" action="{{ url_for('shifts.process_generate_turni_from_coverage') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="sede_id" value="{{ sede.id }}">
                                 <input type="hidden" name="coverage_period_id" value="{{ period_id }}">
