@@ -914,7 +914,7 @@ def attendance():
                          records=records,
                          records_by_sede=records_by_sede,
                          all_sedi_list=all_sedi_list,
-                         today_date=date.today(),
+                         today_date=datetime.now().date(),
                          start_date=start_date.strftime('%Y-%m-%d'),
                          end_date=end_date.strftime('%Y-%m-%d'),
                          user_status=user_status,
@@ -1020,7 +1020,7 @@ def attendance():
                          settimane_stats=settimane_stats,
                          users_by_role=dict(users_by_role),
                          shifts=shifts,
-                         today=date.today(),
+                         today=datetime.now().date(),
                          timedelta=timedelta,
                          can_manage_shifts=current_user.can_manage_shifts())
 
@@ -1205,7 +1205,7 @@ def get_shifts_for_template_api(template_id):
                          settimane_stats=settimane_stats,
                          users_by_role=dict(users_by_role),
                          shifts=shifts,
-                         today=date.today(),
+                         today=datetime.now().date(),
                          timedelta=timedelta)
 
 # ROUTE MOVED TO shifts_bp blueprint
@@ -1613,7 +1613,7 @@ def view_template(template_id):
                          template_form=template_form,
                          shift_templates=shift_templates,
                          selected_template=template,
-                         today=date.today(),
+                         today=datetime.now().date(),
                          total_hours=round(total_hours, 1),
                          future_shifts=future_shifts,
                          unique_users=unique_users,
@@ -1804,7 +1804,7 @@ def delete_leave_type(id):
                          can_approve=can_approve,
                          page_title=page_title,
                          view_mode=view_mode,
-                         today=date.today())
+                         today=datetime.now().date())
 
 # ROUTE MOVED TO leave_bp blueprint
     if not current_user.can_request_leave():
@@ -1905,7 +1905,7 @@ def delete_leave_type(id):
     # GET request - mostra form di creazione
     return render_template('create_leave_request.html', 
                          form=form,
-                         today=date.today())
+                         today=datetime.now().date())
 
 @app.route('/approve_leave/<int:request_id>')
 @login_required
@@ -5324,7 +5324,7 @@ def view_turni_coverage():
                          coperture_grouped=coperture_grouped,
                          total_coperture=total_coperture,
                          active_coperture=active_coperture,
-                         today=date.today(),
+                         today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
 
 @app.route('/admin/turni/genera-da-coperture')
@@ -5397,7 +5397,7 @@ def generate_turni_from_coverage():
                          coperture_grouped=coperture_grouped,
                          total_coperture=total_coperture,
                          active_coperture=active_coperture,
-                         today=date.today(),
+                         today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
 
 @app.route('/admin/turni/process-generate-from-coverage', methods=['POST'])
@@ -5634,7 +5634,7 @@ def view_generated_shifts():
                          dates_with_shifts=dates_with_shifts,
                          period_days=period_days,
                          unique_users_count=unique_users_count,
-                         today=date.today(),
+                         today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
 
 @app.route('/admin/turni/regenerate-from-coverage', methods=['POST'])
@@ -5915,7 +5915,7 @@ def generate_turnazioni():
     
     return render_template('generate_turnazioni.html', 
                          sedi_with_coverage=sedi_with_coverage,
-                         today=date.today(),
+                         today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
 
 # =============================================================================
@@ -6968,7 +6968,7 @@ def view_coverage_templates():
                          coverage_periods=coverage_periods,
                          accessible_sedi=accessible_sedi,
                          total_templates=len(all_coverages),
-                         today=date.today())
+                         today=datetime.now().date())
 
 @app.route("/view_turni_for_period")
 @login_required  
@@ -7027,7 +7027,7 @@ def view_turni_for_period():
                          end_date=end_date,
                          accessible_sedi=accessible_sedi,
                          total_turni=len(turni_periodo),
-                         today=date.today())
+                         today=datetime.now().date())
 
 # =====================================
 # NUOVO SISTEMA PRESIDIO - PACCHETTO COMPLETO

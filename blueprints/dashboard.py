@@ -369,10 +369,17 @@ def dashboard_team():
     elif current_user.sede_id:
         all_sedi = [current_user.sede]
     
+    # Aggiungi date per il filtro nel template
+    today = date.today()
+    start_date = today - timedelta(days=30)  # Ultimi 30 giorni default
+    end_date = today
+    
     return render_template('dashboard_team.html', 
                          users_data=users_data,
                          all_sedi=all_sedi,
                          today=today,
+                         start_date=start_date,
+                         end_date=end_date,
                          format_hours=format_hours)
 
 @dashboard_bp.route('/dashboard_sede')
