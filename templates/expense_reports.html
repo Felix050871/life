@@ -7,7 +7,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-receipt me-2"></i>{{ page_title or 'Note Spese' }}</h2>
                 {% if current_user.can_create_expense_reports() %}
-                <a href="{{ url_for('create_expense_report') }}" class="btn btn-primary">
+                <a href="{{ url_for('expense.create_expense_report') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-1"></i>Nuova Nota Spese
                 </a>
                 {% endif %}
@@ -166,7 +166,7 @@
                         <h4>Nessuna nota spese trovata</h4>
                         <p class="text-muted">Non ci sono note spese che corrispondono ai criteri di ricerca.</p>
                         {% if current_user.can_create_expense_reports() %}
-                        <a href="{{ url_for('create_expense_report') }}" class="btn btn-primary">
+                        <a href="{{ url_for('expense.create_expense_report') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i>Crea la prima nota spese
                         </a>
                         {% endif %}

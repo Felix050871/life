@@ -7481,9 +7481,10 @@ def delete_presidio_coverage(coverage_id):
 # EXPENSE MANAGEMENT ROUTES
 # =============================================================================
 
-@app.route('/expenses', methods=['GET', 'POST'])
-@login_required
-def expense_reports():
+# MIGRATED TO BLUEPRINT: blueprints/expense.py
+# @app.route('/expenses', methods=['GET', 'POST'])
+# @login_required
+# def expense_reports():
     """Visualizza elenco note spese"""
     if not current_user.can_access_expense_reports_menu():
         flash('Non hai i permessi per accedere alle note spese', 'danger')

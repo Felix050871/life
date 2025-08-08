@@ -319,22 +319,22 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_create_overtime_requests() %}
-                        <li><a href="{{ url_for('create_overtime_request') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.create_overtime_request') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Nuova Richiesta
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_my_overtime_requests() %}
-                        <li><a href="{{ url_for('my_overtime_requests') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.my_overtime_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user-clock"></i>Le Mie Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_overtime_requests() or current_user.can_approve_overtime_requests() %}
-                        <li><a href="{{ url_for('overtime_requests_management') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.overtime_requests_management') }}" class="sidebar-submenu-link">
                             <i class="fas fa-tasks"></i>Gestisci Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_overtime_types() %}
-                        <li><a href="{{ url_for('overtime_types') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.overtime_types') }}" class="sidebar-submenu-link">
                             <i class="fas fa-tags"></i>Gestisci Tipologie
                         </a></li>
                         {% endif %}
@@ -353,22 +353,22 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_create_expense_reports() %}
-                        <li><a href="{{ url_for('create_expense_report') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.create_expense_report') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Crea Nota Spese
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_my_expense_reports() %}
-                        <li><a href="{{ url_for('expense_reports') }}?view=my" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.expense_reports') }}?view=my" class="sidebar-submenu-link">
                             <i class="fas fa-user"></i>Le Mie Note Spese
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_expense_reports() or current_user.can_approve_expense_reports() %}
-                        <li><a href="{{ url_for('expense_reports') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.expense_reports') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list"></i>Visualizza Note Spese
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_expense_reports() %}
-                        <li><a href="{{ url_for('expense_categories') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.expense_categories') }}" class="sidebar-submenu-link">
                             <i class="fas fa-tags"></i>Gestisci Categorie
                         </a></li>
                         {% endif %}
@@ -387,17 +387,17 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_create_mileage_requests() %}
-                        <li><a href="{{ url_for('create_mileage_request') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.create_mileage_request') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Nuova Richiesta
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_my_mileage_requests() %}
-                        <li><a href="{{ url_for('my_mileage_requests') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.my_mileage_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user"></i>Le Mie Richieste
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_mileage_requests() or current_user.can_manage_mileage_requests() %}
-                        <li><a href="{{ url_for('mileage_requests') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('expense.mileage_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list"></i>Visualizza Richieste
                         </a></li>
                         {% endif %}

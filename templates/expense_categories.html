@@ -7,10 +7,10 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-tags me-2"></i>Categorie Note Spese</h2>
                 <div>
-                    <a href="{{ url_for('create_expense_category') }}" class="btn btn-primary me-2">
+                    <a href="{{ url_for('expense.create_expense_category') }}" class="btn btn-primary me-2">
                         <i class="fas fa-plus me-1"></i>Nuova Categoria
                     </a>
-                    <a href="{{ url_for('expense_reports') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('expense.expense_reports') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Torna alle Note Spese
                     </a>
                 </div>
@@ -67,12 +67,12 @@
                                     <td>
                                         {% if current_user.can_manage_expense_reports() %}
                                         <div class="btn-group" role="group">
-                                            <a href="{{ url_for('edit_expense_category', category_id=category.id) }}" 
+                                            <a href="{{ url_for('expense.edit_expense_category', category_id=category.id) }}" 
                                                class="btn btn-sm btn-outline-primary" title="Modifica categoria">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                    onclick="confirmDelete('{{ category.name }}', '{{ url_for('delete_expense_category', category_id=category.id) }}')"
+                                                    onclick="confirmDelete('{{ category.name }}', '{{ url_for('expense.delete_expense_category', category_id=category.id) }}')"
                                                     title="Elimina categoria">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -96,7 +96,7 @@
                         <i class="fas fa-tags fa-3x text-muted mb-3"></i>
                         <h4>Nessuna categoria trovata</h4>
                         <p class="text-muted">Non sono ancora state create categorie per le note spese.</p>
-                        <a href="{{ url_for('create_expense_category') }}" class="btn btn-primary">
+                        <a href="{{ url_for('expense.create_expense_category') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i>Crea la prima categoria
                         </a>
                     </div>
