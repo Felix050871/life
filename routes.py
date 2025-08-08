@@ -597,7 +597,7 @@ def attendance():
     
     # Default to last 30 days if no dates provided
     if not start_date_str or not end_date_str:
-        end_date = date.today()
+        end_date = datetime.now().date()
         start_date = end_date - timedelta(days=30)
     else:
         try:
@@ -605,7 +605,7 @@ def attendance():
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         except ValueError:
             # Fallback to default if invalid dates
-            end_date = date.today()
+            end_date = datetime.now().date()
             start_date = end_date - timedelta(days=30)
     
     if show_team_data:
@@ -2219,12 +2219,12 @@ def toggle_user(user_id):
     if start_date:
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
     else:
-        start_date = date.today() - timedelta(days=30)
+        start_date = datetime.now().date() - timedelta(days=30)
     
     if end_date:
         end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
     else:
-        end_date = date.today()
+        end_date = datetime.now().date()
     
     # Get team statistics with error handling
     try:
@@ -4253,14 +4253,14 @@ def export_attendance_excel():
     end_date_str = request.args.get('end_date')
     
     if not start_date_str or not end_date_str:
-        end_date = date.today()
+        end_date = datetime.now().date()
         start_date = end_date - timedelta(days=30)
     else:
         try:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         except ValueError:
-            end_date = date.today()
+            end_date = datetime.now().date()
             start_date = end_date - timedelta(days=30)
     
     if show_team_data:

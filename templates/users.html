@@ -226,7 +226,7 @@
                                         <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-outline-primary">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-info">
+                                        <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-outline-info">
                                             <i class="fas fa-clock"></i>
                                         </a>
                                         {% if user.id != current_user.id %}
