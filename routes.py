@@ -171,226 +171,13 @@ def index():
 # NEXT SECTIONS: REMAINING ROUTES TO MIGRATE
 # =============================================================================
 
-@app.route('/check_shift_before_clock_out', methods=['POST'])
-@login_required  
-def check_shift_before_clock_out():
-    """Check if user can clock-out (no shift validation)"""
-    # Check if can perform clock-out action
-    if not AttendanceEvent.can_perform_action(current_user.id, 'clock_out'):
-        status, last_event = AttendanceEvent.get_user_status(current_user.id)
-        if status == 'out':
-            return jsonify({
-                'success': False,
-                'message': 'Non sei presente. Devi prima registrare l\'entrata.',
-                'already_clocked': True
-            })
-    
-    # No shift validation - always allow clock-out
-    return jsonify({
-        'success': True,
-        'needs_confirmation': False
-    })
+# check_shift_before_clock_out migrated to attendance blueprint
 
-@app.route('/clock_out', methods=['POST'])
-@login_required
-def clock_out():
-    if not current_user.can_access_attendance():
-        return jsonify({
-            'success': False, 
-            'message': 'Non hai i permessi per registrare presenze.'
-        }), 403
-        
-    # Verifica se può fare clock-out
-    if not AttendanceEvent.can_perform_action(current_user.id, 'clock_out'):
-        status, _ = AttendanceEvent.get_user_status(current_user.id)
-        if status == 'out':
-            return jsonify({
-                'success': False, 
-                'message': 'Non sei presente. Devi prima registrare l\'entrata.'
-            }), 400
-    
-    # Usa l'orario italiano invece di UTC
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    now = datetime.now(italy_tz)
-    
-    # Ottieni sede_id da richiesta JSON o utente
-    data = request.get_json() or {}
-    sede_id = data.get('sede_id')
-    
-    # Se utente multi-sede, sede_id è obbligatorio
-    if current_user.all_sedi and not sede_id:
-        return jsonify({
-            'success': False, 
-            'message': 'Seleziona una sede per registrare la presenza.'
-        }), 400
-    
-    # Se utente con sede specifica, usa quella
-    if not current_user.all_sedi:
-        sede_id = current_user.sede_id
-    
-    # Crea nuovo evento di uscita
-    event = AttendanceEvent()
-    event.user_id = current_user.id
-    event.date = now.date()  # Usa la data italiana
-    event.event_type = 'clock_out'
-    event.timestamp = now
-    event.sede_id = sede_id
-    
-    # Controlla gli orari della sede e permessi per determinare lo stato
-    try:
-        schedule_check = check_user_schedule_with_permissions(current_user.id, now)
-        if schedule_check['has_schedule']:
-            event.shift_status = schedule_check['exit_status']
-        else:
-            event.shift_status = 'normale'
-    except Exception as e:
-        pass  # Silent error handling
-        event.shift_status = 'normale'
-    
-    try:
-        db.session.add(event)
-        db.session.commit()
-        return jsonify({
-            'success': True, 
-            'message': f'Uscita registrata alle {now.strftime("%H:%M")}'
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'success': False, 
-            'message': 'Errore nel salvare l\'uscita'
-        }), 500
+# clock_out migrated to attendance blueprint
 
-@app.route('/break_start', methods=['POST'])
-@login_required
-def break_start():
-    if not current_user.can_access_attendance():
-        return jsonify({
-            'success': False, 
-            'message': 'Non hai i permessi per registrare presenze.'
-        }), 403
-        
-    # Verifica se può iniziare la pausa
-    if not AttendanceEvent.can_perform_action(current_user.id, 'break_start'):
-        status, _ = AttendanceEvent.get_user_status(current_user.id)
-        if status == 'out':
-            return jsonify({
-                'success': False, 
-                'message': 'Non sei presente. Devi prima registrare l\'entrata.'
-            }), 400
-        elif status == 'break':
-            return jsonify({
-                'success': False, 
-                'message': 'Sei già in pausa.'
-            }), 400
-    
-    # Usa l'orario italiano invece di UTC
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    now = datetime.now(italy_tz)
-    
-    # Ottieni sede_id da richiesta JSON o utente
-    data = request.get_json() or {}
-    sede_id = data.get('sede_id')
-    
-    # Se utente multi-sede, sede_id è obbligatorio
-    if current_user.all_sedi and not sede_id:
-        return jsonify({
-            'success': False, 
-            'message': 'Seleziona una sede per registrare la presenza.'
-        }), 400
-    
-    # Se utente con sede specifica, usa quella
-    if not current_user.all_sedi:
-        sede_id = current_user.sede_id
-    
-    # Crea nuovo evento di inizio pausa
-    event = AttendanceEvent()
-    event.user_id = current_user.id
-    event.date = now.date()  # Usa la data italiana
-    event.event_type = 'break_start'
-    event.timestamp = now
-    event.sede_id = sede_id
-    
-    try:
-        db.session.add(event)
-        db.session.commit()
-        return jsonify({
-            'success': True, 
-            'message': f'Pausa iniziata alle {now.strftime("%H:%M")}'
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'success': False, 
-            'message': 'Errore nel salvare l\'inizio pausa'
-        }), 500
+# break_start migrated to attendance blueprint
 
-@app.route('/break_end', methods=['POST'])
-@login_required
-def break_end():
-    if not current_user.can_access_attendance():
-        return jsonify({
-            'success': False, 
-            'message': 'Non hai i permessi per registrare presenze.'
-        }), 403
-        
-    # Verifica se può terminare la pausa
-    if not AttendanceEvent.can_perform_action(current_user.id, 'break_end'):
-        status, _ = AttendanceEvent.get_user_status(current_user.id)
-        if status == 'out':
-            return jsonify({
-                'success': False, 
-                'message': 'Non sei presente.'
-            }), 400
-        elif status == 'in':
-            return jsonify({
-                'success': False, 
-                'message': 'Non sei in pausa.'
-            }), 400
-    
-    # Usa l'orario italiano invece di UTC
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    now = datetime.now(italy_tz)
-    
-    # Ottieni sede_id da richiesta JSON o utente
-    data = request.get_json() or {}
-    sede_id = data.get('sede_id')
-    
-    # Se utente multi-sede, sede_id è obbligatorio
-    if current_user.all_sedi and not sede_id:
-        return jsonify({
-            'success': False, 
-            'message': 'Seleziona una sede per registrare la presenza.'
-        }), 400
-    
-    # Se utente con sede specifica, usa quella
-    if not current_user.all_sedi:
-        sede_id = current_user.sede_id
-    
-    # Crea nuovo evento di fine pausa
-    event = AttendanceEvent()
-    event.user_id = current_user.id
-    event.date = now.date()  # Usa la data italiana
-    event.event_type = 'break_end'
-    event.timestamp = now
-    event.sede_id = sede_id
-    
-    try:
-        db.session.add(event)
-        db.session.commit()
-        return jsonify({
-            'success': True, 
-            'message': f'Pausa terminata alle {now.strftime("%H:%M")}'
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'success': False, 
-            'message': 'Errore nel salvare la fine pausa'
-        }), 500
+# break_end migrated to attendance blueprint
 
 @app.route('/attendance', methods=['GET', 'POST'])
 @login_required
@@ -915,7 +702,7 @@ def attendance():
 # SHIFT MANAGEMENT ROUTES
 # =============================================================================
 
-@app.route('/api/get_shifts_for_template/<int:template_id>')
+# API get_shifts_for_template migrated to shifts module
 @login_required
 def get_shifts_for_template_api(template_id):
     """API per ottenere turni di un template specifico"""
@@ -1274,7 +1061,7 @@ def get_shifts_for_template_api(template_id):
     
     return redirect(url_for('manage_turni'))
 
-@app.route('/generate_shifts', methods=['POST'])
+# generate_shifts migrated to shifts module
 @login_required
 def generate_shifts():
     if not current_user.can_manage_shifts():
@@ -1330,7 +1117,7 @@ def generate_shifts():
     
     return redirect(url_for('manage_turni'))
 
-@app.route('/regenerate_template/<int:template_id>', methods=['POST'])
+# regenerate_template migrated to shifts module
 @login_required
 def regenerate_template(template_id):
     if not current_user.can_manage_shifts():
@@ -1386,7 +1173,7 @@ def regenerate_template(template_id):
     
     return redirect(url_for('manage_turni'))
 
-@app.route('/delete_template/<int:template_id>', methods=['POST'])
+# delete_template migrated to shifts module
 @login_required
 def delete_template(template_id):
     if not current_user.can_manage_shifts():
@@ -1408,7 +1195,7 @@ def delete_template(template_id):
     flash(f'Template "{template.name}" eliminato insieme a {shifts_deleted} turni associati', 'success')
     return redirect(url_for('manage_turni'))
 
-@app.route('/view_template/<int:template_id>')
+# view_template migrated to shifts module
 @login_required
 def view_template(template_id):
     # All users can view templates, but only managers can manage them
@@ -1513,7 +1300,7 @@ def view_template(template_id):
 # LEAVE MANAGEMENT ROUTES
 # =============================================================================
 
-@app.route('/leave_types')
+# leave_types migrated to leave module
 @login_required
 def leave_types():
     if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
@@ -1523,7 +1310,7 @@ def leave_types():
     leave_types = LeaveType.query.order_by(LeaveType.name).all()
     return render_template('leave_types.html', leave_types=leave_types)
 
-@app.route('/leave_types/add', methods=['GET', 'POST'])
+# leave_types/add migrated to leave module
 @login_required
 def add_leave_type_page():
     if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
@@ -1561,7 +1348,7 @@ def add_leave_type_page():
     # GET request - mostra form di creazione
     return render_template('add_leave_type.html')
 
-@app.route('/leave_types/<int:id>/edit', methods=['GET', 'POST'])
+# leave_types/edit migrated to leave module
 @login_required
 def edit_leave_type_page(id):
     if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
@@ -1597,7 +1384,7 @@ def edit_leave_type_page(id):
     # GET request - mostra form di modifica
     return render_template('edit_leave_type.html', leave_type=leave_type)
 
-@app.route('/leave_types/<int:id>/delete', methods=['POST'])
+# leave_types/delete migrated to leave module
 @login_required
 def delete_leave_type(id):
     if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
@@ -1794,7 +1581,7 @@ def delete_leave_type(id):
                          form=form,
                          today=datetime.now().date())
 
-@app.route('/approve_leave/<int:request_id>')
+# approve_leave migrated to leave module
 @login_required
 def approve_leave(request_id):
     if not current_user.can_approve_leave():
@@ -1815,7 +1602,7 @@ def approve_leave(request_id):
     flash('Richiesta approvata', 'success')
     return redirect(url_for('leave_requests'))
 
-@app.route('/reject_leave/<int:request_id>')
+# reject_leave migrated to leave module
 @login_required
 def reject_leave(request_id):
     if not current_user.can_approve_leave():
@@ -1836,7 +1623,7 @@ def reject_leave(request_id):
     flash('Richiesta rifiutata', 'warning')
     return redirect(url_for('leave_requests'))
 
-@app.route('/delete_leave/<int:request_id>')
+# delete_leave migrated to leave module
 @login_required
 def delete_leave(request_id):
     leave_request = LeaveRequest.query.get_or_404(request_id)
@@ -1875,52 +1662,11 @@ def delete_leave(request_id):
 # USER MANAGEMENT ROUTES
 # =============================================================================
 
-@app.route('/users')
-@login_required
-def users():
-    if not (current_user.can_manage_users() or current_user.can_view_users()):
-        flash('Non hai i permessi per accedere agli utenti', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    page = request.args.get('page', 1, type=int)
-    users = User.query.order_by(User.created_at.desc()).paginate(
-        page=page, per_page=10, error_out=False)
-    return render_template('users.html', users=users)
+# ROUTE MOVED TO user_management_bp blueprint
+# users() function migrated to blueprints/user_management.py
 
-@app.route('/new_user', methods=['GET', 'POST'])
-@login_required
-def new_user():
-    if not current_user.can_manage_users():
-        flash('Non hai i permessi per creare utenti', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    form = UserForm(is_edit=False)
-    if form.validate_on_submit():
-        # Crea il nuovo utente
-        user = User(
-            username=form.username.data,
-            email=form.email.data,
-            password_hash=generate_password_hash(form.password.data),
-            role=form.role.data,
-            first_name=form.first_name.data,
-            last_name=form.last_name.data,
-            all_sedi=form.all_sedi.data,
-            sede_id=form.sede.data if not form.all_sedi.data else None,
-            work_schedule_id=form.work_schedule.data,
-            aci_vehicle_id=form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None,
-            part_time_percentage=form.get_part_time_percentage_as_float(),
-            active=form.active.data
-        )
-        db.session.add(user)
-        db.session.flush()  # Per ottenere l'ID dell'utente
-        
-        # Non c'è più gestione sedi multiple
-        
-        db.session.commit()
-        flash('Utente creato con successo', 'success')
-        return redirect(url_for('users'))
-    
-    return render_template('users.html', form=form, editing=False)
+# ROUTE MOVED TO user_management_bp blueprint
+# new_user() function migrated to blueprints/user_management.py
 
 # ROUTE MOVED TO user_management_bp blueprint
     if not (current_user.can_manage_users() or current_user.can_view_users()):
@@ -1944,40 +1690,8 @@ def new_user():
                          sede_name=sede_name, is_multi_sede=current_user.all_sedi,
                          team_stats=team_stats)
 
-@app.route('/user_profile', methods=['GET', 'POST'])
-@login_required
-def user_profile():
-    """Route per la gestione del profilo personale dell'utente"""
-    form = UserProfileForm(original_email=current_user.email, obj=current_user)
-    
-    if request.method == 'GET':
-        # Popola i campi con i dati attuali dell'utente
-        form.first_name.data = current_user.first_name
-        form.last_name.data = current_user.last_name
-        form.email.data = current_user.email
-        form.username.data = current_user.username
-    
-    if form.validate_on_submit():
-        # Aggiorna i dati del profilo
-        current_user.first_name = form.first_name.data
-        current_user.last_name = form.last_name.data
-        current_user.email = form.email.data
-        
-        # Aggiorna la password solo se fornita
-        if form.password.data:
-            current_user.password_hash = generate_password_hash(form.password.data)
-            flash('Password aggiornata con successo', 'success')
-        
-        try:
-            db.session.commit()
-            flash('Profilo aggiornato con successo', 'success')
-            return redirect(url_for('user_profile'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Errore durante l\'aggiornamento del profilo', 'danger')
-            return redirect(url_for('user_profile'))
-    
-    return render_template('user_profile.html', form=form)
+# ROUTE MOVED TO user_management_bp blueprint
+# user_profile() function migrated to blueprints/user_management.py
 
 # ROUTE MOVED TO user_management_bp blueprint
     if not current_user.can_manage_users():
@@ -2065,29 +1779,8 @@ def user_profile():
     
     return render_template('edit_user.html', form=form, user=user)
 
-@app.route('/toggle_user/<int:user_id>')
-@login_required
-def toggle_user(user_id):
-    if not current_user.can_manage_users():
-        flash('Non hai i permessi per modificare utenti', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    user = User.query.get_or_404(user_id)
-    if user.id == current_user.id:
-        flash('Non puoi disattivare il tuo account', 'warning')
-        return redirect(url_for('user_management'))
-    
-    # Impedisce la disattivazione dell'amministratore
-    if user.role == 'Amministratore':
-        flash('Non è possibile disattivare l\'utente amministratore', 'danger')
-        return redirect(url_for('user_management'))
-    
-    user.active = not user.active
-    db.session.commit()
-    
-    status = 'attivato' if user.active else 'disattivato'
-    flash(f'Utente {status} con successo', 'success')
-    return redirect(url_for('user_management'))
+# ROUTE MOVED TO user_management_bp blueprint
+# toggle_user() function migrated to blueprints/user_management.py
 
 # =============================================================================
 # REPORTS ROUTES

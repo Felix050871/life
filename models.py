@@ -1485,7 +1485,7 @@ class PresidioCoverage(db.Model):
     created_at = db.Column(db.DateTime, default=italian_now)
 
     creator = db.relationship('User', backref='presidio_coverages')
-    template = db.relationship('PresidioCoverageTemplate', foreign_keys=[template_id])
+    template_ref = db.relationship('PresidioCoverageTemplate', foreign_keys=[template_id])
 
     def get_day_name(self):
         """Restituisce il nome del giorno in italiano"""
@@ -1888,7 +1888,7 @@ class Holiday(db.Model):
     sede = db.relationship('Sede', backref='holidays')
     
     def __repr__(self):
-        scope = f" ({self.sede.name})" if self.sede else " (Nazionale)"
+        scope = f" ({self.sede_obj.name})" if self.sede_obj else " (Nazionale)"
         return f'<Holiday {self.name}: {self.day}/{self.month}{scope}>'
     
     @property
@@ -1899,7 +1899,7 @@ class Holiday(db.Model):
     @property
     def scope_display(self):
         """Visualizza l'ambito della festività"""
-        return self.sede.name if self.sede else "Nazionale"
+        return self.sede_obj.name if self.sede_obj else "Nazionale"
     
     def is_holiday_on_date(self, check_date):
         """Verifica se questa festività cade nella data specificata"""
@@ -2579,14 +2579,14 @@ class WorkSchedule(db.Model):
     active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     
-    # Relazione con Sede
-    sede = db.relationship('Sede', backref='work_schedules')
+    # Relazione con Sede (usa backref esistente da Sede)
+    # La relazione è gestita dal backref 'sede_obj' definito nel modello Sede
     
     # Constraint per evitare duplicati nella stessa sede
     __table_args__ = (db.UniqueConstraint('sede_id', 'name', name='_sede_schedule_name_uc'),)
     
     def __repr__(self):
-        return f'<WorkSchedule {self.name} at {self.sede.name if self.sede else "Unknown Sede"}>'
+        return f'<WorkSchedule {self.name} at {self.sede_obj.name if self.sede_obj else "Unknown Sede"}>'
     
     def get_days_of_week_list(self):
         """Restituisce la lista dei giorni della settimana come interi"""

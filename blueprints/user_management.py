@@ -27,6 +27,8 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
 from models import User, Sede, WorkSchedule, italian_now
+from forms import UserForm, UserProfileForm
+from werkzeug.security import generate_password_hash
 import io
 import csv
 
@@ -352,3 +354,111 @@ def get_users_by_sede_api(sede_id):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@user_management_bp.route('/')
+@login_required
+def users():
+    """Route semplice per lista utenti con paginazione (migrata da routes.py)"""
+    if not (current_user.can_manage_users() or current_user.can_view_users()):
+        flash('Non hai i permessi per accedere agli utenti', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    page = request.args.get('page', 1, type=int)
+    users = User.query.order_by(User.created_at.desc()).paginate(
+        page=page, per_page=10, error_out=False)
+    return render_template('users.html', users=users)
+
+@user_management_bp.route('/new_user', methods=['GET', 'POST'])
+@login_required
+def new_user():
+    """Creazione nuovo utente con UserForm (migrata da routes.py)"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per creare utenti', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    form = UserForm(is_edit=False)
+    if form.validate_on_submit():
+        # Crea il nuovo utente
+        user = User()
+        user.username = form.username.data
+        user.email = form.email.data
+        user.password_hash = generate_password_hash(form.password.data or 'default_password')
+        user.role = form.role.data
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.all_sedi = form.all_sedi.data
+        user.sede_id = form.sede.data if not form.all_sedi.data else None
+        user.work_schedule_id = form.work_schedule.data
+        user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
+        user.part_time_percentage = form.get_part_time_percentage_as_float()
+        user.active = form.active.data
+        db.session.add(user)
+        db.session.flush()  # Per ottenere l'ID dell'utente
+        
+        # Non c'è più gestione sedi multiple
+        
+        db.session.commit()
+        flash('Utente creato con successo', 'success')
+        return redirect(url_for('users.users'))
+    
+    return render_template('users.html', form=form, editing=False)
+
+@user_management_bp.route('/user_profile', methods=['GET', 'POST'])
+@login_required
+def user_profile():
+    """Route per la gestione del profilo personale dell'utente (migrata da routes.py)"""
+    form = UserProfileForm(original_email=current_user.email, obj=current_user)
+    
+    if request.method == 'GET':
+        # Popola i campi con i dati attuali dell'utente
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.email.data = current_user.email
+        form.username.data = current_user.username
+    
+    if form.validate_on_submit():
+        # Aggiorna i dati del profilo
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.email = form.email.data
+        
+        # Aggiorna la password solo se fornita
+        if form.password.data:
+            current_user.password_hash = generate_password_hash(form.password.data)
+            flash('Password aggiornata con successo', 'success')
+        
+        try:
+            db.session.commit()
+            flash('Profilo aggiornato con successo', 'success')
+            return redirect(url_for('users.user_profile'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Errore durante l\'aggiornamento del profilo', 'danger')
+            return redirect(url_for('users.user_profile'))
+    
+    return render_template('user_profile.html', form=form)
+
+@user_management_bp.route('/toggle_user/<int:user_id>')
+@login_required
+def toggle_user(user_id):
+    """Toggle dello stato attivo di un utente (migrata da routes.py)"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per modificare utenti', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('Non puoi disattivare il tuo account', 'warning')
+        return redirect(url_for('users.user_management'))
+    
+    # Impedisce la disattivazione dell'amministratore
+    if user.role == 'Amministratore':
+        flash('Non è possibile disattivare l\'utente amministratore', 'danger')
+        return redirect(url_for('users.user_management'))
+    
+    user.active = not user.active
+    db.session.commit()
+    
+    status = 'attivato' if user.active else 'disattivato'
+    flash(f'Utente {status} con successo', 'success')
+    return redirect(url_for('users.user_management'))
