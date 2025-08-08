@@ -155,7 +155,7 @@ def create_leave_request():
             
             if existing_requests:
                 flash('Hai già una richiesta nel periodo selezionato', 'warning')
-                return render_template('create_leave_request.html', form=form)
+                return render_template('create_leave_request.html', form=form, today=date.today())
             
             # Calcola giorni lavorativi semplificato
             delta = form.end_date.data - form.start_date.data
@@ -182,7 +182,7 @@ def create_leave_request():
             db.session.rollback()
             flash(f'Errore nella creazione richiesta: {str(e)}', 'danger')
     
-    return render_template('create_leave_request.html', form=form)
+    return render_template('create_leave_request.html', form=form, today=date.today())
 
 @leave_bp.route('/approve_leave_request/<int:request_id>', methods=['POST'])
 @login_required
