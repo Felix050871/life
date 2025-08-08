@@ -38,12 +38,12 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             {% if current_user.can_send_messages() %}
-                            <li><a class="dropdown-item" href="{{ url_for('send_message') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('messages.messages') }}">
                                 <i class="fas fa-paper-plane me-1"></i>Invia Messaggio
                             </a></li>
                             {% endif %}
                             {% if current_user.can_view_messages() %}
-                            <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('messages.internal_messages') }}">
                                 <i class="fas fa-inbox me-1"></i>Visualizza Messaggi
                             </a></li>
                             {% endif %}
@@ -75,7 +75,7 @@
         <!-- Sidebar -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <a href="{% if current_user.can_access_dashboard() %}{{ url_for('dashboard.dashboard') }}{% else %}{{ url_for('index') }}{% endif %}" class="brand">
+                <a href="{% if current_user.can_access_dashboard() %}{{ url_for('dashboard.dashboard') }}{% else %}{{ url_for('auth.login') }}{% endif %}" class="brand">
                     <i class="fas fa-briefcase me-2"></i><span>Workly</span>
                 </a>
                 <button class="sidebar-toggle" onclick="toggleSidebar()">
@@ -104,12 +104,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_roles() %}
-                        <li><a href="{{ url_for('manage_roles') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Ruoli
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_roles() %}
-                        <li><a href="{{ url_for('manage_roles') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Ruoli
                         </a></li>
                         {% endif %}
@@ -131,12 +131,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_sedi() %}
-                        <li><a href="{{ url_for('manage_sedi') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_sedi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Sedi
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_sedi() %}
-                        <li><a href="{{ url_for('manage_sedi') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_sedi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Sedi
                         </a></li>
                         {% endif %}
@@ -155,12 +155,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_schedules() %}
-                        <li><a href="{{ url_for('manage_work_schedules') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_work_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Orari
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_schedules() %}
-                        <li><a href="{{ url_for('manage_work_schedules') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_work_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Orari
                         </a></li>
                         {% endif %}
@@ -179,7 +179,7 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_shifts() %}
-                        <li><a href="{{ url_for('presidio_coverage') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.presidio_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestione Coperture
                         </a></li>
                         <li><a href="{{ url_for('shifts.turni_automatici') }}" class="sidebar-submenu-link">
@@ -187,7 +187,7 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_shifts() %}
-                        <li><a href="{{ url_for('view_presidi') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.view_presidi') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizza Coperture
                         </a></li>
                         <li><a href="{{ url_for('shifts.visualizza_turni') }}" class="sidebar-submenu-link">
@@ -229,12 +229,12 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_interventions() %}
-                        <li><a href="{{ url_for('my_interventions') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita.my_interventions') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Interventi
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_interventions() %}
-                        <li><a href="{{ url_for('my_interventions') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('reperibilita.my_interventions') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Interventi
                         </a></li>
                         {% endif %}
@@ -253,12 +253,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_access_attendance() %}
-                        <li><a href="{{ url_for('attendance') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('attendance.attendance') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user-clock"></i>Le Mie Presenze
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_sede_attendance() %}
-                        <li><a href="{{ url_for('attendance', view='sede') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('attendance.attendance', view='sede') }}" class="sidebar-submenu-link">
                             <i class="fas fa-users"></i>Presenze Sede
                         </a></li>
                         {% endif %}
@@ -290,7 +290,7 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_leave() %}
-                        <li><a href="{{ url_for('leave.leave_types') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('leave.leave_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list-alt"></i>Gestisci Tipologie
                         </a></li>
                         {% endif %}
@@ -416,12 +416,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_holidays() %}
-                        <li><a href="{{ url_for('holidays') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('holidays.holidays') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Festività
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_holidays() %}
-                        <li><a href="{{ url_for('holidays') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('holidays.holidays') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Festività
                         </a></li>
                         {% endif %}
@@ -438,16 +438,16 @@
                         <i class="fas fa-chevron-right dropdown-arrow"></i>
                     </a>
                     <ul class="sidebar-submenu">
-                        <li><a href="{{ url_for('aci_tables') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.aci_tables') }}" class="sidebar-submenu-link">
                             <i class="fas fa-list"></i>Visualizza Tabelle
                         </a></li>
-                        <li><a href="{{ url_for('aci_upload') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.aci_upload') }}" class="sidebar-submenu-link">
                             <i class="fas fa-upload"></i>Carica Excel
                         </a></li>
-                        <li><a href="{{ url_for('aci_create') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.aci_create') }}" class="sidebar-submenu-link">
                             <i class="fas fa-plus"></i>Nuovo Record
                         </a></li>
-                        <li><a href="{{ url_for('aci_export') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.aci_export') }}" class="sidebar-submenu-link">
                             <i class="fas fa-download"></i>Export Excel
                         </a></li>
                     </ul>
@@ -458,7 +458,7 @@
                 {% set has_qr_permission = current_user.can_manage_qr() %}
                 {% if has_qr_permission %}
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('admin_generate_qr_codes') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('admin.admin_generate_qr_codes') }}" class="sidebar-nav-link">
                         <i class="fas fa-qrcode"></i>
                         <span>Gestione QR</span>
                     </a>
