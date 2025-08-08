@@ -15,7 +15,7 @@
                     </p>
                 </div>
                 <div class="text-end">
-                    <a href="{{ url_for('generate_turnazioni') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('shifts.generate_turnazioni') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Torna alla Generazione
                     </a>
                 </div>
@@ -124,7 +124,7 @@
                             Non sono state create coperture per questa sede.
                             <br>Prima di generare turni, devi creare delle coperture.
                         </p>
-                        <a href="{{ url_for('manage_turni') }}" class="btn btn-primary">
+                        <a href="{{ url_for('shifts.manage_turni') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i>Crea Coperture
                         </a>
                     </div>

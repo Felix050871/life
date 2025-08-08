@@ -15,10 +15,10 @@
                     </p>
                 </div>
                 <div class="text-end">
-                    <a href="{{ url_for('generate_turnazioni') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('shifts.generate_turnazioni') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Torna alla Generazione
                     </a>
-                    <a href="{{ url_for('shifts') }}?sede={{ sede.id }}" class="btn btn-primary">
+                    <a href="{{ url_for('shifts.visualizza_turni') }}?sede={{ sede.id }}" class="btn btn-primary">
                         <i class="fas fa-calendar-alt me-1"></i>Gestione Turni
                     </a>
                 </div>
@@ -162,7 +162,7 @@
                             Non sono stati ancora generati turni per questo periodo.
                             <br>Torna alla pagina di generazione per creare i turni basandoti sulle coperture.
                         </p>
-                        <a href="{{ url_for('generate_turnazioni') }}" class="btn btn-primary">
+                        <a href="{{ url_for('shifts.generate_turnazioni') }}" class="btn btn-primary">
                             <i class="fas fa-magic me-1"></i>Genera Turni
                         </a>
                     </div>

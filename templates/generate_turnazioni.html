@@ -69,7 +69,7 @@
                                             <i class="fas fa-eye me-2"></i>Visualizza
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('manage_turni') }}">
+                                        <li><a class="dropdown-item" href="{{ url_for('shifts.manage_turni') }}">
                                             <i class="fas fa-edit me-2"></i>Modifica Coperture
                                         </a></li>
                                         <li><a class="dropdown-item text-warning" href="#" onclick="disableCoveragePeriod('{{ period_data.period_id }}')">
@@ -126,7 +126,7 @@
                         <div class="text-center py-4">
                             <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
                             <p class="text-muted mb-2">Nessuna copertura creata per questa sede</p>
-                            <a href="{{ url_for('manage_turni') }}" class="btn btn-primary btn-sm">
+                            <a href="{{ url_for('shifts.manage_turni') }}" class="btn btn-primary btn-sm">
                                 <i class="fas fa-plus me-1"></i>Crea Copertura
                             </a>
                         </div>

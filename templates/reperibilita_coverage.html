@@ -6,7 +6,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-phone-volume"></i> Coperture Reperibilità</h2>
-        <a href="{{ url_for('create_reperibilita_coverage') }}" class="btn btn-primary">
+        <a href="{{ url_for('reperibilita.create_reperibilita_coverage') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Nuova Copertura
         </a>
     </div>
@@ -92,7 +92,7 @@
         <div class="alert alert-info text-center">
             <i class="fas fa-info-circle"></i>
             Nessuna copertura reperibilità configurata. 
-            <a href="{{ url_for('create_reperibilita_coverage') }}" class="alert-link">Crea la prima copertura</a>.
+            <a href="{{ url_for('reperibilita.create_reperibilita_coverage') }}" class="alert-link">Crea la prima copertura</a>.
         </div>
     {% endif %}
 </div>
