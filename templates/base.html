@@ -104,12 +104,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_roles() %}
-                        <li><a href="{{ url_for('manage_roles') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Ruoli
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_roles() %}
-                        <li><a href="{{ url_for('manage_roles') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_roles') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Ruoli
                         </a></li>
                         {% endif %}
@@ -155,12 +155,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_manage_schedules() %}
-                        <li><a href="{{ url_for('manage_work_schedules') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_work_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Orari
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_schedules() %}
-                        <li><a href="{{ url_for('manage_work_schedules') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('admin.manage_work_schedules') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Orari
                         </a></li>
                         {% endif %}

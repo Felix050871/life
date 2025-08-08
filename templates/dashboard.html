@@ -569,11 +569,11 @@ SECTIONS (1207 lines total):
                     {% endif %}
                     
                     {% if current_user.can_manage_roles() %}
-                    <a href="{{ url_for('manage_roles') }}" class="btn btn-secondary btn-sm">
+                    <a href="{{ url_for('admin.manage_roles') }}" class="btn btn-secondary btn-sm">
                         <i class="fas fa-user-cog me-1"></i>Gestisci Ruoli
                     </a>
                     {% elif current_user.can_view_roles() %}
-                    <a href="{{ url_for('manage_roles') }}" class="btn btn-outline-secondary btn-sm">
+                    <a href="{{ url_for('admin.manage_roles') }}" class="btn btn-outline-secondary btn-sm">
                         <i class="fas fa-eye me-1"></i>Visualizza Ruoli
                     </a>
                     {% endif %}

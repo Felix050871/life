@@ -17,7 +17,7 @@
                 </div>
                 <div class="card-body">
                     {% if form.sede.choices|length > 0 %}
-                    <form method="POST" action="{{ url_for('create_work_schedule') }}">
+                    <form method="POST" action="{{ url_for('admin.create_work_schedule') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
                             <div class="col-md-4">
@@ -142,16 +142,16 @@
                                     <td>
                                         {% if current_user.can_manage_schedules() %}
                                         <div class="btn-group" role="group">
-                                            <a href="{{ url_for('edit_work_schedule', schedule_id=schedule.id) }}" 
+                                            <a href="{{ url_for('admin.edit_work_schedule', schedule_id=schedule.id) }}" 
                                                class="btn btn-sm btn-outline-primary" title="Modifica">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <a href="{{ url_for('toggle_work_schedule', schedule_id=schedule.id) }}" 
+                                            <a href="{{ url_for('admin.toggle_work_schedule', schedule_id=schedule.id) }}" 
                                                class="btn btn-sm btn-outline-{% if schedule.active %}warning{% else %}success{% endif %}" 
                                                title="{% if schedule.active %}Disattiva{% else %}Attiva{% endif %}">
                                                 <i class="fas fa-{% if schedule.active %}pause{% else %}play{% endif %}"></i>
                                             </a>
-                                            <a href="{{ url_for('delete_work_schedule', schedule_id=schedule.id) }}" 
+                                            <a href="{{ url_for('admin.delete_work_schedule', schedule_id=schedule.id) }}" 
                                                class="btn btn-sm btn-outline-danger" 
                                                title="Elimina definitivamente"
                                                onclick="return confirm('Vuoi eliminare definitivamente questo orario di lavoro?\n\nATTENZIONE:\n• Gli utenti assegnati a questo orario perderanno la configurazione\n• Non sarà più possibile utilizzarlo per nuovi utenti\n\nL\'operazione NON può essere annullata.')">
