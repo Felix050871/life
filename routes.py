@@ -598,7 +598,7 @@ def attendance():
     # Default to last 30 days if no dates provided
     if not start_date_str or not end_date_str:
         end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=30)
+        start_date = end_date - datetime.timedelta(days=30)
     else:
         try:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
@@ -606,7 +606,7 @@ def attendance():
         except ValueError:
             # Fallback to default if invalid dates
             end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=30)
+            start_date = end_date - datetime.timedelta(days=30)
     
     if show_team_data:
         # Get team attendance data for PM, Management, Responsabili and Ente
@@ -4254,14 +4254,14 @@ def export_attendance_excel():
     
     if not start_date_str or not end_date_str:
         end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=30)
+        start_date = end_date - datetime.timedelta(days=30)
     else:
         try:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         except ValueError:
             end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=30)
+            start_date = end_date - datetime.timedelta(days=30)
     
     if show_team_data:
         team_users = User.query.filter(
