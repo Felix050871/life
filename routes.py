@@ -2204,9 +2204,10 @@ def toggle_user(user_id):
 # REPORTS ROUTES
 # =============================================================================
 
-@app.route('/reports')
-@login_required
-def reports():
+# MIGRATED TO BLUEPRINT: blueprints/reports.py
+# @app.route('/reports')
+# @login_required
+# def reports():
     if not current_user.can_view_reports():
         flash('Non hai i permessi per visualizzare i report', 'danger')
         return redirect(url_for('dashboard'))
