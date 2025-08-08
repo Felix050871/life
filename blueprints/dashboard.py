@@ -358,7 +358,7 @@ def dashboard_team():
         })
     
     # Sort by sede and then by name
-    users_data.sort(key=lambda x: (x['user'].sede_obj.nome if x['user'].sede_obj else 'ZZZ', 
+    users_data.sort(key=lambda x: (x['user'].sede_obj.name if x['user'].sede_obj else 'ZZZ', 
                                   x['user'].last_name, 
                                   x['user'].first_name))
     
