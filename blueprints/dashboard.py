@@ -365,7 +365,7 @@ def dashboard_team():
     # Get all sedi for filtering
     all_sedi = []
     if current_user.role == 'Amministratore' or current_user.all_sedi:
-        all_sedi = Sede.query.filter_by(active=True).order_by(Sede.nome).all()
+        all_sedi = Sede.query.filter_by(active=True).order_by(Sede.name).all()
     elif current_user.sede_id:
         all_sedi = [current_user.sede]
     
@@ -385,7 +385,7 @@ def dashboard_sede():
     
     # Get accessible sedi for current user
     if current_user.role == 'Amministratore' or current_user.all_sedi:
-        available_sedi = Sede.query.filter_by(active=True).order_by(Sede.nome).all()
+        available_sedi = Sede.query.filter_by(active=True).order_by(Sede.name).all()
     elif current_user.sede_id:
         available_sedi = [current_user.sede]
     else:
