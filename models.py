@@ -1301,7 +1301,7 @@ class LeaveType(db.Model):
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
     # Relazione con le richieste di permesso
-    leave_requests = db.relationship('LeaveRequest', backref='leave_type_ref', lazy='dynamic')
+    leave_requests = db.relationship('LeaveRequest', backref='leave_type', lazy='dynamic')
     
     def __repr__(self):
         return f'<LeaveType {self.name}>'
@@ -1339,7 +1339,6 @@ class LeaveRequest(db.Model):
     
     user = db.relationship('User', foreign_keys=[user_id], backref='leave_requests')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_leaves')
-    leave_type_rel = db.relationship('LeaveType', foreign_keys=[leave_type_id], backref='requests')
     
     def is_time_based(self):
         """Verifica se il permesso è basato su orari (permessi parziali)"""
@@ -1366,15 +1365,15 @@ class LeaveRequest(db.Model):
     
     def get_leave_type_name(self):
         """Restituisce il nome della tipologia di permesso"""
-        if self.leave_type_ref:
-            return self.leave_type_ref.name
+        if self.leave_type:
+            return self.leave_type.name
         # Fallback per retrocompatibilità
         return self.leave_type or 'Tipo non specificato'
     
     def requires_approval(self):
         """Verifica se il permesso richiede approvazione"""
-        if self.leave_type_ref:
-            return self.leave_type_ref.requires_approval
+        if self.leave_type:
+            return self.leave_type.requires_approval
         # Fallback: malattia non richiede approvazione, resto sì
         return self.leave_type != 'Malattia' if self.leave_type else True
 
@@ -1486,6 +1485,7 @@ class PresidioCoverage(db.Model):
     created_at = db.Column(db.DateTime, default=italian_now)
 
     creator = db.relationship('User', backref='presidio_coverages')
+    template = db.relationship('PresidioCoverageTemplate', foreign_keys=[template_id])
 
     def get_day_name(self):
         """Restituisce il nome del giorno in italiano"""
@@ -2092,13 +2092,12 @@ class ExpenseReport(db.Model):
             message += f"\n\nCommento: {self.approval_comment}"
         
         # Crea messaggio interno
-        notification = InternalMessage(
-            recipient_id=self.employee_id,
-            sender_id=self.approved_by,
-            title=title,
-            message=message,
-            message_type=message_type
-        )
+        notification = InternalMessage()
+        notification.recipient_id = self.employee_id
+        notification.sender_id = self.approved_by
+        notification.title = title
+        notification.message = message
+        notification.message_type = message_type
         
         db.session.add(notification)
     
@@ -2109,7 +2108,7 @@ class ExpenseReport(db.Model):
         
         result = db.session.query(func.sum(cls.amount)).filter(
             cls.employee_id == employee_id,
-            cls.status == status,
+            cls.status == str(status),
             extract('year', cls.expense_date) == year,
             extract('month', cls.expense_date) == month
         ).scalar()
@@ -2123,7 +2122,7 @@ class ExpenseReport(db.Model):
         
         result = db.session.query(func.sum(cls.amount)).filter(
             cls.employee_id == employee_id,
-            cls.status == status,
+            cls.status == str(status),
             extract('year', cls.expense_date) == year
         ).scalar()
         
@@ -2174,33 +2173,6 @@ class OvertimeRequest(db.Model):
     
     def __repr__(self):
         return f'<OvertimeRequest {self.employee.get_full_name()} - {self.overtime_date}>'
-    
-    @property
-    def hours(self):
-        """Calcola le ore di straordinario"""
-        start_datetime = datetime.combine(self.overtime_date, self.start_time)
-        end_datetime = datetime.combine(self.overtime_date, self.end_time)
-        return round((end_datetime - start_datetime).total_seconds() / 3600, 2)
-    
-    @property
-    def status_display(self):
-        """Mostra lo stato in italiano"""
-        status_map = {
-            'pending': 'In Attesa',
-            'approved': 'Approvata',
-            'rejected': 'Rifiutata'
-        }
-        return status_map.get(self.status, self.status)
-    
-    @property
-    def status_color(self):
-        """Restituisce il colore Bootstrap per lo stato"""
-        color_map = {
-            'pending': 'warning',
-            'approved': 'success',
-            'rejected': 'danger'
-        }
-        return color_map.get(self.status, 'secondary')
     
     @property
     def status_display(self):
@@ -2293,13 +2265,12 @@ class OvertimeRequest(db.Model):
                 message += f"\n\nCommento: {self.approval_comment}"
             
             # Crea messaggio interno
-            notification = InternalMessage(
-                recipient_id=self.employee_id,
-                sender_id=self.approved_by,
-                title=title,
-                message=message,
-                message_type=message_type
-            )
+            notification = InternalMessage()
+            notification.recipient_id = self.employee_id
+            notification.sender_id = self.approved_by
+            notification.title = title
+            notification.message = message
+            notification.message_type = message_type
             
             db.session.add(notification)
                 
@@ -2314,7 +2285,7 @@ class OvertimeRequest(db.Model):
         
         requests = db.session.query(cls).filter(
             cls.employee_id == employee_id,
-            cls.status == status,
+            cls.status == str(status),
             extract('year', cls.overtime_date) == year,
             extract('month', cls.overtime_date) == month
         ).all()
@@ -2439,13 +2410,12 @@ class MileageRequest(db.Model):
         self.approval_comment = comment
         
         # Invia notifica di approvazione
-        notification = InternalMessage(
-            recipient_id=self.user_id,
-            sender_id=approver.id,
-            title="Rimborso Chilometrico Approvato",
-            message=f"Il tuo rimborso chilometrico per {self.total_km}km del {self.travel_date.strftime('%d/%m/%Y')} è stato approvato per un importo di €{self.total_amount:.2f}. {comment or ''}",
-            message_type='Successo'
-        )
+        notification = InternalMessage()
+        notification.recipient_id = self.user_id
+        notification.sender_id = approver.id
+        notification.title = "Rimborso Chilometrico Approvato"
+        notification.message = f"Il tuo rimborso chilometrico per {self.total_km}km del {self.travel_date.strftime('%d/%m/%Y')} è stato approvato per un importo di €{self.total_amount:.2f}. {comment or ''}"
+        notification.message_type = 'Successo'
         db.session.add(notification)
     
     def reject(self, approver, comment=None):
@@ -2456,13 +2426,12 @@ class MileageRequest(db.Model):
         self.approval_comment = comment
         
         # Invia notifica di rifiuto
-        notification = InternalMessage(
-            recipient_id=self.user_id,
-            sender_id=approver.id,
-            title="Rimborso Chilometrico Rifiutato",
-            message=f"Il tuo rimborso chilometrico per {self.total_km}km del {self.travel_date.strftime('%d/%m/%Y')} è stato rifiutato. Motivo: {comment or 'Nessun motivo specificato'}",
-            message_type='Attenzione'
-        )
+        notification = InternalMessage()
+        notification.recipient_id = self.user_id
+        notification.sender_id = approver.id
+        notification.title = "Rimborso Chilometrico Rifiutato"
+        notification.message = f"Il tuo rimborso chilometrico per {self.total_km}km del {self.travel_date.strftime('%d/%m/%Y')} è stato rifiutato. Motivo: {comment or 'Nessun motivo specificato'}"
+        notification.message_type = 'Attenzione'
         db.session.add(notification)
     
     def calculate_reimbursement_amount(self):
@@ -2610,11 +2579,14 @@ class WorkSchedule(db.Model):
     active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     
+    # Relazione con Sede
+    sede = db.relationship('Sede', backref='work_schedules')
+    
     # Constraint per evitare duplicati nella stessa sede
     __table_args__ = (db.UniqueConstraint('sede_id', 'name', name='_sede_schedule_name_uc'),)
     
     def __repr__(self):
-        return f'<WorkSchedule {self.name} at {self.sede_obj.name if self.sede_obj else "Unknown Sede"}>'
+        return f'<WorkSchedule {self.name} at {self.sede.name if self.sede else "Unknown Sede"}>'
     
     def get_days_of_week_list(self):
         """Restituisce la lista dei giorni della settimana come interi"""
