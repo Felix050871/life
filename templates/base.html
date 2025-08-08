@@ -43,7 +43,7 @@
                             </a></li>
                             {% endif %}
                             {% if current_user.can_view_messages() %}
-                            <li><a class="dropdown-item" href="{{ url_for('internal_messages') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('messages.internal_messages') }}">
                                 <i class="fas fa-inbox me-1"></i>Visualizza Messaggi
                             </a></li>
                             {% endif %}
