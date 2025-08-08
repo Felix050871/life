@@ -527,14 +527,15 @@ def get_shifts_for_template_api(template_id):
             db.session.commit()
             flash(f'Cancellati {deleted_shifts} turni esistenti per rigenerazione', 'info')
         
-        # Usa il nuovo sistema avanzato con regole rigorose
-        from new_shift_generation import generate_shifts_advanced
-        turni_creati, message = generate_shifts_advanced(
-            template_id, 
-            start_date, 
-            end_date, 
-            current_user.id
-        )
+        # TEMPORARY DISABLED - CLEANUP: Usa il nuovo sistema avanzato con regole rigorose
+        # from new_shift_generation import generate_shifts_advanced
+        # turni_creati, message = generate_shifts_advanced(
+        #     template_id, 
+        #     start_date, 
+        #     end_date, 
+        #     current_user.id
+        # )
+        turni_creati, message = 0, "Funzionalità temporaneamente disabilitata durante cleanup"
         
         db.session.commit()
         flash(message, 'success' if turni_creati > 0 else 'warning')
@@ -668,7 +669,7 @@ def generate_shifts():
         db.session.add(template)
         db.session.commit()
         
-        from new_shift_generation import generate_shifts_advanced
+        # TEMPORARY DISABLED - CLEANUP: from new_shift_generation import generate_shifts_advanced
         from models import PresidioCoverageTemplate
         
         # Find active template for the period
@@ -681,12 +682,13 @@ def generate_shifts():
             flash('Nessun template di copertura trovato per il periodo specificato', 'warning')
             return redirect(url_for('manage_turni'))
         
-        turni_creati, message = generate_shifts_advanced(
-            template.id,
-            form.start_date.data,
-            form.end_date.data,
-            current_user.id
-        )
+        # TEMPORARY DISABLED - CLEANUP: turni_creati, message = generate_shifts_advanced(
+        #     template.id,
+        #     form.start_date.data,
+        #     form.end_date.data,
+        #     current_user.id
+        # )
+        turni_creati, message = 0, "Funzionalità temporaneamente disabilitata durante cleanup"
         success = turni_creati > 0
         
         if success:
@@ -727,7 +729,7 @@ def regenerate_template(template_id):
     db.session.commit()
     
     # Regenerate shifts
-    from new_shift_generation import generate_shifts_advanced
+    # TEMPORARY DISABLED - CLEANUP: from new_shift_generation import generate_shifts_advanced
     from models import PresidioCoverageTemplate
     
     # Find active template for the period
@@ -740,12 +742,13 @@ def regenerate_template(template_id):
         flash('Nessun template di copertura trovato per rigenerare i turni', 'warning')
         return redirect(url_for('manage_turni'))
     
-    turni_creati, message = generate_shifts_advanced(
-        coverage_template.id,
-        template.start_date,
-        template.end_date,
-        current_user.id
-    )
+    # TEMPORARY DISABLED - CLEANUP: turni_creati, message = generate_shifts_advanced(
+    #     coverage_template.id,
+    #     template.start_date,
+    #     template.end_date,
+    #     current_user.id
+    # )
+    turni_creati, message = 0, "Funzionalità temporaneamente disabilitata durante cleanup"
     success = turni_creati > 0
     
     if success:

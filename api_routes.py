@@ -6,7 +6,7 @@ from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
 import json
 import logging
 from utils import split_coverage_into_segments_by_user_capacity
-from new_shift_generation import calculate_shift_duration
+# TEMPORARY DISABLED: from new_shift_generation import calculate_shift_duration
 
 # Setup logging for API routes
 logger = logging.getLogger(__name__)
