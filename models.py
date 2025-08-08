@@ -1485,7 +1485,7 @@ class PresidioCoverage(db.Model):
     created_at = db.Column(db.DateTime, default=italian_now)
 
     creator = db.relationship('User', backref='presidio_coverages')
-    template_ref = db.relationship('PresidioCoverageTemplate', foreign_keys=[template_id])
+    template_ref = db.relationship('PresidioCoverageTemplate', foreign_keys=[template_id], overlaps="coverages,template")
 
     def get_day_name(self):
         """Restituisce il nome del giorno in italiano"""
