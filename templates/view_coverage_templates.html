@@ -92,7 +92,7 @@
 <script>
 function viewTurniForPeriod(startDate, endDate) {
     // Reindirizza alla pagina dei turni filtrati per periodo
-    const url = `/view_turni_for_period?start_date=${startDate}&end_date=${endDate}`;
+    const url = `{{ url_for('shifts.view_turni_for_period') }}?start_date=${startDate}&end_date=${endDate}`;
     window.location.href = url;
 }
 </script>

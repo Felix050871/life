@@ -3444,120 +3444,18 @@ def internal_error(error):
 
 # ROUTE MOVED TO presidio_bp blueprint - generate_turnazioni_coverage
 
-@app.route("/view_coverage_templates")
-@login_required  
-def view_coverage_templates():
-    """Visualizza Turni - Lista semplificata dei template di copertura"""
-    if not current_user.can_view_shifts():
-        flash("Non hai i permessi per visualizzare i turni", "danger")
-        return redirect(url_for("dashboard"))
-    
-    # Import necessari
-    from models import Sede, PresidioCoverage
-    
-    # Ottieni le sedi accessibili per utente
-    if current_user.all_sedi:
-        accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
-    elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
-        accessible_sedi = [current_user.sede_obj]
-    else:
-        accessible_sedi = []
-        flash("Nessuna sede con modalità turni accessibile", "warning")
-        return redirect(url_for("dashboard"))
-    
-    # Ottieni TUTTI i template di copertura (attivi e non) SENZA DUPLICATI
-    all_coverages = PresidioCoverage.query.distinct().order_by(
-        PresidioCoverage.start_date.desc(),
-        PresidioCoverage.id.desc()
-    ).all()
-    
-    # Raggruppa per periodo per una visualizzazione più chiara
-    coverage_periods = {}
-    for coverage in all_coverages:
-        period_key = f"{coverage.start_date.strftime('%Y-%m-%d')} - {coverage.end_date.strftime('%Y-%m-%d')}"
-        if period_key not in coverage_periods:
-            coverage_periods[period_key] = {
-                'start_date': coverage.start_date,
-                'end_date': coverage.end_date,
-                'coverages': [],
-                'active_status': coverage.active
-            }
-        # Solo aggiungi se non già presente (controllo ID)
-        if not any(c.id == coverage.id for c in coverage_periods[period_key]['coverages']):
-            coverage_periods[period_key]['coverages'].append(coverage)
-    
-    return render_template("view_coverage_templates.html",
-                         coverage_periods=coverage_periods,
-                         accessible_sedi=accessible_sedi,
-                         total_templates=len(all_coverages),
-                         today=datetime.now().date())
+# VIEW COVERAGE TEMPLATES ROUTE MIGRATED TO shifts_bp blueprint
+# def view_coverage_templates():
 
-@app.route("/view_turni_for_period")
-@login_required  
-def view_turni_for_period():
-    """Visualizza i turni generati per un periodo specifico"""
-    if not current_user.can_view_shifts():
-        flash("Non hai i permessi per visualizzare i turni", "danger")
-        return redirect(url_for("dashboard"))
-    
-    # Import necessari
-    from models import Sede, Shift
-    from datetime import datetime
-    
-    # Ottieni parametri
-    start_date_str = request.args.get("start_date")
-    end_date_str = request.args.get("end_date")
-    
-    if not start_date_str or not end_date_str:
-        flash("Periodo non specificato correttamente", "warning")
-        return redirect(url_for("view_coverage_templates"))
-    
-    try:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    except ValueError:
-        flash("Formato data non valido", "error")
-        return redirect(url_for("view_coverage_templates"))
-    
-    # Ottieni le sedi accessibili per utente
-    if current_user.all_sedi:
-        accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
-    elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
-        accessible_sedi = [current_user.sede_obj]
-    else:
-        accessible_sedi = []
-        flash("Nessuna sede con modalità turni accessibile", "warning")
-        return redirect(url_for("dashboard"))
-    
-    # Trova i turni per il periodo specificato filtrando per utenti delle sedi accessibili
-    turni_periodo = []
-    if accessible_sedi:
-        # Ottieni tutti gli utenti delle sedi accessibili
-        sede_ids = [sede.id for sede in accessible_sedi]
-        
-        # Query turni filtrando per periodo e utenti delle sedi
-        # Specificare la condizione JOIN esplicita per evitare ambiguità
-        turni_periodo = Shift.query.join(User, Shift.user_id == User.id).filter(
-            User.sede_id.in_(sede_ids),
-            Shift.date >= start_date,
-            Shift.date <= end_date
-        ).order_by(Shift.date.desc(), Shift.start_time).all()
-    
-    return render_template("view_turni_period.html",
-                         turni_periodo=turni_periodo,
-                         start_date=start_date,
-                         end_date=end_date,
-                         accessible_sedi=accessible_sedi,
-                         total_turni=len(turni_periodo),
-                         today=datetime.now().date())
+# VIEW TURNI FOR PERIOD ROUTE MIGRATED TO shifts_bp blueprint
+# def view_turni_for_period():
 
 # =====================================
 # NUOVO SISTEMA PRESIDIO - PACCHETTO COMPLETO
 # =====================================
 
-@app.route('/presidio_coverage', methods=['GET', 'POST'])
-@login_required
-def presidio_coverage():
+# PRESIDIO COVERAGE ROUTE MIGRATED TO shifts_bp blueprint
+# def presidio_coverage():
     """Pagina principale per gestione copertura presidio - Sistema completo"""
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per gestire coperture presidio', 'danger')
@@ -3626,9 +3524,8 @@ def presidio_coverage():
                          search_form=search_form,
                          current_template=current_template)
 
-@app.route('/presidio_coverage_edit/<int:template_id>', methods=['GET', 'POST'])
-@login_required
-def presidio_coverage_edit(template_id):
+# PRESIDIO COVERAGE ROUTE MIGRATED TO shifts_bp blueprint
+# def presidio_coverage_edit(template_id):
     """Modifica template esistente - Sistema completo"""
     if not current_user.can_manage_shifts():
         flash('Non hai i permessi per gestire coperture presidio', 'danger')
@@ -3709,9 +3606,8 @@ def presidio_coverage_edit(template_id):
                          coverage_form=coverage_form,
                          current_template=current_template)
 
-@app.route('/presidio_detail/<int:template_id>')
-@login_required
-def presidio_detail(template_id):
+# PRESIDIO COVERAGE ROUTE MIGRATED TO shifts_bp blueprint
+# def presidio_detail(template_id):
     """Visualizza dettagli di un template di copertura presidio"""
     if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
         flash('Non hai i permessi per visualizzare le coperture presidio', 'danger')
@@ -3731,9 +3627,8 @@ def presidio_detail(template_id):
                          template=template,
                          coverages_by_day=coverages_by_day)
 
-@app.route('/view_presidi')
-@login_required
-def view_presidi():
+# PRESIDIO COVERAGE ROUTE MIGRATED TO shifts_bp blueprint
+# def view_presidi():
     """Visualizzazione sola lettura dei presidi configurati"""
     if not current_user.can_view_shifts():
         flash('Non hai i permessi per visualizzare i presidi', 'warning')
@@ -3744,9 +3639,8 @@ def view_presidi():
 
 # API ROUTE MIGRATED TO api_bp blueprint - api_presidio_coverage
 
-@app.route('/presidio_coverage/toggle_status/<int:template_id>', methods=['POST'])
-@login_required
-def toggle_presidio_template_status(template_id):
+# PRESIDIO COVERAGE ROUTE MIGRATED TO shifts_bp blueprint
+# def toggle_presidio_template_status(template_id):
     """Attiva/disattiva template presidio"""
     if not current_user.can_manage_shifts():
         return jsonify({'success': False, 'message': 'Non autorizzato'}), 403

@@ -27,8 +27,8 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db, csrf
-from models import User, Shift, Sede, PresidioCoverageTemplate, PresidioCoverage, AttendanceEvent, ReperibilitaShift, LeaveRequest, italian_now
-from forms import EditShiftForm
+from models import User, Shift, Sede, PresidioCoverageTemplate, PresidioCoverage, AttendanceEvent, ReperibilitaShift, LeaveRequest, italian_now, get_active_presidio_templates
+from forms import EditShiftForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm
 from collections import defaultdict
 from io import BytesIO
 import json
@@ -1522,3 +1522,329 @@ def regenerate_turni_from_coverage():
         db.session.rollback()
         flash(f'Errore durante la rigenerazione turni: {str(e)}', 'danger')
         return redirect(url_for('shifts.generate_turnazioni'))
+
+# =============================================================================
+# PRESIDIO COVERAGE ROUTES - Migrated from routes.py
+# =============================================================================
+
+@shifts_bp.route('/presidio_coverage', methods=['GET', 'POST'])
+@login_required
+def presidio_coverage():
+    """Pagina principale per gestione copertura presidio - Sistema completo"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per gestire coperture presidio', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni tutti i template di copertura presidio ordinati per data creazione
+    templates = get_active_presidio_templates()
+    
+    # Form per nuovo template
+    form = PresidioCoverageTemplateForm()
+    search_form = PresidioCoverageSearchForm()
+    current_template = None
+    
+    # Applica filtri di ricerca se presenti
+    if request.args.get('search'):
+        query = PresidioCoverageTemplate.query.filter_by(active=True)
+        
+        template_name = request.args.get('template_name')
+        if template_name:
+            query = query.filter(PresidioCoverageTemplate.name.ilike(f"%{template_name}%"))
+        
+        date_from = request.args.get('date_from')
+        if date_from:
+            try:
+                date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(PresidioCoverageTemplate.start_date >= date_from)
+            except ValueError:
+                pass
+        
+        date_to = request.args.get('date_to')
+        if date_to:
+            try:
+                date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(PresidioCoverageTemplate.end_date <= date_to)
+            except ValueError:
+                pass
+        
+        active_arg = request.args.get('active')
+        if active_arg:
+            active_bool = active_arg == 'true'
+            query = query.filter(PresidioCoverageTemplate.active == active_bool)
+        
+        templates = query.order_by(PresidioCoverageTemplate.created_at.desc()).all()
+    
+    # Gestisci creazione/modifica template
+    if request.method == 'POST':
+        action = request.form.get('action', 'create')
+        
+        if action == 'create' and form.validate_on_submit():
+            template = PresidioCoverageTemplate(
+                name=form.name.data,
+                start_date=form.start_date.data,
+                end_date=form.end_date.data,
+                description=form.description.data,
+                sede_id=form.sede_id.data,
+                created_by=current_user.id
+            )
+            db.session.add(template)
+            db.session.commit()
+            flash(f'Template "{template.name}" creato con successo', 'success')
+            return redirect(url_for('shifts.presidio_coverage_edit', template_id=template.id))
+    
+    return render_template('presidio_coverage.html', 
+                         templates=templates,
+                         form=form,
+                         search_form=search_form,
+                         current_template=current_template)
+
+@shifts_bp.route('/presidio_coverage_edit/<int:template_id>', methods=['GET', 'POST'])
+@login_required
+def presidio_coverage_edit(template_id):
+    """Modifica template esistente - Sistema completo"""
+    if not current_user.can_manage_shifts():
+        flash('Non hai i permessi per gestire coperture presidio', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    current_template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    templates = get_active_presidio_templates()
+    
+    # Pre-popola form con dati template
+    form = PresidioCoverageTemplateForm()
+    coverage_form = PresidioCoverageForm()
+    
+    if request.method == 'GET':
+        form.name.data = current_template.name
+        form.start_date.data = current_template.start_date
+        form.end_date.data = current_template.end_date
+        form.description.data = current_template.description
+        form.sede_id.data = current_template.sede_id
+    
+    if request.method == 'POST':
+        action = request.form.get('action', 'update')
+        
+        if action == 'update' and form.validate_on_submit():
+            current_template.name = form.name.data
+            current_template.start_date = form.start_date.data
+            current_template.end_date = form.end_date.data
+            current_template.description = form.description.data
+            current_template.sede_id = form.sede_id.data
+            db.session.commit()
+            flash(f'Template "{current_template.name}" aggiornato con successo', 'success')
+            return redirect(url_for('shifts.presidio_coverage_edit', template_id=template_id))
+        
+        elif action == 'add_coverage' and coverage_form.validate_on_submit():
+            # Aggiungi nuove coperture per i giorni selezionati
+            success_count = 0
+            error_count = 0
+            
+            for day_of_week in coverage_form.days_of_week.data:
+                
+                # Crea nuova copertura
+                new_coverage = PresidioCoverage(
+                    template_id=template_id,
+                    day_of_week=day_of_week,
+                    start_time=coverage_form.start_time.data,
+                    end_time=coverage_form.end_time.data,
+                    required_roles=json.dumps(coverage_form.required_roles.data),
+                    role_count=coverage_form.role_count.data,
+                    description=coverage_form.description.data,
+                    active=coverage_form.active.data,
+                    start_date=current_template.start_date,
+                    end_date=current_template.end_date,
+                    created_by=current_user.id
+                )
+                
+                # Gestione pause opzionali
+                if coverage_form.break_start.data and coverage_form.break_end.data:
+                    try:
+                        new_coverage.break_start = datetime.strptime(coverage_form.break_start.data, '%H:%M').time()
+                        new_coverage.break_end = datetime.strptime(coverage_form.break_end.data, '%H:%M').time()
+                    except ValueError:
+                        pass  # Ignora errori di parsing per campi opzionali
+                
+                db.session.add(new_coverage)
+                success_count += 1
+            
+            db.session.commit()
+            
+            if success_count > 0:
+                flash(f'{success_count} coperture aggiunte con successo', 'success')
+            if error_count > 0:
+                flash(f'{error_count} coperture non aggiunte per sovrapposizioni orarie', 'warning')
+            
+            return redirect(url_for('shifts.presidio_coverage_edit', template_id=template_id))
+    
+    return render_template('presidio_coverage.html', 
+                         templates=templates,
+                         form=form,
+                         coverage_form=coverage_form,
+                         current_template=current_template)
+
+@shifts_bp.route('/presidio_detail/<int:template_id>')
+@login_required
+def presidio_detail(template_id):
+    """Visualizza dettagli di un template di copertura presidio"""
+    if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
+        flash('Non hai i permessi per visualizzare le coperture presidio', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    
+    # Organizza le coperture per giorno della settimana
+    coverages_by_day = {}
+    for coverage in template.coverages.filter_by(active=True).order_by(PresidioCoverage.start_time):
+        day = coverage.day_of_week
+        if day not in coverages_by_day:
+            coverages_by_day[day] = []
+        coverages_by_day[day].append(coverage)
+    
+    return render_template('presidio_detail.html', 
+                         template=template,
+                         coverages_by_day=coverages_by_day)
+
+@shifts_bp.route('/view_presidi')
+@login_required
+def view_presidi():
+    """Visualizzazione sola lettura dei presidi configurati"""
+    if not current_user.can_view_shifts():
+        flash('Non hai i permessi per visualizzare i presidi', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    templates = PresidioCoverageTemplate.query.filter_by(active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
+    return render_template('view_presidi.html', templates=templates)
+
+@shifts_bp.route('/presidio_coverage/toggle_status/<int:template_id>', methods=['POST'])
+@login_required
+def toggle_presidio_template_status(template_id):
+    """Attiva/disattiva template presidio"""
+    if not current_user.can_manage_shifts():
+        return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
+    
+    template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    new_status = request.json.get('active', not template.active)
+    
+    template.active = new_status
+    template.updated_at = italian_now()
+    
+    # Aggiorna anche tutte le coperture associate
+    for coverage in template.coverages:
+        coverage.active = new_status
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True, 
+        'message': f'Template {"attivato" if new_status else "disattivato"} con successo'
+    })
+
+# =============================================================================
+# TEMPLATE VISUALIZATION ROUTES
+# =============================================================================
+
+@shifts_bp.route("/view_coverage_templates")
+@login_required  
+def view_coverage_templates():
+    """Visualizza Turni - Lista semplificata dei template di copertura"""
+    if not current_user.can_view_shifts():
+        flash("Non hai i permessi per visualizzare i turni", "danger")
+        return redirect(url_for("dashboard.dashboard"))
+    
+    # Import necessari
+    from models import Sede, PresidioCoverage
+    
+    # Ottieni le sedi accessibili per utente
+    if current_user.all_sedi:
+        accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
+    elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+        accessible_sedi = [current_user.sede_obj]
+    else:
+        accessible_sedi = []
+        flash("Nessuna sede con modalità turni accessibile", "warning")
+        return redirect(url_for("dashboard.dashboard"))
+    
+    # Ottieni TUTTI i template di copertura (attivi e non) SENZA DUPLICATI
+    all_coverages = PresidioCoverage.query.distinct().order_by(
+        PresidioCoverage.start_date.desc(),
+        PresidioCoverage.id.desc()
+    ).all()
+    
+    # Raggruppa per periodo per una visualizzazione più chiara
+    coverage_periods = {}
+    for coverage in all_coverages:
+        period_key = f"{coverage.start_date.strftime('%Y-%m-%d')} - {coverage.end_date.strftime('%Y-%m-%d')}"
+        if period_key not in coverage_periods:
+            coverage_periods[period_key] = {
+                'start_date': coverage.start_date,
+                'end_date': coverage.end_date,
+                'coverages': [],
+                'active_status': coverage.active
+            }
+        # Solo aggiungi se non già presente (controllo ID)
+        if not any(c.id == coverage.id for c in coverage_periods[period_key]['coverages']):
+            coverage_periods[period_key]['coverages'].append(coverage)
+    
+    return render_template("view_coverage_templates.html",
+                         coverage_periods=coverage_periods,
+                         accessible_sedi=accessible_sedi,
+                         total_templates=len(all_coverages),
+                         today=datetime.now().date())
+
+@shifts_bp.route("/view_turni_for_period")
+@login_required  
+def view_turni_for_period():
+    """Visualizza i turni generati per un periodo specifico"""
+    if not current_user.can_view_shifts():
+        flash("Non hai i permessi per visualizzare i turni", "danger")
+        return redirect(url_for("dashboard.dashboard"))
+    
+    # Import necessari
+    from models import Sede, Shift
+    from datetime import datetime
+    
+    # Ottieni parametri
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    
+    if not start_date_str or not end_date_str:
+        flash("Periodo non specificato correttamente", "warning")
+        return redirect(url_for("shifts.view_coverage_templates"))
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash("Formato data non valido", "error")
+        return redirect(url_for("shifts.view_coverage_templates"))
+    
+    # Ottieni le sedi accessibili per utente
+    if current_user.all_sedi:
+        accessible_sedi = Sede.query.filter_by(tipologia="Turni", active=True).all()
+    elif current_user.sede_obj and current_user.sede_obj.is_turni_mode():
+        accessible_sedi = [current_user.sede_obj]
+    else:
+        accessible_sedi = []
+        flash("Nessuna sede con modalità turni accessibile", "warning")
+        return redirect(url_for("dashboard.dashboard"))
+    
+    # Trova i turni per il periodo specificato filtrando per utenti delle sedi accessibili
+    turni_periodo = []
+    if accessible_sedi:
+        # Ottieni tutti gli utenti delle sedi accessibili
+        sede_ids = [sede.id for sede in accessible_sedi]
+        
+        # Query turni filtrando per periodo e utenti delle sedi
+        # Specificare la condizione JOIN esplicita per evitare ambiguità
+        turni_periodo = Shift.query.join(User, Shift.user_id == User.id).filter(
+            User.sede_id.in_(sede_ids),
+            Shift.date >= start_date,
+            Shift.date <= end_date
+        ).order_by(Shift.date.desc(), Shift.start_time).all()
+    
+    return render_template("view_turni_period.html",
+                         turni_periodo=turni_periodo,
+                         start_date=start_date,
+                         end_date=end_date,
+                         accessible_sedi=accessible_sedi,
+                         total_turni=len(turni_periodo),
+                         today=datetime.now().date())
