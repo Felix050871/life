@@ -317,6 +317,9 @@ class User(UserMixin, db.Model):
     def can_manage_shifts(self):
         return self.has_permission('can_manage_shifts')
     
+    def can_manage_system(self):
+        return self.has_permission('can_manage_system')
+    
     def can_view_shifts(self):
         return self.has_permission('can_view_shifts')
     
