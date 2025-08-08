@@ -117,8 +117,29 @@
                 </li>
                 {% endif %}
 
-                <!-- UTENTI - Temporarily disabled during blueprint migration -->
-                <!-- {% set has_users_permission = current_user.can_manage_users() or current_user.can_view_users() %} -->
+                <!-- UTENTI - Solo se ha almeno un permesso utenti -->
+                {% set has_users_permission = current_user.can_manage_users() or current_user.can_view_users() %}
+                {% if has_users_permission %}
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-users"></i>
+                        <span>Utenti</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        {% if current_user.can_manage_users() %}
+                        <li><a href="{{ url_for('user_management.user_management') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-cog"></i>Gestire Utenti
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_users() %}
+                        <li><a href="{{ url_for('user_management.user_management') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-eye"></i>Visualizzare Utenti
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
 
                 <!-- SEDI - Solo se ha almeno un permesso sedi -->
                 {% set has_sedi_permission = current_user.can_manage_sedi() or current_user.can_view_sedi() %}
