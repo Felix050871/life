@@ -147,11 +147,54 @@ def reperibilita_shifts():
     if not current_user.all_sedi and current_user.sede_obj:
         available_users = [u for u in available_users if u.sede_id == current_user.sede_obj.id]
     
+    # Parametri per navigation 
+    period_mode = request.args.get('period', 'month')
+    view_mode = request.args.get('view', 'calendar')
+    display_mode = request.args.get('display', 'calendar')
+    
+    # Crea oggetto navigation per il template
+    from datetime import datetime, timedelta
+    try:
+        from utils import italian_now
+        now = italian_now()
+    except ImportError:
+        now = datetime.now()
+        
+    # Calcola navigation date
+    if month_filter:
+        try:
+            year, month = month_filter.split('-')
+            current_month = datetime(int(year), int(month), 1)
+        except ValueError:
+            current_month = datetime(now.year, now.month, 1)
+    else:
+        current_month = datetime(now.year, now.month, 1)
+    
+    # Previous/Next month
+    prev_month = current_month.replace(day=1) - timedelta(days=1)
+    prev_month = prev_month.replace(day=1)
+    
+    if current_month.month == 12:
+        next_month = current_month.replace(year=current_month.year + 1, month=1)
+    else:
+        next_month = current_month.replace(month=current_month.month + 1)
+    
+    # Crea oggetto navigation
+    navigation = {
+        'prev_date': prev_month,
+        'next_date': next_month,
+        'current_period': current_month.strftime('%B %Y')
+    }
+
     return render_template('reperibilita_shifts.html',
                          shifts=shifts,
                          available_users=available_users,
                          selected_month=month_filter,
                          selected_user=user_filter,
+                         navigation=navigation,
+                         period_mode=period_mode,
+                         view_mode=view_mode,
+                         display_mode=display_mode,
                          can_manage=current_user.can_manage_reperibilita())
 
 @reperibilita_bp.route('/my_reperibilita')
