@@ -229,12 +229,12 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_interventions() %}
-                        <li><a href="{{ url_for('my_interventions') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('interventions.my') }}" class="sidebar-submenu-link">
                             <i class="fas fa-cog"></i>Gestire Interventi
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_interventions() %}
-                        <li><a href="{{ url_for('my_interventions') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('interventions.my') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizzare Interventi
                         </a></li>
                         {% endif %}

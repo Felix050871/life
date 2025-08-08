@@ -29,7 +29,7 @@
                     <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filtro per Periodo</h6>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ url_for('my_interventions') }}" class="row g-3">
+                    <form method="GET" action="{{ url_for('interventions.my') }}" class="row g-3">
                         <div class="col-md-4">
                             <label for="start_date" class="form-label">Data Inizio</label>
                             <input type="date" class="form-control" id="start_date" name="start_date" 
@@ -44,7 +44,7 @@
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fas fa-search me-1"></i>Filtra
                             </button>
-                            <a href="{{ url_for('my_interventions') }}" class="btn btn-outline-secondary">
+                            <a href="{{ url_for('interventions.my') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-undo me-1"></i>Reset
                             </a>
                         </div>

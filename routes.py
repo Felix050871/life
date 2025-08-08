@@ -3044,159 +3044,11 @@ def reperibilita_shifts():
 
 # EXPORT ROUTE MIGRATED TO export_bp blueprint - attendance/excel
 
-@app.route('/start_general_intervention', methods=['POST'])
-@login_required
-def start_general_intervention():
-    """Inizia un nuovo intervento generico"""
-    # Controlla se l'utente è presente
-    user_status, _ = AttendanceEvent.get_user_status(current_user.id)
-    if user_status != 'in':
-        flash('Devi essere presente per iniziare un intervento.', 'warning')
-        return redirect(url_for('dashboard'))
-    
-    # Controlla se c'è già un intervento attivo
-    active_intervention = Intervention.query.filter_by(
-        user_id=current_user.id,
-        end_datetime=None
-    ).first()
-    
-    if active_intervention:
-        flash('Hai già un intervento attivo. Terminalo prima di iniziarne un altro.', 'warning')
-        return redirect(url_for('dashboard'))
-    
-    # Ottieni i dati dal form
-    description = request.form.get('description', '')
-    priority = request.form.get('priority', 'Media')
-    is_remote = request.form.get('is_remote', 'false').lower() == 'true'
-    
-    # Crea nuovo intervento
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    now = datetime.now(italy_tz)
-    
-    intervention = Intervention(
-        user_id=current_user.id,
-        start_datetime=now,
-        description=description,
-        priority=priority,
-        is_remote=is_remote
-    )
-    
-    try:
-        db.session.add(intervention)
-        db.session.commit()
-        flash(f'Intervento in presenza iniziato alle {now.strftime("%H:%M")}', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Errore nel salvare l\'intervento', 'danger')
-    
-    return redirect(url_for('dashboard'))
+# INTERVENTION ROUTE MIGRATED TO interventions_bp blueprint - start_general_intervention
 
-@app.route('/end_general_intervention', methods=['POST'])
-@login_required
-def end_general_intervention():
-    """Termina un intervento generico attivo"""
-    # Trova l'intervento attivo
-    active_intervention = Intervention.query.filter_by(
-        user_id=current_user.id,
-        end_datetime=None
-    ).first()
-    
-    if not active_intervention:
-        flash('Nessun intervento attivo trovato.', 'warning')
-        return redirect(url_for('dashboard'))
-    
-    # Termina l'intervento
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    now = datetime.now(italy_tz)
-    
-    active_intervention.end_datetime = now
-    
-    # Gestisci la descrizione finale
-    end_description = request.form.get('end_description', '').strip()
-    if end_description:
-        # Combina descrizione iniziale e finale
-        initial_desc = active_intervention.description or ''
-        if initial_desc and end_description:
-            active_intervention.description = f"{initial_desc}\n\n--- Risoluzione ---\n{end_description}"
-        elif end_description:
-            active_intervention.description = end_description
-    
-    try:
-        db.session.commit()
-        duration = active_intervention.duration_minutes
-        flash(f'Intervento terminato alle {now.strftime("%H:%M")} (durata: {duration:.1f} minuti)', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Errore nel terminare l\'intervento', 'danger')
-    
-    return redirect(url_for('dashboard'))
+# INTERVENTION ROUTE MIGRATED TO interventions_bp blueprint - end_general_intervention
 
-@app.route('/my_interventions')
-@login_required
-def my_interventions():
-    """Pagina per visualizzare gli interventi - tutti per PM/Ente, solo propri per altri utenti"""
-    # Solo Admin non può accedere a questa pagina (non ha interventi)
-    if current_user.role == 'Admin':
-        flash('Accesso non autorizzato.', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    today = datetime.now(italy_tz).date()
-    
-    # Gestisci filtri data
-    start_date_str = request.args.get('start_date')
-    end_date_str = request.args.get('end_date')
-    
-    # Default: primo del mese corrente - oggi
-    if not start_date_str:
-        start_date = today.replace(day=1)
-    else:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-    
-    if not end_date_str:
-        end_date = today
-    else:
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    
-    # Converti le date in datetime per il filtro
-    start_datetime = datetime.combine(start_date, datetime.min.time())
-    end_datetime = datetime.combine(end_date, datetime.max.time())
-    
-    # PM ed Ente vedono tutti gli interventi, altri utenti solo i propri
-    if current_user.role in ['Management', 'Ente']:
-        # Ottieni tutti gli interventi di reperibilità filtrati per data
-        reperibilita_interventions = ReperibilitaIntervention.query.join(User).filter(
-            ReperibilitaIntervention.start_datetime >= start_datetime,
-            ReperibilitaIntervention.start_datetime <= end_datetime
-        ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
-        
-        # Ottieni tutti gli interventi generici filtrati per data
-        general_interventions = Intervention.query.join(User).filter(
-            Intervention.start_datetime >= start_datetime,
-            Intervention.start_datetime <= end_datetime
-        ).order_by(Intervention.start_datetime.desc()).all()
-    else:
-        # Ottieni solo gli interventi dell'utente corrente filtrati per data
-        reperibilita_interventions = ReperibilitaIntervention.query.filter(
-            ReperibilitaIntervention.user_id == current_user.id,
-            ReperibilitaIntervention.start_datetime >= start_datetime,
-            ReperibilitaIntervention.start_datetime <= end_datetime
-        ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
-        
-        general_interventions = Intervention.query.filter(
-            Intervention.user_id == current_user.id,
-            Intervention.start_datetime >= start_datetime,
-            Intervention.start_datetime <= end_datetime
-        ).order_by(Intervention.start_datetime.desc()).all()
-    
-    return render_template('my_interventions.html',
-                         reperibilita_interventions=reperibilita_interventions,
-                         general_interventions=general_interventions,
-                         start_date=start_date,
-                         end_date=end_date)
+# INTERVENTION ROUTE MIGRATED TO interventions_bp blueprint - my_interventions
 
 # EXPORT ROUTE MIGRATED TO export_bp blueprint - interventions/general/excel
 # @app.route('/export_general_interventions_excel')
@@ -4561,98 +4413,12 @@ def generate_turnazioni():
 # API ENDPOINTS
 # =============================================================================
 
-@app.route('/api/sede/<int:sede_id>/users')
-@login_required
-def get_sede_users(sede_id):
-    """API per ottenere gli utenti di una sede specifica"""
-    if not current_user.can_access_turni():
-        return jsonify({'error': 'Non autorizzato'}), 403
-    
-    sede = Sede.query.get_or_404(sede_id)
-    
-    # Verifica che l'utente possa accedere a questa sede
-    if current_user.role != 'Amministratore' and not current_user.all_sedi and (not current_user.sede_obj or current_user.sede_obj.id != sede_id):
-        return jsonify({'error': 'Non autorizzato'}), 403
-    
-    # Ottieni utenti attivi della sede (esclusi Amministratore)
-    users = User.query.filter_by(
-        sede_id=sede_id, 
-        active=True
-    ).filter(
-        User.role != 'Amministratore'
-    ).order_by(User.first_name, User.last_name).all()
-    
-    users_data = []
-    for user in users:
-        users_data.append({
-            'id': user.id,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'role': user.role
-        })
-    
-    return jsonify(users_data)
+# API ROUTE MIGRATED TO api_bp blueprint - get_sede_users
 
-@app.route('/api/sede/<int:sede_id>/work_schedules')
-@login_required
-def api_sede_work_schedules(sede_id):
-    """API per ottenere gli orari di lavoro di una sede"""
-    try:
-        sede = Sede.query.get_or_404(sede_id)
-        work_schedules = WorkSchedule.query.filter_by(sede_id=sede_id, active=True).all()
-        
-        # Se la sede supporta modalità turni e non ha ancora l'orario 'Turni', crealo
-        if sede.is_turni_mode() and not sede.has_turni_schedule():
-            turni_schedule = sede.get_or_create_turni_schedule()
-            work_schedules.append(turni_schedule)
-        
-        schedules_data = []
-        for schedule in work_schedules:
-            # Visualizzazione speciale per orario "Turni"
-            if schedule.is_turni_schedule():
-                schedules_data.append({
-                    'id': schedule.id,
-                    'name': schedule.name,
-                    'start_time': 'Flessibile',
-                    'end_time': 'Flessibile',
-                    'days_count': 7
-                })
-            else:
-                schedules_data.append({
-                    'id': schedule.id,
-                    'name': schedule.name,
-                    'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
-                    'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
-                    'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0
-                })
-        
-        return jsonify({
-            'success': True,
-            'work_schedules': schedules_data,
-            'sede_name': sede.name,
-            'has_schedules': len(schedules_data) > 0,
-            'is_turni_mode': sede.is_turni_mode()
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+# API ROUTE MIGRATED TO api_bp blueprint - api_sede_work_schedules
+# API ROUTE MIGRATED TO api_bp blueprint - api_sede_work_schedules (exception handler migrated)
 
-@app.route('/api/roles')
-@login_required  
-def api_roles():
-    """API endpoint per ottenere la lista dei ruoli disponibili"""
-    try:
-        from models import UserRole
-        roles = UserRole.query.filter(
-            UserRole.active == True,
-            UserRole.name != 'Amministratore'
-        ).all()
-        role_names = [role.name for role in roles] if roles else ['Responsabile', 'Supervisore', 'Operatore', 'Ospite']
-        return jsonify(role_names)
-    except Exception as e:
-        return jsonify(['Responsabile', 'Supervisore', 'Operatore', 'Ospite'])
+# API ROUTE MIGRATED TO api_bp blueprint - api_roles
 
 # ===============================
 # GESTIONE SEDI E ORARI DI LAVORO
@@ -5010,31 +4776,7 @@ def view_presidi():
     templates = PresidioCoverageTemplate.query.filter_by(active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
     return render_template('view_presidi.html', templates=templates)
 
-@app.route('/api/presidio_coverage/<int:template_id>')
-@login_required
-def api_presidio_coverage(template_id):
-    """API per ottenere dettagli copertura presidio"""
-    template = PresidioCoverageTemplate.query.get_or_404(template_id)
-    
-    coverages = []
-    for coverage in template.coverages.filter_by(active=True):
-        coverages.append({
-            'id': coverage.id,
-            'day_of_week': coverage.day_of_week,
-            'start_time': coverage.start_time.strftime('%H:%M'),
-            'end_time': coverage.end_time.strftime('%H:%M'),
-            'required_roles': coverage.get_required_roles(),
-            'role_count': coverage.role_count
-        })
-    
-    return jsonify({
-        'success': True,
-        'template_name': template.name,
-        'start_date': template.start_date.strftime('%Y-%m-%d'),
-        'end_date': template.end_date.strftime('%Y-%m-%d'),
-        'period': template.get_period_display(),
-        'coverages': coverages
-    })
+# API ROUTE MIGRATED TO api_bp blueprint - api_presidio_coverage
 
 @app.route('/presidio_coverage/toggle_status/<int:template_id>', methods=['POST'])
 @login_required
@@ -5656,25 +5398,9 @@ def calculate_approximate_distance(start_address, end_address):
 # SISTEMA ACI - BACK OFFICE AMMINISTRATORE
 # =============================================
 
-def admin_required(f):
-    """Decorator per verificare che l'utente sia amministratore"""
-    from functools import wraps
-    
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            return redirect(url_for('auth.login'))
-        if not current_user.has_role('Amministratore'):
-            flash('Accesso negato. Solo gli amministratori possono accedere a questa sezione.', 'danger')
-            return redirect(url_for('dashboard'))
-        return f(*args, **kwargs)
-    
-    return decorated_function
+# ACI HELPER FUNCTION MIGRATED TO aci_bp blueprint - admin_required
 
-@app.route("/aci_tables", methods=["GET", "POST"])
-@login_required
-@admin_required
-def aci_tables():
+# ACI ROUTE MIGRATED TO aci_bp blueprint - aci_tables
     """Visualizza tabelle ACI con caricamento lazy - record caricati solo dopo filtro"""
     form = ACIFilterForm()
     tables = []
@@ -5711,10 +5437,7 @@ def aci_tables():
                          total_records=total_records,
                          show_results=(request.method == "POST"))
 
-@app.route("/api/aci/marcas")
-@login_required
-@admin_required
-def api_aci_marcas():
+# ACI API ROUTE MIGRATED TO aci_bp blueprint - api_aci_marcas
     """API per ottenere le marche filtrate per tipologia"""
     tipologia = request.args.get('tipologia')
     
@@ -5726,10 +5449,7 @@ def api_aci_marcas():
     marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
     return jsonify(marcas)
 
-@app.route("/api/aci/modelos")
-@login_required
-@admin_required
-def api_aci_modelos():
+# ACI API ROUTE MIGRATED TO aci_bp blueprint - api_aci_modelos
     """API per ottenere i modelli filtrati per tipologia e marca"""
     tipologia = request.args.get('tipologia')
     marca = request.args.get('marca')
@@ -5744,10 +5464,7 @@ def api_aci_modelos():
     modelos = [row.modello for row in query.order_by(ACITable.modello).all()]
     return jsonify(modelos)
 
-@app.route("/aci_tables/upload", methods=["GET", "POST"])
-@login_required
-@admin_required
-def aci_upload():
+# ACI ROUTE MIGRATED TO aci_bp blueprint - aci_upload
     """Upload e importazione file Excel ACI"""
     form = ACIUploadForm()
     
@@ -5866,10 +5583,7 @@ def aci_upload():
     
     return render_template("aci_upload.html", form=form)
 
-@app.route("/aci_tables/create", methods=["GET", "POST"])
-@login_required
-@admin_required
-def aci_create():
+# ACI ROUTE MIGRATED TO aci_bp blueprint - aci_create
     """Crea nuovo record ACI manualmente"""
     form = ACIRecordForm()
     
@@ -5893,10 +5607,7 @@ def aci_create():
     
     return render_template("aci_create.html", form=form)
 
-@app.route("/aci_tables/<int:record_id>/edit", methods=["GET", "POST"])
-@login_required
-@admin_required
-def aci_edit(record_id):
+# ACI ROUTE MIGRATED TO aci_bp blueprint - aci_edit
     """Modifica record ACI esistente"""
     aci_record = ACITable.query.get_or_404(record_id)
     form = ACIRecordForm(obj=aci_record)
@@ -5918,10 +5629,7 @@ def aci_edit(record_id):
     
     return render_template("aci_edit.html", form=form, record=aci_record)
 
-@app.route("/aci_tables/<int:record_id>/delete", methods=["POST"])
-@login_required
-@admin_required
-def aci_delete(record_id):
+# ACI ROUTE MIGRATED TO aci_bp blueprint - aci_delete
     """Cancella record ACI"""
     try:
         aci_record = ACITable.query.get_or_404(record_id)
@@ -5935,10 +5643,7 @@ def aci_delete(record_id):
     
     return redirect(url_for("aci_tables"))
 
-@app.route("/aci_tables/export")
-@login_required
-@admin_required
-def aci_export():
+# ACI ROUTE MIGRATED TO aci_bp blueprint - aci_export
     """Export Excel delle tabelle ACI"""
     try:
         from openpyxl import Workbook
@@ -6015,10 +5720,7 @@ def aci_export():
         flash(f"Errore durante l'export: {str(e)}", "danger")
         return redirect(url_for("aci_tables"))
 
-@app.route("/aci_tables/bulk_delete", methods=["POST"])
-@login_required
-@admin_required
-def aci_bulk_delete():
+# ACI ROUTE MIGRATED TO aci_bp blueprint - aci_bulk_delete
     """Cancellazione in massa per tipologia"""
     tipologia = request.form.get('tipologia')
     if not tipologia:
