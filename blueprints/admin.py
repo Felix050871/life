@@ -32,7 +32,7 @@ def require_admin_permission(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for('auth.login'))
-        if not current_user.can_manage_system():
+        if not current_user.can_manage_roles():
             flash('Non hai i permessi per accedere a questa sezione', 'danger')
             return redirect(url_for('dashboard.dashboard'))
         return f(*args, **kwargs)
