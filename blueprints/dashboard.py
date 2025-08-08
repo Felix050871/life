@@ -115,11 +115,11 @@ def dashboard():
         ).first()
         
         # Recent interventions (last 7 days)
-        seven_days_ago = date.today() - timedelta(days=7)
+        seven_days_ago = datetime.now() - timedelta(days=7)
         recent_interventions = Intervention.query.filter(
             Intervention.user_id == current_user.id,
-            Intervention.start_date >= seven_days_ago
-        ).order_by(Intervention.start_date.desc(), Intervention.start_time.desc()).limit(5).all()
+            Intervention.start_datetime >= seven_days_ago
+        ).order_by(Intervention.start_datetime.desc()).limit(5).all()
     
     # Active general intervention (per tutti gli utenti)
     active_general_intervention = Intervention.query.filter(
@@ -230,7 +230,7 @@ def dashboard():
     expense_reports_data = []
     if current_user.can_view_my_expense_reports():
         recent_reports = ExpenseReport.query.filter(
-            ExpenseReport.user_id == current_user.id
+            ExpenseReport.employee_id == current_user.id
         ).order_by(ExpenseReport.created_at.desc()).limit(3).all()
         expense_reports_data = recent_reports
     
@@ -239,7 +239,7 @@ def dashboard():
     my_overtime_requests = []
     if current_user.can_view_my_overtime_requests():
         my_overtime_requests = OvertimeRequest.query.filter(
-            OvertimeRequest.user_id == current_user.id
+            OvertimeRequest.employee_id == current_user.id
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
     
     if current_user.can_approve_overtime_requests():
