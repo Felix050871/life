@@ -20,20 +20,11 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
 from models import User, LeaveRequest, Sede, Holiday, italian_now
+from forms import LeaveRequestForm
 import io
 import csv
 
-# Form definition for leave requests
-class SimpleLeaveRequestForm:
-    """Simplified form for leave requests"""
-    def __init__(self, data=None):
-        self.leave_type = data.get('leave_type') if data else None
-        self.start_date = data.get('start_date') if data else None
-        self.end_date = data.get('end_date') if data else None  
-        self.reason = data.get('reason') if data else None
-        
-    def validate_on_submit(self):
-        return bool(self.leave_type and self.start_date and self.end_date)
+# Form imported from forms.py
 
 # Create blueprint
 leave_bp = Blueprint('leave', __name__, url_prefix='/leave')
@@ -150,7 +141,7 @@ def create_leave_request():
         flash('Non hai i permessi per creare richieste', 'danger')
         return redirect(url_for('dashboard'))
     
-    form = SimpleLeaveRequestForm(request.form if request.method == 'POST' else None)
+    form = LeaveRequestForm()
     
     if form.validate_on_submit():
         try:
@@ -167,24 +158,24 @@ def create_leave_request():
                 return render_template('create_leave_request.html', form=form)
             
             # Calcola giorni lavorativi semplificato
-            delta = form.end_date - form.start_date
+            delta = form.end_date.data - form.start_date.data
             working_days = delta.days + 1  # Simplified calculation
             
             # Crea nuova richiesta
             new_request = LeaveRequest()
             new_request.user_id = current_user.id
-            new_request.leave_type = form.leave_type
-            new_request.start_date = datetime.strptime(form.start_date, '%Y-%m-%d').date() if isinstance(form.start_date, str) else form.start_date
-            new_request.end_date = datetime.strptime(form.end_date, '%Y-%m-%d').date() if isinstance(form.end_date, str) else form.end_date
+            new_request.leave_type_id = form.leave_type_id.data
+            new_request.start_date = form.start_date.data
+            new_request.end_date = form.end_date.data
             new_request.working_days = working_days
-            new_request.reason = form.reason
+            new_request.reason = form.reason.data
             new_request.status = 'Pending'
             new_request.created_at = italian_now()
             
             db.session.add(new_request)
             db.session.commit()
             
-            flash(f'Richiesta {form.leave_type.lower()} creata correttamente', 'success')
+            flash('Richiesta creata correttamente', 'success')
             return redirect(url_for('leave.leave_requests', view='my'))
             
         except Exception as e:
