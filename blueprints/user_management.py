@@ -14,6 +14,7 @@ from functools import wraps
 from models import User, Sede, UserRole, WorkSchedule
 from forms import UserForm, SedeForm, RoleForm, WorkScheduleForm
 from app import db
+from werkzeug.security import generate_password_hash
 from sqlalchemy.orm import joinedload
 
 # =============================================================================
@@ -276,6 +277,149 @@ def user_management():
                          users=users, 
                          form=form,
                          can_manage_users=current_user.can_manage_users())
+
+# =============================================================================
+# USER CRUD OPERATIONS
+# =============================================================================
+
+@user_management_bp.route('/users/new', methods=['POST'])
+@login_required
+def new_user():
+    """Create a new user"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per creare utenti', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    form = UserForm(is_edit=False)
+    if form.validate_on_submit():
+        # Crea il nuovo utente
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=generate_password_hash(form.password.data),
+            role=form.role.data,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            all_sedi=form.all_sedi.data,
+            sede_id=form.sede.data if not form.all_sedi.data else None,
+            work_schedule_id=form.work_schedule.data,
+            aci_vehicle_id=form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None,
+            part_time_percentage=form.get_part_time_percentage_as_float(),
+            active=form.active.data
+        )
+        db.session.add(user)
+        db.session.flush()  # Per ottenere l'ID dell'utente
+        
+        db.session.commit()
+        flash('Utente creato con successo', 'success')
+        return redirect(url_for('user_management.user_management'))
+    
+    # Se ci sono errori di validazione, torna alla pagina principale con errori
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(f'{field}: {error}', 'danger')
+    
+    return redirect(url_for('user_management.user_management'))
+
+@user_management_bp.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    """Edit an existing user"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per modificare gli utenti', 'danger')
+        return redirect(url_for('user_management.user_management'))
+    
+    user = User.query.get_or_404(user_id)
+    form = UserForm(original_username=user.username, is_edit=True, obj=user)
+    
+    if request.method == 'GET':
+        # Popola i campi sede e all_sedi con i valori attuali
+        form.all_sedi.data = user.all_sedi
+        if user.sede_id:
+            form.sede.data = user.sede_id
+        
+        if user.work_schedule_id:
+            # Aggiungi l'orario corrente alle scelte se non già presente
+            if user.work_schedule:
+                schedule_choice = (user.work_schedule.id, f"{user.work_schedule.name} ({user.work_schedule.start_time.strftime('%H:%M') if user.work_schedule.start_time else ''}-{user.work_schedule.end_time.strftime('%H:%M') if user.work_schedule.end_time else ''})")
+                if schedule_choice not in form.work_schedule.choices:
+                    form.work_schedule.choices.append(schedule_choice)
+            form.work_schedule.data = user.work_schedule_id
+        else:
+            # Se non ha un orario, imposta il valore di default
+            form.work_schedule.data = ''
+        
+        # Gestione del veicolo ACI con campi progressivi
+        if user.aci_vehicle_id and user.aci_vehicle:
+            # Popola i campi progressivi basati sul veicolo esistente
+            form.aci_vehicle_tipo.data = user.aci_vehicle.tipologia
+            form.aci_vehicle_marca.data = user.aci_vehicle.marca
+            form.aci_vehicle.data = user.aci_vehicle_id
+            
+            # Aggiorna le scelte per rendere i dropdown funzionali
+            from models import ACITable
+            aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
+            
+            # Aggiorna le scelte delle marche per il tipo selezionato
+            marche = list(set([v.marca for v in aci_vehicles if v.tipologia == user.aci_vehicle.tipologia and v.marca]))
+            form.aci_vehicle_marca.choices = [('', 'Seleziona marca')] + [(marca, marca) for marca in sorted(marche)]
+            
+            # Aggiorna le scelte dei modelli per tipo e marca selezionati
+            modelli = ACITable.query.filter(
+                ACITable.tipologia == user.aci_vehicle.tipologia,
+                ACITable.marca == user.aci_vehicle.marca
+            ).order_by(ACITable.modello).all()
+            
+            form.aci_vehicle.choices = [('', 'Seleziona modello')] + [(m.id, f"{m.modello} (€{m.costo_km:.4f}/km)") for m in modelli]
+        
+        return render_template('edit_user.html', form=form, user=user)
+    
+    if form.validate_on_submit():
+        # Aggiorna i dati dell'utente
+        user.username = form.username.data
+        user.email = form.email.data
+        if form.password.data:
+            user.password_hash = generate_password_hash(form.password.data)
+        user.role = form.role.data
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.all_sedi = form.all_sedi.data
+        user.sede_id = form.sede.data if not form.all_sedi.data else None
+        user.work_schedule_id = form.work_schedule.data
+        user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
+        user.part_time_percentage = form.get_part_time_percentage_as_float()
+        user.active = form.active.data
+        
+        db.session.commit()
+        flash('Utente modificato con successo', 'success')
+        return redirect(url_for('user_management.user_management'))
+    
+    return render_template('edit_user.html', form=form, user=user)
+
+@user_management_bp.route('/users/toggle/<int:user_id>')
+@login_required
+def toggle_user(user_id):
+    """Toggle user active status"""
+    if not current_user.can_manage_users():
+        flash('Non hai i permessi per modificare utenti', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('Non puoi disattivare il tuo account', 'warning')
+        return redirect(url_for('user_management.user_management'))
+    
+    # Impedisce la disattivazione dell'amministratore
+    if user.role == 'Amministratore':
+        flash('Non è possibile disattivare l\'utente amministratore', 'danger')
+        return redirect(url_for('user_management.user_management'))
+    
+    user.active = not user.active
+    db.session.commit()
+    
+    status = 'attivato' if user.active else 'disattivato'
+    flash(f'Utente {status} con successo', 'success')
+    return redirect(url_for('user_management.user_management'))
 
 # =============================================================================
 # BLUEPRINT REGISTRATION READY
