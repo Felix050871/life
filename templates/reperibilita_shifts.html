@@ -124,11 +124,11 @@
                 <!-- Toggle per vista solo per PM/Admin -->
                 {% if current_user.role in ['Admin', 'Management'] %}
                 <div class="btn-group btn-group-sm" role="group">
-                    <a href="{{ url_for('reperibilita_shifts', view='all', period=request.args.get('period', 'week'), display=request.args.get('display', 'table')) }}" 
+                    <a href="{{ url_for('reperibilita.reperibilita_shifts', view='all', period=request.args.get('period', 'week'), display=request.args.get('display', 'table')) }}" 
                        class="btn btn-outline-primary {% if request.args.get('view') == 'all' or request.args.get('view') is none %}active{% endif %}">
                         Tutti i Turni
                     </a>
-                    <a href="{{ url_for('reperibilita_shifts', view='personal', period=request.args.get('period', 'week'), display=request.args.get('display', 'table')) }}" 
+                    <a href="{{ url_for('reperibilita.reperibilita_shifts', view='personal', period=request.args.get('period', 'week'), display=request.args.get('display', 'table')) }}" 
                        class="btn btn-outline-primary {% if request.args.get('view') == 'personal' %}active{% endif %}">
                         I Miei Turni
                     </a>
@@ -145,7 +145,7 @@
                                class="btn btn-outline-secondary {% if period_mode == 'week' %}active{% endif %}">
                                 Settimana
                             </a>
-                            <a href="{{ url_for('reperibilita_shifts', view=view_mode, period='month', display=display_mode) }}" 
+                            <a href="{{ url_for('reperibilita.reperibilita_shifts', view=view_mode, period='month', display=display_mode) }}" 
                                class="btn btn-outline-secondary {% if period_mode == 'month' %}active{% endif %}">
                                 Mese
                             </a>
@@ -168,12 +168,12 @@
                     <!-- Navigazione temporale -->
                     <div class="col-md-6">
                         <div class="d-flex align-items-center justify-content-center">
-                            <a href="{{ url_for('reperibilita_shifts', view=view_mode, period=period_mode, display=display_mode, date=navigation.prev_date.strftime('%Y-%m-%d')) }}" 
+                            <a href="{{ url_for('reperibilita.reperibilita_shifts', view=view_mode, period=period_mode, display=display_mode, date=navigation.prev_date.strftime('%Y-%m-%d')) }}" 
                                class="btn btn-outline-primary btn-sm me-2">
                                 <i class="fas fa-chevron-left"></i>
                             </a>
                             <span class="px-3 text-center fw-bold">{{ navigation.current_period }}</span>
-                            <a href="{{ url_for('reperibilita_shifts', view=view_mode, period=period_mode, display=display_mode, date=navigation.next_date.strftime('%Y-%m-%d')) }}" 
+                            <a href="{{ url_for('reperibilita.reperibilita_shifts', view=view_mode, period=period_mode, display=display_mode, date=navigation.next_date.strftime('%Y-%m-%d')) }}" 
                                class="btn btn-outline-primary btn-sm ms-2">
                                 <i class="fas fa-chevron-right"></i>
                             </a>
