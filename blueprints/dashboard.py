@@ -18,6 +18,13 @@ from utils import get_user_statistics, get_team_statistics, format_hours
 # Create Blueprint
 dashboard_bp = Blueprint('dashboard', __name__)
 
+@dashboard_bp.route('/')
+def index():
+    """Main entry point - redirect to appropriate dashboard"""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.dashboard'))
+    return redirect(url_for('auth.login'))
+
 @dashboard_bp.route('/dashboard')
 @login_required
 def dashboard():

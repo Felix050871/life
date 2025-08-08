@@ -8,19 +8,29 @@
 # 3. api/get_reperibilita_data (GET) - API dati reperibilità
 # 4. generate_reperibilita (POST) - Generazione automatica turni
 # 5. my_reperibilita (GET) - Le mie reperibilità
+# 6. interventions/start (POST) - Inizia intervento generico
+# 7. interventions/end (POST) - Termina intervento generico
+# 8. interventions/my (GET) - Visualizza miei interventi
+# 9. interventions/export/general/excel (GET) - Export interventi generici Excel
+# 10. interventions/export/reperibilita/excel (GET) - Export interventi reperibilità Excel
+# + altre route di gestione coperture, template, replica
 #
-# Total routes: 5+ reperibilità management routes
+# Total routes: 20+ reperibilità + interventions management routes
 # =============================================================================
 
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, make_response
 from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
-from models import User, Sede, ReperibilitaShift, ReperibilitaCoverage, ReperibilitaIntervention, ReperibilitaTemplate, italian_now
+from models import User, Sede, ReperibilitaShift, ReperibilitaCoverage, ReperibilitaIntervention, ReperibilitaTemplate, Intervention, AttendanceEvent, italian_now
 from forms import ReperibilitaCoverageForm, ReperibilitaReplicaForm
 from collections import defaultdict
 from utils import generate_reperibilita_shifts
+from io import BytesIO, StringIO
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from defusedcsv import csv
 
 # Create blueprint
 reperibilita_bp = Blueprint('reperibilita', __name__, url_prefix='/reperibilita')
@@ -811,3 +821,385 @@ def delete_reperibilita_template(template_id):
         flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
     
     return redirect(url_for('reperibilita.reperibilita_shifts'))
+
+# =============================================================================
+# INTERVENTIONS MANAGEMENT ROUTES
+# =============================================================================
+
+@reperibilita_bp.route('/interventions/start', methods=['POST'])
+@login_required
+@require_reperibilita_permissions
+def start_general_intervention():
+    """Inizia un nuovo intervento generico"""
+    if not current_user.can_manage_interventions():
+        return jsonify({
+            'success': False,
+            'message': 'Non hai i permessi per gestire interventi'
+        }), 403
+    
+    # Controlla se l'utente è presente
+    user_status, _ = AttendanceEvent.get_user_status(current_user.id)
+    if user_status != 'in':
+        flash('Devi essere presente per iniziare un intervento.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Controlla se c'è già un intervento attivo
+    active_intervention = Intervention.query.filter_by(
+        user_id=current_user.id,
+        end_datetime=None
+    ).first()
+    
+    if active_intervention:
+        flash('Hai già un intervento attivo. Terminalo prima di iniziarne un altro.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni i dati dal form
+    description = request.form.get('description', '')
+    priority = request.form.get('priority', 'Media')
+    is_remote = request.form.get('is_remote', 'false').lower() == 'true'
+    
+    # Crea nuovo intervento
+    now = italian_now()
+    
+    intervention = Intervention(
+        user_id=current_user.id,
+        start_datetime=now,
+        description=description,
+        priority=priority,
+        is_remote=is_remote
+    )
+    
+    try:
+        db.session.add(intervention)
+        db.session.commit()
+        flash(f'Intervento iniziato alle {now.strftime("%H:%M")}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore nel salvare l\'intervento', 'danger')
+    
+    return redirect(url_for('dashboard.dashboard'))
+
+@reperibilita_bp.route('/interventions/end', methods=['POST'])
+@login_required
+@require_reperibilita_permissions
+def end_general_intervention():
+    """Termina un intervento generico attivo"""
+    if not current_user.can_manage_interventions():
+        return jsonify({
+            'success': False,
+            'message': 'Non hai i permessi per gestire interventi'
+        }), 403
+    
+    # Trova l'intervento attivo
+    active_intervention = Intervention.query.filter_by(
+        user_id=current_user.id,
+        end_datetime=None
+    ).first()
+    
+    if not active_intervention:
+        flash('Nessun intervento attivo trovato.', 'warning')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Termina l'intervento
+    now = italian_now()
+    active_intervention.end_datetime = now
+    
+    # Gestisci la descrizione finale
+    end_description = request.form.get('end_description', '').strip()
+    if end_description:
+        # Combina descrizione iniziale e finale
+        initial_desc = active_intervention.description or ''
+        if initial_desc and end_description:
+            active_intervention.description = f"{initial_desc}\n\n--- Risoluzione ---\n{end_description}"
+        elif end_description:
+            active_intervention.description = end_description
+    
+    try:
+        db.session.commit()
+        duration = active_intervention.duration_minutes
+        flash(f'Intervento terminato alle {now.strftime("%H:%M")} (durata: {duration:.1f} minuti)', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore nel terminare l\'intervento', 'danger')
+    
+    return redirect(url_for('dashboard.dashboard'))
+
+@reperibilita_bp.route('/interventions/my')
+@login_required
+@require_reperibilita_permissions  
+def my_interventions():
+    """Pagina per visualizzare gli interventi - tutti per PM/Management, solo propri per altri utenti"""
+    if not current_user.can_view_my_interventions():
+        flash('Non hai i permessi per visualizzare gli interventi', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Solo Admin non può accedere a questa pagina (non ha interventi)
+    if current_user.role == 'Admin':
+        flash('Accesso non autorizzato.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    now = italian_now()
+    today = now.date()
+    
+    # Gestisci filtri data
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    # Default: primo del mese corrente - oggi
+    if not start_date_str:
+        start_date = today.replace(day=1)
+    else:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    
+    if not end_date_str:
+        end_date = today
+    else:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    
+    # Converti le date in datetime per il filtro
+    start_datetime = datetime.combine(start_date, datetime.min.time())
+    end_datetime = datetime.combine(end_date, datetime.max.time())
+    
+    # PM/Management vedono tutti gli interventi, altri utenti solo i propri
+    if current_user.can_view_interventions():
+        # Ottieni tutti gli interventi di reperibilità filtrati per data
+        reperibilita_interventions = ReperibilitaIntervention.query.join(User).filter(
+            ReperibilitaIntervention.start_datetime >= start_datetime,
+            ReperibilitaIntervention.start_datetime <= end_datetime
+        ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
+        
+        # Ottieni tutti gli interventi generici filtrati per data
+        general_interventions = Intervention.query.join(User).filter(
+            Intervention.start_datetime >= start_datetime,
+            Intervention.start_datetime <= end_datetime
+        ).order_by(Intervention.start_datetime.desc()).all()
+    else:
+        # Ottieni solo gli interventi dell'utente corrente filtrati per data
+        reperibilita_interventions = ReperibilitaIntervention.query.filter(
+            ReperibilitaIntervention.user_id == current_user.id,
+            ReperibilitaIntervention.start_datetime >= start_datetime,
+            ReperibilitaIntervention.start_datetime <= end_datetime
+        ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
+        
+        general_interventions = Intervention.query.filter(
+            Intervention.user_id == current_user.id,
+            Intervention.start_datetime >= start_datetime,
+            Intervention.start_datetime <= end_datetime
+        ).order_by(Intervention.start_datetime.desc()).all()
+    
+    return render_template('my_interventions.html',
+                         reperibilita_interventions=reperibilita_interventions,
+                         general_interventions=general_interventions,
+                         start_date=start_date,
+                         end_date=end_date)
+
+@reperibilita_bp.route('/interventions/export/general/excel')
+@login_required
+@require_reperibilita_permissions
+def export_general_interventions_excel():
+    """Export interventi generici in formato Excel"""
+    if not current_user.can_view_my_interventions():
+        return jsonify({'error': 'Non autorizzato'}), 403
+    
+    if current_user.role == 'Admin':
+        flash('Accesso non autorizzato.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    now = italian_now()
+    today = now.date()
+    
+    # Gestisci filtri data
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    # Default: primo del mese corrente - oggi
+    if not start_date_str:
+        start_date = today.replace(day=1)
+    else:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    
+    if not end_date_str:
+        end_date = today
+    else:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    
+    # Converti le date in datetime per il filtro
+    start_datetime = datetime.combine(start_date, datetime.min.time())
+    end_datetime = datetime.combine(end_date, datetime.max.time())
+    
+    # PM/Management vedono tutti gli interventi, altri utenti solo i propri
+    if current_user.can_view_interventions():
+        general_interventions = Intervention.query.join(User).filter(
+            Intervention.start_datetime >= start_datetime,
+            Intervention.start_datetime <= end_datetime
+        ).order_by(Intervention.start_datetime.desc()).all()
+    else:
+        general_interventions = Intervention.query.filter(
+            Intervention.user_id == current_user.id,
+            Intervention.start_datetime >= start_datetime,
+            Intervention.start_datetime <= end_datetime
+        ).order_by(Intervention.start_datetime.desc()).all()
+    
+    # Crea workbook Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Interventi Generici"
+    
+    # Stili
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Headers
+    headers = ['Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 'Durata (min)', 
+               'Utente', 'Descrizione', 'Priorità', 'Remoto']
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+    
+    # Dati
+    for row, intervention in enumerate(general_interventions, 2):
+        ws.cell(row=row, column=1, value=intervention.start_datetime.strftime('%d/%m/%Y') if intervention.start_datetime else '')
+        ws.cell(row=row, column=2, value=intervention.start_datetime.strftime('%H:%M') if intervention.start_datetime else '')
+        ws.cell(row=row, column=3, value=intervention.end_datetime.strftime('%d/%m/%Y') if intervention.end_datetime else 'In corso')
+        ws.cell(row=row, column=4, value=intervention.end_datetime.strftime('%H:%M') if intervention.end_datetime else 'In corso')
+        ws.cell(row=row, column=5, value=f'{intervention.duration_minutes:.1f}' if intervention.end_datetime else 'In corso')
+        ws.cell(row=row, column=6, value=f'{intervention.user.first_name} {intervention.user.last_name}' if intervention.user else 'N/A')
+        ws.cell(row=row, column=7, value=intervention.description or '')
+        ws.cell(row=row, column=8, value=intervention.priority or 'Media')
+        ws.cell(row=row, column=9, value='Sì' if intervention.is_remote else 'No')
+    
+    # Regola larghezza colonne
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Prepara response
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"interventi_generici_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+    
+    response = make_response(output.getvalue())
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    
+    return response
+
+@reperibilita_bp.route('/interventions/export/reperibilita/excel')
+@login_required
+@require_reperibilita_permissions
+def export_reperibilita_interventions_excel():
+    """Export interventi di reperibilità in formato Excel"""
+    if not current_user.can_view_my_interventions():
+        return jsonify({'error': 'Non autorizzato'}), 403
+    
+    if current_user.role == 'Admin':
+        flash('Accesso non autorizzato.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    now = italian_now()
+    today = now.date()
+    
+    # Gestisci filtri data
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    # Default: primo del mese corrente - oggi
+    if not start_date_str:
+        start_date = today.replace(day=1)
+    else:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    
+    if not end_date_str:
+        end_date = today
+    else:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    
+    # Converti le date in datetime per il filtro
+    start_datetime = datetime.combine(start_date, datetime.min.time())
+    end_datetime = datetime.combine(end_date, datetime.max.time())
+    
+    # PM/Management vedono tutti gli interventi, altri utenti solo i propri
+    if current_user.can_view_interventions():
+        reperibilita_interventions = ReperibilitaIntervention.query.join(User).filter(
+            ReperibilitaIntervention.start_datetime >= start_datetime,
+            ReperibilitaIntervention.start_datetime <= end_datetime
+        ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
+    else:
+        reperibilita_interventions = ReperibilitaIntervention.query.filter(
+            ReperibilitaIntervention.user_id == current_user.id,
+            ReperibilitaIntervention.start_datetime >= start_datetime,
+            ReperibilitaIntervention.start_datetime <= end_datetime
+        ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
+    
+    # Crea workbook Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Interventi Reperibilità"
+    
+    # Stili
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Headers
+    headers = ['Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 'Durata (min)', 
+               'Utente', 'Descrizione', 'Priorità', 'Tipo', 'Cliente']
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+    
+    # Dati
+    for row, intervention in enumerate(reperibilita_interventions, 2):
+        ws.cell(row=row, column=1, value=intervention.start_datetime.strftime('%d/%m/%Y') if intervention.start_datetime else '')
+        ws.cell(row=row, column=2, value=intervention.start_datetime.strftime('%H:%M') if intervention.start_datetime else '')
+        ws.cell(row=row, column=3, value=intervention.end_datetime.strftime('%d/%m/%Y') if intervention.end_datetime else 'In corso')
+        ws.cell(row=row, column=4, value=intervention.end_datetime.strftime('%H:%M') if intervention.end_datetime else 'In corso')
+        ws.cell(row=row, column=5, value=f'{intervention.duration_minutes:.1f}' if intervention.end_datetime else 'In corso')
+        ws.cell(row=row, column=6, value=f'{intervention.user.first_name} {intervention.user.last_name}' if intervention.user else 'N/A')
+        ws.cell(row=row, column=7, value=intervention.description or '')
+        ws.cell(row=row, column=8, value=intervention.priority or 'Media')
+        ws.cell(row=row, column=9, value=intervention.intervention_type or '')
+        ws.cell(row=row, column=10, value=intervention.client or '')
+    
+    # Regola larghezza colonne
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Prepara response
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"interventi_reperibilita_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+    
+    response = make_response(output.getvalue())
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    
+    return response

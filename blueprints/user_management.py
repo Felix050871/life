@@ -238,6 +238,17 @@ def api_roles():
     })
 
 # =============================================================================
+# USER PROFILE ROUTES
+# =============================================================================
+
+@user_management_bp.route('/profile')
+@login_required
+def user_profile():
+    """User profile page"""
+    # Basic profile functionality - can be expanded later
+    return render_template('user_profile.html', user=current_user)
+
+# =============================================================================
 # BLUEPRINT REGISTRATION READY
 # =============================================================================
 # This blueprint is ready to be registered in main.py:

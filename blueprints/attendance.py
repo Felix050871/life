@@ -23,8 +23,9 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
 from models import User, AttendanceEvent, Shift, Sede, ReperibilitaShift, Intervention, italian_now
+from io import StringIO
+from defusedcsv import csv
 import io
-import csv
 
 # Create blueprint
 attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
