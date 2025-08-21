@@ -36,7 +36,7 @@ def is_safe_url(target):
 def login():
     """User login page"""
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     form = LoginForm()
     if form.validate_on_submit():
@@ -46,7 +46,7 @@ def login():
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
                 return redirect(next_page)
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('dashboard.dashboard'))
         flash('Username o password non validi', 'danger')
     
     return render_template('login.html', form=form)
