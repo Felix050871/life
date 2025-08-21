@@ -289,9 +289,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const message = this.dataset.message || 'Sei sicuro di voler procedere?';
                 const form = this.closest('form');
                 
-                if (form && confirm(message)) {
+                showCustomConfirm(message, () => {
                     form.submit();
-                }
+                });
             });
         }
     });

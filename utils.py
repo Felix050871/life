@@ -1253,29 +1253,39 @@ def send_leave_request_message(leave_request, action_type, sender_user=None):
         # Per approvazioni e rifiuti, invia messaggio solo all'utente richiedente
         recipients = [leave_request.user]
     
+    # Helper function per determinare il tipo di leave
+    def get_leave_type_name(leave_request):
+        if hasattr(leave_request, 'leave_type_obj') and leave_request.leave_type_obj:
+            return leave_request.leave_type_obj.name.lower()
+        elif leave_request.leave_type:
+            return leave_request.leave_type.lower()
+        return 'ferie/permesso'
+    
+    leave_type_name = get_leave_type_name(leave_request)
+    
     # Determina titolo e messaggio in base all'azione
     if action_type == 'created':
-        title = f"Nuova richiesta {leave_request.leave_type.lower()}"
-        message = f"{leave_request.user.get_full_name()} ha richiesto {leave_request.leave_type.lower()} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')}"
+        title = f"Nuova richiesta {leave_type_name}"
+        message = f"{leave_request.user.get_full_name()} ha richiesto {leave_type_name} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')}"
         if leave_request.reason:
             message += f"\nMotivo: {leave_request.reason}"
         msg_type = 'info'
         
     elif action_type == 'cancelled':
-        title = f"Richiesta {leave_request.leave_type.lower()} cancellata"
-        message = f"{leave_request.user.get_full_name()} ha cancellato la sua richiesta di {leave_request.leave_type.lower()} ({leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')})"
+        title = f"Richiesta {leave_type_name} cancellata"
+        message = f"{leave_request.user.get_full_name()} ha cancellato la sua richiesta di {leave_type_name} ({leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')})"
         msg_type = 'warning'
     
     elif action_type == 'approved':
-        title = f"Richiesta {leave_request.leave_type.lower()} approvata"
-        message = f"La tua richiesta di {leave_request.leave_type.lower()} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')} è stata approvata"
+        title = f"Richiesta {leave_type_name} approvata"
+        message = f"La tua richiesta di {leave_type_name} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')} è stata approvata"
         if sender_user:
             message += f" da {sender_user.get_full_name()}"
         msg_type = 'success'
     
     elif action_type == 'rejected':
-        title = f"Richiesta {leave_request.leave_type.lower()} rifiutata"
-        message = f"La tua richiesta di {leave_request.leave_type.lower()} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')} è stata rifiutata"
+        title = f"Richiesta {leave_type_name} rifiutata"
+        message = f"La tua richiesta di {leave_type_name} dal {leave_request.start_date.strftime('%d/%m/%Y')} al {leave_request.end_date.strftime('%d/%m/%Y')} è stata rifiutata"
         if sender_user:
             message += f" da {sender_user.get_full_name()}"
         msg_type = 'danger'
