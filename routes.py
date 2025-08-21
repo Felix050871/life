@@ -1,25 +1,9 @@
 # WORKLY - WORKFORCE MANAGEMENT ROUTES
 # Organized by functional areas for better maintainability
 #
-# ROUTE ORGANIZATION:
 # 1. Global Configuration & Utilities
-# 2. Core Navigation Routes
-# 3. Authentication Routes
-# 4. Dashboard Routes
-# 5. Attendance & Clock In/Out Routes
-# 6. Shift Management Routes
-# 7. Leave Management Routes
-# 8. User Management Routes
-# 9. Reports Routes
-# 10. Holiday Management Routes
-# 11. Reperibilità (On-Call) Routes
-# 12. Expense Management Routes
-# 13. Overtime Management Routes
-# 14. Mileage Reimbursement Routes
-# 15. Admin & System Management Routes
 # 16. API Endpoints
 #
-# Total Routes: 169+
 # Flask Core Imports
 from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
 from flask_login import login_user, logout_user, login_required, current_user
@@ -93,37 +77,12 @@ def index():
         return redirect(url_for('dashboard.dashboard'))
     return redirect(url_for('auth.login'))
 # AUTHENTICATION ROUTES - MOVED TO routes/auth.py BLUEPRINT
-# Authentication routes now handled by auth_bp blueprint
-# DASHBOARD ROUTES - MOVED TO blueprints/dashboard.py BLUEPRINT
-# Dashboard routes now handled by dashboard_bp blueprint
-# NEXT ROUTES TO MIGRATE: ATTENDANCE & CLOCK IN/OUT ROUTES
 # ATTENDANCE & CLOCK IN/OUT ROUTES 
-# API work_hours migrated to attendance blueprint
-# ATTENDANCE & CLOCK IN/OUT ROUTES - MOVED TO blueprints/attendance.py BLUEPRINT  
-# Attendance routes now handled by attendance_bp blueprint
-# NEXT ROUTES TO MIGRATE: SHIFT MANAGEMENT ROUTES
-# La prossima sezione con le vere Shift Management Routes inizia più avanti nel file
 # Le routes Attendance sono state migrate al blueprint blueprints/attendance.py
-# ROUTES NON ANCORA MIGRATE (da rimuovere quando migrazione completata)
-# Prossime routes da migrare: Shift Management, Leave Management, etc.
 # SHIFT MANAGEMENT ROUTES (non ancora migrati)  
-# DUPLICATE FUNCTION REMOVED - La vera funzione turni_automatici() è alla riga ~941
-# ATTENDANCE ROUTES COMPLETAMENTE MIGRATE A BLUEPRINT
 # Il codice duplicato verrà rimosso sistematicamente
 # FINE RIMOZIONE CODICE DUPLICATO
-# NEXT SECTIONS: REMAINING ROUTES TO MIGRATE
-# check_shift_before_clock_out migrated to attendance blueprint
-# clock_out migrated to attendance blueprint
-# break_start migrated to attendance blueprint
-# break_end migrated to attendance blueprint
-# turni_automatici route MOVED TO shifts_bp blueprint
 # SHIFT MANAGEMENT ROUTES
-# get_shifts_for_template_api route MOVED TO shifts_bp blueprint
-# visualizza_turni route MOVED TO shifts_bp blueprint
-# genera_turni_da_template route MOVED TO shifts_bp blueprint
-# create_shift route MOVED TO shifts_bp blueprint
-# generate_shifts route MOVED TO shifts_bp blueprint
-# regenerate_template route MOVED TO shifts_bp blueprint
 # delete_template migrated to shifts module
 @login_required
 def delete_template(template_id):
@@ -255,7 +214,6 @@ def add_leave_type_page():
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     return response
-# export_expense_reports_excel route MOVED TO expense_bp blueprint
     if not current_user.can_view_expense_reports() and not current_user.can_create_expense_reports():
         flash('Non hai i permessi per esportare le note spese', 'danger')
         return redirect(url_for('dashboard'))
@@ -313,7 +271,6 @@ def add_leave_type_page():
             User.sede_id == sede.id,
             User.active == True
         ).count()
-        # Coverage count migrated to presidio blueprint
         coperture_count = 0
         sede_stats[sede.id] = {
             'turni_count': turni_count,
@@ -324,7 +281,6 @@ def add_leave_type_page():
                          sedi_turni=sedi_turni, 
                          sede_stats=sede_stats,
                          can_manage_all=(current_user.can_manage_shifts()))
-# def view_turni_coverage():
     """Visualizza le coperture create per una sede specifica"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per visualizzare le coperture', 'danger')
@@ -351,7 +307,6 @@ def add_leave_type_page():
         return redirect(url_for('manage_turni'))
     # Ottieni le coperture create per questa sede
     # Per ora prendiamo tutte le coperture attive - in futuro potremmo aggiungere un campo sede_id
-    # Coverage data migrated to presidio blueprint
     coperture = []
     # Raggruppa coperture per periodo di validità (evita duplicati)
     coperture_grouped = {}
@@ -380,7 +335,6 @@ def add_leave_type_page():
                          active_coperture=active_coperture,
                          today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
-# def generate_turni_from_coverage():
     """Pagina per generare turni basati sulle coperture create"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per generare turni', 'danger')
@@ -406,7 +360,6 @@ def add_leave_type_page():
         flash('La sede selezionata non è configurata per la modalità turni', 'warning')
         return redirect(url_for('generate_turnazioni'))
     # Ottieni le coperture attive per questa sede
-    # Coverage data migrated to presidio blueprint
     coperture = []
     # Raggruppa coperture per periodo di validità (evita duplicati con ID univoci)
     coperture_grouped = {}
@@ -436,7 +389,6 @@ def add_leave_type_page():
                          active_coperture=active_coperture,
                          today=datetime.now().date(),
                          is_admin=(current_user.role == 'Admin'))
-# def process_generate_turni_from_coverage():
     """Processa la generazione dei turni basata sulle coperture"""
     if not current_user.can_access_turni():
         flash('Non hai i permessi per generare turni', 'danger')
