@@ -187,33 +187,10 @@ def view_template(template_id):
                          can_manage=can_manage,
                          view_mode=view_mode)
 # LEAVE MANAGEMENT ROUTES
-# leave_types migrated to leave module
-@login_required
-def leave_types():
-    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
-        flash('Non hai i permessi per gestire le tipologie di permesso', 'danger')
-        return redirect(url_for('dashboard'))
-    leave_types = LeaveType.query.order_by(LeaveType.name).all()
-    return render_template('leave_types.html', leave_types=leave_types)
-# leave_types/add migrated to leave module
-@login_required
-def add_leave_type_page():
-    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
-        flash('Non hai i permessi per aggiungere tipologie di permesso', 'danger')
-        return redirect(url_for('leave_types'))
-    # Leave type creation logic
-    return render_template('add_leave_type.html')
+# leave_types moved to leave blueprint
+# add_leave_type_page moved to leave blueprint
 # ADMIN & SYSTEM MANAGEMENT ROUTES
-        # Data Approvazione
-    # Prepara la risposta
-    # Salva in un buffer temporaneo
-    buffer = BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-    response.data = buffer.getvalue()
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
-    return response
+
     if not current_user.can_view_expense_reports() and not current_user.can_create_expense_reports():
         flash('Non hai i permessi per esportare le note spese', 'danger')
         return redirect(url_for('dashboard'))
@@ -252,10 +229,7 @@ def add_leave_type_page():
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)
-    response.data = buffer.getvalue()
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
-    return response
+
 # GESTIONE TURNI PER SEDI
     """Gestione turni per sedi di tipo 'Turni'"""
     if not current_user.can_access_turni():
