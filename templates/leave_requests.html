@@ -145,16 +145,18 @@
                                 <td>
                                     {% if can_approve and request.status == 'Pending' %}
                                     <div class="btn-group-vertical btn-group-sm">
-                                        <a href="{{ url_for('leave.approve_leave_request', request_id=request.id) }}" 
-                                           class="btn btn-success btn-sm confirm-link"
-                                           data-message="Approvare questa richiesta?">
-                                            <i class="fas fa-check me-1"></i>Approva
-                                        </a>
-                                        <a href="{{ url_for('leave.reject_leave_request', request_id=request.id) }}" 
-                                           class="btn btn-danger btn-sm confirm-link"
-                                           data-message="Rifiutare questa richiesta?">
-                                            <i class="fas fa-times me-1"></i>Rifiuta
-                                        </a>
+                                        <form method="POST" action="{{ url_for('leave.approve_leave_request', request_id=request.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-success btn-sm confirm-form" 
+                                                    data-message="Approvare questa richiesta?">
+                                                <i class="fas fa-check me-1"></i>Approva
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('leave.reject_leave_request', request_id=request.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm confirm-form" 
+                                                    data-message="Rifiutare questa richiesta?">
+                                                <i class="fas fa-times me-1"></i>Rifiuta
+                                            </button>
+                                        </form>
                                     </div>
                                     {% elif request.user_id == current_user.id and (request.status == 'Pending' or (request.status == 'Approved' and request.start_date >= today)) %}
                                     <a href="{{ url_for('leave.delete_leave_request', request_id=request.id) }}" 
@@ -273,6 +275,20 @@ document.addEventListener('DOMContentLoaded', function() {
             
             showCustomConfirm(message, () => {
                 window.location.href = href;
+            });
+        });
+    });
+    
+    // Intercetta tutti i form con class="confirm-form"
+    document.querySelectorAll('.confirm-form').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const message = this.dataset.message || 'Sei sicuro di voler procedere?';
+            const form = this.closest('form');
+            
+            showCustomConfirm(message, () => {
+                form.submit();
             });
         });
     });
