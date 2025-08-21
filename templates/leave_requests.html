@@ -145,19 +145,19 @@
                                 <td>
                                     {% if can_approve and request.status == 'Pending' %}
                                     <div class="btn-group-vertical btn-group-sm">
-                                        <a href="{{ url_for('approve_leave', request_id=request.id) }}" 
+                                        <a href="{{ url_for('leave.approve_leave_request', request_id=request.id) }}" 
                                            class="btn btn-success btn-sm confirm-link"
                                            data-message="Approvare questa richiesta?">
                                             <i class="fas fa-check me-1"></i>Approva
                                         </a>
-                                        <a href="{{ url_for('reject_leave', request_id=request.id) }}" 
+                                        <a href="{{ url_for('leave.reject_leave_request', request_id=request.id) }}" 
                                            class="btn btn-danger btn-sm confirm-link"
                                            data-message="Rifiutare questa richiesta?">
                                             <i class="fas fa-times me-1"></i>Rifiuta
                                         </a>
                                     </div>
                                     {% elif request.user_id == current_user.id and (request.status == 'Pending' or (request.status == 'Approved' and request.start_date >= today)) %}
-                                    <a href="{{ url_for('delete_leave', request_id=request.id) }}" 
+                                    <a href="{{ url_for('leave.delete_leave_request', request_id=request.id) }}" 
                                        class="btn btn-outline-danger btn-sm confirm-link"
                                        data-message="Cancellare questa richiesta?">
                                         <i class="fas fa-trash me-1"></i>Cancella
