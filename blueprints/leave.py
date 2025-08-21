@@ -298,6 +298,42 @@ def reject_leave_request(request_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
 
+@leave_bp.route('/delete_leave_request/<int:request_id>', methods=['POST'])
+@login_required
+def delete_leave_request(request_id):
+    """Elimina richiesta ferie/permessi"""
+    leave_request = LeaveRequest.query.get_or_404(request_id)
+    
+    # Verifica che sia l'utente proprietario della richiesta
+    if leave_request.user_id != current_user.id:
+        flash('Non puoi cancellare richieste di altri utenti', 'danger')
+        return redirect(url_for('leave.leave_requests'))
+    
+    # Verifica che la richiesta non sia già approvata E che non sia futura
+    from zoneinfo import ZoneInfo
+    italy_tz = ZoneInfo('Europe/Rome')
+    today = datetime.now(italy_tz).date()
+    
+    if leave_request.status == 'Approved' and leave_request.start_date < today:
+        flash('Non puoi cancellare richieste già approvate e iniziate', 'warning')
+        return redirect(url_for('leave.leave_requests'))
+    
+    # Invia messaggi di cancellazione prima di eliminare la richiesta
+    from utils import send_leave_request_message
+    send_leave_request_message(leave_request, 'cancelled', current_user)
+    
+    # Cancella la richiesta
+    db.session.delete(leave_request)
+    db.session.commit()
+    flash('Richiesta cancellata con successo', 'success')
+    
+    # Determina dove reindirizzare in base al referer
+    referer = request.headers.get('Referer', '')
+    if 'dashboard' in referer or referer.endswith('/'):
+        return redirect(url_for('dashboard.dashboard'))
+    else:
+        return redirect(url_for('leave.leave_requests'))
+
 @leave_bp.route('/api/leave_balance/<int:user_id>/<int:year>')
 @login_required
 def leave_balance_api(user_id, year):
