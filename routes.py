@@ -1677,11 +1677,7 @@ def internal_error(error):
     
     return response
 
-# EXPORT ROUTE MIGRATED TO export_bp blueprint - expense/excel
-# @app.route('/export_expense_reports_excel')
-# @login_required
-# def export_expense_reports_excel():
-    """Export delle note spese in formato Excel"""
+# export_expense_reports_excel route MOVED TO expense_bp blueprint
     if not current_user.can_view_expense_reports() and not current_user.can_create_expense_reports():
         flash('Non hai i permessi per esportare le note spese', 'danger')
         return redirect(url_for('dashboard'))
@@ -2831,63 +2827,10 @@ def internal_error(error):
                          page_title=page_title,
                          view_mode=view_mode)
 
-# ROUTE MOVED TO expense_bp blueprint - create_expense_report
-    """Crea nuova nota spese"""
-    if not current_user.can_create_expense_reports():
-        flash('Non hai i permessi per creare note spese', 'danger')
-        return redirect(url_for('expense_reports'))
+# create_expense_report route MOVED TO expense_bp blueprint
     
-    from models import ExpenseReport, ExpenseCategory
-    from forms import ExpenseReportForm
-    import os
-    from werkzeug.utils import secure_filename
-    
-    form = ExpenseReportForm()
-    
-    if form.validate_on_submit():
-        # Gestione upload file
-        receipt_filename = None
-        if form.receipt_file.data:
-            file = form.receipt_file.data
-            filename = secure_filename(file.filename)
-            
-            # Crea nome file unico
-            import uuid
-            file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-            unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
-            
-            # Crea directory uploads se non esiste
-            upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'expenses')
-            os.makedirs(upload_dir, exist_ok=True)
-            
-            file_path = os.path.join(upload_dir, unique_filename)
-            file.save(file_path)
-            receipt_filename = unique_filename
-        
-        # Crea nota spese
-        expense = ExpenseReport(
-            employee_id=current_user.id,
-            expense_date=form.expense_date.data,
-            description=form.description.data,
-            amount=form.amount.data,
-            category_id=form.category_id.data,
-            receipt_filename=receipt_filename
-        )
-        
-        db.session.add(expense)
-        db.session.commit()
-        
-        flash('Nota spese creata con successo', 'success')
-        return redirect(url_for('expense_reports'))
-    
-    return render_template('create_expense_report.html', form=form)
 
-# ROUTE MOVED TO expense_bp blueprint - edit_expense_report
-    """Modifica nota spese esistente"""
-    from models import ExpenseReport
-    from forms import ExpenseReportForm
-    import os
-    from werkzeug.utils import secure_filename
+# edit_expense_report route MOVED TO expense_bp blueprint
     
     expense = ExpenseReport.query.get_or_404(expense_id)
     
@@ -2944,7 +2887,6 @@ def internal_error(error):
     form.amount.data = expense.amount
     form.category_id.data = expense.category_id
     
-    return render_template('edit_expense_report.html', form=form, expense=expense)
 
 # ROUTE MOVED TO expense_bp blueprint - approve_expense_report
     """Approva/rifiuta nota spese"""
@@ -3014,7 +2956,6 @@ def internal_error(error):
     from models import ExpenseCategory
     categories = ExpenseCategory.query.order_by(ExpenseCategory.name).all()
     
-    return render_template('expense_categories.html', categories=categories)
 
 # ROUTE MOVED TO expense_bp blueprint - create_expense_category
     """Crea nuova categoria"""
