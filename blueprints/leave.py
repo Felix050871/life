@@ -229,9 +229,16 @@ def approve_leave_request(request_id):
         except Exception as e:
             pass
         
+        # Determina il tipo per il messaggio
+        leave_type_name = 'ferie/permesso'
+        if leave_request.leave_type_obj:
+            leave_type_name = leave_request.leave_type_obj.name.lower()
+        elif leave_request.leave_type:
+            leave_type_name = leave_request.leave_type.lower()
+        
         return jsonify({
             'success': True, 
-            'message': f'Richiesta {leave_request.leave_type.lower()} approvata correttamente'
+            'message': f'Richiesta {leave_type_name} approvata correttamente'
         })
         
     except Exception as e:
@@ -274,9 +281,16 @@ def reject_leave_request(request_id):
         except Exception as e:
             pass
         
+        # Determina il tipo per il messaggio
+        leave_type_name = 'ferie/permesso'
+        if leave_request.leave_type_obj:
+            leave_type_name = leave_request.leave_type_obj.name.lower()
+        elif leave_request.leave_type:
+            leave_type_name = leave_request.leave_type.lower()
+        
         return jsonify({
             'success': True, 
-            'message': f'Richiesta {leave_request.leave_type.lower()} rifiutata'
+            'message': f'Richiesta {leave_type_name} rifiutata'
         })
         
     except Exception as e:
