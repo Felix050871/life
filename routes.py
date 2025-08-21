@@ -313,11 +313,8 @@ def add_leave_type_page():
             User.sede_id == sede.id,
             User.active == True
         ).count()
-        # Conta coperture attive per questa sede (usando PresidioCoverage temporaneamente)
-        from models import PresidioCoverage
-        coperture_count = PresidioCoverage.query.filter(
-            PresidioCoverage.active == True
-        ).count()
+        # Coverage count migrated to presidio blueprint
+        coperture_count = 0
         sede_stats[sede.id] = {
             'turni_count': turni_count,
             'coperture_count': coperture_count,
@@ -354,12 +351,8 @@ def add_leave_type_page():
         return redirect(url_for('manage_turni'))
     # Ottieni le coperture create per questa sede
     # Per ora prendiamo tutte le coperture attive - in futuro potremmo aggiungere un campo sede_id
-    from models import PresidioCoverage
-    coperture = PresidioCoverage.query.filter_by(active=True).order_by(
-        PresidioCoverage.start_date.desc(),
-        PresidioCoverage.day_of_week,
-        PresidioCoverage.start_time
-    ).all()
+    # Coverage data migrated to presidio blueprint
+    coperture = []
     # Raggruppa coperture per periodo di validità (evita duplicati)
     coperture_grouped = {}
     coperture_ids_seen = set()
@@ -413,12 +406,8 @@ def add_leave_type_page():
         flash('La sede selezionata non è configurata per la modalità turni', 'warning')
         return redirect(url_for('generate_turnazioni'))
     # Ottieni le coperture attive per questa sede
-    from models import PresidioCoverage
-    coperture = PresidioCoverage.query.filter_by(active=True).order_by(
-        PresidioCoverage.start_date.desc(),
-        PresidioCoverage.day_of_week,
-        PresidioCoverage.start_time
-    ).all()
+    # Coverage data migrated to presidio blueprint
+    coperture = []
     # Raggruppa coperture per periodo di validità (evita duplicati con ID univoci)
     coperture_grouped = {}
     coperture_ids_seen = set()
@@ -660,65 +649,3 @@ def calculate_approximate_distance(start_address, end_address):
     else:
         # Fallback: distanza approssimativa basata sulla lunghezza degli indirizzi
         return max(20, min(100, len(start_address) + len(end_address)))
-# SISTEMA ACI - BACK OFFICE AMMINISTRATORE
-# ACI HELPER FUNCTION MIGRATED TO aci_bp blueprint - admin_required
-    """Visualizza tabelle ACI con caricamento lazy - record caricati solo dopo filtro"""
-    form = ACIFilterForm()
-    tables = []
-    total_records = ACITable.query.count()
-    # LAZY LOADING: carica record solo se è stato applicato un filtro (POST)
-    if request.method == "POST" and form.validate_on_submit():
-        query = ACITable.query
-        # Applica filtri selezionati
-        filters_applied = False
-        if form.tipologia.data:
-            query = query.filter(ACITable.tipologia == form.tipologia.data)
-            filters_applied = True
-        if form.marca.data:
-            query = query.filter(ACITable.marca == form.marca.data)
-            filters_applied = True
-        if form.modello.data:
-            query = query.filter(ACITable.modello == form.modello.data)
-            filters_applied = True
-        # Carica risultati solo se almeno un filtro è applicato
-        if filters_applied:
-            tables = query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
-            import logging
-            logging.info(f"ACI Tables: Caricati {len(tables)} record con filtri applicati")
-        else:
-            # Se nessun filtro è selezionato ma form è stato inviato, mostra messaggio
-            flash("⚠️ Seleziona almeno un filtro prima di cercare", "warning")
-    return render_template("aci_tables.html", 
-                         tables=tables, 
-                         form=form, 
-                         total_records=total_records,
-                         show_results=(request.method == "POST"))
-    """API per ottenere le marche filtrate per tipologia"""
-    tipologia = request.args.get('tipologia')
-    query = db.session.query(ACITable.marca).distinct()
-    if tipologia:
-        query = query.filter(ACITable.tipologia == tipologia)
-    marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
-    return jsonify(marcas)
-    """API per ottenere i modelli filtrati per tipologia e marca"""
-    tipologia = request.args.get('tipologia')
-    marca = request.args.get('marca')
-    query = db.session.query(ACITable.modello).distinct()
-    if tipologia:
-        query = query.filter(ACITable.tipologia == tipologia)
-    if marca:
-        query = query.filter(ACITable.marca == marca)
-    modelos = [row.modello for row in query.order_by(ACITable.modello).all()]
-    return jsonify(modelos)
-    """Upload e importazione file Excel ACI"""
-    form = ACIUploadForm()
-    if form.validate_on_submit():
-        file = form.excel_file.data
-        tipologia = form.tipologia.data
-        # Process file upload logic here
-        pass
-    """Cancellazione in massa per tipologia"""
-    tipologia = request.form.get('tipologia')
-    if not tipologia:
-        flash("Tipologia non specificata.", "warning")
-        return redirect(url_for("aci_tables"))
