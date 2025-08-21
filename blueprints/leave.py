@@ -19,7 +19,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
-from models import User, LeaveRequest, Sede, Holiday, italian_now
+from models import User, LeaveRequest, LeaveType, Sede, Holiday, italian_now
 from forms import LeaveRequestForm
 import io
 import csv
@@ -318,3 +318,120 @@ def leave_balance_api(user_id, year):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# =============================================================================
+# LEAVE TYPES MANAGEMENT ROUTES (Migrated from routes.py)
+# =============================================================================
+
+@leave_bp.route('/leave_types')
+@login_required
+def leave_types():
+    """Gestione tipologie ferie/permessi"""
+    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
+        flash('Non hai i permessi per gestire le tipologie di permesso', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    leave_types = LeaveType.query.order_by(LeaveType.name).all()
+    return render_template('leave_types.html', leave_types=leave_types)
+
+@leave_bp.route('/leave_types/add', methods=['GET', 'POST'])
+@login_required
+def add_leave_type_page():
+    """Aggiungi nuova tipologia ferie/permessi"""
+    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
+        flash('Non hai i permessi per aggiungere tipologie di permesso', 'danger')
+        return redirect(url_for('leave.leave_types'))
+    
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            description = request.form.get('description')
+            requires_approval = 'requires_approval' in request.form
+            active_status = 'active' in request.form
+            
+            # Verifica duplicati
+            if LeaveType.query.filter_by(name=name).first():
+                flash('Esiste già una tipologia con questo nome', 'warning')
+                return render_template('add_leave_type.html')
+            
+            leave_type = LeaveType(
+                name=name,
+                description=description,
+                requires_approval=requires_approval,
+                active=active_status
+            )
+            
+            db.session.add(leave_type)
+            db.session.commit()
+            flash(f'Tipologia "{name}" creata con successo', 'success')
+            return redirect(url_for('leave.leave_types'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Errore nella creazione della tipologia', 'danger')
+            return render_template('add_leave_type.html')
+    
+    # GET request - mostra form di creazione
+    return render_template('add_leave_type.html')
+
+@leave_bp.route('/leave_types/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_leave_type_page(id):
+    """Modifica tipologia ferie/permessi"""
+    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
+        flash('Non hai i permessi per modificare tipologie di permesso', 'danger')
+        return redirect(url_for('leave.leave_types'))
+    
+    leave_type = LeaveType.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            
+            # Verifica duplicati (escludendo il record corrente)
+            existing = LeaveType.query.filter(LeaveType.name == name, LeaveType.id != id).first()
+            if existing:
+                flash('Esiste già una tipologia con questo nome', 'warning')
+                return render_template('edit_leave_type.html', leave_type=leave_type)
+            
+            leave_type.name = name
+            leave_type.description = request.form.get('description')
+            leave_type.requires_approval = 'requires_approval' in request.form
+            leave_type.active = 'active' in request.form
+            leave_type.updated_at = italian_now()
+            
+            db.session.commit()
+            flash(f'Tipologia "{name}" aggiornata con successo', 'success')
+            return redirect(url_for('leave.leave_types'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Errore nell\'aggiornamento della tipologia', 'danger')
+            return render_template('edit_leave_type.html', leave_type=leave_type)
+    
+    # GET request - mostra form di modifica
+    return render_template('edit_leave_type.html', leave_type=leave_type)
+
+@leave_bp.route('/leave_types/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_leave_type(id):
+    """Elimina tipologia ferie/permessi"""
+    if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
+        flash('Non hai i permessi per eliminare tipologie di permesso', 'danger')
+        return redirect(url_for('leave.leave_types'))
+    
+    leave_type = LeaveType.query.get_or_404(id)
+    
+    # Verifica che non ci siano richieste associate
+    if leave_type.leave_requests.count() > 0:
+        flash('Non è possibile eliminare una tipologia con richieste associate', 'warning')
+        return redirect(url_for('leave.leave_types'))
+    
+    try:
+        name = leave_type.name
+        db.session.delete(leave_type)
+        db.session.commit()
+        flash(f'Tipologia "{name}" eliminata con successo', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Errore nell\'eliminazione della tipologia', 'danger')
+    
+    return redirect(url_for('leave.leave_types'))
