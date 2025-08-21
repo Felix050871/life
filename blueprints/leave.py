@@ -131,7 +131,8 @@ def leave_requests():
                          selected_type=leave_type_filter,
                          selected_year=year_filter,
                          can_approve=current_user.can_approve_leave(),
-                         can_create=current_user.can_request_leave())
+                         can_create=current_user.can_request_leave(),
+                         today=date.today())
 
 @leave_bp.route('/create_leave_request', methods=['GET', 'POST'])
 @login_required
