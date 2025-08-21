@@ -694,116 +694,12 @@ def delete_leave(request_id):
 # ROUTE MOVED TO user_management_bp blueprint
 # new_user() function migrated to blueprints/user_management.py
 
-# ROUTE MOVED TO user_management_bp blueprint
-    if not (current_user.can_manage_users() or current_user.can_view_users()):
-        flash('Non hai i permessi per accedere alla gestione utenti', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    # Applica filtro automatico per sede usando il metodo helper
-    users_query = User.get_visible_users_query(current_user).options(joinedload(User.sede_obj))
-    users = users_query.order_by(User.created_at.desc()).all()
-    
-    # Determina il nome della sede per il titolo
-    sede_name = None if current_user.all_sedi else (current_user.sede_obj.name if current_user.sede_obj else None)
-    form = UserForm(is_edit=False)
-    
-    # Aggiungi statistiche team per le statistiche utenti dinamiche
-    team_stats = None
-    if current_user.can_view_team_stats_widget():
-        team_stats = get_team_statistics()
-    
-    return render_template('user_management.html', users=users, form=form, 
-                         sede_name=sede_name, is_multi_sede=current_user.all_sedi,
-                         team_stats=team_stats)
+# user_management route MOVED TO user_management_bp blueprint
 
 # ROUTE MOVED TO user_management_bp blueprint
 # user_profile() function migrated to blueprints/user_management.py
 
-# ROUTE MOVED TO user_management_bp blueprint
-    if not current_user.can_manage_users():
-        flash('Non hai i permessi per modificare gli utenti', 'danger')
-        return redirect(url_for('user_management'))
-    
-    user = User.query.get_or_404(user_id)
-    form = UserForm(original_username=user.username, is_edit=True, obj=user)
-    
-    if request.method == 'GET':
-        # Popola i campi sede e all_sedi con i valori attuali
-        form.all_sedi.data = user.all_sedi
-        if user.sede_id:
-            form.sede.data = user.sede_id
-        
-        if user.work_schedule_id:
-            # Aggiungi l'orario corrente alle scelte se non già presente
-            if user.work_schedule:
-                schedule_choice = (user.work_schedule.id, f"{user.work_schedule.name} ({user.work_schedule.start_time.strftime('%H:%M') if user.work_schedule.start_time else ''}-{user.work_schedule.end_time.strftime('%H:%M') if user.work_schedule.end_time else ''})")
-                if schedule_choice not in form.work_schedule.choices:
-                    form.work_schedule.choices.append(schedule_choice)
-            form.work_schedule.data = user.work_schedule_id
-        else:
-            # Se non ha un orario, imposta il valore di default
-            form.work_schedule.data = ''
-        
-        # Gestione del veicolo ACI con campi progressivi
-        if user.aci_vehicle_id and user.aci_vehicle:
-            # Popola i campi progressivi basati sul veicolo esistente
-            form.aci_vehicle_tipo.data = user.aci_vehicle.tipologia
-            form.aci_vehicle_marca.data = user.aci_vehicle.marca
-            form.aci_vehicle.data = user.aci_vehicle_id
-            
-            # Aggiorna le scelte per rendere i dropdown funzionali
-            from models import ACITable
-            aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
-            
-            # Aggiorna le scelte delle marche per il tipo selezionato
-            marche = list(set([v.marca for v in aci_vehicles if v.tipologia == user.aci_vehicle.tipologia and v.marca]))
-            form.aci_vehicle_marca.choices = [('', 'Seleziona marca')] + [(marca, marca) for marca in sorted(marche)]
-            
-            # Aggiorna le scelte dei modelli per tipo e marca selezionati
-            modelli = ACITable.query.filter(
-                ACITable.tipologia == user.aci_vehicle.tipologia,
-                ACITable.marca == user.aci_vehicle.marca
-            ).order_by(ACITable.modello).all()
-            form.aci_vehicle.choices = [('', 'Seleziona modello')] + [
-                (v.id, f"{v.modello} (€{v.costo_km:.4f}/km)") for v in modelli
-            ]
-        else:
-            form.aci_vehicle_tipo.data = ''
-            form.aci_vehicle_marca.data = ''
-            form.aci_vehicle.data = ''
-    
-    if form.validate_on_submit():
-        # Impedisce la disattivazione dell'amministratore
-        if user.role == 'Amministratore' and not form.active.data:
-            flash('Non è possibile disattivare l\'utente amministratore', 'danger')
-            return render_template('edit_user.html', form=form, user=user)
-        
-        user.username = form.username.data
-        user.email = form.email.data
-        user.role = form.role.data
-        user.first_name = form.first_name.data
-        user.last_name = form.last_name.data
-        user.all_sedi = form.all_sedi.data
-        user.sede_id = form.sede.data if not form.all_sedi.data else None
-        user.work_schedule_id = form.work_schedule.data
-        user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
-        user.part_time_percentage = form.get_part_time_percentage_as_float()
-        user.active = form.active.data
-        
-        # Update password only if provided
-        if form.password.data:
-            user.password_hash = generate_password_hash(form.password.data)
-        
-        # Non c'è più gestione sedi multiple
-        
-        db.session.commit()
-        flash(f'Utente {user.username} modificato con successo', 'success')
-        return redirect(url_for('user_management'))
-    else:
-        # Populate the percentage field manually only on GET request
-        form.part_time_percentage.data = str(user.part_time_percentage)
-    
-    return render_template('edit_user.html', form=form, user=user)
+# edit_user route MOVED TO user_management_bp blueprint
 
 # ROUTE MOVED TO user_management_bp blueprint
 # toggle_user() function migrated to blueprints/user_management.py
@@ -812,74 +708,7 @@ def delete_leave(request_id):
 # REPORTS ROUTES
 # =============================================================================
 
-# MIGRATED TO BLUEPRINT: blueprints/reports.py
-# @app.route('/reports')
-# @login_required
-# def reports():
-    if not current_user.can_view_reports():
-        flash('Non hai i permessi per visualizzare i report', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    # Get date range from request
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    
-    if start_date:
-        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-    else:
-        start_date = datetime.now().date() - timedelta(days=30)
-    
-    if end_date:
-        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-    else:
-        end_date = datetime.now().date()
-    
-    # Get team statistics with error handling
-    try:
-        team_stats = get_team_statistics(start_date, end_date)
-    except Exception as e:
-        pass  # Silent error handling
-        team_stats = {
-            'active_users': 0,
-            'total_hours': 0,
-            'shifts_this_period': 0,
-            'avg_hours_per_user': 0
-        }
-    
-    # Get user statistics for all active users (excluding Amministratore and Ospite)
-    users = User.query.filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
-    pass  # User count info
-    
-    user_stats = []
-    chart_data = []  # Separate data for charts without User objects
-    
-    for user in users:
-        try:
-            stats = get_user_statistics(user.id, start_date, end_date)
-            stats['user'] = user
-            user_stats.append(stats)
-            
-            # Create chart-safe data
-            chart_data.append({
-                'user_id': user.id,
-                'username': user.username,
-                'full_name': user.get_full_name(),
-                'role': user.role,
-                'total_hours_worked': stats['total_hours_worked'],
-                'days_worked': stats['days_worked'],
-                'shifts_assigned': stats['shifts_assigned'],
-                'shift_hours': stats['shift_hours'],
-                'approved_leaves': stats['approved_leaves'],
-                'pending_leaves': stats['pending_leaves']
-            })
-            
-            pass  # User stats processed
-        except Exception as e:
-            pass  # Silent error handling
-            # Continue without this user's stats
-            continue
-    
-    pass  # Stats collected
+# reports route MOVED TO reports_bp blueprint
     
     # Get interventions data for the table (entrambi i tipi)
     from models import Intervention, ReperibilitaIntervention
@@ -1255,76 +1084,7 @@ def internal_error(error):
 
 # INTERVENTION ROUTE MIGRATED TO interventions_bp blueprint - my_interventions
 
-# EXPORT ROUTE MIGRATED TO export_bp blueprint - interventions/general/excel
-# @app.route('/export_general_interventions_excel')
-# @login_required
-# def export_general_interventions_excel():
-    """Export interventi generici in formato Excel"""
-    if current_user.role == 'Admin':
-        flash('Accesso non autorizzato.', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    today = datetime.now(italy_tz).date()
-    
-    # Gestisci filtri data
-    start_date_str = request.args.get('start_date')
-    end_date_str = request.args.get('end_date')
-    
-    # Default: primo del mese corrente - oggi
-    if not start_date_str:
-        start_date = today.replace(day=1)
-    else:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-    
-    if not end_date_str:
-        end_date = today
-    else:
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    
-    # Converti le date in datetime per il filtro
-    start_datetime = datetime.combine(start_date, datetime.min.time())
-    end_datetime = datetime.combine(end_date, datetime.max.time())
-    
-    # PM ed Ente vedono tutti gli interventi, altri utenti solo i propri
-    if current_user.role in ['Management', 'Ente']:
-        general_interventions = Intervention.query.join(User).filter(
-            Intervention.start_datetime >= start_datetime,
-            Intervention.start_datetime <= end_datetime
-        ).order_by(Intervention.start_datetime.desc()).all()
-    else:
-        general_interventions = Intervention.query.filter(
-            Intervention.user_id == current_user.id,
-            Intervention.start_datetime >= start_datetime,
-            Intervention.start_datetime <= end_datetime
-        ).order_by(Intervention.start_datetime.desc()).all()
-    
-    # Crea Excel in memoria usando openpyxl
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    import tempfile
-    import os
-    
-    wb = Workbook()
-    ws = wb.active  
-    ws.title = "Interventi Generici"
-    
-    # Header styling
-    header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-    thin_border = Border(
-        left=Side(style='thin'), right=Side(style='thin'),
-        top=Side(style='thin'), bottom=Side(style='thin')
-    )
-    
-    # Header
-    if current_user.role in ['Management', 'Ente']:
-        headers = ['Utente', 'Nome', 'Cognome', 'Ruolo', 'Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
-                  'Durata (minuti)', 'Priorità', 'Tipologia', 'Descrizione', 'Stato']
-    else:
-        headers = ['Data Inizio', 'Ora Inizio', 'Data Fine', 'Ora Fine', 
-                  'Durata (minuti)', 'Priorità', 'Tipologia', 'Descrizione', 'Stato']
+# export_general_interventions_excel route MOVED TO interventions_bp blueprint
     
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
@@ -2608,12 +2368,7 @@ def internal_error(error):
                          search_form=search_form,
                          current_template=current_template)
 
-# PRESIDIO COVERAGE ROUTE MIGRATED TO shifts_bp blueprint
-# def presidio_coverage_edit(template_id):
-    """Modifica template esistente - Sistema completo"""
-    if not current_user.can_manage_shifts():
-        flash('Non hai i permessi per gestire coperture presidio', 'danger')
-        return redirect(url_for('dashboard'))
+# presidio_coverage_edit route MOVED TO presidio_bp blueprint
     
     current_template = PresidioCoverageTemplate.query.get_or_404(template_id)
     templates = get_active_presidio_templates()
