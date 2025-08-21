@@ -263,7 +263,8 @@ class LeaveRequestForm(FlaskForm):
     start_time = TimeField('Ora Inizio', validators=[Optional()])
     end_time = TimeField('Ora Fine', validators=[Optional()])
     
-    reason = TextAreaField('Motivo', validators=[Length(max=500)])
+    # Campo motivo
+    reason = TextAreaField('Motivo', validators=[Optional(), Length(max=500)], render_kw={'rows': 3, 'placeholder': 'Inserisci il motivo della richiesta (opzionale)'})
     submit = SubmitField('Invia Richiesta')
     
     def __init__(self, *args, **kwargs):
