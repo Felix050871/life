@@ -159,11 +159,12 @@
                                         </form>
                                     </div>
                                     {% elif request.user_id == current_user.id and (request.status == 'Pending' or (request.status == 'Approved' and request.start_date >= today)) %}
-                                    <a href="{{ url_for('leave.delete_leave_request', request_id=request.id) }}" 
-                                       class="btn btn-outline-danger btn-sm confirm-link"
-                                       data-message="Cancellare questa richiesta?">
-                                        <i class="fas fa-trash me-1"></i>Cancella
-                                    </a>
+                                    <form method="POST" action="{{ url_for('leave.delete_leave_request', request_id=request.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm confirm-form" 
+                                                data-message="Cancellare questa richiesta?">
+                                            <i class="fas fa-trash me-1"></i>Cancella
+                                        </button>
+                                    </form>
                                     {% else %}
                                     <span class="text-muted">--</span>
                                     {% endif %}
