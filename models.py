@@ -1303,8 +1303,7 @@ class LeaveType(db.Model):
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
-    # Relazione con le richieste di permesso
-    leave_requests = db.relationship('LeaveRequest', backref='leave_type_obj', lazy='dynamic')
+    # Nota: la relazione è definita in LeaveRequest con backref='requests'
     
     def __repr__(self):
         return f'<LeaveType {self.name}>'
@@ -1342,6 +1341,7 @@ class LeaveRequest(db.Model):
     
     user = db.relationship('User', foreign_keys=[user_id], backref='leave_requests')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_leaves')
+    leave_type_obj = db.relationship('LeaveType', foreign_keys=[leave_type_id], backref='requests')
     
     def is_time_based(self):
         """Verifica se il permesso è basato su orari (permessi parziali)"""
