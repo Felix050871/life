@@ -199,7 +199,8 @@ def create_leave_request():
 def approve_leave_request(request_id):
     """Approva richiesta ferie/permessi/malattie"""
     if not current_user.can_approve_leave():
-        return jsonify({'success': False, 'message': 'Non hai i permessi per approvare richieste'}), 403
+        flash('Non hai i permessi per approvare richieste', 'danger')
+        return redirect(url_for('leave.leave_requests'))
     
     try:
         leave_request = LeaveRequest.query.get_or_404(request_id)
@@ -208,10 +209,12 @@ def approve_leave_request(request_id):
         if not current_user.all_sedi:
             if (current_user.sede_obj and 
                 leave_request.user.sede_id != current_user.sede_obj.id):
-                return jsonify({'success': False, 'message': 'Non puoi approvare richieste di altre sedi'}), 403
+                flash('Non puoi approvare richieste di altre sedi', 'danger')
+                return redirect(url_for('leave.leave_requests'))
         
         if leave_request.status != 'Pending':
-            return jsonify({'success': False, 'message': 'La richiesta è già stata processata'}), 400
+            flash('La richiesta è già stata processata', 'warning')
+            return redirect(url_for('leave.leave_requests'))
         
         leave_request.status = 'Approved'
         leave_request.approved_by = current_user.id
@@ -237,21 +240,21 @@ def approve_leave_request(request_id):
         elif leave_request.leave_type:
             leave_type_name = leave_request.leave_type.lower()
         
-        return jsonify({
-            'success': True, 
-            'message': f'Richiesta {leave_type_name} approvata correttamente'
-        })
+        flash(f'Richiesta {leave_type_name} approvata correttamente', 'success')
+        return redirect(url_for('leave.leave_requests'))
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+        flash(f'Errore: {str(e)}', 'danger')
+        return redirect(url_for('leave.leave_requests'))
 
 @leave_bp.route('/reject_leave_request/<int:request_id>', methods=['POST'])
 @login_required
 def reject_leave_request(request_id):
     """Rifiuta richiesta ferie/permessi/malattie"""
     if not current_user.can_approve_leave():
-        return jsonify({'success': False, 'message': 'Non hai i permessi per rifiutare richieste'}), 403
+        flash('Non hai i permessi per rifiutare richieste', 'danger')
+        return redirect(url_for('leave.leave_requests'))
     
     try:
         leave_request = LeaveRequest.query.get_or_404(request_id)
@@ -260,14 +263,14 @@ def reject_leave_request(request_id):
         if not current_user.all_sedi:
             if (current_user.sede_obj and 
                 leave_request.user.sede_id != current_user.sede_obj.id):
-                return jsonify({'success': False, 'message': 'Non puoi rifiutare richieste di altre sedi'}), 403
+                flash('Non puoi rifiutare richieste di altre sedi', 'danger')
+                return redirect(url_for('leave.leave_requests'))
         
         if leave_request.status != 'Pending':
-            return jsonify({'success': False, 'message': 'La richiesta è già stata processata'}), 400
+            flash('La richiesta è già stata processata', 'warning')
+            return redirect(url_for('leave.leave_requests'))
         
-        rejection_reason = request.form.get('rejection_reason')
-        if not rejection_reason:
-            return jsonify({'success': False, 'message': 'Motivo del rifiuto richiesto'}), 400
+        rejection_reason = request.form.get('rejection_reason', 'Richiesta rifiutata')
         
         leave_request.status = 'Rejected'
         leave_request.approved_by = current_user.id
@@ -289,14 +292,13 @@ def reject_leave_request(request_id):
         elif leave_request.leave_type:
             leave_type_name = leave_request.leave_type.lower()
         
-        return jsonify({
-            'success': True, 
-            'message': f'Richiesta {leave_type_name} rifiutata'
-        })
+        flash(f'Richiesta {leave_type_name} rifiutata', 'warning')
+        return redirect(url_for('leave.leave_requests'))
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+        flash(f'Errore: {str(e)}', 'danger')
+        return redirect(url_for('leave.leave_requests'))
 
 @leave_bp.route('/delete_leave_request/<int:request_id>', methods=['POST'])
 @login_required
