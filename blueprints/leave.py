@@ -52,13 +52,13 @@ def leave_requests():
     
     if view == 'approve' and not current_user.can_approve_leave():
         flash('Non hai i permessi per approvare richieste', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     elif view == 'view' and not current_user.can_view_leave():
         flash('Non hai i permessi per visualizzare tutte le richieste', 'danger') 
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     elif view == 'my' and not (current_user.can_view_my_leave() or current_user.can_request_leave()):
         flash('Non hai i permessi per accedere alle richieste', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     # Base query
     query = LeaveRequest.query
@@ -139,7 +139,7 @@ def create_leave_request():
     """Crea nuova richiesta ferie/permessi/malattie"""
     if not current_user.can_request_leave():
         flash('Non hai i permessi per creare richieste', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     form = LeaveRequestForm()
     
