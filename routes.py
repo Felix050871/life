@@ -242,65 +242,10 @@ def add_leave_type_page():
     if not (current_user.can_manage_leave() or current_user.can_manage_leave_types()):
         flash('Non hai i permessi per aggiungere tipologie di permesso', 'danger')
         return redirect(url_for('leave_types'))
-    if request.method == 'POST':
-                pass
-    filename = f'interventi_generici_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.xlsx'
-    excel_path = os.path.join(temp_dir, filename)
-    wb.save(excel_path)
-    # Read file for response
-    with open(excel_path, 'rb') as f:
-        excel_data = f.read()
-    # Cleanup
-    os.remove(excel_path)
-    os.rmdir(temp_dir)
-    response = make_response(excel_data)
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-    return response
-    if not end_date_str:
-        end_date = today
-    else:
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    # Converti le date in datetime per il filtro
-    start_datetime = datetime.combine(start_date, datetime.min.time())
-    end_datetime = datetime.combine(end_date, datetime.max.time())
-    # PM ed Ente vedono tutti gli interventi, altri utenti solo i propri
-    if current_user.role in ['Management', 'Ente']:
-        reperibilita_interventions = ReperibilitaIntervention.query.join(User).filter(
-            ReperibilitaIntervention.start_datetime >= start_datetime,
-            ReperibilitaIntervention.start_datetime <= end_datetime
-        ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
-    else:
-        reperibilita_interventions = ReperibilitaIntervention.query.filter(
-            ReperibilitaIntervention.user_id == current_user.id,
-            ReperibilitaIntervention.start_datetime >= start_datetime,
-            ReperibilitaIntervention.start_datetime <= end_datetime
-        ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
+    # Leave type creation logic
+    return render_template('add_leave_type.html')
 # ADMIN & SYSTEM MANAGEMENT ROUTES
-        # Tipo
-        ws.cell(row=row_idx, column=col, value=request.leave_type)
-        col += 1
-        # Motivo
-        ws.cell(row=row_idx, column=col, value=request.reason or '-')
-        col += 1
-        # Stato
-        status_cell = ws.cell(row=row_idx, column=col, value=request.status)
-        if request.status == 'Approved':
-            status_cell.fill = PatternFill(start_color="D4F8D4", end_color="D4F8D4", fill_type="solid")
-        elif request.status == 'Rejected':
-            status_cell.fill = PatternFill(start_color="F8D4D4", end_color="F8D4D4", fill_type="solid")
-        elif request.status == 'Pending':
-            status_cell.fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
-        col += 1
-        # Data Richiesta
-        ws.cell(row=row_idx, column=col, value=request.created_at.strftime('%d/%m/%Y %H:%M'))
-        col += 1
-        # Approvato da
-        ws.cell(row=row_idx, column=col, value=request.approved_by.get_full_name() if request.approved_by else '-')
-        col += 1
         # Data Approvazione
-        ws.cell(row=row_idx, column=col, value=request.approved_at.strftime('%d/%m/%Y %H:%M') if request.approved_at else '-')
-        col += 1
     # Prepara la risposta
     # Salva in un buffer temporaneo
     buffer = BytesIO()
@@ -316,16 +261,12 @@ def add_leave_type_page():
         return redirect(url_for('dashboard'))
         # Data Spesa
         ws.cell(row=row_idx, column=col, value=expense.expense_date.strftime('%d/%m/%Y'))
-        col += 1
         # Categoria
         ws.cell(row=row_idx, column=col, value=expense.category.name if expense.category else '-')
-        col += 1
         # Descrizione
         ws.cell(row=row_idx, column=col, value=expense.description)
-        col += 1
         # Importo (come numero per calcoli Excel)
         ws.cell(row=row_idx, column=col, value=float(expense.amount))
-        col += 1
         # Stato
         status_text = {
             'pending': 'In attesa',
@@ -339,20 +280,15 @@ def add_leave_type_page():
             status_cell.fill = PatternFill(start_color="F8D4D4", end_color="F8D4D4", fill_type="solid")
         elif expense.status == 'pending':
             status_cell.fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
-        col += 1
         # Data Creazione
         ws.cell(row=row_idx, column=col, value=expense.created_at.strftime('%d/%m/%Y %H:%M'))
-        col += 1
         # Approvato da
         approved_by_user = User.query.get(expense.approved_by) if expense.approved_by else None
         ws.cell(row=row_idx, column=col, value=approved_by_user.get_full_name() if approved_by_user else '-')
-        col += 1
         # Data Approvazione
         ws.cell(row=row_idx, column=col, value=expense.approved_at.strftime('%d/%m/%Y %H:%M') if expense.approved_at else '-')
-        col += 1
         # Note (campo approval_comment del modello)
         ws.cell(row=row_idx, column=col, value=expense.approval_comment or '-')
-        col += 1
     # Prepara la risposta
     # Salva in un buffer temporaneo
     buffer = BytesIO()
@@ -534,8 +470,6 @@ def add_leave_type_page():
     if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
         flash('Non hai accesso per generare turni per questa sede', 'danger')
         return redirect(url_for('generate_turnazioni'))
-            db.session.rollback()
-            flash('Errore: categoria già esistente', 'danger')
     return render_template('create_expense_category.html', form=form)
     """Modifica categoria nota spese"""
     if not current_user.can_manage_expense_reports():
@@ -549,8 +483,6 @@ def add_leave_type_page():
         category.name = form.name.data
         category.description = form.description.data
         category.active = form.active.data
-            db.session.rollback()
-            flash('Errore: nome categoria già esistente', 'danger')
     return render_template('edit_expense_category.html', form=form, category=category)
     """Elimina categoria nota spese"""
     if not current_user.can_manage_expense_reports():
@@ -562,8 +494,6 @@ def add_leave_type_page():
     if category.expense_reports and len(category.expense_reports) > 0:
         flash('Non è possibile eliminare una categoria con note spese associate', 'warning')
         return redirect(url_for('expense_categories'))
-        db.session.rollback()
-        flash('Errore nell\'eliminazione della categoria', 'danger')
     return redirect(url_for('expense_categories'))
     """Elimina nota spese"""
     from models import ExpenseReport
@@ -785,19 +715,8 @@ def calculate_approximate_distance(start_address, end_address):
     if form.validate_on_submit():
         file = form.excel_file.data
         tipologia = form.tipologia.data
-                    pass
-        # Salva in BytesIO
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-        # Response
-        response = make_response(output.getvalue())
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        response.headers['Content-Disposition'] = f'attachment; filename=tabelle_aci_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-        return response
-    except Exception as e:
-        flash(f"Errore durante l'export: {str(e)}", "danger")
-        return redirect(url_for("aci_tables"))
+        # Process file upload logic here
+        pass
     """Cancellazione in massa per tipologia"""
     tipologia = request.form.get('tipologia')
     if not tipologia:
