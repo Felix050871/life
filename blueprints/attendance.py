@@ -345,13 +345,13 @@ def attendance():
                             self.notes = f"{leave_type}: {reason}" if reason else leave_type
                             self.user_id = user_id
                             self.user = User.query.get(user_id)
-                            self.shift_status = leave_type.lower()  # 'ferie', 'permesso', 'malattia'
+                            self.shift_status = leave_type.lower() if leave_type else 'permesso'  # 'ferie', 'permesso', 'malattia'
                             self.exit_status = 'normale'
                             self.leave_type = leave_type
                             self.leave_reason = reason
                             
                             # Determina orari in base al tipo di assenza
-                            if leave_type.lower() == 'permesso' and hasattr(leave_request, 'start_time') and leave_request.start_time:
+                            if (leave_type and leave_type.lower() == 'permesso') and hasattr(leave_request, 'start_time') and leave_request.start_time:
                                 # Per i permessi usa gli orari specifici della richiesta - converti in datetime italiano
                                 from datetime import datetime
                                 from zoneinfo import ZoneInfo
