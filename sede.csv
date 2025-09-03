@@ -1,5 +1,0 @@
-id,name,address,description,tipologia,active,created_at
-1,Sede Principale,"Via Roma 123, Milano",Sede principale della società,Oraria,t,2025-08-07 09:45:39.651462
-2,Filiale Nord,"Via Garibaldi 456, Torino",Filiale operativa del Nord Italia,Oraria,t,2025-08-07 09:45:39.651472
-3,Ufficio Sud,"Via Nazionale 788, Roma",Ufficio per il Sud Italia,Turni,t,2025-08-07 09:45:39.651475
-4,test sede,via roma,"",Oraria,t,2025-08-08 14:36:20.956898
