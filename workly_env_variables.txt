@@ -1,0 +1,8 @@
+# Environment variables for Workly project
+# Database configuration
+DATABASE_URL=postgresql://neondb_owner:npg_5GIA8nzUPldL@ep-floral-cell-adrz6l78.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+PGHOST=ep-floral-cell-adrz6l78.c-2.us-east-1.aws.neon.tech
+PGUSER=neondb_owner
+PGPASSWORD=npg_5GIA8nzUPldL
+PGPORT=5432
+PGDATABASE=neondb
