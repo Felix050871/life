@@ -1,0 +1,2 @@
+id,recipient_id,sender_id,title,message,message_type,is_read,related_leave_request_id,created_at
+1,2,1,Richiesta permesso studio cancellata,Amministratore Sistema ha cancellato la sua richiesta di permesso studio (21/08/2025 - 21/08/2025),warning,f,,2025-08-21 15:43:09.943095

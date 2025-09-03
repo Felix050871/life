@@ -1,0 +1,1 @@
+id,user_id,travel_date,route_addresses,total_km,calculated_km,is_km_manual,vehicle_id,vehicle_description,cost_per_km,total_amount,purpose,notes,status,approved_by,approved_at,approval_comment,created_at,updated_at
