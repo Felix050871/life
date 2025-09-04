@@ -381,7 +381,7 @@ function renderVisualizeTurniWithMissingRoles(data, templateId) {
             '<i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>' +
             '<h5 class="text-muted">Nessun turno presente</h5>' +
             '<p class="text-muted">Non ci sono turni per questo template.</p>' +
-            '<a href="{{ url_for("turni_automatici") }}?suggest=' + templateId + '" class="btn btn-success">' +
+            '<a href="{{ url_for("shifts.turni_automatici") }}?suggest=' + templateId + '" class="btn btn-success">' +
             '<i class="fas fa-magic me-1"></i>Vai a Genera Turni' +
             '</a>' +
             '</div>';
