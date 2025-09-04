@@ -208,7 +208,7 @@
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_shifts() %}
-                        <li><a href="{{ url_for('shifts.view_presidi') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('presidio.view_presidio_coverage') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizza Coperture
                         </a></li>
                         <li><a href="{{ url_for('shifts.visualizza_turni') }}" class="sidebar-submenu-link">
@@ -479,7 +479,7 @@
                 {% set has_qr_permission = current_user.can_manage_qr() %}
                 {% if has_qr_permission %}
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('admin.admin_qr_codes') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('admin.qr_codes') }}" class="sidebar-nav-link">
                         <i class="fas fa-qrcode"></i>
                         <span>Gestione QR</span>
                     </a>
