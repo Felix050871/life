@@ -67,13 +67,13 @@
                                     <td>
                                         {% if current_user.can_manage_leave() or current_user.can_manage_leave_types() %}
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{{ url_for('admin.edit_leave_type', id=leave_type.id) }}" 
+                                            <a href="{{ url_for('leave.edit_leave_type_page', id=leave_type.id) }}" 
                                                class="btn btn-outline-primary" 
                                                title="Modifica tipologia">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             {% if leave_type.leave_requests.count() == 0 %}
-                                            <form method="POST" action="{{ url_for('admin.delete_leave_type', id=leave_type.id) }}" 
+                                            <form method="POST" action="{{ url_for('leave.delete_leave_type', id=leave_type.id) }}" 
                                                   class="d-inline" onsubmit="return confirm('Vuoi eliminare definitivamente questa tipologia di permesso? Non sarà più possibile utilizzarla per nuove richieste.')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <button type="submit" class="btn btn-outline-danger" title="Elimina tipologia">
