@@ -72,7 +72,7 @@
                                                title="Modifica tipologia">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            {% if leave_type.leave_requests.count() == 0 %}
+                                            {% if leave_type.requests|length == 0 %}
                                             <form method="POST" action="{{ url_for('leave.delete_leave_type', id=leave_type.id) }}" 
                                                   class="d-inline" onsubmit="return confirm('Vuoi eliminare definitivamente questa tipologia di permesso? Non sarà più possibile utilizzarla per nuove richieste.')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

@@ -1,0 +1,446 @@
+def register_blueprints(app: Flask):
+def require_reports_permission(f):
+    def decorated_function(*args, **kwargs):
+@reports_bp.route('/')
+def reports():
+@reports_bp.route('/export_shifts_excel')
+def export_shifts_excel():
+@reports_bp.route('/export_attendance_excel')
+def export_attendance_excel():
+@reports_bp.route('/export_leave_requests_excel')
+def export_leave_requests_excel():
+@reports_bp.route('/export_interventions_excel')
+def export_general_interventions_excel():
+@reports_bp.route('/export_reperibilita_interventions_excel')
+def export_reperibilita_interventions_excel():
+@reports_bp.route('/export_expense_reports_excel')
+def export_expense_reports_excel():
+@reports_bp.route('/export_overtime_excel')
+def overtime_requests_excel():
+@reports_bp.route('/export_mileage_requests')
+def export_mileage_requests():
+@reports_bp.route('/aci_export')
+def aci_export():
+@reports_bp.route('/export_shifts_pdf')
+def export_shifts_pdf():
+def require_messages_permission(f):
+    def decorated_function(*args, **kwargs):
+@messages_bp.route('/messages')
+def internal_messages():
+@messages_bp.route('/message/<int:message_id>/mark_read')
+def mark_message_read(message_id):
+@messages_bp.route('/message/<int:message_id>/delete', methods=['POST'])
+def delete_message(message_id):
+@messages_bp.route('/messages/mark_all_read', methods=['POST'])
+def mark_all_messages_read():
+@messages_bp.route('/send_message', methods=['GET', 'POST'])
+def send_message():
+def require_presidio_permission(f):
+    def decorated_function(*args, **kwargs):
+@presidio_bp.route("/manage_coverage")
+def manage_coverage():
+@presidio_bp.route("/view_presidio_coverage/<period_key>")
+def view_presidio_coverage(period_key):
+@presidio_bp.route("/edit_presidio_coverage/<period_key>", methods=['GET', 'POST'])
+def edit_presidio_coverage(period_key):
+@presidio_bp.route('/presidio_coverage', methods=['GET', 'POST'])
+def presidio_coverage():
+@presidio_bp.route('/presidio_coverage_edit/<int:template_id>', methods=['GET', 'POST'])
+def presidio_coverage_edit(template_id):
+@presidio_bp.route('/presidio_detail/<int:template_id>')
+def presidio_detail(template_id):
+@presidio_bp.route('/api/presidio_coverage/<int:template_id>')
+def api_presidio_coverage(template_id):
+@presidio_bp.route('/presidio_coverage/toggle_status/<int:template_id>', methods=['POST'])
+def toggle_presidio_template_status(template_id):
+@presidio_bp.route('/presidio_coverage/delete/<int:template_id>', methods=['POST'])
+def delete_presidio_template(template_id):
+@presidio_bp.route('/presidio_coverage/duplicate/<int:template_id>', methods=['POST'])
+def duplicate_presidio_template(template_id):
+@holidays_bp.route('/')
+def holidays():
+@holidays_bp.route('/add', methods=['GET', 'POST'])
+def add_holiday():
+@holidays_bp.route('/edit/<int:holiday_id>', methods=['GET', 'POST'])
+def edit_holiday(holiday_id):
+@holidays_bp.route('/delete/<int:holiday_id>', methods=['POST'])
+def delete_holiday(holiday_id):
+@holidays_bp.route('/api/generate', methods=['POST'])
+def api_generate_holidays():
+def require_expense_permission(f):
+    def decorated_function(*args, **kwargs):
+def require_manage_expense_permission(f):
+    def decorated_function(*args, **kwargs):
+def require_overtime_permission(f):
+    def decorated_function(*args, **kwargs):
+def require_mileage_permission(f):
+    def decorated_function(*args, **kwargs):
+@expense_bp.route('/reports', methods=['GET', 'POST'])
+def expense_reports():
+@expense_bp.route('/reports/create', methods=['GET', 'POST'])
+def create_expense_report():
+@expense_bp.route('/reports/edit/<int:expense_id>', methods=['GET', 'POST'])
+def edit_expense_report(expense_id):
+@expense_bp.route('/reports/approve/<int:expense_id>', methods=['GET', 'POST'])
+def approve_expense_report(expense_id):
+@expense_bp.route('/reports/download/<int:expense_id>')
+def download_expense_receipt(expense_id):
+@expense_bp.route('/reports/delete/<int:expense_id>', methods=['POST'])
+def delete_expense_report(expense_id):
+@expense_bp.route('/categories')
+def expense_categories():
+@expense_bp.route('/categories/create', methods=['GET', 'POST'])
+def create_expense_category():
+@expense_bp.route('/categories/<int:category_id>/edit', methods=['GET', 'POST'])
+def edit_expense_category(category_id):
+@expense_bp.route('/categories/<int:category_id>/delete', methods=['POST'])
+def delete_expense_category(category_id):
+@expense_bp.route('/overtime/types')
+def overtime_types():
+@expense_bp.route('/overtime/types/create', methods=['GET', 'POST'])
+def create_overtime_type():
+@expense_bp.route('/overtime/types/<int:type_id>/edit', methods=['GET', 'POST'])
+def edit_overtime_type(type_id):
+@expense_bp.route('/overtime/types/<int:type_id>/delete', methods=['POST'])
+def delete_overtime_type(type_id):
+@expense_bp.route('/overtime/requests')
+def overtime_requests_management():
+@expense_bp.route('/overtime/requests/create', methods=['GET', 'POST'])
+def create_overtime_request():
+@expense_bp.route('/overtime/requests/my')
+def my_overtime_requests():
+@expense_bp.route('/overtime/requests/<int:request_id>/approve', methods=['POST'])
+def approve_overtime_request(request_id):
+@expense_bp.route('/overtime/requests/<int:request_id>/reject', methods=['POST'])
+def reject_overtime_request(request_id):
+@expense_bp.route('/overtime/requests/<int:request_id>/delete', methods=['POST'])
+def delete_overtime_request(request_id):
+@expense_bp.route('/overtime/requests/export')
+def overtime_requests_excel():
+@expense_bp.route('/mileage/requests')
+def mileage_requests():
+@expense_bp.route('/mileage/requests/create', methods=['GET', 'POST'])
+def create_mileage_request():
+@expense_bp.route('/mileage/requests/my')
+def my_mileage_requests():
+@expense_bp.route('/mileage/requests/<int:request_id>/approve', methods=['POST'])
+def approve_mileage_request(request_id):
+@expense_bp.route('/mileage/requests/<int:request_id>/delete', methods=['POST'])
+def delete_mileage_request(request_id):
+@expense_bp.route('/api/calculate_distance', methods=['POST'])
+def calculate_distance():
+def calculate_approximate_distance(start_address, end_address):
+    def extract_city(address):
+    def haversine_distance(lat1, lon1, lat2, lon2):
+@expense_bp.route('/mileage/export')
+def mileage_requests_excel():
+@expense_bp.route('/mileage/requests/export')
+def export_mileage_requests():
+@dashboard_bp.route('/')
+def index():
+@dashboard_bp.route('/dashboard')
+def dashboard():
+@dashboard_bp.route('/dashboard_team')
+def dashboard_team():
+@dashboard_bp.route('/dashboard_sede')
+def dashboard_sede():
+@dashboard_bp.route('/ente-home')
+def ente_home():
+def require_reperibilita_permissions(f):
+    def decorated_function(*args, **kwargs):
+@reperibilita_bp.route('/coverage')
+def reperibilita_coverage():
+            def __init__(self, coverages, start_date, end_date, creator, created_at):
+@reperibilita_bp.route('/reperibilita_shifts')
+def reperibilita_shifts():
+@reperibilita_bp.route('/my_reperibilita')
+def my_reperibilita():
+@reperibilita_bp.route('/generate_shifts', methods=['GET', 'POST'])
+def generate_shifts():
+@reperibilita_bp.route('/api/get_reperibilita_data')
+def get_reperibilita_data():
+@reperibilita_bp.route('/coverage/create', methods=['GET', 'POST'])
+def create_reperibilita_coverage():
+@reperibilita_bp.route('/coverage/edit/<int:coverage_id>', methods=['GET', 'POST'])
+def edit_reperibilita_coverage(coverage_id):
+@reperibilita_bp.route('/coverage/delete/<int:coverage_id>', methods=['GET'])
+def delete_reperibilita_coverage(coverage_id):
+@reperibilita_bp.route('/coverage/view/<period_key>')
+def view_reperibilita_coverage(period_key):
+@reperibilita_bp.route('/coverage/delete_period/<period_key>')
+def delete_reperibilita_period(period_key):
+@reperibilita_bp.route('/template/<start_date>/<end_date>')
+def reperibilita_template_detail(start_date, end_date):
+@reperibilita_bp.route('/replica/<period_key>', methods=['GET', 'POST'])
+def reperibilita_replica(period_key):
+@reperibilita_bp.route('/start-intervention', methods=['POST'])
+def start_intervention():
+@reperibilita_bp.route('/end-intervention', methods=['POST'])
+def end_intervention():
+@reperibilita_bp.route('/shifts/regenerate/<int:template_id>', methods=['GET'])
+def regenerate_reperibilita_template(template_id):
+@reperibilita_bp.route('/template/delete/<template_id>')
+def delete_reperibilita_template(template_id):
+@reperibilita_bp.route('/interventions/start', methods=['POST'])
+def start_general_intervention():
+@reperibilita_bp.route('/interventions/end', methods=['POST'])
+def end_general_intervention():
+@reperibilita_bp.route('/interventions/my')
+def my_interventions():
+@reperibilita_bp.route('/interventions/export/general/excel')
+def export_general_interventions_excel():
+@reperibilita_bp.route('/interventions/export/reperibilita/excel')
+def export_reperibilita_interventions_excel():
+@export_bp.route('/shifts/excel')
+def shifts_excel():
+@export_bp.route('/shifts/pdf')
+def shifts_pdf():
+@export_bp.route('/attendance/excel')
+def attendance_excel():
+@export_bp.route('/leave/excel')
+def leave_excel():
+@export_bp.route('/expense/excel')
+def expense_excel():
+@export_bp.route('/interventions/general/excel')
+def general_interventions_excel():
+@export_bp.route('/interventions/reperibilita/excel')
+def reperibilita_interventions_excel():
+def require_login(f):
+    def decorated_function(*args, **kwargs):
+@qr_bp.route('/login/<action>', methods=['GET', 'POST'])
+def login(action):
+@qr_bp.route('/fresh/<action>')
+def fresh(action):
+@qr_bp.route('/attendance/<action>', methods=['GET', 'POST'])
+def quick_attendance(action):
+@qr_bp.route('/generate')
+def generate_codes():
+@qr_bp.route('/page/<action>')
+def page(action):
+@qr_bp.route('/api/status')
+def api_status():
+@qr_bp.route('/api/quick_action', methods=['POST'])
+def api_quick_action():
+@interventions_bp.route('/start', methods=['POST'])
+def start():
+@interventions_bp.route('/end', methods=['POST'])
+def end():
+@interventions_bp.route('/my')
+def my():
+def admin_required(f):
+    def decorated_function(*args, **kwargs):
+@aci_bp.route("/tables", methods=["GET", "POST"])
+def tables():
+@aci_bp.route("/upload", methods=["GET", "POST"])
+def upload():
+@aci_bp.route("/create", methods=["GET", "POST"])
+def create():
+@aci_bp.route("/<int:record_id>/edit", methods=["GET", "POST"])
+def edit(record_id):
+@aci_bp.route("/<int:record_id>/delete", methods=["POST"])
+def delete(record_id):
+@aci_bp.route("/export")
+def export():
+@aci_bp.route("/bulk_delete", methods=["POST"])
+def bulk_delete():
+@aci_bp.route("/api/marcas")
+def api_marcas():
+@aci_bp.route("/api/modelos")
+def api_modelos():
+@api_bp.route('/sede/<int:sede_id>/users')
+def sede_users(sede_id):
+@api_bp.route('/sede/<int:sede_id>/work_schedules')
+def sede_work_schedules(sede_id):
+@api_bp.route('/roles')
+def roles():
+@api_bp.route('/presidio_coverage/<int:template_id>')
+def presidio_coverage(template_id):
+def require_login(f):
+    def decorated_function(*args, **kwargs):
+@shifts_bp.route('/turni_automatici')
+def turni_automatici():
+@shifts_bp.route('/api/get_shifts_for_template/<int:template_id>')
+def get_shifts_for_template_api(template_id):
+@shifts_bp.route('/visualizza_turni')
+def visualizza_turni():
+@shifts_bp.route('/genera_turni_da_template', methods=['POST'])
+def genera_turni_da_template():
+@shifts_bp.route('/create_shift', methods=['POST'])
+def create_shift():
+@shifts_bp.route('/edit/<int:shift_id>', methods=['GET', 'POST'])
+def edit_shift(shift_id):
+@shifts_bp.route('/team')
+def team_shifts():
+@shifts_bp.route('/change-user/<int:shift_id>', methods=['POST'])
+def change_shift_user(shift_id):
+@shifts_bp.route('/delete/<int:shift_id>', methods=['POST'])
+def delete_shift(shift_id):
+def calculate_shift_presence(shift):
+@shifts_bp.route('/export/excel')
+def export_shifts_excel():
+@shifts_bp.route('/export/pdf')
+def export_shifts_pdf():
+@shifts_bp.route('/admin/coverage/create', methods=['POST'])
+def create_shift_coverage():
+@shifts_bp.route('/admin/coperture')
+def view_turni_coverage():
+@shifts_bp.route('/admin/genera-da-coperture')
+def generate_turni_from_coverage():
+@shifts_bp.route('/admin/process-generate-from-coverage', methods=['POST'])
+def process_generate_turni_from_coverage():
+@shifts_bp.route('/admin/visualizza-generati')
+def view_generated_shifts():
+@shifts_bp.route('/admin/regenerate-from-coverage', methods=['POST'])
+def regenerate_turni_from_coverage():
+@shifts_bp.route('/presidio_coverage', methods=['GET', 'POST'])
+def presidio_coverage():
+@shifts_bp.route('/presidio_coverage_edit/<int:template_id>', methods=['GET', 'POST'])
+def presidio_coverage_edit(template_id):
+@shifts_bp.route('/presidio_detail/<int:template_id>')
+def presidio_detail(template_id):
+@shifts_bp.route('/view_presidi')
+def view_presidi():
+@shifts_bp.route('/presidio_coverage/toggle_status/<int:template_id>', methods=['POST'])
+def toggle_presidio_template_status(template_id):
+@shifts_bp.route("/view_coverage_templates")
+def view_coverage_templates():
+@shifts_bp.route("/view_turni_for_period")
+def view_turni_for_period():
+def require_admin_permission(f):
+    def decorated_function(*args, **kwargs):
+def require_qr_permission(f):
+    def decorated_function(*args, **kwargs):
+@admin_bp.route('/qr_codes')
+def admin_qr_codes():
+@admin_bp.route('/qr_codes/view')
+def view_qr_codes():
+@admin_bp.route('/qr_codes/generate', methods=['POST'])
+def generate_qr_codes():
+@admin_bp.route('/sedi')
+def manage_sedi():
+@admin_bp.route('/sedi/create', methods=['POST'])
+def create_sede():
+@admin_bp.route('/sedi/edit/<int:sede_id>', methods=['GET', 'POST'])
+def edit_sede(sede_id):
+@admin_bp.route('/sedi/toggle/<int:sede_id>')
+def toggle_sede(sede_id):
+@admin_bp.route('/orari')
+def manage_work_schedules():
+@admin_bp.route('/orari/create', methods=['POST'])
+def create_work_schedule():
+@admin_bp.route('/orari/edit/<int:schedule_id>', methods=['GET', 'POST'])
+def edit_work_schedule(schedule_id):
+@admin_bp.route('/orari/toggle/<int:schedule_id>')
+def toggle_work_schedule(schedule_id):
+@admin_bp.route('/orari/delete/<int:schedule_id>')
+def delete_work_schedule(schedule_id):
+@admin_bp.route('/roles')
+def manage_roles():
+@admin_bp.route('/roles/create', methods=['GET', 'POST'])
+def create_role():
+@admin_bp.route('/roles/edit/<int:role_id>', methods=['GET', 'POST'])
+def edit_role(role_id):
+@admin_bp.route('/roles/toggle/<int:role_id>')
+def toggle_role(role_id):
+@admin_bp.route('/roles/delete/<int:role_id>')
+def delete_role(role_id):
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+def admin_settings():
+@admin_bp.route('/system_info')
+def system_info():
+def require_admin_permission(f):
+    def decorated_function(*args, **kwargs):
+def require_turni_permission(f):
+    def decorated_function(*args, **kwargs):
+@user_management_bp.route('/qr_codes')
+def admin_qr_codes():
+@user_management_bp.route('/generate_static_qr')
+def admin_generate_static_qr():
+@user_management_bp.route('/view/qr_codes')
+def view_qr_codes():
+@user_management_bp.route('/api/sede/<int:sede_id>/users')
+def api_sede_users(sede_id):
+@user_management_bp.route('/api/sede/<int:sede_id>/work_schedules')
+def api_sede_work_schedules(sede_id):
+@user_management_bp.route('/api/roles')
+def api_roles():
+@user_management_bp.route('/profile')
+def user_profile():
+@user_management_bp.route('/users')
+def user_management():
+@user_management_bp.route('/users/new', methods=['POST'])
+def new_user():
+@user_management_bp.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+@user_management_bp.route('/users/toggle/<int:user_id>')
+def toggle_user(user_id):
+def is_safe_url(target):
+@auth_bp.route('/login', methods=['GET', 'POST'])
+def login():
+@auth_bp.route('/logout')
+def logout():
+@auth_bp.route('/qr_login/<action>')
+def qr_login(action):
+@auth_bp.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+@auth_bp.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+@auth_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+@auth_bp.route('/qr_fresh/<action>')
+def qr_fresh(action):
+@auth_bp.route('/generate_qr_codes')
+def generate_qr_codes():
+@auth_bp.route('/qr/<action>')
+def qr_page(action):
+def require_login(f):
+    def decorated_function(*args, **kwargs):
+@leave_bp.route('/leave_requests')
+def leave_requests():
+@leave_bp.route('/create_leave_request', methods=['GET', 'POST'])
+def create_leave_request():
+@leave_bp.route('/approve_leave_request/<int:request_id>', methods=['POST'])
+def approve_leave_request(request_id):
+@leave_bp.route('/reject_leave_request/<int:request_id>', methods=['POST'])
+def reject_leave_request(request_id):
+@leave_bp.route('/delete_leave_request/<int:request_id>', methods=['POST'])
+def delete_leave_request(request_id):
+@leave_bp.route('/api/leave_balance/<int:user_id>/<int:year>')
+def leave_balance_api(user_id, year):
+@leave_bp.route('/leave_types')
+def leave_types():
+@leave_bp.route('/leave_types/add', methods=['GET', 'POST'])
+def add_leave_type_page():
+@leave_bp.route('/leave_types/edit/<int:id>', methods=['GET', 'POST'])
+def edit_leave_type_page(id):
+@leave_bp.route('/leave_types/delete/<int:id>', methods=['POST'])
+def delete_leave_type(id):
+def get_current_user_sede(user):
+def require_login(f):
+    def decorated_function(*args, **kwargs):
+@attendance_bp.route('/', methods=['GET', 'POST'])
+def attendance():
+                        def __init__(self, date, leave_type, reason, user_id, leave_request):
+                        def get_work_hours(self):
+                        def get_attendance_indicators(self):
+    def sort_key(record):
+@attendance_bp.route('/check_shift_before_clock_in', methods=['POST'])
+def check_shift_before_clock_in():
+@attendance_bp.route('/check_shift_before_clock_out', methods=['POST'])
+def check_shift_before_clock_out():
+@attendance_bp.route('/clock_in', methods=['POST'])
+def clock_in():
+@attendance_bp.route('/clock_out', methods=['POST'])
+def clock_out():
+@attendance_bp.route('/break_start', methods=['POST'])
+def break_start():
+@attendance_bp.route('/break_end', methods=['POST'])
+def break_end():
+@attendance_bp.route('/', methods=['GET', 'POST'])
+def attendance_main():
+@attendance_bp.route('/export_excel')
+def export_attendance_excel():
+@attendance_bp.route('/api/work_hours/<int:user_id>/<date_str>')
+def get_work_hours(user_id, date_str):
+@attendance_bp.route('/quick/<action>', methods=['GET', 'POST'])
+def quick_attendance(action):
