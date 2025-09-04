@@ -248,7 +248,7 @@
                     <ul class="pagination justify-content-center">
                         {% if users.has_prev %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('users', page=users.prev_num) }}">Precedente</a>
+                                <a class="page-link" href="{{ url_for('user_management.user_management', page=users.prev_num) }}">Precedente</a>
                             </li>
                         {% endif %}
                         
@@ -256,7 +256,7 @@
                             {% if page_num %}
                                 {% if page_num != users.page %}
                                     <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('users', page=page_num) }}">{{ page_num }}</a>
+                                        <a class="page-link" href="{{ url_for('user_management.user_management', page=page_num) }}">{{ page_num }}</a>
                                     </li>
                                 {% else %}
                                     <li class="page-item active">
@@ -272,7 +272,7 @@
                         
                         {% if users.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('users', page=users.next_num) }}">Successivo</a>
+                                <a class="page-link" href="{{ url_for('user_management.user_management', page=users.next_num) }}">Successivo</a>
                             </li>
                         {% endif %}
                     </ul>
@@ -283,7 +283,7 @@
                     <i class="fas fa-users fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">Nessun utente trovato</h5>
                     <p class="text-muted">Inizia creando il primo utente del sistema.</p>
-                    <a href="{{ url_for('users.new_user') }}" class="btn btn-primary">
+                    <a href="{{ url_for('user_management.new_user') }}" class="btn btn-primary">
                         <i class="fas fa-user-plus me-1"></i>Crea Primo Utente
                     </a>
                 </div>
