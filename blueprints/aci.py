@@ -400,33 +400,45 @@ def bulk_delete():
 
 @aci_bp.route("/api/marcas")
 @login_required
-@admin_required
 def api_marcas():
     """API per ottenere le marche filtrate per tipologia"""
+    # Verifica permessi con risposta JSON
+    if not current_user.is_authenticated or current_user.role not in ['Admin', 'Amministratore']:
+        return jsonify({'success': False, 'error': 'Accesso non autorizzato'}), 403
+        
     tipologia = request.args.get('tipologia')
     
-    query = db.session.query(ACITable.marca).distinct()
-    
-    if tipologia:
-        query = query.filter(ACITable.tipologia == tipologia)
-    
-    marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
-    return jsonify(marcas)
+    try:
+        query = db.session.query(ACITable.marca).distinct()
+        
+        if tipologia:
+            query = query.filter(ACITable.tipologia == tipologia)
+        
+        marcas = [row.marca for row in query.order_by(ACITable.marca).all()]
+        return jsonify({'success': True, 'marcas': marcas})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @aci_bp.route("/api/modelos")
 @login_required
-@admin_required
 def api_modelos():
     """API per ottenere i modelli filtrati per tipologia e marca"""
+    # Verifica permessi con risposta JSON
+    if not current_user.is_authenticated or current_user.role not in ['Admin', 'Amministratore']:
+        return jsonify({'success': False, 'error': 'Accesso non autorizzato'}), 403
+        
     tipologia = request.args.get('tipologia')
     marca = request.args.get('marca')
     
-    query = db.session.query(ACITable.modello).distinct()
-    
-    if tipologia:
-        query = query.filter(ACITable.tipologia == tipologia)
-    if marca:
-        query = query.filter(ACITable.marca == marca)
-    
-    modelos = [row.modello for row in query.order_by(ACITable.modello).all()]
-    return jsonify(modelos)
+    try:
+        query = db.session.query(ACITable.modello).distinct()
+        
+        if tipologia:
+            query = query.filter(ACITable.tipologia == tipologia)
+        if marca:
+            query = query.filter(ACITable.marca == marca)
+        
+        modelos = [row.modello for row in query.order_by(ACITable.modello).all()]
+        return jsonify({'success': True, 'modelos': modelos})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
