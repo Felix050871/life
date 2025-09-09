@@ -29,10 +29,10 @@ aci_bp = Blueprint('aci', __name__, url_prefix='/aci')
 
 # Helper function for admin access
 def admin_required(f):
-    """Decorator per verificare che l'utente sia Admin"""
+    """Decorator per verificare che l'utente sia Admin o Amministratore"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'Admin':
+        if not current_user.is_authenticated or current_user.role not in ['Admin', 'Amministratore']:
             flash('Accesso negato. Solo gli amministratori possono accedere a questa sezione.', 'danger')
             return redirect(url_for('dashboard.dashboard'))
         return f(*args, **kwargs)
