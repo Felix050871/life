@@ -34,8 +34,14 @@ attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
 # Helper functions
 def get_current_user_sede(user):
     """Get current user's sede - copy from routes.py"""
-    if user.sedi:
+    if hasattr(user, 'sedi') and user.sedi:
         return user.sedi[0]  # Return first sede
+    elif hasattr(user, 'sede') and user.sede:
+        return user.sede  # Return direct sede relationship
+    elif hasattr(user, 'sede_id') and user.sede_id:
+        # Fallback: get sede by ID
+        from models import Sede
+        return Sede.query.get(user.sede_id)
     return None
 
 def require_login(f):
@@ -580,9 +586,11 @@ def clock_in():
 
     except Exception as e:
         db.session.rollback()
+        import logging
+        logging.error(f"Errore clock_in per utente {current_user.id}: {str(e)}")
         return jsonify({
             'success': False,
-            'message': 'Errore nel salvare l\'entrata'
+            'message': f'Errore nel salvare l\'entrata: {str(e)}'
         }), 500
 
 @attendance_bp.route('/clock_out', methods=['POST'])
