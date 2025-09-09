@@ -229,7 +229,7 @@
 {% block scripts %}
 <script>
 // Attendance Chart
-fetch('/api/attendance_chart')
+fetch('{{ url_for("api.attendance_chart") }}')
     .then(response => response.json())
     .then(data => {
         const ctx = document.getElementById('attendanceChart').getContext('2d');

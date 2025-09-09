@@ -274,12 +274,12 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_access_attendance() %}
-                        <li><a href="{{ url_for('attendance.attendance_main') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('attendance.attendance') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user-clock"></i>Le Mie Presenze
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_sede_attendance() %}
-                        <li><a href="{{ url_for('attendance.attendance_main', view='sede') }}" class="sidebar-submenu-link">
+                        <li><a href="{{ url_for('attendance.attendance', view='sede') }}" class="sidebar-submenu-link">
                             <i class="fas fa-users"></i>Presenze Sede
                         </a></li>
                         {% endif %}
