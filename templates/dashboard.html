@@ -1037,7 +1037,7 @@ function handleClockIn() {
     clockInBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrazione in corso...';
     clockInBtn.disabled = true;
     
-    fetch('/clock_in', {
+    fetch('{{ url_for("attendance.clock_in") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1084,7 +1084,7 @@ function handleClockOut() {
     clockOutBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrazione in corso...';
     clockOutBtn.disabled = true;
     
-    fetch('/clock_out', {
+    fetch('{{ url_for("attendance.clock_out") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1131,7 +1131,7 @@ function handleBreakStart() {
     breakStartBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrazione in corso...';
     breakStartBtn.disabled = true;
     
-    fetch('/break_start', {
+    fetch('{{ url_for("attendance.break_start") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1178,7 +1178,7 @@ function handleBreakEnd() {
     breakEndBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrazione in corso...';
     breakEndBtn.disabled = true;
     
-    fetch('/break_end', {
+    fetch('{{ url_for("attendance.break_end") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
