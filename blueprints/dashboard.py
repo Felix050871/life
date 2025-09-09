@@ -169,17 +169,66 @@ def dashboard():
             
             weekly_calendar.append(day_data)
     
-    # Widget for daily attendance data (last 7 days)
-    daily_attendance_data = []
-    if current_user.can_view_attendance():
-        for i in range(7):
-            day = date.today() - timedelta(days=i)
-            daily_hours = AttendanceEvent.get_daily_work_hours(current_user.id, day)
-            daily_attendance_data.append({
-                'date': day,
-                'hours': daily_hours
-            })
-        daily_attendance_data.reverse()  # Show oldest first
+    # Widget for daily attendance data (by sede for managers)
+    daily_attendance_data = {}
+    if current_user.can_view_daily_attendance_widget():
+        # Get users visible to current user based on role and sede access
+        if current_user.role == 'Amministratore':
+            # Amministratori vedono tutti gli utenti di tutte le sedi
+            visible_users = User.query.filter(
+                User.active.is_(True),
+                ~User.role.in_(['Admin', 'Staff'])
+            ).all()
+        elif current_user.role in ['Responsabile', 'Management']:
+            # Responsabili e Management vedono solo utenti della propria sede
+            visible_users = User.query.filter(
+                User.sede_id == current_user.sede_id,
+                User.active.is_(True),
+                ~User.role.in_(['Admin', 'Staff'])
+            ).all()
+        elif current_user.all_sedi:
+            # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
+            visible_users = User.query.filter(
+                User.active.is_(True),
+                ~User.role.in_(['Admin', 'Staff'])
+            ).all()
+        else:
+            # Altri utenti vedono solo utenti della propria sede se specificata
+            if current_user.sede_id:
+                visible_users = User.query.filter(
+                    User.sede_id == current_user.sede_id,
+                    User.active.is_(True),
+                    ~User.role.in_(['Admin', 'Staff'])
+                ).all()
+            else:
+                visible_users = []
+        
+        # Group users by sede and get their attendance status for today
+        sede_groups = {}
+        for user in visible_users:
+            sede_name = user.sede_obj.name if user.sede_obj else 'Sede Non Specificata'
+            if sede_name not in sede_groups:
+                sede_groups[sede_name] = {
+                    'total_users': 0,
+                    'present_users': [],
+                    'coverage_rate': 0
+                }
+            
+            sede_groups[sede_name]['total_users'] += 1
+            
+            # Check if user is present today
+            user_status, _ = AttendanceEvent.get_user_status(user.id, today_date)
+            if user_status in ['in', 'on_break']:
+                sede_groups[sede_name]['present_users'].append(user)
+        
+        # Calculate coverage rates
+        for sede_name, data in sede_groups.items():
+            if data['total_users'] > 0:
+                data['coverage_rate'] = int((len(data['present_users']) / data['total_users']) * 100)
+            else:
+                data['coverage_rate'] = 0
+        
+        daily_attendance_data = sede_groups
     
     # Widget shifts coverage alerts
     shifts_coverage_alerts = []
