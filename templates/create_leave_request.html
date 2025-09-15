@@ -93,6 +93,25 @@
                         {% endif %}
                     </div>
                     
+                    <!-- Opzione Banca Ore (solo per permessi orari) -->
+                    {% if current_user.banca_ore_enabled %}
+                    <div id="banca_ore_section" class="mb-3" style="display: none;">
+                        <div class="card border-success">
+                            <div class="card-body">
+                                <div class="form-check">
+                                    {{ form.use_banca_ore(class="form-check-input") }}
+                                    {{ form.use_banca_ore.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-piggy-bank"></i> 
+                                    Utilizzerai ore dalla tua banca ore invece di permessi standard.
+                                    <strong>Saldo disponibile: <span id="banca_ore_saldo">Caricamento...</span></strong>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <!-- Pulsanti -->
                     <div id="submit_button" class="d-flex gap-2" style="display: none;">
                         <button type="submit" class="btn btn-primary">
