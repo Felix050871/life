@@ -56,8 +56,7 @@ with app.app_context():
     db.create_all()
 
 # Import routes after app context is set up (must be at module level for gunicorn)
-import routes
-import api_routes
+# Routes imported in main.py to avoid circular imports with Gunicorn
 
 # Registra funzioni di utility per i template
 @app.template_global()

@@ -209,6 +209,8 @@ class User(UserMixin, db.Model):
     active = db.Column(db.Boolean, default=True)  # Renamed to avoid UserMixin conflict
     part_time_percentage = db.Column(db.Float, default=100.0)  # Percentuale di lavoro: 100% = tempo pieno, 50% = metà tempo, ecc.
     banca_ore_enabled = db.Column(db.Boolean, default=False)  # True se l'utente è abilitato alla banca ore
+    banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo di ore accumulabili nella banca ore
+    banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo in mesi entro cui le ore devono essere usufruite
     created_at = db.Column(db.DateTime, default=italian_now)
     
     # Relationship con Sede, WorkSchedule e ACITable

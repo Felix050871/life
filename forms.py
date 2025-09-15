@@ -82,6 +82,10 @@ class UserForm(FlaskForm):
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
     banca_ore_enabled = BooleanField('Abilitato Banca Ore', default=False)
+    banca_ore_limite_max = StringField('Limite Massimo Ore Banca', 
+                                     default='40.0')
+    banca_ore_periodo_mesi = StringField('Periodo Validità (mesi)', 
+                                       default='12')
     active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Utente')
     
@@ -203,6 +207,24 @@ class UserForm(FlaskForm):
             except (ValueError, AttributeError):
                 return 100.0
         return 100.0
+    
+    def get_banca_ore_limite_max_as_float(self):
+        """Convert the banca ore limite max string to float for database storage"""
+        if self.banca_ore_limite_max.data:
+            try:
+                return float(self.banca_ore_limite_max.data.replace(',', '.'))
+            except (ValueError, AttributeError):
+                return 40.0
+        return 40.0
+    
+    def get_banca_ore_periodo_mesi_as_int(self):
+        """Convert the banca ore periodo mesi string to int for database storage"""
+        if self.banca_ore_periodo_mesi.data:
+            try:
+                return int(self.banca_ore_periodo_mesi.data)
+            except (ValueError, AttributeError):
+                return 12
+        return 12
 
 # =============================================================================
 # ATTENDANCE FORMS

@@ -167,13 +167,31 @@
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="form-check mb-3">
-                                {{ form.banca_ore_enabled(class="form-check-input") }}
+                                {{ form.banca_ore_enabled(class="form-check-input", id="bancaOreEnabledNew") }}
                                 {{ form.banca_ore_enabled.label(class="form-check-label") }}
                             </div>
                             <small class="text-muted">Abilita la gestione della banca ore</small>
                         </div>
+                        <div class="col-md-4 mb-3" id="bancaOreLimiteGroupNew" style="display: none;">
+                            {{ form.banca_ore_limite_max.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.banca_ore_limite_max(class="form-control") }}
+                                <span class="input-group-text">ore</span>
+                            </div>
+                            <small class="text-muted">Limite massimo di ore accumulabili</small>
+                        </div>
+                        <div class="col-md-4 mb-3" id="bancaOrePeriodoGroupNew" style="display: none;">
+                            {{ form.banca_ore_periodo_mesi.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.banca_ore_periodo_mesi(class="form-control") }}
+                                <span class="input-group-text">mesi</span>
+                            </div>
+                            <small class="text-muted">Periodo entro cui utilizzare le ore</small>
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <div class="form-check mb-3">
                                 {{ form.active(class="form-check-input") }}
@@ -845,6 +863,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+    }
+    
+    // Banca ore toggle functionality for new user form
+    const bancaOreEnabledNew = document.getElementById('bancaOreEnabledNew');
+    const bancaOreLimiteGroupNew = document.getElementById('bancaOreLimiteGroupNew');
+    const bancaOrePeriodoGroupNew = document.getElementById('bancaOrePeriodoGroupNew');
+    
+    function toggleBancaOreFieldsNew() {
+        if (bancaOreEnabledNew && bancaOreLimiteGroupNew && bancaOrePeriodoGroupNew) {
+            if (bancaOreEnabledNew.checked) {
+                bancaOreLimiteGroupNew.style.display = 'block';
+                bancaOrePeriodoGroupNew.style.display = 'block';
+            } else {
+                bancaOreLimiteGroupNew.style.display = 'none';
+                bancaOrePeriodoGroupNew.style.display = 'none';
+            }
+        }
+    }
+    
+    if (bancaOreEnabledNew) {
+        bancaOreEnabledNew.addEventListener('change', toggleBancaOreFieldsNew);
+        toggleBancaOreFieldsNew(); // Initialize visibility on page load
     }
 });
 </script>

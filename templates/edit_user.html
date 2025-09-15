@@ -188,13 +188,29 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="form-check">
-                                    {{ form.banca_ore_enabled(class="form-check-input") }}
+                                    {{ form.banca_ore_enabled(class="form-check-input", id="bancaOreEnabled") }}
                                     {{ form.banca_ore_enabled.label(class="form-check-label") }}
                                 </div>
-                                <small class="text-muted">Abilita la gestione della banca ore per questo utente</small>
+                                <small class="text-muted">Abilita la gestione della banca ore</small>
+                            </div>
+                            <div class="col-md-4 mb-3" id="bancaOreLimiteGroup" style="display: none;">
+                                {{ form.banca_ore_limite_max.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.banca_ore_limite_max(class="form-control") }}
+                                    <span class="input-group-text">ore</span>
+                                </div>
+                                <small class="text-muted">Limite massimo di ore accumulabili</small>
+                            </div>
+                            <div class="col-md-4 mb-3" id="bancaOrePeriodoGroup" style="display: none;">
+                                {{ form.banca_ore_periodo_mesi.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.banca_ore_periodo_mesi(class="form-control") }}
+                                    <span class="input-group-text">mesi</span>
+                                </div>
+                                <small class="text-muted">Periodo entro cui utilizzare le ore</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">&nbsp;</label>
@@ -230,11 +246,16 @@
 
 {% block scripts %}
 <script>
-// Role-based part-time percentage visibility and sede management
+// Role-based part-time percentage visibility, sede management and banca ore controls
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.getElementById('role');
     const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
     const allSediCheck = document.getElementById('allSediCheck');
+    
+    // Banca ore controls
+    const bancaOreEnabled = document.getElementById('bancaOreEnabled');
+    const bancaOreLimiteGroup = document.getElementById('bancaOreLimiteGroup');
+    const bancaOrePeriodoGroup = document.getElementById('bancaOrePeriodoGroup');
     const sedeSelect = document.getElementById('sedeSelect');
     
     function toggleSedeSelect() {
@@ -405,6 +426,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
             }
         });
+    }
+    
+    // Banca ore toggle functionality
+    function toggleBancaOreFields() {
+        if (bancaOreEnabled && bancaOreLimiteGroup && bancaOrePeriodoGroup) {
+            if (bancaOreEnabled.checked) {
+                bancaOreLimiteGroup.style.display = 'block';
+                bancaOrePeriodoGroup.style.display = 'block';
+            } else {
+                bancaOreLimiteGroup.style.display = 'none';
+                bancaOrePeriodoGroup.style.display = 'none';
+            }
+        }
+    }
+    
+    // Attach event listener for banca ore toggle
+    if (bancaOreEnabled) {
+        bancaOreEnabled.addEventListener('change', toggleBancaOreFields);
+        // Initialize visibility on page load
+        toggleBancaOreFields();
     }
 });
 </script>
