@@ -191,6 +191,14 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="form-check">
+                                    {{ form.banca_ore_enabled(class="form-check-input") }}
+                                    {{ form.banca_ore_enabled.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Abilita la gestione della banca ore per questo utente</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="form-check">
                                     {% if user.role == 'Amministratore' %}
                                         {{ form.active(class="form-check-input", disabled=true, checked=true) }}
                                         {{ form.active.label(class="form-check-label text-muted") }}

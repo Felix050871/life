@@ -169,6 +169,13 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <div class="form-check mb-3">
+                                {{ form.banca_ore_enabled(class="form-check-input") }}
+                                {{ form.banca_ore_enabled.label(class="form-check-label") }}
+                            </div>
+                            <small class="text-muted">Abilita la gestione della banca ore</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mb-3">
                                 {{ form.active(class="form-check-input") }}
                                 {{ form.active.label(class="form-check-label") }}
                             </div>

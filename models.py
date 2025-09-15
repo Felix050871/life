@@ -208,6 +208,7 @@ class User(UserMixin, db.Model):
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
     active = db.Column(db.Boolean, default=True)  # Renamed to avoid UserMixin conflict
     part_time_percentage = db.Column(db.Float, default=100.0)  # Percentuale di lavoro: 100% = tempo pieno, 50% = metà tempo, ecc.
+    banca_ore_enabled = db.Column(db.Boolean, default=False)  # True se l'utente è abilitato alla banca ore
     created_at = db.Column(db.DateTime, default=italian_now)
     
     # Relationship con Sede, WorkSchedule e ACITable

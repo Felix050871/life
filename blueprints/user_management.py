@@ -305,6 +305,7 @@ def new_user():
             work_schedule_id=form.work_schedule.data,
             aci_vehicle_id=form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None,
             part_time_percentage=form.get_part_time_percentage_as_float(),
+            banca_ore_enabled=form.banca_ore_enabled.data,
             active=form.active.data
         )
         db.session.add(user)
@@ -388,6 +389,7 @@ def edit_user(user_id):
         user.work_schedule_id = form.work_schedule.data
         user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
         user.part_time_percentage = form.get_part_time_percentage_as_float()
+        user.banca_ore_enabled = form.banca_ore_enabled.data
         user.active = form.active.data
         
         db.session.commit()

@@ -81,6 +81,7 @@ class UserForm(FlaskForm):
     aci_vehicle = SelectField('Modello', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
+    banca_ore_enabled = BooleanField('Abilitato Banca Ore', default=False)
     active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Utente')
     
