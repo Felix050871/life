@@ -23,6 +23,7 @@ from blueprints.qr import qr_bp
 from blueprints.interventions import interventions_bp
 from blueprints.aci import aci_bp
 from blueprints.api import api_bp
+from blueprints.banca_ore import banca_ore_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(holidays_bp)
@@ -42,6 +43,7 @@ app.register_blueprint(qr_bp)
 app.register_blueprint(interventions_bp)
 app.register_blueprint(aci_bp)
 app.register_blueprint(api_bp)
+app.register_blueprint(banca_ore_bp)
 
 if __name__ == '__main__':
     app.run(debug=Config.FLASK_DEBUG, host=Config.SERVER_HOST, port=Config.SERVER_PORT)

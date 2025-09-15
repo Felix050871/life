@@ -942,7 +942,7 @@ SECTIONS (1207 lines total):
     {# ========================================================================= #}
     
     <!-- Widget: La Mia Banca Ore -->
-    {% if current_user.can_view_my_banca_ore_widget() and banca_ore_wallet %}
+    {% if current_user.can_view_my_banca_ore_widget() and banca_ore_wallet and current_user.banca_ore_enabled %}
     <div class="col-12 mb-4">
         <div class="card h-100">
             <div class="card-header">
@@ -1019,7 +1019,7 @@ SECTIONS (1207 lines total):
                 {% endif %}
                 
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-primary btn-sm" onclick="alert('Funzionalità in sviluppo')">
+                    <a href="{{ url_for('banca_ore.my_banca_ore') }}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-eye me-1"></i>Dettaglio Movimenti
                     </a>
                 </div>
