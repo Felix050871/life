@@ -1067,6 +1067,9 @@ class RoleForm(FlaskForm):
     can_view_mileage_widget = BooleanField('Widget Rimborsi Chilometrici')
     can_view_my_mileage_widget = BooleanField('Widget I Miei Rimborsi')
     
+    # Widget Banca Ore
+    can_view_my_banca_ore_widget = BooleanField('Widget La Mia Banca Ore')
+    
     # Gestione Tabelle ACI
     can_manage_aci_tables = BooleanField('Gestire Tabelle ACI')
     can_view_aci_tables = BooleanField('Visualizzare Tabelle ACI')

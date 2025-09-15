@@ -316,6 +316,52 @@ def dashboard():
             MileageRequest.status == 'pending'
         ).order_by(MileageRequest.created_at.desc()).limit(5).all()
     
+    # Widget banca ore wallet
+    banca_ore_wallet = None
+    if current_user.can_view_my_banca_ore_widget():
+        # Controlli di sicurezza sui tipi e valori di default
+        limite_max = float(current_user.banca_ore_limite_max or 40.0)
+        periodo_mesi = int(current_user.banca_ore_periodo_mesi or 12)
+        
+        # Calcola periodo di validità per scadenze
+        periodo_validita = timedelta(days=30 * periodo_mesi)  # Approssimazione mesi in giorni
+        data_limite_scadenza = italian_now() - periodo_validita
+        
+        # Calcolo base delle ore (sarà sostituito con logica reale)
+        ore_accumulate = 15.5  # TODO: Calcolare da straordinari approvati
+        ore_utilizzate = 8.0   # TODO: Calcolare da permessi/ferie utilizzati
+        ore_saldo = max(0.0, ore_accumulate - ore_utilizzate)
+        ore_in_scadenza = 2.5  # TODO: Calcolare ore che scadranno in 30gg
+        
+        # Calcolo percentuale utilizzo limite (server-side per sicurezza)
+        percentuale_utilizzo = (ore_saldo / limite_max * 100) if limite_max > 0 else 0
+        percentuale_utilizzo = min(100, max(0, percentuale_utilizzo))  # Clamp 0-100%
+        
+        # Determinazione colore progress bar
+        if percentuale_utilizzo < 50:
+            color_class = 'bg-success'
+        elif percentuale_utilizzo < 80:
+            color_class = 'bg-warning'
+        else:
+            color_class = 'bg-danger'
+        
+        banca_ore_wallet = {
+            'ore_accumulate': ore_accumulate,
+            'ore_utilizzate': ore_utilizzate,
+            'ore_saldo': ore_saldo,
+            'ore_in_scadenza_30gg': ore_in_scadenza,
+            'prossima_scadenza': (italian_now() + timedelta(days=45)).date() if ore_in_scadenza > 0 else None,
+            'limite_max': limite_max,
+            'periodo_mesi': periodo_mesi,
+            'percentuale_utilizzo': round(percentuale_utilizzo, 1),
+            'color_class': color_class
+        }
+        
+        # TODO: Implementare logica di calcolo reale:
+        # - Query OvertimeRequest per ore straordinario convertite in banca ore  
+        # - Query LeaveRequest per ore utilizzate tramite permessi
+        # - Calcolo scadenze basato su date inserimento straordinari
+    
     # Get current time for dashboard display
     today = italian_now()
     current_time = today.time()
@@ -354,6 +400,7 @@ def dashboard():
                          my_overtime_requests=my_overtime_requests,
                          recent_mileage_requests=recent_mileage_requests,
                          my_mileage_requests=my_mileage_requests,
+                         banca_ore_wallet=banca_ore_wallet,
                          format_hours=format_hours)
 
 @dashboard_bp.route('/dashboard_team')

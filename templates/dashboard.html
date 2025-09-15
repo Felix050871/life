@@ -937,6 +937,97 @@ SECTIONS (1207 lines total):
     </div>
     {% endif %}
 
+    {# ========================================================================= #}
+    {# BANCA ORE WIDGET #}
+    {# ========================================================================= #}
+    
+    <!-- Widget: La Mia Banca Ore -->
+    {% if current_user.can_view_my_banca_ore_widget() and banca_ore_wallet %}
+    <div class="col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-piggy-bank me-2"></i>La Mia Banca Ore</h5>
+            </div>
+            <div class="card-body">
+                <!-- Wallet Summary -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-0 text-success">{{ "%.1f"|format(banca_ore_wallet.ore_saldo) }}h</div>
+                            <small class="text-muted">Saldo Corrente</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-0 text-primary">{{ "%.1f"|format(banca_ore_wallet.ore_accumulate) }}h</div>
+                            <small class="text-muted">Ore Accumulate</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-0 text-info">{{ "%.1f"|format(banca_ore_wallet.ore_utilizzate) }}h</div>
+                            <small class="text-muted">Ore Utilizzate</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-0 text-warning">{{ "%.1f"|format(banca_ore_wallet.ore_in_scadenza_30gg) }}h</div>
+                            <small class="text-muted">In Scadenza (30gg)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Configuration Info -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="fas fa-hourglass-half me-1"></i>
+                            Limite massimo: <strong>{{ "%.1f"|format(banca_ore_wallet.limite_max) }} ore</strong>
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Validità: <strong>{{ banca_ore_wallet.periodo_mesi }} mesi</strong>
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">Utilizzo limite</small>
+                        <small class="text-muted">{{ banca_ore_wallet.percentuale_utilizzo }}%</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar {{ banca_ore_wallet.color_class }}" 
+                             role="progressbar" 
+                             style="width: {{ banca_ore_wallet.percentuale_utilizzo }}%" 
+                             aria-valuenow="{{ banca_ore_wallet.percentuale_utilizzo }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Next Expiry Alert -->
+                {% if banca_ore_wallet.prossima_scadenza %}
+                <div class="alert alert-warning py-2 mb-3">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <small>Prossima scadenza: <strong>{{ banca_ore_wallet.prossima_scadenza.strftime('%d/%m/%Y') }}</strong></small>
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary btn-sm" onclick="alert('Funzionalità in sviluppo')">
+                        <i class="fas fa-eye me-1"></i>Dettaglio Movimenti
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Widget: Rimborsi Chilometrici (Management) -->
     {% if current_user.can_view_mileage_widget() %}
     <div class="col-md-6 col-lg-4 mb-4">
