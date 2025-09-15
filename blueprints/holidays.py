@@ -19,8 +19,8 @@ holidays_bp = Blueprint('holidays', __name__, url_prefix='/holidays')
 def holidays():
     """Holiday management page"""
     # Check permissions
-    if not current_user.can_manage_holidays():
-        flash('Non hai i permessi per gestire le festività.', 'danger')
+    if not current_user.can_access_holidays():
+        flash('Non hai i permessi per accedere alle festività.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
     holidays = Holiday.query.order_by(Holiday.month.desc(), Holiday.day.desc()).all()
