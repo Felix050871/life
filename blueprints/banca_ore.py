@@ -130,7 +130,7 @@ def calculate_banca_ore_balance(user_id):
             standard_hours = standard_hours * (user.part_time_percentage / 100.0)
         
         for row in result:
-            daily_hours = abs(row[1]) if row[1] else 0  # abs per gestire segno negativo
+            daily_hours = float(abs(row[1])) if row[1] else 0.0  # Converte esplicitamente a float
             if daily_hours > standard_hours + 0.5:  # Regola 30 minuti
                 overtime = daily_hours - standard_hours
                 overtime = round(overtime * 4) / 4  # Arrotonda ai quarti d'ora
