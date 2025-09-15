@@ -21,7 +21,7 @@ def holidays():
     # Check permissions
     if not current_user.can_manage_holidays():
         flash('Non hai i permessi per gestire le festività.', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     holidays = Holiday.query.order_by(Holiday.month.desc(), Holiday.day.desc()).all()
     return render_template('holidays.html', holidays=holidays)
@@ -32,7 +32,7 @@ def add_holiday():
     """Add new holiday"""
     if not current_user.can_manage_holidays():
         flash('Non hai i permessi per gestire le festività.', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     form = HolidayForm()
     if form.validate_on_submit():
@@ -73,7 +73,7 @@ def edit_holiday(holiday_id):
     """Edit existing holiday"""
     if not current_user.can_manage_holidays():
         flash('Non hai i permessi per gestire le festività.', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     holiday = Holiday.query.get_or_404(holiday_id)
     form = HolidayForm(obj=holiday)
@@ -113,7 +113,7 @@ def delete_holiday(holiday_id):
     """Delete holiday"""
     if not current_user.can_manage_holidays():
         flash('Non hai i permessi per gestire le festività.', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     holiday = Holiday.query.get_or_404(holiday_id)
     
