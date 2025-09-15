@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}La Mia Banca Ore - Workly{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-piggy-bank"></i> La Mia Banca Ore</h2>
+        <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Torna alla Dashboard
+        </a>
+    </div>
+
+    <!-- Riepilogo Wallet -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-primary">
+                        <i class="fas fa-plus-circle"></i> Ore Accumulate
+                    </h5>
+                    <h3 class="text-primary">{{ "%.1f"|format(wallet.ore_accumulate) }}h</h3>
+                    <div class="small text-muted">
+                        <div>Da presenze: {{ "%.1f"|format(wallet.dettaglio.ore_da_presenze) }}h</div>
+                        <div>Da straordinari: {{ "%.1f"|format(wallet.dettaglio.ore_da_straordinari) }}h</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-danger">
+                        <i class="fas fa-minus-circle"></i> Ore Utilizzate
+                    </h5>
+                    <h3 class="text-danger">{{ "%.1f"|format(wallet.ore_utilizzate) }}h</h3>
+                    <div class="small text-muted">Da permessi approvati</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-{{ wallet.color_class }}">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-{{ wallet.color_class }}">
+                        <i class="fas fa-wallet"></i> Saldo Disponibile
+                    </h5>
+                    <h3 class="text-{{ wallet.color_class }}">{{ "%.1f"|format(wallet.ore_saldo) }}h</h3>
+                    <div class="small text-muted">
+                        {% if wallet.limite_max %}
+                        Limite massimo: {{ wallet.limite_max }}h
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informazioni Scadenza -->
+    {% if wallet.ore_in_scadenza_30gg > 0 %}
+    <div class="alert alert-warning mb-4">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Attenzione:</strong> {{ "%.1f"|format(wallet.ore_in_scadenza_30gg) }}h in scadenza nei prossimi 30 giorni.
+        {% if wallet.prossima_scadenza %}
+        <br><small>Prossima scadenza: {{ wallet.prossima_scadenza.strftime('%d/%m/%Y') }}</small>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Utilizzo -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Statistiche Utilizzo</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Percentuale Utilizzo</label>
+                        <div class="progress">
+                            <div class="progress-bar bg-{{ wallet.color_class }}" 
+                                 role="progressbar" 
+                                 style="width: {{ wallet.percentuale_utilizzo }}%" 
+                                 aria-valuenow="{{ wallet.percentuale_utilizzo }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ "%.1f"|format(wallet.percentuale_utilizzo) }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Periodo di Calcolo</label>
+                        <div class="text-muted">{{ wallet.periodo_mesi }} mesi</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cronologia Movimenti -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-history"></i> Cronologia Movimenti</h5>
+        </div>
+        <div class="card-body">
+            {% if cronologia_movimenti %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Descrizione</th>
+                            <th>Ore</th>
+                            <th>Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movimento in cronologia_movimenti %}
+                        <tr>
+                            <td>{{ movimento.data.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if movimento.tipo == 'accumulo' else 'danger' }}">
+                                    {{ movimento.tipo.title() }}
+                                </span>
+                            </td>
+                            <td>{{ movimento.descrizione }}</td>
+                            <td>
+                                <span class="text-{{ 'success' if movimento.ore > 0 else 'danger' }}">
+                                    {% if movimento.ore > 0 %}+{% endif %}{{ "%.1f"|format(movimento.ore) }}h
+                                </span>
+                            </td>
+                            <td>{{ "%.1f"|format(movimento.saldo_dopo) }}h</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-clock fa-3x mb-3"></i>
+                <p>Nessun movimento registrato nella cronologia.</p>
+                <small>I movimenti verranno visualizzati qui quando accumulerai o utilizzerai ore dalla banca ore.</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.progress {
+    height: 20px;
+}
+</style>
+{% endblock %}
