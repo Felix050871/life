@@ -190,6 +190,7 @@ class UserRole(db.Model):
             'can_view_my_mileage_widget': 'Widget I Miei Rimborsi',
             
             # Banca ore
+            'can_view_banca_ore_widget': 'Widget Banca Ore',
             'can_view_my_banca_ore_widget': 'Widget La Mia Banca Ore',
             
             # Tabelle ACI
@@ -671,6 +672,10 @@ class User(UserMixin, db.Model):
     def can_view_my_mileage_widget(self):
         """Può visualizzare widget dei propri rimborsi chilometrici"""
         return self.has_permission('can_view_my_mileage_widget')
+    
+    def can_view_banca_ore_widget(self):
+        """Può visualizzare widget banca ore"""
+        return self.has_permission('can_view_banca_ore_widget')
     
     def can_view_my_banca_ore_widget(self):
         """Può visualizzare widget della propria banca ore"""

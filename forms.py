@@ -1072,6 +1072,7 @@ class RoleForm(FlaskForm):
     can_view_my_mileage_widget = BooleanField('Widget I Miei Rimborsi')
     
     # Widget Banca Ore
+    can_view_banca_ore_widget = BooleanField('Widget Banca Ore')
     can_view_my_banca_ore_widget = BooleanField('Widget La Mia Banca Ore')
     
     # Gestione Tabelle ACI
@@ -1211,7 +1212,11 @@ class RoleForm(FlaskForm):
             'can_manage_mileage_requests': self.can_manage_mileage_requests.data,
             'can_view_my_mileage_requests': self.can_view_my_mileage_requests.data,
             'can_view_mileage_widget': self.can_view_mileage_widget.data,
-            'can_view_my_mileage_widget': self.can_view_my_mileage_widget.data
+            'can_view_my_mileage_widget': self.can_view_my_mileage_widget.data,
+            
+            # Widget Banca Ore
+            'can_view_banca_ore_widget': self.can_view_banca_ore_widget.data,
+            'can_view_my_banca_ore_widget': self.can_view_my_banca_ore_widget.data
         }
     
     def populate_permissions(self, permissions_dict):
@@ -1322,6 +1327,10 @@ class RoleForm(FlaskForm):
         self.can_view_my_mileage_requests.data = permissions_dict.get('can_view_my_mileage_requests', False)
         self.can_view_mileage_widget.data = permissions_dict.get('can_view_mileage_widget', False)
         self.can_view_my_mileage_widget.data = permissions_dict.get('can_view_my_mileage_widget', False)
+        
+        # Widget Banca Ore
+        self.can_view_banca_ore_widget.data = permissions_dict.get('can_view_banca_ore_widget', False)
+        self.can_view_my_banca_ore_widget.data = permissions_dict.get('can_view_my_banca_ore_widget', False)
 
 
 # Form del pacchetto presidio integrati
