@@ -729,7 +729,7 @@ def export_attendance_excel():
     """Export presenze in formato CSV"""
     if not current_user.can_view_attendance():
         flash('Non hai i permessi per esportare le presenze.', 'error')
-        return redirect(url_for('attendance.attendance_main'))
+        return redirect(url_for('attendance.attendance'))
     
     # Parametri per l'export
     start_date_str = request.args.get('start_date', (date.today() - timedelta(days=30)).strftime('%Y-%m-%d'))
@@ -740,7 +740,7 @@ def export_attendance_excel():
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
     except:
         flash('Date non valide.', 'error')
-        return redirect(url_for('attendance.attendance_main'))
+        return redirect(url_for('attendance.attendance'))
 
     # Query per ottenere tutti gli eventi nel periodo
     events = AttendanceEvent.query.filter(
@@ -798,7 +798,7 @@ def quick_attendance(action):
     """Gestisce la registrazione rapida di entrata/uscita tramite QR"""
     if action not in ['clock_in', 'clock_out', 'break_start', 'break_end']:
         flash('Azione non valida.', 'error')
-        return redirect(url_for('attendance.attendance_main'))
+        return redirect(url_for('attendance.attendance'))
     
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per accedere alle presenze.', 'error')
@@ -819,7 +819,7 @@ def quick_attendance(action):
                     flash('Non sei in pausa.', 'warning')
                 else:
                     flash('Non puoi effettuare questa azione al momento.', 'error')
-                return redirect(url_for('attendance.attendance_main'))
+                return redirect(url_for('attendance.attendance'))
 
             # Crea nuovo evento
             attendance_event = AttendanceEvent(
@@ -840,12 +840,12 @@ def quick_attendance(action):
             }
             
             flash(f'{action_messages[action]} alle {attendance_event.timestamp.strftime("%H:%M")}', 'success')
-            return redirect(url_for('attendance.attendance_main'))
+            return redirect(url_for('attendance.attendance'))
 
         except Exception as e:
             db.session.rollback()
             flash('Errore nel registrare l\'evento.', 'error')
-            return redirect(url_for('attendance.attendance_main'))
+            return redirect(url_for('attendance.attendance'))
 
     # GET request - mostra form di conferma
     action_titles = {

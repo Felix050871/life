@@ -58,7 +58,7 @@ def turni_automatici():
     """Sistema nuovo: Creazione automatica turni da template presidio"""
     if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
         flash('Non hai i permessi per accedere ai turni', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     # Ottieni template presidio attivi per creazione turni
     from models import PresidioCoverageTemplate
@@ -245,7 +245,7 @@ def visualizza_turni():
     """Visualizzazione turni per mese/settimana"""
     if not (current_user.can_manage_shifts() or current_user.can_view_shifts()):
         flash('Non hai i permessi per visualizzare i turni', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard'))
     
     # Ottieni parametri filtro
     view_mode = request.args.get('view', 'month')  # month, week
@@ -984,7 +984,7 @@ def create_shift_coverage():
         
         if not roles_dict:
             flash('Devi selezionare almeno un ruolo con numerosità', 'danger')
-            return redirect(url_for('manage_turni'))
+            return redirect(url_for('dashboard.dashboard'))
         
         # Converti date
         start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
@@ -1044,7 +1044,7 @@ def create_shift_coverage():
         db.session.rollback()
         flash(f'Errore durante la creazione della copertura: {str(e)}', 'danger')
     
-    return redirect(url_for('manage_turni'))
+    return redirect(url_for('dashboard.dashboard'))
 
 @shifts_bp.route('/admin/coperture')
 @login_required
@@ -1061,7 +1061,7 @@ def view_turni_coverage():
             sede_id = current_user.sede_obj.id
         else:
             flash('ID sede non specificato. Seleziona una sede dalla pagina Gestione Turni.', 'warning')
-            return redirect(url_for('manage_turni'))
+            return redirect(url_for('dashboard.dashboard'))
     
     sede = Sede.query.get_or_404(sede_id)
     
@@ -1073,11 +1073,11 @@ def view_turni_coverage():
     # Per utenti non-admin, verifica accesso alla sede specifica
     if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
         flash('Non hai accesso a questa sede specifica', 'danger')
-        return redirect(url_for('manage_turni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     if not sede.is_turni_mode():
         flash('La sede selezionata non è configurata per la modalità turni', 'warning')
-        return redirect(url_for('manage_turni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     # Ottieni le coperture create per questa sede
     coperture = PresidioCoverage.query.filter_by(active=True).order_by(
@@ -1132,7 +1132,7 @@ def generate_turni_from_coverage():
             sede_id = current_user.sede_obj.id
         else:
             flash('ID sede non specificato. Seleziona una sede dalla pagina Genera Turni.', 'warning')
-            return redirect(url_for('generate_turnazioni'))
+            return redirect(url_for('dashboard.dashboard'))
     
     sede = Sede.query.get_or_404(sede_id)
     
@@ -1144,11 +1144,11 @@ def generate_turni_from_coverage():
     # Per utenti non-admin, verifica accesso alla sede specifica
     if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
         flash('Non hai accesso a questa sede specifica', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     if not sede.is_turni_mode():
         flash('La sede selezionata non è configurata per la modalità turni', 'warning')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     # Ottieni le coperture attive per questa sede
     coperture = PresidioCoverage.query.filter_by(active=True).order_by(
@@ -1205,7 +1205,7 @@ def process_generate_turni_from_coverage():
     
     if not sede_id or not coverage_period_id or coverage_period_id.strip() == '':
         flash(f'Dati mancanti per la generazione turni (sede_id: {sede_id}, coverage_period_id: \'{coverage_period_id}\')', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     sede = Sede.query.get_or_404(sede_id)
     
@@ -1217,7 +1217,7 @@ def process_generate_turni_from_coverage():
     # Per utenti non-admin, verifica accesso alla sede specifica
     if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
         flash('Non hai accesso per generare turni per questa sede', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     try:
         # Decodifica period_id per ottenere le date della copertura
@@ -1234,7 +1234,7 @@ def process_generate_turni_from_coverage():
         
         if not coperture:
             flash('Nessuna copertura trovata per il periodo specificato', 'warning')
-            return redirect(url_for('generate_turnazioni'))
+            return redirect(url_for('dashboard.dashboard'))
         
         # Controlla se esistono già turni nel periodo
         existing_shifts = Shift.query.join(User, Shift.user_id == User.id).filter(
@@ -1322,9 +1322,9 @@ def process_generate_turni_from_coverage():
         
     except (ValueError, AttributeError):
         flash('ID periodo non valido', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
-    return redirect(url_for('generate_turnazioni'))
+    return redirect(url_for('dashboard.dashboard'))
 
 @shifts_bp.route('/admin/visualizza-generati')
 @login_required
@@ -1339,7 +1339,7 @@ def view_generated_shifts():
     
     if not all([sede_id, period_id]):
         flash('Parametri mancanti per la visualizzazione turni', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     sede = Sede.query.get_or_404(sede_id)
     
@@ -1351,7 +1351,7 @@ def view_generated_shifts():
     # Per utenti non-admin, verifica accesso alla sede specifica
     if not current_user.all_sedi and current_user.sede_obj and current_user.sede_obj.id != sede_id:
         flash('Non hai accesso per visualizzare i turni di questa sede', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     # Decodifica period_id per ottenere le date
     try:
@@ -1360,7 +1360,7 @@ def view_generated_shifts():
         coverage_end_date = datetime.strptime(end_str, '%Y%m%d').date()
     except (ValueError, AttributeError):
         flash('Periodo non valido specificato', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     # Ottieni i turni generati nel periodo delle coperture
     shifts = Shift.query.filter(
@@ -1426,7 +1426,7 @@ def regenerate_turni_from_coverage():
     
     if not all([sede_id, coverage_period_id]):
         flash('Dati mancanti per la rigenerazione turni', 'danger')
-        return redirect(url_for('generate_turnazioni'))
+        return redirect(url_for('dashboard.dashboard'))
     
     sede = Sede.query.get_or_404(sede_id)
     
@@ -1434,7 +1434,7 @@ def regenerate_turni_from_coverage():
     if current_user.role != 'Admin':
         if not current_user.sede_obj or current_user.sede_obj.id != sede_id:
             flash('Non hai i permessi per rigenerare turni per questa sede', 'danger')
-            return redirect(url_for('generate_turnazioni'))
+            return redirect(url_for('dashboard.dashboard'))
     
     try:
         # Decodifica period_id per ottenere le date della copertura
@@ -1468,7 +1468,7 @@ def regenerate_turni_from_coverage():
         
         if not coperture:
             flash('Nessuna copertura trovata per il periodo specificato', 'warning')
-            return redirect(url_for('generate_turnazioni'))
+            return redirect(url_for('dashboard.dashboard'))
         
         # Genera i nuovi turni
         new_shifts_count = 0
