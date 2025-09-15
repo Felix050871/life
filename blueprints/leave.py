@@ -182,6 +182,28 @@ def create_leave_request():
             if form.end_time.data:
                 new_request.end_time = form.end_time.data
             
+            # Gestisci banca ore
+            if form.use_banca_ore.data and current_user.banca_ore_enabled:
+                # Verifica se è un permesso orario (prerequisito per banca ore)
+                if new_request.is_time_based():
+                    # Calcola ore necessarie
+                    hours_needed = new_request.calculate_banca_ore_hours_needed()
+                    
+                    # Verifica saldo disponibile
+                    from blueprints.banca_ore import calculate_banca_ore_balance
+                    wallet = calculate_banca_ore_balance(current_user.id)
+                    
+                    if wallet and wallet['ore_saldo'] >= hours_needed:
+                        new_request.use_banca_ore = True
+                        # Le ore effettive verranno scalate all'approvazione
+                    else:
+                        available = wallet['ore_saldo'] if wallet else 0.0
+                        flash(f'Ore banca ore insufficienti. Disponibili: {available:.1f}h, Richieste: {hours_needed:.1f}h', 'warning')
+                        return render_template('create_leave_request.html', form=form, today=date.today())
+                else:
+                    flash('La banca ore può essere utilizzata solo per permessi orari', 'warning')
+                    return render_template('create_leave_request.html', form=form, today=date.today())
+            
             db.session.add(new_request)
             db.session.commit()
             
@@ -224,6 +246,25 @@ def approve_leave_request(request_id):
         approval_notes = request.form.get('approval_notes')
         if approval_notes:
             leave_request.approval_notes = approval_notes
+        
+        # Scala ore dalla banca ore se richiesto
+        if leave_request.use_banca_ore and leave_request.user.banca_ore_enabled:
+            hours_to_deduct = leave_request.calculate_banca_ore_hours_needed()
+            
+            # Verifica nuovamente il saldo disponibile al momento dell'approvazione
+            from blueprints.banca_ore import calculate_banca_ore_balance
+            wallet = calculate_banca_ore_balance(leave_request.user.id)
+            
+            if wallet and wallet['ore_saldo'] >= hours_to_deduct:
+                # Registra le ore effettivamente utilizzate
+                leave_request.banca_ore_hours_used = hours_to_deduct
+                flash(f'Richiesta approvata. Scalate {hours_to_deduct:.1f}h dalla banca ore dell\'utente.', 'success')
+            else:
+                # Saldo insufficiente, approva ma senza utilizzare banca ore
+                leave_request.use_banca_ore = False
+                leave_request.banca_ore_hours_used = None
+                available = wallet['ore_saldo'] if wallet else 0.0
+                flash(f'Richiesta approvata. Attenzione: ore banca ore insufficienti ({available:.1f}h disponibili), utilizzato permesso standard.', 'warning')
         
         db.session.commit()
         

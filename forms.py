@@ -288,6 +288,10 @@ class LeaveRequestForm(FlaskForm):
     
     # Campo motivo
     reason = TextAreaField('Motivo', validators=[Optional(), Length(max=500)], render_kw={'rows': 3, 'placeholder': 'Inserisci il motivo della richiesta (opzionale)'})
+    
+    # Campo banca ore
+    use_banca_ore = BooleanField('Utilizza ore dalla Banca Ore', default=False)
+    
     submit = SubmitField('Invia Richiesta')
     
     def __init__(self, *args, **kwargs):

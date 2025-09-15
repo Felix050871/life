@@ -147,7 +147,24 @@ def calculate_banca_ore_balance(user_id):
     
     # 3. Calcola ore utilizzate tramite permessi/ferie con banca ore
     ore_utilizzate = 0.0
-    # TODO: Implementare logica per permessi utilizzati dalla banca ore
+    
+    try:
+        # Query per ottenere ore utilizzate da richieste approvate con banca ore
+        approved_leaves_with_banca_ore = LeaveRequest.query.filter(
+            LeaveRequest.user_id == user_id,
+            LeaveRequest.status == 'Approved',
+            LeaveRequest.use_banca_ore == True,
+            LeaveRequest.banca_ore_hours_used.isnot(None),
+            LeaveRequest.approved_at >= data_limite_scadenza
+        ).all()
+        
+        # Somma le ore effettivamente utilizzate
+        for leave_request in approved_leaves_with_banca_ore:
+            ore_utilizzate += leave_request.banca_ore_hours_used or 0.0
+            
+    except Exception as e:
+        print(f"Errore calcolo ore utilizzate banca ore: {e}")
+        ore_utilizzate = 0.0
     
     # Totali
     ore_accumulate_totali = ore_accumulate_presenze + ore_accumulate_straordinari

@@ -1349,6 +1349,10 @@ class LeaveRequest(db.Model):
     start_time = db.Column(db.Time, nullable=True)  # Orario inizio per permessi parziali
     end_time = db.Column(db.Time, nullable=True)    # Orario fine per permessi parziali
     
+    # Campo per banca ore
+    use_banca_ore = db.Column(db.Boolean, default=False)  # True se utilizza ore dalla banca ore
+    banca_ore_hours_used = db.Column(db.Float, nullable=True)  # Ore effettivamente utilizzate dalla banca ore
+    
     user = db.relationship('User', foreign_keys=[user_id], backref='leave_requests')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_leaves')
     leave_type_obj = db.relationship('LeaveType', foreign_keys=[leave_type_id], backref='requests')
@@ -1389,6 +1393,41 @@ class LeaveRequest(db.Model):
             return self.leave_type_obj.requires_approval
         # Fallback: malattia non richiede approvazione, resto sì
         return self.leave_type != 'Malattia' if self.leave_type else True
+    
+    def get_duration_hours(self):
+        """Calcola la durata del permesso in ore"""
+        if self.is_time_based():
+            # Permesso orario
+            start_dt = datetime.combine(date.today(), self.start_time)
+            end_dt = datetime.combine(date.today(), self.end_time)
+            if end_dt < start_dt:  # Attraversa mezzanotte
+                end_dt += timedelta(days=1)
+            duration = end_dt - start_dt
+            return round(duration.total_seconds() / 3600, 2)
+        else:
+            # Permesso giornaliero intero - assumiamo 8 ore per giorno
+            days = (self.end_date - self.start_date).days + 1
+            return days * 8.0
+    
+    def can_use_banca_ore(self):
+        """Verifica se questa richiesta può utilizzare ore dalla banca ore"""
+        return (self.user and self.user.banca_ore_enabled and 
+                self.is_time_based())  # Solo permessi orari possono usare banca ore
+    
+    def calculate_banca_ore_hours_needed(self):
+        """Calcola le ore necessarie dalla banca ore per questo permesso"""
+        if not self.can_use_banca_ore():
+            return 0.0
+        return self.get_duration_hours()
+    
+    def get_banca_ore_display(self):
+        """Restituisce info display per banca ore"""
+        if self.use_banca_ore and self.banca_ore_hours_used:
+            return f"Banca Ore: {self.banca_ore_hours_used:.1f}h utilizzate"
+        elif self.use_banca_ore:
+            needed = self.calculate_banca_ore_hours_needed()
+            return f"Banca Ore: {needed:.1f}h richieste"
+        return None
 
 # =============================================================================
 # SHIFT MANAGEMENT MODELS  
