@@ -152,10 +152,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Per i permessi, mostra anche i campi orario e nascondi data fine
                 timeFields.style.display = 'flex';
                 endDateField.style.display = 'none';
+                
+                // Mostra sezione banca ore se disponibile
+                {% if current_user.banca_ore_enabled %}
+                const bancaOreSection = document.getElementById('banca_ore_section');
+                if (bancaOreSection) {
+                    bancaOreSection.style.display = 'block';
+                    loadBancaOreSaldo();
+                }
+                {% endif %}
             } else {
                 // Per ferie e malattie, nascondi orari e mostra data fine
                 timeFields.style.display = 'none';
                 endDateField.style.display = 'block';
+                
+                // Nascondi sezione banca ore
+                {% if current_user.banca_ore_enabled %}
+                const bancaOreSection = document.getElementById('banca_ore_section');
+                if (bancaOreSection) {
+                    bancaOreSection.style.display = 'none';
+                }
+                {% endif %}
             }
         } else {
             // Nascondi tutti i campi se nessuna selezione
@@ -163,8 +180,39 @@ document.addEventListener('DOMContentLoaded', function() {
             timeFields.style.display = 'none';
             reasonField.style.display = 'none';
             submitButton.style.display = 'none';
+            
+            // Nascondi anche sezione banca ore
+            {% if current_user.banca_ore_enabled %}
+            const bancaOreSection = document.getElementById('banca_ore_section');
+            if (bancaOreSection) {
+                bancaOreSection.style.display = 'none';
+            }
+            {% endif %}
         }
     });
+    
+    {% if current_user.banca_ore_enabled %}
+    // Funzione per caricare il saldo banca ore
+    function loadBancaOreSaldo() {
+        fetch('/api/calculate_banca_ore_balance')
+            .then(response => response.json())
+            .then(data => {
+                const saldoElement = document.getElementById('banca_ore_saldo');
+                if (saldoElement && data.ore_saldo !== undefined) {
+                    saldoElement.textContent = data.ore_saldo.toFixed(1) + 'h';
+                } else {
+                    saldoElement.textContent = '0.0h';
+                }
+            })
+            .catch(error => {
+                console.error('Errore caricamento saldo banca ore:', error);
+                const saldoElement = document.getElementById('banca_ore_saldo');
+                if (saldoElement) {
+                    saldoElement.textContent = 'Errore';
+                }
+            });
+    }
+    {% endif %}
 });
 </script>
 {% endblock %}

@@ -234,6 +234,20 @@ def my_banca_ore():
                          wallet=wallet,
                          cronologia_movimenti=cronologia_movimenti)
 
+@banca_ore_bp.route('/api/calculate_banca_ore_balance')
+@login_required
+def api_calculate_banca_ore_balance():
+    """API per ottenere il saldo attuale della banca ore dell'utente"""
+    if not current_user.banca_ore_enabled:
+        return jsonify({'error': 'Banca ore non abilitata'}), 403
+    
+    wallet = calculate_banca_ore_balance(current_user.id)
+    
+    if not wallet:
+        return jsonify({'error': 'Errore nel calcolo della banca ore'}), 500
+    
+    return jsonify(wallet)
+
 @banca_ore_bp.route('/api/calculate_daily_overtime')
 @login_required  
 def api_calculate_daily_overtime():
