@@ -208,15 +208,16 @@ SECTIONS (1207 lines total):
                             <tr class="{% if request.status == 'Pending' %}table-warning{% endif %}">
                                 <td>
                                     <strong>{{ request.start_date.strftime('%d/%m/%Y') }}</strong>
-                                    {% if request.leave_type == 'Permesso' and request.is_time_based() %}
-                                        <br><small class="text-muted">{{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}</small>
+                                    {% if request.start_time and request.end_time %}
+                                        <br><small class="text-muted"><i class="fas fa-clock me-1"></i>{{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}</small>
                                     {% elif request.start_date != request.end_date %}
                                         <br><strong>{{ request.end_date.strftime('%d/%m/%Y') }}</strong>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if request.leave_type == 'Permesso' and request.is_time_based() %}
-                                        <span class="badge bg-info">{{ request.get_duration_display() }}</span>
+                                    {% if request.start_time and request.end_time %}
+                                        {% set duration_hours = ((request.end_time.hour * 60 + request.end_time.minute) - (request.start_time.hour * 60 + request.start_time.minute)) / 60 %}
+                                        <span class="badge bg-info">{{ duration_hours|round(1) }}h</span>
                                     {% else %}
                                         <span class="badge bg-info">
                                             {{ (request.end_date - request.start_date).days + 1 }} giorni
@@ -224,12 +225,22 @@ SECTIONS (1207 lines total):
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if request.leave_type == 'Permesso' %}
-                                        <span class="badge bg-info">Permesso</span>
-                                    {% elif request.leave_type == 'Ferie' %}
-                                        <span class="badge bg-success">Ferie</span>
-                                    {% elif request.leave_type == 'Malattia' %}
-                                        <span class="badge bg-warning text-dark">Malattia</span>
+                                    {% if request.leave_type_obj %}
+                                        {% if request.leave_type_obj.name == 'Ferie' %}
+                                        <span class="badge bg-success">{{ request.leave_type_obj.name }}</span>
+                                        {% elif 'Permesso' in request.leave_type_obj.name %}
+                                        <span class="badge bg-info">{{ request.leave_type_obj.name }}</span>
+                                        {% elif request.leave_type_obj.name == 'Malattia' %}
+                                        <span class="badge bg-warning text-dark">{{ request.leave_type_obj.name }}</span>
+                                        {% elif request.leave_type_obj.name == 'Recupero Ore' %}
+                                        <span class="badge bg-primary">{{ request.leave_type_obj.name }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ request.leave_type_obj.name }}</span>
+                                        {% endif %}
+                                    {% elif request.leave_type %}
+                                        <span class="badge bg-secondary">{{ request.leave_type }}</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">Non specificato</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -618,23 +629,46 @@ SECTIONS (1207 lines total):
             <div class="card-body">
                 {% for leave in recent_leaves[:3] %}
                 <div class="border-bottom pb-2 mb-2">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="fw-bold">{{ leave.user.get_full_name() }}</span>
                         <span class="badge 
-                            {% if leave.status.name == 'pending' %}bg-warning text-dark
-                            {% elif leave.status.name == 'approved' %}bg-success
-                            {% elif leave.status.name == 'rejected' %}bg-danger
+                            {% if leave.status == 'Pending' %}bg-warning text-dark
+                            {% elif leave.status == 'Approved' %}bg-success
+                            {% elif leave.status == 'Rejected' %}bg-danger
                             {% endif %}">
-                            {% if leave.status.name == 'pending' %}In Attesa
-                            {% elif leave.status.name == 'approved' %}Approvata
-                            {% elif leave.status.name == 'rejected' %}Rifiutata
+                            {% if leave.status == 'Pending' %}In Attesa
+                            {% elif leave.status == 'Approved' %}Approvata
+                            {% elif leave.status == 'Rejected' %}Rifiutata
                             {% endif %}
                         </span>
                     </div>
-                    <small class="text-muted">
-                        {{ leave.start_date.strftime('%d/%m') }} - {{ leave.end_date.strftime('%d/%m') }}
-                        ({{ (leave.end_date - leave.start_date).days + 1 }} giorni)
-                    </small>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">
+                            {{ leave.start_date.strftime('%d/%m') }}{% if leave.start_date != leave.end_date %} - {{ leave.end_date.strftime('%d/%m') }}{% endif %}
+                            {% if leave.start_time and leave.end_time %}
+                            <br><i class="fas fa-clock me-1"></i>{{ leave.start_time.strftime('%H:%M') }}-{{ leave.end_time.strftime('%H:%M') }}
+                            {% endif %}
+                        </small>
+                        <small>
+                            {% if leave.leave_type_obj %}
+                                {% if leave.leave_type_obj.name == 'Ferie' %}
+                                <span class="badge bg-success">{{ leave.leave_type_obj.name }}</span>
+                                {% elif 'Permesso' in leave.leave_type_obj.name %}
+                                <span class="badge bg-info">{{ leave.leave_type_obj.name }}</span>
+                                {% elif leave.leave_type_obj.name == 'Malattia' %}
+                                <span class="badge bg-warning text-dark">{{ leave.leave_type_obj.name }}</span>
+                                {% elif leave.leave_type_obj.name == 'Recupero Ore' %}
+                                <span class="badge bg-primary">{{ leave.leave_type_obj.name }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ leave.leave_type_obj.name }}</span>
+                                {% endif %}
+                            {% elif leave.leave_type %}
+                                <span class="badge bg-secondary">{{ leave.leave_type }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">N/A</span>
+                            {% endif %}
+                        </small>
+                    </div>
                 </div>
                 {% endfor %}
                 
