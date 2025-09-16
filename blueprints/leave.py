@@ -341,6 +341,29 @@ def reject_leave_request(request_id):
         flash(f'Errore: {str(e)}', 'danger')
         return redirect(url_for('leave.leave_requests'))
 
+@leave_bp.route('/view_leave_request/<int:request_id>')
+@login_required  
+def view_leave_request(request_id):
+    """Visualizza dettagli di una singola richiesta ferie/permessi"""
+    leave_request = LeaveRequest.query.get_or_404(request_id)
+    
+    # Controllo permessi: solo proprietario o chi può visualizzare tutte le richieste
+    if leave_request.user_id != current_user.id and not current_user.can_view_leave():
+        flash('Non hai i permessi per visualizzare questa richiesta', 'danger')
+        return redirect(url_for('leave.leave_requests'))
+    
+    # Controllo sede se non multi-sede
+    if (not current_user.all_sedi and current_user.sede_obj and 
+        leave_request.user.sede_id != current_user.sede_obj.id and 
+        leave_request.user_id != current_user.id):
+        flash('Non puoi visualizzare richieste di altre sedi', 'danger')
+        return redirect(url_for('leave.leave_requests'))
+    
+    return render_template('leave_detail.html', 
+                         request=leave_request,
+                         can_approve=current_user.can_approve_leave(),
+                         today=date.today())
+
 @leave_bp.route('/delete_leave_request/<int:request_id>', methods=['POST'])
 @login_required
 def delete_leave_request(request_id):

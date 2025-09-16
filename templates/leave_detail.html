@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Dettagli Richiesta - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2><i class="fas fa-info-circle me-2"></i>Dettagli Richiesta</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('leave.leave_requests') }}">Richieste</a></li>
+                            <li class="breadcrumb-item active">Dettaglio</li>
+                        </ol>
+                    </nav>
+                </div>
+                
+                <div class="btn-group">
+                    <a href="{{ url_for('leave.leave_requests') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alla Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Informazioni Principali</h5>
+                    
+                    <!-- Status Badge -->
+                    {% if request.status == 'Approved' %}
+                    <span class="badge bg-success fs-6">Approvata</span>
+                    {% elif request.status == 'Rejected' %}
+                    <span class="badge bg-danger fs-6">Rifiutata</span>
+                    {% else %}
+                    <span class="badge bg-warning fs-6">In Attesa</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Left Column -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Richiedente</label>
+                                <p class="mb-0">{{ request.user.get_full_name() }}</p>
+                                <small class="text-muted">{{ request.user.role }}</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Tipo Richiesta</label>
+                                <p class="mb-0">
+                                    {% if request.leave_type_obj %}
+                                        {% if request.leave_type_obj.name == 'Ferie' %}
+                                        <span class="badge bg-success">{{ request.leave_type_obj.name }}</span>
+                                        {% elif request.leave_type_obj.name == 'Permesso' %}
+                                        <span class="badge bg-info">{{ request.leave_type_obj.name }}</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">{{ request.leave_type_obj.name }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ request.leave_type or 'Non specificato' }}</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Periodo</label>
+                                <p class="mb-0">
+                                    <strong>{{ request.start_date.strftime('%d/%m/%Y') }}</strong>
+                                    {% if request.start_date != request.end_date and request.end_date %}
+                                        - <strong>{{ request.end_date.strftime('%d/%m/%Y') }}</strong>
+                                    {% endif %}
+                                </p>
+                                
+                                {% if request.leave_type_obj and request.leave_type_obj.name == 'Permesso' and request.is_time_based() %}
+                                <small class="text-muted">
+                                    {{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Durata</label>
+                                <p class="mb-0">
+                                    {% if request.leave_type_obj and request.leave_type_obj.name == 'Permesso' and request.is_time_based() %}
+                                        <span class="badge bg-info">{{ request.get_duration_display() }}</span>
+                                    {% else %}
+                                        <span class="badge bg-info">
+                                            {{ (request.end_date - request.start_date).days + 1 }} giorni
+                                        </span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Data Richiesta</label>
+                                <p class="mb-0">{{ request.created_at.strftime('%d/%m/%Y alle %H:%M') }}</p>
+                            </div>
+                            
+                            {% if request.approved_at %}
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">
+                                    {% if request.status == 'Approved' %}Data Approvazione
+                                    {% else %}Data Rifiuto{% endif %}
+                                </label>
+                                <p class="mb-0">{{ request.approved_at.strftime('%d/%m/%Y alle %H:%M') }}</p>
+                                {% if request.approver %}
+                                <small class="text-muted">da {{ request.approver.get_full_name() }}</small>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Banca Ore Info -->
+                            {% if request.use_banca_ore %}
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Banca Ore</label>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-piggy-bank text-primary me-2"></i>
+                                    <div>
+                                        <p class="mb-0">Utilizzo richiesto</p>
+                                        {% if request.banca_ore_hours_used %}
+                                        <small class="text-success">✓ Scalate {{ request.banca_ore_hours_used }}h</small>
+                                        {% else %}
+                                        <small class="text-warning">In attesa di approvazione</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if request.user.sede_obj %}
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Sede</label>
+                                <p class="mb-0">{{ request.user.sede_obj.nome }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if request.reason %}
+                    <hr>
+                    <div class="mb-3">
+                        <label class="fw-bold text-muted">Motivo</label>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-0">{{ request.reason }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if request.approval_notes %}
+                    <hr>
+                    <div class="mb-3">
+                        <label class="fw-bold text-muted">
+                            {% if request.status == 'Approved' %}Note di Approvazione
+                            {% else %}Motivo del Rifiuto{% endif %}
+                        </label>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-0">{{ request.approval_notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Azioni</h5>
+                </div>
+                <div class="card-body">
+                    {% if can_approve and request.status == 'Pending' %}
+                    <div class="d-grid gap-2 mb-3">
+                        <form method="POST" action="{{ url_for('leave.approve_leave_request', request_id=request.id) }}">
+                            <button type="submit" class="btn btn-success w-100 confirm-form" 
+                                    data-message="Approvare questa richiesta?">
+                                <i class="fas fa-check me-1"></i>Approva Richiesta
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('leave.reject_leave_request', request_id=request.id) }}">
+                            <button type="submit" class="btn btn-danger w-100 confirm-form" 
+                                    data-message="Rifiutare questa richiesta?">
+                                <i class="fas fa-times me-1"></i>Rifiuta Richiesta
+                            </button>
+                        </form>
+                    </div>
+                    <hr>
+                    {% endif %}
+                    
+                    {% if request.user_id == current_user.id and (request.status == 'Pending' or (request.status == 'Approved' and request.start_date >= today)) %}
+                    <div class="d-grid gap-2 mb-3">
+                        <form method="POST" action="{{ url_for('leave.delete_leave_request', request_id=request.id) }}">
+                            <button type="submit" class="btn btn-outline-danger w-100 confirm-form" 
+                                    data-message="Cancellare definitivamente questa richiesta?">
+                                <i class="fas fa-trash me-1"></i>Cancella Richiesta
+                            </button>
+                        </form>
+                    </div>
+                    <hr>
+                    {% endif %}
+                    
+                    <!-- Navigation -->
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('leave.leave_requests') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-1"></i>Tutte le Richieste
+                        </a>
+                        {% if current_user.can_request_leave() %}
+                        <a href="{{ url_for('leave.create_leave_request') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-1"></i>Nuova Richiesta
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Timeline -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Cronologia</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Richiesta Creata</h6>
+                                <small class="text-muted">{{ request.created_at.strftime('%d/%m/%Y alle %H:%M') }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if request.approved_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if request.status == 'Approved' %}bg-success{% else %}bg-danger{% endif %}"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">
+                                    {% if request.status == 'Approved' %}Richiesta Approvata
+                                    {% else %}Richiesta Rifiutata{% endif %}
+                                </h6>
+                                <small class="text-muted">
+                                    {{ request.approved_at.strftime('%d/%m/%Y alle %H:%M') }}
+                                    {% if request.approver %}<br>da {{ request.approver.get_full_name() }}{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -12px;
+    top: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    margin-left: 15px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+</style>
+{% endblock %}

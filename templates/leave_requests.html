@@ -143,8 +143,14 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if can_approve and request.status == 'Pending' %}
                                     <div class="btn-group-vertical btn-group-sm">
+                                        <!-- Pulsante Visualizza (sempre disponibile) -->
+                                        <a href="{{ url_for('leave.view_leave_request', request_id=request.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>Visualizza
+                                        </a>
+                                        
+                                        {% if can_approve and request.status == 'Pending' %}
                                         <form method="POST" action="{{ url_for('leave.approve_leave_request', request_id=request.id) }}" style="display: inline;">
                                             <button type="submit" class="btn btn-success btn-sm confirm-form" 
                                                     data-message="Approvare questa richiesta?">
@@ -157,17 +163,15 @@
                                                 <i class="fas fa-times me-1"></i>Rifiuta
                                             </button>
                                         </form>
+                                        {% elif request.user_id == current_user.id and (request.status == 'Pending' or (request.status == 'Approved' and request.start_date >= today)) %}
+                                        <form method="POST" action="{{ url_for('leave.delete_leave_request', request_id=request.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm confirm-form" 
+                                                    data-message="Cancellare questa richiesta?">
+                                                <i class="fas fa-trash me-1"></i>Cancella
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                     </div>
-                                    {% elif request.user_id == current_user.id and (request.status == 'Pending' or (request.status == 'Approved' and request.start_date >= today)) %}
-                                    <form method="POST" action="{{ url_for('leave.delete_leave_request', request_id=request.id) }}" style="display: inline;">
-                                        <button type="submit" class="btn btn-outline-danger btn-sm confirm-form" 
-                                                data-message="Cancellare questa richiesta?">
-                                            <i class="fas fa-trash me-1"></i>Cancella
-                                        </button>
-                                    </form>
-                                    {% else %}
-                                    <span class="text-muted">--</span>
-                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
