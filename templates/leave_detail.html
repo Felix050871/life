@@ -80,9 +80,9 @@
                                     {% endif %}
                                 </p>
                                 
-                                {% if request.leave_type_obj and request.leave_type_obj.name == 'Permesso' and request.is_time_based() %}
+                                {% if request.start_time and request.end_time %}
                                 <small class="text-muted">
-                                    {{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}
+                                    <i class="fas fa-clock me-1"></i>{{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}
                                 </small>
                                 {% endif %}
                             </div>
@@ -90,8 +90,9 @@
                             <div class="mb-3">
                                 <label class="fw-bold text-muted">Durata</label>
                                 <p class="mb-0">
-                                    {% if request.leave_type_obj and request.leave_type_obj.name == 'Permesso' and request.is_time_based() %}
-                                        <span class="badge bg-info">{{ request.get_duration_display() }}</span>
+                                    {% if request.start_time and request.end_time %}
+                                        {% set duration_hours = ((request.end_time.hour * 60 + request.end_time.minute) - (request.start_time.hour * 60 + request.start_time.minute)) / 60 %}
+                                        <span class="badge bg-info">{{ duration_hours|round(1) }}h</span>
                                     {% else %}
                                         <span class="badge bg-info">
                                             {{ (request.end_date - request.start_date).days + 1 }} giorni
