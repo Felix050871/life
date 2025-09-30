@@ -268,11 +268,13 @@ def approve_leave_request(request_id):
         
         db.session.commit()
         
-        # Notifica al richiedente (opzionale)
+        # Notifica al richiedente via email
         try:
-            pass  # Notification system placeholder
+            from email_utils import send_leave_approval_email
+            send_leave_approval_email(leave_request, current_user)
         except Exception as e:
-            pass
+            # Continua anche se l'email fallisce
+            print(f"Errore invio email approvazione: {str(e)}")
         
         # Determina il tipo per il messaggio
         leave_type_name = 'ferie/permesso'
@@ -320,11 +322,13 @@ def reject_leave_request(request_id):
         
         db.session.commit()
         
-        # Notifica al richiedente (opzionale)
+        # Notifica al richiedente via email
         try:
-            pass  # Notification system placeholder  
+            from email_utils import send_leave_rejection_email
+            send_leave_rejection_email(leave_request, current_user, rejection_reason)
         except Exception as e:
-            pass
+            # Continua anche se l'email fallisce
+            print(f"Errore invio email rifiuto: {str(e)}")
         
         # Determina il tipo per il messaggio
         leave_type_name = 'ferie/permesso'

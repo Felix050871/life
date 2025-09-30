@@ -118,10 +118,16 @@ def forgot_password():
             db.session.add(reset_token)
             db.session.commit()
             
-            # In una versione completa, qui invieresti l'email
-            # Per ora mostriamo il link direttamente
+            # Invia email con link reset password
             reset_url = url_for('auth.reset_password', token=reset_token.token, _external=True)
-            flash(f'Link per il reset della password: {reset_url}', 'info')
+            try:
+                from email_utils import send_password_reset_email
+                send_password_reset_email(user, reset_url)
+                flash('Se l\'email esiste nel sistema, riceverai un link per il reset della password', 'info')
+            except Exception as e:
+                # Fallback: mostra il link direttamente se l'email fallisce
+                print(f"Errore invio email reset password: {str(e)}")
+                flash(f'Link per il reset della password: {reset_url}', 'info')
         else:
             # Per sicurezza, non rivelare se l'email esiste o meno
             flash('Se l\'email esiste nel sistema, riceverai un link per il reset della password', 'info')

@@ -7,6 +7,7 @@ from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import get_config
+from email_utils import init_mail
 
 # Get configuration based on environment
 config_class = get_config()
@@ -38,6 +39,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 # Initialize the app with the extension
 db.init_app(app)
+
+# Initialize Flask-Mail for email notifications
+init_mail(app)
 
 # Initialize Flask-Login
 login_manager = LoginManager()

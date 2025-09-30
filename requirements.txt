@@ -33,3 +33,4 @@ openpyxl
 pandas
 openpyxl
 pandas
+Flask-Mail

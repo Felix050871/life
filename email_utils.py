@@ -1,0 +1,267 @@
+"""
+Sistema di invio email per Workly
+Gestisce notifiche per approvazioni, rifiuti, reset password, ecc.
+"""
+
+import os
+from flask_mail import Mail, Message
+from flask import url_for, render_template_string
+
+mail = Mail()
+
+def init_mail(app):
+    """Inizializza Flask-Mail con l'app"""
+    mail.init_app(app)
+
+def send_email(subject, recipients, body_text, body_html=None):
+    """
+    Invia email generica
+    
+    Args:
+        subject: Oggetto dell'email
+        recipients: Lista di email destinatari
+        body_text: Corpo email in formato testo
+        body_html: Corpo email in formato HTML (opzionale)
+    
+    Returns:
+        True se inviata con successo, False altrimenti
+    """
+    try:
+        msg = Message(
+            subject=subject,
+            recipients=recipients,
+            sender=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@workly.local')
+        )
+        msg.body = body_text
+        if body_html:
+            msg.html = body_html
+        
+        mail.send(msg)
+        return True
+    except Exception as e:
+        print(f"Errore invio email: {str(e)}")
+        return False
+
+
+def send_leave_approval_email(leave_request, approver):
+    """Notifica approvazione richiesta ferie/permessi"""
+    user = leave_request.user
+    leave_type = leave_request.leave_type_obj.name if leave_request.leave_type_obj else leave_request.leave_type or 'ferie/permesso'
+    
+    subject = f"✅ Richiesta {leave_type} Approvata"
+    
+    # Formatta il periodo
+    if leave_request.start_time and leave_request.end_time:
+        period = f"{leave_request.start_date.strftime('%d/%m/%Y')} dalle {leave_request.start_time.strftime('%H:%M')} alle {leave_request.end_time.strftime('%H:%M')}"
+    else:
+        if leave_request.start_date == leave_request.end_date:
+            period = leave_request.start_date.strftime('%d/%m/%Y')
+        else:
+            period = f"{leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')}"
+    
+    body_text = f"""
+Ciao {user.get_full_name()},
+
+La tua richiesta di {leave_type} è stata APPROVATA.
+
+Dettagli:
+- Periodo: {period}
+- Approvata da: {approver.get_full_name()}
+"""
+    
+    if leave_request.approval_notes:
+        body_text += f"- Note: {leave_request.approval_notes}\n"
+    
+    if leave_request.use_banca_ore and leave_request.banca_ore_hours_used:
+        body_text += f"\nUtilizzate {leave_request.banca_ore_hours_used:.1f}h dalla Banca Ore.\n"
+    
+    body_text += "\nBuon riposo!\n\n---\nWorkly - Sistema Gestione Presenze"
+    
+    body_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+            <h2 style="color: #28a745;">✅ Richiesta Approvata</h2>
+            <p>Ciao <strong>{user.get_full_name()}</strong>,</p>
+            <p>La tua richiesta di <strong>{leave_type}</strong> è stata <span style="color: #28a745;">APPROVATA</span>.</p>
+            
+            <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">Dettagli:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li>📅 <strong>Periodo:</strong> {period}</li>
+                    <li>👤 <strong>Approvata da:</strong> {approver.get_full_name()}</li>
+                    {f'<li>📝 <strong>Note:</strong> {leave_request.approval_notes}</li>' if leave_request.approval_notes else ''}
+                    {f'<li>💰 <strong>Banca Ore:</strong> Utilizzate {leave_request.banca_ore_hours_used:.1f}h</li>' if leave_request.use_banca_ore and leave_request.banca_ore_hours_used else ''}
+                </ul>
+            </div>
+            
+            <p style="color: #666;">Buon riposo!</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999; text-align: center;">Workly - Sistema Gestione Presenze</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return send_email(subject, [user.email], body_text, body_html)
+
+
+def send_leave_rejection_email(leave_request, approver, reason=None):
+    """Notifica rifiuto richiesta ferie/permessi"""
+    user = leave_request.user
+    leave_type = leave_request.leave_type_obj.name if leave_request.leave_type_obj else leave_request.leave_type or 'ferie/permesso'
+    
+    subject = f"❌ Richiesta {leave_type} Rifiutata"
+    
+    # Formatta il periodo
+    if leave_request.start_time and leave_request.end_time:
+        period = f"{leave_request.start_date.strftime('%d/%m/%Y')} dalle {leave_request.start_time.strftime('%H:%M')} alle {leave_request.end_time.strftime('%H:%M')}"
+    else:
+        if leave_request.start_date == leave_request.end_date:
+            period = leave_request.start_date.strftime('%d/%m/%Y')
+        else:
+            period = f"{leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')}"
+    
+    body_text = f"""
+Ciao {user.get_full_name()},
+
+La tua richiesta di {leave_type} è stata RIFIUTATA.
+
+Dettagli:
+- Periodo: {period}
+- Rifiutata da: {approver.get_full_name()}
+"""
+    
+    if reason:
+        body_text += f"- Motivo: {reason}\n"
+    
+    body_text += "\nPer maggiori informazioni, contatta il tuo responsabile.\n\n---\nWorkly - Sistema Gestione Presenze"
+    
+    body_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+            <h2 style="color: #dc3545;">❌ Richiesta Rifiutata</h2>
+            <p>Ciao <strong>{user.get_full_name()}</strong>,</p>
+            <p>La tua richiesta di <strong>{leave_type}</strong> è stata <span style="color: #dc3545;">RIFIUTATA</span>.</p>
+            
+            <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">Dettagli:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li>📅 <strong>Periodo:</strong> {period}</li>
+                    <li>👤 <strong>Rifiutata da:</strong> {approver.get_full_name()}</li>
+                    {f'<li>📝 <strong>Motivo:</strong> {reason}</li>' if reason else ''}
+                </ul>
+            </div>
+            
+            <p style="color: #666;">Per maggiori informazioni, contatta il tuo responsabile.</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999; text-align: center;">Workly - Sistema Gestione Presenze</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return send_email(subject, [user.email], body_text, body_html)
+
+
+def send_password_reset_email(user, reset_url):
+    """Invia email con link per reset password"""
+    subject = "🔒 Reset Password - Workly"
+    
+    body_text = f"""
+Ciao {user.get_full_name()},
+
+Hai richiesto il reset della password per il tuo account Workly.
+
+Clicca sul link seguente per reimpostare la password:
+{reset_url}
+
+Questo link è valido per 1 ora.
+
+Se non hai richiesto il reset, ignora questa email.
+
+---
+Workly - Sistema Gestione Presenze
+"""
+    
+    body_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+            <h2 style="color: #007bff;">🔒 Reset Password</h2>
+            <p>Ciao <strong>{user.get_full_name()}</strong>,</p>
+            <p>Hai richiesto il reset della password per il tuo account Workly.</p>
+            
+            <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                <p>Clicca sul pulsante seguente per reimpostare la password:</p>
+                <a href="{reset_url}" style="display: inline-block; padding: 12px 30px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">
+                    Reimposta Password
+                </a>
+                <p style="font-size: 12px; color: #666; margin-top: 15px;">
+                    Questo link è valido per 1 ora.
+                </p>
+            </div>
+            
+            <p style="color: #666; font-size: 14px;">
+                Se non hai richiesto il reset, ignora questa email. La tua password rimarrà invariata.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999; text-align: center;">Workly - Sistema Gestione Presenze</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return send_email(subject, [user.email], body_text, body_html)
+
+
+def send_overtime_approval_email(overtime_request, approver):
+    """Notifica approvazione richiesta straordinario"""
+    user = overtime_request.user
+    
+    subject = "✅ Richiesta Straordinario Approvata"
+    
+    body_text = f"""
+Ciao {user.get_full_name()},
+
+La tua richiesta di straordinario è stata APPROVATA.
+
+Dettagli:
+- Data: {overtime_request.date.strftime('%d/%m/%Y')}
+- Ore: {overtime_request.hours}h
+- Approvata da: {approver.get_full_name()}
+"""
+    
+    if overtime_request.notes:
+        body_text += f"- Note: {overtime_request.notes}\n"
+    
+    body_text += "\n---\nWorkly - Sistema Gestione Presenze"
+    
+    return send_email(subject, [user.email], body_text)
+
+
+def send_overtime_rejection_email(overtime_request, approver, reason=None):
+    """Notifica rifiuto richiesta straordinario"""
+    user = overtime_request.user
+    
+    subject = "❌ Richiesta Straordinario Rifiutata"
+    
+    body_text = f"""
+Ciao {user.get_full_name()},
+
+La tua richiesta di straordinario è stata RIFIUTATA.
+
+Dettagli:
+- Data: {overtime_request.date.strftime('%d/%m/%Y')}
+- Ore: {overtime_request.hours}h
+- Rifiutata da: {approver.get_full_name()}
+"""
+    
+    if reason:
+        body_text += f"- Motivo: {reason}\n"
+    
+    body_text += "\nPer maggiori informazioni, contatta il tuo responsabile.\n\n---\nWorkly - Sistema Gestione Presenze"
+    
+    return send_email(subject, [user.email], body_text)
