@@ -145,7 +145,8 @@ def reset_password(token):
     # Trova il token
     reset_token = PasswordResetToken.query.filter_by(token=token).first()
     
-    if not reset_token or not reset_token.is_valid:
+    # Controlla se il token esiste, non è scaduto e non è già stato usato
+    if not reset_token or reset_token.is_expired or reset_token.used:
         flash('Token non valido o scaduto', 'danger')
         return redirect(url_for('auth.forgot_password'))
     

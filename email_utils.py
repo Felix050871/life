@@ -40,16 +40,6 @@ def send_email(subject, recipients, body_text, body_html=None):
             # Modalità SMTP standard: usa MAIL_DEFAULT_SENDER se impostato, altrimenti MAIL_USERNAME
             sender = os.environ.get('MAIL_DEFAULT_SENDER') or mail_username or 'noreply@workly.local'
         
-        print(f"[EMAIL DEBUG] Tentativo invio email:")
-        print(f"  - MAIL_SERVER: {os.environ.get('MAIL_SERVER', 'NOT SET')}")
-        print(f"  - MAIL_PORT: {os.environ.get('MAIL_PORT', 'NOT SET')}")
-        print(f"  - MAIL_USE_TLS: {os.environ.get('MAIL_USE_TLS', 'NOT SET')}")
-        print(f"  - MAIL_DEFAULT_SENDER: {os.environ.get('MAIL_DEFAULT_SENDER', 'NOT SET')}")
-        print(f"  - MAIL_USERNAME: {mail_username if mail_username != 'apikey' else 'apikey'}")
-        print(f"  - MAIL_PASSWORD: {'SET' if os.environ.get('MAIL_PASSWORD') else 'NOT SET'}")
-        print(f"  - Sender utilizzato: {sender}")
-        print(f"  - Destinatari: {recipients}")
-        
         msg = Message(
             subject=subject,
             recipients=recipients,
@@ -60,10 +50,9 @@ def send_email(subject, recipients, body_text, body_html=None):
             msg.html = body_html
         
         mail.send(msg)
-        print(f"[EMAIL DEBUG] Email inviata con successo!")
         return True
     except Exception as e:
-        print(f"[EMAIL ERROR] Errore invio email: {str(e)}")
+        print(f"Errore invio email: {str(e)}")
         return False
 
 
