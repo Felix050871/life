@@ -19,8 +19,10 @@ MAIL_PORT=587                           # Porta SMTP (587 per TLS)
 MAIL_USE_TLS=True                       # Usa TLS per sicurezza
 MAIL_USERNAME=tuo-email@gmail.com       # Email mittente
 MAIL_PASSWORD=tua-app-password          # Password applicazione (NON la password email)
-MAIL_DEFAULT_SENDER=noreply@workly.com  # Email mittente visualizzata
+MAIL_DEFAULT_SENDER=noreply@workly.com  # OPZIONALE: Email mittente visualizzata
 ```
+
+**Nota importante:** `MAIL_DEFAULT_SENDER` è opzionale. Se non configurato, il sistema userà automaticamente `MAIL_USERNAME` come mittente.
 
 ### 2. Provider SMTP Consigliati
 
@@ -45,9 +47,18 @@ MAIL_PASSWORD=[App Password generata da Google]
 MAIL_SERVER=smtp.sendgrid.net
 MAIL_PORT=587
 MAIL_USE_TLS=True
-MAIL_USERNAME=apikey
+MAIL_USERNAME=[Email verificata su SendGrid]
 MAIL_PASSWORD=[SendGrid API Key]
 ```
+
+**⚠️ IMPORTANTE per SendGrid:**
+1. Vai su https://app.sendgrid.com/settings/sender_auth/senders
+2. Verifica un'email mittente (Sender Identity)
+3. Usa l'email verificata in `MAIL_USERNAME`
+4. Se non verifichi un'email, riceverai errore 550
+
+**Per usare "apikey" come username:**
+- Se usi `MAIL_USERNAME=apikey`, devi impostare `MAIL_DEFAULT_SENDER` con un'email verificata su SendGrid
 
 #### **Mailgun** (Professionale, flessibile)
 ```bash

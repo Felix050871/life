@@ -27,10 +27,14 @@ def send_email(subject, recipients, body_text, body_html=None):
         True se inviata con successo, False altrimenti
     """
     try:
+        # Usa MAIL_DEFAULT_SENDER se impostato, altrimenti usa MAIL_USERNAME
+        # Questo è importante per SendGrid che richiede un mittente verificato
+        sender = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME', 'noreply@workly.local')
+        
         msg = Message(
             subject=subject,
             recipients=recipients,
-            sender=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@workly.local')
+            sender=sender
         )
         msg.body = body_text
         if body_html:
