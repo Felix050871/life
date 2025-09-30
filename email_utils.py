@@ -31,6 +31,12 @@ def send_email(subject, recipients, body_text, body_html=None):
         # Questo è importante per SendGrid che richiede un mittente verificato
         sender = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME', 'noreply@workly.local')
         
+        print(f"[EMAIL DEBUG] Tentativo invio email:")
+        print(f"  - MAIL_DEFAULT_SENDER: {os.environ.get('MAIL_DEFAULT_SENDER', 'NOT SET')}")
+        print(f"  - MAIL_USERNAME: {os.environ.get('MAIL_USERNAME', 'NOT SET')}")
+        print(f"  - Sender utilizzato: {sender}")
+        print(f"  - Destinatari: {recipients}")
+        
         msg = Message(
             subject=subject,
             recipients=recipients,
@@ -41,9 +47,10 @@ def send_email(subject, recipients, body_text, body_html=None):
             msg.html = body_html
         
         mail.send(msg)
+        print(f"[EMAIL DEBUG] Email inviata con successo!")
         return True
     except Exception as e:
-        print(f"Errore invio email: {str(e)}")
+        print(f"[EMAIL ERROR] Errore invio email: {str(e)}")
         return False
 
 
