@@ -195,7 +195,28 @@ class UserRole(db.Model):
             
             # Tabelle ACI
             'can_manage_aci_tables': 'Gestire Tabelle ACI',
-            'can_view_aci_tables': 'Visualizzare Tabelle ACI'
+            'can_view_aci_tables': 'Visualizzare Tabelle ACI',
+            
+            # HUBLY - Social Intranet
+            'can_access_hubly': 'Accedere a HUBLY',
+            'can_create_posts': 'Creare Post/News',
+            'can_edit_posts': 'Modificare Post/News',
+            'can_delete_posts': 'Eliminare Post/News',
+            'can_manage_groups': 'Gestire Gruppi',
+            'can_create_groups': 'Creare Gruppi',
+            'can_join_groups': 'Unirsi ai Gruppi',
+            'can_create_polls': 'Creare Sondaggi',
+            'can_vote_polls': 'Votare Sondaggi',
+            'can_manage_documents': 'Gestire Documenti',
+            'can_view_documents': 'Visualizzare Documenti',
+            'can_upload_documents': 'Caricare Documenti',
+            'can_manage_calendar': 'Gestire Calendario',
+            'can_view_calendar': 'Visualizzare Calendario',
+            'can_create_events': 'Creare Eventi',
+            'can_manage_tools': 'Gestire Strumenti Esterni',
+            'can_view_tools': 'Visualizzare Strumenti',
+            'can_comment_posts': 'Commentare Post',
+            'can_like_posts': 'Mettere Like ai Post'
         }
 
 class User(UserMixin, db.Model):
@@ -217,6 +238,13 @@ class User(UserMixin, db.Model):
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo in mesi entro cui le ore devono essere usufruite
     profile_image = db.Column(db.String(255), nullable=True)  # Path dell'immagine del profilo
     created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # HUBLY Social fields
+    bio = db.Column(db.Text, nullable=True)  # Biografia breve per profilo social
+    linkedin_url = db.Column(db.String(255), nullable=True)  # URL profilo LinkedIn
+    phone_number = db.Column(db.String(20), nullable=True)  # Numero di telefono aziendale
+    department = db.Column(db.String(100), nullable=True)  # Dipartimento/Reparto
+    job_title = db.Column(db.String(100), nullable=True)  # Titolo professionale
     
     # Multi-tenant fields
     is_system_admin = db.Column(db.Boolean, default=False)  # Admin di sistema (non legato a nessuna azienda)
@@ -2823,3 +2851,218 @@ class ACITable(db.Model):
             'created_at': self.created_at.strftime('%d/%m/%Y %H:%M') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%d/%m/%Y %H:%M') if self.updated_at else None
         }
+
+
+# =============================================================================
+# HUBLY MODELS - Social Intranet Aziendale
+# =============================================================================
+
+class HublyPost(db.Model):
+    """Modello per post/news HUBLY (Delorean, News, Feed)"""
+    __tablename__ = 'hubly_post'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    post_type = db.Column(db.String(50), nullable=False)  # 'news', 'delorean', 'announcement', 'tech_feed'
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    published = db.Column(db.Boolean, default=True)
+    pinned = db.Column(db.Boolean, default=False)  # Post in evidenza
+    image_url = db.Column(db.String(255), nullable=True)  # Immagine allegata
+    video_url = db.Column(db.String(255), nullable=True)  # Video allegato
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    # Relationships
+    author = db.relationship('User', backref='hubly_posts')
+    
+    def __repr__(self):
+        return f'<HublyPost {self.title}>'
+
+
+class HublyGroup(db.Model):
+    """Modello per gruppi sociali aziendali HUBLY"""
+    __tablename__ = 'hubly_group'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    group_type = db.Column(db.String(50), nullable=False)  # 'department', 'project', 'interest', 'official'
+    is_private = db.Column(db.Boolean, default=False)  # Gruppo privato (solo su invito)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)  # Immagine del gruppo
+    created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    # Relationships
+    creator = db.relationship('User', backref='created_groups')
+    
+    def __repr__(self):
+        return f'<HublyGroup {self.name}>'
+
+
+# Tabella associativa many-to-many per membri dei gruppi
+hubly_group_members = db.Table('hubly_group_members',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('group_id', db.Integer, db.ForeignKey('hubly_group.id'), primary_key=True),
+    db.Column('is_admin', db.Boolean, default=False),  # Admin del gruppo
+    db.Column('joined_at', db.DateTime, default=italian_now)
+)
+
+
+class HublyPoll(db.Model):
+    """Modello per sondaggi HUBLY"""
+    __tablename__ = 'hubly_poll'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_anonymous = db.Column(db.Boolean, default=False)  # Voti anonimi
+    multiple_choice = db.Column(db.Boolean, default=False)  # Scelta multipla
+    end_date = db.Column(db.DateTime, nullable=True)  # Data chiusura sondaggio
+    created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    # Relationships
+    creator = db.relationship('User', backref='created_polls')
+    
+    def __repr__(self):
+        return f'<HublyPoll {self.question}>'
+
+
+class HublyPollOption(db.Model):
+    """Opzioni per i sondaggi HUBLY"""
+    __tablename__ = 'hubly_poll_option'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    poll_id = db.Column(db.Integer, db.ForeignKey('hubly_poll.id'), nullable=False)
+    option_text = db.Column(db.String(200), nullable=False)
+    
+    # Relationships
+    poll = db.relationship('HublyPoll', backref='options')
+    
+    def __repr__(self):
+        return f'<HublyPollOption {self.option_text}>'
+
+
+class HublyPollVote(db.Model):
+    """Voti ai sondaggi HUBLY"""
+    __tablename__ = 'hubly_poll_vote'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    poll_id = db.Column(db.Integer, db.ForeignKey('hubly_poll.id'), nullable=False)
+    option_id = db.Column(db.Integer, db.ForeignKey('hubly_poll_option.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    voted_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationships
+    poll = db.relationship('HublyPoll', backref='votes')
+    option = db.relationship('HublyPollOption', backref='votes')
+    user = db.relationship('User', backref='poll_votes')
+    
+    def __repr__(self):
+        return f'<HublyPollVote Poll#{self.poll_id} Option#{self.option_id}>'
+
+
+class HublyDocument(db.Model):
+    """Modello per documenti Qualità/HR HUBLY"""
+    __tablename__ = 'hubly_document'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    category = db.Column(db.String(50), nullable=False)  # 'quality', 'hr', 'procedure', 'form'
+    file_path = db.Column(db.String(255), nullable=False)  # Path del file
+    file_type = db.Column(db.String(50), nullable=True)  # pdf, docx, xlsx, etc
+    uploader_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    version = db.Column(db.String(20), default='1.0')  # Versione documento
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    # Relationships
+    uploader = db.relationship('User', backref='uploaded_documents')
+    
+    def __repr__(self):
+        return f'<HublyDocument {self.title}>'
+
+
+class HublyCalendarEvent(db.Model):
+    """Modello per eventi calendario aziendale HUBLY"""
+    __tablename__ = 'hubly_calendar_event'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    event_type = db.Column(db.String(50), nullable=False)  # 'meeting', 'deadline', 'holiday', 'event'
+    start_datetime = db.Column(db.DateTime, nullable=False)
+    end_datetime = db.Column(db.DateTime, nullable=False)
+    location = db.Column(db.String(200), nullable=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_all_day = db.Column(db.Boolean, default=False)
+    color = db.Column(db.String(20), default='#0d6efd')  # Colore evento
+    created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    # Relationships
+    creator = db.relationship('User', backref='created_events')
+    
+    def __repr__(self):
+        return f'<HublyCalendarEvent {self.title}>'
+
+
+class HublyComment(db.Model):
+    """Modello per commenti ai post HUBLY"""
+    __tablename__ = 'hubly_comment'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('hubly_post.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    post = db.relationship('HublyPost', backref='comments')
+    author = db.relationship('User', backref='comments')
+    
+    def __repr__(self):
+        return f'<HublyComment Post#{self.post_id}>'
+
+
+class HublyLike(db.Model):
+    """Modello per like ai post HUBLY"""
+    __tablename__ = 'hubly_like'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('hubly_post.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationships
+    post = db.relationship('HublyPost', backref='likes')
+    user = db.relationship('User', backref='liked_posts')
+    
+    def __repr__(self):
+        return f'<HublyLike Post#{self.post_id} User#{self.user_id}>'
+
+
+class HublyToolLink(db.Model):
+    """Modello per scorciatoie strumenti esterni HUBLY"""
+    __tablename__ = 'hubly_tool_link'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    url = db.Column(db.String(255), nullable=False)
+    icon = db.Column(db.String(50), nullable=True)  # Font Awesome icon class
+    category = db.Column(db.String(50), nullable=False)  # 'productivity', 'communication', 'hr', 'custom'
+    is_active = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    def __repr__(self):
+        return f'<HublyToolLink {self.name}>'
