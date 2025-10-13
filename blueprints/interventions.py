@@ -15,6 +15,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from app import db
 from models import AttendanceEvent, Intervention, ReperibilitaIntervention, User
+from utils_tenant import filter_by_company, set_company_on_create
 
 # Create blueprint
 interventions_bp = Blueprint('interventions', __name__, url_prefix='/interventions')
@@ -33,8 +34,8 @@ def start():
         flash('Devi essere presente per iniziare un intervento.', 'warning')
         return redirect(url_for('dashboard.dashboard'))
     
-    # Controlla se c'è già un intervento attivo
-    active_intervention = Intervention.query.filter_by(
+    # Controlla se c'è già un intervento attivo (with company filter)
+    active_intervention = filter_by_company(Intervention.query, Intervention).filter_by(
         user_id=current_user.id,
         end_datetime=None
     ).first()
@@ -60,6 +61,7 @@ def start():
         priority=priority,
         is_remote=is_remote
     )
+    set_company_on_create(intervention)
     
     try:
         db.session.add(intervention)
@@ -75,8 +77,8 @@ def start():
 @login_required
 def end():
     """Termina un intervento generico attivo"""
-    # Trova l'intervento attivo
-    active_intervention = Intervention.query.filter_by(
+    # Trova l'intervento attivo (with company filter)
+    active_intervention = filter_by_company(Intervention.query, Intervention).filter_by(
         user_id=current_user.id,
         end_datetime=None
     ).first()
@@ -152,8 +154,8 @@ def my():
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
         
-        # Ottieni tutti gli interventi generici filtrati per data
-        general_interventions = Intervention.query.join(User).filter(
+        # Ottieni tutti gli interventi generici filtrati per data (with company filter)
+        general_interventions = filter_by_company(Intervention.query, Intervention).join(User).filter(
             Intervention.start_datetime >= start_datetime,
             Intervention.start_datetime <= end_datetime
         ).order_by(Intervention.start_datetime.desc()).all()
@@ -165,7 +167,7 @@ def my():
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
         
-        general_interventions = Intervention.query.filter(
+        general_interventions = filter_by_company(Intervention.query, Intervention).filter(
             Intervention.user_id == current_user.id,
             Intervention.start_datetime >= start_datetime,
             Intervention.start_datetime <= end_datetime
