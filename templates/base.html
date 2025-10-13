@@ -87,8 +87,12 @@
                     
                     <!-- User Menu -->
                     <div class="dropdown">
-                        <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i>{{ current_user.first_name or current_user.username }}
+                        <a class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" style="gap: 0.5rem;">
+                            <img src="{{ current_user.get_profile_image_url() }}" 
+                                 alt="{{ current_user.get_full_name() }}" 
+                                 class="rounded-circle"
+                                 style="width: 28px; height: 28px; object-fit: cover; border: 1px solid rgba(255,255,255,0.3);">
+                            <span>{{ current_user.first_name or current_user.username }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('user_management.user_profile') }}">
