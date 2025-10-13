@@ -16,6 +16,7 @@ from forms import UserForm, SedeForm, RoleForm, WorkScheduleForm
 from app import db
 from werkzeug.security import generate_password_hash
 from sqlalchemy.orm import joinedload
+from utils_tenant import filter_by_company, set_company_on_create
 
 # =============================================================================
 # BLUEPRINT CONFIGURATION
@@ -152,13 +153,13 @@ def api_sede_users(sede_id):
     if not current_user.can_view_users():
         return jsonify({'error': 'Non autorizzato'}), 403
     
-    sede = Sede.query.get_or_404(sede_id)
+    sede = filter_by_company(Sede.query, Sede).get_or_404(sede_id)
     
     # Verifica permessi sede
     if not current_user.all_sedi and current_user.sede_id != sede_id:
         return jsonify({'error': 'Accesso negato a questa sede'}), 403
     
-    users = User.query.filter_by(sede_id=sede_id, active=True).order_by(
+    users = filter_by_company(User.query, User).filter_by(sede_id=sede_id, active=True).order_by(
         User.last_name, User.first_name
     ).all()
     
@@ -186,13 +187,13 @@ def api_sede_work_schedules(sede_id):
     if not current_user.can_view_work_schedules():
         return jsonify({'error': 'Non autorizzato'}), 403
     
-    sede = Sede.query.get_or_404(sede_id)
+    sede = filter_by_company(Sede.query, Sede).get_or_404(sede_id)
     
     # Verifica permessi sede
     if not current_user.all_sedi and current_user.sede_id != sede_id:
         return jsonify({'error': 'Accesso negato a questa sede'}), 403
     
-    schedules = WorkSchedule.query.filter_by(sede_id=sede_id, active=True).order_by(
+    schedules = filter_by_company(WorkSchedule.query, WorkSchedule).filter_by(sede_id=sede_id, active=True).order_by(
         WorkSchedule.name
     ).all()
     
@@ -221,7 +222,7 @@ def api_roles():
     if not current_user.can_view_roles():
         return jsonify({'error': 'Non autorizzato'}), 403
     
-    roles = UserRole.query.filter_by(active=True).order_by(UserRole.name).all()
+    roles = filter_by_company(UserRole.query, UserRole).filter_by(active=True).order_by(UserRole.name).all()
     
     roles_data = []
     for role in roles:
@@ -280,7 +281,7 @@ def user_management():
         return redirect(url_for('dashboard.dashboard'))
     
     # Get users with their roles and sedi
-    users = User.query.options(
+    users = filter_by_company(User.query, User).options(
         joinedload(User.sede_obj)
     ).all()
     
@@ -288,8 +289,8 @@ def user_management():
     form = UserForm() if current_user.can_manage_users() else None
     if form:
         # Populate form choices
-        form.role.choices = [(role.name, role.name) for role in UserRole.query.filter_by(active=True).all()]
-        form.sede.choices = [(-1, 'Seleziona una sede')] + [(sede.id, sede.name) for sede in Sede.query.filter_by(active=True).all()]
+        form.role.choices = [(role.name, role.name) for role in filter_by_company(UserRole.query, UserRole).filter_by(active=True).all()]
+        form.sede.choices = [(-1, 'Seleziona una sede')] + [(sede.id, sede.name) for sede in filter_by_company(Sede.query, Sede).filter_by(active=True).all()]
     
     return render_template('user_management.html', 
                          users=users, 
@@ -328,6 +329,7 @@ def new_user():
             banca_ore_periodo_mesi=form.get_banca_ore_periodo_mesi_as_int(),
             active=form.active.data
         )
+        set_company_on_create(user)
         db.session.add(user)
         db.session.flush()  # Per ottenere l'ID dell'utente
         
@@ -350,7 +352,7 @@ def edit_user(user_id):
         flash('Non hai i permessi per modificare gli utenti', 'danger')
         return redirect(url_for('user_management.user_management'))
     
-    user = User.query.get_or_404(user_id)
+    user = filter_by_company(User.query, User).get_or_404(user_id)
     form = UserForm(original_username=user.username, is_edit=True, obj=user)
     
     if request.method == 'GET':
@@ -379,14 +381,14 @@ def edit_user(user_id):
             
             # Aggiorna le scelte per rendere i dropdown funzionali
             from models import ACITable
-            aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
+            aci_vehicles = filter_by_company(ACITable.query, ACITable).order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
             
             # Aggiorna le scelte delle marche per il tipo selezionato
             marche = list(set([v.marca for v in aci_vehicles if v.tipologia == user.aci_vehicle.tipologia and v.marca]))
             form.aci_vehicle_marca.choices = [('', 'Seleziona marca')] + [(marca, marca) for marca in sorted(marche)]
             
             # Aggiorna le scelte dei modelli per tipo e marca selezionati
-            modelli = ACITable.query.filter(
+            modelli = filter_by_company(ACITable.query, ACITable).filter(
                 ACITable.tipologia == user.aci_vehicle.tipologia,
                 ACITable.marca == user.aci_vehicle.marca
             ).order_by(ACITable.modello).all()
@@ -428,7 +430,7 @@ def toggle_user(user_id):
         flash('Non hai i permessi per modificare utenti', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    user = User.query.get_or_404(user_id)
+    user = filter_by_company(User.query, User).get_or_404(user_id)
     if user.id == current_user.id:
         flash('Non puoi disattivare il tuo account', 'warning')
         return redirect(url_for('user_management.user_management'))

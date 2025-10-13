@@ -16,6 +16,7 @@ import base64
 # Import only essential models for reports functionality
 from models import User, AttendanceEvent, Intervention, ReperibilitaIntervention
 from utils import get_team_statistics, get_user_statistics
+from utils_tenant import filter_by_company
 from app import db
 
 # =============================================================================
@@ -81,7 +82,7 @@ def reports():
         }
     
     # Get user statistics for all active users (excluding Amministratore and Ospite)
-    users = User.query.filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
+    users = filter_by_company(User.query, User).filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
     
     user_stats = []
     chart_data = []  # Separate data for charts without User objects
@@ -116,13 +117,13 @@ def reports():
     
     try:
         # General interventions
-        interventions = Intervention.query.filter(
+        interventions = filter_by_company(Intervention.query, Intervention).filter(
             Intervention.start_datetime >= start_datetime,
             Intervention.start_datetime <= end_datetime
         ).order_by(Intervention.start_datetime.desc()).all()
         
         # Reperibilità interventions  
-        reperibilita_interventions = ReperibilitaIntervention.query.filter(
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter(
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
@@ -133,7 +134,7 @@ def reports():
     # Get attendance data for charts - calculate real data
     attendance_data = []
     current_date = start_date
-    active_user_ids = [user.id for user in User.query.filter(User.active.is_(True)).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()]
+    active_user_ids = [user.id for user in filter_by_company(User.query, User).filter(User.active.is_(True)).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()]
     
     while current_date <= end_date:
         # Calculate total hours and workers for this day

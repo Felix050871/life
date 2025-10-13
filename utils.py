@@ -17,6 +17,7 @@
 from datetime import datetime, date, timedelta, time
 from models import User, LeaveRequest, AttendanceEvent, PresidioCoverage, Shift, WorkSchedule, italian_now
 from app import db
+from utils_tenant import filter_by_company
 import random
 import json
 import qrcode
@@ -638,7 +639,7 @@ def get_user_statistics(user_id, start_date=None, end_date=None):
     shift_hours = 0
     
     # Leave statistics
-    leave_requests = LeaveRequest.query.filter(
+    leave_requests = filter_by_company(LeaveRequest.query, LeaveRequest).filter(
         LeaveRequest.user_id == user_id,
         LeaveRequest.start_date >= start_date,
         LeaveRequest.end_date <= end_date
@@ -655,7 +656,7 @@ def get_user_statistics(user_id, start_date=None, end_date=None):
         start_datetime = datetime.combine(start_date, datetime.min.time())
         end_datetime = datetime.combine(end_date, datetime.max.time())
         
-        interventions = Intervention.query.filter(
+        interventions = filter_by_company(Intervention.query, Intervention).filter(
             Intervention.user_id == user_id,
             Intervention.start_datetime >= start_datetime,
             Intervention.start_datetime <= end_datetime
@@ -719,11 +720,11 @@ def get_team_statistics(start_date=None, end_date=None):
         # Active users (excluding protected/administrative roles)
         from config import get_config
         config = get_config()
-        active_users = User.query.filter(User.active.is_(True)).filter(~User.role.in_(config.EXCLUDED_ROLES_FROM_REPORTS)).count()
+        active_users = filter_by_company(User.query, User).filter(User.active.is_(True)).filter(~User.role.in_(config.EXCLUDED_ROLES_FROM_REPORTS)).count()
         
         # Simplified total hours calculation - just count events
         from models import AttendanceEvent
-        total_events = AttendanceEvent.query.filter(
+        total_events = filter_by_company(AttendanceEvent.query, AttendanceEvent).filter(
             AttendanceEvent.date >= start_date,
             AttendanceEvent.date <= end_date,
             AttendanceEvent.event_type == 'clock_in'
@@ -733,7 +734,7 @@ def get_team_statistics(start_date=None, end_date=None):
         estimated_hours = total_events * 8
         
         # Pending leave requests
-        pending_leaves = LeaveRequest.query.filter(
+        pending_leaves = filter_by_company(LeaveRequest.query, LeaveRequest).filter(
             LeaveRequest.status == 'Pending'
         ).count()
         
@@ -747,7 +748,7 @@ def get_team_statistics(start_date=None, end_date=None):
         team_end_datetime = datetime.combine(end_date, datetime.max.time())
         
         # Get all interventions for the period
-        team_interventions = ReperibilitaIntervention.query.filter(
+        team_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter(
             ReperibilitaIntervention.start_datetime >= team_start_datetime,
             ReperibilitaIntervention.start_datetime <= team_end_datetime
         ).all()
@@ -783,7 +784,7 @@ def get_team_statistics(start_date=None, end_date=None):
         from models import UserRole
         
         # Get all active roles first
-        active_roles = UserRole.query.filter_by(active=True).all()
+        active_roles = filter_by_company(UserRole.query, UserRole).filter_by(active=True).all()
         
         # Initialize all roles with 0 count
         role_stats = {}
@@ -791,7 +792,7 @@ def get_team_statistics(start_date=None, end_date=None):
             role_stats[role.name] = 0
         
         # Count users by role
-        all_active_users = User.query.filter(User.active.is_(True)).all()
+        all_active_users = filter_by_company(User.query, User).filter(User.active.is_(True)).all()
         for user in all_active_users:
             # Only count if the role is active
             if user.role in role_stats:
