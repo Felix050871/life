@@ -2583,6 +2583,7 @@ class Company(db.Model):
     description = db.Column(db.Text, nullable=True)
     logo = db.Column(db.String(500), nullable=True)  # Path al file logo
     background_image = db.Column(db.String(500), nullable=True)  # Path all'immagine di sfondo
+    max_licenses = db.Column(db.Integer, default=10, nullable=False)  # Numero massimo di licenze/utenti attivi
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     

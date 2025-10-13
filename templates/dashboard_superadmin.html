@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Amministrazione - Life Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            <i class="fas fa-cogs me-2"></i>
+            Dashboard Amministrazione Sistema
+        </h1>
+        <a href="{{ url_for('companies.create_company') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Nuova Azienda
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Aziende Totali</h6>
+                            <h3 class="card-title mb-0">{{ company_stats|length }}</h3>
+                        </div>
+                        <i class="fas fa-building fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Aziende Attive</h6>
+                            <h3 class="card-title mb-0">{{ company_stats|selectattr('company.active')|list|length }}</h3>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Utenti Totali</h6>
+                            <h3 class="card-title mb-0">{{ company_stats|sum(attribute='total_users') }}</h3>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Utenti Attivi</h6>
+                            <h3 class="card-title mb-0">{{ company_stats|sum(attribute='active_users') }}</h3>
+                        </div>
+                        <i class="fas fa-user-check fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Companies Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list me-2"></i>Elenco Aziende
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Codice</th>
+                            <th>Nome Azienda</th>
+                            <th>Amministratore</th>
+                            <th>Licenze</th>
+                            <th>Utenti Attivi</th>
+                            <th>Sedi</th>
+                            <th>Stato</th>
+                            <th>Creata il</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in company_stats %}
+                        <tr>
+                            <td><strong>{{ stat.company.code }}</strong></td>
+                            <td>
+                                {% if stat.company.logo %}
+                                <img src="{{ url_for('static', filename=stat.company.logo) }}" alt="Logo" class="me-2" style="height: 25px;">
+                                {% endif %}
+                                {{ stat.company.name }}
+                            </td>
+                            <td>
+                                {% if stat.admin %}
+                                <i class="fas fa-user me-1"></i>{{ stat.admin.username }}
+                                <br><small class="text-muted">{{ stat.admin.email }}</small>
+                                {% else %}
+                                <span class="badge bg-warning">Nessun Admin</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">{{ stat.active_users }}/{{ stat.company.max_licenses }}</div>
+                                    <div class="progress flex-grow-1" style="height: 20px; width: 100px;">
+                                        <div class="progress-bar {% if stat.usage_percent >= 90 %}bg-danger{% elif stat.usage_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ stat.usage_percent }}%"
+                                             aria-valuenow="{{ stat.usage_percent }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ stat.usage_percent }}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ stat.active_users }}</span>
+                                <small class="text-muted">/ {{ stat.total_users }} totali</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ stat.sedi_count }}</span>
+                            </td>
+                            <td>
+                                {% if stat.company.active %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Attiva
+                                </span>
+                                {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times me-1"></i>Sospesa
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ stat.company.created_at.strftime('%d/%m/%Y') if stat.company.created_at else '-' }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('companies.view_company', company_id=stat.company.id) }}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Visualizza">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('companies.edit_company', company_id=stat.company.id) }}" 
+                                       class="btn btn-outline-warning" 
+                                       title="Modifica">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Nessuna azienda presente. Crea la prima azienda per iniziare.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.opacity-50 {
+    opacity: 0.5;
+}
+.progress {
+    background-color: rgba(255,255,255,0.2);
+}
+</style>
+{% endblock %}
