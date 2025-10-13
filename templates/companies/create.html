@@ -40,6 +40,38 @@
                     
                     <hr class="my-4">
                     
+                    <h5 class="mb-3"><i class="fas fa-user-shield me-2"></i>Amministratore Azienda *</h5>
+                    <p class="text-muted mb-3">Configura l'amministratore che gestirà questa azienda</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_username" class="form-label">Username Amministratore *</label>
+                            <input type="text" class="form-control" id="admin_username" name="admin_username" required 
+                                   placeholder="es. admin_ns12">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_email" class="form-label">Email Amministratore *</label>
+                            <input type="email" class="form-control" id="admin_email" name="admin_email" required 
+                                   placeholder="admin@azienda.it">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_password" class="form-label">Password Temporanea *</label>
+                            <input type="password" class="form-control" id="admin_password" name="admin_password" required 
+                                   minlength="6" placeholder="Minimo 6 caratteri">
+                            <small class="text-muted">L'amministratore potrà cambiarla al primo accesso</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_full_name" class="form-label">Nome Completo *</label>
+                            <input type="text" class="form-control" id="admin_full_name" name="admin_full_name" required 
+                                   placeholder="Mario Rossi">
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
                     <h5 class="mb-3"><i class="fas fa-image me-2"></i>Immagini</h5>
                     
                     <div class="row">
@@ -93,7 +125,11 @@
                     </li>
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        Dopo la creazione, associa utenti e sedi
+                        L'<strong>amministratore</strong> gestirà la propria azienda
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        L'admin potrà configurare sedi, utenti e impostazioni
                     </li>
                 </ul>
             </div>

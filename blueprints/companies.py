@@ -10,6 +10,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from functools import wraps
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash
 import os
 
 # Local imports
@@ -108,9 +109,19 @@ def create_company():
         code = request.form.get('code')
         description = request.form.get('description')
         
+        # Admin user data
+        admin_username = request.form.get('admin_username')
+        admin_email = request.form.get('admin_email')
+        admin_password = request.form.get('admin_password')
+        admin_full_name = request.form.get('admin_full_name')
+        
         # Validate required fields
         if not name or not code:
             flash('Nome e codice azienda sono obbligatori', 'danger')
+            return redirect(url_for('companies.create_company'))
+        
+        if not admin_username or not admin_email or not admin_password or not admin_full_name:
+            flash('Tutti i campi dell\'amministratore sono obbligatori', 'danger')
             return redirect(url_for('companies.create_company'))
         
         # Check if code already exists
@@ -119,34 +130,59 @@ def create_company():
             flash(f'Esiste già un\'azienda con codice {code.upper()}', 'danger')
             return redirect(url_for('companies.create_company'))
         
-        # Create new company
-        company = Company(
-            name=name,
-            code=code.upper(),
-            description=description,
-            active=True
-        )
-        
-        # Handle logo upload
-        if 'logo' in request.files:
-            logo_file = request.files['logo']
-            if logo_file.filename:
-                logo_path = save_company_file(logo_file, code.upper(), 'logo')
-                if logo_path:
-                    company.logo = logo_path
-        
-        # Handle background image upload
-        if 'background_image' in request.files:
-            bg_file = request.files['background_image']
-            if bg_file.filename:
-                bg_path = save_company_file(bg_file, code.upper(), 'background')
-                if bg_path:
-                    company.background_image = bg_path
+        # Check if admin username or email already exists
+        existing_user = User.query.filter(
+            (User.username == admin_username) | (User.email == admin_email)
+        ).first()
+        if existing_user:
+            flash('Username o email amministratore già in uso', 'danger')
+            return redirect(url_for('companies.create_company'))
         
         try:
+            # Create new company
+            company = Company(
+                name=name,
+                code=code.upper(),
+                description=description,
+                active=True
+            )
+            
+            # Handle logo upload
+            if 'logo' in request.files:
+                logo_file = request.files['logo']
+                if logo_file.filename:
+                    logo_path = save_company_file(logo_file, code.upper(), 'logo')
+                    if logo_path:
+                        company.logo = logo_path
+            
+            # Handle background image upload
+            if 'background_image' in request.files:
+                bg_file = request.files['background_image']
+                if bg_file.filename:
+                    bg_path = save_company_file(bg_file, code.upper(), 'background')
+                    if bg_path:
+                        company.background_image = bg_path
+            
             db.session.add(company)
+            db.session.flush()  # Get company.id without committing
+            
+            # Create admin user for this company
+            admin_user = User(
+                username=admin_username,
+                email=admin_email,
+                password_hash=generate_password_hash(admin_password),
+                full_name=admin_full_name,
+                role='Amministratore',
+                company_id=company.id,
+                active=True,
+                is_system_admin=False,
+                all_sedi=True  # Admin can access all locations by default
+            )
+            
+            db.session.add(admin_user)
             db.session.commit()
-            flash(f'Azienda {company.name} creata con successo', 'success')
+            
+            flash(f'Azienda {company.name} creata con successo. Admin: {admin_username}', 'success')
             return redirect(url_for('companies.list_companies'))
         except Exception as e:
             db.session.rollback()
