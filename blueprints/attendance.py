@@ -23,6 +23,7 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
 from models import User, AttendanceEvent, Shift, Sede, ReperibilitaShift, Intervention, LeaveRequest, WorkSchedule, italian_now
+from utils_tenant import get_user_company_id, filter_by_company, set_company_on_create
 from io import StringIO
 from defusedcsv import csv
 from forms import AttendanceForm
@@ -117,6 +118,8 @@ def attendance():
                     sede_id=sede_id,
                     notes=form.notes.data
                 )
+                # Imposta company_id automaticamente
+                set_company_on_create(note_event)
                 db.session.add(note_event)
                 db.session.commit()
                 flash('Note salvate', 'success')
@@ -166,14 +169,14 @@ def attendance():
     if show_team_data:
         # Get team attendance data for PM, Management, Responsabili and Ente
         if current_user.role == 'Staff':
-            # Staff vede tutti gli utenti di tutte le sedi (esclusi Admin e Staff)
-            team_users = User.query.filter(
+            # Staff vede tutti gli utenti di tutte le sedi (esclusi Admin e Staff), filtrati per company
+            team_users = filter_by_company(User.query, User).filter(
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
             ).all()
         elif current_user.role == 'Management':
-            # Management vedono solo utenti della propria sede (esclusi Admin e Staff)
-            team_users = User.query.filter(
+            # Management vedono solo utenti della propria sede (esclusi Admin e Staff), filtrati per company
+            team_users = filter_by_company(User.query, User).filter(
                 User.sede_id == current_user.sede_id,
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
@@ -181,14 +184,14 @@ def attendance():
         elif view_mode == 'sede' or current_user.role == 'Amministratore':
             # Utenti con permessi visualizzazione sede o amministratori
             if current_user.all_sedi or current_user.role == 'Amministratore':
-                # Utenti multi-sede e amministratori vedono tutti gli utenti attivi di tutte le sedi
-                team_users = User.query.filter(
+                # Utenti multi-sede e amministratori vedono tutti gli utenti attivi di tutte le sedi, filtrati per company
+                team_users = filter_by_company(User.query, User).filter(
                     User.active.is_(True),
                     ~User.role.in_(['Admin', 'Staff'])
                 ).all()
             elif current_user.sede_id:
-                # Utenti sede-specifica vedono solo utenti della propria sede
-                team_users = User.query.filter(
+                # Utenti sede-specifica vedono solo utenti della propria sede, filtrati per company
+                team_users = filter_by_company(User.query, User).filter(
                     User.sede_id == current_user.sede_id,
                     User.active.is_(True),
                     ~User.role.in_(['Admin', 'Staff'])
@@ -196,8 +199,8 @@ def attendance():
             else:
                 team_users = []
         else:
-            # PM e Ente vedono solo utenti operativi (esclusi Admin e Staff)
-            team_users = User.query.filter(
+            # PM e Ente vedono solo utenti operativi (esclusi Admin e Staff), filtrati per company
+            team_users = filter_by_company(User.query, User).filter(
                 User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Management', 'Staff']),
                 User.active.is_(True)
             ).all()
@@ -559,6 +562,8 @@ def clock_in():
             timestamp=italian_now(),
             sede_id=get_current_user_sede(current_user).id if get_current_user_sede(current_user) else None
         )
+        # Imposta company_id automaticamente
+        set_company_on_create(attendance_event)
         db.session.add(attendance_event)
         db.session.commit()
         
@@ -617,6 +622,8 @@ def clock_out():
             timestamp=italian_now(),
             sede_id=get_current_user_sede(current_user).id if get_current_user_sede(current_user) else None
         )
+        # Imposta company_id automaticamente
+        set_company_on_create(attendance_event)
         db.session.add(attendance_event)
         db.session.commit()
 
@@ -661,6 +668,8 @@ def break_start():
             timestamp=italian_now(),
             sede_id=get_current_user_sede(current_user).id if get_current_user_sede(current_user) else None
         )
+        # Imposta company_id automaticamente
+        set_company_on_create(attendance_event)
         db.session.add(attendance_event)
         db.session.commit()
 
@@ -701,6 +710,8 @@ def break_end():
             timestamp=italian_now(),
             sede_id=get_current_user_sede(current_user).id if get_current_user_sede(current_user) else None
         )
+        # Imposta company_id automaticamente
+        set_company_on_create(attendance_event)
         db.session.add(attendance_event)
         db.session.commit()
 
