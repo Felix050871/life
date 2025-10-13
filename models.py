@@ -217,10 +217,15 @@ class User(UserMixin, db.Model):
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo in mesi entro cui le ore devono essere usufruite
     created_at = db.Column(db.DateTime, default=italian_now)
     
-    # Relationship con Sede, WorkSchedule e ACITable
+    # Multi-tenant fields
+    is_system_admin = db.Column(db.Boolean, default=False)  # Admin di sistema (non legato a nessuna azienda)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Azienda di appartenenza
+    
+    # Relationship con Sede, WorkSchedule, ACITable e Company
     sede_obj = db.relationship('Sede', backref='users')
     work_schedule = db.relationship('WorkSchedule', backref='assigned_users')
     aci_vehicle = db.relationship('ACITable', backref='assigned_users')
+    company = db.relationship('Company', back_populates='users')
     
     # La relazione con AttendanceEvent è già definita tramite backref in AttendanceEvent.user
     
@@ -2556,6 +2561,26 @@ class MileageRequest(db.Model):
 # SYSTEM CONFIGURATION MODELS
 # =============================================================================
 
+class Company(db.Model):
+    """Modello per le aziende - Multi-tenant system"""
+    __tablename__ = 'company'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    code = db.Column(db.String(50), unique=True, nullable=False)  # ES: NS12, ATMH
+    description = db.Column(db.Text, nullable=True)
+    logo = db.Column(db.String(500), nullable=True)  # Path al file logo
+    background_image = db.Column(db.String(500), nullable=True)  # Path all'immagine di sfondo
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relazioni
+    users = db.relationship('User', back_populates='company', lazy='dynamic')
+    sedi = db.relationship('Sede', back_populates='company', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<Company {self.code} - {self.name}>'
+
 class Sede(db.Model):
     """Modello per le sedi aziendali"""
     id = db.Column(db.Integer, primary_key=True)
@@ -2566,8 +2591,12 @@ class Sede(db.Model):
     active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     
+    # Multi-tenant field
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
+    
     # Relationships (users già definito tramite backref in User)
     work_schedules = db.relationship('WorkSchedule', backref='sede_obj', lazy='dynamic')
+    company = db.relationship('Company', back_populates='sedi')
     
     def __repr__(self):
         return f'<Sede {self.name}>'
