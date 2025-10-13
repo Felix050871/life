@@ -19,6 +19,7 @@ from functools import wraps
 from app import db
 from models import User, Sede, Shift, ReperibilitaShift, WorkSchedule, UserRole, italian_now
 from forms import SedeForm, WorkScheduleForm, RoleForm
+from utils_tenant import filter_by_company, set_company_on_create, get_user_company_id
 import io
 import os
 
@@ -283,7 +284,7 @@ def manage_work_schedules():
         flash('Non hai i permessi per accedere agli orari', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    schedules = WorkSchedule.query.join(Sede).order_by(Sede.name, WorkSchedule.start_time).all()
+    schedules = filter_by_company(WorkSchedule.query, WorkSchedule).join(Sede).order_by(Sede.name, WorkSchedule.start_time).all()
     form = WorkScheduleForm()
     return render_template('manage_work_schedules.html', schedules=schedules, form=form)
 
@@ -337,7 +338,7 @@ def edit_work_schedule(schedule_id):
         flash('Non hai i permessi per modificare orari', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    schedule = WorkSchedule.query.get_or_404(schedule_id)
+    schedule = filter_by_company(WorkSchedule.query, WorkSchedule).filter_by(id=schedule_id).first_or_404()
     form = WorkScheduleForm(obj=schedule)
     
     # Precompila i campi basandosi sui dati esistenti
@@ -395,7 +396,7 @@ def toggle_work_schedule(schedule_id):
         flash('Non hai i permessi per modificare orari', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    schedule = WorkSchedule.query.get_or_404(schedule_id)
+    schedule = filter_by_company(WorkSchedule.query, WorkSchedule).filter_by(id=schedule_id).first_or_404()
     schedule.active = not schedule.active
     db.session.commit()
     
@@ -412,7 +413,7 @@ def delete_work_schedule(schedule_id):
         flash('Non hai i permessi per eliminare orari', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    schedule = WorkSchedule.query.get_or_404(schedule_id)
+    schedule = filter_by_company(WorkSchedule.query, WorkSchedule).filter_by(id=schedule_id).first_or_404()
     schedule_name = schedule.name
     
     try:

@@ -1330,6 +1330,7 @@ class LeaveType(db.Model):
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Nota: la relazione è definita in LeaveRequest con backref='requests'
     
@@ -1482,6 +1483,7 @@ class ShiftTemplate(db.Model):
     description = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     creator = db.relationship('User', backref='shift_templates')
 
@@ -1500,6 +1502,7 @@ class PresidioCoverageTemplate(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
 
     # Relazioni
     creator = db.relationship('User', backref='presidio_coverage_templates')
@@ -1555,6 +1558,7 @@ class PresidioCoverage(db.Model):
     end_date = db.Column(db.Date, nullable=True)    # Data fine validità (ora nullable)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
 
     creator = db.relationship('User', backref='presidio_coverages')
     template_ref = db.relationship('PresidioCoverageTemplate', foreign_keys=[template_id], overlaps="coverages,template")
@@ -2061,6 +2065,7 @@ class ExpenseCategory(db.Model):
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     creator = db.relationship('User', backref='created_expense_categories')
     
@@ -2087,6 +2092,7 @@ class ExpenseReport(db.Model):
     # Metadati
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Relationships
     employee = db.relationship('User', foreign_keys=[employee_id], backref='expense_reports')
@@ -2215,6 +2221,7 @@ class OvertimeType(db.Model):
     hourly_rate_multiplier = db.Column(db.Float, default=1.5)  # Moltiplicatore per la paga oraria
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     def __repr__(self):
         return f'<OvertimeType {self.name}>'
@@ -2239,6 +2246,7 @@ class OvertimeRequest(db.Model):
     # Metadati
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Relationships
     employee = db.relationship('User', foreign_keys=[employee_id], backref='overtime_requests')
@@ -2407,6 +2415,7 @@ class MileageRequest(db.Model):
     # Metadati
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Relationships
     user = db.relationship('User', foreign_keys=[user_id], backref='mileage_requests')
@@ -2677,6 +2686,7 @@ class WorkSchedule(db.Model):
     description = db.Column(db.Text, nullable=True)
     active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Relazione con Sede (usa backref esistente da Sede)
     # La relazione è gestita dal backref 'sede_obj' definito nel modello Sede
@@ -2788,6 +2798,7 @@ class ACITable(db.Model):
     costo_km = db.Column(db.Numeric(10, 4), nullable=False)  # Costo per KM
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     def __repr__(self):
         return f'<ACITable {self.marca} {self.modello}>'

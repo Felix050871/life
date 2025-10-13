@@ -10,6 +10,7 @@ from datetime import datetime, date
 from app import db
 from models import Holiday, italian_now
 from forms import HolidayForm
+from utils_tenant import filter_by_company, set_company_on_create, get_user_company_id
 
 # Create blueprint
 holidays_bp = Blueprint('holidays', __name__, url_prefix='/holidays')
@@ -23,7 +24,7 @@ def holidays():
         flash('Non hai i permessi per accedere alle festività.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    holidays = Holiday.query.order_by(Holiday.month.desc(), Holiday.day.desc()).all()
+    holidays = filter_by_company(Holiday.query, Holiday).order_by(Holiday.month.desc(), Holiday.day.desc()).all()
     return render_template('holidays.html', holidays=holidays)
 
 @holidays_bp.route('/add', methods=['GET', 'POST'])
@@ -36,9 +37,9 @@ def add_holiday():
     
     form = HolidayForm()
     if form.validate_on_submit():
-        # Check if holiday already exists for this month/day and scope
+        # Check if holiday already exists for this month/day and scope (with company filter)
         sede_id = form.sede_id.data if form.sede_id.data else None
-        existing = Holiday.query.filter_by(
+        existing = filter_by_company(Holiday.query, Holiday).filter_by(
             month=form.month.data,
             day=form.day.data,
             sede_id=sede_id,
@@ -59,6 +60,7 @@ def add_holiday():
         holiday.active = form.active.data
         holiday.created_by = current_user.id
         holiday.created_at = italian_now()
+        set_company_on_create(holiday)
         
         db.session.add(holiday)
         db.session.commit()
@@ -75,13 +77,13 @@ def edit_holiday(holiday_id):
         flash('Non hai i permessi per gestire le festività.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    holiday = Holiday.query.get_or_404(holiday_id)
+    holiday = filter_by_company(Holiday.query, Holiday).filter_by(id=holiday_id).first_or_404()
     form = HolidayForm(obj=holiday)
     
     if form.validate_on_submit():
-        # Check if another holiday exists for this month/day and scope (excluding current)
+        # Check if another holiday exists for this month/day and scope (excluding current, with company filter)
         sede_id = form.sede_id.data if form.sede_id.data else None
-        existing = Holiday.query.filter(
+        existing = filter_by_company(Holiday.query, Holiday).filter(
             Holiday.month == form.month.data,
             Holiday.day == form.day.data,
             Holiday.sede_id == sede_id,
@@ -115,7 +117,7 @@ def delete_holiday(holiday_id):
         flash('Non hai i permessi per gestire le festività.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    holiday = Holiday.query.get_or_404(holiday_id)
+    holiday = filter_by_company(Holiday.query, Holiday).filter_by(id=holiday_id).first_or_404()
     
     try:
         db.session.delete(holiday)
@@ -158,8 +160,8 @@ def api_generate_holidays():
         for name, date_str in standard_holidays:
             holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             
-            # Check if holiday already exists (national holiday with same month/day)
-            existing = Holiday.query.filter_by(
+            # Check if holiday already exists (national holiday with same month/day, with company filter)
+            existing = filter_by_company(Holiday.query, Holiday).filter_by(
                 month=holiday_date.month,
                 day=holiday_date.day,
                 sede_id=None,  # National holiday
@@ -178,6 +180,7 @@ def api_generate_holidays():
             holiday.active = True
             holiday.created_by = current_user.id
             holiday.created_at = italian_now()
+            set_company_on_create(holiday)
             
             db.session.add(holiday)
             created_count += 1

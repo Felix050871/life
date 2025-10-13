@@ -23,6 +23,7 @@ from functools import wraps
 from app import db
 from models import ACITable
 from forms import ACIFilterForm, ACIUploadForm, ACIRecordForm
+from utils_tenant import filter_by_company, set_company_on_create, get_user_company_id
 
 # Create blueprint
 aci_bp = Blueprint('aci', __name__, url_prefix='/aci')
@@ -50,11 +51,11 @@ def tables():
     """Visualizza tabelle ACI con caricamento lazy - record caricati solo dopo filtro"""
     form = ACIFilterForm()
     tables = []
-    total_records = ACITable.query.count()
+    total_records = filter_by_company(ACITable.query, ACITable).count()
     
     # LAZY LOADING: carica record solo se è stato applicato un filtro (POST)
     if request.method == "POST" and form.validate_on_submit():
-        query = ACITable.query
+        query = filter_by_company(ACITable.query, ACITable)
         
         # Applica filtri selezionati
         filters_applied = False
@@ -156,25 +157,27 @@ def upload():
                 batch = rows_data[i:i + batch_size]
                 
                 for marca, modello, costo_km in batch:
-                    # Verifica duplicati esistenti
-                    existing = ACITable.query.filter_by(
+                    # Verifica duplicati esistenti (con filtro company)
+                    existing_query = filter_by_company(ACITable.query, ACITable).filter_by(
                         tipologia=tipologia,
                         marca=marca,
                         modello=modello
-                    ).first()
+                    )
+                    existing = existing_query.first()
                     
                     if existing:
                         # Aggiorna record esistente - SOLO COSTO KM
                         existing.costo_km = float(costo_km)
                         imported_count += 1
                     else:
-                        # Crea nuovo record ACI
+                        # Crea nuovo record ACI con company_id
                         aci_record = ACITable(
                             tipologia=tipologia,
                             marca=marca,
                             modello=modello,
                             costo_km=float(costo_km)
                         )
+                        set_company_on_create(aci_record)
                         db.session.add(aci_record)
                         imported_count += 1
                 
@@ -220,6 +223,7 @@ def create():
                 modello=form.modello.data,
                 costo_km=form.costo_km.data
             )
+            set_company_on_create(aci_record)
             
             db.session.add(aci_record)
             db.session.commit()
@@ -237,7 +241,7 @@ def create():
 @admin_required
 def edit(record_id):
     """Modifica record ACI esistente"""
-    aci_record = ACITable.query.get_or_404(record_id)
+    aci_record = filter_by_company(ACITable.query, ACITable).filter_by(id=record_id).first_or_404()
     form = ACIRecordForm(obj=aci_record)
     
     if form.validate_on_submit():
@@ -263,7 +267,7 @@ def edit(record_id):
 def delete(record_id):
     """Cancella record ACI"""
     try:
-        aci_record = ACITable.query.get_or_404(record_id)
+        aci_record = filter_by_company(ACITable.query, ACITable).filter_by(id=record_id).first_or_404()
         db.session.delete(aci_record)
         db.session.commit()
         flash("Record ACI cancellato con successo!", "success")
@@ -288,8 +292,8 @@ def export():
         from openpyxl.styles import Font, PatternFill, Alignment
         from io import BytesIO
         
-        # Recupera tutti i record ACI
-        records = ACITable.query.order_by(ACITable.tipologia, ACITable.tipo, ACITable.marca, ACITable.modello).all()
+        # Recupera tutti i record ACI (filtrati per company)
+        records = filter_by_company(ACITable.query, ACITable).order_by(ACITable.tipologia, ACITable.tipo, ACITable.marca, ACITable.modello).all()
         
         # Crea workbook
         wb = Workbook()
@@ -369,15 +373,15 @@ def bulk_delete():
         return redirect(url_for("aci.tables"))
     
     try:
-        # Prima conta i record da cancellare
-        records_to_delete = ACITable.query.filter_by(tipologia=tipologia).count()
+        # Prima conta i record da cancellare (con filtro company)
+        records_to_delete = filter_by_company(ACITable.query, ACITable).filter_by(tipologia=tipologia).count()
         
         if records_to_delete == 0:
             flash("Nessun record trovato per la tipologia specificata.", "info")
             return redirect(url_for("aci.tables"))
         
-        # Esegui la cancellazione
-        deleted_count = ACITable.query.filter_by(tipologia=tipologia).delete()
+        # Esegui la cancellazione (con filtro company)
+        deleted_count = filter_by_company(ACITable.query, ACITable).filter_by(tipologia=tipologia).delete()
         db.session.commit()
         
         flash(f"✅ Cancellazione completata con successo!", "success")
@@ -409,7 +413,11 @@ def api_marcas():
     tipologia = request.args.get('tipologia')
     
     try:
-        query = db.session.query(ACITable.marca).distinct()
+        # Query con filtro company
+        base_query = filter_by_company(ACITable.query, ACITable)
+        query = db.session.query(ACITable.marca).distinct().filter(ACITable.id.in_(
+            db.session.query(ACITable.id).select_from(base_query.subquery())
+        ))
         
         if tipologia:
             query = query.filter(ACITable.tipologia == tipologia)
@@ -431,7 +439,11 @@ def api_modelos():
     marca = request.args.get('marca')
     
     try:
-        query = db.session.query(ACITable.modello).distinct()
+        # Query con filtro company
+        base_query = filter_by_company(ACITable.query, ACITable)
+        query = db.session.query(ACITable.modello).distinct().filter(ACITable.id.in_(
+            db.session.query(ACITable.id).select_from(base_query.subquery())
+        ))
         
         if tipologia:
             query = query.filter(ACITable.tipologia == tipologia)

@@ -18,6 +18,7 @@ from forms import ExpenseFilterForm, ExpenseReportForm, OvertimeRequestForm, Mil
 from app import db, app
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
+from utils_tenant import filter_by_company, set_company_on_create, get_user_company_id
 import uuid
 
 # =============================================================================
@@ -91,8 +92,8 @@ def expense_reports():
     """Visualizza elenco note spese"""
     filter_form = ExpenseFilterForm(current_user=current_user)
     
-    # Query base
-    query = ExpenseReport.query
+    # Query base (with company filter)
+    query = filter_by_company(ExpenseReport.query, ExpenseReport)
     
     # Check view mode from URL parameter
     view_mode = request.args.get('view', 'all')
@@ -175,6 +176,7 @@ def create_expense_report():
             category_id=form.category_id.data,
             receipt_filename=receipt_filename
         )
+        set_company_on_create(expense)
         
         db.session.add(expense)
         db.session.commit()
@@ -192,7 +194,7 @@ def edit_expense_report(expense_id):
     from werkzeug.utils import secure_filename
     import uuid
     
-    expense = ExpenseReport.query.get_or_404(expense_id)
+    expense = filter_by_company(ExpenseReport.query, ExpenseReport).filter_by(id=expense_id).first_or_404()
     
     # Verifica permessi
     if expense.employee_id != current_user.id and not current_user.can_manage_expense_reports():
@@ -257,7 +259,7 @@ def approve_expense_report(expense_id):
     """Approva/rifiuta nota spese"""
     from forms import ExpenseApprovalForm
     
-    expense = ExpenseReport.query.get_or_404(expense_id)
+    expense = filter_by_company(ExpenseReport.query, ExpenseReport).filter_by(id=expense_id).first_or_404()
     
     # Verifica permessi
     if not expense.can_be_approved_by(current_user):
@@ -289,7 +291,7 @@ def download_expense_receipt(expense_id):
     """Download ricevuta allegata"""
     import os
     
-    expense = ExpenseReport.query.get_or_404(expense_id)
+    expense = filter_by_company(ExpenseReport.query, ExpenseReport).filter_by(id=expense_id).first_or_404()
     
     # Verifica permessi
     if (expense.employee_id != current_user.id and 
@@ -317,7 +319,7 @@ def delete_expense_report(expense_id):
     """Elimina nota spese"""
     import os
     
-    expense = ExpenseReport.query.get_or_404(expense_id)
+    expense = filter_by_company(ExpenseReport.query, ExpenseReport).filter_by(id=expense_id).first_or_404()
     
     # Verifica permessi
     if expense.employee_id != current_user.id and not current_user.can_manage_expense_reports():
@@ -355,7 +357,7 @@ def expense_categories():
         return redirect(url_for('expense.expense_reports'))
     
     from models import ExpenseCategory
-    categories = ExpenseCategory.query.order_by(ExpenseCategory.name).all()
+    categories = filter_by_company(ExpenseCategory.query, ExpenseCategory).order_by(ExpenseCategory.name).all()
     
     return render_template('expense_categories.html', categories=categories)
 
@@ -380,6 +382,7 @@ def create_expense_category():
             active=form.active.data,
             created_by=current_user.id
         )
+        set_company_on_create(category)
         
         db.session.add(category)
         
@@ -404,7 +407,7 @@ def edit_expense_category(category_id):
     
     from models import ExpenseCategory
     
-    category = ExpenseCategory.query.get_or_404(category_id)
+    category = filter_by_company(ExpenseCategory.query, ExpenseCategory).filter_by(id=category_id).first_or_404()
     form = ExpenseCategoryForm(obj=category)
     
     if form.validate_on_submit():
@@ -433,7 +436,7 @@ def delete_expense_category(category_id):
     
     from models import ExpenseCategory
     
-    category = ExpenseCategory.query.get_or_404(category_id)
+    category = filter_by_company(ExpenseCategory.query, ExpenseCategory).filter_by(id=category_id).first_or_404()
     
     # Verifica se ci sono note spese associate
     if category.expense_reports and len(category.expense_reports) > 0:
@@ -465,7 +468,7 @@ def overtime_types():
         return redirect(url_for('dashboard.dashboard'))
     
     from models import OvertimeType
-    types = OvertimeType.query.all()
+    types = filter_by_company(OvertimeType.query, OvertimeType).all()
     return render_template('overtime_types.html', types=types)
 
 @expense_bp.route('/overtime/types/create', methods=['GET', 'POST'])
@@ -486,6 +489,7 @@ def create_overtime_type():
             hourly_rate_multiplier=form.hourly_rate_multiplier.data,
             active=form.active.data
         )
+        set_company_on_create(overtime_type)
         db.session.add(overtime_type)
         db.session.commit()
         flash('Tipologia straordinario creata con successo!', 'success')
@@ -503,7 +507,7 @@ def edit_overtime_type(type_id):
     
     from models import OvertimeType
     
-    overtime_type = OvertimeType.query.get_or_404(type_id)
+    overtime_type = filter_by_company(OvertimeType.query, OvertimeType).filter_by(id=type_id).first_or_404()
     form = OvertimeTypeForm(obj=overtime_type)
     
     if form.validate_on_submit():
@@ -528,10 +532,10 @@ def delete_overtime_type(type_id):
     
     from models import OvertimeType, OvertimeRequest
     
-    overtime_type = OvertimeType.query.get_or_404(type_id)
+    overtime_type = filter_by_company(OvertimeType.query, OvertimeType).filter_by(id=type_id).first_or_404()
     
     # Controlla se ci sono richieste associate
-    requests_count = OvertimeRequest.query.filter_by(overtime_type_id=type_id).count()
+    requests_count = filter_by_company(OvertimeRequest.query, OvertimeRequest).filter_by(overtime_type_id=type_id).count()
     if requests_count > 0:
         flash(f"Impossibile cancellare: ci sono {requests_count} richieste associate a questa tipologia.", "warning")
         return redirect(url_for("expense.overtime_types"))
@@ -551,8 +555,8 @@ def overtime_requests_management():
     
     filter_form = OvertimeFilterForm()
     
-    # Query base
-    query = OvertimeRequest.query
+    # Query base (with company filter)
+    query = filter_by_company(OvertimeRequest.query, OvertimeRequest)
     
     # Filtra per sede se l'utente non ha accesso globale
     if not current_user.all_sedi and current_user.sede_id:
@@ -604,6 +608,7 @@ def create_overtime_request():
             overtime_type_id=form.overtime_type_id.data,
             status='pending'
         )
+        set_company_on_create(overtime_request)
         db.session.add(overtime_request)
         db.session.commit()
         
@@ -627,7 +632,7 @@ def my_overtime_requests():
         flash('Non hai i permessi per visualizzare le tue richieste di straordinario.', 'warning')
         return redirect(url_for('dashboard.dashboard'))
     
-    requests = OvertimeRequest.query.filter_by(employee_id=current_user.id).options(
+    requests = filter_by_company(OvertimeRequest.query, OvertimeRequest).filter_by(employee_id=current_user.id).options(
         joinedload(OvertimeRequest.overtime_type)
     ).order_by(OvertimeRequest.created_at.desc()).all()
     
@@ -641,7 +646,7 @@ def approve_overtime_request(request_id):
         flash('Non hai i permessi per approvare richieste di straordinario.', 'warning')
         return redirect(url_for('expense.overtime_requests_management'))
     
-    overtime_request = OvertimeRequest.query.get_or_404(request_id)
+    overtime_request = filter_by_company(OvertimeRequest.query, OvertimeRequest).filter_by(id=request_id).first_or_404()
     
     if not current_user.all_sedi and overtime_request.employee.sede_id != current_user.sede_id:
         flash('Non puoi approvare richieste di altre sedi.', 'warning')
@@ -676,7 +681,7 @@ def reject_overtime_request(request_id):
         flash('Non hai i permessi per rifiutare richieste di straordinario.', 'warning')
         return redirect(url_for('expense.overtime_requests_management'))
     
-    overtime_request = OvertimeRequest.query.get_or_404(request_id)
+    overtime_request = filter_by_company(OvertimeRequest.query, OvertimeRequest).filter_by(id=request_id).first_or_404()
     
     if not current_user.all_sedi and overtime_request.employee.sede_id != current_user.sede_id:
         flash('Non puoi rifiutare richieste di altre sedi.', 'warning')
@@ -707,7 +712,7 @@ def reject_overtime_request(request_id):
 @login_required
 def delete_overtime_request(request_id):
     """Cancella richiesta straordinario"""
-    overtime_request = OvertimeRequest.query.get_or_404(request_id)
+    overtime_request = filter_by_company(OvertimeRequest.query, OvertimeRequest).filter_by(id=request_id).first_or_404()
     
     # Solo il proprietario può cancellare se in stato pending
     if overtime_request.employee_id != current_user.id:
@@ -823,8 +828,8 @@ def mileage_requests():
         # Filtri
         filter_form = MileageFilterForm(current_user=current_user)
         
-        # Base query
-        query = MileageRequest.query.options(
+        # Base query (with company filter)
+        query = filter_by_company(MileageRequest.query, MileageRequest).options(
             joinedload(MileageRequest.user),
             joinedload(MileageRequest.approver),  
             joinedload(MileageRequest.vehicle)
@@ -891,6 +896,7 @@ def create_mileage_request():
             
             # Calcola l'importo del rimborso
             mileage_request.calculate_reimbursement_amount()
+            set_company_on_create(mileage_request)
             
             db.session.add(mileage_request)
             db.session.commit()
@@ -914,7 +920,7 @@ def my_mileage_requests():
             flash('Non hai i permessi per visualizzare le tue richieste di rimborso chilometrico.', 'warning')
             return redirect(url_for('dashboard.dashboard'))
         
-        requests = MileageRequest.query.filter_by(user_id=current_user.id)\
+        requests = filter_by_company(MileageRequest.query, MileageRequest).filter_by(user_id=current_user.id)\
                                       .options(joinedload(MileageRequest.approver),
                                               joinedload(MileageRequest.vehicle))\
                                       .order_by(MileageRequest.created_at.desc()).all()
@@ -932,7 +938,7 @@ def approve_mileage_request(request_id):
         flash('Non hai i permessi per approvare richieste di rimborso chilometrico.', 'warning')
         return redirect(url_for('expense.mileage_requests'))
     
-    mileage_request = MileageRequest.query.get_or_404(request_id)
+    mileage_request = filter_by_company(MileageRequest.query, MileageRequest).filter_by(id=request_id).first_or_404()
     
     # Controllo per sede se necessario
     if not current_user.all_sedi and current_user.sede_id:
@@ -988,7 +994,7 @@ def approve_mileage_request(request_id):
 @login_required
 def delete_mileage_request(request_id):
     """Cancella una richiesta di rimborso chilometrico"""
-    mileage_request = MileageRequest.query.get_or_404(request_id)
+    mileage_request = filter_by_company(MileageRequest.query, MileageRequest).filter_by(id=request_id).first_or_404()
     
     # Solo l'autore o un manager può cancellare
     can_delete = (mileage_request.user_id == current_user.id and 
@@ -1125,8 +1131,8 @@ def mileage_requests_excel():
         flash('Non hai i permessi per esportare le richieste di rimborso chilometrico.', 'warning')
         return redirect(url_for('dashboard.dashboard'))
     
-    # Query con filtri sede
-    query = MileageRequest.query.options(
+    # Query con filtri sede (with company filter)
+    query = filter_by_company(MileageRequest.query, MileageRequest).options(
         joinedload(MileageRequest.user),
         joinedload(MileageRequest.approver),
         joinedload(MileageRequest.vehicle)
@@ -1214,8 +1220,8 @@ def export_mileage_requests():
         from openpyxl.styles import Font, PatternFill, Alignment
         from sqlalchemy.orm import joinedload
         
-        # Base query
-        query = MileageRequest.query.options(
+        # Base query (with company filter)
+        query = filter_by_company(MileageRequest.query, MileageRequest).options(
             joinedload(MileageRequest.user),
             joinedload(MileageRequest.approver),
             joinedload(MileageRequest.vehicle)
