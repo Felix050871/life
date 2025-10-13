@@ -108,6 +108,7 @@ def create_company():
         name = request.form.get('name')
         code = request.form.get('code')
         description = request.form.get('description')
+        max_licenses = request.form.get('max_licenses', 10, type=int)
         
         # Admin user data
         admin_username = request.form.get('admin_username')
@@ -144,6 +145,7 @@ def create_company():
                 name=name,
                 code=code.upper(),
                 description=description,
+                max_licenses=max_licenses,
                 active=True
             )
             
@@ -202,6 +204,7 @@ def edit_company(company_id):
         name = request.form.get('name')
         code = request.form.get('code')
         description = request.form.get('description')
+        max_licenses = request.form.get('max_licenses', 10, type=int)
         active = request.form.get('active') == 'on'
         
         # Validate required fields
@@ -219,6 +222,7 @@ def edit_company(company_id):
         company.name = name
         company.code = code.upper()
         company.description = description
+        company.max_licenses = max_licenses
         company.active = active
         
         # Handle logo upload
