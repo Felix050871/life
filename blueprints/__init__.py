@@ -1,6 +1,6 @@
 # =============================================================================
 # ROUTES PACKAGE - FLASK BLUEPRINTS
-# Modular organization of Workly routes using Flask Blueprints
+# Modular organization of Life routes using Flask Blueprints
 # =============================================================================
 
 from flask import Flask

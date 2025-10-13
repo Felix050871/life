@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script per configurare i ruoli e permessi di base per Workly
+Script per configurare i ruoli e permessi di base per Life
 """
 
 from app import app, db

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script per inizializzare il database PostgreSQL di Workly con dati di esempio
+Script per inizializzare il database PostgreSQL di Life con dati di esempio
 """
 
 import os
@@ -34,7 +34,7 @@ def create_admin_user(db):
     
     admin_user = User(
         username='admin',
-        email='admin@workly.local',
+        email='admin@life.local',
         password_hash=generate_password_hash('admin123'),
         first_name='Amministratore',
         last_name='Sistema',
@@ -95,7 +95,7 @@ def create_sample_users(db, sedi):
     users_data = [
         {
             'username': 'responsabile1',
-            'email': 'resp1@workly.local',
+            'email': 'resp1@life.local',
             'password': 'resp123',
             'name': 'Mario',
             'surname': 'Rossi',
@@ -105,7 +105,7 @@ def create_sample_users(db, sedi):
         },
         {
             'username': 'supervisore1',
-            'email': 'super1@workly.local',
+            'email': 'super1@life.local',
             'password': 'super123',
             'name': 'Laura',
             'surname': 'Bianchi',
@@ -115,7 +115,7 @@ def create_sample_users(db, sedi):
         },
         {
             'username': 'operatore1',
-            'email': 'op1@workly.local',
+            'email': 'op1@life.local',
             'password': 'op123',
             'name': 'Giuseppe',
             'surname': 'Verdi',
@@ -125,7 +125,7 @@ def create_sample_users(db, sedi):
         },
         {
             'username': 'operatore2',
-            'email': 'op2@workly.local',
+            'email': 'op2@life.local',
             'password': 'op123',
             'name': 'Anna',
             'surname': 'Neri',
@@ -135,7 +135,7 @@ def create_sample_users(db, sedi):
         },
         {
             'username': 'operatore3',
-            'email': 'op3@workly.local',
+            'email': 'op3@life.local',
             'password': 'op123',
             'name': 'Francesco',
             'surname': 'Blu',
@@ -210,7 +210,7 @@ def create_qr_code():
 
 def main():
     """Funzione principale per creare il database PostgreSQL"""
-    print("🗄️  Workly - Creazione Database PostgreSQL")
+    print("🗄️  Life - Creazione Database PostgreSQL")
     print("========================================")
     
     # Setup ambiente
@@ -244,7 +244,7 @@ def main():
         print("🔑 CREDENZIALI DI ACCESSO:")
         print("   Username: admin")
         print("   Password: admin123")
-        print("   Email: admin@workly.local")
+        print("   Email: admin@life.local")
         print("\n👥 UTENTI DI ESEMPIO CREATI:")
         print("   responsabile1 / resp123")
         print("   supervisore1 / super123")

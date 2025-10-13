@@ -1,5 +1,5 @@
 # =============================================================================
-# WORKLY - DATABASE MODELS
+# LIFE - DATABASE MODELS
 # Organized by functional areas for better maintainability
 # =============================================================================
 #

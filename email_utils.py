@@ -1,5 +1,5 @@
 """
-Sistema di invio email per Workly
+Sistema di invio email per Life
 Gestisce notifiche per approvazioni, rifiuti, reset password, ecc.
 """
 
@@ -38,7 +38,7 @@ def send_email(subject, recipients, body_text, body_html=None):
                 raise ValueError("MAIL_DEFAULT_SENDER è obbligatorio quando MAIL_USERNAME='apikey'")
         else:
             # Modalità SMTP standard: usa MAIL_DEFAULT_SENDER se impostato, altrimenti MAIL_USERNAME
-            sender = os.environ.get('MAIL_DEFAULT_SENDER') or mail_username or 'noreply@workly.local'
+            sender = os.environ.get('MAIL_DEFAULT_SENDER') or mail_username or 'noreply@life.local'
         
         msg = Message(
             subject=subject,
@@ -88,7 +88,7 @@ Dettagli:
     if leave_request.use_banca_ore and leave_request.banca_ore_hours_used:
         body_text += f"\nUtilizzate {leave_request.banca_ore_hours_used:.1f}h dalla Banca Ore.\n"
     
-    body_text += "\nBuon riposo!\n\n---\nWorkly - Sistema Gestione Presenze"
+    body_text += "\nBuon riposo!\n\n---\nLife - Sistema Gestione Presenze"
     
     body_html = f"""
     <html>
@@ -110,7 +110,7 @@ Dettagli:
             
             <p style="color: #666;">Buon riposo!</p>
             <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-            <p style="font-size: 12px; color: #999; text-align: center;">Workly - Sistema Gestione Presenze</p>
+            <p style="font-size: 12px; color: #999; text-align: center;">Life - Sistema Gestione Presenze</p>
         </div>
     </body>
     </html>
@@ -148,7 +148,7 @@ Dettagli:
     if reason:
         body_text += f"- Motivo: {reason}\n"
     
-    body_text += "\nPer maggiori informazioni, contatta il tuo responsabile.\n\n---\nWorkly - Sistema Gestione Presenze"
+    body_text += "\nPer maggiori informazioni, contatta il tuo responsabile.\n\n---\nLife - Sistema Gestione Presenze"
     
     body_html = f"""
     <html>
@@ -169,7 +169,7 @@ Dettagli:
             
             <p style="color: #666;">Per maggiori informazioni, contatta il tuo responsabile.</p>
             <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-            <p style="font-size: 12px; color: #999; text-align: center;">Workly - Sistema Gestione Presenze</p>
+            <p style="font-size: 12px; color: #999; text-align: center;">Life - Sistema Gestione Presenze</p>
         </div>
     </body>
     </html>
@@ -180,12 +180,12 @@ Dettagli:
 
 def send_password_reset_email(user, reset_url):
     """Invia email con link per reset password"""
-    subject = "🔒 Reset Password - Workly"
+    subject = "🔒 Reset Password - Life"
     
     body_text = f"""
 Ciao {user.get_full_name()},
 
-Hai richiesto il reset della password per il tuo account Workly.
+Hai richiesto il reset della password per il tuo account Life.
 
 Clicca sul link seguente per reimpostare la password:
 {reset_url}
@@ -195,7 +195,7 @@ Questo link è valido per 1 ora.
 Se non hai richiesto il reset, ignora questa email.
 
 ---
-Workly - Sistema Gestione Presenze
+Life - Sistema Gestione Presenze
 """
     
     body_html = f"""
@@ -204,7 +204,7 @@ Workly - Sistema Gestione Presenze
         <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
             <h2 style="color: #007bff;">🔒 Reset Password</h2>
             <p>Ciao <strong>{user.get_full_name()}</strong>,</p>
-            <p>Hai richiesto il reset della password per il tuo account Workly.</p>
+            <p>Hai richiesto il reset della password per il tuo account Life.</p>
             
             <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
                 <p>Clicca sul pulsante seguente per reimpostare la password:</p>
@@ -221,7 +221,7 @@ Workly - Sistema Gestione Presenze
             </p>
             
             <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-            <p style="font-size: 12px; color: #999; text-align: center;">Workly - Sistema Gestione Presenze</p>
+            <p style="font-size: 12px; color: #999; text-align: center;">Life - Sistema Gestione Presenze</p>
         </div>
     </body>
     </html>
@@ -250,7 +250,7 @@ Dettagli:
     if overtime_request.notes:
         body_text += f"- Note: {overtime_request.notes}\n"
     
-    body_text += "\n---\nWorkly - Sistema Gestione Presenze"
+    body_text += "\n---\nLife - Sistema Gestione Presenze"
     
     return send_email(subject, [user.email], body_text)
 
@@ -275,6 +275,6 @@ Dettagli:
     if reason:
         body_text += f"- Motivo: {reason}\n"
     
-    body_text += "\nPer maggiori informazioni, contatta il tuo responsabile.\n\n---\nWorkly - Sistema Gestione Presenze"
+    body_text += "\nPer maggiori informazioni, contatta il tuo responsabile.\n\n---\nLife - Sistema Gestione Presenze"
     
     return send_email(subject, [user.email], body_text)

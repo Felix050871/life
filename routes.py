@@ -1,4 +1,4 @@
-# WORKLY - WORKFORCE MANAGEMENT CORE
+# LIFE - WORKFORCE MANAGEMENT CORE
 # Essential utilities and configuration for Flask application
 # All feature routes migrated to respective blueprint modules
 # Flask Core Imports

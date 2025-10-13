@@ -1,5 +1,5 @@
 # =============================================================================
-# FORMS.PY - WORKLY WORKFORCE MANAGEMENT SYSTEM
+# FORMS.PY - LIFE WORKFORCE MANAGEMENT SYSTEM
 # Comprehensive WTForms collection organized in logical sections for
 # maintaining a scalable and organized form management system.
 #

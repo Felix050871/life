@@ -1,5 +1,5 @@
 # =============================================================================
-# UTILS.PY - WORKLY WORKFORCE MANAGEMENT SYSTEM
+# UTILS.PY - LIFE WORKFORCE MANAGEMENT SYSTEM
 # Comprehensive utility functions organized in logical sections for
 # maintaining a scalable and organized codebase.
 #

@@ -1,4 +1,4 @@
-# Workly - Workforce Management Platform
+# Life - Workforce Management Platform
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
@@ -18,7 +18,7 @@ Una piattaforma completa di gestione della forza lavoro sviluppata con Flask, pr
 ### Installazione Locale
 ```bash
 git clone <repository-url>
-cd workly
+cd life
 ./scripts/setup.sh
 ```
 
@@ -121,7 +121,7 @@ docker-compose up -d
 ```bash
 # Clone repository
 git clone <repository-url>
-cd workly
+cd life
 
 # Esegui setup automatico
 chmod +x scripts/setup.sh
@@ -144,7 +144,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Configura database
-export DATABASE_URL="postgresql://user:pass@localhost/workly"
+export DATABASE_URL="postgresql://user:pass@localhost/life"
 export FLASK_SECRET_KEY="your-secret-key"
 
 # Popola dati di test
@@ -247,7 +247,7 @@ Consulta [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) per istruzioni dettagliate.
 
 ### Struttura Progetto
 ```
-workly/
+life/
 ├── main.py              # Entry point applicazione
 ├── models.py            # Modelli database SQLAlchemy
 ├── routes.py            # Route principali applicazione
@@ -300,4 +300,4 @@ Questo progetto è licenziato sotto la Licenza MIT - vedi il file [LICENSE](LICE
 
 ---
 
-**Workly** - La soluzione completa per la gestione della forza lavoro moderna.
+**Life** - La soluzione completa per la gestione della forza lavoro moderna.

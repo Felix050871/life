@@ -1,4 +1,4 @@
-# 🧹 CLEANUP REPORT - Workly Flask Application
+# 🧹 CLEANUP REPORT - Life Flask Application
 
 **Data:** 8 Agosto 2025  
 **Durata Cleanup:** ~45 minuti  
@@ -212,7 +212,7 @@ def calculate_shift_duration(shift_data):
 
 **✅ CLEANUP COMPLETATO CON SUCCESSO**
 
-Il progetto Workly è stato sottoposto a una pulizia completa e sistematica che ha:
+Il progetto Life è stato sottoposto a una pulizia completa e sistematica che ha:
 
 1. **Eliminato completamente** il codice morto (15 file, 1.1MB)
 2. **Riparato** dipendenze rotte mantenendo la stabilità  
@@ -224,5 +224,5 @@ Il progetto Workly è stato sottoposto a una pulizia completa e sistematica che 
 
 ---
 
-*Report generato automaticamente dal sistema di cleanup Workly*  
+*Report generato automaticamente dal sistema di cleanup Life*  
 *Versione: 1.0 | Data: 8 Agosto 2025*

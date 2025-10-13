@@ -1,7 +1,7 @@
-# Workly - Workforce Management Platform
+# Life - Workforce Management Platform
 
 ## Overview
-Workly is a comprehensive workforce management platform designed for employee attendance tracking, shift scheduling, leave management, and user administration. It provides a responsive web interface and supports multiple user roles with distinct permission levels. The project aims to be a standalone, adaptable solution for any organization, offering intelligent shift generation, detailed attendance recording, and a robust user management system with granular access controls.
+Life is a comprehensive workforce management platform designed for employee attendance tracking, shift scheduling, leave management, and user administration. It provides a responsive web interface and supports multiple user roles with distinct permission levels. The project aims to be a standalone, adaptable solution for any organization, offering intelligent shift generation, detailed attendance recording, and a robust user management system with granular access controls.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -19,7 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Attendance Tracking**: Comprehensive clock-in/out, break tracking, daily records, historical viewing, and reporting. Includes a static QR code system for quick attendance marking with intelligent user status validation.
 - **Shift Management**: Supports intelligent shift generation with workload balancing, recurring shift patterns via templates, and integration with leave/part-time percentages. Includes on-call duty management and intervention tracking. The system adheres to strict operational safety rules, including no overlaps, mandatory 11-hour rest periods after night shifts, splitting shifts longer than 8 hours, and automatic workload balancing. It handles 24/7 coverage, calculates maximum work hours per user, ensures weekly rest days, and prevents inappropriate consecutive assignments.
 - **Mileage Reimbursement System**: Manages mileage reimbursement requests, including automatic distance/amount calculation using ACI tables, multi-point routes, and a manager approval workflow. Integrates with user vehicle assignments and granular permissions.
-- **UI/UX**: Modern, responsive design with a dark Bootstrap theme. Uses generic "Workly" branding. Features global Bootstrap modals for confirmations, an optimized overlay system for long operations, and updated sidebar navigation with dynamic submenus based on user permissions.
+- **UI/UX**: Modern, responsive design with a dark Bootstrap theme. Uses generic "Life" branding. Features global Bootstrap modals for confirmations, an optimized overlay system for long operations, and updated sidebar navigation with dynamic submenus based on user permissions.
 - **Data Export**: Supports conversion from CSV to Excel (.xlsx) across all modules using `openpyxl` server-side and `SheetJS` client-side.
 - **System Logging and Optimization**: Professional logging, removal of obsolete files, and centralized configuration for security, performance, and maintainability.
 - **Dashboard Widgets**: Dynamic widgets for team statistics, personal leave requests, shifts, on-call duties, and mileage reimbursements, controlled by user permissions.

@@ -1,4 +1,4 @@
-# 📧 Configurazione Sistema Email - Workly
+# 📧 Configurazione Sistema Email - Life
 
 ## Overview
 Il sistema email è ora completamente implementato e invia notifiche automatiche per:
@@ -19,7 +19,7 @@ MAIL_PORT=587                           # Porta SMTP (587 per TLS)
 MAIL_USE_TLS=True                       # Usa TLS per sicurezza
 MAIL_USERNAME=tuo-email@gmail.com       # Email mittente
 MAIL_PASSWORD=tua-app-password          # Password applicazione (NON la password email)
-MAIL_DEFAULT_SENDER=noreply@workly.com  # OPZIONALE: Email mittente visualizzata
+MAIL_DEFAULT_SENDER=noreply@life.com  # OPZIONALE: Email mittente visualizzata
 ```
 
 **Nota importante:** `MAIL_DEFAULT_SENDER` è opzionale. Se non configurato, il sistema userà automaticamente `MAIL_USERNAME` come mittente.

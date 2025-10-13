@@ -1,5 +1,5 @@
 """
-Configuration settings for Workly Workforce Management Platform
+Configuration settings for Life Workforce Management Platform
 
 This file centralizes all configuration values to eliminate hardcoded constants
 and improve maintainability. Load values from environment variables with fallbacks.
