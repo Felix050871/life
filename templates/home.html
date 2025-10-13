@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Life Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <!-- Logo e Benvenuto -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-8 text-center">
+            <div class="mb-4">
+                <i class="fas fa-briefcase" style="font-size: 5rem; color: var(--bs-primary);"></i>
+            </div>
+            <h1 class="display-4 mb-3">Benvenuto in Life Platform</h1>
+            <p class="lead text-muted">
+                La piattaforma completa per la gestione del personale e delle risorse aziendali
+            </p>
+        </div>
+    </div>
+
+    <!-- Card WORKLY e LIFE -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-10">
+            <div class="row g-4">
+                <!-- Card WORKLY -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm hover-card">
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="fas fa-clock" style="font-size: 4rem; color: #0d6efd;"></i>
+                            </div>
+                            <h3 class="card-title mb-3">WORKLY</h3>
+                            <p class="card-text text-muted mb-4">
+                                Sistema di gestione presenze, turni, ferie e straordinari. 
+                                Tutto ciò che serve per organizzare il lavoro del tuo team.
+                            </p>
+                            <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-arrow-right me-2"></i>Accedi a WORKLY
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card LIFE -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm hover-card">
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="fas fa-heart" style="font-size: 4rem; color: #198754;"></i>
+                            </div>
+                            <h3 class="card-title mb-3">LIFE</h3>
+                            <p class="card-text text-muted mb-4">
+                                Gestione servizi e benefit per il benessere aziendale. 
+                                In arrivo: nuove funzionalità dedicate.
+                            </p>
+                            <a href="#" class="btn btn-success btn-lg" onclick="alert('Sezione LIFE in arrivo!'); return false;">
+                                <i class="fas fa-arrow-right me-2"></i>Accedi a LIFE
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezione News -->
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0"><i class="fas fa-newspaper me-2"></i>Novità e Aggiornamenti</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Sistema Email Attivo</h6>
+                                    <p class="text-muted small mb-0">
+                                        Ricevi notifiche automatiche per approvazioni, rifiuti e reset password
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Banca Ore Completa</h6>
+                                    <p class="text-muted small mb-0">
+                                        Gestione automatica accumulo e utilizzo ore straordinario
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle text-primary" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Nuova Sezione LIFE</h6>
+                                    <p class="text-muted small mb-0">
+                                        Presto disponibile: gestione benefit e servizi aziendali
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-cog text-info" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Sistema Modulare</h6>
+                                    <p class="text-muted small mb-0">
+                                        Accedi solo alle funzionalità di cui hai bisogno
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}
