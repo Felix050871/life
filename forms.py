@@ -1095,6 +1095,27 @@ class RoleForm(FlaskForm):
     can_manage_aci_tables = BooleanField('Gestire Tabelle ACI')
     can_view_aci_tables = BooleanField('Visualizzare Tabelle ACI')
     
+    # HUBLY - Social Intranet Permissions
+    can_access_hubly = BooleanField('Accedere a HUBLY')
+    can_create_posts = BooleanField('Creare Post/News')
+    can_edit_posts = BooleanField('Modificare Post/News')
+    can_delete_posts = BooleanField('Eliminare Post/News')
+    can_manage_groups = BooleanField('Gestire Gruppi')
+    can_create_groups = BooleanField('Creare Gruppi')
+    can_join_groups = BooleanField('Unirsi ai Gruppi')
+    can_create_polls = BooleanField('Creare Sondaggi')
+    can_vote_polls = BooleanField('Votare Sondaggi')
+    can_manage_documents = BooleanField('Gestire Documenti')
+    can_view_documents = BooleanField('Visualizzare Documenti')
+    can_upload_documents = BooleanField('Caricare Documenti')
+    can_manage_calendar = BooleanField('Gestire Calendario')
+    can_view_calendar = BooleanField('Visualizzare Calendario')
+    can_create_events = BooleanField('Creare Eventi')
+    can_manage_tools = BooleanField('Gestire Strumenti Esterni')
+    can_view_tools = BooleanField('Visualizzare Strumenti')
+    can_comment_posts = BooleanField('Commentare Post')
+    can_like_posts = BooleanField('Mettere Like ai Post')
+    
     active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
     
@@ -1232,7 +1253,32 @@ class RoleForm(FlaskForm):
             
             # Widget Banca Ore
             'can_view_banca_ore_widget': self.can_view_banca_ore_widget.data,
-            'can_view_my_banca_ore_widget': self.can_view_my_banca_ore_widget.data
+            'can_view_my_banca_ore_widget': self.can_view_my_banca_ore_widget.data,
+            
+            # Gestione Tabelle ACI
+            'can_manage_aci_tables': self.can_manage_aci_tables.data,
+            'can_view_aci_tables': self.can_view_aci_tables.data,
+            
+            # HUBLY - Social Intranet
+            'can_access_hubly': self.can_access_hubly.data,
+            'can_create_posts': self.can_create_posts.data,
+            'can_edit_posts': self.can_edit_posts.data,
+            'can_delete_posts': self.can_delete_posts.data,
+            'can_manage_groups': self.can_manage_groups.data,
+            'can_create_groups': self.can_create_groups.data,
+            'can_join_groups': self.can_join_groups.data,
+            'can_create_polls': self.can_create_polls.data,
+            'can_vote_polls': self.can_vote_polls.data,
+            'can_manage_documents': self.can_manage_documents.data,
+            'can_view_documents': self.can_view_documents.data,
+            'can_upload_documents': self.can_upload_documents.data,
+            'can_manage_calendar': self.can_manage_calendar.data,
+            'can_view_calendar': self.can_view_calendar.data,
+            'can_create_events': self.can_create_events.data,
+            'can_manage_tools': self.can_manage_tools.data,
+            'can_view_tools': self.can_view_tools.data,
+            'can_comment_posts': self.can_comment_posts.data,
+            'can_like_posts': self.can_like_posts.data
         }
     
     def populate_permissions(self, permissions_dict):
@@ -1347,6 +1393,31 @@ class RoleForm(FlaskForm):
         # Widget Banca Ore
         self.can_view_banca_ore_widget.data = permissions_dict.get('can_view_banca_ore_widget', False)
         self.can_view_my_banca_ore_widget.data = permissions_dict.get('can_view_my_banca_ore_widget', False)
+        
+        # Gestione Tabelle ACI
+        self.can_manage_aci_tables.data = permissions_dict.get('can_manage_aci_tables', False)
+        self.can_view_aci_tables.data = permissions_dict.get('can_view_aci_tables', False)
+        
+        # HUBLY - Social Intranet
+        self.can_access_hubly.data = permissions_dict.get('can_access_hubly', False)
+        self.can_create_posts.data = permissions_dict.get('can_create_posts', False)
+        self.can_edit_posts.data = permissions_dict.get('can_edit_posts', False)
+        self.can_delete_posts.data = permissions_dict.get('can_delete_posts', False)
+        self.can_manage_groups.data = permissions_dict.get('can_manage_groups', False)
+        self.can_create_groups.data = permissions_dict.get('can_create_groups', False)
+        self.can_join_groups.data = permissions_dict.get('can_join_groups', False)
+        self.can_create_polls.data = permissions_dict.get('can_create_polls', False)
+        self.can_vote_polls.data = permissions_dict.get('can_vote_polls', False)
+        self.can_manage_documents.data = permissions_dict.get('can_manage_documents', False)
+        self.can_view_documents.data = permissions_dict.get('can_view_documents', False)
+        self.can_upload_documents.data = permissions_dict.get('can_upload_documents', False)
+        self.can_manage_calendar.data = permissions_dict.get('can_manage_calendar', False)
+        self.can_view_calendar.data = permissions_dict.get('can_view_calendar', False)
+        self.can_create_events.data = permissions_dict.get('can_create_events', False)
+        self.can_manage_tools.data = permissions_dict.get('can_manage_tools', False)
+        self.can_view_tools.data = permissions_dict.get('can_view_tools', False)
+        self.can_comment_posts.data = permissions_dict.get('can_comment_posts', False)
+        self.can_like_posts.data = permissions_dict.get('can_like_posts', False)
 
 
 # Form del pacchetto presidio integrati
