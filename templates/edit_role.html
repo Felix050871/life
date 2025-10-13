@@ -535,6 +535,134 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- HUBLY Section -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card border-success shadow-sm">
+                                    <div class="card-header py-3 bg-success text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-network-wired me-2"></i>
+                                            HUBLY - Social Intranet
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <!-- Accesso Base -->
+                                            <div class="col-md-6 mb-3">
+                                                <h6 class="text-success mb-3"><i class="fas fa-door-open me-1"></i> Accesso</h6>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_access_hubly() }}
+                                                    {{ form.can_access_hubly.label(class="form-check-label") }}
+                                                </div>
+                                            </div>
+
+                                            <!-- Post e News -->
+                                            <div class="col-md-6 mb-3">
+                                                <h6 class="text-success mb-3"><i class="fas fa-newspaper me-1"></i> Post & News</h6>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_create_posts() }}
+                                                    {{ form.can_create_posts.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_edit_posts() }}
+                                                    {{ form.can_edit_posts.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_delete_posts() }}
+                                                    {{ form.can_delete_posts.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_comment_posts() }}
+                                                    {{ form.can_comment_posts.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_like_posts() }}
+                                                    {{ form.can_like_posts.label(class="form-check-label") }}
+                                                </div>
+                                            </div>
+
+                                            <!-- Gruppi -->
+                                            <div class="col-md-6 mb-3">
+                                                <h6 class="text-success mb-3"><i class="fas fa-users me-1"></i> Gruppi</h6>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_manage_groups() }}
+                                                    {{ form.can_manage_groups.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_create_groups() }}
+                                                    {{ form.can_create_groups.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_join_groups() }}
+                                                    {{ form.can_join_groups.label(class="form-check-label") }}
+                                                </div>
+                                            </div>
+
+                                            <!-- Sondaggi -->
+                                            <div class="col-md-6 mb-3">
+                                                <h6 class="text-success mb-3"><i class="fas fa-poll me-1"></i> Sondaggi</h6>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_create_polls() }}
+                                                    {{ form.can_create_polls.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_vote_polls() }}
+                                                    {{ form.can_vote_polls.label(class="form-check-label") }}
+                                                </div>
+                                            </div>
+
+                                            <!-- Documenti -->
+                                            <div class="col-md-6 mb-3">
+                                                <h6 class="text-success mb-3"><i class="fas fa-folder-open me-1"></i> Documenti</h6>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_manage_documents() }}
+                                                    {{ form.can_manage_documents.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_view_documents() }}
+                                                    {{ form.can_view_documents.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_upload_documents() }}
+                                                    {{ form.can_upload_documents.label(class="form-check-label") }}
+                                                </div>
+                                            </div>
+
+                                            <!-- Calendario -->
+                                            <div class="col-md-6 mb-3">
+                                                <h6 class="text-success mb-3"><i class="fas fa-calendar me-1"></i> Calendario</h6>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_manage_calendar() }}
+                                                    {{ form.can_manage_calendar.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_view_calendar() }}
+                                                    {{ form.can_view_calendar.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_create_events() }}
+                                                    {{ form.can_create_events.label(class="form-check-label") }}
+                                                </div>
+                                            </div>
+
+                                            <!-- Strumenti -->
+                                            <div class="col-md-6 mb-3">
+                                                <h6 class="text-success mb-3"><i class="fas fa-tools me-1"></i> Strumenti</h6>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_manage_tools() }}
+                                                    {{ form.can_manage_tools.label(class="form-check-label") }}
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    {{ form.can_view_tools() }}
+                                                    {{ form.can_view_tools.label(class="form-check-label") }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         </div> <!-- Chiusura sezione Permessi Funzionali -->
 
                         {% endif %}
