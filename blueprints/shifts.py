@@ -28,6 +28,7 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db, csrf
 from models import User, Shift, Sede, PresidioCoverageTemplate, PresidioCoverage, AttendanceEvent, ReperibilitaShift, LeaveRequest, italian_now, get_active_presidio_templates
+from utils_tenant import get_user_company_id, filter_by_company, set_company_on_create
 from forms import EditShiftForm, PresidioCoverageTemplateForm, PresidioCoverageForm, PresidioCoverageSearchForm
 from collections import defaultdict
 from io import BytesIO
