@@ -233,11 +233,18 @@ class User(UserMixin, db.Model):
         return f"{self.first_name} {self.last_name}"
     
     def get_accessible_sedi(self):
-        """Restituisce tutte le sedi accessibili dall'utente"""
-        if self.all_sedi:
+        """Restituisce tutte le sedi accessibili dall'utente (filtrate per azienda)"""
+        # System admin vedono tutte le sedi
+        if self.is_system_admin:
             return Sede.query.filter_by(active=True).all()
+        
+        # Filtra per company_id
+        base_query = Sede.query.filter_by(active=True, company_id=self.company_id)
+        
+        if self.all_sedi:
+            return base_query.all()
         elif self.sede_id:
-            return [self.sede_obj] if self.sede_obj and self.sede_obj.active else []
+            return [self.sede_obj] if self.sede_obj and self.sede_obj.active and self.sede_obj.company_id == self.company_id else []
         return []
     
     def can_access_sede(self, sede_id):
@@ -756,6 +763,7 @@ class AttendanceEvent(db.Model):
     notes = db.Column(db.Text)
     shift_status = db.Column(db.String(20), nullable=True)  # 'anticipo', 'normale', 'ritardo' per entrate/uscite
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     user = db.relationship('User', backref='attendance_events')
     sede = db.relationship('Sede', backref='sede_attendance_events')
@@ -1354,6 +1362,7 @@ class LeaveRequest(db.Model):
     approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     approved_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Campi per permessi orari
     start_time = db.Column(db.Time, nullable=True)  # Orario inizio per permessi parziali
@@ -1452,6 +1461,7 @@ class Shift(db.Model):
     shift_type = db.Column(db.String(50), nullable=False, default='Turno')  # Simplified shift type
     created_at = db.Column(db.DateTime, default=italian_now)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     user = db.relationship('User', foreign_keys=[user_id], backref='shifts')
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_shifts')
@@ -1944,6 +1954,7 @@ class Holiday(db.Model):
     description = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Relationships
     creator = db.relationship('User', backref='created_holidays')
@@ -2002,6 +2013,7 @@ class InternalMessage(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     related_leave_request_id = db.Column(db.Integer, db.ForeignKey('leave_request.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')

@@ -21,6 +21,7 @@ from functools import wraps
 from app import db
 from models import User, LeaveRequest, LeaveType, Sede, Holiday, italian_now
 from forms import LeaveRequestForm
+from utils_tenant import get_user_company_id, filter_by_company, set_company_on_create
 import io
 import csv
 
@@ -60,8 +61,8 @@ def leave_requests():
         flash('Non hai i permessi per accedere alle richieste', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    # Base query
-    query = LeaveRequest.query
+    # Base query con filtro company
+    query = filter_by_company(LeaveRequest.query, LeaveRequest)
     
     # Filtri per vista
     if view == 'my':
@@ -107,13 +108,14 @@ def leave_requests():
         LeaveRequest.created_at.desc()
     ).all()
     
-    # Statistiche per dashboard
+    # Statistiche per dashboard (filtrate per company)
     stats = {}
     if view in ['approve', 'view']:
+        stats_query = filter_by_company(LeaveRequest.query, LeaveRequest)
         stats = {
-            'pending_count': LeaveRequest.query.filter_by(status='Pending').count(),
-            'approved_count': LeaveRequest.query.filter_by(status='Approved').count(),
-            'rejected_count': LeaveRequest.query.filter_by(status='Rejected').count(),
+            'pending_count': stats_query.filter_by(status='Pending').count(),
+            'approved_count': stats_query.filter_by(status='Approved').count(),
+            'rejected_count': stats_query.filter_by(status='Rejected').count(),
         }
     
     # Lista anni disponibili per filtro
@@ -203,6 +205,9 @@ def create_leave_request():
                 else:
                     flash('La banca ore può essere utilizzata solo per permessi orari', 'warning')
                     return render_template('create_leave_request.html', form=form, today=date.today())
+            
+            # Imposta company_id automaticamente
+            set_company_on_create(new_request)
             
             db.session.add(new_request)
             db.session.commit()
