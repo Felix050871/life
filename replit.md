@@ -41,7 +41,7 @@ Preferred communication style: Simple, everyday language.
 - **System Logging and Optimization**: Professional logging, configuration centralization for security, performance, and maintainability.
 - **Dashboard Widgets**: Dynamic widgets for team statistics, personal leave requests, shifts, on-call duties, and mileage reimbursements, controlled by user permissions.
 - **Internal Messaging**: Multi-recipient internal messaging system with permission-based sending and automatic notifications for approvals/rejections.
-- **User Profile Management**: Allows users to modify personal details independently.
+- **User Profile Management**: Allows users to modify personal details independently, including profile image upload with automatic resizing to 200x200px. Profile images are displayed in a circular format in the navbar and profile page, with a default image for users without a custom photo.
 - **Database Simplification**: System is exclusively designed for PostgreSQL, removing previous SQLite support for robustness.
 
 ## External Dependencies
