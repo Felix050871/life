@@ -239,9 +239,10 @@
                     </a>
                 </li>
                 {% endif %}
-                <!-- RUOLI - Solo se ha almeno un permesso ruoli -->
+                <!-- RUOLI - Solo se ha almeno un permesso ruoli E non è ADMIN aziendale (sono nella topbar) -->
                 {% set has_roles_permission = current_user.can_manage_roles() or current_user.can_view_roles() %}
-                {% if has_roles_permission %}
+                {% set is_company_admin = current_user.role == 'Amministratore' and not current_user.is_system_admin %}
+                {% if has_roles_permission and not is_company_admin %}
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
                         <i class="fas fa-users-gear"></i>
@@ -263,9 +264,9 @@
                 </li>
                 {% endif %}
 
-                <!-- UTENTI - Solo se ha almeno un permesso utenti -->
+                <!-- UTENTI - Solo se ha almeno un permesso utenti E non è ADMIN aziendale (sono nella topbar) -->
                 {% set has_users_permission = current_user.can_manage_users() or current_user.can_view_users() %}
-                {% if has_users_permission %}
+                {% if has_users_permission and not is_company_admin %}
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
                         <i class="fas fa-users"></i>
