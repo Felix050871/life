@@ -32,14 +32,39 @@
                         </h5>
                     </a>
                     {% if not current_user.is_system_admin %}
-                    <div class="btn-group" role="group">
-                        <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-sm btn-outline-light">
-                            <img src="{{ url_for('static', filename='images/workly_logo.png') }}" alt="WORKLY" style="height: 16px; width: auto; margin-right: 0.25rem;">WORKLY
-                        </a>
-                        {% if current_user.has_permission('can_access_hubly') %}
-                        <a href="{{ url_for('hubly.home') }}" class="btn btn-sm btn-outline-light">
-                            <img src="{{ url_for('static', filename='images/hubly_logo.png') }}" alt="HUBLY" style="height: 16px; width: auto; margin-right: 0.25rem;">HUBLY
-                        </a>
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- Platform Tabs -->
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-sm btn-outline-light">
+                                <img src="{{ url_for('static', filename='images/workly_logo.png') }}" alt="WORKLY" style="height: 16px; width: auto; margin-right: 0.25rem;">WORKLY
+                            </a>
+                            {% if current_user.has_permission('can_access_hubly') %}
+                            <a href="{{ url_for('hubly.home') }}" class="btn btn-sm btn-outline-light">
+                                <img src="{{ url_for('static', filename='images/hubly_logo.png') }}" alt="HUBLY" style="height: 16px; width: auto; margin-right: 0.25rem;">HUBLY
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Admin Menu (Only for Company ADMIN) -->
+                        {% if current_user.role == 'Amministratore' and not current_user.is_system_admin %}
+                        <div class="vr" style="opacity: 0.5;"></div>
+                        <div class="dropdown">
+                            <a class="btn btn-outline-warning btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-shield me-1"></i>Amministrazione
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% if current_user.can_manage_roles() or current_user.can_view_roles() %}
+                                <li><a class="dropdown-item" href="{{ url_for('admin.manage_roles') }}">
+                                    <i class="fas fa-users-gear me-1"></i>Ruoli
+                                </a></li>
+                                {% endif %}
+                                {% if current_user.can_manage_users() or current_user.can_view_users() %}
+                                <li><a class="dropdown-item" href="{{ url_for('user_management.user_management') }}">
+                                    <i class="fas fa-users me-1"></i>Utenti
+                                </a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
                         {% endif %}
                     </div>
                     {% endif %}
