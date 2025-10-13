@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}Life - Workforce Management Platform{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <!-- SheetJS for Excel export -->  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- SUPERADMIN Layout - Full Screen without Sidebar -->
+    {% if current_user.is_authenticated %}
+    <!-- Project Title Bar with User Menu -->
+    <div class="project-title-bar">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center">
+                <!-- Left: Platform Title -->
+                <div class="d-flex align-items-center gap-3">
+                    <a href="{{ url_for('index') }}" class="text-decoration-none text-white">
+                        <h5 class="mb-0 me-3">
+                            <i class="fas fa-cogs me-2"></i>Life Platform - Amministrazione Sistema
+                        </h5>
+                    </a>
+                </div>
+                
+                <!-- Right: User Menu and System Administration -->
+                <div class="d-flex align-items-center gap-3">
+                    <!-- System Administration -->
+                    <div class="dropdown">
+                        <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cogs me-1"></i>Amministrazione Sistema
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('companies.list_companies') }}">
+                                <i class="fas fa-building me-1"></i>Gestione Aziende
+                            </a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- User Menu -->
+                    <div class="dropdown">
+                        <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ current_user.first_name or current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('user_management.user_profile') }}">
+                                <i class="fas fa-user-edit me-1"></i>Profilo
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-1"></i>Logout
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Full Width Content (No Sidebar) -->
+    <div class="superadmin-content-wrapper">
+        <!-- Main Content -->
+        <div class="main-content" style="padding-top: 70px;">
+            <div class="container-fluid">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="content-area">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="container-fluid">
+                <div class="text-center py-2">
+                    <small class="text-muted">
+                        <strong>LIFE</strong> Workforce Management Platform by <strong>NS12 S.p.A.</strong>
+                    </small>
+                </div>
+            </div>
+        </footer>
+    </div>
+    {% endif %}
+    
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-circle-notch fa-spin fa-3x text-white"></i>
+            <div class="mt-3 text-white">Caricamento in corso...</div>
+        </div>
+    </div>
+
+    <!-- Global Confirmation Modal -->
+    <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="globalConfirmModalLabel">Conferma</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="globalConfirmModalBody">
+                    Sei sicuro di voler procedere?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </button>
+                    <button type="button" class="btn btn-danger" id="globalConfirmModalOk">
+                        <i class="fas fa-check me-1"></i>Conferma
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Loading Manager
+        const loadingManager = {
+            overlay: document.getElementById('loadingOverlay'),
+            activeRequests: 0,
+            
+            show() {
+                this.activeRequests++;
+                if (this.overlay) {
+                    this.overlay.style.display = 'flex';
+                }
+            },
+            
+            hide() {
+                this.activeRequests = Math.max(0, this.activeRequests - 1);
+                if (this.activeRequests === 0 && this.overlay) {
+                    this.overlay.style.display = 'none';
+                }
+            }
+        };
+
+        // Show loading on form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    if (!this.hasAttribute('data-no-loading')) {
+                        loadingManager.show();
+                    }
+                });
+            });
+
+            // Show loading on navigation links (except modals and cancel buttons)
+            document.querySelectorAll('a[href]').forEach(link => {
+                if (!link.hasAttribute('data-bs-toggle') && 
+                    !link.classList.contains('dropdown-item') && 
+                    !link.textContent.toLowerCase().includes('annulla')) {
+                    link.addEventListener('click', function(e) {
+                        if (this.getAttribute('href') !== '#' && !this.getAttribute('onclick')) {
+                            loadingManager.show();
+                        }
+                    });
+                }
+            });
+
+            // Hide loading on page load
+            loadingManager.hide();
+        });
+
+        // Hide loading on page visibility change or beforeunload
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                loadingManager.hide();
+            }
+        });
+
+        window.addEventListener('beforeunload', function() {
+            loadingManager.hide();
+        });
+
+        // Expose globally for manual control
+        window.showLoading = () => loadingManager.show();
+        window.hideLoading = () => loadingManager.hide();
+
+        // Global Confirmation Modal System
+        class ConfirmationManager {
+            constructor() {
+                this.modal = new bootstrap.Modal(document.getElementById('globalConfirmModal'));
+                this.currentCallback = null;
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                const confirmBtn = document.getElementById('globalConfirmModalOk');
+                const modal = document.getElementById('globalConfirmModal');
+
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', () => {
+                        this.modal.hide();
+                        if (this.currentCallback) {
+                            setTimeout(() => {
+                                this.currentCallback();
+                                this.currentCallback = null;
+                            }, 300);
+                        }
+                    });
+                }
+
+                if (modal) {
+                    modal.addEventListener('hidden.bs.modal', () => {
+                        this.currentCallback = null;
+                    });
+                }
+            }
+
+            show(title, message, onConfirm, confirmBtnText = 'Conferma', confirmBtnClass = 'btn-danger') {
+                document.getElementById('globalConfirmModalLabel').innerHTML = 
+                    `<i class="fas fa-exclamation-triangle text-warning me-2"></i>${title}`;
+                document.getElementById('globalConfirmModalBody').innerHTML = message;
+                
+                const confirmBtn = document.getElementById('globalConfirmModalOk');
+                confirmBtn.className = `btn ${confirmBtnClass}`;
+                confirmBtn.innerHTML = `<i class="fas fa-check me-1"></i>${confirmBtnText}`;
+                
+                this.currentCallback = onConfirm;
+                this.modal.show();
+            }
+        }
+
+        // Initialize global confirmation manager
+        const confirmationManager = new ConfirmationManager();
+
+        // Replace all confirm() calls with custom modal
+        window.showConfirm = (title, message, onConfirm, confirmBtnText, confirmBtnClass) => {
+            confirmationManager.show(title, message, onConfirm, confirmBtnText, confirmBtnClass);
+        };
+
+        // Global confirmDelete function
+        window.confirmDelete = function(itemName, deleteUrl, itemType = 'elemento') {
+            let title = 'Conferma Eliminazione';
+            let message = `<p><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Vuoi eliminare definitivamente <strong>${itemName}</strong>?</p>` +
+                         `<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>` +
+                         `<strong>Attenzione:</strong> Questa operazione non può essere annullata.</small></div>`;
+            
+            confirmationManager.show(title, message, () => {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = deleteUrl;
+                
+                const csrfToken = document.querySelector('meta[name=csrf-token]');
+                if (csrfToken) {
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrf_token';
+                    csrfInput.value = csrfToken.getAttribute('content');
+                    form.appendChild(csrfInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+            }, 'Elimina', 'btn-danger');
+        };
+    </script>
+
+    <style>
+        /* Full-width content for SUPERADMIN */
+        .superadmin-content-wrapper {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .superadmin-content-wrapper .main-content {
+            flex: 1;
+        }
+    </style>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
