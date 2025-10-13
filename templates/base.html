@@ -34,7 +34,7 @@
                     {% if not current_user.is_system_admin %}
                     <div class="btn-group" role="group">
                         <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-sm btn-outline-light">
-                            <i class="fas fa-clock me-1"></i>WORKLY
+                            <img src="{{ url_for('static', filename='images/workly_logo.webp') }}" alt="WORKLY" style="height: 16px; width: auto; margin-right: 0.25rem;">WORKLY
                         </a>
                         <a href="#" class="btn btn-sm btn-outline-light" onclick="alert('Sezione LIFE in arrivo!'); return false;">
                             <img src="{{ url_for('static', filename='images/life_logo.png') }}" alt="LIFE" style="height: 16px; width: auto; margin-right: 0.25rem;">LIFE
@@ -110,7 +110,7 @@
         <nav class="sidebar {% if request.endpoint == 'index' %}d-none{% endif %}" id="sidebar">
             <div class="sidebar-header">
                 <a href="{{ url_for('dashboard.dashboard') }}" class="brand">
-                    <i class="fas fa-clock me-2"></i><span>Workly</span>
+                    <img src="{{ url_for('static', filename='images/workly_logo.webp') }}" alt="Workly" style="height: 24px; width: auto; margin-right: 0.5rem;"><span>Workly</span>
                 </a>
                 <button class="sidebar-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
