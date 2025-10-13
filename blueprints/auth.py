@@ -36,6 +36,9 @@ def is_safe_url(target):
 def login():
     """User login page"""
     if current_user.is_authenticated:
+        # SUPERADMIN goes to home page, others to dashboard
+        if current_user.is_system_admin:
+            return redirect(url_for('index'))
         return redirect(url_for('dashboard.dashboard'))
     
     form = LoginForm()
@@ -46,6 +49,10 @@ def login():
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
                 return redirect(next_page)
+            
+            # SUPERADMIN goes to home page, others to dashboard
+            if user.is_system_admin:
+                return redirect(url_for('index'))
             return redirect(url_for('dashboard.dashboard'))
         flash('Username o password non validi', 'danger')
     
