@@ -18,6 +18,7 @@
             </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="code" class="form-label">Codice Azienda *</label>
@@ -91,6 +92,45 @@
                             <div id="bgPreview" class="mt-2"></div>
                         </div>
                     </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="mb-3"><i class="fas fa-user-shield me-2"></i>Amministratore Azienda</h5>
+                    {% if admin %}
+                    <p class="text-muted mb-3">Modifica le informazioni dell'amministratore</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_username" class="form-label">Username Amministratore</label>
+                            <input type="text" class="form-control" id="admin_username" name="admin_username" 
+                                   value="{{ admin.username }}" placeholder="es. admin_ns12">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_email" class="form-label">Email Amministratore</label>
+                            <input type="email" class="form-control" id="admin_email" name="admin_email" 
+                                   value="{{ admin.email }}" placeholder="admin@azienda.it">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_full_name" class="form-label">Nome Completo</label>
+                            <input type="text" class="form-control" id="admin_full_name" name="admin_full_name" 
+                                   value="{{ admin.full_name or '' }}" placeholder="Mario Rossi">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_password" class="form-label">Nuova Password (opzionale)</label>
+                            <input type="password" class="form-control" id="admin_password" name="admin_password" 
+                                   minlength="6" placeholder="Lascia vuoto per non modificare">
+                            <small class="text-muted">Inserisci solo se vuoi cambiare la password</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Nessun amministratore assegnato a questa azienda
+                    </div>
+                    {% endif %}
                     
                     <div class="d-flex justify-content-between mt-4">
                         <a href="{{ url_for('companies.list_companies') }}" class="btn btn-secondary">

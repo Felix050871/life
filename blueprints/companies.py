@@ -216,6 +216,12 @@ def edit_company(company_id):
         max_licenses = request.form.get('max_licenses', 10, type=int)
         active = request.form.get('active') == 'on'
         
+        # Admin data
+        admin_username = request.form.get('admin_username')
+        admin_email = request.form.get('admin_email')
+        admin_full_name = request.form.get('admin_full_name')
+        admin_password = request.form.get('admin_password')
+        
         # Validate required fields
         if not name or not code:
             flash('Nome e codice azienda sono obbligatori', 'danger')
@@ -233,6 +239,32 @@ def edit_company(company_id):
         company.description = description
         company.max_licenses = max_licenses
         company.active = active
+        
+        # Update admin if data is provided
+        if admin_username or admin_email or admin_full_name:
+            admin = company.users.filter_by(role='Amministratore').first()
+            if admin:
+                # Check if username or email already exists (excluding current admin)
+                if admin_username and admin_username != admin.username:
+                    existing_user = User.query.filter(User.username == admin_username, User.id != admin.id).first()
+                    if existing_user:
+                        flash('Username amministratore già in uso', 'danger')
+                        return redirect(url_for('companies.edit_company', company_id=company_id))
+                    admin.username = admin_username
+                
+                if admin_email and admin_email != admin.email:
+                    existing_user = User.query.filter(User.email == admin_email, User.id != admin.id).first()
+                    if existing_user:
+                        flash('Email amministratore già in uso', 'danger')
+                        return redirect(url_for('companies.edit_company', company_id=company_id))
+                    admin.email = admin_email
+                
+                if admin_full_name:
+                    admin.full_name = admin_full_name
+                
+                # Update password if provided
+                if admin_password:
+                    admin.password_hash = generate_password_hash(admin_password)
         
         # Handle logo upload
         if 'logo' in request.files:
@@ -259,14 +291,16 @@ def edit_company(company_id):
             flash(f'Errore nell\'aggiornamento dell\'azienda: {str(e)}', 'danger')
             return redirect(url_for('companies.edit_company', company_id=company_id))
     
-    # Get company statistics
+    # Get company statistics and admin
     users_count = company.users.count()
     sedi_count = company.sedi.count()
+    admin = company.users.filter_by(role='Amministratore').first()
     
     return render_template('companies/edit.html', 
                          company=company,
                          users_count=users_count,
-                         sedi_count=sedi_count)
+                         sedi_count=sedi_count,
+                         admin=admin)
 
 @companies_bp.route('/delete/<int:company_id>', methods=['POST'])
 @login_required
