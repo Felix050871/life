@@ -248,6 +248,10 @@ def api_roles():
 def user_profile():
     """User profile page"""
     from forms import UserProfileForm
+    from werkzeug.utils import secure_filename
+    from PIL import Image
+    import os
+    import uuid
     
     form = UserProfileForm(obj=current_user)
     
@@ -256,6 +260,48 @@ def user_profile():
         current_user.first_name = form.first_name.data
         current_user.last_name = form.last_name.data
         current_user.email = form.email.data
+        
+        # Handle profile image upload
+        if form.profile_image.data:
+            file = form.profile_image.data
+            
+            # Generate unique filename
+            file_ext = os.path.splitext(secure_filename(file.filename))[1]
+            unique_filename = f"{uuid.uuid4().hex}{file_ext}"
+            
+            # Save path
+            upload_folder = os.path.join('static', 'uploads', 'profiles')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, unique_filename)
+            
+            # Save and resize image
+            file.save(file_path)
+            
+            # Resize image to 200x200 using PIL
+            try:
+                with Image.open(file_path) as img:
+                    # Convert to RGB if necessary (for PNG with transparency)
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                        img = background
+                    
+                    # Resize maintaining aspect ratio and crop to square
+                    img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                    img.save(file_path, quality=85, optimize=True)
+                
+                # Delete old profile image if exists
+                if current_user.profile_image:
+                    old_image_path = os.path.join(upload_folder, current_user.profile_image)
+                    if os.path.exists(old_image_path):
+                        os.remove(old_image_path)
+                
+                # Update user profile image
+                current_user.profile_image = unique_filename
+            except Exception as e:
+                flash(f'Errore nel caricamento dell\'immagine: {str(e)}', 'danger')
         
         # Update password if provided
         if form.password.data:
