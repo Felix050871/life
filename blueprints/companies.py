@@ -87,13 +87,22 @@ def list_companies():
     """List all companies"""
     companies = Company.query.order_by(Company.created_at.desc()).all()
     
-    # Get statistics for each company
+    # Calculate statistics for each company (same as dashboard)
     company_stats = []
     for company in companies:
+        # Get active users count
+        active_users = company.users.filter_by(active=True).count()
+        
+        # Get company admin
+        admin = company.users.filter_by(role='Amministratore').first()
+        
         stats = {
             'company': company,
-            'users_count': company.users.count(),
-            'sedi_count': company.sedi.count()
+            'active_users': active_users,
+            'total_users': company.users.count(),
+            'admin': admin,
+            'sedi_count': company.sedi.count(),
+            'usage_percent': round((active_users / company.max_licenses * 100) if company.max_licenses > 0 else 0)
         }
         company_stats.append(stats)
     
