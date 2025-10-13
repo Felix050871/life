@@ -66,7 +66,27 @@ def create_default_roles():
                 # Straordinari
                 'can_manage_overtime': True,
                 'can_view_overtime': True,
-                'can_approve_overtime': True
+                'can_approve_overtime': True,
+                # HUBLY - Social Intranet
+                'can_access_hubly': True,
+                'can_create_posts': True,
+                'can_edit_posts': True,
+                'can_delete_posts': True,
+                'can_manage_groups': True,
+                'can_create_groups': True,
+                'can_join_groups': True,
+                'can_create_polls': True,
+                'can_vote_polls': True,
+                'can_manage_documents': True,
+                'can_view_documents': True,
+                'can_upload_documents': True,
+                'can_manage_calendar': True,
+                'can_view_calendar': True,
+                'can_create_events': True,
+                'can_manage_tools': True,
+                'can_view_tools': True,
+                'can_comment_posts': True,
+                'can_like_posts': True
             }
         },
         'Responsabile': {
@@ -82,7 +102,21 @@ def create_default_roles():
                 'can_manage_shifts': True,
                 'can_view_shifts': True,
                 'can_view_reports': True,
-                'can_export_reports': True
+                'can_export_reports': True,
+                # HUBLY
+                'can_access_hubly': True,
+                'can_create_posts': True,
+                'can_create_groups': True,
+                'can_join_groups': True,
+                'can_create_polls': True,
+                'can_vote_polls': True,
+                'can_view_documents': True,
+                'can_upload_documents': True,
+                'can_view_calendar': True,
+                'can_create_events': True,
+                'can_view_tools': True,
+                'can_comment_posts': True,
+                'can_like_posts': True
             }
         },
         'Supervisore': {
@@ -92,7 +126,17 @@ def create_default_roles():
                 'can_view_attendance': True,
                 'can_view_leave_requests': True,
                 'can_view_shifts': True,
-                'can_view_reports': True
+                'can_view_reports': True,
+                # HUBLY
+                'can_access_hubly': True,
+                'can_create_posts': True,
+                'can_join_groups': True,
+                'can_vote_polls': True,
+                'can_view_documents': True,
+                'can_view_calendar': True,
+                'can_view_tools': True,
+                'can_comment_posts': True,
+                'can_like_posts': True
             }
         },
         'Operatore': {
@@ -100,7 +144,16 @@ def create_default_roles():
             'permissions': {
                 'can_access_dashboard': True,
                 'can_view_attendance': True,
-                'can_view_shifts': True
+                'can_view_shifts': True,
+                # HUBLY
+                'can_access_hubly': True,
+                'can_join_groups': True,
+                'can_vote_polls': True,
+                'can_view_documents': True,
+                'can_view_calendar': True,
+                'can_view_tools': True,
+                'can_comment_posts': True,
+                'can_like_posts': True
             }
         }
     }

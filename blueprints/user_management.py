@@ -261,6 +261,13 @@ def user_profile():
         current_user.last_name = form.last_name.data
         current_user.email = form.email.data
         
+        # Update HUBLY social fields
+        current_user.bio = form.bio.data
+        current_user.linkedin_url = form.linkedin_url.data
+        current_user.phone_number = form.phone_number.data
+        current_user.department = form.department.data
+        current_user.job_title = form.job_title.data
+        
         # Handle profile image upload
         if form.profile_image.data:
             file = form.profile_image.data
