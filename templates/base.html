@@ -110,8 +110,8 @@
     </div>
     
     <div class="main-wrapper">
-        <!-- Sidebar - Nascosta nella home page -->
-        <nav class="sidebar {% if request.endpoint == 'index' %}d-none{% endif %}" id="sidebar">
+        <!-- Sidebar - Nascosta nella home page e nella pagina profilo -->
+        <nav class="sidebar {% if request.endpoint == 'index' or request.endpoint == 'user_management.user_profile' %}d-none{% endif %}" id="sidebar">
             <div class="sidebar-header">
                 <a href="{{ url_for('dashboard.dashboard') }}" class="brand">
                     <img src="{{ url_for('static', filename='images/workly_logo.png') }}" alt="Workly" style="height: 24px; width: auto; margin-right: 0.5rem;"><span>Workly</span>
@@ -538,10 +538,10 @@
         </nav>
 
         <!-- Content Wrapper - Full width nella home page -->
-        <div class="content-wrapper {% if request.endpoint == 'index' %}sidebar-collapsed{% endif %}" id="content-wrapper">
+        <div class="content-wrapper {% if request.endpoint == 'index' or request.endpoint == 'user_management.user_profile' %}sidebar-collapsed{% endif %}" id="content-wrapper">
             <!-- Main Content -->
             <div class="main-content">
-                <div class="container-fluid" style="{% if request.endpoint != 'index' %}padding: 0;{% endif %}">
+                <div class="container-fluid" style="{% if request.endpoint != 'index' and request.endpoint != 'user_management.user_profile' %}padding: 0;{% endif %}">
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
