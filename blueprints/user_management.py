@@ -242,12 +242,30 @@ def api_roles():
 # USER PROFILE ROUTES
 # =============================================================================
 
-@user_management_bp.route('/profile')
+@user_management_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def user_profile():
     """User profile page"""
-    # Basic profile functionality - can be expanded later
-    return render_template('user_profile.html', user=current_user)
+    from forms import UserProfileForm
+    
+    form = UserProfileForm(obj=current_user)
+    
+    if form.validate_on_submit():
+        # Update user profile
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.email = form.email.data
+        
+        # Update password if provided
+        if form.password.data:
+            from werkzeug.security import generate_password_hash
+            current_user.password_hash = generate_password_hash(form.password.data)
+        
+        db.session.commit()
+        flash('Profilo aggiornato con successo', 'success')
+        return redirect(url_for('user_management.user_profile'))
+    
+    return render_template('user_profile.html', user=current_user, form=form)
 
 # =============================================================================
 # USER MANAGEMENT MAIN ROUTES
