@@ -26,7 +26,7 @@
                             {% if current_user.company and current_user.company.logo %}
                             <img src="{{ url_for('static', filename=current_user.company.logo) }}" alt="{{ current_user.company.name }}" style="height: 30px; width: auto; margin-right: 0.5rem;">
                             {% else %}
-                            <i class="fas fa-briefcase me-2"></i>
+                            <img src="{{ url_for('static', filename='images/life_logo.png') }}" alt="Life Platform" style="height: 30px; width: auto; margin-right: 0.5rem;">
                             {% endif %}
                             Life Platform
                         </h5>
@@ -37,7 +37,7 @@
                             <i class="fas fa-clock me-1"></i>WORKLY
                         </a>
                         <a href="#" class="btn btn-sm btn-outline-light" onclick="alert('Sezione LIFE in arrivo!'); return false;">
-                            <i class="fas fa-heart me-1"></i>LIFE
+                            <img src="{{ url_for('static', filename='images/life_logo.png') }}" alt="LIFE" style="height: 16px; width: auto; margin-right: 0.25rem;">LIFE
                         </a>
                     </div>
                     {% endif %}
