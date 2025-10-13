@@ -26,6 +26,7 @@
                             <i class="fas fa-briefcase me-2"></i>Life Platform
                         </h5>
                     </a>
+                    {% if not current_user.is_system_admin %}
                     <div class="btn-group" role="group">
                         <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-sm btn-outline-light">
                             <i class="fas fa-clock me-1"></i>WORKLY
@@ -34,10 +35,25 @@
                             <i class="fas fa-heart me-1"></i>LIFE
                         </a>
                     </div>
+                    {% endif %}
                 </div>
                 
                 <!-- Right: User Menu and Messages -->
                 <div class="d-flex align-items-center gap-3">
+                    <!-- System Administration (Only for SUPERADMIN) -->
+                    {% if current_user.is_system_admin %}
+                    <div class="dropdown">
+                        <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cogs me-1"></i>Amministrazione Sistema
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('companies.list_companies') }}">
+                                <i class="fas fa-building me-1"></i>Gestione Aziende
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
                     <!-- Messages -->
                     {% if current_user.can_send_messages() or current_user.can_view_messages() %}
                     <div class="dropdown">
@@ -97,20 +113,6 @@
             </div>
             
             <ul class="sidebar-nav">
-                <!-- AMMINISTRAZIONE SISTEMA (Solo System Admin) -->
-                {% if current_user.is_system_admin %}
-                <li class="sidebar-nav-item">
-                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-cogs"></i>
-                        <span>Amministrazione Sistema</span>
-                        <i class="fas fa-chevron-right dropdown-arrow"></i>
-                    </a>
-                    <ul class="sidebar-submenu">
-                        <li><a href="{{ url_for('companies.list_companies') }}"><i class="fas fa-building"></i> Gestione Aziende</a></li>
-                    </ul>
-                </li>
-                {% endif %}
-                
                 <!-- DASHBOARD -->
                 {% if current_user.can_access_dashboard() %}
                 <li class="sidebar-nav-item">
