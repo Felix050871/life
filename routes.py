@@ -38,7 +38,7 @@ def is_safe_url(target):
 # CORE NAVIGATION ROUTES
 @app.route('/')
 def index():
-    """Main entry point - redirect to appropriate dashboard"""
+    """Main entry point - show home page or redirect to login"""
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard.dashboard'))
+        return render_template('home.html')
     return redirect(url_for('auth.login'))
