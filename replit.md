@@ -14,11 +14,19 @@ Preferred communication style: Simple, everyday language.
 - **Deployment**: Gunicorn WSGI server.
 
 ### Key Architectural Decisions & Features
-- **Multi-Tenant System**: Fully implemented with a `Company` model, allowing each company (e.g., NS12, ATMH) to have personalized branding (logo, background image) and complete data isolation. System administrators (`is_system_admin`) manage all companies via a dedicated "System Administration" menu with full CRUD capabilities.
+- **Multi-Tenant SaaS System**: Fully implemented as a Software-as-a-Service platform with complete company isolation and role-based administration.
+  - **SUPERADMIN Role**: System-level administrators (`is_system_admin=true`, `company_id=null`) manage the entire SaaS platform
+    - Create and manage companies via "Amministrazione Sistema" menu
+    - Mandatory creation of company ADMIN during company setup (transactional workflow)
+    - Cannot access company-specific operational data (sedi, users, shifts, etc.)
+  - **Company ADMIN Role**: Each company has its own administrator (`role='Amministratore'`, linked to specific `company_id`)
+    - Full control over their company's configuration (sedi, users, mail settings, etc.)
+    - Cannot access other companies' data or create new companies
+    - Auto-assigned `all_sedi=true` for full location access within their company
   - **Data Isolation**: All core entities (User, AttendanceEvent, LeaveRequest, Shift, Holiday, InternalMessage, etc.) include `company_id` foreign key
   - **Helper Utilities**: `utils_tenant.py` provides `filter_by_company()` for automatic query filtering, `set_company_on_create()` for automatic company assignment, and `get_user_company_id()` for retrieving user's company
-  - **Blueprint Integration**: Leave and Attendance blueprints fully implement multi-tenant filtering; other blueprints (Shifts, Messages, Holidays) have imports ready but need query updates
-  - **Migration**: All existing data migrated to default NS12 company (ID=1); admin user promoted to system admin
+  - **Blueprint Integration**: Leave and Attendance blueprints fully implement multi-tenant filtering; other blueprints (Shifts, Messages, Holidays, User Management) need complete company-scoped filtering
+  - **Company Creation Workflow**: SUPERADMIN creates company with mandatory admin user in single transaction; validates unique codes, usernames, and emails
 - **User Management**: Features a permission-based access control system with over 30 granular permissions and 5 dynamically configurable standard roles. Supports advanced work schedule assignments (ORARIA vs. TURNI modes) and multi-location access.
 - **Attendance Tracking**: Includes clock-in/out, break tracking, daily records, historical viewing, reporting, and a static QR code system for quick attendance marking with intelligent user status validation.
 - **Shift Management**: Supports intelligent shift generation with workload balancing, recurring shift patterns via templates, and integration with leave/part-time percentages. Includes on-call duty management (`ReperibilitaShift`) and intervention tracking (`ReperibilitaIntervention`). Adheres to operational safety rules (e.g., no overlaps, 11-hour rest periods, split shifts for long durations, 24/7 coverage, weekly rest days).
