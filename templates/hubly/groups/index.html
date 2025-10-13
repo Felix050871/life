@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}HUBLY - Gruppi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users text-primary"></i> Gruppi</h2>
+        {% if current_user.has_permission('can_create_groups') %}
+        <a href="{{ url_for('hubly_groups.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Crea Gruppo
+        </a>
+        {% endif %}
+    </div>
+
+    {% if my_groups %}
+    <div class="mb-4">
+        <h4>I Miei Gruppi</h4>
+        <div class="row">
+            {% for group in my_groups %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a href="{{ url_for('hubly_groups.view_group', group_id=group.id) }}" class="text-decoration-none">
+                                {{ group.name }}
+                            </a>
+                        </h5>
+                        <p class="card-text">{{ group.description[:100] if group.description else '' }}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <span class="badge bg-info">{{ group.group_type }}</span>
+                                {% if group.is_private %}
+                                <span class="badge bg-secondary">Privato</span>
+                                {% endif %}
+                            </small>
+                            <small class="text-muted">
+                                <i class="fas fa-users"></i> {{ group.members|length }} membri
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if public_groups %}
+    <div class="mb-4">
+        <h4>Gruppi Pubblici</h4>
+        <div class="row">
+            {% for group in public_groups %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a href="{{ url_for('hubly_groups.view_group', group_id=group.id) }}" class="text-decoration-none">
+                                {{ group.name }}
+                            </a>
+                        </h5>
+                        <p class="card-text">{{ group.description[:100] if group.description else '' }}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <span class="badge bg-info">{{ group.group_type }}</span>
+                            </small>
+                            <small class="text-muted">
+                                <i class="fas fa-users"></i> {{ group.members|length }} membri
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Nessun gruppo pubblico disponibile al momento.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
