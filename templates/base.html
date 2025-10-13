@@ -45,8 +45,10 @@
                             {% endif %}
                         </div>
                         
-                        <!-- Admin Menu (Only for Company ADMIN) -->
-                        {% if current_user.role == 'Amministratore' and not current_user.is_system_admin %}
+                        <!-- Admin Menu (Only for Company ADMIN with permissions) -->
+                        {% set is_company_admin = current_user.role == 'Amministratore' and not current_user.is_system_admin %}
+                        {% set has_admin_permissions = (current_user.can_manage_roles() or current_user.can_view_roles() or current_user.can_manage_users() or current_user.can_view_users()) %}
+                        {% if is_company_admin and has_admin_permissions %}
                         <div class="vr" style="opacity: 0.5;"></div>
                         <div class="dropdown">
                             <a class="btn btn-outline-warning btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
