@@ -42,6 +42,9 @@ class UserProfileForm(FlaskForm):
     last_name = StringField('Cognome', validators=[DataRequired(), Length(max=100)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     username = StringField('Username', render_kw={'readonly': True})
+    profile_image = FileField('Immagine Profilo', validators=[
+        FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Solo immagini JPG, PNG o GIF!')
+    ])
     password = PasswordField('Nuova Password', validators=[Optional(), Length(min=6)])
     confirm_password = PasswordField('Conferma Password', validators=[
         EqualTo('password', message='Le password devono corrispondere')

@@ -215,6 +215,7 @@ class User(UserMixin, db.Model):
     banca_ore_enabled = db.Column(db.Boolean, default=False)  # True se l'utente è abilitato alla banca ore
     banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo di ore accumulabili nella banca ore
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo in mesi entro cui le ore devono essere usufruite
+    profile_image = db.Column(db.String(255), nullable=True)  # Path dell'immagine del profilo
     created_at = db.Column(db.DateTime, default=italian_now)
     
     # Multi-tenant fields
@@ -231,6 +232,12 @@ class User(UserMixin, db.Model):
     
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
+    
+    def get_profile_image_url(self):
+        """Restituisce l'URL dell'immagine del profilo o quella di default"""
+        if self.profile_image:
+            return f"/static/uploads/profiles/{self.profile_image}"
+        return "/static/images/defaults/default_profile.png"
     
     def get_accessible_sedi(self):
         """Restituisce tutte le sedi accessibili dall'utente (filtrate per azienda)"""
