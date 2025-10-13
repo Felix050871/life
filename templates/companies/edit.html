@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Azienda - Life Platform{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-building me-2"></i>Modifica Azienda: {{ company.name }}</h2>
+        <p class="text-muted">Aggiorna le informazioni dell'azienda</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Informazioni Azienda</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="code" class="form-label">Codice Azienda *</label>
+                            <input type="text" class="form-control" id="code" name="code" 
+                                   value="{{ company.code }}" required style="text-transform: uppercase;">
+                            <small class="text-muted">Codice univoco identificativo</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Nome Azienda *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ company.name }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ company.description or '' }}</textarea>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="active" name="active" 
+                               {% if company.active %}checked{% endif %}>
+                        <label class="form-check-label" for="active">
+                            Azienda Attiva
+                        </label>
+                        <small class="text-muted d-block">Se disattivata, gli utenti non potranno accedere</small>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="mb-3"><i class="fas fa-image me-2"></i>Immagini</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="logo" class="form-label">Logo Azienda</label>
+                            {% if company.logo %}
+                            <div class="mb-2">
+                                <img src="{{ url_for('static', filename=company.logo) }}" 
+                                     alt="{{ company.name }}" 
+                                     class="img-thumbnail" 
+                                     style="max-height: 100px;">
+                                <p class="text-muted small mb-0">Logo attuale</p>
+                            </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="logo" name="logo" 
+                                   accept="image/*" onchange="previewImage(this, 'logoPreview')">
+                            <small class="text-muted">Carica un nuovo logo per sostituire quello attuale</small>
+                            <div id="logoPreview" class="mt-2"></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="background_image" class="form-label">Immagine di Sfondo Home</label>
+                            {% if company.background_image %}
+                            <div class="mb-2">
+                                <img src="{{ url_for('static', filename=company.background_image) }}" 
+                                     alt="Background" 
+                                     class="img-thumbnail" 
+                                     style="max-height: 100px;">
+                                <p class="text-muted small mb-0">Sfondo attuale</p>
+                            </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="background_image" name="background_image" 
+                                   accept="image/*" onchange="previewImage(this, 'bgPreview')">
+                            <small class="text-muted">Carica una nuova immagine per sostituire quella attuale</small>
+                            <div id="bgPreview" class="mt-2"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('companies.list_companies') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Annulla
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar me-2"></i>Statistiche</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Utenti:</span>
+                    <span class="badge bg-info">{{ users_count }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Sedi:</span>
+                    <span class="badge bg-secondary">{{ sedi_count }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Stato:</span>
+                    <span class="badge {% if company.active %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if company.active %}Attiva{% else %}Disattivata{% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Creata il:</span>
+                    <span>{{ company.created_at.strftime('%d/%m/%Y') if company.created_at else '-' }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-lightbulb me-2"></i>Info</h5>
+            </div>
+            <div class="card-body">
+                <p class="small mb-0">
+                    <i class="fas fa-info-circle text-info me-2"></i>
+                    Le modifiche saranno immediatamente visibili a tutti gli utenti dell'azienda.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    preview.innerHTML = '';
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.maxWidth = '200px';
+            img.style.maxHeight = '150px';
+            img.className = 'img-thumbnail';
+            preview.appendChild(img);
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Convert code to uppercase
+document.getElementById('code').addEventListener('input', function(e) {
+    this.value = this.value.toUpperCase();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Aziende - Life Platform{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-building me-2"></i>Gestione Aziende</h2>
+        <p class="text-muted">Amministra le aziende del sistema multi-tenant</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('companies.create_company') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Nuova Azienda
+        </a>
+    </div>
+</div>
+
+<!-- Companies List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Elenco Aziende</h5>
+            </div>
+            <div class="card-body">
+                {% if company_stats %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Logo</th>
+                                <th>Codice</th>
+                                <th>Nome</th>
+                                <th>Utenti</th>
+                                <th>Sedi</th>
+                                <th>Stato</th>
+                                <th>Creata il</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in company_stats %}
+                            <tr>
+                                <td>
+                                    {% if stat.company.logo %}
+                                    <img src="{{ url_for('static', filename=stat.company.logo) }}" 
+                                         alt="{{ stat.company.name }}" 
+                                         style="max-height: 40px; max-width: 60px;">
+                                    {% else %}
+                                    <i class="fas fa-building text-muted" style="font-size: 2rem;"></i>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ stat.company.code }}</strong></td>
+                                <td>{{ stat.company.name }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ stat.users_count }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ stat.sedi_count }}</span>
+                                </td>
+                                <td>
+                                    {% if stat.company.active %}
+                                    <span class="badge bg-success">Attiva</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Disattivata</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ stat.company.created_at.strftime('%d/%m/%Y') if stat.company.created_at else '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('companies.view_company', company_id=stat.company.id) }}" 
+                                       class="btn btn-sm btn-info" title="Visualizza">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('companies.edit_company', company_id=stat.company.id) }}" 
+                                       class="btn btn-sm btn-warning" title="Modifica">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if stat.users_count == 0 and stat.sedi_count == 0 %}
+                                    <button type="button" class="btn btn-sm btn-danger" 
+                                            onclick="confirmDelete({{ stat.company.id }}, '{{ stat.company.name }}')" 
+                                            title="Elimina">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% else %}
+                                    <button type="button" class="btn btn-sm btn-secondary" disabled title="Impossibile eliminare: ci sono utenti o sedi associati">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Nessuna azienda presente nel sistema. Crea la prima azienda per iniziare.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma Eliminazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler eliminare l'azienda <strong id="companyNameToDelete"></strong>?</p>
+                <p class="text-danger">Questa azione non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Elimina</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(companyId, companyName) {
+    document.getElementById('companyNameToDelete').textContent = companyName;
+    document.getElementById('deleteForm').action = "{{ url_for('companies.delete_company', company_id=0) }}".replace('0', companyId);
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

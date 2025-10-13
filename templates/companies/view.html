@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}{{ company.name }} - Life Platform{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-building me-2"></i>{{ company.name }}</h2>
+        <p class="text-muted">Codice: <strong>{{ company.code }}</strong></p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('companies.edit_company', company_id=company.id) }}" class="btn btn-warning">
+            <i class="fas fa-edit me-2"></i>Modifica
+        </a>
+        <a href="{{ url_for('companies.list_companies') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Torna alla Lista
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Company Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Informazioni Azienda</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Nome:</strong> {{ company.name }}</p>
+                        <p><strong>Codice:</strong> {{ company.code }}</p>
+                        <p><strong>Stato:</strong> 
+                            <span class="badge {% if company.active %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if company.active %}Attiva{% else %}Disattivata{% endif %}
+                            </span>
+                        </p>
+                        <p><strong>Creata il:</strong> {{ company.created_at.strftime('%d/%m/%Y %H:%M') if company.created_at else '-' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        {% if company.logo %}
+                        <p><strong>Logo:</strong></p>
+                        <img src="{{ url_for('static', filename=company.logo) }}" 
+                             alt="{{ company.name }}" 
+                             class="img-thumbnail" 
+                             style="max-height: 150px;">
+                        {% endif %}
+                    </div>
+                </div>
+                {% if company.description %}
+                <div class="mt-3">
+                    <p><strong>Descrizione:</strong></p>
+                    <p class="text-muted">{{ company.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Users List -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-users me-2"></i>Utenti ({{ users|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Ruolo</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.get_full_name() }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.role }}</td>
+                                <td>
+                                    <span class="badge {% if user.active %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if user.active %}Attivo{% else %}Disattivato{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Nessun utente associato a questa azienda.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sedi List -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map-marker-alt me-2"></i>Sedi ({{ sedi|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if sedi %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Indirizzo</th>
+                                <th>Tipologia</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sede in sedi %}
+                            <tr>
+                                <td>{{ sede.name }}</td>
+                                <td>{{ sede.address or '-' }}</td>
+                                <td>{{ sede.tipologia }}</td>
+                                <td>
+                                    <span class="badge {% if sede.active %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if sede.active %}Attiva{% else %}Disattivata{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Nessuna sede associata a questa azienda.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Stats Card -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar me-2"></i>Statistiche</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <div class="text-center flex-fill">
+                        <h3 class="text-primary">{{ users|length }}</h3>
+                        <p class="text-muted mb-0">Utenti</p>
+                    </div>
+                    <div class="text-center flex-fill">
+                        <h3 class="text-info">{{ sedi|length }}</h3>
+                        <p class="text-muted mb-0">Sedi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Background Image -->
+        {% if company.background_image %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-image me-2"></i>Sfondo Home</h5>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ url_for('static', filename=company.background_image) }}" 
+                     alt="Background" 
+                     class="img-fluid rounded">
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
