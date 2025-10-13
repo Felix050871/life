@@ -23,9 +23,14 @@ Preferred communication style: Simple, everyday language.
     - Full control over their company's configuration (sedi, users, mail settings, etc.)
     - Cannot access other companies' data or create new companies
     - Auto-assigned `all_sedi=true` for full location access within their company
-  - **Data Isolation**: All core entities (User, AttendanceEvent, LeaveRequest, Shift, Holiday, InternalMessage, etc.) include `company_id` foreign key
+  - **Data Isolation**: All core entities include `company_id` foreign key: User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, Holiday, InternalMessage, Intervention, ReperibilitaShift, ReperibilitaCoverage, ReperibilitaTemplate, ReperibilitaIntervention, OvertimeRequest, MileageRequest, ExpenseReport, ExpenseCategory, WorkSchedule, ACITable, LeaveType, OvertimeType, PresidioCoverageTemplate, PresidioCoverage
   - **Helper Utilities**: `utils_tenant.py` provides `filter_by_company()` for automatic query filtering, `set_company_on_create()` for automatic company assignment, and `get_user_company_id()` for retrieving user's company
-  - **Blueprint Integration**: Leave and Attendance blueprints fully implement multi-tenant filtering; other blueprints (Shifts, Messages, Holidays, User Management) need complete company-scoped filtering
+  - **Complete Multi-Tenant Security**: ALL 15 blueprints fully implement multi-tenant filtering with 100+ database queries secured:
+    - ✅ interventions.py, messages.py, reperibilita.py
+    - ✅ user_management.py, dashboard.py, reports.py + utils.py
+    - ✅ banca_ore.py, export.py, qr.py, api.py
+    - ✅ aci.py, presidio.py, holidays.py, admin.py, expense.py
+    - ✅ attendance.py, leave.py, shifts.py
   - **Company Creation Workflow**: SUPERADMIN creates company with mandatory admin user in single transaction; validates unique codes, usernames, and emails
 - **User Management**: Features a permission-based access control system with over 30 granular permissions and 5 dynamically configurable standard roles. Supports advanced work schedule assignments (ORARIA vs. TURNI modes) and multi-location access.
 - **Attendance Tracking**: Includes clock-in/out, break tracking, daily records, historical viewing, reporting, and a static QR code system for quick attendance marking with intelligent user status validation.

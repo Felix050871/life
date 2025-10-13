@@ -23,6 +23,7 @@ from models import User, Shift, AttendanceEvent, LeaveRequest, ExpenseReport, Ex
 from io import BytesIO, StringIO
 import tempfile
 import os
+from utils_tenant import filter_by_company, set_company_on_create
 
 # Create blueprint
 export_bp = Blueprint('export', __name__, url_prefix='/export')
@@ -65,7 +66,7 @@ def shifts_excel():
         filename = f"turni_{current_date.strftime('%Y-%m')}.xlsx"
     
     # Query dei turni
-    shifts_query = Shift.query.filter(
+    shifts_query = filter_by_company(Shift.query, Shift).filter(
         Shift.date >= start_date,
         Shift.date <= end_date
     )
@@ -197,7 +198,7 @@ def shifts_pdf():
         title_period = current_date.strftime('%B %Y').title()
     
     # Query turni
-    shifts_query = Shift.query.filter(
+    shifts_query = filter_by_company(Shift.query, Shift).filter(
         Shift.date >= start_date,
         Shift.date <= end_date
     )
@@ -310,7 +311,7 @@ def attendance_excel():
             start_date = end_date - timedelta(days=30)
     
     if show_team_data:
-        team_users = User.query.filter(
+        team_users = filter_by_company(User.query, User).filter(
             User.role.in_(['Redattore', 'Sviluppatore', 'Operatore', 'Management', 'Responsabili']),
             User.active.is_(True)
         ).all()
@@ -382,11 +383,11 @@ def leave_excel():
     
     if can_approve:
         # Admin può vedere tutte le richieste
-        requests = LeaveRequest.query.order_by(LeaveRequest.start_date.desc()).all()
+        requests = filter_by_company(LeaveRequest.query, LeaveRequest).order_by(LeaveRequest.start_date.desc()).all()
         filename = f"richieste_ferie_permessi_{date.today().strftime('%Y%m%d')}.xlsx"
     else:
         # Utente normale vede solo le proprie
-        requests = LeaveRequest.query.filter_by(user_id=current_user.id).order_by(LeaveRequest.start_date.desc()).all()
+        requests = filter_by_company(LeaveRequest.query, LeaveRequest).filter_by(user_id=current_user.id).order_by(LeaveRequest.start_date.desc()).all()
         filename = f"mie_richieste_ferie_permessi_{date.today().strftime('%Y%m%d')}.xlsx"
     
     # Crea il workbook
@@ -508,7 +509,7 @@ def expense_excel():
     
     if can_manage:
         # Manager può vedere tutte le note spese
-        reports = ExpenseReport.query.options(
+        reports = filter_by_company(ExpenseReport.query, ExpenseReport).options(
             joinedload(ExpenseReport.user),
             joinedload(ExpenseReport.category),
             joinedload(ExpenseReport.approved_by)
@@ -516,7 +517,7 @@ def expense_excel():
         filename = f"note_spese_tutte_{date.today().strftime('%Y%m%d')}.xlsx"
     else:
         # Utente normale vede solo le proprie
-        reports = ExpenseReport.query.filter_by(user_id=current_user.id).options(
+        reports = filter_by_company(ExpenseReport.query, ExpenseReport).filter_by(user_id=current_user.id).options(
             joinedload(ExpenseReport.category),
             joinedload(ExpenseReport.approved_by)
         ).order_by(ExpenseReport.expense_date.desc()).all()
@@ -640,7 +641,7 @@ def general_interventions_excel():
         end_date = today
     
     # Query degli interventi nel periodo
-    interventions = Intervention.query.filter(
+    interventions = filter_by_company(Intervention.query, Intervention).filter(
         Intervention.start_time >= datetime.combine(start_date, datetime.min.time()),
         Intervention.start_time <= datetime.combine(end_date, datetime.max.time())
     ).order_by(Intervention.start_time.desc()).all()
@@ -752,7 +753,7 @@ def reperibilita_interventions_excel():
         end_date = today
     
     # Query degli interventi di reperibilità nel periodo
-    interventions = ReperibilitaIntervention.query.filter(
+    interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter(
         ReperibilitaIntervention.start_time >= datetime.combine(start_date, datetime.min.time()),
         ReperibilitaIntervention.start_time <= datetime.combine(end_date, datetime.max.time())
     ).order_by(ReperibilitaIntervention.start_time.desc()).all()

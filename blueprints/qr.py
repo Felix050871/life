@@ -23,6 +23,7 @@ import qrcode
 import base64
 from io import BytesIO
 from werkzeug.security import check_password_hash
+from utils_tenant import filter_by_company, set_company_on_create
 
 # Create blueprint
 qr_bp = Blueprint('qr', __name__, url_prefix='/qr')
@@ -55,7 +56,7 @@ def login(action):
     form = LoginForm()
     
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+        user = filter_by_company(User.query, User).filter_by(username=form.username.data).first()
         if user and user.active and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
             return redirect(url_for('qr.quick_attendance', action=action))
@@ -125,6 +126,7 @@ def quick_attendance(action):
                     sede_id=sede_id,
                     notes=request.form.get('notes', '')
                 )
+                set_company_on_create(event)
                 db.session.add(event)
                 db.session.commit()
                 
@@ -144,6 +146,7 @@ def quick_attendance(action):
                     sede_id=sede_id,
                     notes=request.form.get('notes', '')
                 )
+                set_company_on_create(event)
                 db.session.add(event)
                 db.session.commit()
                 
@@ -163,7 +166,7 @@ def quick_attendance(action):
     # GET request: mostra il form
     available_sedi = []
     if current_user.all_sedi:
-        available_sedi = Sede.query.filter_by(active=True).all()
+        available_sedi = filter_by_company(Sede.query, Sede).filter_by(active=True).all()
     
     # Ottieni eventi di oggi per le statistiche
     today_events = AttendanceEvent.get_daily_events(current_user.id)
@@ -312,6 +315,7 @@ def api_quick_action():
                 sede_id=sede_id,
                 notes=notes
             )
+            set_company_on_create(event)
             db.session.add(event)
             db.session.commit()
             
@@ -330,6 +334,7 @@ def api_quick_action():
                 sede_id=sede_id,
                 notes=notes
             )
+            set_company_on_create(event)
             db.session.add(event)
             db.session.commit()
             

@@ -148,8 +148,8 @@ def my():
     
     # PM ed Ente vedono tutti gli interventi, altri utenti solo i propri
     if current_user.role in ['Management', 'Ente']:
-        # Ottieni tutti gli interventi di reperibilità filtrati per data
-        reperibilita_interventions = ReperibilitaIntervention.query.join(User).filter(
+        # Ottieni tutti gli interventi di reperibilità filtrati per data (with company filter)
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).join(User).filter(
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
@@ -160,8 +160,8 @@ def my():
             Intervention.start_datetime <= end_datetime
         ).order_by(Intervention.start_datetime.desc()).all()
     else:
-        # Ottieni solo gli interventi dell'utente corrente filtrati per data
-        reperibilita_interventions = ReperibilitaIntervention.query.filter(
+        # Ottieni solo gli interventi dell'utente corrente filtrati per data (with company filter)
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter(
             ReperibilitaIntervention.user_id == current_user.id,
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime

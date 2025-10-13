@@ -15,6 +15,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from app import db
 from models import Sede, User, WorkSchedule, UserRole, PresidioCoverageTemplate
+from utils_tenant import filter_by_company, set_company_on_create
 
 # Create blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -30,14 +31,14 @@ def sede_users(sede_id):
     if not current_user.can_access_turni():
         return jsonify({'error': 'Non autorizzato'}), 403
     
-    sede = Sede.query.get_or_404(sede_id)
+    sede = filter_by_company(Sede.query, Sede).filter(Sede.id == sede_id).first_or_404()
     
     # Verifica che l'utente possa accedere a questa sede
     if current_user.role != 'Amministratore' and not current_user.all_sedi and (not current_user.sede_obj or current_user.sede_obj.id != sede_id):
         return jsonify({'error': 'Non autorizzato'}), 403
     
     # Ottieni utenti attivi della sede (esclusi Amministratore)
-    users = User.query.filter_by(
+    users = filter_by_company(User.query, User).filter_by(
         sede_id=sede_id, 
         active=True
     ).filter(
@@ -60,8 +61,8 @@ def sede_users(sede_id):
 def sede_work_schedules(sede_id):
     """API per ottenere gli orari di lavoro di una sede"""
     try:
-        sede = Sede.query.get_or_404(sede_id)
-        work_schedules = WorkSchedule.query.filter_by(sede_id=sede_id, active=True).all()
+        sede = filter_by_company(Sede.query, Sede).filter(Sede.id == sede_id).first_or_404()
+        work_schedules = filter_by_company(WorkSchedule.query, WorkSchedule).filter_by(sede_id=sede_id, active=True).all()
         
         # Se la sede supporta modalità turni e non ha ancora l'orario 'Turni', crealo
         if sede.is_turni_mode() and not sede.has_turni_schedule():
@@ -111,7 +112,7 @@ def sede_work_schedules(sede_id):
 def roles():
     """API endpoint per ottenere la lista dei ruoli disponibili"""
     try:
-        roles = UserRole.query.filter(
+        roles = filter_by_company(UserRole.query, UserRole).filter(
             UserRole.active == True,
             UserRole.name != 'Amministratore'
         ).all()
@@ -128,7 +129,7 @@ def roles():
 @login_required
 def presidio_coverage(template_id):
     """API per ottenere dettagli copertura presidio"""
-    template = PresidioCoverageTemplate.query.get_or_404(template_id)
+    template = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter(PresidioCoverageTemplate.id == template_id).first_or_404()
     
     coverages = []
     for coverage in template.coverages.filter_by(active=True):
