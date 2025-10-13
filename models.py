@@ -1909,6 +1909,7 @@ class Intervention(db.Model):
     priority = db.Column(db.String(10), default='Media', nullable=False)  # 'Bassa', 'Media', 'Alta'
     is_remote = db.Column(db.Boolean, default=True, nullable=False)  # True = remoto, False = in presenza
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Relationships
     user = db.relationship('User', backref='general_interventions')
@@ -1939,6 +1940,7 @@ class ReperibilitaTemplate(db.Model):
     description = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     creator = db.relationship('User', backref='reperibilita_templates')
 
