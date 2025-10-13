@@ -65,7 +65,7 @@ def create():
             category=category,
             sort_order=int(sort_order)
         )
-        set_company_on_create(new_tool, current_user)
+        set_company_on_create(new_tool)
         
         db.session.add(new_tool)
         db.session.commit()

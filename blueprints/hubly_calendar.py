@@ -83,7 +83,7 @@ def create():
             is_all_day=is_all_day,
             color=color
         )
-        set_company_on_create(new_event, current_user)
+        set_company_on_create(new_event)
         
         db.session.add(new_event)
         db.session.commit()

@@ -81,7 +81,7 @@ def create():
             is_private=is_private,
             creator_id=current_user.id
         )
-        set_company_on_create(new_group, current_user)
+        set_company_on_create(new_group)
         
         db.session.add(new_group)
         db.session.flush()

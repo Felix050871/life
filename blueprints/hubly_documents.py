@@ -87,7 +87,7 @@ def upload():
                 uploader_id=current_user.id,
                 version=version
             )
-            set_company_on_create(new_document, current_user)
+            set_company_on_create(new_document)
             
             db.session.add(new_document)
             db.session.commit()

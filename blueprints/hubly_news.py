@@ -66,7 +66,7 @@ def create():
             image_url=image_url,
             video_url=video_url
         )
-        set_company_on_create(new_post, current_user)
+        set_company_on_create(new_post)
         
         db.session.add(new_post)
         db.session.commit()

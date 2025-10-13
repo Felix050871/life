@@ -18,7 +18,7 @@ def home():
     if not current_user.has_permission('can_access_hubly'):
         abort(403)
     
-    company_id = get_user_company_id(current_user)
+    company_id = get_user_company_id()
     
     # Widget: Ultimi post/news in evidenza (pinned)
     pinned_posts = filter_by_company(
@@ -95,7 +95,7 @@ def personas():
     if not current_user.has_permission('can_access_hubly'):
         abort(403)
     
-    company_id = get_user_company_id(current_user)
+    company_id = get_user_company_id()
     
     # Filtra utenti della stessa azienda, escludi system admin
     users = User.query.filter_by(
