@@ -21,9 +21,11 @@
             <div class="d-flex justify-content-between align-items-center">
                 <!-- Left: Platform Tabs -->
                 <div class="d-flex align-items-center gap-3">
-                    <h5 class="mb-0 me-3">
-                        <i class="fas fa-briefcase me-2"></i>Life Platform
-                    </h5>
+                    <a href="{{ url_for('index') }}" class="text-decoration-none text-white">
+                        <h5 class="mb-0 me-3">
+                            <i class="fas fa-briefcase me-2"></i>Life Platform
+                        </h5>
+                    </a>
                     <div class="btn-group" role="group">
                         <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-sm btn-outline-light">
                             <i class="fas fa-clock me-1"></i>WORKLY
@@ -83,11 +85,11 @@
     </div>
     
     <div class="main-wrapper">
-        <!-- Sidebar -->
-        <nav class="sidebar" id="sidebar">
+        <!-- Sidebar - Nascosta nella home page -->
+        <nav class="sidebar {% if request.endpoint == 'index' %}d-none{% endif %}" id="sidebar">
             <div class="sidebar-header">
-                <a href="{% if current_user.can_access_dashboard() %}{{ url_for('dashboard.dashboard') }}{% else %}{{ url_for('auth.login') }}{% endif %}" class="brand">
-                    <i class="fas fa-briefcase me-2"></i><span>Life</span>
+                <a href="{{ url_for('dashboard.dashboard') }}" class="brand">
+                    <i class="fas fa-clock me-2"></i><span>Workly</span>
                 </a>
                 <button class="sidebar-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
@@ -510,11 +512,11 @@
             </ul>
         </nav>
 
-        <!-- Content Wrapper -->
-        <div class="content-wrapper" id="content-wrapper">
+        <!-- Content Wrapper - Full width nella home page -->
+        <div class="content-wrapper {% if request.endpoint == 'index' %}sidebar-collapsed{% endif %}" id="content-wrapper">
             <!-- Main Content -->
             <div class="main-content">
-                <div class="container-fluid" style="padding: 0;">
+                <div class="container-fluid" style="{% if request.endpoint != 'index' %}padding: 0;{% endif %}">
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
