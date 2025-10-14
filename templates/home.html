@@ -26,7 +26,9 @@
                     <div class="card h-100 border-0 shadow-sm hover-card">
                         <div class="card-body text-center p-5">
                             <div class="mb-4">
-                                <img src="{{ url_for('static', filename='img/flow_icon.png') }}" alt="FLOW" style="height: 100px; width: auto;">
+                                <a href="{{ url_for('dashboard.dashboard') }}" class="d-inline-block icon-link">
+                                    <img src="{{ url_for('static', filename='img/flow_icon.png') }}" alt="FLOW" style="height: 100px; width: auto;">
+                                </a>
                             </div>
                             <p class="card-text text-muted mb-4">
                                 Il tuo gestore smart del tempo. L'area dedicata all'organizzazione operativa del team, alla pianificazione dei turni, alla richiesta di ferie e permessi e al tracciamento di presenze e straordinari. Meno burocrazia, più produttività.
@@ -46,7 +48,9 @@
                     <div class="card h-100 border-0 shadow-sm hover-card">
                         <div class="card-body text-center p-5">
                             <div class="mb-4">
-                                <img src="{{ url_for('static', filename='img/circle_icon.png') }}" alt="CIRCLE" style="height: 100px; width: auto;">
+                                <a href="{{ url_for('circle.home') }}" class="d-inline-block icon-link">
+                                    <img src="{{ url_for('static', filename='img/circle_icon.png') }}" alt="CIRCLE" style="height: 100px; width: auto;">
+                                </a>
                             </div>
                             <p class="card-text text-muted mb-4">
                                 Il centro della tua community aziendale. Lo spazio di connessione social per rimanere aggiornato sulle iniziative, accedere velocemente ai documenti e agli strumenti di lavoro, e condividere idee con i colleghi.
@@ -146,6 +150,16 @@
 .hover-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.icon-link {
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.icon-link:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
 }
 </style>
 {% endblock %}
