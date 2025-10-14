@@ -131,7 +131,7 @@
                             <div class="flex-grow-1">
                                 <div class="comment-bubble p-2 rounded" style="background: #f0f2f5;">
                                     <strong style="font-size: 0.9rem;">{{ comment.author.get_full_name() }}</strong>
-                                    <p class="mb-0" style="font-size: 0.9rem;">{{ comment.content }}</p>
+                                    <p class="mb-0" style="font-size: 0.9rem;">{{ comment.content|safe }}</p>
                                 </div>
                                 <small class="text-muted" style="font-size: 0.75rem; padding-left: 8px;">{{ comment.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
                             </div>
