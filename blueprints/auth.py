@@ -3,7 +3,7 @@
 # Login, logout, password reset functionality
 # =============================================================================
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
 from urllib.parse import urlparse, urljoin
@@ -14,8 +14,9 @@ import base64
 from datetime import timedelta, datetime
 
 from app import db
-from models import User, PasswordResetToken
+from models import User, PasswordResetToken, Company
 from forms import LoginForm, ForgotPasswordForm, ResetPasswordForm, ChangePasswordForm
+from middleware_tenant import get_tenant_company, get_tenant_slug
 
 # Create blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -34,25 +35,68 @@ def is_safe_url(target):
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login page"""
+    """Legacy login redirect - redirige al login appropriato"""
+    # Redirect a /admin/login per SUPERADMIN
+    return redirect(url_for('auth.admin_login'))
+
+@auth_bp.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """SUPERADMIN login page"""
     if current_user.is_authenticated:
-        # All authenticated users go to home page
         return redirect(url_for('index'))
     
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+        # SUPERADMIN login: cerca utenti con is_system_admin=True
+        user = User.query.filter_by(
+            username=form.username.data, 
+            is_system_admin=True
+        ).first()
+        
         if user and user.active and user.password_hash and form.password.data and check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
                 return redirect(next_page)
-            
-            # All authenticated users go to home page
             return redirect(url_for('index'))
+        
+        flash('Username o password non validi per SUPERADMIN', 'danger')
+    
+    return render_template('login_admin.html', form=form)
+
+@auth_bp.route('/t/<slug>/login', methods=['GET', 'POST'])
+def tenant_login(slug):
+    """Tenant-specific login page"""
+    if current_user.is_authenticated:
+        # Se già loggato, redirige alla home dell'azienda
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Cerca l'azienda dal slug
+    company = Company.query.filter_by(slug=slug, active=True).first()
+    if not company:
+        flash(f'Azienda non trovata: {slug}', 'danger')
+        return redirect(url_for('auth.admin_login'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        # Tenant login: cerca utenti nell'azienda specifica
+        user = User.query.filter_by(
+            username=form.username.data,
+            company_id=company.id,
+            is_system_admin=False
+        ).first()
+        
+        if user and user.active and user.password_hash and form.password.data and check_password_hash(user.password_hash, form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            next_page = request.args.get('next')
+            if next_page and is_safe_url(next_page):
+                return redirect(next_page)
+            return redirect(url_for('dashboard.dashboard'))
+        
         flash('Username o password non validi', 'danger')
     
-    return render_template('login.html', form=form)
+    # Passa l'azienda al template per mostrare logo personalizzato
+    return render_template('login_tenant.html', form=form, company=company, slug=slug)
 
 @auth_bp.route('/logout')
 def logout():

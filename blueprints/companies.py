@@ -116,6 +116,7 @@ def create_company():
     if request.method == 'POST':
         name = request.form.get('name')
         code = request.form.get('code')
+        slug = request.form.get('slug', '').lower().strip()  # Get slug or generate from code
         description = request.form.get('description')
         max_licenses = request.form.get('max_licenses', 10, type=int)
         
@@ -134,10 +135,26 @@ def create_company():
             flash('Tutti i campi dell\'amministratore sono obbligatori', 'danger')
             return redirect(url_for('companies.create_company'))
         
+        # Generate slug from code if not provided
+        if not slug:
+            slug = code.lower().strip()
+        
+        # Validate slug format (alphanumeric and hyphens only)
+        import re
+        if not re.match(r'^[a-z0-9-]+$', slug):
+            flash('Lo slug può contenere solo lettere minuscole, numeri e trattini', 'danger')
+            return redirect(url_for('companies.create_company'))
+        
         # Check if code already exists
         existing = Company.query.filter_by(code=code.upper()).first()
         if existing:
             flash(f'Esiste già un\'azienda con codice {code.upper()}', 'danger')
+            return redirect(url_for('companies.create_company'))
+        
+        # Check if slug already exists
+        existing_slug = Company.query.filter_by(slug=slug).first()
+        if existing_slug:
+            flash(f'Esiste già un\'azienda con slug {slug}', 'danger')
             return redirect(url_for('companies.create_company'))
         
         # Check if admin username or email already exists
@@ -153,6 +170,7 @@ def create_company():
             company = Company(
                 name=name,
                 code=code.upper(),
+                slug=slug,
                 description=description,
                 max_licenses=max_licenses,
                 active=True
@@ -212,6 +230,7 @@ def edit_company(company_id):
     if request.method == 'POST':
         name = request.form.get('name')
         code = request.form.get('code')
+        slug = request.form.get('slug', '').lower().strip()
         description = request.form.get('description')
         max_licenses = request.form.get('max_licenses', 10, type=int)
         active = request.form.get('active') == 'on'
@@ -227,15 +246,32 @@ def edit_company(company_id):
             flash('Nome e codice azienda sono obbligatori', 'danger')
             return redirect(url_for('companies.edit_company', company_id=company_id))
         
+        # Generate slug from code if not provided
+        if not slug:
+            slug = code.lower().strip()
+        
+        # Validate slug format
+        import re
+        if not re.match(r'^[a-z0-9-]+$', slug):
+            flash('Lo slug può contenere solo lettere minuscole, numeri e trattini', 'danger')
+            return redirect(url_for('companies.edit_company', company_id=company_id))
+        
         # Check if code already exists (excluding current company)
         existing = Company.query.filter(Company.code == code.upper(), Company.id != company_id).first()
         if existing:
             flash(f'Esiste già un\'azienda con codice {code.upper()}', 'danger')
             return redirect(url_for('companies.edit_company', company_id=company_id))
         
+        # Check if slug already exists (excluding current company)
+        existing_slug = Company.query.filter(Company.slug == slug, Company.id != company_id).first()
+        if existing_slug:
+            flash(f'Esiste già un\'azienda con slug {slug}', 'danger')
+            return redirect(url_for('companies.edit_company', company_id=company_id))
+        
         # Update company data
         company.name = name
         company.code = code.upper()
+        company.slug = slug
         company.description = description
         company.max_licenses = max_licenses
         company.active = active
