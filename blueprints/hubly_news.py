@@ -20,7 +20,7 @@ def index():
         abort(403)
     
     news_posts = filter_by_company(
-        HublyPost.query.filter_by(post_type='news', published=True),
+        HublyPost.query.filter(HublyPost.post_type.in_(['news', 'comunicazione'])).filter_by(published=True),
         current_user
     ).order_by(desc(HublyPost.pinned), desc(HublyPost.created_at)).all()
     
