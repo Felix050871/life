@@ -21,23 +21,45 @@ def get_user_company_id():
     
     return current_user.company_id
 
-def filter_by_company(query, model_class):
+def filter_by_company(query, user=None):
     """
     Filtra una query per company_id dell'utente corrente
     Args:
         query: SQLAlchemy query object
-        model_class: La classe del modello da filtrare
+        user: User object (opzionale, default current_user)
     Returns:
         Query filtrata per company
     """
-    company_id = get_user_company_id()
+    # Usa current_user se user non specificato
+    if user is None:
+        user = current_user
     
-    # System admin vedono tutto
-    if company_id is None and current_user.is_authenticated and current_user.is_system_admin:
+    # Ottieni company_id dall'utente
+    if not user.is_authenticated:
         return query
     
-    # Filtra per company_id
-    if hasattr(model_class, 'company_id'):
+    # System admin vedono tutto
+    if user.is_system_admin:
+        return query
+    
+    company_id = user.company_id
+    
+    # Estrai il model_class dalla query
+    # Prova diversi metodi per ottenere l'entità dalla query
+    model_class = None
+    try:
+        # Metodo 1: column_descriptions
+        if hasattr(query, 'column_descriptions') and query.column_descriptions:
+            model_class = query.column_descriptions[0].get('entity')
+        
+        # Metodo 2: _mapper_zero (fallback)
+        if model_class is None and hasattr(query, '_mapper_zero'):
+            model_class = query._mapper_zero().class_
+    except:
+        pass
+    
+    # Filtra per company_id se il modello ha questo campo
+    if model_class and hasattr(model_class, 'company_id'):
         return query.filter(model_class.company_id == company_id)
     
     return query
