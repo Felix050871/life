@@ -2917,9 +2917,46 @@ class HublyGroup(db.Model):
     
     # Relationships
     creator = db.relationship('User', backref='created_groups')
+    members = db.relationship('User', secondary='hubly_group_members', backref='joined_groups')
     
     def __repr__(self):
         return f'<HublyGroup {self.name}>'
+    
+    def is_member(self, user):
+        """Verifica se l'utente è membro del gruppo"""
+        return user in self.members or user.id == self.creator_id
+    
+    def is_admin(self, user):
+        """Verifica se l'utente è admin del gruppo"""
+        if user.id == self.creator_id:
+            return True
+        result = db.session.execute(
+            db.select(hubly_group_members).where(
+                hubly_group_members.c.user_id == user.id,
+                hubly_group_members.c.group_id == self.id,
+                hubly_group_members.c.is_admin == True
+            )
+        ).first()
+        return result is not None
+    
+    def get_member_count(self):
+        """Restituisce il numero di membri"""
+        return len(self.members) + 1  # +1 per il creatore
+    
+    def has_pending_request(self, user):
+        """Verifica se l'utente ha una richiesta pendente"""
+        from models import HublyGroupMembershipRequest
+        return HublyGroupMembershipRequest.query.filter_by(
+            group_id=self.id,
+            user_id=user.id,
+            status='pending'
+        ).first() is not None
+    
+    def can_access(self, user):
+        """Verifica se l'utente può accedere al gruppo"""
+        if not self.is_private:
+            return True
+        return self.is_member(user)
 
 
 # Tabella associativa many-to-many per membri dei gruppi
@@ -3086,3 +3123,67 @@ class HublyToolLink(db.Model):
     
     def __repr__(self):
         return f'<HublyToolLink {self.name}>'
+
+
+class HublyGroupMembershipRequest(db.Model):
+    """Modello per richieste di adesione ai gruppi HUBLY"""
+    __tablename__ = 'hubly_group_membership_request'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('hubly_group.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # 'pending', 'accepted', 'rejected'
+    message = db.Column(db.Text, nullable=True)  # Messaggio di richiesta
+    created_at = db.Column(db.DateTime, default=italian_now)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    # Relationships
+    group = db.relationship('HublyGroup', backref='membership_requests')
+    user = db.relationship('User', foreign_keys=[user_id], backref='group_requests')
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by], backref='reviewed_requests')
+    
+    def __repr__(self):
+        return f'<HublyGroupMembershipRequest Group#{self.group_id} User#{self.user_id}>'
+
+
+class HublyGroupPost(db.Model):
+    """Modello per post nella bacheca dei gruppi HUBLY"""
+    __tablename__ = 'hubly_group_post'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('hubly_group.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)
+    file_url = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    group = db.relationship('HublyGroup', backref='posts')
+    author = db.relationship('User', backref='group_posts')
+    
+    def __repr__(self):
+        return f'<HublyGroupPost Group#{self.group_id}>'
+
+
+class HublyGroupMessage(db.Model):
+    """Modello per messaggi diretti tra membri dei gruppi HUBLY"""
+    __tablename__ = 'hubly_group_message'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('hubly_group.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationships
+    group = db.relationship('HublyGroup', backref='messages')
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_group_messages')
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_group_messages')
+    
+    def __repr__(self):
+        return f'<HublyGroupMessage Group#{self.group_id} From#{self.sender_id} To#{self.recipient_id}>'
