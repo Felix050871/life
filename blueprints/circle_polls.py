@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from models import CirclePoll, CirclePollOption, CirclePollVote
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
+from utils_security import sanitize_html
 from sqlalchemy import desc
 from datetime import datetime
 
@@ -42,6 +43,9 @@ def create():
         is_anonymous = request.form.get('is_anonymous') == 'on'
         multiple_choice = request.form.get('multiple_choice') == 'on'
         end_date_str = request.form.get('end_date')
+        
+        # Sanitizza HTML per prevenire XSS
+        description = sanitize_html(description)
         
         if not question:
             flash('La domanda è obbligatoria', 'danger')

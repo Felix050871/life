@@ -17,6 +17,7 @@ from app import db
 from werkzeug.security import generate_password_hash
 from sqlalchemy.orm import joinedload
 from utils_tenant import filter_by_company, set_company_on_create
+from utils_security import validate_image_upload
 
 # =============================================================================
 # BLUEPRINT CONFIGURATION
@@ -271,6 +272,12 @@ def user_profile():
         # Handle profile image upload
         if form.profile_image.data:
             file = form.profile_image.data
+            
+            # Valida immagine
+            is_valid, error_msg = validate_image_upload(file)
+            if not is_valid:
+                flash(error_msg, 'danger')
+                return render_template('user_profile.html', user=current_user, form=form)
             
             # Generate unique filename
             file_ext = os.path.splitext(secure_filename(file.filename))[1]

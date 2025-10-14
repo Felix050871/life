@@ -4,6 +4,7 @@ from app import db
 from models import (CircleGroup, User, circle_group_members, CircleGroupMembershipRequest,
                    CircleGroupPost, CircleGroupMessage, CircleGroupPostLike, CircleGroupPostComment)
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
+from utils_security import sanitize_html, validate_image_upload
 from sqlalchemy import desc, or_, and_
 from werkzeug.utils import secure_filename
 from PIL import Image
@@ -78,6 +79,9 @@ def create():
         description = request.form.get('description')
         group_type = request.form.get('group_type', 'interest')
         is_private = request.form.get('is_private') == 'on'
+        
+        # Sanitizza HTML per prevenire XSS
+        description = sanitize_html(description)
         
         new_group = CircleGroup(
             name=name,
@@ -218,6 +222,9 @@ def request_membership(group_id):
     
     # Crea nuova richiesta
     message = request.form.get('message', '')
+    # Sanitizza HTML per prevenire XSS
+    message = sanitize_html(message)
+    
     new_request = CircleGroupMembershipRequest(
         group_id=group_id,
         user_id=current_user.id,
@@ -333,11 +340,20 @@ def create_post(group_id):
         flash('Il contenuto non può essere vuoto', 'danger')
         return redirect(url_for('hubly_groups.view_group', group_id=group_id))
     
+    # Sanitizza HTML per prevenire XSS
+    content = sanitize_html(content)
+    
     # Gestione immagine
     image_url = None
     if 'image_file' in request.files:
         image_file = request.files['image_file']
         if image_file and image_file.filename:
+            # Valida immagine
+            is_valid, error_msg = validate_image_upload(image_file)
+            if not is_valid:
+                flash(error_msg, 'danger')
+                return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+            
             filename = secure_filename(image_file.filename)
             unique_filename = f"{uuid.uuid4()}_{filename}"
             upload_folder = 'static/uploads/groups'
@@ -430,6 +446,9 @@ def add_post_comment(group_id, post_id):
     if not content:
         flash('Il commento non può essere vuoto', 'danger')
         return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+    
+    # Sanitizza HTML per prevenire XSS
+    content = sanitize_html(content)
     
     comment = CircleGroupPostComment(
         post_id=post_id,
@@ -555,6 +574,9 @@ def send_message(group_id, user_id):
     if not content:
         flash('Il messaggio non può essere vuoto', 'danger')
         return redirect(url_for('hubly_groups.conversation', group_id=group_id, user_id=user_id))
+    
+    # Sanitizza HTML per prevenire XSS
+    content = sanitize_html(content)
     
     # Crea messaggio
     new_message = CircleGroupMessage(

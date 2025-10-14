@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 from app import db
 from models import CircleDocument
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
+from utils_security import sanitize_html, validate_document_upload
 from sqlalchemy import desc
 import os
 from datetime import datetime
@@ -52,6 +53,9 @@ def upload():
         category = request.form.get('category', 'quality')
         version = request.form.get('version', '1.0')
         
+        # Sanitizza HTML per prevenire XSS
+        description = sanitize_html(description)
+        
         if 'file' not in request.files:
             flash('Nessun file selezionato', 'danger')
             return redirect(request.url)
@@ -60,6 +64,12 @@ def upload():
         
         if file.filename == '':
             flash('Nessun file selezionato', 'danger')
+            return redirect(request.url)
+        
+        # Valida documento
+        is_valid, error_msg = validate_document_upload(file)
+        if not is_valid:
+            flash(error_msg, 'danger')
             return redirect(request.url)
         
         if file and allowed_file(file.filename):

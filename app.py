@@ -27,6 +27,12 @@ app.config.from_object(config_class)
 app.secret_key = app.config['SECRET_KEY']
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+# Secure session cookie configuration
+# SESSION_COOKIE_SECURE solo in produzione (HTTPS richiesto)
+app.config['SESSION_COOKIE_SECURE'] = not app.config.get('FLASK_DEBUG', False)
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Previene accesso JavaScript ai cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Protezione CSRF
+
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
 

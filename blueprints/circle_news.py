@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from models import CirclePost, CircleComment, CircleLike, User
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
+from utils_security import sanitize_html, validate_image_upload
 from sqlalchemy import desc
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -62,9 +63,18 @@ def create():
         image_url = request.form.get('image_url')
         video_url = request.form.get('video_url')
         
+        # Sanitizza HTML per prevenire XSS
+        content = sanitize_html(content)
+        
         # Handle image upload
         if 'image_file' in request.files and request.files['image_file'].filename:
             file = request.files['image_file']
+            
+            # Valida immagine
+            is_valid, error_msg = validate_image_upload(file)
+            if not is_valid:
+                flash(error_msg, 'danger')
+                return render_template('circle/news/create.html')
             
             # Generate unique filename
             file_ext = os.path.splitext(secure_filename(file.filename))[1]
@@ -135,6 +145,9 @@ def add_comment(post_id):
     content = request.form.get('content')
     
     if content:
+        # Sanitizza HTML per prevenire XSS
+        content = sanitize_html(content)
+        
         comment = CircleComment(
             post_id=post_id,
             author_id=current_user.id,
@@ -184,7 +197,7 @@ def edit(post_id):
     
     if request.method == 'POST':
         post.title = request.form.get('title')
-        post.content = request.form.get('content')
+        post.content = sanitize_html(request.form.get('content'))
         post.pinned = request.form.get('pinned') == 'on'
         post.comments_enabled = request.form.get('comments_enabled') == 'on'
         post.video_url = request.form.get('video_url')
@@ -193,6 +206,12 @@ def edit(post_id):
         # Handle image upload
         if 'image_file' in request.files and request.files['image_file'].filename:
             file = request.files['image_file']
+            
+            # Valida immagine
+            is_valid, error_msg = validate_image_upload(file)
+            if not is_valid:
+                flash(error_msg, 'danger')
+                return render_template('circle/news/edit.html', post=post)
             
             # Generate unique filename
             file_ext = os.path.splitext(secure_filename(file.filename))[1]
