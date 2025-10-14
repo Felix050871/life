@@ -47,11 +47,11 @@
                     {% if not current_user.is_system_admin %}
                         <!-- Platform Tabs -->
                         <a href="{{ url_for('dashboard.dashboard') }}" class="nav-link text-white">
-                            <img src="{{ url_for('static', filename='images/flow_logo.png') }}" alt="FLOW" style="height: 16px; width: auto; margin-right: 0.25rem;">FLOW
+                            <img src="{{ url_for('static', filename='img/flow_icon.png') }}" alt="FLOW" style="height: 20px; width: auto; margin-right: 0.4rem;">FLOW
                         </a>
                         {% if current_user.has_permission('can_access_hubly') %}
                         <a href="{{ url_for('circle.home') }}" class="nav-link text-white">
-                            <img src="{{ url_for('static', filename='images/circle_logo.png') }}" alt="CIRCLE" style="height: 16px; width: auto; margin-right: 0.25rem;">CIRCLE
+                            <img src="{{ url_for('static', filename='img/circle_icon.png') }}" alt="CIRCLE" style="height: 20px; width: auto; margin-right: 0.4rem;">CIRCLE
                         </a>
                         {% endif %}
                         
