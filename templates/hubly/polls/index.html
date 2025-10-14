@@ -27,7 +27,7 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ poll.question }}</h5>
                             {% if poll.description %}
-                            <p class="card-text text-muted small">{{ poll.description[:100] }}{% if poll.description|length > 100 %}...{% endif %}</p>
+                            <p class="card-text text-muted small">{{ poll.description[:100]|safe }}{% if poll.description|length > 100 %}...{% endif %}</p>
                             {% endif %}
                             
                             <div class="mb-3">
@@ -97,7 +97,7 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ poll.question }}</h5>
                             {% if poll.description %}
-                            <p class="card-text text-muted small">{{ poll.description[:100] }}{% if poll.description|length > 100 %}...{% endif %}</p>
+                            <p class="card-text text-muted small">{{ poll.description[:100]|safe }}{% if poll.description|length > 100 %}...{% endif %}</p>
                             {% endif %}
                             
                             <div class="mb-3">
