@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import HublyPost, HublyComment, HublyLike
+from models import HublyPost, HublyComment, HublyLike, User
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
 from sqlalchemy import desc
 from datetime import datetime
@@ -54,6 +54,7 @@ def create():
         content = request.form.get('content')
         post_type = request.form.get('post_type', 'news')
         pinned = request.form.get('pinned') == 'on'
+        comments_enabled = request.form.get('comments_enabled') == 'on'
         image_url = request.form.get('image_url')
         video_url = request.form.get('video_url')
         
@@ -63,6 +64,7 @@ def create():
             post_type=post_type,
             author_id=current_user.id,
             pinned=pinned,
+            comments_enabled=comments_enabled,
             image_url=image_url,
             video_url=video_url
         )
@@ -84,6 +86,12 @@ def add_comment(post_id):
         abort(403)
     
     post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    
+    # Verifica se i commenti sono abilitati per questo post
+    if not post.comments_enabled:
+        flash('I commenti sono disabilitati per questo post', 'warning')
+        return redirect(url_for('hubly_news.view_post', post_id=post_id))
+    
     content = request.form.get('content')
     
     if content:
@@ -138,6 +146,7 @@ def edit(post_id):
         post.title = request.form.get('title')
         post.content = request.form.get('content')
         post.pinned = request.form.get('pinned') == 'on'
+        post.comments_enabled = request.form.get('comments_enabled') == 'on'
         post.image_url = request.form.get('image_url')
         post.video_url = request.form.get('video_url')
         post.updated_at = datetime.utcnow()
@@ -166,3 +175,83 @@ def delete(post_id):
     
     flash('Post eliminato', 'success')
     return redirect(url_for('hubly_news.index'))
+
+# =============================================================================
+# API AJAX per interazioni reattive
+# =============================================================================
+
+@bp.route('/api/<int:post_id>/like', methods=['POST'])
+@login_required
+def api_toggle_like(post_id):
+    """Toggle like via AJAX"""
+    if not current_user.has_permission('can_like_posts'):
+        return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
+    
+    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    
+    existing_like = HublyLike.query.filter_by(post_id=post_id, user_id=current_user.id).first()
+    
+    if existing_like:
+        db.session.delete(existing_like)
+        db.session.commit()
+        liked = False
+    else:
+        new_like = HublyLike(post_id=post_id, user_id=current_user.id)
+        db.session.add(new_like)
+        db.session.commit()
+        liked = True
+    
+    # Get updated like count and users
+    likes = HublyLike.query.filter_by(post_id=post_id).all()
+    like_count = len(likes)
+    like_users = []
+    for like in likes[:5]:  # Primi 5 utenti
+        if like.user:
+            like_users.append({
+                'id': like.user.id,
+                'name': like.user.get_full_name(),
+                'avatar': like.user.get_profile_image_url()
+            })
+    
+    return jsonify({
+        'success': True,
+        'liked': liked,
+        'like_count': like_count,
+        'like_users': like_users
+    })
+
+@bp.route('/api/<int:post_id>/comment', methods=['POST'])
+@login_required
+def api_add_comment(post_id):
+    """Aggiungi commento via AJAX"""
+    if not current_user.has_permission('can_comment_posts'):
+        return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
+    
+    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    
+    if not post.comments_enabled:
+        return jsonify({'success': False, 'error': 'Commenti disabilitati'}), 400
+    
+    content = request.json.get('content')
+    
+    if not content:
+        return jsonify({'success': False, 'error': 'Contenuto vuoto'}), 400
+    
+    comment = HublyComment(
+        post_id=post_id,
+        author_id=current_user.id,
+        content=content
+    )
+    db.session.add(comment)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'comment': {
+            'id': comment.id,
+            'content': comment.content,
+            'author_name': current_user.get_full_name(),
+            'author_avatar': current_user.get_profile_image_url(),
+            'created_at': comment.created_at.strftime('%d/%m/%Y %H:%M')
+        }
+    })
