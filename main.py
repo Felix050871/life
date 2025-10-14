@@ -26,14 +26,14 @@ from blueprints.api import api_bp
 from blueprints.banca_ore import banca_ore_bp
 from blueprints.companies import companies_bp
 
-# HUBLY Blueprints
-from blueprints.hubly_home import bp as hubly_bp
-from blueprints.hubly_news import bp as hubly_news_bp
-from blueprints.hubly_groups import bp as hubly_groups_bp
-from blueprints.hubly_polls import bp as hubly_polls_bp
-from blueprints.hubly_calendar import bp as hubly_calendar_bp
-from blueprints.hubly_documents import bp as hubly_documents_bp
-from blueprints.hubly_tools import bp as hubly_tools_bp
+# CIRCLE Blueprints
+from blueprints.circle_home import bp as circle_bp
+from blueprints.circle_news import bp as circle_news_bp
+from blueprints.circle_groups import bp as circle_groups_bp
+from blueprints.circle_polls import bp as circle_polls_bp
+from blueprints.circle_calendar import bp as circle_calendar_bp
+from blueprints.circle_documents import bp as circle_documents_bp
+from blueprints.circle_tools import bp as circle_tools_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(holidays_bp)
@@ -56,14 +56,14 @@ app.register_blueprint(api_bp)
 app.register_blueprint(banca_ore_bp)
 app.register_blueprint(companies_bp)
 
-# HUBLY Blueprints
-app.register_blueprint(hubly_bp)
-app.register_blueprint(hubly_news_bp)
-app.register_blueprint(hubly_groups_bp)
-app.register_blueprint(hubly_polls_bp)
-app.register_blueprint(hubly_calendar_bp)
-app.register_blueprint(hubly_documents_bp)
-app.register_blueprint(hubly_tools_bp)
+# CIRCLE Blueprints
+app.register_blueprint(circle_bp)
+app.register_blueprint(circle_news_bp)
+app.register_blueprint(circle_groups_bp)
+app.register_blueprint(circle_polls_bp)
+app.register_blueprint(circle_calendar_bp)
+app.register_blueprint(circle_documents_bp)
+app.register_blueprint(circle_tools_bp)
 
 if __name__ == '__main__':
     app.run(debug=Config.FLASK_DEBUG, host=Config.SERVER_HOST, port=Config.SERVER_PORT)

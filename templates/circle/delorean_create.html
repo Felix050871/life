@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova Storia Aziendale - Delorean{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-history"></i> Crea Nuova Storia Aziendale - Delorean</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('circle.create_delorean') }}" enctype="multipart/form-data">
+                        <!-- Titolo -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Titolo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required 
+                                   placeholder="Es: Fondazione dell'azienda">
+                        </div>
+
+                        <!-- Contenuto -->
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Contenuto <span class="text-danger">*</span></label>
+                            <div id="editor-container" style="height: 300px; background: white; color: black;"></div>
+                            <textarea class="form-control" id="content" name="content" rows="8" style="display:none;"></textarea>
+                            <div class="form-text">Usa la barra degli strumenti per formattare il testo (grassetto, corsivo, liste, ecc.).</div>
+                        </div>
+
+                        <!-- Immagine (opzionale) -->
+                        <div class="mb-3">
+                            <label for="image_file" class="form-label">Immagine Storica (opzionale)</label>
+                            <input type="file" class="form-control" id="image_file" name="image_file" accept="image/*">
+                            <div class="form-text">Carica un'immagine storica relativa all'evento. Formati supportati: JPG, PNG, GIF.</div>
+                        </div>
+                        
+                        <!-- Oppure URL Immagine -->
+                        <div class="mb-3">
+                            <label for="image_url" class="form-label">Oppure URL Immagine</label>
+                            <input type="url" class="form-control" id="image_url" name="image_url" 
+                                   placeholder="https://example.com/image.jpg">
+                            <div class="form-text">In alternativa, inserisci l'URL di un'immagine. Il caricamento file ha priorità sull'URL.</div>
+                        </div>
+
+                        <!-- Video URL (opzionale) -->
+                        <div class="mb-3">
+                            <label for="video_url" class="form-label">URL Video (opzionale)</label>
+                            <input type="url" class="form-control" id="video_url" name="video_url" 
+                                   placeholder="https://youtube.com/watch?v=...">
+                            <div class="form-text">Inserisci l'URL di un video YouTube o Vimeo.</div>
+                        </div>
+
+                        <!-- Opzioni -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="comments_enabled" name="comments_enabled" checked>
+                                <label class="form-check-label" for="comments_enabled">
+                                    <i class="fas fa-comments"></i> Abilita Commenti
+                                </label>
+                            </div>
+                            <div class="form-text">Se disabilitato, gli utenti non potranno commentare questo post.</div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('circle.delorean') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Annulla
+                            </a>
+                            <button type="submit" class="btn btn-info text-white">
+                                <i class="fas fa-save"></i> Pubblica Storia
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Quill Editor -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+// Crea editor Quill
+var quill = new Quill('#editor-container', {
+    theme: 'snow',
+    placeholder: 'Racconta un momento importante della storia aziendale...',
+    modules: {
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'align': [] }],
+            ['link'],
+            ['clean']
+        ]
+    }
+});
+
+// Sincronizza contenuto con textarea al submit
+document.querySelector('form').onsubmit = function(e) {
+    var content = quill.root.innerHTML;
+    var textContent = quill.getText().trim();
+    
+    // Valida che ci sia contenuto
+    if (textContent.length === 0) {
+        e.preventDefault();
+        alert('Per favore inserisci il contenuto della storia');
+        return false;
+    }
+    
+    document.getElementById('content').value = content;
+    return true;
+};
+</script>
+{% endblock %}

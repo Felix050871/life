@@ -33,13 +33,5 @@ waitForPort = 5000
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 34801
-externalPort = 3000
-
-[[ports]]
-localPort = 43455
-externalPort = 3001
-
 [agent]
 integrations = ["styling_replit==1.0.0", "python_database==1.0.0"]

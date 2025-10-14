@@ -47,11 +47,11 @@
                     {% if not current_user.is_system_admin %}
                         <!-- Platform Tabs -->
                         <a href="{{ url_for('dashboard.dashboard') }}" class="nav-link text-white">
-                            <img src="{{ url_for('static', filename='images/workly_logo.png') }}" alt="WORKLY" style="height: 16px; width: auto; margin-right: 0.25rem;">WORKLY
+                            <img src="{{ url_for('static', filename='images/flow_logo.png') }}" alt="FLOW" style="height: 16px; width: auto; margin-right: 0.25rem;">FLOW
                         </a>
                         {% if current_user.has_permission('can_access_hubly') %}
-                        <a href="{{ url_for('hubly.home') }}" class="nav-link text-white">
-                            <img src="{{ url_for('static', filename='images/hubly_logo.png') }}" alt="HUBLY" style="height: 16px; width: auto; margin-right: 0.25rem;">HUBLY
+                        <a href="{{ url_for('circle.home') }}" class="nav-link text-white">
+                            <img src="{{ url_for('static', filename='images/circle_logo.png') }}" alt="CIRCLE" style="height: 16px; width: auto; margin-right: 0.25rem;">CIRCLE
                         </a>
                         {% endif %}
                         
@@ -154,7 +154,7 @@
             
             <div class="sidebar-header">
                 {% if is_hubly %}
-                <a href="{{ url_for('hubly.home') }}" class="brand">
+                <a href="{{ url_for('circle.home') }}" class="brand">
                     <img src="{{ url_for('static', filename='images/hubly_logo.png') }}" alt="HUBLY" style="height: 24px; width: auto; margin-right: 0.5rem;"><span>HUBLY</span>
                 </a>
                 {% else %}
@@ -171,69 +171,69 @@
             {% if is_hubly %}
                 <!-- MENU HUBLY -->
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly_news.index') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle_news.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-newspaper"></i>
                         <span>News & Comunicazioni</span>
                     </a>
                 </li>
                 
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly.delorean') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle.delorean') }}" class="sidebar-nav-link">
                         <i class="fas fa-history"></i>
                         <span>Delorean</span>
                     </a>
                 </li>
                 
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly_groups.index') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle_groups.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-users"></i>
                         <span>Gruppi</span>
                     </a>
                 </li>
                 
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly_polls.index') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle_polls.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-poll"></i>
                         <span>Sondaggi</span>
                     </a>
                 </li>
                 
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly_calendar.index') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle_calendar.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-calendar"></i>
                         <span>Calendario</span>
                     </a>
                 </li>
                 
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly_documents.index') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle_documents.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-folder-open"></i>
                         <span>Documenti</span>
                     </a>
                 </li>
                 
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly_tools.index') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle_tools.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-tools"></i>
                         <span>Strumenti</span>
                     </a>
                 </li>
                 
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly.personas') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle.personas') }}" class="sidebar-nav-link">
                         <i class="fas fa-id-card"></i>
                         <span>Personas</span>
                     </a>
                 </li>
                 
                 <li class="sidebar-nav-item">
-                    <a href="{{ url_for('hubly.tech_feed') }}" class="sidebar-nav-link">
+                    <a href="{{ url_for('circle.tech_feed') }}" class="sidebar-nav-link">
                         <i class="fas fa-microchip"></i>
                         <span>Tech Feed</span>
                     </a>
                 </li>
             {% else %}
-                <!-- MENU WORKLY -->
+                <!-- MENU FLOW -->
                 <!-- DASHBOARD -->
                 {% if current_user.can_access_dashboard() %}
                 <li class="sidebar-nav-item">

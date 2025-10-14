@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}CIRCLE - Documenti{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-folder-open text-primary"></i> Documenti</h2>
+        {% if current_user.has_permission('can_upload_documents') %}
+        <a href="{{ url_for('circle_documents.upload') }}" class="btn btn-primary">
+            <i class="fas fa-upload"></i> Carica Documento
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('circle_documents.index', category='all') }}" class="btn btn-sm {% if selected_category == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">Tutti</a>
+            <a href="{{ url_for('circle_documents.index', category='quality') }}" class="btn btn-sm {% if selected_category == 'quality' %}btn-primary{% else %}btn-outline-primary{% endif %}">Qualità</a>
+            <a href="{{ url_for('circle_documents.index', category='hr') }}" class="btn btn-sm {% if selected_category == 'hr' %}btn-primary{% else %}btn-outline-primary{% endif %}">HR</a>
+            <a href="{{ url_for('circle_documents.index', category='procedure') }}" class="btn btn-sm {% if selected_category == 'procedure' %}btn-primary{% else %}btn-outline-primary{% endif %}">Procedure</a>
+            <a href="{{ url_for('circle_documents.index', category='policy') }}" class="btn btn-sm {% if selected_category == 'policy' %}btn-primary{% else %}btn-outline-primary{% endif %}">Policy</a>
+        </div>
+    </div>
+
+    {% if documents %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Titolo</th>
+                    <th>Categoria</th>
+                    <th>Versione</th>
+                    <th>Data</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td>
+                        <i class="fas fa-file-{{ doc.file_type }} me-2"></i>
+                        {{ doc.title }}
+                    </td>
+                    <td><span class="badge bg-secondary">{{ doc.category }}</span></td>
+                    <td>v{{ doc.version }}</td>
+                    <td>{{ doc.created_at.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        <a href="{{ url_for('circle_documents.download', document_id=doc.id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-download"></i> Scarica
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Nessun documento disponibile.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

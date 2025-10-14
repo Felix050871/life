@@ -197,8 +197,8 @@ class UserRole(db.Model):
             'can_manage_aci_tables': 'Gestire Tabelle ACI',
             'can_view_aci_tables': 'Visualizzare Tabelle ACI',
             
-            # HUBLY - Social Intranet
-            'can_access_hubly': 'Accedere a HUBLY',
+            # CIRCLE - Social Intranet
+            'can_access_hubly': 'Accedere a CIRCLE',
             'can_create_posts': 'Creare Post/News',
             'can_edit_posts': 'Modificare Post/News',
             'can_delete_posts': 'Eliminare Post/News',
@@ -240,7 +240,7 @@ class User(UserMixin, db.Model):
     profile_image = db.Column(db.String(255), nullable=True)  # Path dell'immagine del profilo
     created_at = db.Column(db.DateTime, default=italian_now)
     
-    # HUBLY Social fields
+    # CIRCLE Social fields
     bio = db.Column(db.Text, nullable=True)  # Biografia breve per profilo social
     linkedin_url = db.Column(db.String(255), nullable=True)  # URL profilo LinkedIn
     phone_number = db.Column(db.String(20), nullable=True)  # Numero di telefono aziendale
@@ -2862,12 +2862,12 @@ class ACITable(db.Model):
 
 
 # =============================================================================
-# HUBLY MODELS - Social Intranet Aziendale
+# CIRCLE MODELS - Social Intranet Aziendale
 # =============================================================================
 
-class HublyPost(db.Model):
-    """Modello per post/news HUBLY (Delorean, News, Feed)"""
-    __tablename__ = 'hubly_post'
+class CirclePost(db.Model):
+    """Modello per post/news CIRCLE (Delorean, News, Feed)"""
+    __tablename__ = 'circle_post'
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -2884,10 +2884,10 @@ class HublyPost(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
     
     # Relationships
-    author = db.relationship('User', backref='hubly_posts')
+    author = db.relationship('User', backref='circle_posts')
     
     def __repr__(self):
-        return f'<HublyPost {self.title}>'
+        return f'<CirclePost {self.title}>'
     
     def get_like_count(self):
         """Restituisce il numero di like"""
@@ -2902,9 +2902,9 @@ class HublyPost(db.Model):
         return any(like.user_id == user.id for like in self.likes)
 
 
-class HublyGroup(db.Model):
-    """Modello per gruppi sociali aziendali HUBLY"""
-    __tablename__ = 'hubly_group'
+class CircleGroup(db.Model):
+    """Modello per gruppi sociali aziendali CIRCLE"""
+    __tablename__ = 'circle_group'
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -2918,10 +2918,10 @@ class HublyGroup(db.Model):
     
     # Relationships
     creator = db.relationship('User', backref='created_groups')
-    members = db.relationship('User', secondary='hubly_group_members', backref='joined_groups')
+    members = db.relationship('User', secondary='circle_group_members', backref='joined_groups')
     
     def __repr__(self):
-        return f'<HublyGroup {self.name}>'
+        return f'<CircleGroup {self.name}>'
     
     def is_member(self, user):
         """Verifica se l'utente è membro del gruppo"""
@@ -2932,10 +2932,10 @@ class HublyGroup(db.Model):
         if user.id == self.creator_id:
             return True
         result = db.session.execute(
-            db.select(hubly_group_members).where(
-                hubly_group_members.c.user_id == user.id,
-                hubly_group_members.c.group_id == self.id,
-                hubly_group_members.c.is_admin == True
+            db.select(circle_group_members).where(
+                circle_group_members.c.user_id == user.id,
+                circle_group_members.c.group_id == self.id,
+                circle_group_members.c.is_admin == True
             )
         ).first()
         return result is not None
@@ -2946,8 +2946,8 @@ class HublyGroup(db.Model):
     
     def has_pending_request(self, user):
         """Verifica se l'utente ha una richiesta pendente"""
-        from models import HublyGroupMembershipRequest
-        return HublyGroupMembershipRequest.query.filter_by(
+        from models import CircleGroupMembershipRequest
+        return CircleGroupMembershipRequest.query.filter_by(
             group_id=self.id,
             user_id=user.id,
             status='pending'
@@ -2961,17 +2961,17 @@ class HublyGroup(db.Model):
 
 
 # Tabella associativa many-to-many per membri dei gruppi
-hubly_group_members = db.Table('hubly_group_members',
+circle_group_members = db.Table('circle_group_members',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-    db.Column('group_id', db.Integer, db.ForeignKey('hubly_group.id'), primary_key=True),
+    db.Column('group_id', db.Integer, db.ForeignKey('circle_group.id'), primary_key=True),
     db.Column('is_admin', db.Boolean, default=False),  # Admin del gruppo
     db.Column('joined_at', db.DateTime, default=italian_now)
 )
 
 
-class HublyPoll(db.Model):
-    """Modello per sondaggi HUBLY"""
-    __tablename__ = 'hubly_poll'
+class CirclePoll(db.Model):
+    """Modello per sondaggi CIRCLE"""
+    __tablename__ = 'circle_poll'
     
     id = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.String(255), nullable=False)
@@ -2988,7 +2988,7 @@ class HublyPoll(db.Model):
     
     def has_voted(self, user):
         """Verifica se l'utente ha già votato"""
-        return HublyPollVote.query.filter_by(poll_id=self.id, user_id=user.id).first() is not None
+        return CirclePollVote.query.filter_by(poll_id=self.id, user_id=user.id).first() is not None
     
     def is_closed(self):
         """Verifica se il sondaggio è chiuso"""
@@ -3019,50 +3019,50 @@ class HublyPoll(db.Model):
     
     def get_user_votes(self, user):
         """Ottiene le opzioni votate dall'utente"""
-        votes = HublyPollVote.query.filter_by(poll_id=self.id, user_id=user.id).all()
+        votes = CirclePollVote.query.filter_by(poll_id=self.id, user_id=user.id).all()
         return [vote.option_id for vote in votes]
     
     def __repr__(self):
-        return f'<HublyPoll {self.question}>'
+        return f'<CirclePoll {self.question}>'
 
 
-class HublyPollOption(db.Model):
-    """Opzioni per i sondaggi HUBLY"""
-    __tablename__ = 'hubly_poll_option'
+class CirclePollOption(db.Model):
+    """Opzioni per i sondaggi CIRCLE"""
+    __tablename__ = 'circle_poll_option'
     
     id = db.Column(db.Integer, primary_key=True)
-    poll_id = db.Column(db.Integer, db.ForeignKey('hubly_poll.id'), nullable=False)
+    poll_id = db.Column(db.Integer, db.ForeignKey('circle_poll.id'), nullable=False)
     option_text = db.Column(db.String(200), nullable=False)
     
     # Relationships
-    poll = db.relationship('HublyPoll', backref='options')
+    poll = db.relationship('CirclePoll', backref='options')
     
     def __repr__(self):
-        return f'<HublyPollOption {self.option_text}>'
+        return f'<CirclePollOption {self.option_text}>'
 
 
-class HublyPollVote(db.Model):
-    """Voti ai sondaggi HUBLY"""
-    __tablename__ = 'hubly_poll_vote'
+class CirclePollVote(db.Model):
+    """Voti ai sondaggi CIRCLE"""
+    __tablename__ = 'circle_poll_vote'
     
     id = db.Column(db.Integer, primary_key=True)
-    poll_id = db.Column(db.Integer, db.ForeignKey('hubly_poll.id'), nullable=False)
-    option_id = db.Column(db.Integer, db.ForeignKey('hubly_poll_option.id'), nullable=False)
+    poll_id = db.Column(db.Integer, db.ForeignKey('circle_poll.id'), nullable=False)
+    option_id = db.Column(db.Integer, db.ForeignKey('circle_poll_option.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     voted_at = db.Column(db.DateTime, default=italian_now)
     
     # Relationships
-    poll = db.relationship('HublyPoll', backref='votes')
-    option = db.relationship('HublyPollOption', backref='votes')
+    poll = db.relationship('CirclePoll', backref='votes')
+    option = db.relationship('CirclePollOption', backref='votes')
     user = db.relationship('User', backref='poll_votes')
     
     def __repr__(self):
-        return f'<HublyPollVote Poll#{self.poll_id} Option#{self.option_id}>'
+        return f'<CirclePollVote Poll#{self.poll_id} Option#{self.option_id}>'
 
 
-class HublyDocument(db.Model):
-    """Modello per documenti Qualità/HR HUBLY"""
-    __tablename__ = 'hubly_document'
+class CircleDocument(db.Model):
+    """Modello per documenti Qualità/HR CIRCLE"""
+    __tablename__ = 'circle_document'
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -3081,12 +3081,12 @@ class HublyDocument(db.Model):
     uploader = db.relationship('User', backref='uploaded_documents')
     
     def __repr__(self):
-        return f'<HublyDocument {self.title}>'
+        return f'<CircleDocument {self.title}>'
 
 
-class HublyCalendarEvent(db.Model):
-    """Modello per eventi calendario aziendale HUBLY"""
-    __tablename__ = 'hubly_calendar_event'
+class CircleCalendarEvent(db.Model):
+    """Modello per eventi calendario aziendale CIRCLE"""
+    __tablename__ = 'circle_calendar_event'
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -3105,48 +3105,48 @@ class HublyCalendarEvent(db.Model):
     creator = db.relationship('User', backref='created_events')
     
     def __repr__(self):
-        return f'<HublyCalendarEvent {self.title}>'
+        return f'<CircleCalendarEvent {self.title}>'
 
 
-class HublyComment(db.Model):
-    """Modello per commenti ai post HUBLY"""
-    __tablename__ = 'hubly_comment'
+class CircleComment(db.Model):
+    """Modello per commenti ai post CIRCLE"""
+    __tablename__ = 'circle_comment'
     
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('hubly_post.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('circle_post.id'), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
     # Relationships
-    post = db.relationship('HublyPost', backref='comments')
+    post = db.relationship('CirclePost', backref='comments')
     author = db.relationship('User', backref='comments')
     
     def __repr__(self):
-        return f'<HublyComment Post#{self.post_id}>'
+        return f'<CircleComment Post#{self.post_id}>'
 
 
-class HublyLike(db.Model):
-    """Modello per like ai post HUBLY"""
-    __tablename__ = 'hubly_like'
+class CircleLike(db.Model):
+    """Modello per like ai post CIRCLE"""
+    __tablename__ = 'circle_like'
     
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('hubly_post.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('circle_post.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     
     # Relationships
-    post = db.relationship('HublyPost', backref='likes')
+    post = db.relationship('CirclePost', backref='likes')
     user = db.relationship('User', backref='liked_posts')
     
     def __repr__(self):
-        return f'<HublyLike Post#{self.post_id} User#{self.user_id}>'
+        return f'<CircleLike Post#{self.post_id} User#{self.user_id}>'
 
 
-class HublyToolLink(db.Model):
-    """Modello per scorciatoie strumenti esterni HUBLY"""
-    __tablename__ = 'hubly_tool_link'
+class CircleToolLink(db.Model):
+    """Modello per scorciatoie strumenti esterni CIRCLE"""
+    __tablename__ = 'circle_tool_link'
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -3159,15 +3159,15 @@ class HublyToolLink(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
     
     def __repr__(self):
-        return f'<HublyToolLink {self.name}>'
+        return f'<CircleToolLink {self.name}>'
 
 
-class HublyGroupMembershipRequest(db.Model):
-    """Modello per richieste di adesione ai gruppi HUBLY"""
-    __tablename__ = 'hubly_group_membership_request'
+class CircleGroupMembershipRequest(db.Model):
+    """Modello per richieste di adesione ai gruppi CIRCLE"""
+    __tablename__ = 'circle_group_membership_request'
     
     id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey('hubly_group.id'), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('circle_group.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     status = db.Column(db.String(20), default='pending')  # 'pending', 'accepted', 'rejected'
     message = db.Column(db.Text, nullable=True)  # Messaggio di richiesta
@@ -3176,20 +3176,20 @@ class HublyGroupMembershipRequest(db.Model):
     reviewed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     
     # Relationships
-    group = db.relationship('HublyGroup', backref='membership_requests')
+    group = db.relationship('CircleGroup', backref='membership_requests')
     user = db.relationship('User', foreign_keys=[user_id], backref='group_requests')
     reviewer = db.relationship('User', foreign_keys=[reviewed_by], backref='reviewed_requests')
     
     def __repr__(self):
-        return f'<HublyGroupMembershipRequest Group#{self.group_id} User#{self.user_id}>'
+        return f'<CircleGroupMembershipRequest Group#{self.group_id} User#{self.user_id}>'
 
 
-class HublyGroupPost(db.Model):
-    """Modello per post nella bacheca dei gruppi HUBLY"""
-    __tablename__ = 'hubly_group_post'
+class CircleGroupPost(db.Model):
+    """Modello per post nella bacheca dei gruppi CIRCLE"""
+    __tablename__ = 'circle_group_post'
     
     id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey('hubly_group.id'), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('circle_group.id'), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     image_url = db.Column(db.String(255), nullable=True)
@@ -3198,7 +3198,7 @@ class HublyGroupPost(db.Model):
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
     # Relationships
-    group = db.relationship('HublyGroup', backref='posts')
+    group = db.relationship('CircleGroup', backref='posts')
     author = db.relationship('User', backref='group_posts')
     
     def get_like_count(self):
@@ -3214,51 +3214,51 @@ class HublyGroupPost(db.Model):
         return len(self.comments)
     
     def __repr__(self):
-        return f'<HublyGroupPost Group#{self.group_id}>'
+        return f'<CircleGroupPost Group#{self.group_id}>'
 
 
-class HublyGroupPostLike(db.Model):
-    """Modello per like ai post dei gruppi HUBLY"""
-    __tablename__ = 'hubly_group_post_like'
+class CircleGroupPostLike(db.Model):
+    """Modello per like ai post dei gruppi CIRCLE"""
+    __tablename__ = 'circle_group_post_like'
     
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('hubly_group_post.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('circle_group_post.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     
     # Relationships
-    post = db.relationship('HublyGroupPost', backref='likes')
+    post = db.relationship('CircleGroupPost', backref='likes')
     user = db.relationship('User', backref='group_post_likes')
     
     def __repr__(self):
-        return f'<HublyGroupPostLike Post#{self.post_id} User#{self.user_id}>'
+        return f'<CircleGroupPostLike Post#{self.post_id} User#{self.user_id}>'
 
 
-class HublyGroupPostComment(db.Model):
-    """Modello per commenti ai post dei gruppi HUBLY"""
-    __tablename__ = 'hubly_group_post_comment'
+class CircleGroupPostComment(db.Model):
+    """Modello per commenti ai post dei gruppi CIRCLE"""
+    __tablename__ = 'circle_group_post_comment'
     
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('hubly_group_post.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('circle_group_post.id'), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
     # Relationships
-    post = db.relationship('HublyGroupPost', backref='comments')
+    post = db.relationship('CircleGroupPost', backref='comments')
     author = db.relationship('User', backref='group_post_comments')
     
     def __repr__(self):
-        return f'<HublyGroupPostComment Post#{self.post_id} Author#{self.author_id}>'
+        return f'<CircleGroupPostComment Post#{self.post_id} Author#{self.author_id}>'
 
 
-class HublyGroupMessage(db.Model):
-    """Modello per messaggi diretti tra membri dei gruppi HUBLY"""
-    __tablename__ = 'hubly_group_message'
+class CircleGroupMessage(db.Model):
+    """Modello per messaggi diretti tra membri dei gruppi CIRCLE"""
+    __tablename__ = 'circle_group_message'
     
     id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey('hubly_group.id'), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('circle_group.id'), nullable=False)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
@@ -3266,9 +3266,9 @@ class HublyGroupMessage(db.Model):
     created_at = db.Column(db.DateTime, default=italian_now)
     
     # Relationships
-    group = db.relationship('HublyGroup', backref='messages')
+    group = db.relationship('CircleGroup', backref='messages')
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_group_messages')
     recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_group_messages')
     
     def __repr__(self):
-        return f'<HublyGroupMessage Group#{self.group_id} From#{self.sender_id} To#{self.recipient_id}>'
+        return f'<CircleGroupMessage Group#{self.group_id} From#{self.sender_id} To#{self.recipient_id}>'

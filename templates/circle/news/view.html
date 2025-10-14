@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - CIRCLE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Post detail card -->
+            <div class="card shadow-sm mb-4">
+                <!-- Header con immagine -->
+                <div class="post-detail-header" style="background: {% if post.image_url %}url('{{ post.image_url }}') center/cover{% else %}linear-gradient(135deg, #667eea 0%, #764ba2 100%){% endif %}; height: 250px; position: relative;">
+                    {% if post.pinned %}
+                    <div class="pinned-badge" style="position: absolute; top: 20px; right: 20px; background: #ffc107; color: #000; padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+                        <i class="fas fa-thumbtack"></i> In Evidenza
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Contenuto post -->
+                <div class="card-body p-4">
+                    <!-- Meta info -->
+                    <div class="d-flex align-items-center mb-4">
+                        <img src="{{ post.author.get_profile_image_url() }}" alt="{{ post.author.get_full_name() }}" class="rounded-circle me-3" width="48" height="48">
+                        <div>
+                            <h6 class="mb-0">{{ post.author.get_full_name() }}</h6>
+                            <small class="text-muted">
+                                <i class="far fa-clock"></i> {{ post.created_at.strftime('%d/%m/%Y alle %H:%M') }}
+                                {% if post.updated_at and post.updated_at != post.created_at %}
+                                <span class="badge bg-secondary ms-2">Modificato</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <!-- Edit/Delete buttons -->
+                        <div class="ms-auto">
+                            {% if current_user.has_permission('can_edit_posts') and (post.author_id == current_user.id or current_user.has_permission('can_delete_posts')) %}
+                            <a href="{{ url_for('circle_news.edit', post_id=post.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Modifica
+                            </a>
+                            {% endif %}
+                            
+                            {% if current_user.has_permission('can_delete_posts') or post.author_id == current_user.id %}
+                            <form action="{{ url_for('circle_news.delete', post_id=post.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Sei sicuro di voler eliminare questo post?');">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i> Elimina
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Titolo -->
+                    <h2 class="mb-4">{{ post.title }}</h2>
+                    
+                    <!-- Contenuto -->
+                    <div class="post-content mb-4" style="font-size: 1.1rem; line-height: 1.8;">
+                        {{ post.content|safe }}
+                    </div>
+                    
+                    <!-- Video embed (se presente) -->
+                    {% if post.video_url %}
+                    <div class="ratio ratio-16x9 mb-4">
+                        <iframe src="{{ post.video_url }}" allowfullscreen></iframe>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Like section -->
+                    <div class="d-flex justify-content-between align-items-center py-3 border-top border-bottom">
+                        <div>
+                            <button class="btn btn-link text-decoration-none {% if user_liked %}text-danger{% else %}text-muted{% endif %}" 
+                                    id="like-btn" 
+                                    onclick="toggleLike()">
+                                <i class="{% if user_liked %}fas{% else %}far{% endif %} fa-heart"></i>
+                                <span id="like-count">{{ post.get_like_count() }}</span> Mi Piace
+                            </button>
+                        </div>
+                        
+                        <!-- Like avatars -->
+                        <div class="d-flex align-items-center" id="like-avatars">
+                            {% set likes = post.likes[:5] %}
+                            {% if likes %}
+                                {% for like in likes %}
+                                <img src="{{ like.user.get_profile_image_url() }}" 
+                                     alt="{{ like.user.get_full_name() }}" 
+                                     class="rounded-circle border border-2 border-white" 
+                                     width="36" 
+                                     height="36"
+                                     style="margin-left: -10px;"
+                                     title="{{ like.user.get_full_name() }}">
+                                {% endfor %}
+                                {% if post.get_like_count() > 5 %}
+                                <span class="ms-2 text-muted">+{{ post.get_like_count() - 5 }} altri</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Comments section -->
+            {% if post.comments_enabled %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="far fa-comments"></i> Commenti ({{ comments|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Comment form -->
+                    {% if current_user.has_permission('can_comment_posts') %}
+                    <form action="{{ url_for('circle_news.add_comment', post_id=post.id) }}" method="POST" class="mb-4">
+                        <div class="d-flex align-items-start">
+                            <img src="{{ current_user.get_profile_image_url() }}" alt="{{ current_user.get_full_name() }}" class="rounded-circle me-3" width="40" height="40">
+                            <div class="flex-grow-1">
+                                <textarea class="form-control mb-2" name="content" rows="3" placeholder="Scrivi un commento..." required></textarea>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-paper-plane"></i> Invia Commento
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
+                    
+                    <!-- Comments list -->
+                    <div id="comments-list">
+                        {% if comments %}
+                            {% for comment in comments %}
+                            <div class="d-flex align-items-start mb-3 pb-3 border-bottom">
+                                <img src="{{ comment.author.get_profile_image_url() }}" alt="{{ comment.author.get_full_name() }}" class="rounded-circle me-3" width="40" height="40">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <h6 class="mb-0">{{ comment.author.get_full_name() }}</h6>
+                                        <small class="text-muted">{{ comment.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                    </div>
+                                    <p class="mb-0 text-muted">{{ comment.content|safe }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted text-center py-3">Nessun commento ancora. Sii il primo a commentare!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> I commenti sono disabilitati per questo post.
+            </div>
+            {% endif %}
+            
+            <!-- Back button -->
+            <div class="mt-4">
+                <a href="{{ url_for('circle_news.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Torna alle News
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleLike() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    fetch('/hubly/news/api/{{ post.id }}/like', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update like button
+            const likeBtn = document.getElementById('like-btn');
+            const icon = likeBtn.querySelector('i');
+            const count = document.getElementById('like-count');
+            
+            if (data.liked) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                likeBtn.classList.add('text-danger');
+                likeBtn.classList.remove('text-muted');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                likeBtn.classList.remove('text-danger');
+                likeBtn.classList.add('text-muted');
+            }
+            count.textContent = data.like_count;
+            
+            // Update avatars
+            const avatarsContainer = document.getElementById('like-avatars');
+            let avatarsHTML = '';
+            data.like_users.forEach(user => {
+                avatarsHTML += `<img src="${user.avatar}" alt="${user.name}" class="rounded-circle border border-2 border-white" width="36" height="36" style="margin-left: -10px;" title="${user.name}">`;
+            });
+            if (data.like_count > 5) {
+                avatarsHTML += `<span class="ms-2 text-muted">+${data.like_count - 5} altri</span>`;
+            }
+            avatarsContainer.innerHTML = avatarsHTML;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %}

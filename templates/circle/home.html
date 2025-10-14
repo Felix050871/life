@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}CIRCLE - Home{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="fas fa-home text-primary"></i> CIRCLE - Social Intranet Aziendale
+            </h2>
+            <p class="text-muted">Rimani aggiornato sulle iniziative aziendali e accedi facilmente agli strumenti di lavoro</p>
+        </div>
+    </div>
+
+    <!-- Quick Tools -->
+    {% if quick_tools %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tools"></i> Strumenti Rapidi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for tool in quick_tools %}
+                        <div class="col-md-3 col-sm-6">
+                            <a href="{{ tool.url }}" target="_blank" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center" style="padding: 1rem;">
+                                <i class="fas {{ tool.icon }} fa-2x me-2"></i>
+                                <div class="text-start">
+                                    <strong>{{ tool.name }}</strong>
+                                    {% if tool.description %}
+                                    <br><small>{{ tool.description[:30] }}...</small>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Left Column: News & Posts -->
+        <div class="col-lg-8">
+            <!-- Pinned Posts -->
+            {% if pinned_posts %}
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-thumbtack"></i> Post in Evidenza</h5>
+                </div>
+                <div class="card-body">
+                    {% for post in pinned_posts %}
+                    <div class="alert alert-info mb-3">
+                        <h6><a href="{{ url_for('circle_news.view_post', post_id=post.id) }}" class="text-decoration-none">{{ post.title }}</a></h6>
+                        <p class="mb-1">{{ post.content[:150]|safe }}...</p>
+                        <small class="text-muted">
+                            <i class="fas fa-user"></i> {{ post.author.get_full_name() }} • 
+                            <i class="fas fa-clock"></i> {{ post.created_at.strftime('%d/%m/%Y %H:%M') }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent News -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-newspaper"></i> Ultime News</h5>
+                    <a href="{{ url_for('circle_news.index') }}" class="btn btn-sm btn-light">Vedi Tutte</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_posts %}
+                    <div class="list-group list-group-flush">
+                        {% for post in recent_posts %}
+                        <a href="{{ url_for('circle_news.view_post', post_id=post.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ post.title }}</h6>
+                                <small>{{ post.created_at.strftime('%d/%m/%Y') }}</small>
+                            </div>
+                            <p class="mb-1">{{ post.content[:100]|safe }}...</p>
+                            <small class="text-muted"><i class="fas fa-user"></i> {{ post.author.get_full_name() }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nessuna news disponibile</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Active Polls -->
+            {% if active_polls %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-poll"></i> Sondaggi Attivi</h5>
+                </div>
+                <div class="card-body">
+                    {% for poll in active_polls %}
+                    <div class="mb-3 pb-3 border-bottom">
+                        <h6>{{ poll.question }}</h6>
+                        <p class="text-muted small mb-2">{{ poll.description or '' }}</p>
+                        <a href="#" class="btn btn-sm btn-success">Vota</a>
+                        <small class="text-muted ms-3">
+                            <i class="fas fa-users"></i> {{ poll.votes|length }} voti
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Groups & Events -->
+        <div class="col-lg-4">
+            <!-- Groups -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Gruppi</h5>
+                    <a href="{{ url_for('circle_groups.index') }}" class="btn btn-sm btn-light">Vedi Tutti</a>
+                </div>
+                <div class="card-body">
+                    {% if active_groups %}
+                    <div class="list-group list-group-flush">
+                        {% for group in active_groups %}
+                        <a href="{{ url_for('circle_groups.view_group', group_id=group.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    {% if group.image_url %}
+                                    <img src="{{ group.image_url }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-users text-white"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ group.name }}</h6>
+                                    <small class="text-muted">{{ group.group_type }}</small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nessun gruppo disponibile</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Calendar Events -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar"></i> Prossimi Eventi</h5>
+                    <a href="{{ url_for('circle_calendar.index') }}" class="btn btn-sm btn-light">Calendario</a>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_events %}
+                    <div class="list-group list-group-flush">
+                        {% for event in upcoming_events %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ event.title }}</h6>
+                            <p class="mb-1 small">{{ event.description[:50] if event.description else '' }}...</p>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-day"></i> {{ event.start_datetime.strftime('%d/%m/%Y %H:%M') }}
+                                {% if event.location %}
+                                <br><i class="fas fa-map-marker-alt"></i> {{ event.location }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nessun evento in programma</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Documents -->
+            {% if recent_documents %}
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-file-alt"></i> Documenti</h5>
+                    <a href="{{ url_for('circle_documents.index') }}" class="btn btn-sm btn-light">Vedi Tutti</a>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for doc in recent_documents %}
+                        <a href="{{ url_for('circle_documents.download', document_id=doc.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file-{{ doc.file_type }} fa-2x me-3 text-primary"></i>
+                                <div>
+                                    <h6 class="mb-0">{{ doc.title }}</h6>
+                                    <small class="text-muted">{{ doc.category }} • v{{ doc.version }}</small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
