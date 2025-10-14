@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Evento - HUBLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-calendar-edit text-primary"></i> Modifica Evento</h2>
+                <a href="{{ url_for('hubly_calendar.view', event_id=event.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Indietro
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('hubly_calendar.edit', event_id=event.id) }}">
+                        <!-- Titolo -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Titolo Evento <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ event.title }}" required>
+                        </div>
+
+                        <!-- Tipo Evento -->
+                        <div class="mb-3">
+                            <label for="event_type" class="form-label">Tipo Evento</label>
+                            <select class="form-select" id="event_type" name="event_type">
+                                <option value="event" {% if event.event_type == 'event' %}selected{% endif %}>Evento Generico</option>
+                                <option value="meeting" {% if event.event_type == 'meeting' %}selected{% endif %}>Riunione</option>
+                                <option value="deadline" {% if event.event_type == 'deadline' %}selected{% endif %}>Scadenza</option>
+                                <option value="holiday" {% if event.event_type == 'holiday' %}selected{% endif %}>Festività</option>
+                                <option value="training" {% if event.event_type == 'training' %}selected{% endif %}>Formazione</option>
+                            </select>
+                        </div>
+
+                        <!-- Descrizione -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="description" name="description" rows="4">{{ event.description or '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <!-- Data/Ora Inizio -->
+                            <div class="col-md-6 mb-3">
+                                <label for="start_datetime" class="form-label">Data/Ora Inizio <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="start_datetime" name="start_datetime" 
+                                       value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') }}" required>
+                            </div>
+
+                            <!-- Data/Ora Fine -->
+                            <div class="col-md-6 mb-3">
+                                <label for="end_datetime" class="form-label">Data/Ora Fine <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="end_datetime" name="end_datetime" 
+                                       value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Luogo -->
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Luogo</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ event.location or '' }}" placeholder="Es: Sala Riunioni, Online, ecc.">
+                        </div>
+
+                        <div class="row">
+                            <!-- Evento Giornata Intera -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_all_day" name="is_all_day" 
+                                           {% if event.is_all_day %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_all_day">
+                                        Evento Giornata Intera
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Colore -->
+                            <div class="col-md-6 mb-3">
+                                <label for="color" class="form-label">Colore Evento</label>
+                                <select class="form-select" id="color" name="color">
+                                    <option value="#0d6efd" {% if event.color == '#0d6efd' %}selected{% endif %}>Blu</option>
+                                    <option value="#198754" {% if event.color == '#198754' %}selected{% endif %}>Verde</option>
+                                    <option value="#dc3545" {% if event.color == '#dc3545' %}selected{% endif %}>Rosso</option>
+                                    <option value="#ffc107" {% if event.color == '#ffc107' %}selected{% endif %}>Giallo</option>
+                                    <option value="#6f42c1" {% if event.color == '#6f42c1' %}selected{% endif %}>Viola</option>
+                                    <option value="#fd7e14" {% if event.color == '#fd7e14' %}selected{% endif %}>Arancione</option>
+                                    <option value="#0dcaf0" {% if event.color == '#0dcaf0' %}selected{% endif %}>Azzurro</option>
+                                    <option value="#6c757d" {% if event.color == '#6c757d' %}selected{% endif %}>Grigio</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Pulsanti -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salva Modifiche
+                            </button>
+                            <a href="{{ url_for('hubly_calendar.view', event_id=event.id) }}" class="btn btn-secondary">
+                                Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

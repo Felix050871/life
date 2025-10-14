@@ -93,21 +93,56 @@ def create():
     
     return render_template('hubly/calendar/create.html')
 
+@bp.route('/<int:event_id>')
+@login_required
+def view(event_id):
+    """Visualizza dettaglio evento"""
+    if not current_user.has_permission('can_view_calendar'):
+        abort(403)
+    
+    event = filter_by_company(HublyCalendarEvent.query, current_user).filter_by(id=event_id).first_or_404()
+    
+    return render_template('hubly/calendar/view.html', event=event)
+
+@bp.route('/<int:event_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit(event_id):
+    """Modifica evento"""
+    event = filter_by_company(HublyCalendarEvent.query, current_user).filter_by(id=event_id).first_or_404()
+    
+    # Solo il creatore o utenti con permesso can_manage_calendar possono modificare
+    if event.creator_id != current_user.id and not current_user.has_permission('can_manage_calendar'):
+        abort(403)
+    
+    if request.method == 'POST':
+        event.title = request.form.get('title')
+        event.description = request.form.get('description')
+        event.event_type = request.form.get('event_type', 'event')
+        event.start_datetime = datetime.fromisoformat(request.form.get('start_datetime'))
+        event.end_datetime = datetime.fromisoformat(request.form.get('end_datetime'))
+        event.location = request.form.get('location')
+        event.is_all_day = request.form.get('is_all_day') == 'on'
+        event.color = request.form.get('color', '#0d6efd')
+        
+        db.session.commit()
+        
+        flash('Evento aggiornato con successo!', 'success')
+        return redirect(url_for('hubly_calendar.view', event_id=event.id))
+    
+    return render_template('hubly/calendar/edit.html', event=event)
+
 @bp.route('/<int:event_id>/delete', methods=['POST'])
 @login_required
 def delete(event_id):
     """Elimina evento"""
-    if not current_user.has_permission('can_manage_calendar'):
-        abort(403)
+    event = filter_by_company(HublyCalendarEvent.query, current_user).filter_by(id=event_id).first_or_404()
     
-    event = filter_by_company(HublyCalendarEvent.query, current_user).get_or_404(event_id)
-    
-    # Solo il creatore o admin possono eliminare
+    # Solo il creatore o utenti con permesso can_manage_calendar possono eliminare
     if event.creator_id != current_user.id and not current_user.has_permission('can_manage_calendar'):
         abort(403)
     
     db.session.delete(event)
     db.session.commit()
     
-    flash('Evento eliminato', 'success')
+    flash('Evento eliminato con successo!', 'success')
     return redirect(url_for('hubly_calendar.index'))
