@@ -120,26 +120,28 @@
                     </div>
                 </div>
                 
-                <!-- Altri membri -->
+                <!-- Altri membri (escluso il creatore) -->
                 {% for member, is_admin in members %}
-                <div class="col-md-4 col-lg-3 mb-3">
-                    <div class="d-flex align-items-center p-2 border rounded">
-                        <img src="{{ member.get_profile_image_url() }}" 
-                             class="rounded-circle me-2" width="40" height="40">
-                        <div class="flex-grow-1">
-                            <div>{{ member.get_full_name() }}</div>
-                            {% if is_admin %}
-                            <span class="badge bg-info">Admin</span>
+                    {% if member.id != group.creator_id %}
+                    <div class="col-md-4 col-lg-3 mb-3">
+                        <div class="d-flex align-items-center p-2 border rounded">
+                            <img src="{{ member.get_profile_image_url() }}" 
+                                 class="rounded-circle me-2" width="40" height="40">
+                            <div class="flex-grow-1">
+                                <div>{{ member.get_full_name() }}</div>
+                                {% if is_admin %}
+                                <span class="badge bg-info">Admin</span>
+                                {% endif %}
+                            </div>
+                            {% if group.is_member(current_user) %}
+                            <a href="{{ url_for('hubly_groups.conversation', group_id=group.id, user_id=member.id) }}" 
+                               class="btn btn-sm btn-outline-primary ms-1">
+                                <i class="fas fa-comment"></i>
+                            </a>
                             {% endif %}
                         </div>
-                        {% if group.is_member(current_user) %}
-                        <a href="{{ url_for('hubly_groups.conversation', group_id=group.id, user_id=member.id) }}" 
-                           class="btn btn-sm btn-outline-primary ms-1">
-                            <i class="fas fa-comment"></i>
-                        </a>
-                        {% endif %}
                     </div>
-                </div>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
