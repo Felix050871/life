@@ -147,8 +147,9 @@
     </nav>
     
     <div class="main-wrapper">
-        <!-- Sidebar - Nascosta nella home page e nella pagina profilo -->
-        <nav class="sidebar {% if request.endpoint == 'index' or request.endpoint == 'user_management.user_profile' %}d-none{% endif %}" id="sidebar">
+        <!-- Sidebar - Nascosta nella home page, pagina profilo e pagine amministrazione -->
+        {% set hide_sidebar = request.endpoint == 'index' or request.endpoint == 'user_management.user_profile' or request.endpoint == 'user_management.user_management' or request.endpoint == 'user_management.edit_user' or (request.endpoint and request.endpoint.startswith('admin.')) %}
+        <nav class="sidebar {% if hide_sidebar %}d-none{% endif %}" id="sidebar">
             {% set is_hubly = request.endpoint and request.endpoint.startswith('hubly') %}
             
             <div class="sidebar-header">
