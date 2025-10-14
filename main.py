@@ -30,6 +30,7 @@ from blueprints.companies import companies_bp
 from blueprints.hubly_home import bp as hubly_bp
 from blueprints.hubly_news import bp as hubly_news_bp
 from blueprints.hubly_groups import bp as hubly_groups_bp
+from blueprints.hubly_polls import bp as hubly_polls_bp
 from blueprints.hubly_calendar import bp as hubly_calendar_bp
 from blueprints.hubly_documents import bp as hubly_documents_bp
 from blueprints.hubly_tools import bp as hubly_tools_bp
@@ -59,6 +60,7 @@ app.register_blueprint(companies_bp)
 app.register_blueprint(hubly_bp)
 app.register_blueprint(hubly_news_bp)
 app.register_blueprint(hubly_groups_bp)
+app.register_blueprint(hubly_polls_bp)
 app.register_blueprint(hubly_calendar_bp)
 app.register_blueprint(hubly_documents_bp)
 app.register_blueprint(hubly_tools_bp)

@@ -207,6 +207,7 @@ class UserRole(db.Model):
             'can_join_groups': 'Unirsi ai Gruppi',
             'can_create_polls': 'Creare Sondaggi',
             'can_vote_polls': 'Votare Sondaggi',
+            'can_manage_polls': 'Gestire Sondaggi',
             'can_manage_documents': 'Gestire Documenti',
             'can_view_documents': 'Visualizzare Documenti',
             'can_upload_documents': 'Caricare Documenti',
@@ -2984,6 +2985,42 @@ class HublyPoll(db.Model):
     
     # Relationships
     creator = db.relationship('User', backref='created_polls')
+    
+    def has_voted(self, user):
+        """Verifica se l'utente ha già votato"""
+        return HublyPollVote.query.filter_by(poll_id=self.id, user_id=user.id).first() is not None
+    
+    def is_closed(self):
+        """Verifica se il sondaggio è chiuso"""
+        if self.end_date is None:
+            return False
+        from datetime import datetime
+        return italian_now() > self.end_date
+    
+    def get_vote_count(self):
+        """Conta totale dei voti"""
+        return len(self.votes)
+    
+    def get_results(self):
+        """Ottiene i risultati del sondaggio con percentuali"""
+        total_votes = self.get_vote_count()
+        results = []
+        
+        for option in self.options:
+            vote_count = len(option.votes)
+            percentage = (vote_count / total_votes * 100) if total_votes > 0 else 0
+            results.append({
+                'option': option,
+                'votes': vote_count,
+                'percentage': round(percentage, 1)
+            })
+        
+        return results
+    
+    def get_user_votes(self, user):
+        """Ottiene le opzioni votate dall'utente"""
+        votes = HublyPollVote.query.filter_by(poll_id=self.id, user_id=user.id).all()
+        return [vote.option_id for vote in votes]
     
     def __repr__(self):
         return f'<HublyPoll {self.question}>'

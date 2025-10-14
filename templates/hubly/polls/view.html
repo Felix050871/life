@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}{{ poll.question }} - HUBLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-poll"></i> Sondaggio</h2>
+        <a href="{{ url_for('hubly_polls.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Torna ai Sondaggi
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Card Sondaggio -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="mb-2">{{ poll.question }}</h4>
+                            {% if poll.description %}
+                            <p class="text-muted mb-0">{{ poll.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if poll.is_closed() %}
+                            <span class="badge bg-danger"><i class="fas fa-lock"></i> Chiuso</span>
+                            {% else %}
+                            <span class="badge bg-success"><i class="fas fa-check-circle"></i> Aperto</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Info sondaggio -->
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-user"></i> Creato da {{ poll.creator.get_full_name() }}
+                        </small> | 
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> {{ poll.created_at.strftime('%d/%m/%Y %H:%M') }}
+                        </small>
+                        {% if poll.end_date %}
+                        <br><small class="text-muted">
+                            <i class="fas fa-calendar-times"></i> 
+                            {% if poll.is_closed() %}
+                            Chiuso il: {{ poll.end_date.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                            Chiusura: {{ poll.end_date.strftime('%d/%m/%Y %H:%M') }}
+                            {% endif %}
+                        </small>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {% if poll.is_anonymous %}
+                        <span class="badge bg-secondary"><i class="fas fa-user-secret"></i> Voti anonimi</span>
+                        {% endif %}
+                        {% if poll.multiple_choice %}
+                        <span class="badge bg-primary"><i class="fas fa-list-check"></i> Scelta multipla</span>
+                        {% endif %}
+                        <span class="badge bg-info"><i class="fas fa-vote-yea"></i> {{ poll.get_vote_count() }} voti totali</span>
+                    </div>
+
+                    <!-- Form Votazione -->
+                    {% if not poll.is_closed() and not has_voted and current_user.has_permission('can_vote_polls') %}
+                    <form method="POST" action="{{ url_for('hubly_polls.vote', poll_id=poll.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Seleziona la tua risposta:</strong></label>
+                            {% for option in poll.options %}
+                            <div class="form-check">
+                                {% if poll.multiple_choice %}
+                                <input class="form-check-input" type="checkbox" name="option_ids[]" 
+                                       value="{{ option.id }}" id="option{{ option.id }}">
+                                {% else %}
+                                <input class="form-check-input" type="radio" name="option_id" 
+                                       value="{{ option.id }}" id="option{{ option.id }}" required>
+                                {% endif %}
+                                <label class="form-check-label" for="option{{ option.id }}">
+                                    {{ option.option_text }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Invia Voto
+                        </button>
+                    </form>
+                    {% elif has_voted %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> Hai già votato in questo sondaggio
+                    </div>
+                    {% elif poll.is_closed() %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-lock"></i> Questo sondaggio è chiuso
+                    </div>
+                    {% endif %}
+
+                    <!-- Risultati -->
+                    <hr class="my-4">
+                    <h5 class="mb-3"><i class="fas fa-chart-bar"></i> Risultati</h5>
+                    
+                    {% if results %}
+                    {% for result in results %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>{{ result.option.option_text }}</span>
+                            <span class="text-muted">
+                                {{ result.votes }} voti ({{ result.percentage }}%)
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ result.percentage }}%;" 
+                                 aria-valuenow="{{ result.percentage }}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {% if result.percentage > 10 %}{{ result.percentage }}%{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">Nessun voto ancora</p>
+                    {% endif %}
+
+                    <!-- Lista Votanti (se non anonimo) -->
+                    {% if not poll.is_anonymous and poll.votes %}
+                    <hr class="my-4">
+                    <h6 class="mb-3"><i class="fas fa-users"></i> Chi ha votato</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for vote in poll.votes %}
+                        <span class="badge bg-secondary">
+                            {{ vote.user.get_full_name() }}
+                            {% if not poll.multiple_choice %}
+                            - {{ vote.option.option_text }}
+                            {% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Azioni (solo per creatore o admin) -->
+            {% if poll.creator_id == current_user.id or current_user.has_permission('can_manage_polls') %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cog"></i> Gestione Sondaggio</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        {% if not poll.is_closed() %}
+                        <form method="POST" action="{{ url_for('hubly_polls.close', poll_id=poll.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-warning" 
+                                    onclick="return confirm('Chiudere questo sondaggio anticipatamente?')">
+                                <i class="fas fa-lock"></i> Chiudi Sondaggio
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="POST" action="{{ url_for('hubly_polls.delete', poll_id=poll.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-danger" 
+                                    onclick="return confirm('Eliminare questo sondaggio? Questa azione è irreversibile.')">
+                                <i class="fas fa-trash"></i> Elimina Sondaggio
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar Info -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informazioni</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Totale voti:</strong> {{ poll.get_vote_count() }}</p>
+                    <p><strong>Tipo:</strong> 
+                        {% if poll.multiple_choice %}
+                        Scelta multipla
+                        {% else %}
+                        Scelta singola
+                        {% endif %}
+                    </p>
+                    <p><strong>Privacy:</strong> 
+                        {% if poll.is_anonymous %}
+                        Voti anonimi
+                        {% else %}
+                        Voti pubblici
+                        {% endif %}
+                    </p>
+                    {% if has_voted %}
+                    <p class="mb-0"><strong>Il tuo voto:</strong></p>
+                    <ul class="mb-0">
+                        {% for option in poll.options %}
+                        {% if option.id in user_votes %}
+                        <li>{{ option.option_text }}</li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

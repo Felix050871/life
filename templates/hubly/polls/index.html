@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Sondaggi - HUBLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-poll"></i> Sondaggi</h2>
+        {% if current_user.has_permission('can_create_polls') %}
+        <a href="{{ url_for('hubly_polls.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nuovo Sondaggio
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Sondaggi Aperti -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-check-circle text-success"></i> Sondaggi Aperti</h5>
+        </div>
+        <div class="card-body">
+            {% if open_polls %}
+            <div class="row">
+                {% for poll in open_polls %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ poll.question }}</h5>
+                            {% if poll.description %}
+                            <p class="card-text text-muted small">{{ poll.description[:100] }}{% if poll.description|length > 100 %}...{% endif %}</p>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ poll.creator.get_full_name() }}
+                                </small><br>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> {{ poll.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                                {% if poll.end_date %}
+                                <br><small class="text-muted">
+                                    <i class="fas fa-calendar-times"></i> Chiusura: {{ poll.end_date.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-info">
+                                    <i class="fas fa-vote-yea"></i> {{ poll.get_vote_count() }} voti
+                                </span>
+                                <div>
+                                    {% if poll.is_anonymous %}
+                                    <span class="badge bg-secondary"><i class="fas fa-user-secret"></i> Anonimo</span>
+                                    {% endif %}
+                                    {% if poll.multiple_choice %}
+                                    <span class="badge bg-primary"><i class="fas fa-list-check"></i> Multiplo</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if poll.has_voted(current_user) %}
+                            <span class="badge bg-success mb-2"><i class="fas fa-check"></i> Hai votato</span>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('hubly_polls.view', poll_id=poll.id) }}" class="btn btn-sm btn-primary w-100">
+                                {% if poll.has_voted(current_user) %}
+                                <i class="fas fa-chart-bar"></i> Vedi Risultati
+                                {% else %}
+                                <i class="fas fa-vote-yea"></i> Vota Ora
+                                {% endif %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-poll fa-3x mb-3"></i>
+                <p>Nessun sondaggio aperto al momento</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sondaggi Chiusi -->
+    {% if closed_polls %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-lock text-danger"></i> Sondaggi Chiusi</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for poll in closed_polls %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 opacity-75">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ poll.question }}</h5>
+                            {% if poll.description %}
+                            <p class="card-text text-muted small">{{ poll.description[:100] }}{% if poll.description|length > 100 %}...{% endif %}</p>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ poll.creator.get_full_name() }}
+                                </small><br>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-times"></i> Chiuso il: {{ poll.end_date.strftime('%d/%m/%Y %H:%M') if poll.end_date else 'N/D' }}
+                                </small>
+                            </div>
+                            
+                            <span class="badge bg-danger mb-2"><i class="fas fa-lock"></i> Chiuso</span>
+                            <span class="badge bg-info mb-2">
+                                <i class="fas fa-vote-yea"></i> {{ poll.get_vote_count() }} voti
+                            </span>
+                            
+                            <a href="{{ url_for('hubly_polls.view', poll_id=poll.id) }}" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-chart-bar"></i> Vedi Risultati
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
