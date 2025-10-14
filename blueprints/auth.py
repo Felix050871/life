@@ -62,7 +62,10 @@ def admin_login():
         
         flash('Username o password non validi per SUPERADMIN', 'danger')
     
-    return render_template('login_admin.html', form=form)
+    # Recupera tutte le aziende attive per mostrare i link ai login
+    companies = Company.query.filter_by(active=True).order_by(Company.name).all()
+    
+    return render_template('login_admin.html', form=form, companies=companies)
 
 @auth_bp.route('/t/<slug>/login', methods=['GET', 'POST'])
 def tenant_login(slug):
