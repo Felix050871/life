@@ -18,6 +18,13 @@
     <!-- Project Title Bar with User Menu -->
     <nav class="navbar navbar-expand-lg project-title-bar">
         <div class="container-fluid">
+            <!-- Sidebar Toggle (Mobile Only) - Solo se non siamo su index o profilo -->
+            {% if request.endpoint != 'index' and request.endpoint != 'user_management.user_profile' %}
+            <button class="btn btn-link text-white d-md-none p-0 me-2 sidebar-mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                <i class="fas fa-bars" style="font-size: 1.2rem;"></i>
+            </button>
+            {% endif %}
+            
             <!-- Logo -->
             <a class="navbar-brand text-white d-flex align-items-center" href="{{ url_for('index') }}">
                 {% if current_user.company and current_user.company.logo %}
@@ -28,7 +35,7 @@
                 <span class="d-none d-sm-inline">Life Platform</span>
             </a>
             
-            <!-- Burger Menu Toggle -->
+            <!-- Burger Menu Toggle (for top menu) -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -723,8 +730,15 @@
             const sidebar = document.getElementById('sidebar');
             const contentWrapper = document.getElementById('content-wrapper');
             
-            sidebar.classList.toggle('sidebar-collapsed');
-            contentWrapper.classList.toggle('sidebar-collapsed');
+            // Su mobile usa la classe 'show', su desktop usa 'sidebar-collapsed'
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('show');
+            } else {
+                sidebar.classList.toggle('sidebar-collapsed');
+                if (contentWrapper) {
+                    contentWrapper.classList.toggle('sidebar-collapsed');
+                }
+            }
         }
 
         function toggleSubmenu(link) {
@@ -764,8 +778,12 @@
             if (window.innerWidth <= 768) {
                 const sidebar = document.getElementById('sidebar');
                 const toggleButton = document.querySelector('.sidebar-toggle');
+                const mobileToggleButton = document.querySelector('.sidebar-mobile-toggle');
                 
-                if (sidebar && !sidebar.contains(e.target) && !toggleButton.contains(e.target)) {
+                // Non chiudere se clicchi sulla sidebar, sul pulsante toggle o sul pulsante mobile toggle
+                const clickedToggle = (toggleButton && toggleButton.contains(e.target)) || (mobileToggleButton && mobileToggleButton.contains(e.target));
+                
+                if (sidebar && !sidebar.contains(e.target) && !clickedToggle) {
                     sidebar.classList.remove('show');
                 }
             }

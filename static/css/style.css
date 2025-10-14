@@ -449,10 +449,12 @@ body {
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
+        z-index: 1040;
     }
     
     .sidebar.show {
         transform: translateX(0);
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
     }
     
     .sidebar-toggle {
@@ -480,6 +482,17 @@ body {
         background: none;
         border: none;
         font-size: 1.2rem;
+    }
+    
+    /* Sidebar mobile toggle button */
+    .sidebar-mobile-toggle {
+        text-decoration: none;
+    }
+    
+    .sidebar-mobile-toggle:hover,
+    .sidebar-mobile-toggle:focus {
+        opacity: 0.8;
+        text-decoration: none;
     }
 }
 
