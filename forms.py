@@ -70,7 +70,12 @@ class UserProfileForm(FlaskForm):
 
     def validate_email(self, email):
         if email.data != self.original_email:
-            user = User.query.filter_by(email=email.data).first()
+            from flask_login import current_user
+            # Check email uniqueness within the same company (multi-tenant)
+            user = User.query.filter_by(
+                email=email.data,
+                company_id=current_user.company_id
+            ).first()
             if user:
                 raise ValidationError('Questa email è già in uso.')
 

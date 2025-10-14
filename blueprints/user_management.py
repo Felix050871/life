@@ -253,7 +253,7 @@ def user_profile():
     import os
     import uuid
     
-    form = UserProfileForm(obj=current_user)
+    form = UserProfileForm(obj=current_user, original_email=current_user.email)
     
     if form.validate_on_submit():
         # Update user profile
