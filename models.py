@@ -221,8 +221,8 @@ class UserRole(db.Model):
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    username = db.Column(db.String(80), nullable=False)  # Unique constraint removed, now scoped by company
+    email = db.Column(db.String(120), nullable=False)  # Unique constraint removed, now scoped by company
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(50), nullable=False)  # Ora referenzia UserRole.name
     first_name = db.Column(db.String(100), nullable=False)
@@ -249,6 +249,12 @@ class User(UserMixin, db.Model):
     # Multi-tenant fields
     is_system_admin = db.Column(db.Boolean, default=False)  # Admin di sistema (non legato a nessuna azienda)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Azienda di appartenenza
+    
+    # Composite unique constraints: username/email unique within company
+    __table_args__ = (
+        db.UniqueConstraint('company_id', 'username', name='uq_company_username'),
+        db.UniqueConstraint('company_id', 'email', name='uq_company_email'),
+    )
     
     # Relationship con Sede, WorkSchedule, ACITable e Company
     sede_obj = db.relationship('Sede', backref='users')
@@ -2626,6 +2632,7 @@ class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     code = db.Column(db.String(50), unique=True, nullable=False)  # ES: NS12, ATMH
+    slug = db.Column(db.String(50), unique=True, nullable=False)  # URL-friendly slug per path-based tenant (es: ns12, azienda1)
     description = db.Column(db.Text, nullable=True)
     logo = db.Column(db.String(500), nullable=True)  # Path al file logo
     background_image = db.Column(db.String(500), nullable=True)  # Path all'immagine di sfondo
