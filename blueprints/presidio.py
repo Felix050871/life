@@ -82,7 +82,7 @@ def view_presidio_coverage(period_key):
         return redirect(url_for('presidio.manage_coverage'))
     
     # Ottieni tutte le coperture del template (with company filter)
-    coverages = filter_by_company(PresidioCoverage.query, PresidioCoverage).filter(
+    coverages = filter_by_company(PresidioCoverage.query).filter(
         PresidioCoverage.start_date == start_date,
         PresidioCoverage.end_date == end_date,
         PresidioCoverage.active == True
@@ -117,7 +117,7 @@ def edit_presidio_coverage(period_key):
         return redirect(url_for('presidio.manage_coverage'))
     
     # Ottieni tutte le coperture del template (with company filter)
-    coverages = filter_by_company(PresidioCoverage.query, PresidioCoverage).filter(
+    coverages = filter_by_company(PresidioCoverage.query).filter(
         PresidioCoverage.start_date == start_date,
         PresidioCoverage.end_date == end_date
     ).order_by(PresidioCoverage.day_of_week, PresidioCoverage.start_time).all()
@@ -184,7 +184,7 @@ def presidio_coverage():
     
     # Applica filtri di ricerca se presenti
     if request.args.get('search'):
-        query = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter_by(active=True)
+        query = filter_by_company(PresidioCoverageTemplate.query).filter_by(active=True)
         
         template_name = request.args.get('template_name')
         if template_name:
@@ -246,7 +246,7 @@ def presidio_coverage_edit(template_id):
         flash('Non hai i permessi per gestire coperture presidio', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    current_template = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter_by(id=template_id).first_or_404()
+    current_template = filter_by_company(PresidioCoverageTemplate.query).filter_by(id=template_id).first_or_404()
     templates = get_active_presidio_templates()
     
     # Pre-popola form con dati template
@@ -324,7 +324,7 @@ def presidio_coverage_edit(template_id):
 @require_presidio_permission
 def presidio_detail(template_id):
     """Dettagli template presidio"""
-    template = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter_by(id=template_id).first_or_404()
+    template = filter_by_company(PresidioCoverageTemplate.query).filter_by(id=template_id).first_or_404()
     return render_template('presidio_detail.html', template=template)
 
 @presidio_bp.route('/api/presidio_coverage/<int:template_id>')
@@ -332,7 +332,7 @@ def presidio_detail(template_id):
 @require_presidio_permission
 def api_presidio_coverage(template_id):
     """API per ottenere dati template presidio"""
-    template = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter_by(id=template_id).first_or_404()
+    template = filter_by_company(PresidioCoverageTemplate.query).filter_by(id=template_id).first_or_404()
     
     # Prepara dati coperture
     coverages = []
@@ -364,7 +364,7 @@ def toggle_presidio_template_status(template_id):
     if not current_user.can_manage_shifts():
         return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
     
-    template = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter_by(id=template_id).first_or_404()
+    template = filter_by_company(PresidioCoverageTemplate.query).filter_by(id=template_id).first_or_404()
     new_status = request.json.get('active', not template.active)
     
     template.active = new_status
@@ -389,7 +389,7 @@ def delete_presidio_template(template_id):
     if not current_user.can_manage_shifts():
         return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
     
-    template = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter_by(id=template_id).first_or_404()
+    template = filter_by_company(PresidioCoverageTemplate.query).filter_by(id=template_id).first_or_404()
     
     # Soft delete del template e di tutte le coperture
     template.active = False
@@ -413,7 +413,7 @@ def duplicate_presidio_template(template_id):
     if not current_user.can_manage_shifts():
         return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
     
-    source_template = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter_by(id=template_id).first_or_404()
+    source_template = filter_by_company(PresidioCoverageTemplate.query).filter_by(id=template_id).first_or_404()
     
     # Crea nuovo template
     new_template = PresidioCoverageTemplate()

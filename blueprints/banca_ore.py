@@ -29,12 +29,12 @@ def calculate_overtime_from_attendance(user_id, work_date):
     Returns:
         float: Ore di straordinario accumulate (0.0 se nessuna)
     """
-    user = filter_by_company(User.query, User).filter(User.id == user_id).first()
+    user = filter_by_company(User.query).filter(User.id == user_id).first()
     if not user or not user.banca_ore_enabled:
         return 0.0
     
     # Verifica se l'utente ha già una richiesta di straordinario per questa data
-    existing_overtime = filter_by_company(OvertimeRequest.query, OvertimeRequest).filter(
+    existing_overtime = filter_by_company(OvertimeRequest.query).filter(
         OvertimeRequest.employee_id == user_id,
         OvertimeRequest.overtime_date == work_date
     ).first()
@@ -82,7 +82,7 @@ def calculate_banca_ore_balance(user_id):
     Returns:
         dict: Dizionario con informazioni complete del wallet banca ore
     """
-    user = filter_by_company(User.query, User).filter(User.id == user_id).first()
+    user = filter_by_company(User.query).filter(User.id == user_id).first()
     if not user or not user.banca_ore_enabled:
         return None
     
@@ -151,7 +151,7 @@ def calculate_banca_ore_balance(user_id):
     
     try:
         # Query per ottenere ore utilizzate da richieste approvate con banca ore
-        approved_leaves_with_banca_ore = filter_by_company(LeaveRequest.query, LeaveRequest).filter(
+        approved_leaves_with_banca_ore = filter_by_company(LeaveRequest.query).filter(
             LeaveRequest.user_id == user_id,
             LeaveRequest.status == 'Approved',
             LeaveRequest.use_banca_ore == True,

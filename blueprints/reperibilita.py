@@ -63,7 +63,7 @@ def reperibilita_coverage():
         return redirect(url_for('dashboard.dashboard'))
     
     # Raggruppa le coperture per periodo + sede per trattare duplicazioni come gruppi separati
-    coverages = filter_by_company(ReperibilitaCoverage.query, ReperibilitaCoverage).order_by(ReperibilitaCoverage.start_date.desc()).all()
+    coverages = filter_by_company(ReperibilitaCoverage.query).order_by(ReperibilitaCoverage.start_date.desc()).all()
     groups = defaultdict(lambda: {'coverages': [], 'start_date': None, 'end_date': None, 'creator': None, 'created_at': None})
     
     for coverage in coverages:
@@ -112,7 +112,7 @@ def reperibilita_shifts():
     user_filter = request.args.get('user', 'all')
     
     # Query base
-    query = filter_by_company(ReperibilitaShift.query, ReperibilitaShift)
+    query = filter_by_company(ReperibilitaShift.query)
     
     # Filtro mese
     if month_filter:
@@ -216,7 +216,7 @@ def my_reperibilita():
     status_filter = request.args.get('status', 'all')
     
     # Base query - solo le proprie reperibilità
-    query = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter_by(user_id=current_user.id)
+    query = filter_by_company(ReperibilitaShift.query).filter_by(user_id=current_user.id)
     
     # Filtro mese
     if month_filter:
@@ -272,7 +272,7 @@ def get_reperibilita_data():
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         
         # Query shifts nel periodo
-        query = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter(
+        query = filter_by_company(ReperibilitaShift.query).filter(
             ReperibilitaShift.date >= start_date,
             ReperibilitaShift.date <= end_date
         )
@@ -358,7 +358,7 @@ def edit_reperibilita_coverage(coverage_id):
         flash('Non hai i permessi per modificare coperture reperibilità', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    coverage = filter_by_company(ReperibilitaCoverage.query, ReperibilitaCoverage).get_or_404(coverage_id)
+    coverage = filter_by_company(ReperibilitaCoverage.query).get_or_404(coverage_id)
     form = ReperibilitaCoverageForm()
     
     if form.validate_on_submit():
@@ -401,7 +401,7 @@ def delete_reperibilita_coverage(coverage_id):
         flash('Non hai i permessi per eliminare coperture reperibilità', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    coverage = filter_by_company(ReperibilitaCoverage.query, ReperibilitaCoverage).get_or_404(coverage_id)
+    coverage = filter_by_company(ReperibilitaCoverage.query).get_or_404(coverage_id)
     
     try:
         db.session.delete(coverage)
@@ -428,7 +428,7 @@ def view_reperibilita_coverage(period_key):
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
     
     # Trova tutte le coperture per questo periodo
-    coverages = filter_by_company(ReperibilitaCoverage.query, ReperibilitaCoverage).filter(
+    coverages = filter_by_company(ReperibilitaCoverage.query).filter(
         ReperibilitaCoverage.start_date == start_date,
         ReperibilitaCoverage.end_date == end_date
     ).order_by(ReperibilitaCoverage.day_of_week, ReperibilitaCoverage.start_time).all()
@@ -458,13 +458,13 @@ def delete_reperibilita_period(period_key):
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
     
     # Trova tutte le coperture per questo periodo
-    coverages = filter_by_company(ReperibilitaCoverage.query, ReperibilitaCoverage).filter(
+    coverages = filter_by_company(ReperibilitaCoverage.query).filter(
         ReperibilitaCoverage.start_date == start_date,
         ReperibilitaCoverage.end_date == end_date
     ).all()
     
     # Trova anche tutti i turni generati per questo periodo
-    shifts = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter(
+    shifts = filter_by_company(ReperibilitaShift.query).filter(
         ReperibilitaShift.date >= start_date,
         ReperibilitaShift.date <= end_date
     ).all()
@@ -499,7 +499,7 @@ def reperibilita_template_detail(start_date, end_date):
     end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
     
     # Trova tutti i turni di reperibilità per questo periodo
-    shifts = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter(
+    shifts = filter_by_company(ReperibilitaShift.query).filter(
         ReperibilitaShift.date >= start_date,
         ReperibilitaShift.date <= end_date
     ).order_by(ReperibilitaShift.date, ReperibilitaShift.start_time).all()
@@ -556,7 +556,7 @@ def reperibilita_replica(period_key):
         role_mapping = form.get_role_mapping_dict()
         
         # Trova le coperture originali
-        original_coverages = filter_by_company(ReperibilitaCoverage.query, ReperibilitaCoverage).filter(
+        original_coverages = filter_by_company(ReperibilitaCoverage.query).filter(
             ReperibilitaCoverage.start_date == start_date,
             ReperibilitaCoverage.end_date == end_date
         ).all()
@@ -566,7 +566,7 @@ def reperibilita_replica(period_key):
             return redirect(url_for('reperibilita.reperibilita_coverage'))
         
         # Verifica se esistono già coperture per informazione (non blocca la creazione)
-        existing_coverages = filter_by_company(ReperibilitaCoverage.query, ReperibilitaCoverage).filter(
+        existing_coverages = filter_by_company(ReperibilitaCoverage.query).filter(
             ReperibilitaCoverage.start_date == form.start_date.data,
             ReperibilitaCoverage.end_date == form.end_date.data
         ).all()
@@ -638,7 +638,7 @@ def reperibilita_replica(period_key):
         form.end_date.data = end_date
     
     # Trova le coperture originali per mostrare informazioni nel template
-    original_coverages = filter_by_company(ReperibilitaCoverage.query, ReperibilitaCoverage).filter(
+    original_coverages = filter_by_company(ReperibilitaCoverage.query).filter(
         ReperibilitaCoverage.start_date == start_date,
         ReperibilitaCoverage.end_date == end_date
     ).order_by(ReperibilitaCoverage.day_of_week, ReperibilitaCoverage.start_time).all()
@@ -664,7 +664,7 @@ def start_intervention():
     
     # Controlla se c'è già un intervento attivo
     from models import ReperibilitaIntervention
-    active_intervention = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter_by(
+    active_intervention = filter_by_company(ReperibilitaIntervention.query).filter_by(
         user_id=current_user.id,
         end_datetime=None
     ).first()
@@ -712,7 +712,7 @@ def end_intervention():
         return redirect(url_for('dashboard.dashboard'))
     
     # Trova l'intervento attivo
-    active_intervention = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter_by(
+    active_intervention = filter_by_company(ReperibilitaIntervention.query).filter_by(
         user_id=current_user.id,
         end_datetime=None
     ).first()
@@ -749,11 +749,11 @@ def regenerate_reperibilita_template(template_id):
     from utils import generate_reperibilita_shifts
     
     # Trova il template esistente
-    template = filter_by_company(ReperibilitaTemplate.query, ReperibilitaTemplate).get_or_404(template_id)
+    template = filter_by_company(ReperibilitaTemplate.query).get_or_404(template_id)
     
     try:
         # Elimina turni esistenti nel periodo del template
-        existing_shifts = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter(
+        existing_shifts = filter_by_company(ReperibilitaShift.query).filter(
             ReperibilitaShift.date >= template.start_date,
             ReperibilitaShift.date <= template.end_date
         ).all()
@@ -802,11 +802,11 @@ def delete_reperibilita_template(template_id):
     
     from models import ReperibilitaTemplate
     
-    template = filter_by_company(ReperibilitaTemplate.query, ReperibilitaTemplate).get_or_404(template_id)
+    template = filter_by_company(ReperibilitaTemplate.query).get_or_404(template_id)
     
     try:
         # Elimina tutti i turni del periodo del template
-        shifts = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter(
+        shifts = filter_by_company(ReperibilitaShift.query).filter(
             ReperibilitaShift.date >= template.start_date,
             ReperibilitaShift.date <= template.end_date
         ).all()
@@ -967,7 +967,7 @@ def my_interventions():
     # PM/Management vedono tutti gli interventi, altri utenti solo i propri
     if current_user.can_view_interventions():
         # Ottieni tutti gli interventi di reperibilità filtrati per data
-        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).join(User).filter(
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query).join(User).filter(
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
@@ -979,7 +979,7 @@ def my_interventions():
         ).order_by(Intervention.start_datetime.desc()).all()
     else:
         # Ottieni solo gli interventi dell'utente corrente filtrati per data
-        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter(
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query).filter(
             ReperibilitaIntervention.user_id == current_user.id,
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
@@ -1138,12 +1138,12 @@ def export_reperibilita_interventions_excel():
     
     # PM/Management vedono tutti gli interventi, altri utenti solo i propri
     if current_user.can_view_interventions():
-        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).join(User).filter(
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query).join(User).filter(
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
     else:
-        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter(
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query).filter(
             ReperibilitaIntervention.user_id == current_user.id,
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime

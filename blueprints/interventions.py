@@ -35,7 +35,7 @@ def start():
         return redirect(url_for('dashboard.dashboard'))
     
     # Controlla se c'è già un intervento attivo (with company filter)
-    active_intervention = filter_by_company(Intervention.query, Intervention).filter_by(
+    active_intervention = filter_by_company(Intervention.query).filter_by(
         user_id=current_user.id,
         end_datetime=None
     ).first()
@@ -78,7 +78,7 @@ def start():
 def end():
     """Termina un intervento generico attivo"""
     # Trova l'intervento attivo (with company filter)
-    active_intervention = filter_by_company(Intervention.query, Intervention).filter_by(
+    active_intervention = filter_by_company(Intervention.query).filter_by(
         user_id=current_user.id,
         end_datetime=None
     ).first()
@@ -149,25 +149,25 @@ def my():
     # PM ed Ente vedono tutti gli interventi, altri utenti solo i propri
     if current_user.role in ['Management', 'Ente']:
         # Ottieni tutti gli interventi di reperibilità filtrati per data (with company filter)
-        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).join(User).filter(
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query).join(User).filter(
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
         
         # Ottieni tutti gli interventi generici filtrati per data (with company filter)
-        general_interventions = filter_by_company(Intervention.query, Intervention).join(User).filter(
+        general_interventions = filter_by_company(Intervention.query).join(User).filter(
             Intervention.start_datetime >= start_datetime,
             Intervention.start_datetime <= end_datetime
         ).order_by(Intervention.start_datetime.desc()).all()
     else:
         # Ottieni solo gli interventi dell'utente corrente filtrati per data (with company filter)
-        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter(
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query).filter(
             ReperibilitaIntervention.user_id == current_user.id,
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
         
-        general_interventions = filter_by_company(Intervention.query, Intervention).filter(
+        general_interventions = filter_by_company(Intervention.query).filter(
             Intervention.user_id == current_user.id,
             Intervention.start_datetime >= start_datetime,
             Intervention.start_datetime <= end_datetime

@@ -46,12 +46,12 @@ def require_messages_permission(f):
 def internal_messages():
     """Visualizza i messaggi interni per l'utente corrente"""
     # Messaggi per l'utente corrente (with company filter)
-    messages = filter_by_company(InternalMessage.query, InternalMessage).filter_by(
+    messages = filter_by_company(InternalMessage.query).filter_by(
         recipient_id=current_user.id
     ).order_by(InternalMessage.created_at.desc()).all()
     
     # Conta messaggi non letti (with company filter)
-    unread_count = filter_by_company(InternalMessage.query, InternalMessage).filter_by(
+    unread_count = filter_by_company(InternalMessage.query).filter_by(
         recipient_id=current_user.id,
         is_read=False
     ).count()
@@ -64,7 +64,7 @@ def internal_messages():
 @login_required  
 def mark_message_read(message_id):
     """Segna un messaggio come letto"""
-    message = filter_by_company(InternalMessage.query, InternalMessage).get_or_404(message_id)
+    message = filter_by_company(InternalMessage.query).get_or_404(message_id)
     
     # Verifica che sia il destinatario del messaggio
     if message.recipient_id != current_user.id:
@@ -81,7 +81,7 @@ def mark_message_read(message_id):
 @login_required  
 def delete_message(message_id):
     """Cancella un messaggio"""
-    message = filter_by_company(InternalMessage.query, InternalMessage).get_or_404(message_id)
+    message = filter_by_company(InternalMessage.query).get_or_404(message_id)
     
     # Verifica che sia il destinatario del messaggio
     if message.recipient_id != current_user.id:
@@ -105,7 +105,7 @@ def mark_all_messages_read():
     """Segna tutti i messaggi dell'utente come letti"""
     try:
         # Segna tutti i messaggi non letti dell'utente corrente come letti (with company filter)
-        unread_messages = filter_by_company(InternalMessage.query, InternalMessage).filter_by(
+        unread_messages = filter_by_company(InternalMessage.query).filter_by(
             recipient_id=current_user.id,
             is_read=False
         ).all()
@@ -139,7 +139,7 @@ def send_message():
     
     if form.validate_on_submit():
         # Verifica che tutti i destinatari siano validi e accessibili (with company filter)
-        recipients = filter_by_company(User.query, User).filter(
+        recipients = filter_by_company(User.query).filter(
             User.id.in_(form.recipient_ids.data),
             User.active == True
         ).all()

@@ -56,7 +56,7 @@ def login(action):
     form = LoginForm()
     
     if form.validate_on_submit():
-        user = filter_by_company(User.query, User).filter_by(username=form.username.data).first()
+        user = filter_by_company(User.query).filter_by(username=form.username.data).first()
         if user and user.active and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
             return redirect(url_for('qr.quick_attendance', action=action))
@@ -166,7 +166,7 @@ def quick_attendance(action):
     # GET request: mostra il form
     available_sedi = []
     if current_user.all_sedi:
-        available_sedi = filter_by_company(Sede.query, Sede).filter_by(active=True).all()
+        available_sedi = filter_by_company(Sede.query).filter_by(active=True).all()
     
     # Ottieni eventi di oggi per le statistiche
     today_events = AttendanceEvent.get_daily_events(current_user.id)

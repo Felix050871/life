@@ -82,7 +82,7 @@ def reports():
         }
     
     # Get user statistics for all active users (excluding Amministratore and Ospite)
-    users = filter_by_company(User.query, User).filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
+    users = filter_by_company(User.query).filter_by(active=True).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()
     
     user_stats = []
     chart_data = []  # Separate data for charts without User objects
@@ -117,13 +117,13 @@ def reports():
     
     try:
         # General interventions
-        interventions = filter_by_company(Intervention.query, Intervention).filter(
+        interventions = filter_by_company(Intervention.query).filter(
             Intervention.start_datetime >= start_datetime,
             Intervention.start_datetime <= end_datetime
         ).order_by(Intervention.start_datetime.desc()).all()
         
         # Reperibilità interventions  
-        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query, ReperibilitaIntervention).filter(
+        reperibilita_interventions = filter_by_company(ReperibilitaIntervention.query).filter(
             ReperibilitaIntervention.start_datetime >= start_datetime,
             ReperibilitaIntervention.start_datetime <= end_datetime
         ).order_by(ReperibilitaIntervention.start_datetime.desc()).all()
@@ -134,7 +134,7 @@ def reports():
     # Get attendance data for charts - calculate real data
     attendance_data = []
     current_date = start_date
-    active_user_ids = [user.id for user in filter_by_company(User.query, User).filter(User.active.is_(True)).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()]
+    active_user_ids = [user.id for user in filter_by_company(User.query).filter(User.active.is_(True)).filter(~User.role.in_(['Amministratore', 'Ospite'])).all()]
     
     while current_date <= end_date:
         # Calculate total hours and workers for this day

@@ -62,7 +62,7 @@ def leave_requests():
         return redirect(url_for('dashboard.dashboard'))
     
     # Base query con filtro company
-    query = filter_by_company(LeaveRequest.query, LeaveRequest)
+    query = filter_by_company(LeaveRequest.query)
     
     # Filtri per vista
     if view == 'my':
@@ -111,7 +111,7 @@ def leave_requests():
     # Statistiche per dashboard (filtrate per company)
     stats = {}
     if view in ['approve', 'view']:
-        stats_query = filter_by_company(LeaveRequest.query, LeaveRequest)
+        stats_query = filter_by_company(LeaveRequest.query)
         stats = {
             'pending_count': stats_query.filter_by(status='Pending').count(),
             'approved_count': stats_query.filter_by(status='Approved').count(),

@@ -51,11 +51,11 @@ def tables():
     """Visualizza tabelle ACI con caricamento lazy - record caricati solo dopo filtro"""
     form = ACIFilterForm()
     tables = []
-    total_records = filter_by_company(ACITable.query, ACITable).count()
+    total_records = filter_by_company(ACITable.query).count()
     
     # LAZY LOADING: carica record solo se è stato applicato un filtro (POST)
     if request.method == "POST" and form.validate_on_submit():
-        query = filter_by_company(ACITable.query, ACITable)
+        query = filter_by_company(ACITable.query)
         
         # Applica filtri selezionati
         filters_applied = False
@@ -158,7 +158,7 @@ def upload():
                 
                 for marca, modello, costo_km in batch:
                     # Verifica duplicati esistenti (con filtro company)
-                    existing_query = filter_by_company(ACITable.query, ACITable).filter_by(
+                    existing_query = filter_by_company(ACITable.query).filter_by(
                         tipologia=tipologia,
                         marca=marca,
                         modello=modello
@@ -241,7 +241,7 @@ def create():
 @admin_required
 def edit(record_id):
     """Modifica record ACI esistente"""
-    aci_record = filter_by_company(ACITable.query, ACITable).filter_by(id=record_id).first_or_404()
+    aci_record = filter_by_company(ACITable.query).filter_by(id=record_id).first_or_404()
     form = ACIRecordForm(obj=aci_record)
     
     if form.validate_on_submit():
@@ -267,7 +267,7 @@ def edit(record_id):
 def delete(record_id):
     """Cancella record ACI"""
     try:
-        aci_record = filter_by_company(ACITable.query, ACITable).filter_by(id=record_id).first_or_404()
+        aci_record = filter_by_company(ACITable.query).filter_by(id=record_id).first_or_404()
         db.session.delete(aci_record)
         db.session.commit()
         flash("Record ACI cancellato con successo!", "success")
@@ -293,7 +293,7 @@ def export():
         from io import BytesIO
         
         # Recupera tutti i record ACI (filtrati per company)
-        records = filter_by_company(ACITable.query, ACITable).order_by(ACITable.tipologia, ACITable.tipo, ACITable.marca, ACITable.modello).all()
+        records = filter_by_company(ACITable.query).order_by(ACITable.tipologia, ACITable.tipo, ACITable.marca, ACITable.modello).all()
         
         # Crea workbook
         wb = Workbook()
@@ -374,14 +374,14 @@ def bulk_delete():
     
     try:
         # Prima conta i record da cancellare (con filtro company)
-        records_to_delete = filter_by_company(ACITable.query, ACITable).filter_by(tipologia=tipologia).count()
+        records_to_delete = filter_by_company(ACITable.query).filter_by(tipologia=tipologia).count()
         
         if records_to_delete == 0:
             flash("Nessun record trovato per la tipologia specificata.", "info")
             return redirect(url_for("aci.tables"))
         
         # Esegui la cancellazione (con filtro company)
-        deleted_count = filter_by_company(ACITable.query, ACITable).filter_by(tipologia=tipologia).delete()
+        deleted_count = filter_by_company(ACITable.query).filter_by(tipologia=tipologia).delete()
         db.session.commit()
         
         flash(f"✅ Cancellazione completata con successo!", "success")
@@ -414,7 +414,7 @@ def api_marcas():
     
     try:
         # Query con filtro company
-        base_query = filter_by_company(ACITable.query, ACITable)
+        base_query = filter_by_company(ACITable.query)
         query = db.session.query(ACITable.marca).distinct().filter(ACITable.id.in_(
             db.session.query(ACITable.id).select_from(base_query.subquery())
         ))
@@ -440,7 +440,7 @@ def api_modelos():
     
     try:
         # Query con filtro company
-        base_query = filter_by_company(ACITable.query, ACITable)
+        base_query = filter_by_company(ACITable.query)
         query = db.session.query(ACITable.modello).distinct().filter(ACITable.id.in_(
             db.session.query(ACITable.id).select_from(base_query.subquery())
         ))

@@ -42,7 +42,7 @@ def dashboard():
         team_stats = get_team_statistics()
     
     # Get today's attendance events
-    today_events_check = filter_by_company(AttendanceEvent.query, AttendanceEvent).filter(
+    today_events_check = filter_by_company(AttendanceEvent.query).filter(
         AttendanceEvent.user_id == current_user.id,
         AttendanceEvent.date == date.today()
     ).first()
@@ -66,7 +66,7 @@ def dashboard():
     upcoming_shifts = []
     if current_user.can_view_shifts():
         # Show active presidio coverage templates
-        upcoming_shifts = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter_by(active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
+        upcoming_shifts = filter_by_company(PresidioCoverageTemplate.query).filter_by(active=True).order_by(PresidioCoverageTemplate.start_date.desc()).all()
     
     # Widget team management data (per Management e Responsabile)
     team_management_data = []
@@ -75,19 +75,19 @@ def dashboard():
         
         if current_user.role == 'Amministratore':
             # Admin vede tutti gli utenti attivi
-            users_to_check = filter_by_company(User.query, User).filter(
+            users_to_check = filter_by_company(User.query).filter(
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])  # Escludi admin e staff
             ).order_by(User.last_name, User.first_name).all()
         elif current_user.role == 'Management' and current_user.all_sedi:
             # Management multi-sede vede tutti gli utenti
-            users_to_check = filter_by_company(User.query, User).filter(
+            users_to_check = filter_by_company(User.query).filter(
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
             ).order_by(User.last_name, User.first_name).all()
         elif current_user.sede_id:
             # Responsabile e Management vede utenti della propria sede
-            users_to_check = filter_by_company(User.query, User).filter(
+            users_to_check = filter_by_company(User.query).filter(
                 User.sede_id == current_user.sede_id,
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
@@ -110,27 +110,27 @@ def dashboard():
     if current_user.can_view_my_reperibilita():
         # My upcoming reperibilità shifts (next 7 days)
         seven_days_from_now = date.today() + timedelta(days=7)
-        upcoming_reperibilita_shifts = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter(
+        upcoming_reperibilita_shifts = filter_by_company(ReperibilitaShift.query).filter(
             ReperibilitaShift.user_id == current_user.id,
             ReperibilitaShift.date >= date.today(),
             ReperibilitaShift.date <= seven_days_from_now
         ).order_by(ReperibilitaShift.date, ReperibilitaShift.start_time).all()
         
         # Active intervention for current user
-        active_intervention = filter_by_company(Intervention.query, Intervention).filter(
+        active_intervention = filter_by_company(Intervention.query).filter(
             Intervention.user_id == current_user.id,
             Intervention.end_datetime.is_(None)
         ).first()
         
         # Recent interventions (last 7 days)
         seven_days_ago = datetime.now() - timedelta(days=7)
-        recent_interventions = filter_by_company(Intervention.query, Intervention).filter(
+        recent_interventions = filter_by_company(Intervention.query).filter(
             Intervention.user_id == current_user.id,
             Intervention.start_datetime >= seven_days_ago
         ).order_by(Intervention.start_datetime.desc()).limit(5).all()
     
     # Active general intervention (per tutti gli utenti)
-    active_general_intervention = filter_by_company(Intervention.query, Intervention).filter(
+    active_general_intervention = filter_by_company(Intervention.query).filter(
         Intervention.user_id.is_(None),  # Intervento generale
         Intervention.end_datetime.is_(None)
     ).first()
@@ -140,7 +140,7 @@ def dashboard():
     if current_user.can_view_my_leave():
         # Recent leave requests (last 30 days)
         thirty_days_ago = date.today() - timedelta(days=30)
-        recent_leaves = filter_by_company(LeaveRequest.query, LeaveRequest).filter(
+        recent_leaves = filter_by_company(LeaveRequest.query).filter(
             LeaveRequest.user_id == current_user.id,
             LeaveRequest.created_at >= thirty_days_ago
         ).order_by(LeaveRequest.created_at.desc()).limit(5).all()
@@ -154,7 +154,7 @@ def dashboard():
             
             # Get shifts for this day
             if current_user.can_view_shifts():
-                day_shifts = filter_by_company(Shift.query, Shift).filter(
+                day_shifts = filter_by_company(Shift.query).filter(
                     Shift.user_id == current_user.id,
                     Shift.date == day
                 ).all()
@@ -162,7 +162,7 @@ def dashboard():
             
             # Get reperibilità for this day
             if current_user.can_view_my_reperibilita():
-                day_reperibilita = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter(
+                day_reperibilita = filter_by_company(ReperibilitaShift.query).filter(
                     ReperibilitaShift.user_id == current_user.id,
                     ReperibilitaShift.date == day
                 ).all()
@@ -176,27 +176,27 @@ def dashboard():
         # Get users visible to current user based on role and sede access
         if current_user.role == 'Amministratore':
             # Amministratori vedono tutti gli utenti di tutte le sedi
-            visible_users = filter_by_company(User.query, User).filter(
+            visible_users = filter_by_company(User.query).filter(
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
             ).all()
         elif current_user.role in ['Responsabile', 'Management']:
             # Responsabili e Management vedono solo utenti della propria sede
-            visible_users = filter_by_company(User.query, User).filter(
+            visible_users = filter_by_company(User.query).filter(
                 User.sede_id == current_user.sede_id,
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
             ).all()
         elif current_user.all_sedi:
             # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
-            visible_users = filter_by_company(User.query, User).filter(
+            visible_users = filter_by_company(User.query).filter(
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
             ).all()
         else:
             # Altri utenti vedono solo utenti della propria sede se specificata
             if current_user.sede_id:
-                visible_users = filter_by_company(User.query, User).filter(
+                visible_users = filter_by_company(User.query).filter(
                     User.sede_id == current_user.sede_id,
                     User.active.is_(True),
                     ~User.role.in_(['Admin', 'Staff'])
@@ -236,7 +236,7 @@ def dashboard():
     if current_user.can_view_shifts() and current_user.can_view_team_management_widget():
         # Check for shifts without coverage in next 7 days
         end_date = date.today() + timedelta(days=7)
-        templates_to_check = filter_by_company(PresidioCoverageTemplate.query, PresidioCoverageTemplate).filter(
+        templates_to_check = filter_by_company(PresidioCoverageTemplate.query).filter(
             PresidioCoverageTemplate.active.is_(True),
             PresidioCoverageTemplate.start_date <= end_date
         ).all()
@@ -259,7 +259,7 @@ def dashboard():
     # Widget my leave requests (pending and recent)
     my_leave_requests = []
     if current_user.can_view_my_leave():
-        my_leave_requests = filter_by_company(LeaveRequest.query, LeaveRequest).filter(
+        my_leave_requests = filter_by_company(LeaveRequest.query).filter(
             LeaveRequest.user_id == current_user.id
         ).order_by(LeaveRequest.created_at.desc()).limit(5).all()
     
@@ -267,7 +267,7 @@ def dashboard():
     my_shifts = []
     if current_user.can_view_shifts():
         seven_days_from_now = date.today() + timedelta(days=7)
-        my_shifts = filter_by_company(Shift.query, Shift).filter(
+        my_shifts = filter_by_company(Shift.query).filter(
             Shift.user_id == current_user.id,
             Shift.date >= date.today(),
             Shift.date <= seven_days_from_now
@@ -277,7 +277,7 @@ def dashboard():
     my_reperibilita = []
     if current_user.can_view_my_reperibilita():
         seven_days_from_now = date.today() + timedelta(days=7)
-        my_reperibilita = filter_by_company(ReperibilitaShift.query, ReperibilitaShift).filter(
+        my_reperibilita = filter_by_company(ReperibilitaShift.query).filter(
             ReperibilitaShift.user_id == current_user.id,
             ReperibilitaShift.date >= date.today(),
             ReperibilitaShift.date <= seven_days_from_now
@@ -286,7 +286,7 @@ def dashboard():
     # Widget expense reports data
     expense_reports_data = []
     if current_user.can_view_my_expense_reports():
-        recent_reports = filter_by_company(ExpenseReport.query, ExpenseReport).filter(
+        recent_reports = filter_by_company(ExpenseReport.query).filter(
             ExpenseReport.employee_id == current_user.id
         ).order_by(ExpenseReport.created_at.desc()).limit(3).all()
         expense_reports_data = recent_reports
@@ -295,12 +295,12 @@ def dashboard():
     recent_overtime_requests = []
     my_overtime_requests = []
     if current_user.can_view_my_overtime_requests():
-        my_overtime_requests = filter_by_company(OvertimeRequest.query, OvertimeRequest).filter(
+        my_overtime_requests = filter_by_company(OvertimeRequest.query).filter(
             OvertimeRequest.employee_id == current_user.id
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
     
     if current_user.can_approve_overtime_requests():
-        recent_overtime_requests = filter_by_company(OvertimeRequest.query, OvertimeRequest).filter(
+        recent_overtime_requests = filter_by_company(OvertimeRequest.query).filter(
             OvertimeRequest.status == 'pending'
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
     
@@ -308,12 +308,12 @@ def dashboard():
     recent_mileage_requests = []
     my_mileage_requests = []
     if current_user.can_view_my_mileage_requests():
-        my_mileage_requests = filter_by_company(MileageRequest.query, MileageRequest).filter(
+        my_mileage_requests = filter_by_company(MileageRequest.query).filter(
             MileageRequest.user_id == current_user.id
         ).order_by(MileageRequest.created_at.desc()).limit(5).all()
     
     if current_user.can_approve_mileage_requests():
-        recent_mileage_requests = filter_by_company(MileageRequest.query, MileageRequest).filter(
+        recent_mileage_requests = filter_by_company(MileageRequest.query).filter(
             MileageRequest.status == 'pending'
         ).order_by(MileageRequest.created_at.desc()).limit(5).all()
     
@@ -331,7 +331,7 @@ def dashboard():
     # Get all sedi for multi-sede users
     all_sedi_list = []
     if current_user.all_sedi:
-        all_sedi_list = filter_by_company(Sede.query, Sede).filter_by(active=True).all()
+        all_sedi_list = filter_by_company(Sede.query).filter_by(active=True).all()
 
     return render_template('dashboard.html', 
                          stats=stats, 
@@ -376,27 +376,27 @@ def dashboard_team():
     # Get users visible to current user based on role and sede access - consistent with attendance logic
     if current_user.role == 'Amministratore':
         # Amministratori vedono tutti gli utenti di tutte le sedi
-        all_users = filter_by_company(User.query, User).filter(
+        all_users = filter_by_company(User.query).filter(
             User.active.is_(True),
             ~User.role.in_(['Admin', 'Staff'])
         ).all()
     elif current_user.role in ['Responsabile', 'Management']:
         # Responsabili e Management vedono solo utenti della propria sede
-        all_users = filter_by_company(User.query, User).filter(
+        all_users = filter_by_company(User.query).filter(
             User.sede_id == current_user.sede_id,
             User.active.is_(True),
             ~User.role.in_(['Admin', 'Staff'])
         ).all()
     elif current_user.all_sedi:
         # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
-        all_users = filter_by_company(User.query, User).filter(
+        all_users = filter_by_company(User.query).filter(
             User.active.is_(True),
             ~User.role.in_(['Admin', 'Staff'])
         ).all()
     else:
         # Altri utenti vedono solo utenti della propria sede se specificata
         if current_user.sede_id:
-            all_users = filter_by_company(User.query, User).filter(
+            all_users = filter_by_company(User.query).filter(
                 User.sede_id == current_user.sede_id,
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
@@ -430,7 +430,7 @@ def dashboard_team():
     # Get all sedi for filtering
     all_sedi = []
     if current_user.role == 'Amministratore' or current_user.all_sedi:
-        all_sedi = filter_by_company(Sede.query, Sede).filter_by(active=True).order_by(Sede.name).all()
+        all_sedi = filter_by_company(Sede.query).filter_by(active=True).order_by(Sede.name).all()
     elif current_user.sede_id:
         all_sedi = [current_user.sede]
     
@@ -457,7 +457,7 @@ def dashboard_sede():
     
     # Get accessible sedi for current user
     if current_user.role == 'Amministratore' or current_user.all_sedi:
-        available_sedi = filter_by_company(Sede.query, Sede).filter_by(active=True).order_by(Sede.name).all()
+        available_sedi = filter_by_company(Sede.query).filter_by(active=True).order_by(Sede.name).all()
     elif current_user.sede_id:
         available_sedi = [current_user.sede]
     else:
@@ -468,7 +468,7 @@ def dashboard_sede():
     selected_sede = None
     
     if selected_sede_id:
-        selected_sede = filter_by_company(Sede.query, Sede).get(selected_sede_id)
+        selected_sede = filter_by_company(Sede.query).get(selected_sede_id)
         # Verify user has access to this sede
         if selected_sede and not (
             current_user.role == 'Amministratore' or 
@@ -485,7 +485,7 @@ def dashboard_sede():
     sede_data = {}
     if selected_sede:
         # Get users from selected sede
-        sede_users = filter_by_company(User.query, User).filter(
+        sede_users = filter_by_company(User.query).filter(
             User.sede_id == selected_sede.id,
             User.active.is_(True),
             ~User.role.in_(['Admin', 'Staff'])
@@ -561,7 +561,7 @@ def ente_home():
     # Get recent leave requests
     recent_leaves = []
     if current_user.can_view_my_leave():
-        recent_leaves = filter_by_company(LeaveRequest.query, LeaveRequest).filter(
+        recent_leaves = filter_by_company(LeaveRequest.query).filter(
             LeaveRequest.user_id == current_user.id
         ).order_by(LeaveRequest.created_at.desc()).limit(3).all()
     
@@ -569,7 +569,7 @@ def ente_home():
     upcoming_shifts = []
     if current_user.can_view_shifts():
         seven_days_from_now = date.today() + timedelta(days=7)
-        upcoming_shifts = filter_by_company(Shift.query, Shift).filter(
+        upcoming_shifts = filter_by_company(Shift.query).filter(
             Shift.user_id == current_user.id,
             Shift.date >= date.today(),
             Shift.date <= seven_days_from_now

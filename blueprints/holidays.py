@@ -24,7 +24,7 @@ def holidays():
         flash('Non hai i permessi per accedere alle festività.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    holidays = filter_by_company(Holiday.query, Holiday).order_by(Holiday.month.desc(), Holiday.day.desc()).all()
+    holidays = filter_by_company(Holiday.query).order_by(Holiday.month.desc(), Holiday.day.desc()).all()
     return render_template('holidays.html', holidays=holidays)
 
 @holidays_bp.route('/add', methods=['GET', 'POST'])
@@ -39,7 +39,7 @@ def add_holiday():
     if form.validate_on_submit():
         # Check if holiday already exists for this month/day and scope (with company filter)
         sede_id = form.sede_id.data if form.sede_id.data else None
-        existing = filter_by_company(Holiday.query, Holiday).filter_by(
+        existing = filter_by_company(Holiday.query).filter_by(
             month=form.month.data,
             day=form.day.data,
             sede_id=sede_id,
@@ -77,13 +77,13 @@ def edit_holiday(holiday_id):
         flash('Non hai i permessi per gestire le festività.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    holiday = filter_by_company(Holiday.query, Holiday).filter_by(id=holiday_id).first_or_404()
+    holiday = filter_by_company(Holiday.query).filter_by(id=holiday_id).first_or_404()
     form = HolidayForm(obj=holiday)
     
     if form.validate_on_submit():
         # Check if another holiday exists for this month/day and scope (excluding current, with company filter)
         sede_id = form.sede_id.data if form.sede_id.data else None
-        existing = filter_by_company(Holiday.query, Holiday).filter(
+        existing = filter_by_company(Holiday.query).filter(
             Holiday.month == form.month.data,
             Holiday.day == form.day.data,
             Holiday.sede_id == sede_id,
@@ -117,7 +117,7 @@ def delete_holiday(holiday_id):
         flash('Non hai i permessi per gestire le festività.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    holiday = filter_by_company(Holiday.query, Holiday).filter_by(id=holiday_id).first_or_404()
+    holiday = filter_by_company(Holiday.query).filter_by(id=holiday_id).first_or_404()
     
     try:
         db.session.delete(holiday)
@@ -161,7 +161,7 @@ def api_generate_holidays():
             holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             
             # Check if holiday already exists (national holiday with same month/day, with company filter)
-            existing = filter_by_company(Holiday.query, Holiday).filter_by(
+            existing = filter_by_company(Holiday.query).filter_by(
                 month=holiday_date.month,
                 day=holiday_date.day,
                 sede_id=None,  # National holiday
