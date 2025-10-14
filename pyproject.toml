@@ -1,9 +1,9 @@
 [project]
-name = "workly"
+name = "flow"
 version = "1.0.0"
 description = "Workforce Management Platform"
 authors = [
-    {name = "Workly Team", email = "info@workly.com"}
+    {name = "Flow Team", email = "info@flow.com"}
 ]
 readme = "README.md"
 license = {text = "Proprietary"}
@@ -27,11 +27,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/workly/workforce-management"
-Repository = "https://github.com/workly/workforce-management"
+Homepage = "https://github.com/flow/workforce-management"
+Repository = "https://github.com/flow/workforce-management"
 
 [tool.setuptools]
-packages = ["workly"]
+packages = ["flow"]
 
 [build-system]
 requires = ["setuptools", "wheel"]

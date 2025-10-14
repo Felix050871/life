@@ -2,8 +2,8 @@
 
 ## Overview
 Life is a comprehensive multi-tenant SAAS workforce management platform consisting of two integrated sections:
-- **WORKLY**: Workforce operations (attendance tracking, shift scheduling, leave management, user administration)
-- **HUBLY**: Social intranet space for internal communication, collaboration, and company culture
+- **FLOW**: Workforce operations (attendance tracking, shift scheduling, leave management, user administration)
+- **CIRCLE**: Social intranet space for internal communication, collaboration, and company culture
 
 The platform provides a responsive web interface with multiple user roles and distinct permission levels. It's designed as a **path-based multi-tenant system** serving various companies, each with isolated data, custom branding, and dedicated URL paths (`/t/<slug>`).
 
@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **Deployment**: Gunicorn WSGI server.
 
 ### Platform Sections
-1. **WORKLY** - Workforce Management
+1. **FLOW** - Workforce Management
    - Attendance tracking with clock-in/out
    - Intelligent shift scheduling and management
    - Leave request workflow
@@ -27,7 +27,7 @@ Preferred communication style: Simple, everyday language.
    - On-call duty management (Reperibilità)
    - Reports and data export
 
-2. **HUBLY** - Social Intranet
+2. **CIRCLE** - Social Intranet
    - News feed and announcements (post system with comments/likes)
    - Delorean (company history archive)
    - Groups (department, project, interest-based)
@@ -66,17 +66,17 @@ Preferred communication style: Simple, everyday language.
     - ✅ aci.py, presidio.py, holidays.py, admin.py, expense.py
     - ✅ attendance.py, leave.py, shifts.py
   - **Company Creation Workflow**: SUPERADMIN creates company with mandatory admin user and unique slug in single transaction; validates unique codes, slugs, usernames, and emails
-- **User Management**: Features a permission-based access control system with over 70 granular permissions (including 19 HUBLY-specific permissions) and 5 dynamically configurable standard roles. Supports advanced work schedule assignments (ORARIA vs. TURNI modes) and multi-location access. Enhanced user profiles include social fields (bio, LinkedIn, phone, department, job title) for HUBLY integration. The role management page includes a dedicated HUBLY permissions card for easy configuration of social intranet access and management capabilities.
+- **User Management**: Features a permission-based access control system with over 70 granular permissions (including 19 CIRCLE-specific permissions) and 5 dynamically configurable standard roles. Supports advanced work schedule assignments (ORARIA vs. TURNI modes) and multi-location access. Enhanced user profiles include social fields (bio, LinkedIn, phone, department, job title) for CIRCLE integration. The role management page includes a dedicated CIRCLE permissions card for easy configuration of social intranet access and management capabilities.
 - **Attendance Tracking**: Includes clock-in/out, break tracking, daily records, historical viewing, reporting, and a static QR code system for quick attendance marking with intelligent user status validation.
 - **Shift Management**: Supports intelligent shift generation with workload balancing, recurring shift patterns via templates, and integration with leave/part-time percentages. Includes on-call duty management (`ReperibilitaShift`) and intervention tracking (`ReperibilitaIntervention`). Adheres to operational safety rules (e.g., no overlaps, 11-hour rest periods, split shifts for long durations, 24/7 coverage, weekly rest days).
 - **Mileage Reimbursement System**: Manages mileage reimbursement requests, including automatic distance/amount calculation using ACI tables, multi-point routes, and a manager approval workflow.
-- **UI/UX**: Modern, responsive dark-themed Bootstrap design with generic "Life" branding. Features global Bootstrap modals, an optimized overlay system, and dynamic sidebar navigation based on user permissions. Company ADMIN users (role='Amministratore', not SUPERADMIN) have dedicated "Amministrazione" dropdown in the topbar with Ruoli and Utenti links, visually separated from WORKLY/HUBLY tabs - these menus are hidden from the sidebar for a cleaner interface.
+- **UI/UX**: Modern, responsive dark-themed Bootstrap design with generic "Life" branding. Features global Bootstrap modals, an optimized overlay system, and dynamic sidebar navigation based on user permissions. Company ADMIN users (role='Amministratore', not SUPERADMIN) have dedicated "Amministrazione" dropdown in the topbar with Ruoli and Utenti links, visually separated from FLOW/CIRCLE tabs - these menus are hidden from the sidebar for a cleaner interface.
 - **Data Export**: Supports CSV to Excel (.xlsx) conversion across all modules using `openpyxl` (server-side) and `SheetJS` (client-side).
 - **System Logging and Optimization**: Professional logging, configuration centralization for security, performance, and maintainability.
 - **Dashboard Widgets**: Dynamic widgets for team statistics, personal leave requests, shifts, on-call duties, and mileage reimbursements, controlled by user permissions.
 - **Internal Messaging**: Multi-recipient internal messaging system with permission-based sending and automatic notifications for approvals/rejections.
-- **User Profile Management**: Allows users to modify personal details independently, including profile image upload with automatic resizing to 200x200px, and HUBLY social fields (bio, LinkedIn URL, phone number, department, job title). Profile images are displayed in a circular format in the navbar and profile page, with a default image for users without a custom photo.
-- **HUBLY Social Features**: Complete social intranet implementation with 8 core models (HublyPost, HublyGroup, HublyPoll, HublyDocument, HublyCalendarEvent, HublyComment, HublyLike, HublyToolLink) and 6 dedicated blueprints. Features include news/announcement posting with engagement (comments, likes), group management, polling system, company calendar, document repository with versioning, and customizable tool links dashboard. All HUBLY entities enforce multi-tenant isolation via company_id filtering.
+- **User Profile Management**: Allows users to modify personal details independently, including profile image upload with automatic resizing to 200x200px, and CIRCLE social fields (bio, LinkedIn URL, phone number, department, job title). Profile images are displayed in a circular format in the navbar and profile page, with a default image for users without a custom photo.
+- **CIRCLE Social Features**: Complete social intranet implementation with 8 core models (CirclePost, CircleGroup, CirclePoll, CircleDocument, CircleCalendarEvent, CircleComment, CircleLike, CircleToolLink) and 6 dedicated blueprints. Features include news/announcement posting with engagement (comments, likes), group management, polling system, company calendar, document repository with versioning, and customizable tool links dashboard. All CIRCLE entities enforce multi-tenant isolation via company_id filtering.
 - **Database Simplification**: System is exclusively designed for PostgreSQL, removing previous SQLite support for robustness.
 
 ## External Dependencies
