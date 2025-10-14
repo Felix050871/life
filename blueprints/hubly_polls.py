@@ -72,7 +72,7 @@ def create():
             is_anonymous=is_anonymous,
             multiple_choice=multiple_choice,
             end_date=end_date,
-            company_id=get_user_company_id(current_user)
+            company_id=get_user_company_id()
         )
         
         db.session.add(poll)
