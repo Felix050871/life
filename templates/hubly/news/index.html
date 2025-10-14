@@ -68,7 +68,7 @@
                             {% endif %}
                         </p>
                         {% if post.content|length > 200 %}
-                        <a href="javascript:void(0)" class="read-more-btn" onclick="toggleReadMore({{ post.id }})">
+                        <a href="javascript:void(0)" class="read-more-btn no-loading" onclick="toggleReadMore({{ post.id }})">
                             [Leggi Tutto]
                         </a>
                         {% endif %}
