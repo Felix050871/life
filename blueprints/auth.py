@@ -71,8 +71,8 @@ def admin_login():
 def tenant_login(slug):
     """Tenant-specific login page"""
     if current_user.is_authenticated:
-        # Se già loggato, redirige alla home dell'azienda
-        return redirect(url_for('dashboard.dashboard'))
+        # Se già loggato, redirige alla home con scelta WORKLY/HUBLY
+        return redirect(url_for('index'))
     
     # Cerca l'azienda dal slug
     company = Company.query.filter_by(slug=slug, active=True).first()
@@ -94,7 +94,8 @@ def tenant_login(slug):
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
                 return redirect(next_page)
-            return redirect(url_for('dashboard.dashboard'))
+            # Redirige alla home page con scelta WORKLY/HUBLY
+            return redirect(url_for('index'))
         
         flash('Username o password non validi', 'danger')
     
