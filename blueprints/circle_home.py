@@ -90,7 +90,7 @@ def delorean():
         current_user
     ).order_by(desc(CirclePost.created_at)).all()
     
-    return render_template('hubly/delorean.html', posts=delorean_posts)
+    return render_template('circle/delorean.html', posts=delorean_posts)
 
 @bp.route('/personas')
 @login_required
@@ -108,7 +108,7 @@ def personas():
         is_system_admin=False
     ).order_by(User.last_name, User.first_name).all()
     
-    return render_template('hubly/personas.html', users=users)
+    return render_template('circle/personas.html', users=users)
 
 @bp.route('/tech-feed')
 @login_required
@@ -122,7 +122,7 @@ def tech_feed():
         current_user
     ).order_by(desc(CirclePost.created_at)).all()
     
-    return render_template('hubly/tech_feed.html', posts=tech_posts)
+    return render_template('circle/tech_feed.html', posts=tech_posts)
 
 @bp.route('/delorean/create', methods=['GET', 'POST'])
 @login_required
@@ -190,9 +190,9 @@ def create_delorean():
         db.session.commit()
         
         flash('Storia aziendale creata con successo!', 'success')
-        return redirect(url_for('hubly.delorean'))
+        return redirect(url_for('circle.delorean'))
     
-    return render_template('hubly/delorean_create.html')
+    return render_template('circle/delorean_create.html')
 
 @bp.route('/tech-feed/create', methods=['GET', 'POST'])
 @login_required
@@ -260,6 +260,6 @@ def create_tech_feed():
         db.session.commit()
         
         flash('Post tech feed creato con successo!', 'success')
-        return redirect(url_for('hubly.tech_feed'))
+        return redirect(url_for('circle.tech_feed'))
     
-    return render_template('hubly/tech_feed_create.html')
+    return render_template('circle/tech_feed_create.html')
