@@ -26,12 +26,14 @@
                     <div class="card h-100 border-0 shadow-sm hover-card">
                         <div class="card-body text-center p-5">
                             <div class="mb-4">
-                                <img src="{{ url_for('static', filename='images/flow_logo.png') }}" alt="FLOW" style="height: 80px; width: auto;">
+                                <img src="{{ url_for('static', filename='img/flow_icon.png') }}" alt="FLOW" style="height: 100px; width: auto;">
                             </div>
                             <h3 class="card-title mb-3">FLOW</h3>
                             <p class="card-text text-muted mb-4">
-                                Sistema di gestione presenze, turni, ferie e straordinari. 
-                                Tutto ciò che serve per organizzare il lavoro del tuo team.
+                                Il tuo gestore smart del tempo. L'area dedicata all'organizzazione operativa del team, alla pianificazione dei turni, alla richiesta di ferie e permessi e al tracciamento di presenze e straordinari. Meno burocrazia, più produttività.
+                            </p>
+                            <p class="text-primary fw-bold mb-3">
+                                <i class="fas fa-clock me-2"></i>Semplifica il lavoro, moltiplica il tempo. ⏱️
                             </p>
                             <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-primary btn-lg">
                                 <i class="fas fa-arrow-right me-2"></i>Accedi a FLOW
@@ -45,11 +47,14 @@
                     <div class="card h-100 border-0 shadow-sm hover-card">
                         <div class="card-body text-center p-5">
                             <div class="mb-4">
-                                <img src="{{ url_for('static', filename='images/circle_logo.png') }}" alt="CIRCLE" style="height: 80px; width: auto;">
+                                <img src="{{ url_for('static', filename='img/circle_icon.png') }}" alt="CIRCLE" style="height: 100px; width: auto;">
                             </div>
                             <h3 class="card-title mb-3">CIRCLE</h3>
                             <p class="card-text text-muted mb-4">
-                                Spazio social per le persone grazie al quale è possibile rimanere aggiornati sulle iniziative aziendali e accedere facilmente a tutti gli strumenti di lavoro.
+                                Il centro della tua community aziendale. Lo spazio di connessione social per rimanere aggiornato sulle iniziative, accedere velocemente ai documenti e agli strumenti di lavoro, e condividere idee con i colleghi.
+                            </p>
+                            <p class="text-success fw-bold mb-3">
+                                <i class="fas fa-users me-2"></i>Connettiti alle persone, connettiti al lavoro. 🤝
                             </p>
                             <a href="{{ url_for('circle.home') }}" class="btn btn-success btn-lg">
                                 <i class="fas fa-arrow-right me-2"></i>Accedi a CIRCLE
@@ -102,7 +107,7 @@
                                     <i class="fas fa-info-circle text-primary" style="font-size: 1.5rem;"></i>
                                 </div>
                                 <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">Nuova Sezione HUBLY</h6>
+                                    <h6 class="mb-1">Nuova Sezione CIRCLE</h6>
                                     <p class="text-muted small mb-0">
                                         Spazio social aziendale per rimanere aggiornati e accedere agli strumenti di lavoro
                                     </p>
