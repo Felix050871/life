@@ -277,10 +277,12 @@ function toggleReadMore(postId) {
 }
 
 function toggleLike(postId) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     fetch(`/hubly/news/api/${postId}/like`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         }
     })
     .then(response => response.json())
