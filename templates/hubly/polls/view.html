@@ -65,28 +65,33 @@
 
                     <!-- Form Votazione -->
                     {% if not poll.is_closed() and not has_voted and current_user.has_permission('can_vote_polls') %}
-                    <form method="POST" action="{{ url_for('hubly_polls.vote', poll_id=poll.id) }}">
-                        <div class="mb-3">
-                            <label class="form-label"><strong>Seleziona la tua risposta:</strong></label>
-                            {% for option in poll.options %}
-                            <div class="form-check">
-                                {% if poll.multiple_choice %}
-                                <input class="form-check-input" type="checkbox" name="option_ids[]" 
-                                       value="{{ option.id }}" id="option{{ option.id }}">
-                                {% else %}
-                                <input class="form-check-input" type="radio" name="option_id" 
-                                       value="{{ option.id }}" id="option{{ option.id }}" required>
-                                {% endif %}
-                                <label class="form-check-label" for="option{{ option.id }}">
-                                    {{ option.option_text }}
-                                </label>
-                            </div>
-                            {% endfor %}
+                    <div class="card bg-primary bg-opacity-10 border-primary mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary"><i class="fas fa-vote-yea"></i> Vota Ora</h5>
+                            <form method="POST" action="{{ url_for('hubly_polls.vote', poll_id=poll.id) }}">
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Seleziona la tua risposta:</strong></label>
+                                    {% for option in poll.options %}
+                                    <div class="form-check">
+                                        {% if poll.multiple_choice %}
+                                        <input class="form-check-input" type="checkbox" name="option_ids[]" 
+                                               value="{{ option.id }}" id="option{{ option.id }}">
+                                        {% else %}
+                                        <input class="form-check-input" type="radio" name="option_id" 
+                                               value="{{ option.id }}" id="option{{ option.id }}" required>
+                                        {% endif %}
+                                        <label class="form-check-label" for="option{{ option.id }}">
+                                            {{ option.option_text }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check"></i> Invia Voto
+                                </button>
+                            </form>
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-check"></i> Invia Voto
-                        </button>
-                    </form>
+                    </div>
                     {% elif has_voted %}
                     <div class="alert alert-success">
                         <i class="fas fa-check-circle"></i> Hai già votato in questo sondaggio
@@ -94,6 +99,10 @@
                     {% elif poll.is_closed() %}
                     <div class="alert alert-warning">
                         <i class="fas fa-lock"></i> Questo sondaggio è chiuso
+                    </div>
+                    {% elif not current_user.has_permission('can_vote_polls') %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-ban"></i> Non hai il permesso per votare nei sondaggi. Contatta l'amministratore.
                     </div>
                     {% endif %}
 
