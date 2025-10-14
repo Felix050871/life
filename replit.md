@@ -2,8 +2,8 @@
 
 ## Overview
 Life is a comprehensive multi-tenant SAAS workforce management platform consisting of two integrated sections:
-- **FLOW**: Workforce operations (attendance tracking, shift scheduling, leave management, user administration)
-- **CIRCLE**: Social intranet space for internal communication, collaboration, and company culture
+- **FLOW**: "Il tuo gestore smart del tempo" - L'area dedicata all'organizzazione operativa del team, alla pianificazione dei turni, alla richiesta di ferie e permessi e al tracciamento di presenze e straordinari. Meno burocrazia, più produttività. *Tagline: Semplifica il lavoro, moltiplica il tempo. ⏱️*
+- **CIRCLE**: "Il centro della tua community aziendale" - Lo spazio di connessione social per rimanere aggiornato sulle iniziative, accedere velocemente ai documenti e agli strumenti di lavoro, e condividere idee con i colleghi. *Tagline: Connettiti alle persone, connettiti al lavoro. 🤝*
 
 The platform provides a responsive web interface with multiple user roles and distinct permission levels. It's designed as a **path-based multi-tenant system** serving various companies, each with isolated data, custom branding, and dedicated URL paths (`/t/<slug>`).
 
@@ -18,25 +18,31 @@ Preferred communication style: Simple, everyday language.
 - **Deployment**: Gunicorn WSGI server.
 
 ### Platform Sections
-1. **FLOW** - Workforce Management
-   - Attendance tracking with clock-in/out
-   - Intelligent shift scheduling and management
-   - Leave request workflow
-   - Overtime and mileage reimbursements
-   - Banca ore (time bank) system
-   - On-call duty management (Reperibilità)
-   - Reports and data export
+1. **FLOW** - "Il tuo gestore smart del tempo"
+   - **Tagline**: Semplifica il lavoro, moltiplica il tempo. ⏱️
+   - **Description**: L'area dedicata all'organizzazione operativa del team, alla pianificazione dei turni, alla richiesta di ferie e permessi e al tracciamento di presenze e straordinari. Meno burocrazia, più produttività.
+   - **Features**:
+     - Attendance tracking with clock-in/out
+     - Intelligent shift scheduling and management
+     - Leave request workflow
+     - Overtime and mileage reimbursements
+     - Banca ore (time bank) system
+     - On-call duty management (Reperibilità)
+     - Reports and data export
 
-2. **CIRCLE** - Social Intranet
-   - News feed and announcements (post system with comments/likes)
-   - Delorean (company history archive)
-   - Groups (department, project, interest-based)
-   - Polls and surveys
-   - Company calendar with events
-   - Document management (Quality/HR documents)
-   - Tool links (quick access to external tools like Trello, Email, etc.)
-   - Personas (employee directory with social profiles)
-   - Tech Feed (IT/technology updates)
+2. **CIRCLE** - "Il centro della tua community aziendale"
+   - **Tagline**: Connettiti alle persone, connettiti al lavoro. 🤝
+   - **Description**: Lo spazio di connessione social per rimanere aggiornato sulle iniziative, accedere velocemente ai documenti e agli strumenti di lavoro, e condividere idee con i colleghi.
+   - **Features**:
+     - News feed and announcements (post system with comments/likes)
+     - Delorean (company history archive)
+     - Groups (department, project, interest-based)
+     - Polls and surveys
+     - Company calendar with events
+     - Document management (Quality/HR documents)
+     - Tool links (quick access to external tools like Trello, Email, etc.)
+     - Personas (employee directory with social profiles)
+     - Tech Feed (IT/technology updates)
 
 ### Key Architectural Decisions & Features
 - **Multi-Tenant SaaS System**: Fully implemented as a Software-as-a-Service platform with complete company isolation and role-based administration.
