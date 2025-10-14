@@ -2875,6 +2875,7 @@ class HublyPost(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     published = db.Column(db.Boolean, default=True)
     pinned = db.Column(db.Boolean, default=False)  # Post in evidenza
+    comments_enabled = db.Column(db.Boolean, default=True)  # Abilitazione commenti
     image_url = db.Column(db.String(255), nullable=True)  # Immagine allegata
     video_url = db.Column(db.String(255), nullable=True)  # Video allegato
     created_at = db.Column(db.DateTime, default=italian_now)
@@ -2886,6 +2887,18 @@ class HublyPost(db.Model):
     
     def __repr__(self):
         return f'<HublyPost {self.title}>'
+    
+    def get_like_count(self):
+        """Restituisce il numero di like"""
+        return len(self.likes)
+    
+    def get_comment_count(self):
+        """Restituisce il numero di commenti"""
+        return len(self.comments) if self.comments_enabled else 0
+    
+    def is_liked_by(self, user):
+        """Verifica se l'utente ha già messo like"""
+        return any(like.user_id == user.id for like in self.likes)
 
 
 class HublyGroup(db.Model):
