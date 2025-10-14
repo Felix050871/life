@@ -61,10 +61,10 @@
                     <div class="news-content">
                         <p class="news-text" id="content-{{ post.id }}">
                             {% if post.content|length > 200 %}
-                                <span class="content-preview">{{ post.content[:200] }}...</span>
-                                <span class="content-full d-none">{{ post.content }}</span>
+                                <span class="content-preview">{{ post.content[:200]|safe }}...</span>
+                                <span class="content-full d-none">{{ post.content|safe }}</span>
                             {% else %}
-                                {{ post.content }}
+                                {{ post.content|safe }}
                             {% endif %}
                         </p>
                         {% if post.content|length > 200 %}

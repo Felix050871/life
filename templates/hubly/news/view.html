@@ -54,8 +54,8 @@
                     <h2 class="mb-4">{{ post.title }}</h2>
                     
                     <!-- Contenuto -->
-                    <div class="post-content mb-4" style="font-size: 1.1rem; line-height: 1.8; color: #2d3748;">
-                        {{ post.content|replace('\n', '<br>')|safe }}
+                    <div class="post-content mb-4" style="font-size: 1.1rem; line-height: 1.8;">
+                        {{ post.content|safe }}
                     </div>
                     
                     <!-- Video embed (se presente) -->
