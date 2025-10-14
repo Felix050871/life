@@ -49,7 +49,7 @@ def create():
         
         if not question:
             flash('La domanda è obbligatoria', 'danger')
-            return redirect(url_for('hubly_polls.create'))
+            return redirect(url_for('circle_polls.create'))
         
         # Opzioni (almeno 2)
         options = request.form.getlist('options[]')
@@ -57,7 +57,7 @@ def create():
         
         if len(options) < 2:
             flash('Devi fornire almeno 2 opzioni', 'danger')
-            return redirect(url_for('hubly_polls.create'))
+            return redirect(url_for('circle_polls.create'))
         
         # Parse end_date
         end_date = None
@@ -66,7 +66,7 @@ def create():
                 end_date = datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M')
             except ValueError:
                 flash('Formato data non valido', 'danger')
-                return redirect(url_for('hubly_polls.create'))
+                return redirect(url_for('circle_polls.create'))
         
         # Crea sondaggio
         poll = CirclePoll(
@@ -93,7 +93,7 @@ def create():
         db.session.commit()
         
         flash('Sondaggio creato con successo!', 'success')
-        return redirect(url_for('hubly_polls.view', poll_id=poll.id))
+        return redirect(url_for('circle_polls.view', poll_id=poll.id))
     
     return render_template('circle/polls/create.html')
 
@@ -131,12 +131,12 @@ def vote(poll_id):
     # Verifica se il sondaggio è chiuso
     if poll.is_closed():
         flash('Questo sondaggio è chiuso', 'warning')
-        return redirect(url_for('hubly_polls.view', poll_id=poll_id))
+        return redirect(url_for('circle_polls.view', poll_id=poll_id))
     
     # Verifica se ha già votato
     if poll.has_voted(current_user) and not poll.multiple_choice:
         flash('Hai già votato in questo sondaggio', 'warning')
-        return redirect(url_for('hubly_polls.view', poll_id=poll_id))
+        return redirect(url_for('circle_polls.view', poll_id=poll_id))
     
     # Ottieni opzioni selezionate
     if poll.multiple_choice:
@@ -147,7 +147,7 @@ def vote(poll_id):
     
     if not option_ids:
         flash('Devi selezionare almeno un\'opzione', 'danger')
-        return redirect(url_for('hubly_polls.view', poll_id=poll_id))
+        return redirect(url_for('circle_polls.view', poll_id=poll_id))
     
     # Rimuovi voti precedenti se esiste
     CirclePollVote.query.filter_by(poll_id=poll_id, user_id=current_user.id).delete()
@@ -166,7 +166,7 @@ def vote(poll_id):
     db.session.commit()
     
     flash('Voto registrato!', 'success')
-    return redirect(url_for('hubly_polls.view', poll_id=poll_id))
+    return redirect(url_for('circle_polls.view', poll_id=poll_id))
 
 @bp.route('/<int:poll_id>/delete', methods=['POST'])
 @login_required
@@ -189,7 +189,7 @@ def delete(poll_id):
     db.session.commit()
     
     flash('Sondaggio eliminato', 'success')
-    return redirect(url_for('hubly_polls.index'))
+    return redirect(url_for('circle_polls.index'))
 
 @bp.route('/<int:poll_id>/close', methods=['POST'])
 @login_required
@@ -207,4 +207,4 @@ def close(poll_id):
     db.session.commit()
     
     flash('Sondaggio chiuso', 'success')
-    return redirect(url_for('hubly_polls.view', poll_id=poll_id))
+    return redirect(url_for('circle_polls.view', poll_id=poll_id))

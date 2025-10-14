@@ -105,7 +105,7 @@ def create():
         db.session.commit()
         
         flash('Gruppo creato con successo!', 'success')
-        return redirect(url_for('hubly_groups.view_group', group_id=new_group.id))
+        return redirect(url_for('circle_groups.view_group', group_id=new_group.id))
     
     return render_template('circle/groups/create.html')
 
@@ -121,7 +121,7 @@ def join_group(group_id):
     # Non puoi unirti a gruppi privati direttamente
     if group.is_private:
         flash('Questo gruppo è privato, serve un invito', 'warning')
-        return redirect(url_for('hubly_groups.index'))
+        return redirect(url_for('circle_groups.index'))
     
     # Verifica se già membro
     existing = db.session.query(circle_group_members).filter_by(
@@ -141,7 +141,7 @@ def join_group(group_id):
         db.session.commit()
         flash('Ti sei unito al gruppo!', 'success')
     
-    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+    return redirect(url_for('circle_groups.view_group', group_id=group_id))
 
 @bp.route('/<int:group_id>/leave', methods=['POST'])
 @login_required
@@ -155,7 +155,7 @@ def leave_group(group_id):
     # Non puoi lasciare il gruppo se sei il creatore
     if group.creator_id == current_user.id:
         flash('Il creatore non può abbandonare il gruppo', 'danger')
-        return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+        return redirect(url_for('circle_groups.view_group', group_id=group_id))
     
     stmt = circle_group_members.delete().where(
         (circle_group_members.c.user_id == current_user.id) &
@@ -165,7 +165,7 @@ def leave_group(group_id):
     db.session.commit()
     
     flash('Hai lasciato il gruppo', 'info')
-    return redirect(url_for('hubly_groups.index'))
+    return redirect(url_for('circle_groups.index'))
 
 @bp.route('/<int:group_id>/delete', methods=['POST'])
 @login_required
@@ -185,7 +185,7 @@ def delete(group_id):
     db.session.commit()
     
     flash('Gruppo eliminato', 'success')
-    return redirect(url_for('hubly_groups.index'))
+    return redirect(url_for('circle_groups.index'))
 
 # ==================================================
 # RICHIESTE DI ADESIONE (Gruppi Privati)
@@ -202,12 +202,12 @@ def request_membership(group_id):
     
     if not group.is_private:
         flash('Questo gruppo è pubblico, puoi unirti direttamente', 'info')
-        return redirect(url_for('hubly_groups.join_group', group_id=group_id))
+        return redirect(url_for('circle_groups.join_group', group_id=group_id))
     
     # Verifica se già membro
     if group.is_member(current_user):
         flash('Sei già membro di questo gruppo', 'info')
-        return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+        return redirect(url_for('circle_groups.view_group', group_id=group_id))
     
     # Verifica se esiste già una richiesta pendente
     existing_request = CircleGroupMembershipRequest.query.filter_by(
@@ -218,7 +218,7 @@ def request_membership(group_id):
     
     if existing_request:
         flash('Hai già una richiesta pendente per questo gruppo', 'warning')
-        return redirect(url_for('hubly_groups.index'))
+        return redirect(url_for('circle_groups.index'))
     
     # Crea nuova richiesta
     message = request.form.get('message', '')
@@ -235,7 +235,7 @@ def request_membership(group_id):
     db.session.commit()
     
     flash('Richiesta di adesione inviata al creatore del gruppo', 'success')
-    return redirect(url_for('hubly_groups.index'))
+    return redirect(url_for('circle_groups.index'))
 
 @bp.route('/<int:group_id>/manage-requests')
 @login_required
@@ -291,7 +291,7 @@ def accept_request(group_id, request_id):
     db.session.commit()
     
     flash('Richiesta accettata', 'success')
-    return redirect(url_for('hubly_groups.manage_requests', group_id=group_id))
+    return redirect(url_for('circle_groups.manage_requests', group_id=group_id))
 
 @bp.route('/<int:group_id>/reject-request/<int:request_id>', methods=['POST'])
 @login_required
@@ -316,7 +316,7 @@ def reject_request(group_id, request_id):
     db.session.commit()
     
     flash('Richiesta rifiutata', 'info')
-    return redirect(url_for('hubly_groups.manage_requests', group_id=group_id))
+    return redirect(url_for('circle_groups.manage_requests', group_id=group_id))
 
 # ==================================================
 # BACHECA GRUPPO (Post)
@@ -338,7 +338,7 @@ def create_post(group_id):
     content = request.form.get('content')
     if not content:
         flash('Il contenuto non può essere vuoto', 'danger')
-        return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+        return redirect(url_for('circle_groups.view_group', group_id=group_id))
     
     # Sanitizza HTML per prevenire XSS
     content = sanitize_html(content)
@@ -352,7 +352,7 @@ def create_post(group_id):
             is_valid, error_msg = validate_image_upload(image_file)
             if not is_valid:
                 flash(error_msg, 'danger')
-                return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+                return redirect(url_for('circle_groups.view_group', group_id=group_id))
             
             filename = secure_filename(image_file.filename)
             unique_filename = f"{uuid.uuid4()}_{filename}"
@@ -378,7 +378,7 @@ def create_post(group_id):
     db.session.commit()
     
     flash('Post pubblicato!', 'success')
-    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+    return redirect(url_for('circle_groups.view_group', group_id=group_id))
 
 @bp.route('/<int:group_id>/delete-post/<int:post_id>', methods=['POST'])
 @login_required
@@ -395,7 +395,7 @@ def delete_post(group_id, post_id):
     db.session.commit()
     
     flash('Post eliminato', 'success')
-    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+    return redirect(url_for('circle_groups.view_group', group_id=group_id))
 
 @bp.route('/<int:group_id>/post/<int:post_id>/like', methods=['POST'])
 @login_required
@@ -425,7 +425,7 @@ def toggle_post_like(group_id, post_id):
         db.session.add(new_like)
         db.session.commit()
     
-    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+    return redirect(url_for('circle_groups.view_group', group_id=group_id))
 
 @bp.route('/<int:group_id>/post/<int:post_id>/comment', methods=['POST'])
 @login_required
@@ -445,7 +445,7 @@ def add_post_comment(group_id, post_id):
     content = request.form.get('content')
     if not content:
         flash('Il commento non può essere vuoto', 'danger')
-        return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+        return redirect(url_for('circle_groups.view_group', group_id=group_id))
     
     # Sanitizza HTML per prevenire XSS
     content = sanitize_html(content)
@@ -460,7 +460,7 @@ def add_post_comment(group_id, post_id):
     db.session.commit()
     
     flash('Commento aggiunto!', 'success')
-    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+    return redirect(url_for('circle_groups.view_group', group_id=group_id))
 
 @bp.route('/<int:group_id>/post/<int:post_id>/delete-comment/<int:comment_id>', methods=['POST'])
 @login_required
@@ -477,7 +477,7 @@ def delete_post_comment(group_id, post_id, comment_id):
     db.session.commit()
     
     flash('Commento eliminato', 'success')
-    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+    return redirect(url_for('circle_groups.view_group', group_id=group_id))
 
 # ==================================================
 # MESSAGGI DIRETTI (tra membri del gruppo)
@@ -573,7 +573,7 @@ def send_message(group_id, user_id):
     content = request.form.get('content')
     if not content:
         flash('Il messaggio non può essere vuoto', 'danger')
-        return redirect(url_for('hubly_groups.conversation', group_id=group_id, user_id=user_id))
+        return redirect(url_for('circle_groups.conversation', group_id=group_id, user_id=user_id))
     
     # Sanitizza HTML per prevenire XSS
     content = sanitize_html(content)
@@ -589,4 +589,4 @@ def send_message(group_id, user_id):
     db.session.add(new_message)
     db.session.commit()
     
-    return redirect(url_for('hubly_groups.conversation', group_id=group_id, user_id=user_id))
+    return redirect(url_for('circle_groups.conversation', group_id=group_id, user_id=user_id))

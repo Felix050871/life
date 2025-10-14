@@ -40,11 +40,11 @@ document.addEventListener('DOMContentLoaded', function() {
             day: 'Giorno',
             list: 'Lista'
         },
-        events: '{{ url_for("hubly_calendar.get_events") }}',
+        events: '{{ url_for("circle_calendar.get_events") }}',
         eventClick: function(info) {
             info.jsEvent.preventDefault();
             // Vai alla pagina dettaglio evento
-            window.location.href = '/hubly/calendar/' + info.event.id;
+            window.location.href = '/circle/calendar/' + info.event.id;
         },
         eventMouseEnter: function(info) {
             // Tooltip con informazioni evento

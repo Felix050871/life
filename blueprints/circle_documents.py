@@ -103,7 +103,7 @@ def upload():
             db.session.commit()
             
             flash('Documento caricato con successo!', 'success')
-            return redirect(url_for('hubly_documents.index'))
+            return redirect(url_for('circle_documents.index'))
         else:
             flash('Tipo di file non consentito', 'danger')
             return redirect(request.url)
@@ -124,7 +124,7 @@ def download(document_id):
         return send_file(filepath, as_attachment=True, download_name=document.file_path)
     else:
         flash('File non trovato', 'danger')
-        return redirect(url_for('hubly_documents.index'))
+        return redirect(url_for('circle_documents.index'))
 
 @bp.route('/<int:document_id>/delete', methods=['POST'])
 @login_required
@@ -144,4 +144,4 @@ def delete(document_id):
     db.session.commit()
     
     flash('Documento eliminato', 'success')
-    return redirect(url_for('hubly_documents.index'))
+    return redirect(url_for('circle_documents.index'))

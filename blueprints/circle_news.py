@@ -124,7 +124,7 @@ def create():
         db.session.commit()
         
         flash('Post creato con successo!', 'success')
-        return redirect(url_for('hubly_news.view_post', post_id=new_post.id))
+        return redirect(url_for('circle_news.view_post', post_id=new_post.id))
     
     return render_template('circle/news/create.html')
 
@@ -140,7 +140,7 @@ def add_comment(post_id):
     # Verifica se i commenti sono abilitati per questo post
     if not post.comments_enabled:
         flash('I commenti sono disabilitati per questo post', 'warning')
-        return redirect(url_for('hubly_news.view_post', post_id=post_id))
+        return redirect(url_for('circle_news.view_post', post_id=post_id))
     
     content = request.form.get('content')
     
@@ -157,7 +157,7 @@ def add_comment(post_id):
         db.session.commit()
         flash('Commento aggiunto!', 'success')
     
-    return redirect(url_for('hubly_news.view_post', post_id=post_id))
+    return redirect(url_for('circle_news.view_post', post_id=post_id))
 
 @bp.route('/<int:post_id>/like', methods=['POST'])
 @login_required
@@ -180,7 +180,7 @@ def toggle_like(post_id):
         db.session.commit()
         flash('Like aggiunto!', 'success')
     
-    return redirect(url_for('hubly_news.view_post', post_id=post_id))
+    return redirect(url_for('circle_news.view_post', post_id=post_id))
 
 @bp.route('/<int:post_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -256,7 +256,7 @@ def edit(post_id):
         
         db.session.commit()
         flash('Post aggiornato!', 'success')
-        return redirect(url_for('hubly_news.view_post', post_id=post.id))
+        return redirect(url_for('circle_news.view_post', post_id=post.id))
     
     return render_template('circle/news/edit.html', post=post)
 
@@ -277,7 +277,7 @@ def delete(post_id):
     db.session.commit()
     
     flash('Post eliminato', 'success')
-    return redirect(url_for('hubly_news.index'))
+    return redirect(url_for('circle_news.index'))
 
 # =============================================================================
 # API AJAX per interazioni reattive

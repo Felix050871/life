@@ -77,7 +77,7 @@ def create():
         # Validazione: end_datetime deve essere dopo start_datetime
         if end_datetime <= start_datetime:
             flash('La data di fine deve essere successiva alla data di inizio', 'danger')
-            return redirect(url_for('hubly_calendar.create'))
+            return redirect(url_for('circle_calendar.create'))
         
         new_event = CircleCalendarEvent(
             title=title,
@@ -96,7 +96,7 @@ def create():
         db.session.commit()
         
         flash('Evento creato con successo!', 'success')
-        return redirect(url_for('hubly_calendar.index'))
+        return redirect(url_for('circle_calendar.index'))
     
     return render_template('circle/calendar/create.html')
 
@@ -131,7 +131,7 @@ def edit(event_id):
         # Validazione: end_datetime deve essere dopo start_datetime
         if end_datetime <= start_datetime:
             flash('La data di fine deve essere successiva alla data di inizio', 'danger')
-            return redirect(url_for('hubly_calendar.edit', event_id=event.id))
+            return redirect(url_for('circle_calendar.edit', event_id=event.id))
         
         event.start_datetime = start_datetime
         event.end_datetime = end_datetime
@@ -142,7 +142,7 @@ def edit(event_id):
         db.session.commit()
         
         flash('Evento aggiornato con successo!', 'success')
-        return redirect(url_for('hubly_calendar.view', event_id=event.id))
+        return redirect(url_for('circle_calendar.view', event_id=event.id))
     
     return render_template('circle/calendar/edit.html', event=event)
 
@@ -160,4 +160,4 @@ def delete(event_id):
     db.session.commit()
     
     flash('Evento eliminato con successo!', 'success')
-    return redirect(url_for('hubly_calendar.index'))
+    return redirect(url_for('circle_calendar.index'))
