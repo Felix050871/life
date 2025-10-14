@@ -195,12 +195,18 @@ def create_company():
             db.session.add(company)
             db.session.flush()  # Get company.id without committing
             
+            # Split full name into first and last name
+            name_parts = admin_full_name.strip().split(' ', 1)
+            first_name = name_parts[0] if name_parts else admin_full_name
+            last_name = name_parts[1] if len(name_parts) > 1 else ''
+            
             # Create admin user for this company
             admin_user = User(
                 username=admin_username,
                 email=admin_email,
                 password_hash=generate_password_hash(admin_password),
-                full_name=admin_full_name,
+                first_name=first_name,
+                last_name=last_name,
                 role='Amministratore',
                 company_id=company.id,
                 active=True,
@@ -296,7 +302,10 @@ def edit_company(company_id):
                     admin.email = admin_email
                 
                 if admin_full_name:
-                    admin.full_name = admin_full_name
+                    # Split full name into first and last name
+                    name_parts = admin_full_name.strip().split(' ', 1)
+                    admin.first_name = name_parts[0] if name_parts else admin_full_name
+                    admin.last_name = name_parts[1] if len(name_parts) > 1 else ''
                 
                 # Update password if provided
                 if admin_password:
