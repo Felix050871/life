@@ -5,9 +5,13 @@ from models import (
     HublyPost, HublyGroup, HublyPoll, HublyCalendarEvent, 
     HublyDocument, HublyToolLink, User
 )
-from utils_tenant import filter_by_company, get_user_company_id
+from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
 from datetime import datetime, timedelta
 from sqlalchemy import desc
+from werkzeug.utils import secure_filename
+from PIL import Image
+import os
+import uuid
 
 bp = Blueprint('hubly', __name__, url_prefix='/hubly')
 
@@ -119,3 +123,143 @@ def tech_feed():
     ).order_by(desc(HublyPost.created_at)).all()
     
     return render_template('hubly/tech_feed.html', posts=tech_posts)
+
+@bp.route('/delorean/create', methods=['GET', 'POST'])
+@login_required
+def create_delorean():
+    """Crea nuovo post Delorean"""
+    if not current_user.has_permission('can_create_posts'):
+        abort(403)
+    
+    if request.method == 'POST':
+        title = request.form.get('title')
+        content = request.form.get('content')
+        comments_enabled = request.form.get('comments_enabled') == 'on'
+        image_url = request.form.get('image_url')
+        video_url = request.form.get('video_url')
+        
+        # Handle image upload
+        if 'image_file' in request.files and request.files['image_file'].filename:
+            file = request.files['image_file']
+            
+            # Generate unique filename
+            file_ext = os.path.splitext(secure_filename(file.filename))[1]
+            unique_filename = f"{uuid.uuid4().hex}{file_ext}"
+            
+            # Save path
+            upload_folder = os.path.join('static', 'uploads', 'news')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, unique_filename)
+            
+            # Save and resize image
+            try:
+                file.save(file_path)
+                
+                # Resize image to max 1200x800 using PIL
+                with Image.open(file_path) as img:
+                    # Convert to RGB if necessary
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                        img = background
+                    
+                    # Resize maintaining aspect ratio
+                    img.thumbnail((1200, 800), Image.Resampling.LANCZOS)
+                    img.save(file_path, quality=90, optimize=True)
+                
+                # Set image URL to uploaded file
+                image_url = f'/static/uploads/news/{unique_filename}'
+            except Exception as e:
+                flash(f'Errore nel caricamento dell\'immagine: {str(e)}', 'warning')
+        
+        new_post = HublyPost(
+            title=title,
+            content=content,
+            post_type='delorean',  # Tipo fisso
+            author_id=current_user.id,
+            pinned=False,
+            comments_enabled=comments_enabled,
+            image_url=image_url,
+            video_url=video_url
+        )
+        set_company_on_create(new_post)
+        
+        db.session.add(new_post)
+        db.session.commit()
+        
+        flash('Storia aziendale creata con successo!', 'success')
+        return redirect(url_for('hubly.delorean'))
+    
+    return render_template('hubly/delorean_create.html')
+
+@bp.route('/tech-feed/create', methods=['GET', 'POST'])
+@login_required
+def create_tech_feed():
+    """Crea nuovo post Tech Feed"""
+    if not current_user.has_permission('can_create_posts'):
+        abort(403)
+    
+    if request.method == 'POST':
+        title = request.form.get('title')
+        content = request.form.get('content')
+        comments_enabled = request.form.get('comments_enabled') == 'on'
+        image_url = request.form.get('image_url')
+        video_url = request.form.get('video_url')
+        
+        # Handle image upload
+        if 'image_file' in request.files and request.files['image_file'].filename:
+            file = request.files['image_file']
+            
+            # Generate unique filename
+            file_ext = os.path.splitext(secure_filename(file.filename))[1]
+            unique_filename = f"{uuid.uuid4().hex}{file_ext}"
+            
+            # Save path
+            upload_folder = os.path.join('static', 'uploads', 'news')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, unique_filename)
+            
+            # Save and resize image
+            try:
+                file.save(file_path)
+                
+                # Resize image to max 1200x800 using PIL
+                with Image.open(file_path) as img:
+                    # Convert to RGB if necessary
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                        img = background
+                    
+                    # Resize maintaining aspect ratio
+                    img.thumbnail((1200, 800), Image.Resampling.LANCZOS)
+                    img.save(file_path, quality=90, optimize=True)
+                
+                # Set image URL to uploaded file
+                image_url = f'/static/uploads/news/{unique_filename}'
+            except Exception as e:
+                flash(f'Errore nel caricamento dell\'immagine: {str(e)}', 'warning')
+        
+        new_post = HublyPost(
+            title=title,
+            content=content,
+            post_type='tech_feed',  # Tipo fisso
+            author_id=current_user.id,
+            pinned=False,
+            comments_enabled=comments_enabled,
+            image_url=image_url,
+            video_url=video_url
+        )
+        set_company_on_create(new_post)
+        
+        db.session.add(new_post)
+        db.session.commit()
+        
+        flash('Post tech feed creato con successo!', 'success')
+        return redirect(url_for('hubly.tech_feed'))
+    
+    return render_template('hubly/tech_feed_create.html')
