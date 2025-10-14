@@ -32,9 +32,11 @@ def get_events():
     if start_date and end_date:
         start = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
         end = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        # Usa overlap logic: eventi che si sovrappongono alla finestra
+        # (start < window_end AND end > window_start)
         query = query.filter(
-            HublyCalendarEvent.start_datetime >= start,
-            HublyCalendarEvent.end_datetime <= end
+            HublyCalendarEvent.start_datetime < end,
+            HublyCalendarEvent.end_datetime > start
         )
     
     events = query.all()
@@ -71,6 +73,11 @@ def create():
         location = request.form.get('location')
         is_all_day = request.form.get('is_all_day') == 'on'
         color = request.form.get('color', '#0d6efd')
+        
+        # Validazione: end_datetime deve essere dopo start_datetime
+        if end_datetime <= start_datetime:
+            flash('La data di fine deve essere successiva alla data di inizio', 'danger')
+            return redirect(url_for('hubly_calendar.create'))
         
         new_event = HublyCalendarEvent(
             title=title,
@@ -118,8 +125,16 @@ def edit(event_id):
         event.title = request.form.get('title')
         event.description = request.form.get('description')
         event.event_type = request.form.get('event_type', 'event')
-        event.start_datetime = datetime.fromisoformat(request.form.get('start_datetime'))
-        event.end_datetime = datetime.fromisoformat(request.form.get('end_datetime'))
+        start_datetime = datetime.fromisoformat(request.form.get('start_datetime'))
+        end_datetime = datetime.fromisoformat(request.form.get('end_datetime'))
+        
+        # Validazione: end_datetime deve essere dopo start_datetime
+        if end_datetime <= start_datetime:
+            flash('La data di fine deve essere successiva alla data di inizio', 'danger')
+            return redirect(url_for('hubly_calendar.edit', event_id=event.id))
+        
+        event.start_datetime = start_datetime
+        event.end_datetime = end_datetime
         event.location = request.form.get('location')
         event.is_all_day = request.form.get('is_all_day') == 'on'
         event.color = request.form.get('color', '#0d6efd')
