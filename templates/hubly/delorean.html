@@ -27,7 +27,7 @@
                         <i class="fas fa-calendar"></i> {{ post.created_at.strftime('%d/%m/%Y') }}
                     </small>
                 </div>
-                <p class="card-text mt-3">{{ post.content }}</p>
+                <div class="card-text mt-3">{{ post.content|safe }}</div>
                 {% if post.image_url %}
                 <img src="{{ post.image_url }}" class="img-fluid mt-3 rounded" alt="{{ post.title }}">
                 {% endif %}

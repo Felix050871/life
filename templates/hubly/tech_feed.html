@@ -31,7 +31,7 @@
                             </small>
                         </div>
                     </div>
-                    <p class="card-text">{{ post.content[:200] }}{% if post.content|length > 200 %}...{% endif %}</p>
+                    <div class="card-text">{{ post.content[:200]|safe }}{% if post.content|length > 200 %}...{% endif %}</div>
                     {% if post.image_url %}
                     <img src="{{ post.image_url }}" class="img-fluid rounded mb-2" alt="{{ post.title }}">
                     {% endif %}
