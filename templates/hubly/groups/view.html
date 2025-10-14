@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}HUBLY - {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Informazioni Gruppo -->
+        <div class="col-lg-3">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <a href="{{ url_for('hubly_groups.index') }}" class="btn btn-sm btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <h5 class="mb-0">{{ group.name }}</h5>
+                    </div>
+                    
+                    {% if group.is_private %}
+                    <span class="badge bg-secondary mb-2"><i class="fas fa-lock"></i> Privato</span>
+                    {% else %}
+                    <span class="badge bg-success mb-2"><i class="fas fa-globe"></i> Pubblico</span>
+                    {% endif %}
+                    <span class="badge bg-info mb-2">{{ group.group_type }}</span>
+                    
+                    <p class="text-muted small mt-3">{{ group.description }}</p>
+                    
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-users text-muted me-2"></i>
+                        <span>{{ group.get_member_count() }} membri</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-user text-muted me-2"></i>
+                        <span>Creato da {{ group.creator.get_full_name() }}</span>
+                    </div>
+
+                    <!-- Azioni -->
+                    {% if group.is_member(current_user) %}
+                        <a href="{{ url_for('hubly_groups.messages', group_id=group.id) }}" class="btn btn-sm btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-envelope"></i> Messaggi
+                        </a>
+                        
+                        {% if group.is_admin(current_user) %}
+                        <a href="{{ url_for('hubly_groups.manage_requests', group_id=group.id) }}" class="btn btn-sm btn-outline-info w-100 mb-2">
+                            <i class="fas fa-user-check"></i> Gestisci Richieste
+                        </a>
+                        {% endif %}
+                        
+                        {% if group.creator_id != current_user.id %}
+                        <form method="POST" action="{{ url_for('hubly_groups.leave_group', group_id=group.id) }}" class="mb-2">
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100" 
+                                    onclick="return confirm('Sei sicuro di voler lasciare questo gruppo?')">
+                                <i class="fas fa-sign-out-alt"></i> Lascia Gruppo
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        {% if current_user.has_permission('can_manage_groups') or group.creator_id == current_user.id %}
+                        <form method="POST" action="{{ url_for('hubly_groups.delete', group_id=group.id) }}">
+                            <button type="submit" class="btn btn-sm btn-danger w-100" 
+                                    onclick="return confirm('Sei sicuro di voler eliminare questo gruppo? Questa azione è irreversibile!')">
+                                <i class="fas fa-trash"></i> Elimina Gruppo
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                        {% if not group.is_private %}
+                        <form method="POST" action="{{ url_for('hubly_groups.join_group', group_id=group.id) }}">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-user-plus"></i> Unisciti al Gruppo
+                            </button>
+                        </form>
+                        {% else %}
+                            {% if group.has_pending_request(current_user) %}
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i class="fas fa-clock"></i> Richiesta Pendente
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#requestModal">
+                                <i class="fas fa-paper-plane"></i> Richiedi Adesione
+                            </button>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Membri -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-users"></i> Membri</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <!-- Creatore -->
+                        <div class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ group.creator.get_profile_image_url() }}" 
+                                     class="rounded-circle me-2" width="32" height="32">
+                                <div class="flex-grow-1">
+                                    <strong>{{ group.creator.get_full_name() }}</strong>
+                                    <span class="badge bg-warning text-dark ms-2">Creatore</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Altri membri -->
+                        {% for member, is_admin in members %}
+                        <div class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ member.get_profile_image_url() }}" 
+                                     class="rounded-circle me-2" width="32" height="32">
+                                <div class="flex-grow-1">
+                                    {{ member.get_full_name() }}
+                                    {% if is_admin %}
+                                    <span class="badge bg-info ms-2">Admin</span>
+                                    {% endif %}
+                                </div>
+                                {% if group.is_member(current_user) %}
+                                <a href="{{ url_for('hubly_groups.conversation', group_id=group.id, user_id=member.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-comment"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bacheca Gruppo -->
+        <div class="col-lg-9">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-comments"></i> Bacheca del Gruppo</h5>
+                </div>
+                <div class="card-body">
+                    {% if group.is_member(current_user) %}
+                    <!-- Form nuovo post -->
+                    <form method="POST" action="{{ url_for('hubly_groups.create_post', group_id=group.id) }}" enctype="multipart/form-data" class="mb-4">
+                        <div class="card bg-dark">
+                            <div class="card-body">
+                                <textarea class="form-control mb-3" name="content" rows="3" 
+                                          placeholder="Condividi qualcosa con il gruppo..." required></textarea>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <input type="file" class="form-control w-auto" name="image_file" accept="image/*">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i> Pubblica
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
+
+                    <!-- Post del gruppo -->
+                    {% if group.posts %}
+                        {% for post in group.posts|sort(attribute='created_at', reverse=True) %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start mb-3">
+                                    <img src="{{ post.author.get_profile_image_url() }}" 
+                                         class="rounded-circle me-3" width="48" height="48">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0">{{ post.author.get_full_name() }}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> {{ post.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                        </small>
+                                    </div>
+                                    {% if post.author_id == current_user.id or group.is_admin(current_user) %}
+                                    <form method="POST" action="{{ url_for('hubly_groups.delete_post', group_id=group.id, post_id=post.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('Eliminare questo post?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">{{ post.content }}</div>
+                                
+                                {% if post.image_url %}
+                                <img src="{{ post.image_url }}" class="img-fluid rounded mb-2" alt="Post image">
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-comments fa-3x mb-3"></i>
+                            <p>Nessun post ancora. {% if group.is_member(current_user) %}Sii il primo a condividere qualcosa!{% endif %}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Richiesta Adesione -->
+<div class="modal fade" id="requestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Richiedi Adesione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('hubly_groups.request_membership', group_id=group.id) }}">
+                <div class="modal-body">
+                    <p>Questo è un gruppo privato. Invia una richiesta al creatore per unirti.</p>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Messaggio (opzionale)</label>
+                        <textarea class="form-control" id="message" name="message" rows="3" 
+                                  placeholder="Spiega perché vuoi unirti a questo gruppo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">Invia Richiesta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
