@@ -59,6 +59,10 @@ with app.app_context():
     import models
     db.create_all()
 
+# Register tenant context middleware
+from middleware_tenant import load_tenant_context
+app.before_request(load_tenant_context)
+
 # Import routes after app context is set up (must be at module level for gunicorn)
 # Routes imported in main.py to avoid circular imports with Gunicorn
 
