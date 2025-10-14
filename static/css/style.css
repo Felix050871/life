@@ -274,6 +274,12 @@ body {
     transition: margin-left 0.3s ease;
 }
 
+/* When sidebar is hidden, expand content to full width */
+.sidebar.d-none + .content-wrapper,
+body:has(.sidebar.d-none) .content-wrapper {
+    margin-left: 0;
+}
+
 /* Full width when sidebar is collapsed */
 .content-wrapper.sidebar-collapsed {
     margin-left: 0 !important;
