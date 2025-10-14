@@ -777,14 +777,16 @@
         document.addEventListener('click', function(e) {
             if (window.innerWidth <= 768) {
                 const sidebar = document.getElementById('sidebar');
-                const toggleButton = document.querySelector('.sidebar-toggle');
                 const mobileToggleButton = document.querySelector('.sidebar-mobile-toggle');
                 
-                // Non chiudere se clicchi sulla sidebar, sul pulsante toggle o sul pulsante mobile toggle
-                const clickedToggle = (toggleButton && toggleButton.contains(e.target)) || (mobileToggleButton && mobileToggleButton.contains(e.target));
-                
-                if (sidebar && !sidebar.contains(e.target) && !clickedToggle) {
-                    sidebar.classList.remove('show');
+                // Se la sidebar è aperta e clicchi fuori (non sulla sidebar stessa o sul toggle button)
+                if (sidebar && sidebar.classList.contains('show')) {
+                    const clickedOnSidebar = sidebar.contains(e.target);
+                    const clickedOnToggle = mobileToggleButton && mobileToggleButton.contains(e.target);
+                    
+                    if (!clickedOnSidebar && !clickedOnToggle) {
+                        sidebar.classList.remove('show');
+                    }
                 }
             }
         });
