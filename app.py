@@ -46,13 +46,29 @@ init_mail(app)
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
+login_manager.login_view = 'auth.admin_login'  # Default fallback
 login_manager.login_message = 'Effettua il login per accedere a questa pagina.'
 
 @login_manager.user_loader
 def load_user(user_id):
     from models import User
     return User.query.get(int(user_id))
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Custom unauthorized handler per tenant-aware login redirect"""
+    from flask import g, redirect, url_for, request
+    from middleware_tenant import get_tenant_slug
+    
+    # Check if we're in a tenant context
+    tenant_slug = get_tenant_slug()
+    
+    if tenant_slug:
+        # Redirect to tenant-specific login
+        return redirect(url_for('auth.tenant_login', slug=tenant_slug, next=request.url))
+    else:
+        # Redirect to admin login
+        return redirect(url_for('auth.admin_login', next=request.url))
 
 with app.app_context():
     # Import models to ensure tables are created

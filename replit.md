@@ -5,7 +5,7 @@ Life is a comprehensive multi-tenant SAAS workforce management platform consisti
 - **WORKLY**: Workforce operations (attendance tracking, shift scheduling, leave management, user administration)
 - **HUBLY**: Social intranet space for internal communication, collaboration, and company culture
 
-The platform provides a responsive web interface with multiple user roles and distinct permission levels. It's designed as a multi-tenant system serving various companies, each with isolated data and custom branding.
+The platform provides a responsive web interface with multiple user roles and distinct permission levels. It's designed as a **path-based multi-tenant system** serving various companies, each with isolated data, custom branding, and dedicated URL paths (`/t/<slug>`).
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -40,8 +40,13 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Architectural Decisions & Features
 - **Multi-Tenant SaaS System**: Fully implemented as a Software-as-a-Service platform with complete company isolation and role-based administration.
+  - **Path-Based Multi-Tenancy**: Each company has a dedicated URL path (`/t/<slug>`) for complete isolation
+    - SUPERADMIN login: `/admin/login` for system administrators
+    - Tenant login: `/t/<slug>/login` with company-specific branding and logo
+    - Custom unauthorized handler redirects users to appropriate login based on context
+    - Middleware (`middleware_tenant.py`) extracts slug from URL, loads Company into flask.g, validates user access
   - **SUPERADMIN Role**: System-level administrators (`is_system_admin=true`, `company_id=null`) manage the entire SaaS platform
-    - Create and manage companies via "Amministrazione Sistema" menu
+    - Create and manage companies via "Amministrazione Sistema" menu at `/admin/login`
     - Mandatory creation of company ADMIN during company setup (transactional workflow)
     - Cannot access company-specific operational data (sedi, users, shifts, etc.)
   - **Company ADMIN Role**: Each company has its own administrator (`role='Amministratore'`, linked to specific `company_id`)
@@ -49,6 +54,10 @@ Preferred communication style: Simple, everyday language.
     - Cannot access other companies' data or create new companies
     - Auto-assigned `all_sedi=true` for full location access within their company
   - **Data Isolation**: All core entities include `company_id` foreign key: User, AttendanceEvent, LeaveRequest, Shift, ShiftTemplate, Holiday, InternalMessage, Intervention, ReperibilitaShift, ReperibilitaCoverage, ReperibilitaTemplate, ReperibilitaIntervention, OvertimeRequest, MileageRequest, ExpenseReport, ExpenseCategory, WorkSchedule, ACITable, LeaveType, OvertimeType, PresidioCoverageTemplate, PresidioCoverage
+  - **Username/Email Scoping**: User credentials (username, email) are unique per company, not globally
+    - Database constraints: `UniqueConstraint('company_id', 'username')` and `UniqueConstraint('company_id', 'email')`
+    - Allows same username/email across different companies
+    - SUPERADMIN credentials (company_id=NULL) handled separately
   - **Helper Utilities**: `utils_tenant.py` provides `filter_by_company()` for automatic query filtering, `set_company_on_create()` for automatic company assignment, and `get_user_company_id()` for retrieving user's company
   - **Complete Multi-Tenant Security**: ALL 15 blueprints fully implement multi-tenant filtering with 100+ database queries secured:
     - ✅ interventions.py, messages.py, reperibilita.py
@@ -56,7 +65,7 @@ Preferred communication style: Simple, everyday language.
     - ✅ banca_ore.py, export.py, qr.py, api.py
     - ✅ aci.py, presidio.py, holidays.py, admin.py, expense.py
     - ✅ attendance.py, leave.py, shifts.py
-  - **Company Creation Workflow**: SUPERADMIN creates company with mandatory admin user in single transaction; validates unique codes, usernames, and emails
+  - **Company Creation Workflow**: SUPERADMIN creates company with mandatory admin user and unique slug in single transaction; validates unique codes, slugs, usernames, and emails
 - **User Management**: Features a permission-based access control system with over 70 granular permissions (including 19 HUBLY-specific permissions) and 5 dynamically configurable standard roles. Supports advanced work schedule assignments (ORARIA vs. TURNI modes) and multi-location access. Enhanced user profiles include social fields (bio, LinkedIn, phone, department, job title) for HUBLY integration. The role management page includes a dedicated HUBLY permissions card for easy configuration of social intranet access and management capabilities.
 - **Attendance Tracking**: Includes clock-in/out, break tracking, daily records, historical viewing, reporting, and a static QR code system for quick attendance marking with intelligent user status validation.
 - **Shift Management**: Supports intelligent shift generation with workload balancing, recurring shift patterns via templates, and integration with leave/part-time percentages. Includes on-call duty management (`ReperibilitaShift`) and intervention tracking (`ReperibilitaIntervention`). Adheres to operational safety rules (e.g., no overlaps, 11-hour rest periods, split shifts for long durations, 24/7 coverage, weekly rest days).
