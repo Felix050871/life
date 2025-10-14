@@ -26,7 +26,7 @@
                                 {{ group.name }}
                             </a>
                         </h5>
-                        <p class="card-text">{{ group.description[:100] if group.description else '' }}...</p>
+                        <p class="card-text">{{ (group.description[:100]|safe) if group.description else '' }}...</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">
                                 <span class="badge bg-info">{{ group.group_type }}</span>
@@ -59,7 +59,7 @@
                                 {{ group.name }}
                             </a>
                         </h5>
-                        <p class="card-text">{{ group.description[:100] if group.description else '' }}...</p>
+                        <p class="card-text">{{ (group.description[:100]|safe) if group.description else '' }}...</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">
                                 <span class="badge bg-info">{{ group.group_type }}</span>
