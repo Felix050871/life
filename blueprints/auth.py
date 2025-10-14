@@ -105,9 +105,23 @@ def tenant_login(slug):
 @auth_bp.route('/logout')
 def logout():
     """User logout"""
+    # Salva info utente prima del logout per redirigere correttamente
+    is_superadmin = current_user.is_authenticated and current_user.is_system_admin
+    company_slug = None
+    
+    if current_user.is_authenticated and not current_user.is_system_admin and current_user.company:
+        company_slug = current_user.company.slug
+    
     logout_user()
     flash('Logout effettuato con successo', 'info')
-    return redirect(url_for('auth.login'))
+    
+    # Redirige al login appropriato
+    if is_superadmin:
+        return redirect(url_for('auth.admin_login'))
+    elif company_slug:
+        return redirect(url_for('auth.tenant_login', slug=company_slug))
+    else:
+        return redirect(url_for('auth.admin_login'))
 
 @auth_bp.route('/qr_login/<action>')
 def qr_login(action):
