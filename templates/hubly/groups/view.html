@@ -200,8 +200,82 @@
                                 <div class="mb-3">{{ post.content }}</div>
                                 
                                 {% if post.image_url %}
-                                <img src="{{ post.image_url }}" class="img-fluid rounded mb-2" alt="Post image">
+                                <img src="{{ post.image_url }}" class="img-fluid rounded mb-3" alt="Post image">
                                 {% endif %}
+                                
+                                <!-- Like e Commenti -->
+                                <div class="border-top pt-3">
+                                    <div class="d-flex gap-3 mb-3">
+                                        <!-- Pulsante Like -->
+                                        {% if group.is_member(current_user) and current_user.has_permission('can_like_posts') %}
+                                        <form method="POST" action="{{ url_for('hubly_groups.toggle_post_like', group_id=group.id, post_id=post.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-sm {% if post.is_liked_by(current_user) %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                                <i class="fas fa-thumbs-up"></i> 
+                                                {{ post.get_like_count() }} Like
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-outline-secondary" disabled>
+                                            <i class="fas fa-thumbs-up"></i> 
+                                            {{ post.get_like_count() }} Like
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <!-- Conteggio Commenti -->
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comments-{{ post.id }}">
+                                            <i class="fas fa-comment"></i> 
+                                            {{ post.get_comment_count() }} Commenti
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Sezione Commenti (collapsible) -->
+                                    <div class="collapse" id="comments-{{ post.id }}">
+                                        <!-- Form Aggiungi Commento -->
+                                        {% if group.is_member(current_user) and current_user.has_permission('can_comment_posts') %}
+                                        <form method="POST" action="{{ url_for('hubly_groups.add_post_comment', group_id=group.id, post_id=post.id) }}" class="mb-3">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" name="content" placeholder="Scrivi un commento..." required>
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </button>
+                                            </div>
+                                        </form>
+                                        {% endif %}
+                                        
+                                        <!-- Lista Commenti -->
+                                        {% if post.comments %}
+                                        <div class="list-group list-group-flush">
+                                            {% for comment in post.comments|sort(attribute='created_at') %}
+                                            <div class="list-group-item">
+                                                <div class="d-flex align-items-start">
+                                                    <img src="{{ comment.author.get_profile_image_url() }}" 
+                                                         class="rounded-circle me-2" width="32" height="32">
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <strong>{{ comment.author.get_full_name() }}</strong>
+                                                                <small class="text-muted ms-2">{{ comment.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                                            </div>
+                                                            {% if comment.author_id == current_user.id or group.is_admin(current_user) %}
+                                                            <form method="POST" action="{{ url_for('hubly_groups.delete_post_comment', group_id=group.id, post_id=post.id, comment_id=comment.id) }}" class="d-inline">
+                                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" 
+                                                                        onclick="return confirm('Eliminare questo commento?')">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                            {% endif %}
+                                                        </div>
+                                                        <p class="mb-0 mt-1">{{ comment.content }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <p class="text-muted text-center py-2 mb-0">Nessun commento ancora</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         {% endfor %}

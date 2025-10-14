@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from app import db
 from models import (HublyGroup, User, hubly_group_members, HublyGroupMembershipRequest,
-                   HublyGroupPost, HublyGroupMessage)
+                   HublyGroupPost, HublyGroupMessage, HublyGroupPostLike, HublyGroupPostComment)
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
 from sqlalchemy import desc, or_, and_
 from werkzeug.utils import secure_filename
@@ -379,6 +379,85 @@ def delete_post(group_id, post_id):
     db.session.commit()
     
     flash('Post eliminato', 'success')
+    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+
+@bp.route('/<int:group_id>/post/<int:post_id>/like', methods=['POST'])
+@login_required
+def toggle_post_like(group_id, post_id):
+    """Toggle like su un post del gruppo"""
+    if not current_user.has_permission('can_like_posts'):
+        abort(403)
+    
+    group = filter_by_company(HublyGroup.query, current_user).filter_by(id=group_id).first_or_404()
+    
+    # Verifica membership
+    if not group.is_member(current_user):
+        abort(403)
+    
+    post = HublyGroupPost.query.filter_by(id=post_id, group_id=group_id).first_or_404()
+    
+    existing_like = HublyGroupPostLike.query.filter_by(post_id=post_id, user_id=current_user.id).first()
+    
+    if existing_like:
+        db.session.delete(existing_like)
+        db.session.commit()
+    else:
+        new_like = HublyGroupPostLike(
+            post_id=post_id,
+            user_id=current_user.id
+        )
+        db.session.add(new_like)
+        db.session.commit()
+    
+    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+
+@bp.route('/<int:group_id>/post/<int:post_id>/comment', methods=['POST'])
+@login_required
+def add_post_comment(group_id, post_id):
+    """Aggiungi commento a un post del gruppo"""
+    if not current_user.has_permission('can_comment_posts'):
+        abort(403)
+    
+    group = filter_by_company(HublyGroup.query, current_user).filter_by(id=group_id).first_or_404()
+    
+    # Verifica membership
+    if not group.is_member(current_user):
+        abort(403)
+    
+    post = HublyGroupPost.query.filter_by(id=post_id, group_id=group_id).first_or_404()
+    
+    content = request.form.get('content')
+    if not content:
+        flash('Il commento non può essere vuoto', 'danger')
+        return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+    
+    comment = HublyGroupPostComment(
+        post_id=post_id,
+        author_id=current_user.id,
+        content=content
+    )
+    
+    db.session.add(comment)
+    db.session.commit()
+    
+    flash('Commento aggiunto!', 'success')
+    return redirect(url_for('hubly_groups.view_group', group_id=group_id))
+
+@bp.route('/<int:group_id>/post/<int:post_id>/delete-comment/<int:comment_id>', methods=['POST'])
+@login_required
+def delete_post_comment(group_id, post_id, comment_id):
+    """Elimina un commento da un post del gruppo"""
+    comment = HublyGroupPostComment.query.filter_by(id=comment_id, post_id=post_id).first_or_404()
+    group = filter_by_company(HublyGroup.query, current_user).filter_by(id=group_id).first_or_404()
+    
+    # Solo autore del commento o admin del gruppo possono eliminare
+    if comment.author_id != current_user.id and not group.is_admin(current_user):
+        abort(403)
+    
+    db.session.delete(comment)
+    db.session.commit()
+    
+    flash('Commento eliminato', 'success')
     return redirect(url_for('hubly_groups.view_group', group_id=group_id))
 
 # ==================================================

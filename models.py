@@ -3164,8 +3164,56 @@ class HublyGroupPost(db.Model):
     group = db.relationship('HublyGroup', backref='posts')
     author = db.relationship('User', backref='group_posts')
     
+    def get_like_count(self):
+        """Ritorna il numero di like del post"""
+        return len(self.likes)
+    
+    def is_liked_by(self, user):
+        """Verifica se l'utente ha messo like al post"""
+        return any(like.user_id == user.id for like in self.likes)
+    
+    def get_comment_count(self):
+        """Ritorna il numero di commenti del post"""
+        return len(self.comments)
+    
     def __repr__(self):
         return f'<HublyGroupPost Group#{self.group_id}>'
+
+
+class HublyGroupPostLike(db.Model):
+    """Modello per like ai post dei gruppi HUBLY"""
+    __tablename__ = 'hubly_group_post_like'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('hubly_group_post.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    
+    # Relationships
+    post = db.relationship('HublyGroupPost', backref='likes')
+    user = db.relationship('User', backref='group_post_likes')
+    
+    def __repr__(self):
+        return f'<HublyGroupPostLike Post#{self.post_id} User#{self.user_id}>'
+
+
+class HublyGroupPostComment(db.Model):
+    """Modello per commenti ai post dei gruppi HUBLY"""
+    __tablename__ = 'hubly_group_post_comment'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('hubly_group_post.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    post = db.relationship('HublyGroupPost', backref='comments')
+    author = db.relationship('User', backref='group_post_comments')
+    
+    def __repr__(self):
+        return f'<HublyGroupPostComment Post#{self.post_id} Author#{self.author_id}>'
 
 
 class HublyGroupMessage(db.Model):
