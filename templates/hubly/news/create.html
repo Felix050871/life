@@ -11,7 +11,7 @@
                     <h4 class="mb-0"><i class="fas fa-newspaper"></i> Crea Nuova News/Comunicazione</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('hubly_news.create') }}">
+                    <form method="POST" action="{{ url_for('hubly_news.create') }}" enctype="multipart/form-data">
                         <!-- Titolo -->
                         <div class="mb-3">
                             <label for="title" class="form-label">Titolo <span class="text-danger">*</span></label>
@@ -38,12 +38,19 @@
                             <div class="form-text">Puoi usare testo formattato. Il testo verrà visualizzato con "Leggi Tutto" se supera i 200 caratteri.</div>
                         </div>
 
-                        <!-- Immagine URL (opzionale) -->
+                        <!-- Immagine (opzionale) -->
                         <div class="mb-3">
-                            <label for="image_url" class="form-label">URL Immagine (opzionale)</label>
+                            <label for="image_file" class="form-label">Immagine (opzionale)</label>
+                            <input type="file" class="form-control" id="image_file" name="image_file" accept="image/*">
+                            <div class="form-text">Carica un'immagine per il background della news. Formati supportati: JPG, PNG, GIF. Se non specificato, verrà usato un gradiente colorato.</div>
+                        </div>
+                        
+                        <!-- Oppure URL Immagine -->
+                        <div class="mb-3">
+                            <label for="image_url" class="form-label">Oppure URL Immagine</label>
                             <input type="url" class="form-control" id="image_url" name="image_url" 
                                    placeholder="https://example.com/image.jpg">
-                            <div class="form-text">Inserisci l'URL di un'immagine per il background. Se non specificato, verrà usato un gradiente colorato.</div>
+                            <div class="form-text">In alternativa, inserisci l'URL di un'immagine. Il caricamento file ha priorità sull'URL.</div>
                         </div>
 
                         <!-- Video URL (opzionale) -->

@@ -5,6 +5,10 @@ from models import HublyPost, HublyComment, HublyLike, User
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
 from sqlalchemy import desc
 from datetime import datetime
+from werkzeug.utils import secure_filename
+from PIL import Image
+import os
+import uuid
 
 bp = Blueprint('hubly_news', __name__, url_prefix='/hubly/news')
 
@@ -57,6 +61,42 @@ def create():
         comments_enabled = request.form.get('comments_enabled') == 'on'
         image_url = request.form.get('image_url')
         video_url = request.form.get('video_url')
+        
+        # Handle image upload
+        if 'image_file' in request.files and request.files['image_file'].filename:
+            file = request.files['image_file']
+            
+            # Generate unique filename
+            file_ext = os.path.splitext(secure_filename(file.filename))[1]
+            unique_filename = f"{uuid.uuid4().hex}{file_ext}"
+            
+            # Save path
+            upload_folder = os.path.join('static', 'uploads', 'news')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, unique_filename)
+            
+            # Save and resize image
+            try:
+                file.save(file_path)
+                
+                # Resize image to max 1200x800 using PIL
+                with Image.open(file_path) as img:
+                    # Convert to RGB if necessary
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                        img = background
+                    
+                    # Resize maintaining aspect ratio
+                    img.thumbnail((1200, 800), Image.Resampling.LANCZOS)
+                    img.save(file_path, quality=90, optimize=True)
+                
+                # Set image URL to uploaded file
+                image_url = f'/static/uploads/news/{unique_filename}'
+            except Exception as e:
+                flash(f'Errore nel caricamento dell\'immagine: {str(e)}', 'warning')
         
         new_post = HublyPost(
             title=title,
@@ -147,9 +187,53 @@ def edit(post_id):
         post.content = request.form.get('content')
         post.pinned = request.form.get('pinned') == 'on'
         post.comments_enabled = request.form.get('comments_enabled') == 'on'
-        post.image_url = request.form.get('image_url')
         post.video_url = request.form.get('video_url')
         post.updated_at = datetime.utcnow()
+        
+        # Handle image upload
+        if 'image_file' in request.files and request.files['image_file'].filename:
+            file = request.files['image_file']
+            
+            # Generate unique filename
+            file_ext = os.path.splitext(secure_filename(file.filename))[1]
+            unique_filename = f"{uuid.uuid4().hex}{file_ext}"
+            
+            # Save path
+            upload_folder = os.path.join('static', 'uploads', 'news')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, unique_filename)
+            
+            # Save and resize image
+            try:
+                file.save(file_path)
+                
+                # Resize image to max 1200x800 using PIL
+                with Image.open(file_path) as img:
+                    # Convert to RGB if necessary
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                        img = background
+                    
+                    # Resize maintaining aspect ratio
+                    img.thumbnail((1200, 800), Image.Resampling.LANCZOS)
+                    img.save(file_path, quality=90, optimize=True)
+                
+                # Delete old image if it was uploaded (not a URL)
+                if post.image_url and post.image_url.startswith('/static/uploads/news/'):
+                    old_image_path = post.image_url.lstrip('/')
+                    if os.path.exists(old_image_path):
+                        os.remove(old_image_path)
+                
+                # Set image URL to uploaded file
+                post.image_url = f'/static/uploads/news/{unique_filename}'
+            except Exception as e:
+                flash(f'Errore nel caricamento dell\'immagine: {str(e)}', 'warning')
+        else:
+            # If no file uploaded, use URL from form
+            post.image_url = request.form.get('image_url')
         
         db.session.commit()
         flash('Post aggiornato!', 'success')

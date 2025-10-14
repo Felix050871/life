@@ -11,7 +11,7 @@
                     <h4 class="mb-0"><i class="fas fa-edit"></i> Modifica News/Comunicazione</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('hubly_news.edit', post_id=post.id) }}">
+                    <form method="POST" action="{{ url_for('hubly_news.edit', post_id=post.id) }}" enctype="multipart/form-data">
                         <!-- Titolo -->
                         <div class="mb-3">
                             <label for="title" class="form-label">Titolo <span class="text-danger">*</span></label>
@@ -26,13 +26,30 @@
                             <div class="form-text">Puoi usare testo formattato. Il testo verrà visualizzato con "Leggi Tutto" se supera i 200 caratteri.</div>
                         </div>
 
-                        <!-- Immagine URL (opzionale) -->
+                        <!-- Immagine corrente -->
+                        {% if post.image_url %}
                         <div class="mb-3">
-                            <label for="image_url" class="form-label">URL Immagine (opzionale)</label>
+                            <label class="form-label">Immagine Corrente</label>
+                            <div class="border rounded p-2">
+                                <img src="{{ post.image_url }}" alt="Immagine post" style="max-height: 150px; max-width: 100%;">
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Carica nuova immagine -->
+                        <div class="mb-3">
+                            <label for="image_file" class="form-label">Carica Nuova Immagine (opzionale)</label>
+                            <input type="file" class="form-control" id="image_file" name="image_file" accept="image/*">
+                            <div class="form-text">Carica una nuova immagine per sostituire quella corrente. Formati supportati: JPG, PNG, GIF.</div>
+                        </div>
+                        
+                        <!-- Oppure URL Immagine -->
+                        <div class="mb-3">
+                            <label for="image_url" class="form-label">Oppure URL Immagine</label>
                             <input type="url" class="form-control" id="image_url" name="image_url" 
                                    value="{{ post.image_url or '' }}" 
                                    placeholder="https://example.com/image.jpg">
-                            <div class="form-text">Inserisci l'URL di un'immagine per il background. Se non specificato, verrà usato un gradiente colorato.</div>
+                            <div class="form-text">In alternativa, inserisci l'URL di un'immagine. Il caricamento file ha priorità sull'URL.</div>
                         </div>
 
                         <!-- Video URL (opzionale) -->
