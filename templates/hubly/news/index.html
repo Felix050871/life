@@ -16,7 +16,7 @@
     {% if posts %}
     <div class="row">
         {% for post in posts %}
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 mb-4">
             <div class="hubly-news-card {% if post.pinned %}pinned{% endif %}">
                 <!-- Header con immagine gradient -->
                 <div class="news-header" style="background: {% if post.image_url %}url('{{ post.image_url }}') center/cover{% else %}linear-gradient(135deg, #667eea 0%, #764ba2 100%){% endif %};">
