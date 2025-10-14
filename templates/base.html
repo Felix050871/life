@@ -16,42 +16,44 @@
     <!-- Main Layout -->
     {% if current_user.is_authenticated %}
     <!-- Project Title Bar with User Menu -->
-    <div class="project-title-bar">
+    <nav class="navbar navbar-expand-lg project-title-bar">
         <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center">
-                <!-- Left: Platform Tabs -->
-                <div class="d-flex align-items-center gap-3">
-                    <a href="{{ url_for('index') }}" class="text-decoration-none text-white">
-                        <h5 class="mb-0 me-3">
-                            {% if current_user.company and current_user.company.logo %}
-                            <img src="{{ url_for('static', filename=current_user.company.logo) }}" alt="{{ current_user.company.name }}" style="height: 30px; width: auto; margin-right: 0.5rem;">
-                            {% else %}
-                            <img src="{{ url_for('static', filename='images/life_logo.png') }}" alt="Life Platform" style="height: 30px; width: auto; margin-right: 0.5rem;">
-                            {% endif %}
-                            Life Platform
-                        </h5>
-                    </a>
+            <!-- Logo -->
+            <a class="navbar-brand text-white d-flex align-items-center" href="{{ url_for('index') }}">
+                {% if current_user.company and current_user.company.logo %}
+                <img src="{{ url_for('static', filename=current_user.company.logo) }}" alt="{{ current_user.company.name }}" style="height: 30px; width: auto; margin-right: 0.5rem;">
+                {% else %}
+                <img src="{{ url_for('static', filename='images/life_logo.png') }}" alt="Life Platform" style="height: 30px; width: auto; margin-right: 0.5rem;">
+                {% endif %}
+                <span class="d-none d-sm-inline">Life Platform</span>
+            </a>
+            
+            <!-- Burger Menu Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Collapsible Content -->
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <!-- Left: Platform Tabs and Admin -->
+                <div class="navbar-nav me-auto">
                     {% if not current_user.is_system_admin %}
-                    <div class="d-flex align-items-center gap-3">
                         <!-- Platform Tabs -->
-                        <div class="btn-group" role="group">
-                            <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-sm btn-outline-light">
-                                <img src="{{ url_for('static', filename='images/workly_logo.png') }}" alt="WORKLY" style="height: 16px; width: auto; margin-right: 0.25rem;">WORKLY
-                            </a>
-                            {% if current_user.has_permission('can_access_hubly') %}
-                            <a href="{{ url_for('hubly.home') }}" class="btn btn-sm btn-outline-light">
-                                <img src="{{ url_for('static', filename='images/hubly_logo.png') }}" alt="HUBLY" style="height: 16px; width: auto; margin-right: 0.25rem;">HUBLY
-                            </a>
-                            {% endif %}
-                        </div>
+                        <a href="{{ url_for('dashboard.dashboard') }}" class="nav-link text-white">
+                            <img src="{{ url_for('static', filename='images/workly_logo.png') }}" alt="WORKLY" style="height: 16px; width: auto; margin-right: 0.25rem;">WORKLY
+                        </a>
+                        {% if current_user.has_permission('can_access_hubly') %}
+                        <a href="{{ url_for('hubly.home') }}" class="nav-link text-white">
+                            <img src="{{ url_for('static', filename='images/hubly_logo.png') }}" alt="HUBLY" style="height: 16px; width: auto; margin-right: 0.25rem;">HUBLY
+                        </a>
+                        {% endif %}
                         
                         <!-- Admin Menu (Only for Company ADMIN with permissions) -->
                         {% set is_company_admin = current_user.role == 'Amministratore' and not current_user.is_system_admin %}
                         {% set has_admin_permissions = (current_user.can_manage_roles() or current_user.can_view_roles() or current_user.can_manage_users() or current_user.can_view_users()) %}
                         {% if is_company_admin and has_admin_permissions %}
-                        <div class="vr" style="opacity: 0.5;"></div>
-                        <div class="dropdown">
-                            <a class="btn btn-outline-warning btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-warning" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-shield me-1"></i>Amministrazione
                             </a>
                             <ul class="dropdown-menu">
@@ -66,18 +68,17 @@
                                 </a></li>
                                 {% endif %}
                             </ul>
-                        </div>
+                        </li>
                         {% endif %}
-                    </div>
                     {% endif %}
                 </div>
                 
                 <!-- Right: User Menu and Messages -->
-                <div class="d-flex align-items-center gap-3">
+                <div class="navbar-nav ms-auto">
                     <!-- System Administration (Only for SUPERADMIN) -->
                     {% if current_user.is_system_admin %}
-                    <div class="dropdown">
-                        <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-cogs me-1"></i>Amministrazione Sistema
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -85,14 +86,14 @@
                                 <i class="fas fa-building me-1"></i>Gestione Aziende
                             </a></li>
                         </ul>
-                    </div>
+                    </li>
                     {% endif %}
                     
                     <!-- Messages -->
                     {% if current_user.can_send_messages() or current_user.can_view_messages() %}
-                    <div class="dropdown">
-                        <a class="btn btn-outline-light btn-sm dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-envelope me-1"></i>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white position-relative" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-envelope me-1"></i><span class="d-lg-none">Messaggi</span>
                             {% if unread_messages_count > 0 %}
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.2em 0.4em; margin-left: -0.5rem;">
                                 {{ unread_messages_count if unread_messages_count < 100 else '99+' }}
@@ -111,12 +112,12 @@
                             </a></li>
                             {% endif %}
                         </ul>
-                    </div>
+                    </li>
                     {% endif %}
                     
                     <!-- User Menu -->
-                    <div class="dropdown">
-                        <a class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" style="gap: 0.5rem;">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" style="gap: 0.5rem;">
                             <img src="{{ current_user.get_profile_image_url() }}" 
                                  alt="{{ current_user.get_full_name() }}" 
                                  class="rounded-circle"
@@ -132,11 +133,11 @@
                                 <i class="fas fa-sign-out-alt me-1"></i>Logout
                             </a></li>
                         </ul>
-                    </div>
+                    </li>
                 </div>
             </div>
         </div>
-    </div>
+    </nav>
     
     <div class="main-wrapper">
         <!-- Sidebar - Nascosta nella home page e nella pagina profilo -->
