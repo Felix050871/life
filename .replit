@@ -37,5 +37,9 @@ externalPort = 80
 localPort = 45263
 externalPort = 3000
 
+[[ports]]
+localPort = 46223
+externalPort = 3001
+
 [agent]
 integrations = ["styling_replit==1.0.0", "python_database==1.0.0"]
