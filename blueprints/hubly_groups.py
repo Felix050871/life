@@ -167,12 +167,9 @@ def leave_group(group_id):
 @login_required
 def delete(group_id):
     """Elimina gruppo"""
-    if not current_user.has_permission('can_manage_groups'):
-        abort(403)
-    
     group = filter_by_company(HublyGroup.query, current_user).filter_by(id=group_id).first_or_404()
     
-    # Solo il creatore o admin possono eliminare
+    # Solo il creatore o utenti con can_manage_groups possono eliminare
     if group.creator_id != current_user.id and not current_user.has_permission('can_manage_groups'):
         abort(403)
     
