@@ -29,7 +29,7 @@ def view_post(post_id):
     if not current_user.has_permission('can_access_hubly'):
         abort(403)
     
-    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    post = filter_by_company(HublyPost.query, current_user).filter_by(id=post_id).first_or_404()
     
     # Carica commenti
     comments = HublyComment.query.filter_by(post_id=post_id).order_by(HublyComment.created_at).all()
@@ -85,7 +85,7 @@ def add_comment(post_id):
     if not current_user.has_permission('can_comment_posts'):
         abort(403)
     
-    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    post = filter_by_company(HublyPost.query, current_user).filter_by(id=post_id).first_or_404()
     
     # Verifica se i commenti sono abilitati per questo post
     if not post.comments_enabled:
@@ -113,7 +113,7 @@ def toggle_like(post_id):
     if not current_user.has_permission('can_like_posts'):
         abort(403)
     
-    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    post = filter_by_company(HublyPost.query, current_user).filter_by(id=post_id).first_or_404()
     
     existing_like = HublyLike.query.filter_by(post_id=post_id, user_id=current_user.id).first()
     
@@ -136,7 +136,7 @@ def edit(post_id):
     if not current_user.has_permission('can_edit_posts'):
         abort(403)
     
-    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    post = filter_by_company(HublyPost.query, current_user).filter_by(id=post_id).first_or_404()
     
     # Solo l'autore o admin possono modificare
     if post.author_id != current_user.id and not current_user.has_permission('can_delete_posts'):
@@ -164,7 +164,7 @@ def delete(post_id):
     if not current_user.has_permission('can_delete_posts'):
         abort(403)
     
-    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    post = filter_by_company(HublyPost.query, current_user).filter_by(id=post_id).first_or_404()
     
     # Elimina commenti e like associati
     HublyComment.query.filter_by(post_id=post_id).delete()
@@ -187,7 +187,7 @@ def api_toggle_like(post_id):
     if not current_user.has_permission('can_like_posts'):
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
     
-    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    post = filter_by_company(HublyPost.query, current_user).filter_by(id=post_id).first_or_404()
     
     existing_like = HublyLike.query.filter_by(post_id=post_id, user_id=current_user.id).first()
     
@@ -227,7 +227,7 @@ def api_add_comment(post_id):
     if not current_user.has_permission('can_comment_posts'):
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
     
-    post = filter_by_company(HublyPost.query, current_user).get_or_404(post_id)
+    post = filter_by_company(HublyPost.query, current_user).filter_by(id=post_id).first_or_404()
     
     if not post.comments_enabled:
         return jsonify({'success': False, 'error': 'Commenti disabilitati'}), 400
