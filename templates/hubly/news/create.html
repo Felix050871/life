@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova News - HUBLY{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-newspaper"></i> Crea Nuova News/Comunicazione</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('hubly_news.create') }}">
+                        <!-- Titolo -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Titolo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required 
+                                   placeholder="Es: Buon Anno!">
+                        </div>
+
+                        <!-- Tipo Post -->
+                        <div class="mb-3">
+                            <label for="post_type" class="form-label">Tipo <span class="text-danger">*</span></label>
+                            <select class="form-select" id="post_type" name="post_type" required>
+                                <option value="news">News</option>
+                                <option value="announcement">Annuncio</option>
+                                <option value="delorean">Delorean (Storia Aziendale)</option>
+                                <option value="tech_feed">Tech Feed</option>
+                            </select>
+                        </div>
+
+                        <!-- Contenuto -->
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Contenuto <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="content" name="content" rows="8" required
+                                      placeholder="Scrivi qui il contenuto della comunicazione..."></textarea>
+                            <div class="form-text">Puoi usare testo formattato. Il testo verrà visualizzato con "Leggi Tutto" se supera i 200 caratteri.</div>
+                        </div>
+
+                        <!-- Immagine URL (opzionale) -->
+                        <div class="mb-3">
+                            <label for="image_url" class="form-label">URL Immagine (opzionale)</label>
+                            <input type="url" class="form-control" id="image_url" name="image_url" 
+                                   placeholder="https://example.com/image.jpg">
+                            <div class="form-text">Inserisci l'URL di un'immagine per il background. Se non specificato, verrà usato un gradiente colorato.</div>
+                        </div>
+
+                        <!-- Video URL (opzionale) -->
+                        <div class="mb-3">
+                            <label for="video_url" class="form-label">URL Video (opzionale)</label>
+                            <input type="url" class="form-control" id="video_url" name="video_url" 
+                                   placeholder="https://youtube.com/watch?v=...">
+                            <div class="form-text">Inserisci l'URL di un video YouTube o Vimeo.</div>
+                        </div>
+
+                        <!-- Opzioni -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="comments_enabled" name="comments_enabled" checked>
+                                <label class="form-check-label" for="comments_enabled">
+                                    <i class="fas fa-comments"></i> Abilita Commenti
+                                </label>
+                            </div>
+                            <div class="form-text">Se disabilitato, gli utenti non potranno commentare questo post.</div>
+                        </div>
+
+                        {% if current_user.has_permission('can_delete_posts') %}
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="pinned" name="pinned">
+                                <label class="form-check-label" for="pinned">
+                                    <i class="fas fa-thumbtack"></i> Fissa In Evidenza
+                                </label>
+                            </div>
+                            <div class="form-text">Il post apparirà sempre in cima alla lista.</div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('hubly_news.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Annulla
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Pubblica
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -20,7 +20,7 @@ def index():
         current_user
     ).order_by(desc(HublyPost.pinned), desc(HublyPost.created_at)).all()
     
-    return render_template('hubly/news/index.html', posts=news_posts)
+    return render_template('hubly/news/index.html', posts=news_posts, now=datetime.now())
 
 @bp.route('/<int:post_id>')
 @login_required
