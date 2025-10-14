@@ -150,16 +150,16 @@
         <!-- Sidebar - Nascosta nella home page, pagina profilo e pagine amministrazione -->
         {% set hide_sidebar = request.endpoint == 'index' or request.endpoint == 'user_management.user_profile' or request.endpoint == 'user_management.user_management' or request.endpoint == 'user_management.edit_user' or (request.endpoint and request.endpoint.startswith('admin.')) %}
         <nav class="sidebar {% if hide_sidebar %}d-none{% endif %}" id="sidebar">
-            {% set is_hubly = request.endpoint and request.endpoint.startswith('hubly') %}
+            {% set is_circle = request.endpoint and request.endpoint.startswith('circle') %}
             
             <div class="sidebar-header">
-                {% if is_hubly %}
+                {% if is_circle %}
                 <a href="{{ url_for('circle.home') }}" class="brand">
-                    <img src="{{ url_for('static', filename='images/hubly_logo.png') }}" alt="HUBLY" style="height: 24px; width: auto; margin-right: 0.5rem;"><span>HUBLY</span>
+                    <img src="{{ url_for('static', filename='img/circle_icon.png') }}" alt="CIRCLE" style="height: 24px; width: auto; margin-right: 0.5rem;"><span>CIRCLE</span>
                 </a>
                 {% else %}
                 <a href="{{ url_for('dashboard.dashboard') }}" class="brand">
-                    <img src="{{ url_for('static', filename='images/workly_logo.png') }}" alt="Workly" style="height: 24px; width: auto; margin-right: 0.5rem;"><span>Workly</span>
+                    <img src="{{ url_for('static', filename='img/flow_icon.png') }}" alt="FLOW" style="height: 24px; width: auto; margin-right: 0.5rem;"><span>FLOW</span>
                 </a>
                 {% endif %}
                 <button class="sidebar-toggle" onclick="toggleSidebar()">
@@ -168,8 +168,8 @@
             </div>
             
             <ul class="sidebar-nav">
-            {% if is_hubly %}
-                <!-- MENU HUBLY -->
+            {% if is_circle %}
+                <!-- MENU CIRCLE -->
                 <li class="sidebar-nav-item">
                     <a href="{{ url_for('circle_news.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-newspaper"></i>
