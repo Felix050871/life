@@ -120,6 +120,30 @@
                             {% endif %}
                         </div>
                     </div>
+                    
+                    <!-- Sezione Commenti -->
+                    {% if post.comments_enabled and post.comments|length > 0 %}
+                    <div class="comments-preview mt-3 pt-3 border-top">
+                        <h6 class="text-muted mb-3"><i class="far fa-comments"></i> {{ post.comments|length }} {% if post.comments|length == 1 %}Commento{% else %}Commenti{% endif %}</h6>
+                        {% for comment in post.comments[:2] %}
+                        <div class="comment-item d-flex mb-2">
+                            <img src="{{ comment.author.get_profile_image_url() }}" alt="{{ comment.author.get_full_name() }}" class="rounded-circle me-2" width="32" height="32">
+                            <div class="flex-grow-1">
+                                <div class="comment-bubble p-2 rounded" style="background: #f0f2f5;">
+                                    <strong style="font-size: 0.9rem;">{{ comment.author.get_full_name() }}</strong>
+                                    <p class="mb-0" style="font-size: 0.9rem;">{{ comment.content }}</p>
+                                </div>
+                                <small class="text-muted" style="font-size: 0.75rem; padding-left: 8px;">{{ comment.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if post.comments|length > 2 %}
+                        <a href="{{ url_for('hubly_news.view_post', post_id=post.id) }}" class="btn btn-sm btn-link text-decoration-none ps-0">
+                            Vedi tutti i {{ post.comments|length }} commenti
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
