@@ -212,7 +212,7 @@
                     <div class="mb-3 {% if not loop.last %}border-bottom pb-3{% endif %}">
                         <h6 class="text-primary mb-2">{{ skill_group.category or 'Competenze' }}</h6>
                         <div class="d-flex flex-wrap gap-2">
-                            {% for item in skill_group.items %}
+                            {% for item in skill_group['items'] %}
                             <span class="badge bg-secondary">{{ item }}</span>
                             {% endfor %}
                         </div>
