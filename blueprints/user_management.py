@@ -508,6 +508,283 @@ def toggle_user(user_id):
     return redirect(url_for('user_management.user_management'))
 
 # =============================================================================
+# GDPR COMPLIANCE ROUTES
+# =============================================================================
+
+@user_management_bp.route('/account/delete', methods=['GET', 'POST'])
+@login_required
+def request_account_deletion():
+    """Request account deletion (GDPR Right to be Forgotten)"""
+    if current_user.is_system_admin:
+        flash('Gli account SUPERADMIN non possono essere eliminati tramite questa funzione', 'danger')
+        return redirect(url_for('user_management.profile'))
+    
+    if request.method == 'POST':
+        # Verifica password per sicurezza
+        from werkzeug.security import check_password_hash
+        password = request.form.get('password')
+        
+        if not check_password_hash(current_user.password_hash, password):
+            flash('Password non corretta', 'danger')
+            return redirect(url_for('user_management.request_account_deletion'))
+        
+        # Conferma checkbox
+        confirm = request.form.get('confirm_deletion') == 'on'
+        if not confirm:
+            flash('Devi confermare la richiesta di cancellazione', 'warning')
+            return redirect(url_for('user_management.request_account_deletion'))
+        
+        # Effettua la cancellazione cascade di tutti i dati
+        try:
+            _delete_user_cascade(current_user.id)
+            flash('Il tuo account e tutti i dati personali sono stati eliminati', 'success')
+            
+            # Logout
+            from flask_login import logout_user
+            logout_user()
+            return redirect(url_for('home.index'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore durante la cancellazione dell\'account: {str(e)}', 'danger')
+            return redirect(url_for('user_management.request_account_deletion'))
+    
+    return render_template('user/delete_account.html')
+
+@user_management_bp.route('/account/export')
+@login_required
+def export_personal_data():
+    """Export personal data (GDPR Right to Data Portability)"""
+    import json
+    from flask import Response
+    
+    # Raccogli tutti i dati personali dell'utente
+    user_data = _collect_user_personal_data(current_user.id)
+    
+    # Formato richiesto
+    format_type = request.args.get('format', 'json')
+    
+    if format_type == 'json':
+        # Export in JSON
+        json_data = json.dumps(user_data, indent=2, default=str, ensure_ascii=False)
+        
+        response = Response(
+            json_data,
+            mimetype='application/json',
+            headers={
+                'Content-Disposition': f'attachment;filename=personal_data_{current_user.username}_{datetime.now().strftime("%Y%m%d")}.json'
+            }
+        )
+        return response
+    
+    elif format_type == 'csv':
+        # Export in CSV
+        import csv
+        from io import StringIO
+        
+        output = StringIO()
+        
+        # Crea CSV con dati utente principali
+        writer = csv.writer(output)
+        writer.writerow(['Campo', 'Valore'])
+        
+        # Dati profilo
+        for key, value in user_data.get('profile', {}).items():
+            writer.writerow([key, value])
+        
+        # Altre sezioni come conteggi
+        writer.writerow([])
+        writer.writerow(['Categoria', 'Conteggio'])
+        for key, value in user_data.get('statistics', {}).items():
+            if isinstance(value, int):
+                writer.writerow([key, value])
+        
+        csv_data = output.getvalue()
+        
+        response = Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment;filename=personal_data_{current_user.username}_{datetime.now().strftime("%Y%m%d")}.csv'
+            }
+        )
+        return response
+    
+    flash('Formato non supportato', 'danger')
+    return redirect(url_for('user_management.profile'))
+
+def _delete_user_cascade(user_id):
+    """
+    Delete user and all related data (GDPR compliance)
+    Implements cascade deletion for all user-related entities
+    """
+    from models import (
+        AttendanceEvent, LeaveRequest, Shift, ShiftTemplate,
+        ReperibilitaShift, ReperibilitaTemplate, Intervention,
+        Holiday, InternalMessage, PasswordResetToken,
+        ExpenseReport, ExpenseCategory, OvertimeRequest, MileageRequest,
+        CirclePost, CircleGroup, CirclePoll, CirclePollVote,
+        CircleDocument, CircleCalendarEvent, CircleComment, CircleLike,
+        CircleToolLink, CircleGroupMembershipRequest, CircleGroupMessage,
+        PresidioCoverage, PresidioCoverageTemplate, ReperibilitaIntervention,
+        circle_group_members
+    )
+    
+    user = User.query.get(user_id)
+    if not user:
+        raise ValueError("Utente non trovato")
+    
+    # 1. Delete attendance events
+    AttendanceEvent.query.filter_by(user_id=user_id).delete()
+    
+    # 2. Delete leave requests (both as requester and approver)
+    LeaveRequest.query.filter_by(user_id=user_id).delete()
+    LeaveRequest.query.filter_by(approved_by=user_id).update({LeaveRequest.approved_by: None})
+    
+    # 3. Delete shifts (both assigned and created)
+    Shift.query.filter_by(user_id=user_id).delete()
+    Shift.query.filter_by(created_by=user_id).delete()
+    
+    # 4. Delete shift templates created by user
+    ShiftTemplate.query.filter_by(created_by=user_id).delete()
+    
+    # 5. Delete reperibilità shifts and templates
+    ReperibilitaShift.query.filter_by(user_id=user_id).delete()
+    ReperibilitaShift.query.filter_by(created_by=user_id).delete()
+    ReperibilitaTemplate.query.filter_by(created_by=user_id).delete()
+    ReperibilitaIntervention.query.filter_by(user_id=user_id).delete()
+    
+    # 6. Delete general interventions
+    Intervention.query.filter_by(user_id=user_id).delete()
+    
+    # 7. Update holidays (set created_by to NULL instead of delete)
+    Holiday.query.filter_by(created_by=user_id).update({Holiday.created_by: None})
+    
+    # 8. Delete internal messages (received and sent)
+    InternalMessage.query.filter_by(recipient_id=user_id).delete()
+    InternalMessage.query.filter_by(sender_id=user_id).delete()
+    
+    # 9. Delete password reset tokens
+    PasswordResetToken.query.filter_by(user_id=user_id).delete()
+    
+    # 10. Delete expense reports and categories
+    ExpenseReport.query.filter_by(employee_id=user_id).delete()
+    ExpenseReport.query.filter_by(approved_by=user_id).update({ExpenseReport.approved_by: None})
+    ExpenseCategory.query.filter_by(created_by=user_id).delete()
+    
+    # 11. Delete overtime and mileage requests
+    OvertimeRequest.query.filter_by(employee_id=user_id).delete()
+    OvertimeRequest.query.filter_by(approved_by=user_id).update({OvertimeRequest.approved_by: None})
+    MileageRequest.query.filter_by(user_id=user_id).delete()
+    MileageRequest.query.filter_by(approved_by=user_id).update({MileageRequest.approved_by: None})
+    
+    # 12. Delete CIRCLE social content
+    # Delete likes and comments first (FK constraints)
+    CircleLike.query.filter_by(user_id=user_id).delete()
+    CircleComment.query.filter_by(author_id=user_id).delete()
+    
+    # Delete posts
+    CirclePost.query.filter_by(author_id=user_id).delete()
+    
+    # 13. Delete poll votes
+    CirclePollVote.query.filter_by(user_id=user_id).delete()
+    
+    # 14. Handle groups (leave groups, delete created groups)
+    # Remove from group memberships
+    db.session.execute(
+        circle_group_members.delete().where(circle_group_members.c.user_id == user_id)
+    )
+    CircleGroup.query.filter_by(creator_id=user_id).delete()
+    CircleGroupMembershipRequest.query.filter_by(user_id=user_id).delete()
+    CircleGroupMembershipRequest.query.filter_by(reviewed_by=user_id).update({CircleGroupMembershipRequest.reviewed_by: None})
+    
+    # 15. Delete group messages
+    CircleGroupMessage.query.filter_by(sender_id=user_id).delete()
+    CircleGroupMessage.query.filter_by(recipient_id=user_id).delete()
+    
+    # 16. Delete documents uploaded by user
+    CircleDocument.query.filter_by(uploader_id=user_id).delete()
+    
+    # 17. Delete calendar events
+    CircleCalendarEvent.query.filter_by(creator_id=user_id).delete()
+    
+    # 18. Delete polls created by user
+    # First delete poll options and votes for polls created by user
+    polls = CirclePoll.query.filter_by(creator_id=user_id).all()
+    for poll in polls:
+        from models import CirclePollOption
+        CirclePollOption.query.filter_by(poll_id=poll.id).delete()
+        CirclePollVote.query.filter_by(poll_id=poll.id).delete()
+    CirclePoll.query.filter_by(creator_id=user_id).delete()
+    
+    # 19. Update presidio coverage (set created_by to NULL)
+    PresidioCoverage.query.filter_by(created_by=user_id).update({PresidioCoverage.created_by: None})
+    PresidioCoverageTemplate.query.filter_by(created_by=user_id).update({PresidioCoverageTemplate.created_by: None})
+    
+    # 20. Finally, delete the user
+    db.session.delete(user)
+    db.session.commit()
+
+def _collect_user_personal_data(user_id):
+    """
+    Collect all personal data for a user (GDPR compliance)
+    Returns a dictionary with all user data for export
+    """
+    from models import (
+        AttendanceEvent, LeaveRequest, Shift,
+        ReperibilitaShift, Intervention, InternalMessage,
+        ExpenseReport, OvertimeRequest, MileageRequest,
+        CirclePost, CirclePoll, CircleDocument, CircleCalendarEvent
+    )
+    
+    user = User.query.get(user_id)
+    if not user:
+        return {}
+    
+    data = {
+        'profile': {
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role,
+            'bio': user.bio,
+            'linkedin_url': user.linkedin_url,
+            'phone_number': user.phone_number,
+            'department': user.department,
+            'job_title': user.job_title,
+            'created_at': user.created_at.isoformat() if user.created_at else None,
+        },
+        'work_data': {
+            'sede': user.sede.name if user.sede else None,
+            'work_schedule': user.work_schedule.name if user.work_schedule else None,
+            'part_time_percentage': user.part_time_percentage,
+            'banca_ore_enabled': user.banca_ore_enabled,
+            'banca_ore_saldo': user.banca_ore_saldo,
+        },
+        'statistics': {
+            'total_attendance_events': AttendanceEvent.query.filter_by(user_id=user_id).count(),
+            'total_leave_requests': LeaveRequest.query.filter_by(user_id=user_id).count(),
+            'total_shifts': Shift.query.filter_by(user_id=user_id).count(),
+            'total_reperibilita_shifts': ReperibilitaShift.query.filter_by(user_id=user_id).count(),
+            'total_interventions': Intervention.query.filter_by(user_id=user_id).count(),
+            'total_messages_received': InternalMessage.query.filter_by(recipient_id=user_id).count(),
+            'total_messages_sent': InternalMessage.query.filter_by(sender_id=user_id).count(),
+            'total_expense_reports': ExpenseReport.query.filter_by(employee_id=user_id).count(),
+            'total_overtime_requests': OvertimeRequest.query.filter_by(employee_id=user_id).count(),
+            'total_mileage_requests': MileageRequest.query.filter_by(user_id=user_id).count(),
+            'total_circle_posts': CirclePost.query.filter_by(author_id=user_id).count(),
+            'total_circle_polls': CirclePoll.query.filter_by(creator_id=user_id).count(),
+            'total_circle_documents': CircleDocument.query.filter_by(uploader_id=user_id).count(),
+            'total_circle_events': CircleCalendarEvent.query.filter_by(creator_id=user_id).count(),
+        },
+        'export_date': datetime.now().isoformat(),
+        'export_format': 'GDPR Personal Data Export'
+    }
+    
+    return data
+
+# =============================================================================
 # BLUEPRINT REGISTRATION READY
 # =============================================================================
 # This blueprint is ready to be registered in main.py:

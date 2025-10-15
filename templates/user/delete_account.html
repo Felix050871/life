@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Elimina Account - Life Platform{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card bg-dark border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Elimina Account</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-warning me-2"></i>Attenzione: Questa azione è irreversibile!</h5>
+                        <p class="mb-0">Eliminando il tuo account, <strong>tutti i tuoi dati personali verranno cancellati permanentemente</strong> in conformità con il GDPR.</p>
+                    </div>
+
+                    <h5 class="mb-3">Cosa verrà eliminato:</h5>
+                    <ul class="mb-4">
+                        <li><strong>Dati profilo:</strong> username, email, nome, cognome, foto profilo</li>
+                        <li><strong>Dati FLOW:</strong> presenze, turni, ferie, straordinari, rimborsi chilometrici, interventi</li>
+                        <li><strong>Dati CIRCLE:</strong> post, commenti, likes, gruppi creati, sondaggi, documenti, eventi calendario</li>
+                        <li><strong>Messaggi:</strong> tutti i messaggi interni ricevuti e inviati</li>
+                        <li><strong>Autenticazione:</strong> password e token di reset</li>
+                    </ul>
+
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Nota importante:</h6>
+                        <p class="mb-0">Alcuni dati potrebbero essere conservati per obblighi legali (es. dati contabili e fiscali per 10 anni). I contenuti creati da te che sono stati approvati o che hanno impatto su altri utenti potrebbero essere anonimizzati invece di eliminati.</p>
+                    </div>
+
+                    <form method="POST" id="deleteAccountForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Conferma la tua password</label>
+                            <input type="password" class="form-control bg-dark text-white" id="password" name="password" required>
+                            <div class="form-text">Per sicurezza, inserisci la tua password per confermare l'eliminazione</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirm_deletion" name="confirm_deletion" required>
+                                <label class="form-check-label" for="confirm_deletion">
+                                    <strong>Confermo di voler eliminare permanentemente il mio account e tutti i dati personali</strong>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('user_management.profile') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Annulla
+                            </a>
+                            <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                <i class="fas fa-trash me-2"></i>Elimina Account Definitivamente
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <h5>Alternative alla cancellazione:</h5>
+                    <ul>
+                        <li><strong>Disattivazione temporanea:</strong> Contatta il tuo amministratore per disattivare temporaneamente il tuo account</li>
+                        <li><strong>Export dati:</strong> <a href="{{ url_for('user_management.export_personal_data', format='json') }}" class="text-primary">Scarica i tuoi dati personali (JSON)</a> o <a href="{{ url_for('user_management.export_personal_data', format='csv') }}" class="text-primary">in formato CSV</a> prima di eliminare l'account</li>
+                        <li><strong>Privacy Policy:</strong> <a href="{{ url_for('legal.privacy') }}" class="text-primary">Consulta la Privacy Policy</a> per maggiori informazioni sui tuoi diritti GDPR</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Enable delete button only when checkbox is checked
+    const confirmCheckbox = document.getElementById('confirm_deletion');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const passwordInput = document.getElementById('password');
+    
+    function updateDeleteButton() {
+        deleteBtn.disabled = !(confirmCheckbox.checked && passwordInput.value.length > 0);
+    }
+    
+    confirmCheckbox.addEventListener('change', updateDeleteButton);
+    passwordInput.addEventListener('input', updateDeleteButton);
+    
+    // Confirm before submit
+    document.getElementById('deleteAccountForm').addEventListener('submit', function(e) {
+        if (!confirm('Sei ASSOLUTAMENTE SICURO di voler eliminare il tuo account? Questa azione NON può essere annullata.')) {
+            e.preventDefault();
+        }
+    });
+</script>
+{% endblock %}
