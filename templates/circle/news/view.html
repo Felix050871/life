@@ -162,8 +162,10 @@
 
 <script>
 function toggleLike() {
-    const likeUrl = '{{ url_for("circle_news.api_toggle_like", post_id=post.id) }}';
-    console.log('Like URL:', likeUrl);
+    // Costruisci URL relativo che mantiene il path corrente (incluso /t/<slug>)
+    const currentPath = window.location.pathname;
+    const basePath = currentPath.substring(0, currentPath.indexOf('/circle'));
+    const likeUrl = basePath + '/circle/news/api/{{ post.id }}/like';
     
     const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
     fetch(likeUrl, {
