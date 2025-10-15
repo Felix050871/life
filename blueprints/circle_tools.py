@@ -56,6 +56,7 @@ def create():
         icon = request.form.get('icon', 'fa-link')
         category = request.form.get('category', 'custom')
         sort_order = request.form.get('sort_order', 0)
+        is_active = request.form.get('is_active') == 'on'
         
         new_tool = CircleToolLink(
             name=name,
@@ -63,7 +64,8 @@ def create():
             url=url,
             icon=icon,
             category=category,
-            sort_order=int(sort_order)
+            sort_order=int(sort_order),
+            is_active=is_active
         )
         set_company_on_create(new_tool)
         
