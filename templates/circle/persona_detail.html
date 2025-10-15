@@ -76,6 +76,57 @@
                         {% endif %}
                     </div>
                     {% endif %}
+
+                    <!-- Connection Actions -->
+                    <hr>
+                    {% set connection_status = current_user.get_connection_status(user) %}
+                    {% if connection_status == 'connected' %}
+                        <div class="alert alert-success mb-2">
+                            <i class="fas fa-check-circle me-1"></i>Sei collegato con questa persona
+                        </div>
+                        <form action="{{ url_for('circle.remove_connection', user_id=user.id) }}" method="POST" onsubmit="return confirm('Vuoi rimuovere questa connessione?');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="fas fa-user-times me-1"></i>Rimuovi Connessione
+                            </button>
+                        </form>
+                    {% elif connection_status == 'pending_sent' %}
+                        <div class="alert alert-warning mb-2">
+                            <i class="fas fa-clock me-1"></i>Richiesta di connessione inviata
+                        </div>
+                        {% set pending_request = current_user.has_pending_request_with(user) %}
+                        {% if pending_request %}
+                        <form action="{{ url_for('circle.cancel_connection_request', request_id=pending_request.id) }}" method="POST">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="fas fa-times me-1"></i>Annulla Richiesta
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% elif connection_status == 'pending_received' %}
+                        <div class="alert alert-info mb-2">
+                            <i class="fas fa-user-plus me-1"></i>Vuole collegarsi con te
+                        </div>
+                        {% set pending_request = current_user.has_pending_request_with(user) %}
+                        {% if pending_request %}
+                        <div class="d-flex gap-2">
+                            <form action="{{ url_for('circle.accept_connection_request', request_id=pending_request.id) }}" method="POST" class="flex-fill">
+                                <button type="submit" class="btn btn-success btn-sm w-100">
+                                    <i class="fas fa-check me-1"></i>Accetta
+                                </button>
+                            </form>
+                            <form action="{{ url_for('circle.reject_connection_request', request_id=pending_request.id) }}" method="POST" class="flex-fill">
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                    <i class="fas fa-times me-1"></i>Rifiuta
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    {% elif connection_status == 'none' %}
+                        <form action="{{ url_for('circle.send_connection_request', user_id=user.id) }}" method="POST">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-user-plus me-1"></i>Collegati
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
