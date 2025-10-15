@@ -141,6 +141,47 @@ def get_permission_display(permission_name):
     permissions_map = UserRole.get_available_permissions()
     return permissions_map.get(permission_name, permission_name)
 
+@app.template_filter('safe_html')
+def safe_html(text):
+    """Sanitizza HTML permettendo solo tag sicuri"""
+    if not text:
+        return ""
+    
+    import bleach
+    from markupsafe import Markup
+    
+    # Tag HTML permessi (solo formattazione di base)
+    allowed_tags = [
+        'p', 'br', 'b', 'i', 'strong', 'em', 'u', 's',
+        'ul', 'ol', 'li', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'blockquote', 'pre', 'code', 'hr', 'div', 'span'
+    ]
+    
+    # Attributi permessi
+    allowed_attributes = {
+        'a': ['href', 'title', 'target'],
+        '*': ['class']
+    }
+    
+    # Protocolli permessi per i link
+    allowed_protocols = ['http', 'https', 'mailto']
+    
+    # Sanitizza il contenuto
+    cleaned = bleach.clean(
+        text,
+        tags=allowed_tags,
+        attributes=allowed_attributes,
+        protocols=allowed_protocols,
+        strip=True
+    )
+    
+    # Converte newline in <br> se non ci sono già tag p o br
+    if '<br' not in cleaned and '<p>' not in cleaned:
+        cleaned = cleaned.replace('\n', '<br>')
+    
+    # Ritorna come Markup (safe HTML)
+    return Markup(cleaned)
+
 # Context processor per conteggio messaggi non letti
 @app.context_processor
 def inject_unread_messages_count():
