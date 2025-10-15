@@ -71,7 +71,7 @@ def create():
         db.session.commit()
         
         flash('Strumento creato con successo!', 'success')
-        return redirect(url_for('hubly_tools.manage'))
+        return redirect(url_for('circle_tools.manage'))
     
     return render_template('circle/tools/create.html')
 
@@ -95,7 +95,7 @@ def edit(tool_id):
         
         db.session.commit()
         flash('Strumento aggiornato!', 'success')
-        return redirect(url_for('hubly_tools.manage'))
+        return redirect(url_for('circle_tools.manage'))
     
     return render_template('circle/tools/edit.html', tool=tool)
 
@@ -112,4 +112,4 @@ def delete(tool_id):
     db.session.commit()
     
     flash('Strumento eliminato', 'success')
-    return redirect(url_for('hubly_tools.manage'))
+    return redirect(url_for('circle_tools.manage'))
