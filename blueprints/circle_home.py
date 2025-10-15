@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from models import (
     CirclePost, CircleGroup, CirclePoll, CircleCalendarEvent, 
-    CircleDocument, CircleToolLink, User
+    CircleDocument, CircleToolLink, User, ConnectionRequest
 )
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
 from datetime import datetime, timedelta
@@ -286,3 +286,203 @@ def create_tech_feed():
         return redirect(url_for('circle.tech_feed'))
     
     return render_template('circle/tech_feed_create.html')
+
+
+# =============================================================================
+# CONNECTION MANAGEMENT ROUTES
+# =============================================================================
+
+@bp.route('/connections/send/<int:user_id>', methods=['POST'])
+@login_required
+def send_connection_request(user_id):
+    """Invia richiesta di connessione a un altro utente"""
+    if not current_user.has_permission('can_access_hubly'):
+        abort(403)
+    
+    # Verifica che l'utente target esista e sia nella stessa company
+    target_user = filter_by_company(User.query).filter_by(id=user_id, active=True).first()
+    if not target_user:
+        flash('Utente non trovato', 'danger')
+        return redirect(url_for('circle.personas'))
+    
+    # Non puoi collegarti a te stesso
+    if target_user.id == current_user.id:
+        flash('Non puoi collegarti a te stesso', 'warning')
+        return redirect(url_for('circle.personas'))
+    
+    # Verifica se esiste già una connessione o richiesta
+    existing = ConnectionRequest.query.filter(
+        db.or_(
+            db.and_(
+                ConnectionRequest.sender_id == current_user.id,
+                ConnectionRequest.recipient_id == target_user.id
+            ),
+            db.and_(
+                ConnectionRequest.sender_id == target_user.id,
+                ConnectionRequest.recipient_id == current_user.id
+            )
+        )
+    ).first()
+    
+    if existing:
+        if existing.status == 'accepted':
+            flash('Sei già collegato con questo utente', 'info')
+        elif existing.status == 'pending':
+            flash('Hai già una richiesta pendente con questo utente', 'info')
+        else:
+            flash('Esiste già una richiesta con questo utente', 'warning')
+        return redirect(url_for('circle.persona_detail', user_id=user_id))
+    
+    # Crea nuova richiesta
+    new_request = ConnectionRequest(
+        sender_id=current_user.id,
+        recipient_id=target_user.id,
+        status='pending'
+    )
+    set_company_on_create(new_request)
+    
+    db.session.add(new_request)
+    db.session.commit()
+    
+    flash(f'Richiesta di connessione inviata a {target_user.get_full_name()}', 'success')
+    return redirect(url_for('circle.persona_detail', user_id=user_id))
+
+
+@bp.route('/connections/accept/<int:request_id>', methods=['POST'])
+@login_required
+def accept_connection_request(request_id):
+    """Accetta richiesta di connessione"""
+    if not current_user.has_permission('can_access_hubly'):
+        abort(403)
+    
+    # Verifica che la richiesta esista e sia destinata all'utente corrente
+    connection_request = filter_by_company(ConnectionRequest.query).filter_by(
+        id=request_id,
+        recipient_id=current_user.id,
+        status='pending'
+    ).first()
+    
+    if not connection_request:
+        flash('Richiesta non trovata o già gestita', 'warning')
+        return redirect(url_for('circle.connection_requests'))
+    
+    # Accetta la richiesta
+    connection_request.status = 'accepted'
+    connection_request.responded_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    flash(f'Ora sei collegato con {connection_request.sender.get_full_name()}', 'success')
+    return redirect(url_for('circle.connection_requests'))
+
+
+@bp.route('/connections/reject/<int:request_id>', methods=['POST'])
+@login_required
+def reject_connection_request(request_id):
+    """Rifiuta richiesta di connessione"""
+    if not current_user.has_permission('can_access_hubly'):
+        abort(403)
+    
+    # Verifica che la richiesta esista e sia destinata all'utente corrente
+    connection_request = filter_by_company(ConnectionRequest.query).filter_by(
+        id=request_id,
+        recipient_id=current_user.id,
+        status='pending'
+    ).first()
+    
+    if not connection_request:
+        flash('Richiesta non trovata o già gestita', 'warning')
+        return redirect(url_for('circle.connection_requests'))
+    
+    # Rifiuta la richiesta
+    connection_request.status = 'rejected'
+    connection_request.responded_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    flash('Richiesta di connessione rifiutata', 'info')
+    return redirect(url_for('circle.connection_requests'))
+
+
+@bp.route('/connections/cancel/<int:request_id>', methods=['POST'])
+@login_required
+def cancel_connection_request(request_id):
+    """Annulla richiesta di connessione inviata"""
+    if not current_user.has_permission('can_access_hubly'):
+        abort(403)
+    
+    # Verifica che la richiesta esista e sia stata inviata dall'utente corrente
+    connection_request = filter_by_company(ConnectionRequest.query).filter_by(
+        id=request_id,
+        sender_id=current_user.id,
+        status='pending'
+    ).first()
+    
+    if not connection_request:
+        flash('Richiesta non trovata o già gestita', 'warning')
+        return redirect(url_for('circle.personas'))
+    
+    # Elimina la richiesta
+    db.session.delete(connection_request)
+    db.session.commit()
+    
+    flash('Richiesta di connessione annullata', 'info')
+    return redirect(url_for('circle.persona_detail', user_id=connection_request.recipient_id))
+
+
+@bp.route('/connections/remove/<int:user_id>', methods=['POST'])
+@login_required
+def remove_connection(user_id):
+    """Rimuove una connessione esistente"""
+    if not current_user.has_permission('can_access_hubly'):
+        abort(403)
+    
+    # Trova la connessione accettata
+    connection = filter_by_company(ConnectionRequest.query).filter(
+        db.or_(
+            db.and_(
+                ConnectionRequest.sender_id == current_user.id,
+                ConnectionRequest.recipient_id == user_id
+            ),
+            db.and_(
+                ConnectionRequest.sender_id == user_id,
+                ConnectionRequest.recipient_id == current_user.id
+            )
+        ),
+        ConnectionRequest.status == 'accepted'
+    ).first()
+    
+    if not connection:
+        flash('Connessione non trovata', 'warning')
+        return redirect(url_for('circle.personas'))
+    
+    # Elimina la connessione
+    db.session.delete(connection)
+    db.session.commit()
+    
+    flash('Connessione rimossa', 'info')
+    return redirect(url_for('circle.persona_detail', user_id=user_id))
+
+
+@bp.route('/connections/requests')
+@login_required
+def connection_requests():
+    """Pagina per visualizzare richieste di connessione pendenti"""
+    if not current_user.has_permission('can_access_hubly'):
+        abort(403)
+    
+    # Richieste ricevute (pendenti)
+    received_requests = filter_by_company(ConnectionRequest.query).filter_by(
+        recipient_id=current_user.id,
+        status='pending'
+    ).order_by(desc(ConnectionRequest.created_at)).all()
+    
+    # Richieste inviate (pendenti)
+    sent_requests = filter_by_company(ConnectionRequest.query).filter_by(
+        sender_id=current_user.id,
+        status='pending'
+    ).order_by(desc(ConnectionRequest.created_at)).all()
+    
+    return render_template('circle/connection_requests.html',
+                         received_requests=received_requests,
+                         sent_requests=sent_requests)
