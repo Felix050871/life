@@ -1277,49 +1277,40 @@
     </style>
 
     <script>
-        // Cookie Consent Management
-        const COOKIE_CONSENT_NAME = 'life_cookie_consent';
-        const COOKIE_CONSENT_EXPIRY_DAYS = 365;
+        // Cookie Consent Management using localStorage (works better in iframe environments like Replit)
+        const COOKIE_CONSENT_KEY = 'life_cookie_consent';
 
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
+        function getConsentFromStorage() {
+            try {
+                const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
+                return consent ? JSON.parse(consent) : null;
+            } catch (e) {
+                console.error('Error reading consent from storage:', e);
+                return null;
+            }
         }
 
-        function setCookie(name, value, days) {
-            const expires = new Date(Date.now() + days * 864e5).toUTCString();
-            // Use Secure attribute for HTTPS environments (like Replit)
-            const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
-            document.cookie = `${name}=${value}; expires=${expires}; path=/${isSecure}; SameSite=Lax`;
-            console.log('Cookie set:', name, '=', value);
-            console.log('Cookie string:', document.cookie);
+        function saveConsentToStorage(preferences) {
+            try {
+                localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(preferences));
+                return true;
+            } catch (e) {
+                console.error('Error saving consent to storage:', e);
+                return false;
+            }
         }
 
         function checkCookieConsent() {
-            const consent = getCookie(COOKIE_CONSENT_NAME);
+            const consent = getConsentFromStorage();
             const banner = document.getElementById('cookieConsentBanner');
-            
-            console.log('Checking cookie consent. Cookie value:', consent);
-            console.log('All cookies:', document.cookie);
             
             if (!consent) {
                 // Show banner if no consent given
-                console.log('No consent found, showing banner');
                 banner.style.display = 'block';
             } else {
                 // Hide banner and apply saved preferences
-                console.log('Consent found, hiding banner');
                 banner.style.display = 'none';
-                try {
-                    const preferences = JSON.parse(consent);
-                    applyCookiePreferences(preferences);
-                } catch (e) {
-                    // If parsing fails, show banner again
-                    console.error('Error parsing cookie consent:', e);
-                    banner.style.display = 'block';
-                }
+                applyCookiePreferences(consent);
             }
         }
 
@@ -1329,9 +1320,13 @@
                 preference: true,
                 timestamp: new Date().toISOString()
             };
-            setCookie(COOKIE_CONSENT_NAME, JSON.stringify(preferences), COOKIE_CONSENT_EXPIRY_DAYS);
-            document.getElementById('cookieConsentBanner').style.display = 'none';
-            applyCookiePreferences(preferences);
+            
+            if (saveConsentToStorage(preferences)) {
+                document.getElementById('cookieConsentBanner').style.display = 'none';
+                applyCookiePreferences(preferences);
+            } else {
+                alert('Errore nel salvataggio delle preferenze. Riprova.');
+            }
         }
 
         function manageCookies() {
@@ -1339,10 +1334,9 @@
             modal.show();
             
             // Load current preferences
-            const consent = getCookie(COOKIE_CONSENT_NAME);
+            const consent = getConsentFromStorage();
             if (consent) {
-                const preferences = JSON.parse(consent);
-                document.getElementById('preferenceCookies').checked = preferences.preference;
+                document.getElementById('preferenceCookies').checked = consent.preference || false;
             }
         }
 
@@ -1352,16 +1346,20 @@
                 preference: document.getElementById('preferenceCookies').checked,
                 timestamp: new Date().toISOString()
             };
-            setCookie(COOKIE_CONSENT_NAME, JSON.stringify(preferences), COOKIE_CONSENT_EXPIRY_DAYS);
-            document.getElementById('cookieConsentBanner').style.display = 'none';
             
-            const modal = bootstrap.Modal.getInstance(document.getElementById('cookieSettingsModal'));
-            modal.hide();
-            
-            applyCookiePreferences(preferences);
-            
-            // Show success message
-            alert('Preferenze cookie salvate con successo!');
+            if (saveConsentToStorage(preferences)) {
+                document.getElementById('cookieConsentBanner').style.display = 'none';
+                
+                const modal = bootstrap.Modal.getInstance(document.getElementById('cookieSettingsModal'));
+                modal.hide();
+                
+                applyCookiePreferences(preferences);
+                
+                // Show success message
+                alert('Preferenze cookie salvate con successo!');
+            } else {
+                alert('Errore nel salvataggio delle preferenze. Riprova.');
+            }
         }
 
         function applyCookiePreferences(preferences) {
