@@ -43,10 +43,15 @@ def view_post(post_id):
     # Verifica se l'utente ha messo like
     user_liked = CircleLike.query.filter_by(post_id=post_id, user_id=current_user.id).first() is not None
     
+    # Get tenant slug for URL construction
+    from middleware_tenant import get_tenant_slug
+    tenant_slug = get_tenant_slug()
+    
     return render_template('circle/news/view.html', 
                          post=post, 
                          comments=comments, 
-                         user_liked=user_liked)
+                         user_liked=user_liked,
+                         tenant_slug=tenant_slug)
 
 @bp.route('/create', methods=['GET', 'POST'])
 @login_required
