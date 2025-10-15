@@ -250,13 +250,31 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-secondary">
+                            <button type="button" class="btn btn-secondary" onclick="smartBack()">
                                 <i class="fas fa-arrow-left me-1"></i>Annulla
-                            </a>
+                            </button>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save me-1"></i>Salva Modifiche
                             </button>
                         </div>
+
+                        <script>
+                        function smartBack() {
+                            // Controlla il referrer per decidere dove tornare
+                            const referrer = document.referrer;
+                            
+                            if (referrer && referrer.includes('/personas')) {
+                                // Se veniamo da personas, torna a personas
+                                window.location.href = "{{ url_for('circle.personas') }}";
+                            } else if (window.history.length > 1 && referrer) {
+                                // Se c'è una history e un referrer, usa back
+                                window.history.back();
+                            } else {
+                                // Altrimenti vai alla dashboard
+                                window.location.href = "{{ url_for('dashboard.dashboard') }}";
+                            }
+                        }
+                        </script>
                     </form>
                 </div>
             </div>
