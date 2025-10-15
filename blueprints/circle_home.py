@@ -101,12 +101,13 @@ def personas():
     
     company_id = get_user_company_id()
     
-    # Filtra utenti della stessa azienda, escludi system admin e amministratori
+    # Filtra utenti della stessa azienda, escludi system admin e amministratori, escludi l'utente corrente
     users = User.query.filter(
         User.company_id == company_id,
         User.active == True,
         User.is_system_admin == False,
-        User.role != 'Amministratore'
+        User.role != 'Amministratore',
+        User.id != current_user.id
     ).order_by(User.last_name, User.first_name).all()
     
     return render_template('circle/personas.html', users=users)
