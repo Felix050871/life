@@ -12,38 +12,68 @@
     {% if users %}
     <div class="row">
         {% for user in users %}
-        <div class="col-md-3 mb-4">
-            <div class="card h-100 text-center">
-                <div class="card-body">
+        <div class="col-md-6 col-lg-4 col-xl-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
                     <img src="{{ user.get_profile_image_url() }}" 
                          alt="{{ user.get_full_name() }}" 
                          class="rounded-circle mb-3"
-                         style="width: 100px; height: 100px; object-fit: cover;">
-                    <h5 class="card-title">{{ user.get_full_name() }}</h5>
+                         style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #007bff;">
+                    <h5 class="card-title mb-1">{{ user.get_full_name() }}</h5>
                     {% if user.job_title %}
-                    <p class="text-muted mb-2">{{ user.job_title }}</p>
+                    <p class="text-primary mb-1"><strong>{{ user.job_title }}</strong></p>
                     {% endif %}
                     {% if user.department %}
-                    <p class="text-muted small mb-2">{{ user.department }}</p>
+                    <p class="text-muted small mb-3"><i class="fas fa-building me-1"></i>{{ user.department }}</p>
                     {% endif %}
                     {% if user.bio %}
-                    <p class="card-text small">{{ user.bio[:100] }}{% if user.bio|length > 100 %}...{% endif %}</p>
+                    <p class="card-text small text-muted" style="min-height: 60px;">
+                        {{ user.bio[:80] }}{% if user.bio|length > 80 %}...{% endif %}
+                    </p>
+                    {% else %}
+                    <p class="card-text small text-muted" style="min-height: 60px;"></p>
                     {% endif %}
-                    <div class="mt-3">
+                    
+                    <!-- Social Links -->
+                    <div class="mt-3 mb-3 d-flex flex-wrap justify-content-center gap-2">
                         {% if user.phone_number %}
-                        <a href="tel:{{ user.phone_number }}" class="btn btn-sm btn-outline-primary me-1">
+                        <a href="tel:{{ user.phone_number }}" class="btn btn-sm btn-outline-success" title="Telefono">
                             <i class="fas fa-phone"></i>
                         </a>
                         {% endif %}
-                        <a href="mailto:{{ user.email }}" class="btn btn-sm btn-outline-primary me-1">
+                        <a href="mailto:{{ user.email }}" class="btn btn-sm btn-outline-primary" title="Email">
                             <i class="fas fa-envelope"></i>
                         </a>
                         {% if user.linkedin_url %}
-                        <a href="{{ user.linkedin_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ user.linkedin_url }}" target="_blank" class="btn btn-sm btn-outline-info" title="LinkedIn">
                             <i class="fab fa-linkedin"></i>
                         </a>
                         {% endif %}
+                        {% if user.twitter_url %}
+                        <a href="{{ user.twitter_url }}" target="_blank" class="btn btn-sm btn-outline-info" title="Twitter/X">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        {% endif %}
+                        {% if user.instagram_url %}
+                        <a href="{{ user.instagram_url }}" target="_blank" class="btn btn-sm btn-outline-danger" title="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        {% endif %}
+                        {% if user.facebook_url %}
+                        <a href="{{ user.facebook_url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Facebook">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        {% endif %}
+                        {% if user.github_url %}
+                        <a href="{{ user.github_url }}" target="_blank" class="btn btn-sm btn-outline-dark" title="GitHub">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        {% endif %}
                     </div>
+                    
+                    <a href="{{ url_for('circle.persona_detail', user_id=user.id) }}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-user me-1"></i>Vedi Profilo Completo
+                    </a>
                 </div>
             </div>
         </div>

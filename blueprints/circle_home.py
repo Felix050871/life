@@ -111,6 +111,28 @@ def personas():
     
     return render_template('circle/personas.html', users=users)
 
+@bp.route('/personas/<int:user_id>')
+@login_required
+def persona_detail(user_id):
+    """Vista dettagliata profilo persona"""
+    if not current_user.has_permission('can_access_hubly'):
+        abort(403)
+    
+    company_id = get_user_company_id()
+    
+    # Verifica che l'utente appartenga alla stessa azienda
+    user = User.query.filter_by(
+        id=user_id,
+        company_id=company_id,
+        active=True,
+        is_system_admin=False
+    ).first()
+    
+    if not user or user.role == 'Amministratore':
+        abort(404)
+    
+    return render_template('circle/persona_detail.html', user=user)
+
 @bp.route('/tech-feed')
 @login_required
 def tech_feed():
