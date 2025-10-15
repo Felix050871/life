@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Termini di Servizio - Life Platform{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <h1 class="mb-4"><i class="fas fa-file-contract me-2"></i>Termini di Servizio</h1>
+            <p class="text-muted mb-4">Ultimo aggiornamento: {{ current_date|default('Ottobre 2025') }}</p>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">1. Accettazione dei Termini</h2>
+                    <p>Utilizzando Life Platform ("Piattaforma", "Servizio"), accetti di essere vincolato da questi Termini di Servizio. Se non accetti questi termini, non utilizzare la Piattaforma.</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">2. Descrizione del Servizio</h2>
+                    <p>Life Platform è una piattaforma SaaS multi-tenant per la gestione delle risorse umane che offre:</p>
+                    <ul>
+                        <li><strong>FLOW:</strong> Gestione presenze, turni, ferie, straordinari, rimborsi</li>
+                        <li><strong>CIRCLE:</strong> Social intranet aziendale con news, gruppi, calendario, documenti</li>
+                    </ul>
+                    <p>Ogni azienda ("Tenant") ha dati completamente isolati e un URL dedicato (<code>/t/&lt;slug&gt;</code>).</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">3. Account Utente</h2>
+                    <ul>
+                        <li>L'account è creato dall'amministratore della tua azienda</li>
+                        <li>Sei responsabile della sicurezza delle tue credenziali di accesso</li>
+                        <li>Devi notificare immediatamente l'amministratore in caso di accesso non autorizzato</li>
+                        <li>Non puoi condividere il tuo account con altre persone</li>
+                        <li>L'account è personale e legato alla tua identità aziendale</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">4. Uso Accettabile</h2>
+                    <p>Ti impegni a:</p>
+                    <ul>
+                        <li>Utilizzare la Piattaforma solo per scopi professionali legittimi</li>
+                        <li>Rispettare le policy aziendali e le leggi applicabili</li>
+                        <li>Non pubblicare contenuti illegali, diffamatori, offensivi o inappropriati</li>
+                        <li>Non tentare di accedere a dati di altre aziende o utenti non autorizzati</li>
+                        <li>Non utilizzare la Piattaforma per attività che potrebbero danneggiarla o comprometterne la sicurezza</li>
+                        <li>Rispettare i diritti di proprietà intellettuale</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">5. Contenuti Utente</h2>
+                    <ul>
+                        <li>Mantieni la proprietà dei contenuti che pubblichi (post, commenti, documenti)</li>
+                        <li>Concedi alla Piattaforma una licenza per archiviare e visualizzare i tuoi contenuti</li>
+                        <li>Sei responsabile dei contenuti che pubblichi</li>
+                        <li>La tua azienda può accedere ai contenuti secondo le policy configurate</li>
+                        <li>Possiamo rimuovere contenuti che violano questi termini</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">6. Privacy e Protezione Dati</h2>
+                    <p>Il trattamento dei tuoi dati personali è regolato dalla nostra <a href="{{ url_for('legal.privacy') }}" class="text-primary">Privacy Policy</a>, che fa parte integrante di questi Termini.</p>
+                    <p>Rispettiamo pienamente il GDPR e i tuoi diritti alla privacy.</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">7. Disponibilità del Servizio</h2>
+                    <ul>
+                        <li>Ci impegniamo a mantenere la Piattaforma disponibile il più possibile</li>
+                        <li>Possono verificarsi interruzioni per manutenzione programmata (con preavviso) o emergenze</li>
+                        <li>Non garantiamo uptime al 100%</li>
+                        <li>Eseguiamo backup regolari ma consigliamo di esportare periodicamente i tuoi dati</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">8. Limitazione di Responsabilità</h2>
+                    <p>La Piattaforma è fornita "così com'è" senza garanzie di alcun tipo. Nei limiti consentiti dalla legge:</p>
+                    <ul>
+                        <li>Non siamo responsabili per danni indiretti, consequenziali o speciali</li>
+                        <li>Non garantiamo che il servizio sia privo di errori o ininterrotto</li>
+                        <li>La responsabilità massima è limitata all'importo pagato dalla tua azienda negli ultimi 12 mesi</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">9. Modifiche al Servizio</h2>
+                    <p>Ci riserviamo il diritto di:</p>
+                    <ul>
+                        <li>Modificare, sospendere o interrompere qualsiasi funzionalità</li>
+                        <li>Aggiornare questi Termini di Servizio (con notifica preventiva per modifiche sostanziali)</li>
+                        <li>Modificare i prezzi per nuovi contratti (i contratti esistenti sono rispettati)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">10. Risoluzione e Cancellazione Account</h2>
+                    <ul>
+                        <li>L'amministratore aziendale può disattivare il tuo account in qualsiasi momento</li>
+                        <li>Puoi richiedere la cancellazione del tuo account (diritto GDPR)</li>
+                        <li>Alla cancellazione, i tuoi dati personali vengono eliminati secondo la Privacy Policy</li>
+                        <li>Alcuni dati possono essere conservati per obblighi legali</li>
+                        <li>Possiamo sospendere o terminare account che violano questi termini</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">11. Proprietà Intellettuale</h2>
+                    <p>Life Platform, il codice, il design, i loghi e tutti i contenuti della piattaforma (esclusi i contenuti utente) sono di proprietà del fornitore del servizio e protetti da copyright e altre leggi sulla proprietà intellettuale.</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">12. Legge Applicabile</h2>
+                    <p>Questi Termini sono regolati dalla legge italiana. Qualsiasi controversia sarà sottoposta alla giurisdizione esclusiva dei tribunali italiani.</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">13. Contatti</h2>
+                    <p>Per domande su questi Termini di Servizio:</p>
+                    <ul>
+                        <li><strong>Email:</strong> support@lifeplatform.example</li>
+                        <li><strong>Amministratore aziendale:</strong> tramite la piattaforma</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{{ url_for('home.index') }}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-2"></i>Torna alla Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - Life Platform{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <h1 class="mb-4"><i class="fas fa-shield-alt me-2"></i>Privacy Policy</h1>
+            <p class="text-muted mb-4">Ultimo aggiornamento: {{ current_date|default('Ottobre 2025') }}</p>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">1. Introduzione</h2>
+                    <p>Life Platform ("noi", "nostro") si impegna a proteggere la privacy e i dati personali dei propri utenti. Questa Privacy Policy descrive come raccogliamo, utilizziamo, conserviamo e proteggiamo i tuoi dati personali in conformità con il Regolamento Generale sulla Protezione dei Dati (GDPR - Regolamento UE 2016/679).</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">2. Dati che raccogliamo</h2>
+                    <p>Raccogliamo e processiamo le seguenti categorie di dati personali:</p>
+                    <ul>
+                        <li><strong>Dati di identificazione:</strong> nome, cognome, username, email</li>
+                        <li><strong>Dati professionali:</strong> ruolo, dipartimento, sede di lavoro, percentuale part-time</li>
+                        <li><strong>Dati di contatto:</strong> numero di telefono, profilo LinkedIn (opzionali)</li>
+                        <li><strong>Dati di autenticazione:</strong> password (crittografate), sessioni di login</li>
+                        <li><strong>Dati operativi:</strong> presenze, turni, richieste ferie, straordinari, rimborsi chilometrici</li>
+                        <li><strong>Contenuti generati:</strong> post, commenti, messaggi interni, documenti caricati</li>
+                        <li><strong>Dati di utilizzo:</strong> log di accesso, preferenze cookie, interazioni con la piattaforma</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">3. Base giuridica e finalità del trattamento</h2>
+                    <p>Trattiamo i tuoi dati personali sulla base delle seguenti basi giuridiche:</p>
+                    <ul>
+                        <li><strong>Esecuzione di un contratto:</strong> per fornire i servizi della piattaforma (gestione presenze, turni, ferie)</li>
+                        <li><strong>Obbligo legale:</strong> per adempiere a obblighi di legge in materia di lavoro e fiscali</li>
+                        <li><strong>Interesse legittimo:</strong> per migliorare i servizi, garantire la sicurezza della piattaforma</li>
+                        <li><strong>Consenso:</strong> per funzionalità opzionali come cookie non essenziali e profilo social</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">4. Condivisione dei dati</h2>
+                    <p>I tuoi dati personali non vengono mai venduti a terze parti. Condividiamo i dati solo quando necessario:</p>
+                    <ul>
+                        <li><strong>All'interno della tua azienda:</strong> i dati sono visibili ai colleghi e ai manager secondo i permessi configurati</li>
+                        <li><strong>Fornitori di servizi:</strong> hosting (Replit), database (PostgreSQL), email (se configurato)</li>
+                        <li><strong>Autorità competenti:</strong> quando richiesto per legge</li>
+                    </ul>
+                    <p><strong>Multi-tenancy:</strong> I dati della tua azienda sono completamente isolati da quelli di altre aziende che utilizzano la piattaforma.</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">5. I tuoi diritti (GDPR)</h2>
+                    <p>Hai i seguenti diritti sui tuoi dati personali:</p>
+                    <ul>
+                        <li><strong>Diritto di accesso:</strong> puoi richiedere una copia di tutti i tuoi dati personali</li>
+                        <li><strong>Diritto di rettifica:</strong> puoi modificare i tuoi dati personali dal tuo profilo</li>
+                        <li><strong>Diritto alla cancellazione:</strong> puoi richiedere la cancellazione del tuo account e di tutti i dati associati</li>
+                        <li><strong>Diritto alla portabilità:</strong> puoi esportare i tuoi dati in formato JSON o CSV</li>
+                        <li><strong>Diritto di opposizione:</strong> puoi opporti al trattamento basato su interesse legittimo</li>
+                        <li><strong>Diritto di revoca del consenso:</strong> puoi revocare il consenso per cookie non essenziali</li>
+                    </ul>
+                    <p class="mt-3">Per esercitare questi diritti, vai alla sezione <a href="{{ url_for('user_management.profile') }}" class="text-primary">Impostazioni Account</a> o contatta il tuo amministratore aziendale.</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">6. Conservazione dei dati</h2>
+                    <p>Conserviamo i tuoi dati personali per il tempo necessario a fornire i servizi e per adempiere agli obblighi legali:</p>
+                    <ul>
+                        <li><strong>Dati operativi:</strong> fino a 10 anni dopo la cessazione del rapporto di lavoro (obblighi fiscali)</li>
+                        <li><strong>Dati di autenticazione:</strong> fino alla cancellazione dell'account</li>
+                        <li><strong>Contenuti social (CIRCLE):</strong> fino alla cancellazione dell'account o rimozione manuale</li>
+                        <li><strong>Log di sistema:</strong> fino a 12 mesi</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">7. Sicurezza dei dati</h2>
+                    <p>Implementiamo misure tecniche e organizzative appropriate per proteggere i tuoi dati:</p>
+                    <ul>
+                        <li>Crittografia delle password con algoritmi sicuri</li>
+                        <li>Connessioni HTTPS per tutte le comunicazioni</li>
+                        <li>Cookie sicuri con flag HttpOnly e SameSite</li>
+                        <li>Protezione CSRF su tutti i form</li>
+                        <li>Sanitizzazione HTML per prevenire attacchi XSS</li>
+                        <li>Validazione rigorosa dei file caricati</li>
+                        <li>Backup regolari dei database</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">8. Cookie</h2>
+                    <p>Utilizziamo cookie per garantire il funzionamento della piattaforma e migliorare l'esperienza utente:</p>
+                    <ul>
+                        <li><strong>Cookie essenziali:</strong> sessione, autenticazione, CSRF protection (sempre attivi)</li>
+                        <li><strong>Cookie di preferenza:</strong> consenso cookie, preferenze interfaccia (richiedono consenso)</li>
+                    </ul>
+                    <p>Puoi gestire le tue preferenze sui cookie tramite il banner visualizzato al primo accesso.</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">9. Modifiche alla Privacy Policy</h2>
+                    <p>Ci riserviamo il diritto di aggiornare questa Privacy Policy. Le modifiche sostanziali saranno comunicate tramite email o notifica nella piattaforma.</p>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">10. Contatti</h2>
+                    <p>Per domande sulla privacy o per esercitare i tuoi diritti GDPR, contatta:</p>
+                    <ul>
+                        <li><strong>Data Protection Officer (DPO):</strong> privacy@lifeplatform.example</li>
+                        <li><strong>Amministratore aziendale:</strong> tramite la piattaforma</li>
+                    </ul>
+                    <p>Hai anche il diritto di presentare un reclamo all'Autorità Garante per la Protezione dei Dati Personali.</p>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{{ url_for('home.index') }}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-2"></i>Torna alla Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

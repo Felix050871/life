@@ -35,6 +35,9 @@ from blueprints.circle_calendar import bp as circle_calendar_bp
 from blueprints.circle_documents import bp as circle_documents_bp
 from blueprints.circle_tools import bp as circle_tools_bp
 
+# Legal/GDPR Blueprints
+from blueprints.legal import bp as legal_bp
+
 app.register_blueprint(auth_bp)
 app.register_blueprint(holidays_bp)
 app.register_blueprint(dashboard_bp)
@@ -64,6 +67,9 @@ app.register_blueprint(circle_polls_bp)
 app.register_blueprint(circle_calendar_bp)
 app.register_blueprint(circle_documents_bp)
 app.register_blueprint(circle_tools_bp)
+
+# Legal/GDPR Blueprints
+app.register_blueprint(legal_bp)
 
 if __name__ == '__main__':
     app.run(debug=Config.FLASK_DEBUG, host=Config.SERVER_HOST, port=Config.SERVER_PORT)
