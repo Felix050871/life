@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, send_file
 from flask_login import login_required, current_user
 from app import db
 from models import (
@@ -10,8 +10,15 @@ from datetime import datetime, timedelta
 from sqlalchemy import desc
 from werkzeug.utils import secure_filename
 from PIL import Image
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT, TA_CENTER
 import os
 import uuid
+import io
 
 bp = Blueprint('circle', __name__, url_prefix='/circle')
 
@@ -133,6 +140,224 @@ def persona_detail(user_id):
         abort(404)
     
     return render_template('circle/persona_detail.html', user=user)
+
+@bp.route('/personas/<int:user_id>/cv-pdf')
+@login_required
+def download_cv_pdf(user_id):
+    """Genera e scarica il CV in formato PDF"""
+    if not current_user.has_permission('can_access_hubly'):
+        abort(403)
+    
+    company_id = get_user_company_id()
+    
+    # Verifica che l'utente appartenga alla stessa azienda
+    user = User.query.filter_by(
+        id=user_id,
+        company_id=company_id,
+        active=True,
+        is_system_admin=False
+    ).first()
+    
+    if not user or user.role == 'Amministratore':
+        abort(404)
+    
+    # Crea PDF in memoria
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    # Stili personalizzati
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#007bff'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#007bff'),
+        spaceAfter=8,
+        spaceBefore=12
+    )
+    
+    subheading_style = ParagraphStyle(
+        'CustomSubHeading',
+        parent=styles['Heading3'],
+        fontSize=12,
+        textColor=colors.HexColor('#333333'),
+        spaceAfter=6
+    )
+    
+    body_style = ParagraphStyle(
+        'CustomBody',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=6
+    )
+    
+    # Titolo - Nome completo
+    story.append(Paragraph(user.get_full_name(), title_style))
+    
+    # Job title e department
+    if user.job_title:
+        story.append(Paragraph(user.job_title, subheading_style))
+    if user.department:
+        story.append(Paragraph(user.department, body_style))
+    
+    story.append(Spacer(1, 0.5*cm))
+    
+    # Contatti
+    contact_data = []
+    if user.email:
+        contact_data.append(['Email:', user.email])
+    if user.phone_number:
+        contact_data.append(['Telefono:', user.phone_number])
+    
+    if contact_data:
+        contact_table = Table(contact_data, colWidths=[4*cm, 12*cm])
+        contact_table.setStyle(TableStyle([
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#666666')),
+            ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        story.append(contact_table)
+        story.append(Spacer(1, 0.5*cm))
+    
+    # Bio
+    if user.bio:
+        story.append(Paragraph('Profilo Professionale', heading_style))
+        story.append(Paragraph(user.bio, body_style))
+        story.append(Spacer(1, 0.3*cm))
+    
+    # Formazione
+    if user.education:
+        story.append(Paragraph('Formazione', heading_style))
+        for edu in user.education:
+            degree = edu.get('degree', '')
+            institution = edu.get('institution', '')
+            location = edu.get('location', '')
+            start_date = edu.get('start_date', '')
+            end_date = edu.get('end_date', '')
+            description = edu.get('description', '')
+            
+            story.append(Paragraph(f"<b>{degree}</b>", subheading_style))
+            if institution:
+                inst_text = institution
+                if location:
+                    inst_text += f" - {location}"
+                story.append(Paragraph(inst_text, body_style))
+            if start_date or end_date:
+                period = f"{start_date} - {end_date}" if start_date and end_date else (start_date or end_date)
+                story.append(Paragraph(period, body_style))
+            if description:
+                story.append(Paragraph(description, body_style))
+            story.append(Spacer(1, 0.2*cm))
+    
+    # Esperienza Professionale
+    if user.experience:
+        story.append(Paragraph('Esperienza Professionale', heading_style))
+        for exp in user.experience:
+            position = exp.get('position', '')
+            company = exp.get('company', '')
+            location = exp.get('location', '')
+            start_date = exp.get('start_date', '')
+            end_date = exp.get('end_date', '')
+            current = exp.get('current', False)
+            description = exp.get('description', '')
+            
+            story.append(Paragraph(f"<b>{position}</b>", subheading_style))
+            if company:
+                comp_text = company
+                if location:
+                    comp_text += f" - {location}"
+                story.append(Paragraph(comp_text, body_style))
+            if start_date or end_date or current:
+                if current:
+                    period = f"{start_date} - Presente" if start_date else "Presente"
+                else:
+                    period = f"{start_date} - {end_date}" if start_date and end_date else (start_date or end_date)
+                story.append(Paragraph(period, body_style))
+            if description:
+                story.append(Paragraph(description, body_style))
+            story.append(Spacer(1, 0.2*cm))
+    
+    # Competenze
+    if user.skills:
+        story.append(Paragraph('Competenze', heading_style))
+        for skill_group in user.skills:
+            category = skill_group.get('category', 'Competenze')
+            items = skill_group.get('items', [])
+            story.append(Paragraph(f"<b>{category}:</b> {', '.join(items)}", body_style))
+        story.append(Spacer(1, 0.3*cm))
+    
+    # Lingue
+    if user.languages:
+        story.append(Paragraph('Lingue', heading_style))
+        for lang in user.languages:
+            language = lang.get('language', '')
+            level = lang.get('level', '')
+            proficiency = lang.get('proficiency', '')
+            certifications = lang.get('certifications', '')
+            
+            lang_text = f"<b>{language}</b>"
+            if level:
+                lang_text += f" - {level}"
+            if proficiency:
+                lang_text += f" ({proficiency})"
+            story.append(Paragraph(lang_text, body_style))
+            if certifications:
+                story.append(Paragraph(f"<i>{certifications}</i>", body_style))
+        story.append(Spacer(1, 0.3*cm))
+    
+    # Certificazioni
+    if user.certifications:
+        story.append(Paragraph('Certificazioni', heading_style))
+        for cert in user.certifications:
+            name = cert.get('name', '')
+            issuer = cert.get('issuer', '')
+            date = cert.get('date', '')
+            expiry = cert.get('expiry', '')
+            credential_id = cert.get('credential_id', '')
+            
+            story.append(Paragraph(f"<b>{name}</b>", subheading_style))
+            if issuer:
+                story.append(Paragraph(f"Ente certificatore: {issuer}", body_style))
+            if date or expiry:
+                cert_period = f"Rilasciata: {date}" if date else ""
+                if expiry:
+                    cert_period += f" | Scadenza: {expiry}"
+                story.append(Paragraph(cert_period, body_style))
+            if credential_id:
+                story.append(Paragraph(f"ID Credenziale: {credential_id}", body_style))
+            story.append(Spacer(1, 0.2*cm))
+    
+    # Referenze
+    if user.references:
+        story.append(Paragraph('Referenze', heading_style))
+        # Sostituisci newline con <br/> per il PDF
+        references_html = user.references.replace('\n', '<br/>')
+        story.append(Paragraph(references_html, body_style))
+    
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    # Prepara filename
+    filename = f"CV_{user.last_name}_{user.first_name}.pdf"
+    
+    return send_file(
+        buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename
+    )
 
 @bp.route('/tech-feed')
 @login_required
