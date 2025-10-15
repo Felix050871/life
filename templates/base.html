@@ -1290,7 +1290,11 @@
 
         function setCookie(name, value, days) {
             const expires = new Date(Date.now() + days * 864e5).toUTCString();
-            document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
+            // Use Secure attribute for HTTPS environments (like Replit)
+            const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = `${name}=${value}; expires=${expires}; path=/${isSecure}; SameSite=Lax`;
+            console.log('Cookie set:', name, '=', value);
+            console.log('Cookie string:', document.cookie);
         }
 
         function checkCookieConsent() {
