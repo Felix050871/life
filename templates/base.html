@@ -1295,13 +1295,22 @@
 
         function checkCookieConsent() {
             const consent = getCookie(COOKIE_CONSENT_NAME);
+            const banner = document.getElementById('cookieConsentBanner');
+            
             if (!consent) {
                 // Show banner if no consent given
-                document.getElementById('cookieConsentBanner').style.display = 'block';
+                banner.style.display = 'block';
             } else {
-                // Apply saved preferences
-                const preferences = JSON.parse(consent);
-                applyCookiePreferences(preferences);
+                // Hide banner and apply saved preferences
+                banner.style.display = 'none';
+                try {
+                    const preferences = JSON.parse(consent);
+                    applyCookiePreferences(preferences);
+                } catch (e) {
+                    // If parsing fails, show banner again
+                    console.error('Error parsing cookie consent:', e);
+                    banner.style.display = 'block';
+                }
             }
         }
 
