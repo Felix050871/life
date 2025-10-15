@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione CV - Life{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cv-section {
+        background: var(--bs-dark-bg-subtle);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .cv-entry {
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    
+    .remove-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+    
+    .skills-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .skill-badge {
+        background: var(--bs-primary);
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .skill-badge .remove-skill {
+        cursor: pointer;
+        opacity: 0.8;
+    }
+    
+    .skill-badge .remove-skill:hover {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-file-alt text-primary me-2"></i>Gestione CV
+                    </h2>
+                    <p class="text-muted mb-0">Compila il tuo curriculum vitae per renderlo visibile nella sezione Personas di CIRCLE</p>
+                </div>
+                <a href="{{ url_for('user_management.user_profile') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Torna al Profilo
+                </a>
+            </div>
+
+            <form id="cvForm">
+                <!-- Formazione / Education -->
+                <div class="cv-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-graduation-cap text-success me-2"></i>Formazione
+                    </h5>
+                    <div id="educationContainer">
+                        {% if education and education|length > 0 %}
+                            {% for edu in education %}
+                            <div class="cv-entry education-entry">
+                                <button type="button" class="btn btn-sm btn-danger remove-btn remove-education">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Titolo di Studio</label>
+                                        <input type="text" class="form-control edu-degree" placeholder="Es: Laurea in Informatica" value="{{ edu.degree }}">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label">Istituto</label>
+                                        <input type="text" class="form-control edu-institution" placeholder="Es: Università di Bologna" value="{{ edu.institution }}">
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">Anno</label>
+                                        <input type="text" class="form-control edu-year" placeholder="2020" value="{{ edu.year }}">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Descrizione (opzionale)</label>
+                                        <textarea class="form-control edu-description" rows="2" placeholder="Breve descrizione...">{{ edu.description }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="addEducation">
+                        <i class="fas fa-plus me-1"></i>Aggiungi Formazione
+                    </button>
+                </div>
+
+                <!-- Esperienza Professionale / Experience -->
+                <div class="cv-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-briefcase text-info me-2"></i>Esperienza Professionale
+                    </h5>
+                    <div id="experienceContainer">
+                        {% if experience and experience|length > 0 %}
+                            {% for exp in experience %}
+                            <div class="cv-entry experience-entry">
+                                <button type="button" class="btn btn-sm btn-danger remove-btn remove-experience">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Posizione</label>
+                                        <input type="text" class="form-control exp-title" placeholder="Es: Software Developer" value="{{ exp.title }}">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label">Azienda</label>
+                                        <input type="text" class="form-control exp-company" placeholder="Es: Tech Corp SRL" value="{{ exp.company }}">
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">Periodo</label>
+                                        <input type="text" class="form-control exp-period" placeholder="2020-2023" value="{{ exp.period }}">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Descrizione (opzionale)</label>
+                                        <textarea class="form-control exp-description" rows="2" placeholder="Breve descrizione del ruolo...">{{ exp.description }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-info" id="addExperience">
+                        <i class="fas fa-plus me-1"></i>Aggiungi Esperienza
+                    </button>
+                </div>
+
+                <!-- Competenze / Skills -->
+                <div class="cv-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-code text-warning me-2"></i>Competenze
+                    </h5>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="skillInput" placeholder="Inserisci una competenza e premi Invio">
+                        <button type="button" class="btn btn-outline-warning" id="addSkill">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="skills-container" id="skillsContainer">
+                        {% if skills and skills|length > 0 %}
+                            {% for skill in skills %}
+                            <span class="skill-badge">
+                                {{ skill }}
+                                <span class="remove-skill">&times;</span>
+                            </span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Certificazioni / Certifications -->
+                <div class="cv-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-certificate text-danger me-2"></i>Certificazioni
+                    </h5>
+                    <div id="certificationsContainer">
+                        {% if certifications and certifications|length > 0 %}
+                            {% for cert in certifications %}
+                            <div class="cv-entry certification-entry">
+                                <button type="button" class="btn btn-sm btn-danger remove-btn remove-certification">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Nome Certificazione</label>
+                                        <input type="text" class="form-control cert-name" placeholder="Es: AWS Certified Solutions Architect" value="{{ cert.name }}">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label">Ente Certificatore</label>
+                                        <input type="text" class="form-control cert-issuer" placeholder="Es: Amazon Web Services" value="{{ cert.issuer }}">
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">Anno</label>
+                                        <input type="text" class="form-control cert-year" placeholder="2023" value="{{ cert.year }}">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Descrizione (opzionale)</label>
+                                        <textarea class="form-control cert-description" rows="2" placeholder="Breve descrizione...">{{ cert.description }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="addCertification">
+                        <i class="fas fa-plus me-1"></i>Aggiungi Certificazione
+                    </button>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save me-2"></i>Salva CV
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Education management
+document.getElementById('addEducation').addEventListener('click', function() {
+    const container = document.getElementById('educationContainer');
+    const entry = document.createElement('div');
+    entry.className = 'cv-entry education-entry';
+    entry.innerHTML = `
+        <button type="button" class="btn btn-sm btn-danger remove-btn remove-education">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Titolo di Studio</label>
+                <input type="text" class="form-control edu-degree" placeholder="Es: Laurea in Informatica">
+            </div>
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Istituto</label>
+                <input type="text" class="form-control edu-institution" placeholder="Es: Università di Bologna">
+            </div>
+            <div class="col-md-2 mb-2">
+                <label class="form-label">Anno</label>
+                <input type="text" class="form-control edu-year" placeholder="2020">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Descrizione (opzionale)</label>
+                <textarea class="form-control edu-description" rows="2" placeholder="Breve descrizione..."></textarea>
+            </div>
+        </div>
+    `;
+    container.appendChild(entry);
+});
+
+// Remove education
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-education')) {
+        e.target.closest('.education-entry').remove();
+    }
+});
+
+// Experience management
+document.getElementById('addExperience').addEventListener('click', function() {
+    const container = document.getElementById('experienceContainer');
+    const entry = document.createElement('div');
+    entry.className = 'cv-entry experience-entry';
+    entry.innerHTML = `
+        <button type="button" class="btn btn-sm btn-danger remove-btn remove-experience">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Posizione</label>
+                <input type="text" class="form-control exp-title" placeholder="Es: Software Developer">
+            </div>
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Azienda</label>
+                <input type="text" class="form-control exp-company" placeholder="Es: Tech Corp SRL">
+            </div>
+            <div class="col-md-2 mb-2">
+                <label class="form-label">Periodo</label>
+                <input type="text" class="form-control exp-period" placeholder="2020-2023">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Descrizione (opzionale)</label>
+                <textarea class="form-control exp-description" rows="2" placeholder="Breve descrizione del ruolo..."></textarea>
+            </div>
+        </div>
+    `;
+    container.appendChild(entry);
+});
+
+// Remove experience
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-experience')) {
+        e.target.closest('.experience-entry').remove();
+    }
+});
+
+// Skills management
+document.getElementById('addSkill').addEventListener('click', addSkill);
+document.getElementById('skillInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addSkill();
+    }
+});
+
+function addSkill() {
+    const input = document.getElementById('skillInput');
+    const skill = input.value.trim();
+    if (skill) {
+        const container = document.getElementById('skillsContainer');
+        const badge = document.createElement('span');
+        badge.className = 'skill-badge';
+        badge.innerHTML = `${skill} <span class="remove-skill">&times;</span>`;
+        container.appendChild(badge);
+        input.value = '';
+    }
+}
+
+// Remove skill
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-skill')) {
+        e.target.closest('.skill-badge').remove();
+    }
+});
+
+// Certification management
+document.getElementById('addCertification').addEventListener('click', function() {
+    const container = document.getElementById('certificationsContainer');
+    const entry = document.createElement('div');
+    entry.className = 'cv-entry certification-entry';
+    entry.innerHTML = `
+        <button type="button" class="btn btn-sm btn-danger remove-btn remove-certification">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Nome Certificazione</label>
+                <input type="text" class="form-control cert-name" placeholder="Es: AWS Certified Solutions Architect">
+            </div>
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Ente Certificatore</label>
+                <input type="text" class="form-control cert-issuer" placeholder="Es: Amazon Web Services">
+            </div>
+            <div class="col-md-2 mb-2">
+                <label class="form-label">Anno</label>
+                <input type="text" class="form-control cert-year" placeholder="2023">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Descrizione (opzionale)</label>
+                <textarea class="form-control cert-description" rows="2" placeholder="Breve descrizione..."></textarea>
+            </div>
+        </div>
+    `;
+    container.appendChild(entry);
+});
+
+// Remove certification
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-certification')) {
+        e.target.closest('.certification-entry').remove();
+    }
+});
+
+// Form submission
+document.getElementById('cvForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect education
+    const education = [];
+    document.querySelectorAll('.education-entry').forEach(entry => {
+        education.push({
+            degree: entry.querySelector('.edu-degree').value,
+            institution: entry.querySelector('.edu-institution').value,
+            year: entry.querySelector('.edu-year').value,
+            description: entry.querySelector('.edu-description').value
+        });
+    });
+    
+    // Collect experience
+    const experience = [];
+    document.querySelectorAll('.experience-entry').forEach(entry => {
+        experience.push({
+            title: entry.querySelector('.exp-title').value,
+            company: entry.querySelector('.exp-company').value,
+            period: entry.querySelector('.exp-period').value,
+            description: entry.querySelector('.exp-description').value
+        });
+    });
+    
+    // Collect skills
+    const skills = [];
+    document.querySelectorAll('.skill-badge').forEach(badge => {
+        skills.push(badge.textContent.replace('×', '').trim());
+    });
+    
+    // Collect certifications
+    const certifications = [];
+    document.querySelectorAll('.certification-entry').forEach(entry => {
+        certifications.push({
+            name: entry.querySelector('.cert-name').value,
+            issuer: entry.querySelector('.cert-issuer').value,
+            year: entry.querySelector('.cert-year').value,
+            description: entry.querySelector('.cert-description').value
+        });
+    });
+    
+    // Send data to server
+    fetch('{{ url_for("user_management.cv_editor") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            education: education,
+            experience: experience,
+            skills: skills,
+            certifications: certifications
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.row'));
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Remove alert after 3 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        } else {
+            alert('Errore: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Errore durante il salvataggio del CV');
+        console.error('Error:', error);
+    });
+});
+</script>
+{% endblock %}

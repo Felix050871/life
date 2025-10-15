@@ -332,6 +332,97 @@ def user_profile():
     
     return render_template('user_profile.html', user=current_user, form=form)
 
+@user_management_bp.route('/profile/cv', methods=['GET', 'POST'])
+@login_required
+def cv_editor():
+    """CV Editor page for managing education, experience, skills, and certifications"""
+    import json
+    
+    if request.method == 'POST':
+        try:
+            # Get JSON data from request
+            data = request.json if request.is_json else request.form
+            
+            # Parse education
+            education = []
+            if 'education' in data:
+                education_data = json.loads(data['education']) if isinstance(data['education'], str) else data['education']
+                for edu in education_data:
+                    if edu.get('degree') or edu.get('institution'):
+                        education.append({
+                            'degree': edu.get('degree', ''),
+                            'institution': edu.get('institution', ''),
+                            'year': edu.get('year', ''),
+                            'description': edu.get('description', '')
+                        })
+            
+            # Parse experience
+            experience = []
+            if 'experience' in data:
+                experience_data = json.loads(data['experience']) if isinstance(data['experience'], str) else data['experience']
+                for exp in experience_data:
+                    if exp.get('title') or exp.get('company'):
+                        experience.append({
+                            'title': exp.get('title', ''),
+                            'company': exp.get('company', ''),
+                            'period': exp.get('period', ''),
+                            'description': exp.get('description', '')
+                        })
+            
+            # Parse skills
+            skills = []
+            if 'skills' in data:
+                skills_data = json.loads(data['skills']) if isinstance(data['skills'], str) else data['skills']
+                skills = [s.strip() for s in skills_data if s.strip()] if isinstance(skills_data, list) else [s.strip() for s in skills_data.split(',') if s.strip()]
+            
+            # Parse certifications
+            certifications = []
+            if 'certifications' in data:
+                cert_data = json.loads(data['certifications']) if isinstance(data['certifications'], str) else data['certifications']
+                for cert in cert_data:
+                    if cert.get('name'):
+                        certifications.append({
+                            'name': cert.get('name', ''),
+                            'issuer': cert.get('issuer', ''),
+                            'year': cert.get('year', ''),
+                            'description': cert.get('description', '')
+                        })
+            
+            # Update user CV data
+            current_user.education = education if education else None
+            current_user.experience = experience if experience else None
+            current_user.skills = skills if skills else None
+            current_user.certifications = certifications if certifications else None
+            
+            db.session.commit()
+            
+            if request.is_json:
+                return jsonify({'success': True, 'message': 'CV aggiornato con successo'})
+            else:
+                flash('CV aggiornato con successo', 'success')
+                return redirect(url_for('user_management.cv_editor'))
+        
+        except Exception as e:
+            db.session.rollback()
+            if request.is_json:
+                return jsonify({'success': False, 'error': str(e)}), 400
+            else:
+                flash(f'Errore durante l\'aggiornamento del CV: {str(e)}', 'danger')
+                return redirect(url_for('user_management.cv_editor'))
+    
+    # GET request - show editor
+    # Ensure CV fields are initialized as empty lists if None
+    education = current_user.education if current_user.education else []
+    experience = current_user.experience if current_user.experience else []
+    skills = current_user.skills if current_user.skills else []
+    certifications = current_user.certifications if current_user.certifications else []
+    
+    return render_template('cv_editor.html', 
+                         education=education, 
+                         experience=experience, 
+                         skills=skills, 
+                         certifications=certifications)
+
 # =============================================================================
 # USER MANAGEMENT MAIN ROUTES
 # =============================================================================
