@@ -797,6 +797,92 @@ class User(UserMixin, db.Model):
             return last_attendance.date
         return None
     
+    # === CONNECTION MANAGEMENT (CIRCLE) ===
+    def is_connected_with(self, other_user):
+        """Verifica se due utenti sono connessi (richiesta accettata)"""
+        connection = ConnectionRequest.query.filter(
+            db.or_(
+                db.and_(
+                    ConnectionRequest.sender_id == self.id,
+                    ConnectionRequest.recipient_id == other_user.id
+                ),
+                db.and_(
+                    ConnectionRequest.sender_id == other_user.id,
+                    ConnectionRequest.recipient_id == self.id
+                )
+            ),
+            ConnectionRequest.status == 'accepted'
+        ).first()
+        return connection is not None
+    
+    def has_pending_request_with(self, other_user):
+        """Verifica se esiste una richiesta pendente con un altro utente"""
+        pending = ConnectionRequest.query.filter(
+            db.or_(
+                db.and_(
+                    ConnectionRequest.sender_id == self.id,
+                    ConnectionRequest.recipient_id == other_user.id
+                ),
+                db.and_(
+                    ConnectionRequest.sender_id == other_user.id,
+                    ConnectionRequest.recipient_id == self.id
+                )
+            ),
+            ConnectionRequest.status == 'pending'
+        ).first()
+        return pending
+    
+    def get_connection_status(self, other_user):
+        """Restituisce lo stato della connessione con un altro utente
+        Returns: 'connected', 'pending_sent', 'pending_received', 'none'
+        """
+        if self.id == other_user.id:
+            return 'self'
+        
+        # Check if connected
+        if self.is_connected_with(other_user):
+            return 'connected'
+        
+        # Check pending request
+        pending = self.has_pending_request_with(other_user)
+        if pending:
+            if pending.sender_id == self.id:
+                return 'pending_sent'
+            else:
+                return 'pending_received'
+        
+        return 'none'
+    
+    def get_connections(self):
+        """Restituisce tutti gli utenti connessi"""
+        # Richieste inviate e accettate
+        sent_accepted = db.session.query(User).join(
+            ConnectionRequest, 
+            ConnectionRequest.recipient_id == User.id
+        ).filter(
+            ConnectionRequest.sender_id == self.id,
+            ConnectionRequest.status == 'accepted'
+        ).all()
+        
+        # Richieste ricevute e accettate
+        received_accepted = db.session.query(User).join(
+            ConnectionRequest,
+            ConnectionRequest.sender_id == User.id
+        ).filter(
+            ConnectionRequest.recipient_id == self.id,
+            ConnectionRequest.status == 'accepted'
+        ).all()
+        
+        # Unisci e rimuovi duplicati
+        connections = list(set(sent_accepted + received_accepted))
+        return connections
+    
+    def get_pending_connection_requests(self):
+        """Restituisce tutte le richieste di connessione pendenti ricevute"""
+        return ConnectionRequest.query.filter_by(
+            recipient_id=self.id,
+            status='pending'
+        ).all()
 
 
 
@@ -3282,3 +3368,28 @@ class CircleGroupMessage(db.Model):
     
     def __repr__(self):
         return f'<CircleGroupMessage Group#{self.group_id} From#{self.sender_id} To#{self.recipient_id}>'
+
+
+class ConnectionRequest(db.Model):
+    """Modello per richieste di connessione tra utenti CIRCLE (Personas)"""
+    __tablename__ = 'connection_request'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'accepted', 'rejected'
+    created_at = db.Column(db.DateTime, default=italian_now)
+    responded_at = db.Column(db.DateTime, nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    # Relationships
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_connection_requests')
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_connection_requests')
+    
+    # Constraint per evitare richieste duplicate
+    __table_args__ = (
+        db.UniqueConstraint('sender_id', 'recipient_id', name='unique_connection_request'),
+    )
+    
+    def __repr__(self):
+        return f'<ConnectionRequest From#{self.sender_id} To#{self.recipient_id} Status:{self.status}>'
