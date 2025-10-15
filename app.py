@@ -150,6 +150,10 @@ def safe_html(text):
     import bleach
     from markupsafe import Markup
     
+    # Prima converti i letterali \n in newline reali
+    # Questo gestisce il caso in cui il database contiene "\n" come stringa
+    text = text.replace('\\n', '\n')
+    
     # Tag HTML permessi (solo formattazione di base)
     allowed_tags = [
         'p', 'br', 'b', 'i', 'strong', 'em', 'u', 's',
