@@ -4,6 +4,7 @@ from app import db
 from models import CirclePost, CircleComment, CircleLike, User
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
 from utils_security import sanitize_html, validate_image_upload
+from email_utils import send_announcement_notification
 from sqlalchemy import desc
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -123,7 +124,35 @@ def create():
         db.session.add(new_post)
         db.session.commit()
         
-        flash('Post creato con successo!', 'success')
+        # Invia email se richiesto (solo per comunicazioni)
+        send_email_notification = request.form.get('send_email_notification') == 'on'
+        if send_email_notification and post_type == 'comunicazione':
+            company_id = get_user_company_id()
+            
+            # Recupera tutti gli utenti attivi dell'azienda (escluso l'autore)
+            company_users = User.query.filter(
+                User.company_id == company_id,
+                User.active == True,
+                User.id != current_user.id,
+                User.email.isnot(None)
+            ).all()
+            
+            if company_users:
+                # Genera URL completo per il post
+                post_url = url_for('circle_news.view_post', post_id=new_post.id, _external=True)
+                
+                # Invia notifiche
+                sent_count = send_announcement_notification(new_post, company_users, post_url)
+                
+                if sent_count > 0:
+                    flash(f'Comunicazione pubblicata! Email inviate a {sent_count} utenti.', 'success')
+                else:
+                    flash('Comunicazione pubblicata! Errore nell\'invio delle email.', 'warning')
+            else:
+                flash('Comunicazione pubblicata! Nessun utente trovato per l\'invio email.', 'info')
+        else:
+            flash('Post creato con successo!', 'success')
+        
         return redirect(url_for('circle_news.view_post', post_id=new_post.id))
     
     return render_template('circle/news/create.html')
