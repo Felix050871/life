@@ -524,7 +524,7 @@ def request_account_deletion():
         from werkzeug.security import check_password_hash
         password = request.form.get('password')
         
-        if not check_password_hash(current_user.password_hash, password):
+        if not password or not check_password_hash(current_user.password_hash, password):
             flash('Password non corretta', 'danger')
             return redirect(url_for('user_management.request_account_deletion'))
         
