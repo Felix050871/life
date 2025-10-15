@@ -255,7 +255,9 @@ class User(UserMixin, db.Model):
     education = db.Column(db.JSON, nullable=True)  # Formazione/Istruzione
     experience = db.Column(db.JSON, nullable=True)  # Esperienza lavorativa
     skills = db.Column(db.JSON, nullable=True)  # Competenze/Abilità
+    languages = db.Column(db.JSON, nullable=True)  # Lingue conosciute con livelli
     certifications = db.Column(db.JSON, nullable=True)  # Certificazioni
+    references = db.Column(db.Text, nullable=True)  # Referenze professionali
     
     # Multi-tenant fields
     is_system_admin = db.Column(db.Boolean, default=False)  # Admin di sistema (non legato a nessuna azienda)
