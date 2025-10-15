@@ -46,17 +46,27 @@ class UserProfileForm(FlaskForm):
         FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Solo immagini JPG, PNG o GIF!')
     ])
     
-    # HUBLY Social fields
+    # CIRCLE Social fields
     bio = TextAreaField('Biografia', validators=[Optional(), Length(max=500)], 
                        render_kw={'rows': 3, 'placeholder': 'Parlaci di te...'})
-    linkedin_url = StringField('LinkedIn URL', validators=[Optional(), Length(max=255)],
-                              render_kw={'placeholder': 'https://linkedin.com/in/...'})
-    phone_number = StringField('Telefono Aziendale', validators=[Optional(), Length(max=20)],
-                               render_kw={'placeholder': '+39 123 456 7890'})
+    job_title = StringField('Ruolo Aziendale', validators=[Optional(), Length(max=100)],
+                           render_kw={'placeholder': 'Es: Software Developer'})
     department = StringField('Dipartimento', validators=[Optional(), Length(max=100)],
                             render_kw={'placeholder': 'Es: IT, HR, Sales...'})
-    job_title = StringField('Titolo Professionale', validators=[Optional(), Length(max=100)],
-                           render_kw={'placeholder': 'Es: Software Developer'})
+    phone_number = StringField('Telefono Aziendale', validators=[Optional(), Length(max=20)],
+                               render_kw={'placeholder': '+39 123 456 7890'})
+    
+    # Social Media Links
+    linkedin_url = StringField('LinkedIn', validators=[Optional(), Length(max=255)],
+                              render_kw={'placeholder': 'https://linkedin.com/in/...'})
+    twitter_url = StringField('Twitter/X', validators=[Optional(), Length(max=255)],
+                             render_kw={'placeholder': 'https://twitter.com/...'})
+    instagram_url = StringField('Instagram', validators=[Optional(), Length(max=255)],
+                               render_kw={'placeholder': 'https://instagram.com/...'})
+    facebook_url = StringField('Facebook', validators=[Optional(), Length(max=255)],
+                              render_kw={'placeholder': 'https://facebook.com/...'})
+    github_url = StringField('GitHub', validators=[Optional(), Length(max=255)],
+                            render_kw={'placeholder': 'https://github.com/...'})
     
     password = PasswordField('Nuova Password', validators=[Optional(), Length(min=6)])
     confirm_password = PasswordField('Conferma Password', validators=[

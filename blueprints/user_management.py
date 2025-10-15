@@ -262,12 +262,16 @@ def user_profile():
         current_user.last_name = form.last_name.data
         current_user.email = form.email.data
         
-        # Update HUBLY social fields
+        # Update CIRCLE social fields
         current_user.bio = form.bio.data
-        current_user.linkedin_url = form.linkedin_url.data
-        current_user.phone_number = form.phone_number.data
-        current_user.department = form.department.data
         current_user.job_title = form.job_title.data
+        current_user.department = form.department.data
+        current_user.phone_number = form.phone_number.data
+        current_user.linkedin_url = form.linkedin_url.data
+        current_user.twitter_url = form.twitter_url.data
+        current_user.instagram_url = form.instagram_url.data
+        current_user.facebook_url = form.facebook_url.data
+        current_user.github_url = form.github_url.data
         
         # Handle profile image upload
         if form.profile_image.data:

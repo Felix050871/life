@@ -82,6 +82,141 @@
                         <hr class="my-4">
 
                         <h6 class="mb-3">
+                            <i class="fas fa-id-card text-primary me-2"></i>Informazioni CIRCLE (Profilo Pubblico)
+                        </h6>
+
+                        <div class="mb-3">
+                            {{ form.bio.label(class="form-label") }}
+                            {{ form.bio(class="form-control") }}
+                            {% if form.bio.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.bio.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Breve descrizione di te (max 500 caratteri)</small>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.job_title.label(class="form-label") }}
+                                {{ form.job_title(class="form-control") }}
+                                {% if form.job_title.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.job_title.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.department.label(class="form-label") }}
+                                {{ form.department(class="form-control") }}
+                                {% if form.department.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.department.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.phone_number.label(class="form-label") }}
+                            {{ form.phone_number(class="form-control") }}
+                            {% if form.phone_number.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.phone_number.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <h6 class="mb-3 mt-4">
+                            <i class="fas fa-share-alt text-info me-2"></i>Canali Social
+                        </h6>
+
+                        <div class="mb-3">
+                            {{ form.linkedin_url.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fab fa-linkedin"></i></span>
+                                {{ form.linkedin_url(class="form-control") }}
+                            </div>
+                            {% if form.linkedin_url.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.linkedin_url.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.twitter_url.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fab fa-twitter"></i></span>
+                                {{ form.twitter_url(class="form-control") }}
+                            </div>
+                            {% if form.twitter_url.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.twitter_url.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.instagram_url.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fab fa-instagram"></i></span>
+                                {{ form.instagram_url(class="form-control") }}
+                            </div>
+                            {% if form.instagram_url.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.instagram_url.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.facebook_url.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fab fa-facebook"></i></span>
+                                {{ form.facebook_url(class="form-control") }}
+                            </div>
+                            {% if form.facebook_url.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.facebook_url.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.github_url.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fab fa-github"></i></span>
+                                {{ form.github_url(class="form-control") }}
+                            </div>
+                            {% if form.github_url.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.github_url.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="mb-3">
                             <i class="fas fa-key me-2"></i>Cambia Password (opzionale)
                         </h6>
 
