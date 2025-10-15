@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}CIRCLE - Nuovo Strumento{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <a href="{{ url_for('circle_tools.manage') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Torna alla Gestione
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Crea Nuovo Strumento</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nome Strumento <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required
+                                   placeholder="es. Email Aziendale, Trello, Slack...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Nome Applicazione/Categoria <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="category" name="category" required
+                                   placeholder="es. Comunicazione, Produttività, HR...">
+                            <small class="text-muted">Inserisci il nome dell'applicazione o categoria</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL <span class="text-danger">*</span></label>
+                            <input type="url" class="form-control" id="url" name="url" required
+                                   placeholder="https://...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Descrizione opzionale dello strumento"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="icon" class="form-label">Icona Font Awesome</label>
+                                <input type="text" class="form-control" id="icon" name="icon" value="fa-link"
+                                       placeholder="es. fa-envelope, fa-calendar...">
+                                <small class="text-muted">Cerca su <a href="https://fontawesome.com/icons" target="_blank">fontawesome.com</a></small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="sort_order" class="form-label">Ordine di visualizzazione</label>
+                                <input type="number" class="form-control" id="sort_order" name="sort_order" value="0">
+                                <small class="text-muted">Numero più basso = posizione più alta</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('circle_tools.manage') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Annulla
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Crea Strumento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Suggerimenti</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Esempi di Strumenti:</h6>
+                    <ul class="small">
+                        <li><strong>Email:</strong> Webmail aziendale</li>
+                        <li><strong>Calendario:</strong> Google Calendar condiviso</li>
+                        <li><strong>Trello:</strong> Gestione progetti</li>
+                        <li><strong>Drive:</strong> Documenti condivisi</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Icone Popolari:</h6>
+                    <ul class="small">
+                        <li><code>fa-envelope</code> - Email</li>
+                        <li><code>fa-calendar</code> - Calendario</li>
+                        <li><code>fa-folder</code> - Documenti</li>
+                        <li><code>fa-chart-line</code> - Analytics</li>
+                        <li><code>fa-comments</code> - Chat</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

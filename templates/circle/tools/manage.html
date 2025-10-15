@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}CIRCLE - Gestione Strumenti{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-cog me-2"></i>Gestione Strumenti</h2>
+        <div>
+            <a href="{{ url_for('circle_tools.index') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Torna agli Strumenti
+            </a>
+            <a href="{{ url_for('circle_tools.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Nuovo Strumento
+            </a>
+        </div>
+    </div>
+
+    {% if tools %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Ordine</th>
+                        <th>Nome</th>
+                        <th>Categoria</th>
+                        <th>URL</th>
+                        <th>Icona</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tool in tools %}
+                    <tr>
+                        <td>{{ tool.sort_order }}</td>
+                        <td>
+                            <i class="fas {{ tool.icon }} me-2"></i>
+                            {{ tool.name }}
+                        </td>
+                        <td><span class="badge bg-secondary">{{ tool.category }}</span></td>
+                        <td>
+                            <a href="{{ tool.url }}" target="_blank" class="text-decoration-none small">
+                                {{ tool.url[:50] }}{% if tool.url|length > 50 %}...{% endif %}
+                            </a>
+                        </td>
+                        <td>
+                            <code>{{ tool.icon }}</code>
+                        </td>
+                        <td>
+                            {% if tool.is_active %}
+                            <span class="badge bg-success">Attivo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Disattivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('circle_tools.edit', tool_id=tool.id) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ url_for('circle_tools.delete', tool_id=tool.id) }}" method="POST" class="d-inline" 
+                                      onsubmit="return confirm('Sei sicuro di voler eliminare questo strumento?');">
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Nessuno strumento configurato.
+        <a href="{{ url_for('circle_tools.create') }}">Crea il primo strumento</a>.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

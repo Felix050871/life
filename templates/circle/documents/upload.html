@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}CIRCLE - Carica Documento{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <a href="{{ url_for('circle_documents.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Torna ai Documenti
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Carica Nuovo Documento</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Titolo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Tipologia Documento <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="category" name="category" 
+                                   placeholder="es. Organigramma, Chiusura Natalizia, Procedura Sicurezza..." required>
+                            <small class="text-muted">Inserisci la tipologia del documento</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Descrizione opzionale del documento"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="version" class="form-label">Versione</label>
+                            <input type="text" class="form-control" id="version" name="version" value="1.0">
+                            <small class="text-muted">es. 1.0, 2.1, ecc.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="file" class="form-label">File <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="file" name="file" required>
+                            <small class="text-muted">Formati supportati: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP (max 10MB)</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('circle_documents.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Annulla
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-1"></i>Carica Documento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informazioni</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Formati Supportati:</h6>
+                    <ul class="small">
+                        <li>Documenti: PDF, DOC, DOCX</li>
+                        <li>Fogli di calcolo: XLS, XLSX</li>
+                        <li>Presentazioni: PPT, PPTX</li>
+                        <li>Altro: TXT, ZIP</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Note:</h6>
+                    <ul class="small">
+                        <li>Dimensione massima: 10MB</li>
+                        <li>La tipologia è un campo libero</li>
+                        <li>I documenti saranno visibili a tutti gli utenti autorizzati</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
