@@ -156,7 +156,7 @@
 <script>
 function toggleLike() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    fetch('/hubly/news/api/{{ post.id }}/like', {
+    fetch('{{ url_for("circle_news.api_toggle_like", post_id=post.id) }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
