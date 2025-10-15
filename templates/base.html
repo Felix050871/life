@@ -1135,6 +1135,223 @@
         };
     </script>
 
+    <!-- Cookie Consent Banner (GDPR Compliance) -->
+    <div id="cookieConsentBanner" class="cookie-consent-banner" style="display: none;">
+        <div class="cookie-consent-content">
+            <div class="cookie-consent-text">
+                <h5><i class="fas fa-cookie-bite me-2"></i>Questo sito utilizza i cookie</h5>
+                <p>Utilizziamo cookie essenziali per garantire il funzionamento della piattaforma e cookie di preferenza per migliorare la tua esperienza. Continuando a utilizzare il sito, acconsenti all'uso dei cookie in conformità con la nostra <a href="{{ url_for('legal.privacy') }}" class="text-primary">Privacy Policy</a>.</p>
+            </div>
+            <div class="cookie-consent-buttons">
+                <button type="button" class="btn btn-outline-light btn-sm" onclick="manageCookies()">
+                    <i class="fas fa-cog me-1"></i>Gestisci
+                </button>
+                <button type="button" class="btn btn-light btn-sm" onclick="acceptAllCookies()">
+                    <i class="fas fa-check me-1"></i>Accetta Tutti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie Settings Modal -->
+    <div class="modal fade" id="cookieSettingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-cookie-bite me-2"></i>Impostazioni Cookie</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Gestisci le tue preferenze sui cookie. I cookie essenziali sono sempre attivi perché necessari per il funzionamento della piattaforma.</p>
+                    
+                    <div class="cookie-category mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1"><i class="fas fa-check-circle text-success me-2"></i>Cookie Essenziali</h6>
+                                <small class="text-muted">Necessari per autenticazione, sessione e sicurezza (CSRF)</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" checked disabled>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cookie-category mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1"><i class="fas fa-sliders-h me-2"></i>Cookie di Preferenza</h6>
+                                <small class="text-muted">Memorizzano le tue preferenze (tema, lingua, impostazioni interfaccia)</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="preferenceCookies" checked>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <small><i class="fas fa-info-circle me-1"></i>Non utilizziamo cookie di terze parti o di tracciamento per finalità pubblicitarie.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCookiePreferences()">
+                        <i class="fas fa-save me-1"></i>Salva Preferenze
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .cookie-consent-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border-top: 2px solid #007bff;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+            z-index: 9999;
+            padding: 1rem;
+        }
+
+        .cookie-consent-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .cookie-consent-text {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .cookie-consent-text h5 {
+            color: #fff;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .cookie-consent-text p {
+            color: #ccc;
+            margin-bottom: 0;
+            font-size: 0.9rem;
+        }
+
+        .cookie-consent-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .cookie-category {
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .cookie-consent-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .cookie-consent-buttons {
+                justify-content: stretch;
+            }
+
+            .cookie-consent-buttons button {
+                flex: 1;
+            }
+        }
+    </style>
+
+    <script>
+        // Cookie Consent Management
+        const COOKIE_CONSENT_NAME = 'life_cookie_consent';
+        const COOKIE_CONSENT_EXPIRY_DAYS = 365;
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function setCookie(name, value, days) {
+            const expires = new Date(Date.now() + days * 864e5).toUTCString();
+            document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
+        }
+
+        function checkCookieConsent() {
+            const consent = getCookie(COOKIE_CONSENT_NAME);
+            if (!consent) {
+                // Show banner if no consent given
+                document.getElementById('cookieConsentBanner').style.display = 'block';
+            } else {
+                // Apply saved preferences
+                const preferences = JSON.parse(consent);
+                applyCookiePreferences(preferences);
+            }
+        }
+
+        function acceptAllCookies() {
+            const preferences = {
+                essential: true,
+                preference: true,
+                timestamp: new Date().toISOString()
+            };
+            setCookie(COOKIE_CONSENT_NAME, JSON.stringify(preferences), COOKIE_CONSENT_EXPIRY_DAYS);
+            document.getElementById('cookieConsentBanner').style.display = 'none';
+            applyCookiePreferences(preferences);
+        }
+
+        function manageCookies() {
+            const modal = new bootstrap.Modal(document.getElementById('cookieSettingsModal'));
+            modal.show();
+            
+            // Load current preferences
+            const consent = getCookie(COOKIE_CONSENT_NAME);
+            if (consent) {
+                const preferences = JSON.parse(consent);
+                document.getElementById('preferenceCookies').checked = preferences.preference;
+            }
+        }
+
+        function saveCookiePreferences() {
+            const preferences = {
+                essential: true, // Always true
+                preference: document.getElementById('preferenceCookies').checked,
+                timestamp: new Date().toISOString()
+            };
+            setCookie(COOKIE_CONSENT_NAME, JSON.stringify(preferences), COOKIE_CONSENT_EXPIRY_DAYS);
+            document.getElementById('cookieConsentBanner').style.display = 'none';
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cookieSettingsModal'));
+            modal.hide();
+            
+            applyCookiePreferences(preferences);
+            
+            // Show success message
+            alert('Preferenze cookie salvate con successo!');
+        }
+
+        function applyCookiePreferences(preferences) {
+            // Apply cookie preferences (currently only essential and preference cookies)
+            // This can be extended to disable/enable specific features based on preferences
+            console.log('Cookie preferences applied:', preferences);
+        }
+
+        // Check consent on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkCookieConsent();
+        });
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
