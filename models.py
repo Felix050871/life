@@ -243,9 +243,19 @@ class User(UserMixin, db.Model):
     # CIRCLE Social fields
     bio = db.Column(db.Text, nullable=True)  # Biografia breve per profilo social
     linkedin_url = db.Column(db.String(255), nullable=True)  # URL profilo LinkedIn
+    twitter_url = db.Column(db.String(255), nullable=True)  # URL profilo Twitter/X
+    instagram_url = db.Column(db.String(255), nullable=True)  # URL profilo Instagram
+    facebook_url = db.Column(db.String(255), nullable=True)  # URL profilo Facebook
+    github_url = db.Column(db.String(255), nullable=True)  # URL profilo GitHub
     phone_number = db.Column(db.String(20), nullable=True)  # Numero di telefono aziendale
     department = db.Column(db.String(100), nullable=True)  # Dipartimento/Reparto
     job_title = db.Column(db.String(100), nullable=True)  # Titolo professionale
+    
+    # CV/Resume fields (stored as JSON for flexibility)
+    education = db.Column(db.JSON, nullable=True)  # Formazione/Istruzione
+    experience = db.Column(db.JSON, nullable=True)  # Esperienza lavorativa
+    skills = db.Column(db.JSON, nullable=True)  # Competenze/Abilità
+    certifications = db.Column(db.JSON, nullable=True)  # Certificazioni
     
     # Multi-tenant fields
     is_system_admin = db.Column(db.Boolean, default=False)  # Admin di sistema (non legato a nessuna azienda)
