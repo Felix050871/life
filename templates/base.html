@@ -1297,11 +1297,16 @@
             const consent = getCookie(COOKIE_CONSENT_NAME);
             const banner = document.getElementById('cookieConsentBanner');
             
+            console.log('Checking cookie consent. Cookie value:', consent);
+            console.log('All cookies:', document.cookie);
+            
             if (!consent) {
                 // Show banner if no consent given
+                console.log('No consent found, showing banner');
                 banner.style.display = 'block';
             } else {
                 // Hide banner and apply saved preferences
+                console.log('Consent found, hiding banner');
                 banner.style.display = 'none';
                 try {
                     const preferences = JSON.parse(consent);
