@@ -159,12 +159,18 @@ def send_message():
             elif current_user.sede_id and recipient.sede_id == current_user.sede_id:
                 can_send = True
             
-            # Poi verifica se sono collegati (solo se CIRCLE è abilitato)
-            if can_send and current_user.has_permission('can_access_hubly'):
-                # Se CIRCLE è attivo, verifica la connessione
-                if not current_user.is_connected_with(recipient):
-                    can_send = False
-                    non_connected_recipients.append(recipient.get_full_name())
+            # Verifica connessione se CIRCLE è abilitato per entrambi gli utenti
+            # Un messaggio può essere inviato SOLO se gli utenti sono collegati in CIRCLE
+            if can_send:
+                # Se almeno uno dei due ha accesso a CIRCLE, verifica la connessione
+                sender_has_circle = current_user.has_permission('can_access_hubly')
+                recipient_has_circle = recipient.has_permission('can_access_hubly')
+                
+                if sender_has_circle or recipient_has_circle:
+                    # Se CIRCLE è attivo per almeno uno, devono essere collegati
+                    if not current_user.is_connected_with(recipient):
+                        can_send = False
+                        non_connected_recipients.append(recipient.get_full_name())
             
             if can_send:
                 valid_recipients.append(recipient)
