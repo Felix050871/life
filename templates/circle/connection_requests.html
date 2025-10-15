@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}CIRCLE - Richieste di Connessione{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <h2>
+            <i class="fas fa-user-friends text-primary me-2"></i>Richieste di Connessione
+        </h2>
+        <p class="text-muted">Gestisci le tue richieste di connessione con altri colleghi</p>
+    </div>
+
+    <div class="row">
+        <!-- Richieste Ricevute -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-inbox me-2"></i>Richieste Ricevute
+                        {% if received_requests|length > 0 %}
+                        <span class="badge bg-warning float-end">{{ received_requests|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if received_requests|length > 0 %}
+                        <div class="list-group list-group-flush">
+                            {% for request in received_requests %}
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="{{ request.sender.get_profile_image_url() }}" 
+                                         alt="{{ request.sender.get_full_name() }}" 
+                                         class="rounded-circle me-3"
+                                         style="width: 60px; height: 60px; object-fit: cover;">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <a href="{{ url_for('circle.persona_detail', user_id=request.sender.id) }}">
+                                                {{ request.sender.get_full_name() }}
+                                            </a>
+                                        </h6>
+                                        {% if request.sender.job_title %}
+                                        <p class="text-muted mb-1 small">{{ request.sender.job_title }}</p>
+                                        {% endif %}
+                                        {% if request.sender.department %}
+                                        <p class="text-muted mb-0 small">
+                                            <i class="fas fa-building me-1"></i>{{ request.sender.department }}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ request.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                                <div class="mt-3 d-flex gap-2">
+                                    <form action="{{ url_for('circle.accept_connection_request', request_id=request.id) }}" method="POST" class="flex-fill">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-check me-1"></i>Accetta
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('circle.reject_connection_request', request_id=request.id) }}" method="POST" class="flex-fill">
+                                        <button type="submit" class="btn btn-outline-danger w-100">
+                                            <i class="fas fa-times me-1"></i>Rifiuta
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>Nessuna richiesta ricevuta</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Richieste Inviate -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paper-plane me-2"></i>Richieste Inviate
+                        {% if sent_requests|length > 0 %}
+                        <span class="badge bg-warning float-end">{{ sent_requests|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if sent_requests|length > 0 %}
+                        <div class="list-group list-group-flush">
+                            {% for request in sent_requests %}
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="{{ request.recipient.get_profile_image_url() }}" 
+                                         alt="{{ request.recipient.get_full_name() }}" 
+                                         class="rounded-circle me-3"
+                                         style="width: 60px; height: 60px; object-fit: cover;">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <a href="{{ url_for('circle.persona_detail', user_id=request.recipient.id) }}">
+                                                {{ request.recipient.get_full_name() }}
+                                            </a>
+                                        </h6>
+                                        {% if request.recipient.job_title %}
+                                        <p class="text-muted mb-1 small">{{ request.recipient.job_title }}</p>
+                                        {% endif %}
+                                        {% if request.recipient.department %}
+                                        <p class="text-muted mb-0 small">
+                                            <i class="fas fa-building me-1"></i>{{ request.recipient.department }}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge bg-warning">In Attesa</span>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Inviata il {{ request.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                                <div class="mt-3">
+                                    <form action="{{ url_for('circle.cancel_connection_request', request_id=request.id) }}" method="POST">
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                                            <i class="fas fa-times me-1"></i>Annulla Richiesta
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-paper-plane fa-3x mb-3"></i>
+                            <p>Nessuna richiesta inviata</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('circle.personas') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Torna a Personas
+        </a>
+    </div>
+</div>
+{% endblock %}
