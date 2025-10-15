@@ -82,6 +82,16 @@
                         </div>
                         {% endif %}
 
+                        <div class="mb-3" id="email-notification-section" style="display: none;">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="send_email_notification" name="send_email_notification">
+                                <label class="form-check-label" for="send_email_notification">
+                                    <i class="fas fa-envelope"></i> Invia email a tutti gli utenti dell'azienda
+                                </label>
+                            </div>
+                            <div class="form-text">Una notifica email verrà inviata a tutti gli utenti attivi dell'azienda con il link alla comunicazione.</div>
+                        </div>
+
                         <!-- Buttons -->
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('circle_news.index') }}" class="btn btn-secondary">
@@ -136,5 +146,25 @@ document.querySelector('form').onsubmit = function(e) {
     document.getElementById('content').value = content;
     return true;
 };
+
+// Mostra/nascondi opzione email notifica in base al tipo di post
+document.getElementById('post_type').addEventListener('change', function() {
+    var emailSection = document.getElementById('email-notification-section');
+    if (this.value === 'comunicazione') {
+        emailSection.style.display = 'block';
+    } else {
+        emailSection.style.display = 'none';
+        document.getElementById('send_email_notification').checked = false;
+    }
+});
+
+// Inizializza visibilità al caricamento
+document.addEventListener('DOMContentLoaded', function() {
+    var postType = document.getElementById('post_type').value;
+    var emailSection = document.getElementById('email-notification-section');
+    if (postType === 'comunicazione') {
+        emailSection.style.display = 'block';
+    }
+});
 </script>
 {% endblock %}
