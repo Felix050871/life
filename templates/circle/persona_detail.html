@@ -150,7 +150,7 @@
                     <h5 class="mb-0"><i class="fas fa-user me-2"></i>Su di me</h5>
                 </div>
                 <div class="card-body">
-                    <p class="mb-0">{{ user.bio }}</p>
+                    <p class="mb-0">{{ user.bio|safe }}</p>
                 </div>
             </div>
             {% endif %}
@@ -175,7 +175,7 @@
                         </p>
                         {% endif %}
                         {% if edu.description %}
-                        <p class="small mb-0">{{ edu.description }}</p>
+                        <p class="small mb-0">{{ edu.description|safe }}</p>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -203,7 +203,7 @@
                         </p>
                         {% endif %}
                         {% if exp.description %}
-                        <p class="small mb-0">{{ exp.description }}</p>
+                        <p class="small mb-0">{{ exp.description|safe }}</p>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -296,7 +296,7 @@
                     <h5 class="mb-0"><i class="fas fa-users me-2"></i>Referenze</h5>
                 </div>
                 <div class="card-body">
-                    <p class="mb-0" style="white-space: pre-line;">{{ user.references }}</p>
+                    <p class="mb-0" style="white-space: pre-line;">{{ user.references|safe }}</p>
                 </div>
             </div>
             {% endif %}
