@@ -317,10 +317,52 @@ def delete(post_id):
 # API AJAX per interazioni reattive
 # =============================================================================
 
+# Route tenant-aware per API like
+@bp.route('/t/<slug>/circle/news/api/<int:post_id>/like', methods=['POST'])
+@login_required
+def api_toggle_like_tenant(slug, post_id):
+    """Toggle like via AJAX - tenant-aware route"""
+    if not current_user.has_permission('can_like_posts'):
+        return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
+    
+    post = filter_by_company(CirclePost.query, current_user).filter_by(id=post_id).first_or_404()
+    
+    existing_like = CircleLike.query.filter_by(post_id=post_id, user_id=current_user.id).first()
+    
+    if existing_like:
+        db.session.delete(existing_like)
+        db.session.commit()
+        liked = False
+    else:
+        new_like = CircleLike(post_id=post_id, user_id=current_user.id)
+        db.session.add(new_like)
+        db.session.commit()
+        liked = True
+    
+    # Get updated like count and users
+    likes = CircleLike.query.filter_by(post_id=post_id).all()
+    like_count = len(likes)
+    like_users = []
+    for like in likes[:5]:  # Primi 5 utenti
+        if like.user:
+            like_users.append({
+                'id': like.user.id,
+                'name': like.user.get_full_name(),
+                'avatar': like.user.get_profile_image_url()
+            })
+    
+    return jsonify({
+        'success': True,
+        'liked': liked,
+        'like_count': like_count,
+        'like_users': like_users
+    })
+
+# Legacy route without tenant prefix (for backwards compatibility)
 @bp.route('/api/<int:post_id>/like', methods=['POST'])
 @login_required
 def api_toggle_like(post_id):
-    """Toggle like via AJAX"""
+    """Toggle like via AJAX - legacy route"""
     if not current_user.has_permission('can_like_posts'):
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
     

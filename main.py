@@ -71,5 +71,18 @@ app.register_blueprint(circle_tools_bp)
 # Legal/GDPR Blueprints
 app.register_blueprint(legal_bp)
 
+# =============================================================================
+# TENANT-AWARE API ROUTES
+# Manually register tenant-prefixed routes for AJAX APIs
+# =============================================================================
+from blueprints.circle_news import api_toggle_like_tenant
+
+# Register tenant-aware like API
+app.add_url_rule(
+    '/t/<slug>/circle/news/api/<int:post_id>/like',
+    view_func=api_toggle_like_tenant,
+    methods=['POST']
+)
+
 if __name__ == '__main__':
     app.run(debug=Config.FLASK_DEBUG, host=Config.SERVER_HOST, port=Config.SERVER_PORT)
