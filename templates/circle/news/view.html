@@ -68,12 +68,19 @@
                     <!-- Like section -->
                     <div class="d-flex justify-content-between align-items-center py-3 border-top border-bottom">
                         <div>
+                            {% if current_user.has_permission('can_like_posts') %}
                             <button class="btn btn-link text-decoration-none {% if user_liked %}text-danger{% else %}text-muted{% endif %}" 
                                     id="like-btn" 
                                     onclick="toggleLike()">
                                 <i class="{% if user_liked %}fas{% else %}far{% endif %} fa-heart"></i>
                                 <span id="like-count">{{ post.get_like_count() }}</span> Mi Piace
                             </button>
+                            {% else %}
+                            <span class="text-muted">
+                                <i class="far fa-heart"></i>
+                                <span id="like-count">{{ post.get_like_count() }}</span> Mi Piace
+                            </span>
+                            {% endif %}
                         </div>
                         
                         <!-- Like avatars -->
