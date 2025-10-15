@@ -278,3 +278,76 @@ Dettagli:
     body_text += "\nPer maggiori informazioni, contatta il tuo responsabile.\n\n---\nLife - Sistema Gestione Presenze"
     
     return send_email(subject, [user.email], body_text)
+
+
+def send_announcement_notification(post, company_users, post_url):
+    """
+    Invia notifica email a tutti gli utenti dell'azienda per una nuova comunicazione
+    
+    Args:
+        post: Oggetto CirclePost (comunicazione)
+        company_users: Lista di oggetti User dell'azienda
+        post_url: URL completo per visualizzare la comunicazione
+    
+    Returns:
+        Numero di email inviate con successo
+    """
+    subject = f"📢 Nuova Comunicazione: {post.title}"
+    
+    successful_sends = 0
+    
+    for user in company_users:
+        if not user.email:
+            continue
+            
+        body_text = f"""
+Ciao {user.get_full_name()},
+
+È stata pubblicata una nuova comunicazione su Life.
+
+Titolo: {post.title}
+Autore: {post.author.get_full_name()}
+
+Accedi a Life per leggere la comunicazione completa:
+{post_url}
+
+---
+Life - Piattaforma Aziendale
+"""
+        
+        body_html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+                <h2 style="color: #007bff;">📢 Nuova Comunicazione</h2>
+                <p>Ciao <strong>{user.get_full_name()}</strong>,</p>
+                <p>È stata pubblicata una nuova comunicazione su Life.</p>
+                
+                <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #333;">{post.title}</h3>
+                    <p style="color: #666; margin-bottom: 15px;">
+                        <small>Autore: {post.author.get_full_name()}</small>
+                    </p>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="{post_url}" style="display: inline-block; padding: 12px 30px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+                            Leggi la Comunicazione
+                        </a>
+                    </div>
+                </div>
+                
+                <p style="color: #666; font-size: 14px;">
+                    Accedi alla piattaforma Life per visualizzare il contenuto completo.
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="font-size: 12px; color: #999; text-align: center;">Life - Piattaforma Aziendale</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        if send_email(subject, [user.email], body_text, body_html):
+            successful_sends += 1
+    
+    return successful_sends
