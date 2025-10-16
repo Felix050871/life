@@ -12,11 +12,12 @@ from PIL import Image
 import os
 import uuid
 
-bp = Blueprint('circle_news', __name__, url_prefix='/circle/news')
+bp = Blueprint('circle_news', __name__)
 
-@bp.route('/')
+@bp.route('/circle/news/')
+@bp.route('/t/<slug>/circle/news/')
 @login_required
-def index():
+def index(slug=None):
     """Lista di tutte le news/comunicazioni"""
     if not current_user.has_permission('can_access_hubly'):
         abort(403)
@@ -28,9 +29,10 @@ def index():
     
     return render_template('circle/news/index.html', posts=news_posts, now=datetime.now())
 
-@bp.route('/<int:post_id>')
+@bp.route('/circle/news/<int:post_id>')
+@bp.route('/t/<slug>/circle/news/<int:post_id>')
 @login_required
-def view_post(post_id):
+def view_post(post_id, slug=None):
     """Visualizza dettaglio post con commenti"""
     if not current_user.has_permission('can_access_hubly'):
         abort(403)
@@ -53,9 +55,10 @@ def view_post(post_id):
                          user_liked=user_liked,
                          tenant_slug=tenant_slug)
 
-@bp.route('/create', methods=['GET', 'POST'])
+@bp.route('/circle/news/create', methods=['GET', 'POST'])
+@bp.route('/t/<slug>/circle/news/create', methods=['GET', 'POST'])
 @login_required
-def create():
+def create(slug=None):
     """Crea nuovo post/news"""
     if not current_user.has_permission('can_create_posts'):
         abort(403)
@@ -162,9 +165,10 @@ def create():
     
     return render_template('circle/news/create.html')
 
-@bp.route('/<int:post_id>/comment', methods=['POST'])
+@bp.route('/circle/news/<int:post_id>/comment', methods=['POST'])
+@bp.route('/t/<slug>/circle/news/<int:post_id>/comment', methods=['POST'])
 @login_required
-def add_comment(post_id):
+def add_comment(post_id, slug=None):
     """Aggiungi commento a un post"""
     if not current_user.has_permission('can_comment_posts'):
         abort(403)
@@ -193,9 +197,10 @@ def add_comment(post_id):
     
     return redirect(url_for('circle_news.view_post', post_id=post_id))
 
-@bp.route('/<int:post_id>/like', methods=['POST'])
+@bp.route('/circle/news/<int:post_id>/like', methods=['POST'])
+@bp.route('/t/<slug>/circle/news/<int:post_id>/like', methods=['POST'])
 @login_required
-def toggle_like(post_id):
+def toggle_like(post_id, slug=None):
     """Toggle like su un post"""
     if not current_user.has_permission('can_like_posts'):
         abort(403)
@@ -216,9 +221,10 @@ def toggle_like(post_id):
     
     return redirect(url_for('circle_news.view_post', post_id=post_id))
 
-@bp.route('/<int:post_id>/edit', methods=['GET', 'POST'])
+@bp.route('/circle/news/<int:post_id>/edit', methods=['GET', 'POST'])
+@bp.route('/t/<slug>/circle/news/<int:post_id>/edit', methods=['GET', 'POST'])
 @login_required
-def edit(post_id):
+def edit(post_id, slug=None):
     """Modifica post esistente"""
     if not current_user.has_permission('can_edit_posts'):
         abort(403)
@@ -294,9 +300,10 @@ def edit(post_id):
     
     return render_template('circle/news/edit.html', post=post)
 
-@bp.route('/<int:post_id>/delete', methods=['POST'])
+@bp.route('/circle/news/<int:post_id>/delete', methods=['POST'])
+@bp.route('/t/<slug>/circle/news/<int:post_id>/delete', methods=['POST'])
 @login_required
-def delete(post_id):
+def delete(post_id, slug=None):
     """Elimina post"""
     if not current_user.has_permission('can_delete_posts'):
         abort(403)
@@ -317,11 +324,11 @@ def delete(post_id):
 # API AJAX per interazioni reattive
 # =============================================================================
 
-# Route tenant-aware per API like
+@bp.route('/circle/news/api/<int:post_id>/like', methods=['POST'])
 @bp.route('/t/<slug>/circle/news/api/<int:post_id>/like', methods=['POST'])
 @login_required
-def api_toggle_like_tenant(slug, post_id):
-    """Toggle like via AJAX - tenant-aware route"""
+def api_toggle_like(post_id, slug=None):
+    """Toggle like via AJAX"""
     if not current_user.has_permission('can_like_posts'):
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
     
@@ -358,50 +365,10 @@ def api_toggle_like_tenant(slug, post_id):
         'like_users': like_users
     })
 
-# Legacy route without tenant prefix (for backwards compatibility)
-@bp.route('/api/<int:post_id>/like', methods=['POST'])
+@bp.route('/circle/news/api/<int:post_id>/comment', methods=['POST'])
+@bp.route('/t/<slug>/circle/news/api/<int:post_id>/comment', methods=['POST'])
 @login_required
-def api_toggle_like(post_id):
-    """Toggle like via AJAX - legacy route"""
-    if not current_user.has_permission('can_like_posts'):
-        return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
-    
-    post = filter_by_company(CirclePost.query, current_user).filter_by(id=post_id).first_or_404()
-    
-    existing_like = CircleLike.query.filter_by(post_id=post_id, user_id=current_user.id).first()
-    
-    if existing_like:
-        db.session.delete(existing_like)
-        db.session.commit()
-        liked = False
-    else:
-        new_like = CircleLike(post_id=post_id, user_id=current_user.id)
-        db.session.add(new_like)
-        db.session.commit()
-        liked = True
-    
-    # Get updated like count and users
-    likes = CircleLike.query.filter_by(post_id=post_id).all()
-    like_count = len(likes)
-    like_users = []
-    for like in likes[:5]:  # Primi 5 utenti
-        if like.user:
-            like_users.append({
-                'id': like.user.id,
-                'name': like.user.get_full_name(),
-                'avatar': like.user.get_profile_image_url()
-            })
-    
-    return jsonify({
-        'success': True,
-        'liked': liked,
-        'like_count': like_count,
-        'like_users': like_users
-    })
-
-@bp.route('/api/<int:post_id>/comment', methods=['POST'])
-@login_required
-def api_add_comment(post_id):
+def api_add_comment(post_id, slug=None):
     """Aggiungi commento via AJAX"""
     if not current_user.has_permission('can_comment_posts'):
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
