@@ -77,7 +77,7 @@
                                                     {% set recipients = message.get_all_recipients() %}
                                                     <i class="fas fa-arrow-right me-1"></i>A: 
                                                     {% if recipients|length <= 3 %}
-                                                        {{ ', '.join([r.get_full_name() for r in recipients]) }}
+                                                        {% for r in recipients %}{{ r.get_full_name() }}{% if not loop.last %}, {% endif %}{% endfor %}
                                                     {% else %}
                                                         {{ recipients[0].get_full_name() }}, {{ recipients[1].get_full_name() }} e altri {{ recipients|length - 2 }}
                                                     {% endif %}
