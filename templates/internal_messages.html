@@ -73,7 +73,17 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">
                                             {% if is_sent %}
-                                                <i class="fas fa-arrow-right me-1"></i>A: {{ message.get_recipient_name() }}
+                                                {% if message.message_group_id %}
+                                                    {% set recipients = message.get_all_recipients() %}
+                                                    <i class="fas fa-arrow-right me-1"></i>A: 
+                                                    {% if recipients|length <= 3 %}
+                                                        {{ ', '.join([r.get_full_name() for r in recipients]) }}
+                                                    {% else %}
+                                                        {{ recipients[0].get_full_name() }}, {{ recipients[1].get_full_name() }} e altri {{ recipients|length - 2 }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    <i class="fas fa-arrow-right me-1"></i>A: {{ message.get_recipient_name() }}
+                                                {% endif %}
                                             {% else %}
                                                 <i class="fas fa-user me-1"></i>Da: {{ message.get_sender_name() }}
                                             {% endif %}
