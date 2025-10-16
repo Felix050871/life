@@ -38,7 +38,7 @@ def is_safe_url(target):
 # CORE NAVIGATION ROUTES
 @app.route('/')
 def index():
-    """Main entry point - show home page or redirect to login"""
+    """Main entry point - redirect to appropriate dashboard or login"""
     if current_user.is_authenticated:
         # SUPERADMIN sees company dashboard
         if current_user.is_system_admin:
@@ -66,6 +66,6 @@ def index():
             
             return render_template('dashboard_superadmin.html', company_stats=company_stats)
         
-        # Regular users see normal home
-        return render_template('home.html')
+        # Regular users redirect to dashboard (FLOW)
+        return redirect(url_for('dashboard.dashboard'))
     return redirect(url_for('auth.login'))
