@@ -15,36 +15,40 @@
 <body>
     <!-- SUPERADMIN Layout - Full Screen without Sidebar -->
     {% if current_user.is_authenticated %}
-    <!-- Project Title Bar with User Menu -->
-    <div class="project-title-bar">
+    <!-- Project Title Bar with User Menu (Mobile Responsive) -->
+    <nav class="navbar navbar-expand-lg project-title-bar">
         <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center">
-                <!-- Left: Platform Title -->
-                <div class="d-flex align-items-center gap-3">
-                    <a href="{{ url_for('index') }}" class="text-decoration-none text-white">
-                        <h5 class="mb-0 me-3">
-                            <i class="fas fa-cogs me-2"></i>Life Platform - Amministrazione Sistema
-                        </h5>
-                    </a>
-                </div>
-                
-                <!-- Right: User Menu and System Administration -->
-                <div class="d-flex align-items-center gap-3">
+            <!-- Logo / Title -->
+            <a class="navbar-brand text-white d-flex align-items-center" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='images/life_logo.png') }}" alt="Life Platform" style="height: 30px; width: auto; margin-right: 0.5rem;">
+                <span class="d-none d-md-inline">Life Platform</span>
+                <span class="d-md-none">Life</span>
+            </a>
+            
+            <!-- Burger Menu Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#superadminNavbar" aria-controls="superadminNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Collapsible Content -->
+            <div class="collapse navbar-collapse" id="superadminNavbar">
+                <!-- Right: Menus -->
+                <ul class="navbar-nav ms-auto">
                     <!-- System Administration -->
-                    <div class="dropdown">
-                        <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-cogs me-1"></i>Amministrazione Sistema
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cogs me-1"></i><span class="d-lg-inline">Amministrazione</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('companies.list_companies') }}">
                                 <i class="fas fa-building me-1"></i>Gestione Aziende
                             </a></li>
                         </ul>
-                    </div>
+                    </li>
                     
                     <!-- User Menu -->
-                    <div class="dropdown">
-                        <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user me-1"></i>{{ current_user.first_name or current_user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -56,11 +60,11 @@
                                 <i class="fas fa-sign-out-alt me-1"></i>Logout
                             </a></li>
                         </ul>
-                    </div>
-                </div>
+                    </li>
+                </ul>
             </div>
         </div>
-    </div>
+    </nav>
     
     <!-- Full Width Content (No Sidebar) -->
     <div class="superadmin-content-wrapper">

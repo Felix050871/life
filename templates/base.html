@@ -18,8 +18,8 @@
     <!-- Project Title Bar with User Menu -->
     <nav class="navbar navbar-expand-lg project-title-bar">
         <div class="container-fluid">
-            <!-- Sidebar Toggle (Mobile Only) - Solo se non siamo su index o profilo -->
-            {% if request.endpoint != 'index' and request.endpoint != 'user_management.user_profile' %}
+            <!-- Sidebar Toggle (Mobile Only) - Solo se non siamo su index, home o profilo -->
+            {% if request.endpoint != 'index' and request.endpoint != 'home' and request.endpoint != 'user_management.user_profile' %}
             <button class="btn btn-link text-white d-md-none p-0 me-2 sidebar-mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
                 <i class="fas fa-bars" style="font-size: 1.2rem;"></i>
             </button>
@@ -152,7 +152,7 @@
     
     <div class="main-wrapper">
         <!-- Sidebar - Nascosta nella home page, pagina profilo e pagine amministrazione -->
-        {% set hide_sidebar = request.endpoint == 'index' or request.endpoint == 'user_management.user_profile' or request.endpoint == 'user_management.user_management' or request.endpoint == 'user_management.edit_user' or (request.endpoint and request.endpoint.startswith('admin.')) %}
+        {% set hide_sidebar = request.endpoint == 'index' or request.endpoint == 'home' or request.endpoint == 'user_management.user_profile' or request.endpoint == 'user_management.user_management' or request.endpoint == 'user_management.edit_user' or (request.endpoint and request.endpoint.startswith('admin.')) %}
         <nav class="sidebar {% if hide_sidebar %}d-none{% endif %}" id="sidebar">
             {% set is_circle = request.endpoint and request.endpoint.startswith('circle') %}
             
@@ -656,10 +656,10 @@
         </nav>
 
         <!-- Content Wrapper - Full width nella home page -->
-        <div class="content-wrapper {% if request.endpoint == 'index' or request.endpoint == 'user_management.user_profile' %}sidebar-collapsed{% endif %}" id="content-wrapper">
+        <div class="content-wrapper {% if request.endpoint == 'index' or request.endpoint == 'home' or request.endpoint == 'user_management.user_profile' %}sidebar-collapsed{% endif %}" id="content-wrapper">
             <!-- Main Content -->
             <div class="main-content">
-                <div class="container-fluid" style="{% if request.endpoint != 'index' and request.endpoint != 'user_management.user_profile' %}padding: 0;{% endif %}">
+                <div class="container-fluid" style="{% if request.endpoint == 'index' or request.endpoint == 'home' or request.endpoint == 'user_management.user_profile' %}padding: 0;{% endif %}">
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
