@@ -1110,8 +1110,8 @@ class RoleForm(FlaskForm):
     can_manage_aci_tables = BooleanField('Gestire Tabelle ACI')
     can_view_aci_tables = BooleanField('Visualizzare Tabelle ACI')
     
-    # HUBLY - Social Intranet Permissions
-    can_access_hubly = BooleanField('Accedere a HUBLY')
+    # CIRCLE - Social Intranet Permissions
+    can_access_hubly = BooleanField('Accedere a CIRCLE')
     can_create_posts = BooleanField('Creare Post/News')
     can_edit_posts = BooleanField('Modificare Post/News')
     can_delete_posts = BooleanField('Eliminare Post/News')
@@ -1274,7 +1274,7 @@ class RoleForm(FlaskForm):
             'can_manage_aci_tables': self.can_manage_aci_tables.data,
             'can_view_aci_tables': self.can_view_aci_tables.data,
             
-            # HUBLY - Social Intranet
+            # CIRCLE - Social Intranet
             'can_access_hubly': self.can_access_hubly.data,
             'can_create_posts': self.can_create_posts.data,
             'can_edit_posts': self.can_edit_posts.data,
@@ -1413,7 +1413,7 @@ class RoleForm(FlaskForm):
         self.can_manage_aci_tables.data = permissions_dict.get('can_manage_aci_tables', False)
         self.can_view_aci_tables.data = permissions_dict.get('can_view_aci_tables', False)
         
-        # HUBLY - Social Intranet
+        # CIRCLE - Social Intranet
         self.can_access_hubly.data = permissions_dict.get('can_access_hubly', False)
         self.can_create_posts.data = permissions_dict.get('can_create_posts', False)
         self.can_edit_posts.data = permissions_dict.get('can_edit_posts', False)
