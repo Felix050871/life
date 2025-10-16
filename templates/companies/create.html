@@ -69,8 +69,11 @@
                         <div class="col-md-6 mb-3">
                             <label for="admin_password" class="form-label">Password Temporanea *</label>
                             <input type="password" class="form-control" id="admin_password" name="admin_password" required 
-                                   minlength="6" placeholder="Minimo 6 caratteri">
-                            <small class="text-muted">L'amministratore potrà cambiarla al primo accesso</small>
+                                   minlength="8" placeholder="Es: Admin2024!">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> Minimo 8 caratteri: maiuscola, minuscola, numero e carattere speciale (@#$%^&+=!*()_-.)
+                                <br>L'amministratore potrà cambiarla al primo accesso
+                            </small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="admin_full_name" class="form-label">Nome Completo *</label>
