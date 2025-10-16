@@ -2160,6 +2160,7 @@ class InternalMessage(db.Model):
     related_leave_request_id = db.Column(db.Integer, db.ForeignKey('leave_request.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
+    message_group_id = db.Column(db.String(36), nullable=True)  # UUID per raggruppare messaggi multipli
     
     recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
@@ -2175,6 +2176,27 @@ class InternalMessage(db.Model):
     def get_recipient_name(self):
         """Restituisce il nome del destinatario"""
         return self.recipient.get_full_name() if self.recipient else 'Sconosciuto'
+    
+    def get_all_recipients(self):
+        """Restituisce tutti i destinatari se il messaggio è parte di un gruppo"""
+        if not self.message_group_id:
+            return [self.recipient]
+        
+        # Trova tutti i messaggi con lo stesso group_id
+        grouped_messages = InternalMessage.query.filter_by(
+            message_group_id=self.message_group_id
+        ).all()
+        
+        return [msg.recipient for msg in grouped_messages]
+    
+    def get_recipients_count(self):
+        """Restituisce il numero di destinatari per messaggi raggruppati"""
+        if not self.message_group_id:
+            return 1
+        
+        return InternalMessage.query.filter_by(
+            message_group_id=self.message_group_id
+        ).count()
 
 
 
