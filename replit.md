@@ -83,7 +83,26 @@ Preferred communication style: Simple, everyday language.
 - **Internal Messaging**: Multi-recipient internal messaging system with permission-based sending and automatic notifications for approvals/rejections.
 - **User Profile Management**: Allows users to modify personal details independently, including profile image upload with automatic resizing to 200x200px, and CIRCLE social fields (bio, LinkedIn URL, phone number, department, job title). Profile images are displayed in a circular format in the navbar and profile page, with a default image for users without a custom photo.
 - **CIRCLE Social Features**: Complete social intranet implementation with 8 core models (CirclePost, CircleGroup, CirclePoll, CircleDocument, CircleCalendarEvent, CircleComment, CircleLike, CircleToolLink) and 6 dedicated blueprints. Features include news/announcement posting with engagement (comments, likes), group management, polling system, company calendar, document repository with versioning, and customizable tool links dashboard. All CIRCLE entities enforce multi-tenant isolation via company_id filtering.
-  - **Email Notifications for Announcements**: When creating a "comunicazione" (announcement) post, users can optionally send email notifications to all active company users via a checkbox. Uses existing Flask-Mail configuration (SMTP) with HTML-formatted emails containing a direct link to the announcement. Email notification system reuses password-reset infrastructure (`email_utils.py`).
+  - **Email Notifications for Announcements**: When creating a "comunicazione" (announcement) post, users can optionally send email notifications to all active company users via a checkbox. Uses multi-tenant email system with HTML-formatted emails containing a direct link to the announcement.
+- **Multi-Tenant Email System**: Hybrid SMTP architecture supporting both global (SUPERADMIN) and per-company email configurations
+  - **Architecture**: 
+    - SUPERADMIN uses global SMTP (environment variables) for onboarding/activation emails when creating new companies
+    - Each tenant uses CompanyEmailSettings for operational emails (notifications, approvals, announcements)
+    - EmailContext class auto-detects correct SMTP based on g.company (tenant context) with fallback to global config
+  - **Security**: SMTP passwords encrypted at rest using Fernet symmetric encryption (cryptography library)
+    - Encryption key derived from environment ENCRYPTION_KEY or SESSION_SECRET (dev fallback)
+    - CompanyEmailSettings.set_password() encrypts, get_decrypted_password() decrypts on-the-fly
+  - **Admin UI**: Company ADMIN can configure SMTP settings via "Amministrazione > Configurazione Email"
+    - Form with server, port, TLS/SSL, credentials, sender, reply-to fields
+    - Test email functionality to validate configuration
+    - Status tracking (last_tested_at, test_status, test_error)
+  - **Implementation Files**:
+    - `models.py`: CompanyEmailSettings model with encrypted credentials
+    - `utils_encryption.py`: Fernet-based encryption/decryption utilities
+    - `email_utils.py`: EmailContext, send_email_smtp() for direct SMTP, auto-detection logic
+    - `blueprints/admin.py`: Routes for email_settings, test_email
+    - `blueprints/companies.py`: Welcome email sent to company admin upon creation (uses global SMTP)
+  - **Integration**: All existing email notifications (leave approvals, overtime, announcements) automatically use appropriate SMTP context
 - **Database Simplification**: System is exclusively designed for PostgreSQL, removing previous SQLite support for robustness.
 
 ## External Dependencies
@@ -97,3 +116,5 @@ Preferred communication style: Simple, everyday language.
 - **Werkzeug**: Password hashing.
 - **Openpyxl**: Python library for server-side Excel file generation.
 - **SheetJS (XLSX)**: JavaScript library for client-side Excel handling.
+- **Cryptography**: Fernet symmetric encryption for SMTP credentials and sensitive data.
+- **Flask-Mail**: Email sending infrastructure (integrated with multi-tenant SMTP system).
