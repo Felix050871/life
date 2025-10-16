@@ -148,43 +148,32 @@ def send_message():
             flash('Nessun destinatario valido selezionato', 'danger')
             return render_template('send_message.html', form=form)
         
-        # Verifica permessi sede e connessioni per tutti i destinatari
+        # Verifica permessi sede per tutti i destinatari
         valid_recipients = []
-        non_connected_recipients = []
+        invalid_recipients = []
         for recipient in recipients:
             can_send = False
-            # Prima controlla se l'utente ha permessi sede
+            # Controlla se l'utente ha permessi sede
             if current_user.all_sedi:
                 can_send = True
             elif current_user.sede_id and recipient.sede_id == current_user.sede_id:
                 can_send = True
             
-            # Verifica connessione se CIRCLE è abilitato per entrambi gli utenti
-            # Un messaggio può essere inviato SOLO se gli utenti sono collegati in CIRCLE
-            if can_send:
-                # Se almeno uno dei due ha accesso a CIRCLE, verifica la connessione
-                sender_has_circle = current_user.has_permission('can_access_hubly')
-                recipient_has_circle = recipient.has_permission('can_access_hubly')
-                
-                if sender_has_circle or recipient_has_circle:
-                    # Se CIRCLE è attivo per almeno uno, devono essere collegati
-                    if not current_user.is_connected_with(recipient):
-                        can_send = False
-                        non_connected_recipients.append(recipient.get_full_name())
-            
             if can_send:
                 valid_recipients.append(recipient)
+            else:
+                invalid_recipients.append(recipient.get_full_name())
         
         if not valid_recipients:
-            if non_connected_recipients:
-                flash(f'Non puoi inviare messaggi agli utenti con cui non sei collegato: {", ".join(non_connected_recipients[:3])}', 'danger')
+            if invalid_recipients:
+                flash(f'Non puoi inviare messaggi agli utenti selezionati: {", ".join(invalid_recipients[:3])}', 'danger')
             else:
                 flash('Non hai i permessi per inviare messaggi ai destinatari selezionati', 'danger')
             return render_template('send_message.html', form=form)
         
-        # Avvisa se alcuni destinatari sono stati esclusi per mancanza di connessione
-        if non_connected_recipients:
-            flash(f'Attenzione: {len(non_connected_recipients)} destinatario/i escluso/i perché non collegato/i', 'warning')
+        # Avvisa se alcuni destinatari sono stati esclusi per permessi sede
+        if invalid_recipients:
+            flash(f'Attenzione: {len(invalid_recipients)} destinatario/i escluso/i per permessi sede', 'warning')
         
         # Crea e salva un messaggio per ogni destinatario valido
         messages_sent = 0
