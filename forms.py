@@ -226,7 +226,8 @@ class UserForm(FlaskForm):
         if not is_edit:
             self.password.validators = [DataRequired(), StrongPassword()]
         else:
-            self.password.validators = [StrongPassword()]
+            # In edit mode, password is optional but if provided must be strong
+            self.password.validators = [Optional(), StrongPassword()]
     
     def validate_username(self, username):
         if username.data != self.original_username:
