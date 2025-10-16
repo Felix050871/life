@@ -227,9 +227,6 @@ def create_company():
                 # URL di accesso per l'azienda
                 tenant_login_url = url_for('auth.tenant_login', slug=slug, _external=True)
                 
-                # Debug: verifica URL generato
-                print(f"[EMAIL DEBUG] URL generato per {company.name} (slug={slug}): {tenant_login_url}")
-                
                 subject = f'🎉 Benvenuto su Life Platform - Azienda {company.name} Attivata'
                 
                 body_text = f"""
