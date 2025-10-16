@@ -111,9 +111,21 @@ def delete_message(message_id):
         return redirect(url_for('messages.internal_messages'))
     
     try:
-        db.session.delete(message)
-        db.session.commit()
-        flash('Messaggio cancellato con successo', 'success')
+        # Se è il mittente e il messaggio è parte di un gruppo, cancella tutto il gruppo
+        if message.sender_id == current_user.id and message.message_group_id:
+            # Cancella tutti i messaggi del gruppo
+            grouped_messages = filter_by_company(InternalMessage.query).filter_by(
+                message_group_id=message.message_group_id
+            ).all()
+            for msg in grouped_messages:
+                db.session.delete(msg)
+            db.session.commit()
+            flash(f'Messaggio cancellato con successo ({len(grouped_messages)} destinatari)', 'success')
+        else:
+            # Cancella solo questo messaggio
+            db.session.delete(message)
+            db.session.commit()
+            flash('Messaggio cancellato con successo', 'success')
     except Exception as e:
         db.session.rollback()
         flash('Errore nella cancellazione del messaggio', 'danger')
