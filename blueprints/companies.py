@@ -12,6 +12,7 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
 import os
+import re
 
 # Local imports
 from models import Company, User, Sede
@@ -133,6 +134,23 @@ def create_company():
         
         if not admin_username or not admin_email or not admin_password or not admin_full_name:
             flash('Tutti i campi dell\'amministratore sono obbligatori', 'danger')
+            return redirect(url_for('companies.create_company'))
+        
+        # Validate admin password strength
+        password_errors = []
+        if len(admin_password) < 8:
+            password_errors.append('almeno 8 caratteri')
+        if not re.search(r'[A-Z]', admin_password):
+            password_errors.append('una lettera maiuscola')
+        if not re.search(r'[a-z]', admin_password):
+            password_errors.append('una lettera minuscola')
+        if not re.search(r'\d', admin_password):
+            password_errors.append('un numero')
+        if not re.search(r'[@#$%^&+=!*()_\-.]', admin_password):
+            password_errors.append('un carattere speciale (@#$%^&+=!*()_-.)')
+        
+        if password_errors:
+            flash(f'La password deve contenere: {", ".join(password_errors)}', 'danger')
             return redirect(url_for('companies.create_company'))
         
         # Generate slug from code if not provided

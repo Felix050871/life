@@ -24,6 +24,59 @@ from wtforms import StringField, PasswordField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, Length, NumberRange, EqualTo, Optional
 from models import User, Sede, UserRole
 from flask_wtf.file import FileField, FileAllowed
+import re
+
+
+# =============================================================================
+# CUSTOM VALIDATORS
+# =============================================================================
+
+class StrongPassword:
+    """
+    Validatore per password robuste con requisiti di sicurezza.
+    
+    Requisiti:
+    - Minimo 8 caratteri
+    - Almeno una lettera maiuscola
+    - Almeno una lettera minuscola
+    - Almeno un numero
+    - Almeno un carattere speciale (@#$%^&+=!*()_-.)
+    """
+    
+    def __init__(self, message=None):
+        if not message:
+            message = (
+                'La password deve contenere almeno: '
+                '8 caratteri, una maiuscola, una minuscola, '
+                'un numero e un carattere speciale (@#$%^&+=!*()_-.)'
+            )
+        self.message = message
+    
+    def __call__(self, form, field):
+        password = field.data
+        
+        if not password:
+            return  # Lascia che DataRequired gestisca i campi vuoti
+        
+        # Controlla lunghezza minima
+        if len(password) < 8:
+            raise ValidationError('La password deve essere di almeno 8 caratteri')
+        
+        # Controlla presenza di maiuscola
+        if not re.search(r'[A-Z]', password):
+            raise ValidationError('La password deve contenere almeno una lettera maiuscola')
+        
+        # Controlla presenza di minuscola
+        if not re.search(r'[a-z]', password):
+            raise ValidationError('La password deve contenere almeno una lettera minuscola')
+        
+        # Controlla presenza di numero
+        if not re.search(r'\d', password):
+            raise ValidationError('La password deve contenere almeno un numero')
+        
+        # Controlla presenza di carattere speciale
+        if not re.search(r'[@#$%^&+=!*()_\-.]', password):
+            raise ValidationError('La password deve contenere almeno un carattere speciale (@#$%^&+=!*()_-.)')
 
 
 # =============================================================================
@@ -68,7 +121,7 @@ class UserProfileForm(FlaskForm):
     github_url = StringField('GitHub', validators=[Optional(), Length(max=255)],
                             render_kw={'placeholder': 'https://github.com/...'})
     
-    password = PasswordField('Nuova Password', validators=[Optional(), Length(min=6)])
+    password = PasswordField('Nuova Password', validators=[Optional(), StrongPassword()])
     confirm_password = PasswordField('Conferma Password', validators=[
         EqualTo('password', message='Le password devono corrispondere')
     ])
@@ -88,10 +141,6 @@ class UserProfileForm(FlaskForm):
             ).first()
             if user:
                 raise ValidationError('Questa email è già in uso.')
-
-    def validate_password(self, password):
-        if password.data and len(password.data) < 6:
-            raise ValidationError('La password deve essere di almeno 6 caratteri.')
 
 # =============================================================================
 # USER MANAGEMENT FORMS
@@ -175,9 +224,9 @@ class UserForm(FlaskForm):
         
         # Set password validators based on mode
         if not is_edit:
-            self.password.validators = [DataRequired(), Length(min=6)]
+            self.password.validators = [DataRequired(), StrongPassword()]
         else:
-            self.password.validators = []
+            self.password.validators = [StrongPassword()]
     
     def validate_username(self, username):
         if username.data != self.original_username:
@@ -694,7 +743,7 @@ class ChangePasswordForm(FlaskForm):
     current_password = PasswordField('Password Attuale', validators=[DataRequired()])
     new_password = PasswordField('Nuova Password', validators=[
         DataRequired(), 
-        Length(min=6, message='La password deve essere di almeno 6 caratteri')
+        StrongPassword()
     ])
     confirm_password = PasswordField('Conferma Nuova Password', validators=[
         DataRequired(),
@@ -713,7 +762,7 @@ class ResetPasswordForm(FlaskForm):
     """Form per impostare nuova password dopo reset"""
     new_password = PasswordField('Nuova Password', validators=[
         DataRequired(), 
-        Length(min=6, message='La password deve essere di almeno 6 caratteri')
+        StrongPassword()
     ])
     confirm_password = PasswordField('Conferma Nuova Password', validators=[
         DataRequired(),
