@@ -84,11 +84,11 @@ def mark_message_read(message_id):
 @messages_bp.route('/message/<int:message_id>/delete', methods=['POST'])
 @login_required  
 def delete_message(message_id):
-    """Cancella un messaggio"""
+    """Cancella un messaggio (ricevuto o inviato)"""
     message = filter_by_company(InternalMessage.query).get_or_404(message_id)
     
-    # Verifica che sia il destinatario del messaggio
-    if message.recipient_id != current_user.id:
+    # Verifica che sia il destinatario o il mittente del messaggio
+    if message.recipient_id != current_user.id and message.sender_id != current_user.id:
         flash('Non puoi cancellare questo messaggio', 'danger')
         return redirect(url_for('messages.internal_messages'))
     
