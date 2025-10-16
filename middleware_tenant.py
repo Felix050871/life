@@ -1,6 +1,6 @@
 # =============================================================================
 # TENANT CONTEXT MIDDLEWARE
-# Path-based multi-tenancy: /t/<slug> routes for company-specific access
+# Path-based multi-tenancy: /tenant/<slug> routes for company-specific access
 # =============================================================================
 
 from flask import g, request, abort, redirect, url_for
@@ -11,7 +11,7 @@ from models import Company
 def extract_tenant_slug_from_path():
     """
     Estrae lo slug del tenant dall'URL path.
-    Pattern: /t/<slug>/...
+    Pattern: /tenant/<slug>/...
     Restituisce None se non è un percorso tenant o se è un percorso admin.
     """
     path = request.path
@@ -20,9 +20,9 @@ def extract_tenant_slug_from_path():
     if path.startswith('/admin/'):
         return None
     
-    # Percorsi tenant: /t/<slug>/...
-    if path.startswith('/t/'):
-        parts = path[3:].split('/')  # Rimuove '/t/' e divide
+    # Percorsi tenant: /tenant/<slug>/...
+    if path.startswith('/tenant/'):
+        parts = path[8:].split('/')  # Rimuove '/tenant/' e divide
         if parts and parts[0]:
             return parts[0]
     
