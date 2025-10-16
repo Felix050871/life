@@ -1,23 +1,103 @@
 """
-Sistema di invio email per Life
+Sistema di invio email multi-tenant per Life
 Gestisce notifiche per approvazioni, rifiuti, reset password, ecc.
+
+Sistema Ibrido:
+- SUPERADMIN: usa SMTP globale da variabili ambiente (per email di onboarding/attivazione azienda)
+- TENANT: usa CompanyEmailSettings specifico dell'azienda (per email operative)
 """
 
 import os
 from flask_mail import Mail, Message
-from flask import url_for, render_template_string
+from flask import url_for, render_template_string, g
+from dataclasses import dataclass
+from typing import Optional
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 mail = Mail()
 
 def init_mail(app):
-    """Inizializza Flask-Mail con l'app"""
+    """Inizializza Flask-Mail con l'app (solo per SMTP globale SUPERADMIN)"""
     mail.init_app(app)
 
-def send_email(subject, recipients, body_text, body_html=None):
+
+@dataclass
+class EmailContext:
+    """Contesto email che determina quale SMTP usare"""
+    server: str
+    port: int
+    use_tls: bool
+    use_ssl: bool
+    username: str
+    password: str
+    sender: str
+    reply_to: Optional[str] = None
+    
+    @classmethod
+    def from_global_config(cls):
+        """Crea EmailContext da configurazione globale (SUPERADMIN)"""
+        return cls(
+            server=os.environ.get('MAIL_SERVER', 'smtp.gmail.com'),
+            port=int(os.environ.get('MAIL_PORT', '587')),
+            use_tls=os.environ.get('MAIL_USE_TLS', 'True').lower() == 'true',
+            use_ssl=False,
+            username=os.environ.get('MAIL_USERNAME', ''),
+            password=os.environ.get('MAIL_PASSWORD', ''),
+            sender=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@life.local')
+        )
+    
+    @classmethod
+    def from_company_settings(cls, company_id):
+        """Crea EmailContext da CompanyEmailSettings (TENANT)"""
+        from models import CompanyEmailSettings
+        from app import db
+        
+        settings = CompanyEmailSettings.query.filter_by(
+            company_id=company_id, 
+            active=True
+        ).first()
+        
+        if not settings:
+            raise ValueError(f"Nessuna configurazione email attiva per company_id={company_id}")
+        
+        return cls(
+            server=settings.mail_server,
+            port=settings.mail_port,
+            use_tls=settings.mail_use_tls,
+            use_ssl=settings.mail_use_ssl,
+            username=settings.mail_username,
+            password=settings.get_decrypted_password(),
+            sender=settings.mail_default_sender,
+            reply_to=settings.mail_reply_to
+        )
+    
+    @classmethod
+    def get_current(cls):
+        """
+        Determina automaticamente il contesto email corretto:
+        - Se c'è g.company (tenant context): usa CompanyEmailSettings
+        - Altrimenti: usa configurazione globale (SUPERADMIN)
+        """
+        if hasattr(g, 'company') and g.company:
+            try:
+                return cls.from_company_settings(g.company.id)
+            except ValueError:
+                # Fallback a global se non c'è config per il tenant
+                print(f"WARNING: Nessuna config email per company {g.company.id}, uso global config")
+                return cls.from_global_config()
+        else:
+            # SUPERADMIN context
+            return cls.from_global_config()
+
+
+def send_email_smtp(context: EmailContext, subject: str, recipients: list, body_text: str, body_html: str = None):
     """
-    Invia email generica
+    Invia email usando SMTP diretto (non Flask-Mail) con EmailContext specifico
     
     Args:
+        context: EmailContext con configurazione SMTP
         subject: Oggetto dell'email
         recipients: Lista di email destinatari
         body_text: Corpo email in formato testo
@@ -27,32 +107,75 @@ def send_email(subject, recipients, body_text, body_html=None):
         True se inviata con successo, False altrimenti
     """
     try:
-        # Per SendGrid: se MAIL_USERNAME è 'apikey', usa MAIL_DEFAULT_SENDER come mittente
-        # Altrimenti usa MAIL_DEFAULT_SENDER se impostato, o MAIL_USERNAME
-        mail_username = os.environ.get('MAIL_USERNAME', '')
+        # Crea messaggio
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = context.sender
+        msg['To'] = ', '.join(recipients)
+        if context.reply_to:
+            msg['Reply-To'] = context.reply_to
         
-        if mail_username == 'apikey':
-            # Modalità SendGrid API: usa MAIL_DEFAULT_SENDER obbligatoriamente
-            sender = os.environ.get('MAIL_DEFAULT_SENDER')
-            if not sender:
-                raise ValueError("MAIL_DEFAULT_SENDER è obbligatorio quando MAIL_USERNAME='apikey'")
-        else:
-            # Modalità SMTP standard: usa MAIL_DEFAULT_SENDER se impostato, altrimenti MAIL_USERNAME
-            sender = os.environ.get('MAIL_DEFAULT_SENDER') or mail_username or 'noreply@life.local'
+        # Aggiungi corpo testo
+        part_text = MIMEText(body_text, 'plain')
+        msg.attach(part_text)
         
-        msg = Message(
-            subject=subject,
-            recipients=recipients,
-            sender=sender
-        )
-        msg.body = body_text
+        # Aggiungi corpo HTML se presente
         if body_html:
-            msg.html = body_html
+            part_html = MIMEText(body_html, 'html')
+            msg.attach(part_html)
         
-        mail.send(msg)
+        # Connetti al server SMTP
+        if context.use_ssl:
+            server = smtplib.SMTP_SSL(context.server, context.port)
+        else:
+            server = smtplib.SMTP(context.server, context.port)
+            if context.use_tls:
+                server.starttls()
+        
+        # Autenticazione
+        if context.username and context.password:
+            server.login(context.username, context.password)
+        
+        # Invia email
+        server.send_message(msg)
+        server.quit()
+        
         return True
     except Exception as e:
         print(f"Errore invio email: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def send_email(subject, recipients, body_text, body_html=None, company_id=None):
+    """
+    Invia email generica usando il sistema multi-tenant
+    
+    Args:
+        subject: Oggetto dell'email
+        recipients: Lista di email destinatari
+        body_text: Corpo email in formato testo
+        body_html: Corpo email in formato HTML (opzionale)
+        company_id: ID azienda (opzionale, auto-detect da g.company)
+    
+    Returns:
+        True se inviata con successo, False altrimenti
+    """
+    try:
+        # Determina il contesto email
+        if company_id:
+            # Usa configurazione specifica dell'azienda
+            context = EmailContext.from_company_settings(company_id)
+        else:
+            # Auto-detect: usa g.company se presente, altrimenti global
+            context = EmailContext.get_current()
+        
+        # Invia usando SMTP diretto
+        return send_email_smtp(context, subject, recipients, body_text, body_html)
+    except Exception as e:
+        print(f"Errore invio email: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
