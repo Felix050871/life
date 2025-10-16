@@ -4,6 +4,10 @@ from config import Config
 # Import routes for gunicorn (must be at module level)
 import routes
 
+# Register tenant middleware
+from middleware_tenant import load_tenant_context
+app.before_request(load_tenant_context)
+
 # Register Flask Blueprints after routes are imported
 from blueprints.auth import auth_bp
 from blueprints.holidays import holidays_bp

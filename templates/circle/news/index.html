@@ -17,7 +17,7 @@
     <div class="row">
         {% for post in posts %}
         <div class="col-12 mb-4">
-            <div class="hubly-news-card {% if post.pinned %}pinned{% endif %}">
+            <div class="circle-news-card {% if post.pinned %}pinned{% endif %}">
                 <!-- Header con immagine gradient -->
                 <div class="news-header" style="background: {% if post.image_url %}url('{{ post.image_url }}') center/cover{% else %}linear-gradient(135deg, #667eea 0%, #764ba2 100%){% endif %};">
                     {% if post.pinned %}
@@ -157,7 +157,7 @@
 </div>
 
 <style>
-.hubly-news-card {
+.circle-news-card {
     background: white;
     border-radius: 12px;
     overflow: hidden;
@@ -168,12 +168,12 @@
     flex-direction: column;
 }
 
-.hubly-news-card:hover {
+.circle-news-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 
-.hubly-news-card.pinned {
+.circle-news-card.pinned {
     border: 2px solid #ffc107;
 }
 
