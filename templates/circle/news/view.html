@@ -162,7 +162,13 @@
 
 <script>
 function toggleLike() {
-    fetch('{{ url_for("circle_news.api_toggle_like", post_id=post.id, slug=tenant_slug) }}', {
+    {% if tenant_slug %}
+    const likeUrl = '{{ url_for("circle_news.api_toggle_like", post_id=post.id, slug=tenant_slug) }}';
+    {% else %}
+    const likeUrl = '{{ url_for("circle_news.api_toggle_like", post_id=post.id) }}';
+    {% endif %}
+    
+    fetch(likeUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
