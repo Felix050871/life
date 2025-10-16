@@ -37,12 +37,15 @@
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         {% for message in messages %}
-                        <div class="list-group-item {% if not message.is_read %}list-group-item-action bg-opacity-10 bg-info{% endif %}">
+                        {% set is_sent = message.sender_id == current_user.id %}
+                        <div class="list-group-item {% if is_sent %}bg-opacity-10 bg-success{% elif not message.is_read %}list-group-item-action bg-opacity-10 bg-info{% endif %}">
                             <div class="d-flex w-100 justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center mb-2">
                                         <!-- Icona tipo messaggio -->
-                                        {% if message.message_type == 'info' %}
+                                        {% if is_sent %}
+                                            <i class="fas fa-paper-plane text-success me-2"></i>
+                                        {% elif message.message_type == 'info' %}
                                             <i class="fas fa-info-circle text-info me-2"></i>
                                         {% elif message.message_type == 'warning' %}
                                             <i class="fas fa-exclamation-triangle text-warning me-2"></i>
@@ -56,7 +59,9 @@
                                         
                                         <h6 class="mb-0 me-auto">{{ message.title }}</h6>
                                         
-                                        {% if not message.is_read %}
+                                        {% if is_sent %}
+                                            <span class="badge bg-success ms-2">Inviato</span>
+                                        {% elif not message.is_read %}
                                             <span class="badge bg-primary ms-2">Nuovo</span>
                                         {% endif %}
                                     </div>
@@ -67,7 +72,11 @@
                                     
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">
-                                            <i class="fas fa-user me-1"></i>{{ message.get_sender_name() }}
+                                            {% if is_sent %}
+                                                <i class="fas fa-arrow-right me-1"></i>A: {{ message.get_recipient_name() }}
+                                            {% else %}
+                                                <i class="fas fa-user me-1"></i>Da: {{ message.get_sender_name() }}
+                                            {% endif %}
                                             <i class="fas fa-clock ms-3 me-1"></i>{{ message.created_at.strftime('%d/%m/%Y alle %H:%M') }}
                                         </small>
                                         
@@ -81,15 +90,17 @@
                                 
                                 <div class="ms-3">
                                     <div class="btn-group" role="group">
-                                        {% if not message.is_read %}
-                                        <a href="{{ url_for('messages.mark_message_read', message_id=message.id) }}" 
-                                           class="btn btn-outline-primary btn-sm" title="Segna come letto">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        {% else %}
-                                        <button class="btn btn-outline-secondary btn-sm" disabled title="Già letto">
-                                            <i class="fas fa-eye-slash"></i>
-                                        </button>
+                                        {% if not is_sent %}
+                                            {% if not message.is_read %}
+                                            <a href="{{ url_for('messages.mark_message_read', message_id=message.id) }}" 
+                                               class="btn btn-outline-primary btn-sm" title="Segna come letto">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% else %}
+                                            <button class="btn btn-outline-secondary btn-sm" disabled title="Già letto">
+                                                <i class="fas fa-eye-slash"></i>
+                                            </button>
+                                            {% endif %}
                                         {% endif %}
                                         
                                         <!-- Pulsante cancella messaggio -->
