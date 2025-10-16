@@ -25,7 +25,7 @@ bp = Blueprint('circle', __name__, url_prefix='/circle')
 @bp.route('/')
 @login_required
 def home():
-    """Home page HUBLY con widget dinamici"""
+    """Home page CIRCLE con widget dinamici"""
     if not current_user.has_permission('can_access_hubly'):
         abort(403)
     
