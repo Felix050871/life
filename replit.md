@@ -103,6 +103,22 @@ Preferred communication style: Simple, everyday language.
     - `blueprints/admin.py`: Routes for email_settings, test_email
     - `blueprints/companies.py`: Welcome email sent to company admin upon creation (uses global SMTP)
   - **Integration**: All existing email notifications (leave approvals, overtime, announcements) automatically use appropriate SMTP context
+- **Password Security**: Enhanced password validation enforcing strong password requirements across all authentication flows
+  - **StrongPassword Validator**: Custom WTForms validator requiring minimum 8 characters with uppercase, lowercase, number, and special character (@#$%^&+=!*()_-.)
+  - **Form Coverage**: Applied to all password entry points:
+    - UserForm: Required with StrongPassword on user creation; optional but validated on edit
+    - UserProfileForm: Optional password update with StrongPassword validation
+    - ChangePasswordForm: Required strong password for password changes
+    - ResetPasswordForm: Required strong password for password resets
+    - Company Creation (blueprints/companies.py): Manual validation with same requirements for admin password
+  - **User Guidance**: Template helpers display password requirements inline with clear examples and security guidelines
+    - change_password.html: Dedicated card with password requirements
+    - reset_password.html: Dedicated card with password requirements
+    - companies/create.html: Inline helper text for admin password creation
+  - **Implementation Files**:
+    - `forms.py`: StrongPassword validator class and form definitions
+    - `blueprints/companies.py`: Manual password validation for company admin creation
+    - Templates with password requirement helpers and examples
 - **Database Simplification**: System is exclusively designed for PostgreSQL, removing previous SQLite support for robustness.
 
 ## External Dependencies
