@@ -108,11 +108,13 @@ def personas():
     
     company_id = get_user_company_id()
     
-    # Filtra utenti della stessa azienda, escludi solo system admin
+    # Filtra utenti della stessa azienda, escludi system admin, amministratori e l'utente corrente
     users = User.query.filter(
         User.company_id == company_id,
         User.active == True,
-        User.is_system_admin == False
+        User.is_system_admin == False,
+        User.role != 'Amministratore',
+        User.id != current_user.id
     ).order_by(User.last_name, User.first_name).all()
     
     return render_template('circle/personas.html', users=users)
@@ -137,6 +139,12 @@ def persona_detail(user_id):
     if not user:
         abort(404)
     
+    # Permetti la visualizzazione solo se:
+    # 1. L'utente non è amministratore (utente normale), OPPURE
+    # 2. L'utente è l'utente corrente (anche se admin, può vedere il proprio profilo)
+    if user.role == 'Amministratore' and user.id != current_user.id:
+        abort(404)
+    
     return render_template('circle/persona_detail.html', user=user)
 
 @bp.route('/personas/<int:user_id>/cv-pdf')
@@ -157,6 +165,12 @@ def download_cv_pdf(user_id):
     ).first()
     
     if not user:
+        abort(404)
+    
+    # Permetti il download CV solo se:
+    # 1. L'utente non è amministratore (utente normale), OPPURE
+    # 2. L'utente è l'utente corrente (anche se admin, può scaricare il proprio CV)
+    if user.role == 'Amministratore' and user.id != current_user.id:
         abort(404)
     
     # Crea PDF in memoria
