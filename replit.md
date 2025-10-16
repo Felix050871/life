@@ -1,7 +1,7 @@
 # Life - Comprehensive Multi-Tenant SAAS Platform
 
 ## Overview
-Life is a comprehensive multi-tenant SaaS workforce management platform, designed as a path-based multi-tenant system to serve various companies with isolated data, custom branding, and dedicated URL paths (`/t/<slug>`). It consists of two integrated sections:
+Life is a comprehensive multi-tenant SaaS workforce management platform, designed as a path-based multi-tenant system to serve various companies with isolated data, custom branding, and dedicated URL paths (`/tenant/<slug>`). It consists of two integrated sections:
 
 - **FLOW**: "Il tuo gestore smart del tempo" - Focuses on operational team organization, shift planning, leave requests, and tracking attendance and overtime. *Tagline: Semplifica il lavoro, moltiplica il tempo. ⏱️*
 - **CIRCLE**: "Il centro della tua community aziendale" - Provides a social connection space for company updates, quick access to documents and tools, and idea sharing among colleagues. *Tagline: Connettiti alle persone, connettiti al lavoro. 🤝*
@@ -22,7 +22,7 @@ Preferred communication style: Simple, everyday language.
 The platform features a modern, responsive dark-themed Bootstrap design with generic "Life" branding. It includes global Bootstrap modals, an optimized overlay system, and dynamic sidebar navigation based on user permissions. User profiles support image uploads with automatic resizing and display in a circular format.
 
 ### System Design Choices
-- **Multi-Tenant SaaS System**: Implemented with complete company isolation, path-based tenancy (`/t/<slug>`), and role-based administration.
+- **Multi-Tenant SaaS System**: Implemented with complete company isolation, path-based tenancy (`/tenant/<slug>`), and role-based administration.
   - **Roles**: Features a SUPERADMIN role for system-level management (creating companies) and Company ADMIN roles for company-specific configuration and user management.
   - **Data Isolation**: All core entities are scoped by `company_id` to ensure data separation. User credentials (username, email) are unique per company.
   - **Security**: Complete multi-tenant filtering across all blueprints and database queries.
