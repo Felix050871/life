@@ -162,10 +162,7 @@
 
 <script>
 function toggleLike() {
-    // Construct full URL with tenant prefix  
-    const likeUrl = '/t/{{ tenant_slug }}/circle/news/api/{{ post.id }}/like';
-    
-    fetch(likeUrl, {
+    fetch('{{ url_for("circle_news.api_toggle_like", post_id=post.id, slug=tenant_slug) }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
