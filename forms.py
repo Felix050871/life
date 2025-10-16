@@ -24,6 +24,7 @@ from wtforms import StringField, PasswordField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, Length, NumberRange, EqualTo, Optional
 from models import User, Sede, UserRole
 from flask_wtf.file import FileField, FileAllowed
+from utils_tenant import filter_by_company
 import re
 
 
@@ -797,17 +798,18 @@ class SendMessageForm(FlaskForm):
         
         if current_user:
             # Seleziona utenti disponibili per l'invio messaggi
-            # Stessa sede o accesso globale
-            users_query = User.query.filter(
+            # Filtra per company, stessa sede o accesso globale, escludi Admin/Staff
+            users_query = filter_by_company(User.query).filter(
                 User.active == True,
-                User.id != current_user.id  # Escludi se stesso
+                User.id != current_user.id,  # Escludi se stesso
+                ~User.role.in_(['Admin', 'Staff'])  # Escludi amministratori
             )
             
             if not current_user.all_sedi and current_user.sede_id:
                 # Utente sede-specifico: solo utenti della stessa sede
                 users_query = users_query.filter(User.sede_id == current_user.sede_id)
             
-            # Se l'utente ha accesso a tutte le sedi, può inviare a tutti
+            # Se l'utente ha accesso a tutte le sedi, può inviare a tutti (della sua azienda)
             available_users = users_query.order_by(User.first_name, User.last_name).all()
             
             self.recipient_ids.choices = [
