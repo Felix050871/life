@@ -15,6 +15,7 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from functools import wraps
+from sqlalchemy import or_
 from app import db
 from models import User, InternalMessage
 from forms import SendMessageForm
@@ -44,13 +45,16 @@ def require_messages_permission(f):
 @login_required
 @require_messages_permission
 def internal_messages():
-    """Visualizza i messaggi interni per l'utente corrente"""
-    # Messaggi per l'utente corrente (with company filter)
-    messages = filter_by_company(InternalMessage.query).filter_by(
-        recipient_id=current_user.id
+    """Visualizza i messaggi interni per l'utente corrente (ricevuti e inviati)"""
+    # Messaggi ricevuti e inviati dall'utente corrente (with company filter)
+    messages = filter_by_company(InternalMessage.query).filter(
+        or_(
+            InternalMessage.recipient_id == current_user.id,
+            InternalMessage.sender_id == current_user.id
+        )
     ).order_by(InternalMessage.created_at.desc()).all()
     
-    # Conta messaggi non letti (with company filter)
+    # Conta messaggi non letti ricevuti (with company filter)
     unread_count = filter_by_company(InternalMessage.query).filter_by(
         recipient_id=current_user.id,
         is_read=False
