@@ -511,3 +511,95 @@ def view_company(company_id):
                          company=company,
                          users=users,
                          sedi=sedi)
+
+# =============================================================================
+# PLATFORM NEWS MANAGEMENT
+# =============================================================================
+
+@companies_bp.route('/news', methods=['GET'])
+@login_required
+@require_system_admin
+def list_news():
+    """List all platform news"""
+    from models import PlatformNews
+    news_list = PlatformNews.query.order_by(PlatformNews.order, PlatformNews.created_at.desc()).all()
+    return render_template('companies/news_list.html', news_list=news_list)
+
+@companies_bp.route('/news/create', methods=['GET', 'POST'])
+@login_required
+@require_system_admin
+def create_news():
+    """Create a new platform news item"""
+    from models import PlatformNews
+    from forms import PlatformNewsForm
+    
+    form = PlatformNewsForm()
+    
+    if form.validate_on_submit():
+        news = PlatformNews(
+            title=form.title.data,
+            description=form.description.data,
+            icon_class=form.icon_class.data,
+            icon_color=form.icon_color.data,
+            order=form.order.data,
+            active=form.active.data
+        )
+        
+        try:
+            db.session.add(news)
+            db.session.commit()
+            flash(f'Novità "{news.title}" creata con successo', 'success')
+            return redirect(url_for('companies.list_news'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore nella creazione della novità: {str(e)}', 'danger')
+    
+    return render_template('companies/news_form.html', form=form, mode='create')
+
+@companies_bp.route('/news/<int:news_id>/edit', methods=['GET', 'POST'])
+@login_required
+@require_system_admin
+def edit_news(news_id):
+    """Edit an existing platform news item"""
+    from models import PlatformNews
+    from forms import PlatformNewsForm
+    
+    news = PlatformNews.query.get_or_404(news_id)
+    form = PlatformNewsForm(obj=news)
+    
+    if form.validate_on_submit():
+        news.title = form.title.data
+        news.description = form.description.data
+        news.icon_class = form.icon_class.data
+        news.icon_color = form.icon_color.data
+        news.order = form.order.data
+        news.active = form.active.data
+        
+        try:
+            db.session.commit()
+            flash(f'Novità "{news.title}" aggiornata con successo', 'success')
+            return redirect(url_for('companies.list_news'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore nell\'aggiornamento della novità: {str(e)}', 'danger')
+    
+    return render_template('companies/news_form.html', form=form, news=news, mode='edit')
+
+@companies_bp.route('/news/<int:news_id>/delete', methods=['POST'])
+@login_required
+@require_system_admin
+def delete_news(news_id):
+    """Delete a platform news item"""
+    from models import PlatformNews
+    
+    news = PlatformNews.query.get_or_404(news_id)
+    
+    try:
+        db.session.delete(news)
+        db.session.commit()
+        flash(f'Novità "{news.title}" eliminata con successo', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore nell\'eliminazione della novità: {str(e)}', 'danger')
+    
+    return redirect(url_for('companies.list_news'))

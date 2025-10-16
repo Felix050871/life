@@ -2033,3 +2033,34 @@ class TestEmailForm(FlaskForm):
     test_email = StringField('Email di Test', validators=[DataRequired(), Email()],
                             render_kw={'placeholder': 'tua.email@esempio.it'})
     submit = SubmitField('Invia Email di Test')
+
+
+# =============================================================================
+# PLATFORM NEWS FORMS
+# =============================================================================
+
+class PlatformNewsForm(FlaskForm):
+    """Form per gestire novità e aggiornamenti della piattaforma"""
+    title = StringField('Titolo', validators=[DataRequired(), Length(max=200)],
+                       render_kw={'placeholder': 'Es: Nuovo Sistema Email Attivo'})
+    description = TextAreaField('Descrizione', validators=[DataRequired()],
+                               render_kw={'placeholder': 'Descrizione dettagliata della novità', 'rows': 4})
+    icon_class = StringField('Classe Icona Font Awesome', validators=[DataRequired(), Length(max=100)],
+                            default='fas fa-info-circle',
+                            render_kw={'placeholder': 'Es: fas fa-check-circle'})
+    icon_color = SelectField('Colore Icona', 
+                            choices=[
+                                ('text-primary', 'Blu (Primary)'),
+                                ('text-success', 'Verde (Success)'),
+                                ('text-info', 'Azzurro (Info)'),
+                                ('text-warning', 'Giallo (Warning)'),
+                                ('text-danger', 'Rosso (Danger)'),
+                                ('text-secondary', 'Grigio (Secondary)')
+                            ],
+                            default='text-primary',
+                            validators=[DataRequired()])
+    order = IntegerField('Ordine di Visualizzazione', validators=[Optional()],
+                        default=0,
+                        render_kw={'placeholder': '0 = primo, numeri più alti vengono dopo'})
+    active = BooleanField('Attiva', default=True)
+    submit = SubmitField('Salva Novità')

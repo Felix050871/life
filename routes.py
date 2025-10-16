@@ -74,4 +74,7 @@ def index():
 @login_required
 def home():
     """Home page with FLOW and CIRCLE sections"""
-    return render_template('home.html')
+    from models import PlatformNews
+    # Get active news ordered by priority
+    news_list = PlatformNews.get_active_news()
+    return render_template('home.html', news_list=news_list)

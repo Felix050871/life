@@ -2195,6 +2195,32 @@ class PasswordResetToken(db.Model):
         return now_utc > self.expires_at
 
 
+class PlatformNews(db.Model):
+    """Novità e aggiornamenti della piattaforma gestiti dal SUPERADMIN"""
+    __tablename__ = 'platform_news'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    icon_class = db.Column(db.String(100), default='fas fa-info-circle')  # Font Awesome icon class
+    icon_color = db.Column(db.String(50), default='text-primary')  # Bootstrap text color class
+    active = db.Column(db.Boolean, default=True)
+    order = db.Column(db.Integer, default=0)  # Per ordinare le novità
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    def __repr__(self):
+        return f'<PlatformNews {self.title}>'
+    
+    @classmethod
+    def get_active_news(cls, limit=None):
+        """Recupera le novità attive ordinate"""
+        query = cls.query.filter_by(active=True).order_by(cls.order, cls.created_at.desc())
+        if limit:
+            query = query.limit(limit)
+        return query.all()
+
+
 # =============================================================================
 # EXPENSE MANAGEMENT MODELS
 # =============================================================================

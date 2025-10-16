@@ -1,0 +1,219 @@
+{% extends "base_superadmin.html" %}
+
+{% block title %}{{ 'Nuova Novità' if mode == 'create' else 'Modifica Novità' }} - Life Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">
+        <i class="fas fa-newspaper me-2"></i>
+        {{ 'Nuova Novità' if mode == 'create' else 'Modifica Novità' }}
+    </h1>
+    <a href="{{ url_for('companies.list_news') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Torna alla Lista
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-edit me-2"></i>{{ 'Crea Nuova Novità' if mode == 'create' else 'Modifica Novità' }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+                        {% if form.title.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.title.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else "")) }}
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.description.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.icon_class.label(class="form-label") }}
+                            {{ form.icon_class(class="form-control" + (" is-invalid" if form.icon_class.errors else ""), id="icon_class_input") }}
+                            {% if form.icon_class.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.icon_class.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Cerca icone su <a href="https://fontawesome.com/icons" target="_blank">Font Awesome</a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.icon_color.label(class="form-label") }}
+                            {{ form.icon_color(class="form-select" + (" is-invalid" if form.icon_color.errors else "")) }}
+                            {% if form.icon_color.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.icon_color.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.order.label(class="form-label") }}
+                            {{ form.order(class="form-control" + (" is-invalid" if form.order.errors else "")) }}
+                            {% if form.order.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.order.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Le novità sono ordinate per questo valore (crescente)
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="form-check">
+                                {{ form.active(class="form-check-input") }}
+                                {{ form.active.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('companies.list_news') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Annulla
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Preview Card -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-eye me-2"></i>Anteprima
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Come apparirà nella home page:</p>
+                <div class="d-flex" id="preview_container">
+                    <div class="flex-shrink-0">
+                        <i id="preview_icon" class="{{ form.icon_class.data or 'fas fa-info-circle' }} {{ form.icon_color.data or 'text-primary' }}" style="font-size: 1.5rem;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1" id="preview_title">{{ form.title.data or 'Titolo della novità' }}</h6>
+                        <p class="text-muted small mb-0" id="preview_description">{{ form.description.data or 'Descrizione della novità' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Icon Examples -->
+        <div class="card mt-3">
+            <div class="card-header bg-light">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Esempi di Icone
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-example" data-icon="fas fa-check-circle" title="Check Circle">
+                        <i class="fas fa-check-circle"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-example" data-icon="fas fa-info-circle" title="Info Circle">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-example" data-icon="fas fa-cog" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-example" data-icon="fas fa-bell" title="Bell">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-example" data-icon="fas fa-star" title="Star">
+                        <i class="fas fa-star"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-example" data-icon="fas fa-rocket" title="Rocket">
+                        <i class="fas fa-rocket"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-example" data-icon="fas fa-shield-alt" title="Shield">
+                        <i class="fas fa-shield-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-example" data-icon="fas fa-envelope" title="Envelope">
+                        <i class="fas fa-envelope"></i>
+                    </button>
+                </div>
+                <p class="text-muted small mt-2 mb-0">Clicca un'icona per usarla</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Live preview update
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('{{ form.title.id }}');
+    const descInput = document.getElementById('{{ form.description.id }}');
+    const iconInput = document.getElementById('icon_class_input');
+    const colorInput = document.getElementById('{{ form.icon_color.id }}');
+    
+    const previewTitle = document.getElementById('preview_title');
+    const previewDesc = document.getElementById('preview_description');
+    const previewIcon = document.getElementById('preview_icon');
+    
+    // Update preview on input
+    if (titleInput) {
+        titleInput.addEventListener('input', function() {
+            previewTitle.textContent = this.value || 'Titolo della novità';
+        });
+    }
+    
+    if (descInput) {
+        descInput.addEventListener('input', function() {
+            previewDesc.textContent = this.value || 'Descrizione della novità';
+        });
+    }
+    
+    if (iconInput) {
+        iconInput.addEventListener('input', updateIcon);
+    }
+    
+    if (colorInput) {
+        colorInput.addEventListener('change', updateIcon);
+    }
+    
+    function updateIcon() {
+        const iconClass = iconInput.value || 'fas fa-info-circle';
+        const colorClass = colorInput.value || 'text-primary';
+        previewIcon.className = iconClass + ' ' + colorClass;
+        previewIcon.style.fontSize = '1.5rem';
+    }
+    
+    // Icon examples click handler
+    document.querySelectorAll('.icon-example').forEach(button => {
+        button.addEventListener('click', function() {
+            const iconClass = this.dataset.icon;
+            iconInput.value = iconClass;
+            updateIcon();
+        });
+    });
+});
+</script>
+{% endblock %}
