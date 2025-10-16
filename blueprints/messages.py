@@ -46,13 +46,31 @@ def require_messages_permission(f):
 @require_messages_permission
 def internal_messages():
     """Visualizza i messaggi interni per l'utente corrente (ricevuti e inviati)"""
-    # Messaggi ricevuti e inviati dall'utente corrente (with company filter)
-    messages = filter_by_company(InternalMessage.query).filter(
-        or_(
-            InternalMessage.recipient_id == current_user.id,
-            InternalMessage.sender_id == current_user.id
-        )
+    # Messaggi ricevuti dall'utente corrente (with company filter)
+    received_messages = filter_by_company(InternalMessage.query).filter(
+        InternalMessage.recipient_id == current_user.id
     ).order_by(InternalMessage.created_at.desc()).all()
+    
+    # Messaggi inviati dall'utente corrente (with company filter)
+    # Raggruppa per message_group_id per evitare duplicati
+    sent_messages_raw = filter_by_company(InternalMessage.query).filter(
+        InternalMessage.sender_id == current_user.id
+    ).order_by(InternalMessage.created_at.desc()).all()
+    
+    # Filtra i messaggi inviati per mostrare solo uno per gruppo
+    sent_messages = []
+    seen_groups = set()
+    for msg in sent_messages_raw:
+        if msg.message_group_id:
+            if msg.message_group_id not in seen_groups:
+                sent_messages.append(msg)
+                seen_groups.add(msg.message_group_id)
+        else:
+            sent_messages.append(msg)
+    
+    # Unisci e ordina tutti i messaggi per data
+    messages = sorted(received_messages + sent_messages, 
+                     key=lambda x: x.created_at, reverse=True)
     
     # Conta messaggi non letti ricevuti (with company filter)
     unread_count = filter_by_company(InternalMessage.query).filter_by(
@@ -180,6 +198,10 @@ def send_message():
             flash(f'Attenzione: {len(invalid_recipients)} destinatario/i escluso/i per permessi sede', 'warning')
         
         # Crea e salva un messaggio per ogni destinatario valido
+        # Genera un UUID per raggruppare messaggi multipli
+        import uuid
+        message_group_id = str(uuid.uuid4()) if len(valid_recipients) > 1 else None
+        
         messages_sent = 0
         for recipient in valid_recipients:
             message = InternalMessage()
@@ -188,6 +210,7 @@ def send_message():
             message.title = form.title.data
             message.message = form.message.data
             message.message_type = form.message_type.data
+            message.message_group_id = message_group_id
             set_company_on_create(message)
             db.session.add(message)
             messages_sent += 1
