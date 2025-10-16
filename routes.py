@@ -3,7 +3,7 @@
 # All feature routes migrated to respective blueprint modules
 # Flask Core Imports
 from flask import render_template, request, redirect, url_for, flash
-from flask_login import current_user
+from flask_login import current_user, login_required
 # Standard Library Imports
 from urllib.parse import urlparse, urljoin
 # Application Imports
@@ -66,6 +66,12 @@ def index():
             
             return render_template('dashboard_superadmin.html', company_stats=company_stats)
         
-        # Regular users redirect to dashboard (FLOW)
-        return redirect(url_for('dashboard.dashboard'))
+        # Regular users see home page with FLOW and CIRCLE buttons
+        return redirect(url_for('home'))
     return redirect(url_for('auth.login'))
+
+@app.route('/home')
+@login_required
+def home():
+    """Home page with FLOW and CIRCLE sections"""
+    return render_template('home.html')

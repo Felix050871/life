@@ -26,7 +26,7 @@
             {% endif %}
             
             <!-- Logo -->
-            <a class="navbar-brand text-white d-flex align-items-center" href="{{ url_for('index') }}">
+            <a class="navbar-brand text-white d-flex align-items-center" href="{{ url_for('home') if not current_user.is_system_admin else url_for('index') }}">
                 {% if current_user.company and current_user.company.logo %}
                 <img src="{{ url_for('static', filename=current_user.company.logo) }}" alt="{{ current_user.company.name }}" style="height: 30px; width: auto; margin-right: 0.5rem;">
                 {% else %}

@@ -640,7 +640,7 @@ def email_settings():
     from forms import CompanyEmailSettingsForm, TestEmailForm
     from utils_tenant import get_user_company_id
     
-    company_id = get_user_company_id(current_user)
+    company_id = get_user_company_id()
     if not company_id:
         flash('Errore: azienda non trovata', 'danger')
         return redirect(url_for('dashboard.index'))
@@ -702,7 +702,7 @@ def test_email():
     from utils_tenant import get_user_company_id
     from datetime import datetime
     
-    company_id = get_user_company_id(current_user)
+    company_id = get_user_company_id()
     if not company_id:
         flash('Errore: azienda non trovata', 'danger')
         return redirect(url_for('admin.email_settings'))
