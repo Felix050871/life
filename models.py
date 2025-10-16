@@ -2171,6 +2171,10 @@ class InternalMessage(db.Model):
     def get_sender_name(self):
         """Restituisce il nome del mittente o 'Sistema' se è un messaggio automatico"""
         return self.sender.get_full_name() if self.sender else 'Sistema'
+    
+    def get_recipient_name(self):
+        """Restituisce il nome del destinatario"""
+        return self.recipient.get_full_name() if self.recipient else 'Sconosciuto'
 
 
 
