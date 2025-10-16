@@ -108,13 +108,11 @@ def personas():
     
     company_id = get_user_company_id()
     
-    # Filtra utenti della stessa azienda, escludi system admin e amministratori, escludi l'utente corrente
+    # Filtra utenti della stessa azienda, escludi solo system admin
     users = User.query.filter(
         User.company_id == company_id,
         User.active == True,
-        User.is_system_admin == False,
-        User.role != 'Amministratore',
-        User.id != current_user.id
+        User.is_system_admin == False
     ).order_by(User.last_name, User.first_name).all()
     
     return render_template('circle/personas.html', users=users)
@@ -136,7 +134,7 @@ def persona_detail(user_id):
         is_system_admin=False
     ).first()
     
-    if not user or user.role == 'Amministratore':
+    if not user:
         abort(404)
     
     return render_template('circle/persona_detail.html', user=user)
@@ -158,7 +156,7 @@ def download_cv_pdf(user_id):
         is_system_admin=False
     ).first()
     
-    if not user or user.role == 'Amministratore':
+    if not user:
         abort(404)
     
     # Crea PDF in memoria
