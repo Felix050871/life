@@ -162,15 +162,14 @@
 
 <script>
 function toggleLike() {
-    // Construct full URL with tenant prefix
+    // Construct full URL with tenant prefix  
     const likeUrl = '/t/{{ tenant_slug }}/circle/news/api/{{ post.id }}/like';
     
-    const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
     fetch(likeUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
+            'X-CSRFToken': '{{ csrf_token() }}'
         }
     })
     .then(response => response.json())
