@@ -67,7 +67,7 @@ def admin_login():
     
     return render_template('login_admin.html', form=form, companies=companies)
 
-@auth_bp.route('/t/<slug>/login', methods=['GET', 'POST'])
+@auth_bp.route('/tenant/<slug>/login', methods=['GET', 'POST'])
 def tenant_login(slug):
     """Tenant-specific login page"""
     if current_user.is_authenticated:

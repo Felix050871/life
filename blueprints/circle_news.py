@@ -15,7 +15,7 @@ import uuid
 bp = Blueprint('circle_news', __name__)
 
 @bp.route('/circle/news/')
-@bp.route('/t/<slug>/circle/news/')
+@bp.route('/tenant/<slug>/circle/news/')
 @login_required
 def index(slug=None):
     """Lista di tutte le news/comunicazioni"""
@@ -30,7 +30,7 @@ def index(slug=None):
     return render_template('circle/news/index.html', posts=news_posts, now=datetime.now())
 
 @bp.route('/circle/news/<int:post_id>')
-@bp.route('/t/<slug>/circle/news/<int:post_id>')
+@bp.route('/tenant/<slug>/circle/news/<int:post_id>')
 @login_required
 def view_post(post_id, slug=None):
     """Visualizza dettaglio post con commenti"""
@@ -56,7 +56,7 @@ def view_post(post_id, slug=None):
                          tenant_slug=tenant_slug)
 
 @bp.route('/circle/news/create', methods=['GET', 'POST'])
-@bp.route('/t/<slug>/circle/news/create', methods=['GET', 'POST'])
+@bp.route('/tenant/<slug>/circle/news/create', methods=['GET', 'POST'])
 @login_required
 def create(slug=None):
     """Crea nuovo post/news"""
@@ -166,7 +166,7 @@ def create(slug=None):
     return render_template('circle/news/create.html')
 
 @bp.route('/circle/news/<int:post_id>/comment', methods=['POST'])
-@bp.route('/t/<slug>/circle/news/<int:post_id>/comment', methods=['POST'])
+@bp.route('/tenant/<slug>/circle/news/<int:post_id>/comment', methods=['POST'])
 @login_required
 def add_comment(post_id, slug=None):
     """Aggiungi commento a un post"""
@@ -198,7 +198,7 @@ def add_comment(post_id, slug=None):
     return redirect(url_for('circle_news.view_post', post_id=post_id))
 
 @bp.route('/circle/news/<int:post_id>/like', methods=['POST'])
-@bp.route('/t/<slug>/circle/news/<int:post_id>/like', methods=['POST'])
+@bp.route('/tenant/<slug>/circle/news/<int:post_id>/like', methods=['POST'])
 @login_required
 def toggle_like(post_id, slug=None):
     """Toggle like su un post"""
@@ -222,7 +222,7 @@ def toggle_like(post_id, slug=None):
     return redirect(url_for('circle_news.view_post', post_id=post_id))
 
 @bp.route('/circle/news/<int:post_id>/edit', methods=['GET', 'POST'])
-@bp.route('/t/<slug>/circle/news/<int:post_id>/edit', methods=['GET', 'POST'])
+@bp.route('/tenant/<slug>/circle/news/<int:post_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit(post_id, slug=None):
     """Modifica post esistente"""
@@ -301,7 +301,7 @@ def edit(post_id, slug=None):
     return render_template('circle/news/edit.html', post=post)
 
 @bp.route('/circle/news/<int:post_id>/delete', methods=['POST'])
-@bp.route('/t/<slug>/circle/news/<int:post_id>/delete', methods=['POST'])
+@bp.route('/tenant/<slug>/circle/news/<int:post_id>/delete', methods=['POST'])
 @login_required
 def delete(post_id, slug=None):
     """Elimina post"""
@@ -325,7 +325,7 @@ def delete(post_id, slug=None):
 # =============================================================================
 
 @bp.route('/circle/news/api/<int:post_id>/like', methods=['POST'])
-@bp.route('/t/<slug>/circle/news/api/<int:post_id>/like', methods=['POST'])
+@bp.route('/tenant/<slug>/circle/news/api/<int:post_id>/like', methods=['POST'])
 @login_required
 def api_toggle_like(post_id, slug=None):
     """Toggle like via AJAX"""
@@ -366,7 +366,7 @@ def api_toggle_like(post_id, slug=None):
     })
 
 @bp.route('/circle/news/api/<int:post_id>/comment', methods=['POST'])
-@bp.route('/t/<slug>/circle/news/api/<int:post_id>/comment', methods=['POST'])
+@bp.route('/tenant/<slug>/circle/news/api/<int:post_id>/comment', methods=['POST'])
 @login_required
 def api_add_comment(post_id, slug=None):
     """Aggiungi commento via AJAX"""
