@@ -630,6 +630,186 @@ def admin_settings():
     
     return render_template('admin_settings.html', config=config)
 
+
+@admin_bp.route('/email-settings', methods=['GET', 'POST'])
+@login_required
+@require_admin_permission
+def email_settings():
+    """Configurazione SMTP per l'azienda"""
+    from models import CompanyEmailSettings
+    from forms import CompanyEmailSettingsForm, TestEmailForm
+    from utils_tenant import get_user_company_id
+    
+    company_id = get_user_company_id(current_user)
+    if not company_id:
+        flash('Errore: azienda non trovata', 'danger')
+        return redirect(url_for('dashboard.index'))
+    
+    # Ottieni configurazione esistente o creane una nuova
+    email_config = CompanyEmailSettings.query.filter_by(company_id=company_id).first()  # type: ignore
+    
+    form = CompanyEmailSettingsForm()
+    test_form = TestEmailForm()
+    
+    if form.validate_on_submit():
+        try:
+            if not email_config:
+                email_config = CompanyEmailSettings(company_id=company_id)
+                db.session.add(email_config)
+            
+            # Aggiorna configurazione
+            email_config.mail_server = form.mail_server.data
+            email_config.mail_port = form.mail_port.data
+            email_config.mail_use_tls = form.mail_use_tls.data
+            email_config.mail_use_ssl = form.mail_use_ssl.data
+            email_config.mail_username = form.mail_username.data
+            email_config.set_password(form.mail_password.data)  # Cripta la password
+            email_config.mail_default_sender = form.mail_default_sender.data
+            email_config.mail_reply_to = form.mail_reply_to.data
+            email_config.active = True
+            
+            db.session.commit()
+            flash('Configurazione email salvata con successo! Prova ad inviare un\'email di test.', 'success')
+            return redirect(url_for('admin.email_settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore nel salvataggio: {str(e)}', 'danger')
+    
+    # Pre-popola form con dati esistenti
+    if email_config and request.method == 'GET':
+        form.mail_server.data = email_config.mail_server
+        form.mail_port.data = email_config.mail_port
+        form.mail_use_tls.data = email_config.mail_use_tls
+        form.mail_use_ssl.data = email_config.mail_use_ssl
+        form.mail_username.data = email_config.mail_username
+        form.mail_default_sender.data = email_config.mail_default_sender
+        form.mail_reply_to.data = email_config.mail_reply_to
+    
+    return render_template('admin_email_settings.html', 
+                         form=form, 
+                         test_form=test_form,
+                         email_config=email_config)
+
+
+@admin_bp.route('/email-settings/test', methods=['POST'])
+@login_required
+@require_admin_permission
+def test_email():
+    """Testa configurazione SMTP inviando email di prova"""
+    from models import CompanyEmailSettings
+    from forms import TestEmailForm
+    from email_utils import EmailContext, send_email_smtp
+    from utils_tenant import get_user_company_id
+    from datetime import datetime
+    
+    company_id = get_user_company_id(current_user)
+    if not company_id:
+        flash('Errore: azienda non trovata', 'danger')
+        return redirect(url_for('admin.email_settings'))
+    
+    form = TestEmailForm()
+    email_config = None  # Inizializza qui
+    
+    if form.validate_on_submit():
+        try:
+            # Ottieni configurazione email
+            email_config = CompanyEmailSettings.query.filter_by(
+                company_id=company_id, 
+                active=True
+            ).first()  # type: ignore
+            
+            if not email_config:
+                flash('Configurazione email non trovata. Salva prima la configurazione.', 'warning')
+                return redirect(url_for('admin.email_settings'))
+            
+            # Crea contesto email
+            context = EmailContext.from_company_settings(company_id)
+            
+            # Invia email di test
+            subject = '✅ Test Configurazione SMTP - Life Platform'
+            recipient = form.test_email.data
+            
+            body_text = f"""
+Ciao,
+
+Questa è un'email di test per verificare la configurazione SMTP della tua azienda su Life Platform.
+
+Se ricevi questa email, la configurazione è corretta!
+
+Dettagli configurazione:
+- Server SMTP: {email_config.mail_server}
+- Porta: {email_config.mail_port}
+- TLS: {'Sì' if email_config.mail_use_tls else 'No'}
+- SSL: {'Sì' if email_config.mail_use_ssl else 'No'}
+- Mittente: {email_config.mail_default_sender}
+
+Data test: {datetime.now().strftime('%d/%m/%Y %H:%M')}
+
+---
+Life Platform - Sistema Multi-Tenant
+"""
+            
+            body_html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+                    <h2 style="color: #28a745;">✅ Test Configurazione SMTP</h2>
+                    <p>Ciao,</p>
+                    <p>Questa è un'email di test per verificare la configurazione SMTP della tua azienda su <strong>Life Platform</strong>.</p>
+                    
+                    <div style="background-color: #28a745; color: white; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                        <h3 style="margin: 0;">✓ Configurazione Corretta!</h3>
+                    </div>
+                    
+                    <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <h3 style="margin-top: 0;">Dettagli Configurazione:</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            <li>📡 <strong>Server SMTP:</strong> {email_config.mail_server}</li>
+                            <li>🔌 <strong>Porta:</strong> {email_config.mail_port}</li>
+                            <li>🔒 <strong>TLS:</strong> {'Sì' if email_config.mail_use_tls else 'No'}</li>
+                            <li>🔐 <strong>SSL:</strong> {'Sì' if email_config.mail_use_ssl else 'No'}</li>
+                            <li>📧 <strong>Mittente:</strong> {email_config.mail_default_sender}</li>
+                        </ul>
+                        <p style="color: #666; font-size: 12px; margin-top: 15px;">
+                            Data test: {datetime.now().strftime('%d/%m/%Y %H:%M')}
+                        </p>
+                    </div>
+                    
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999; text-align: center;">Life Platform - Sistema Multi-Tenant</p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Invia email
+            success = send_email_smtp(context, subject, [recipient], body_text, body_html)
+            
+            # Aggiorna stato test
+            email_config.last_tested_at = datetime.now()
+            email_config.test_status = 'success' if success else 'failed'
+            email_config.test_error = None if success else 'Errore invio SMTP'
+            db.session.commit()
+            
+            if success:
+                flash(f'✅ Email di test inviata con successo a {recipient}', 'success')
+            else:
+                flash(f'❌ Errore nell\'invio dell\'email di test. Verifica la configurazione.', 'danger')
+                
+        except Exception as e:
+            # Salva errore
+            if email_config:
+                email_config.last_tested_at = datetime.now()
+                email_config.test_status = 'failed'
+                email_config.test_error = str(e)
+                db.session.commit()
+            
+            flash(f'Errore nel test email: {str(e)}', 'danger')
+    else:
+        flash('Email di test non valida', 'danger')
+    
+    return redirect(url_for('admin.email_settings'))
+
 @admin_bp.route('/system_info')
 @login_required
 @require_admin_permission
@@ -637,7 +817,7 @@ def system_info():
     """Informazioni sistema e diagnostica"""
     import sys
     import platform
-    from flask import __version__ as flask_version
+    from flask import __version__ as flask_version, current_app
     
     try:
         # Informazioni sistema
@@ -647,7 +827,7 @@ def system_info():
             'flask_version': flask_version,
             'database_url': os.environ.get('DATABASE_URL', 'Non configurato'),
             'environment': os.environ.get('ENVIRONMENT', 'development'),
-            'debug_mode': current_app.debug if 'current_app' in globals() else False,
+            'debug_mode': current_app.debug,
         }
         
         # Statistiche database

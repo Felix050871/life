@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Configurazione Email - Admin{% endblock %}
+
+{% block head %}
+<style>
+.email-config-card {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-failed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.help-text {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.form-section {
+    margin-bottom: 25px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+}
+
+.test-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 30px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-envelope me-2"></i>Configurazione Email SMTP</h2>
+        <p class="text-muted">Configura il server SMTP per inviare email dalla tua azienda</p>
+        
+        <!-- Stato configurazione -->
+        {% if email_config %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Stato Configurazione:</strong> 
+            {% if email_config.active %}
+                <span class="status-badge status-success ms-2">Attiva</span>
+            {% else %}
+                <span class="status-badge status-pending ms-2">Inattiva</span>
+            {% endif %}
+            
+            {% if email_config.last_tested_at %}
+            <div class="mt-2">
+                <small>
+                    <i class="fas fa-clock me-1"></i>Ultimo test: {{ email_config.last_tested_at.strftime('%d/%m/%Y %H:%M') }}
+                    {% if email_config.test_status == 'success' %}
+                        <span class="badge bg-success ms-2">✓ Successo</span>
+                    {% elif email_config.test_status == 'failed' %}
+                        <span class="badge bg-danger ms-2">✗ Fallito</span>
+                        {% if email_config.test_error %}
+                        <br><span class="text-danger">Errore: {{ email_config.test_error }}</span>
+                        {% endif %}
+                    {% endif %}
+                </small>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Nessuna configurazione email presente. Compila il form sottostante per configurare l'invio email.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Form configurazione SMTP -->
+<div class="email-config-card">
+    <h4 class="mb-4"><i class="fas fa-cog me-2"></i>Parametri SMTP</h4>
+    
+    <form method="POST" action="{{ url_for('admin.email_settings') }}">
+        {{ form.hidden_tag() }}
+        
+        <!-- Server e Porta -->
+        <div class="row form-section">
+            <div class="col-md-8">
+                <div class="mb-3">
+                    {{ form.mail_server.label(class="form-label") }}
+                    {{ form.mail_server(class="form-control") }}
+                    <div class="help-text">
+                        <i class="fas fa-info-circle"></i> Es: smtp.gmail.com, smtp.office365.com, smtp.sendgrid.net
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    {{ form.mail_port.label(class="form-label") }}
+                    {{ form.mail_port(class="form-control") }}
+                    <div class="help-text">
+                        <i class="fas fa-info-circle"></i> Porta standard: 587 (TLS) o 465 (SSL)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sicurezza -->
+        <div class="form-section">
+            <h5 class="mb-3">Sicurezza Connessione</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-check mb-2">
+                        {{ form.mail_use_tls(class="form-check-input") }}
+                        {{ form.mail_use_tls.label(class="form-check-label") }}
+                    </div>
+                    <div class="help-text ms-4">Usa STARTTLS (consigliato per porta 587)</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mb-2">
+                        {{ form.mail_use_ssl(class="form-check-input") }}
+                        {{ form.mail_use_ssl.label(class="form-check-label") }}
+                    </div>
+                    <div class="help-text ms-4">Usa SSL/TLS diretto (consigliato per porta 465)</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Credenziali -->
+        <div class="form-section">
+            <h5 class="mb-3">Credenziali SMTP</h5>
+            <div class="mb-3">
+                {{ form.mail_username.label(class="form-label") }}
+                {{ form.mail_username(class="form-control") }}
+                <div class="help-text">
+                    <i class="fas fa-info-circle"></i> Username per l'autenticazione SMTP
+                </div>
+            </div>
+            <div class="mb-3">
+                {{ form.mail_password.label(class="form-label") }}
+                {{ form.mail_password(class="form-control") }}
+                <div class="help-text">
+                    <i class="fas fa-lock"></i> La password sarà criptata prima del salvataggio
+                </div>
+            </div>
+        </div>
+        
+        <!-- Email mittente -->
+        <div class="form-section">
+            <h5 class="mb-3">Configurazione Email</h5>
+            <div class="mb-3">
+                {{ form.mail_default_sender.label(class="form-label") }}
+                {{ form.mail_default_sender(class="form-control") }}
+                <div class="help-text">
+                    <i class="fas fa-info-circle"></i> Indirizzo email che apparirà come mittente
+                </div>
+            </div>
+            <div class="mb-3">
+                {{ form.mail_reply_to.label(class="form-label") }}
+                {{ form.mail_reply_to(class="form-control") }}
+                <div class="help-text">
+                    <i class="fas fa-info-circle"></i> Indirizzo email per le risposte (opzionale)
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-end">
+            {{ form.submit(class="btn btn-primary btn-lg") }}
+        </div>
+    </form>
+</div>
+
+<!-- Sezione test email -->
+{% if email_config and email_config.active %}
+<div class="test-section">
+    <h4 class="mb-3"><i class="fas fa-flask me-2"></i>Test Configurazione</h4>
+    <p class="text-muted">Invia un'email di test per verificare che la configurazione funzioni correttamente</p>
+    
+    <form method="POST" action="{{ url_for('admin.test_email') }}" class="row g-3 align-items-end">
+        {{ test_form.hidden_tag() }}
+        <div class="col-md-8">
+            {{ test_form.test_email.label(class="form-label") }}
+            {{ test_form.test_email(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+            {{ test_form.submit(class="btn btn-success w-100") }}
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<!-- Guida configurazione -->
+<div class="alert alert-light mt-4">
+    <h5><i class="fas fa-book me-2"></i>Guida Rapida</h5>
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <h6>Gmail</h6>
+            <ul class="small">
+                <li>Server: smtp.gmail.com</li>
+                <li>Porta: 587</li>
+                <li>TLS: Attivo</li>
+                <li>Username: tua.email@gmail.com</li>
+                <li>Password: <a href="https://support.google.com/accounts/answer/185833" target="_blank">App Password</a></li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h6>Microsoft 365 / Outlook</h6>
+            <ul class="small">
+                <li>Server: smtp.office365.com</li>
+                <li>Porta: 587</li>
+                <li>TLS: Attivo</li>
+                <li>Username: tua.email@outlook.com</li>
+                <li>Password: Password account</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

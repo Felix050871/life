@@ -1950,5 +1950,34 @@ class ACIFilterForm(FlaskForm):
         except Exception as e:
             # Fallback se non ci sono dati o errore database
             self.tipologia.choices = [('', 'Tutte le tipologie')]
-            self.tipo.choices = [('', 'Tutti i tipi')]
             self.marca.choices = [('', 'Tutte le marche')]
+
+
+# =============================================================================
+# EMAIL CONFIGURATION FORMS
+# =============================================================================
+
+class CompanyEmailSettingsForm(FlaskForm):
+    """Form per configurare SMTP specifico dell'azienda"""
+    mail_server = StringField('Server SMTP', validators=[DataRequired(), Length(max=255)],
+                             render_kw={'placeholder': 'smtp.gmail.com'})
+    mail_port = IntegerField('Porta SMTP', validators=[DataRequired(), NumberRange(min=1, max=65535)],
+                            default=587, render_kw={'placeholder': '587'})
+    mail_use_tls = BooleanField('Usa TLS', default=True)
+    mail_use_ssl = BooleanField('Usa SSL', default=False)
+    mail_username = StringField('Username SMTP', validators=[DataRequired(), Length(max=255)],
+                               render_kw={'placeholder': 'noreply@tuaazienda.it'})
+    mail_password = PasswordField('Password SMTP', validators=[DataRequired()],
+                                 render_kw={'placeholder': 'Password del servizio SMTP'})
+    mail_default_sender = StringField('Email Mittente', validators=[DataRequired(), Email(), Length(max=255)],
+                                      render_kw={'placeholder': 'noreply@tuaazienda.it'})
+    mail_reply_to = StringField('Email Reply-To (opzionale)', validators=[Optional(), Email(), Length(max=255)],
+                               render_kw={'placeholder': 'support@tuaazienda.it'})
+    submit = SubmitField('Salva Configurazione')
+
+
+class TestEmailForm(FlaskForm):
+    """Form per testare configurazione SMTP"""
+    test_email = StringField('Email di Test', validators=[DataRequired(), Email()],
+                            render_kw={'placeholder': 'tua.email@esempio.it'})
+    submit = SubmitField('Invia Email di Test')
