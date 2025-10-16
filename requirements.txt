@@ -36,3 +36,4 @@ pandas
 Flask-Mail
 bleach
 bleach
+cryptography

@@ -2746,6 +2746,50 @@ class Company(db.Model):
     def __repr__(self):
         return f'<Company {self.code} - {self.name}>'
 
+
+class CompanyEmailSettings(db.Model):
+    """Configurazione SMTP specifica per ogni azienda - Multi-tenant email system"""
+    __tablename__ = 'company_email_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False, unique=True)
+    
+    # Configurazione SMTP
+    mail_server = db.Column(db.String(255), nullable=False)  # es: smtp.gmail.com
+    mail_port = db.Column(db.Integer, default=587, nullable=False)
+    mail_use_tls = db.Column(db.Boolean, default=True, nullable=False)
+    mail_use_ssl = db.Column(db.Boolean, default=False, nullable=False)
+    mail_username = db.Column(db.String(255), nullable=False)
+    mail_password_encrypted = db.Column(db.Text, nullable=False)  # Password criptata con Fernet
+    mail_default_sender = db.Column(db.String(255), nullable=False)  # Email mittente
+    mail_reply_to = db.Column(db.String(255), nullable=True)  # Email reply-to (opzionale)
+    
+    # Stato e diagnostica
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    last_tested_at = db.Column(db.DateTime, nullable=True)
+    test_status = db.Column(db.String(20), nullable=True)  # 'success', 'failed'
+    test_error = db.Column(db.Text, nullable=True)  # Ultimo errore di test
+    
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relazione
+    company = db.relationship('Company', backref=db.backref('email_settings', uselist=False, lazy=True))
+    
+    def __repr__(self):
+        return f'<CompanyEmailSettings for {self.company.name if self.company else "Unknown"}>'
+    
+    def get_decrypted_password(self):
+        """Decripta e restituisce la password SMTP"""
+        from utils_encryption import decrypt_value
+        return decrypt_value(self.mail_password_encrypted)
+    
+    def set_password(self, plain_password):
+        """Cripta e salva la password SMTP"""
+        from utils_encryption import encrypt_value
+        self.mail_password_encrypted = encrypt_value(plain_password)
+
+
 class Sede(db.Model):
     """Modello per le sedi aziendali"""
     id = db.Column(db.Integer, primary_key=True)
