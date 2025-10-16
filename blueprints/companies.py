@@ -217,7 +217,108 @@ def create_company():
             db.session.add(admin_user)
             db.session.commit()
             
-            flash(f'Azienda {company.name} creata con successo. Admin: {admin_username}', 'success')
+            # Invia email di attivazione all'amministratore (usa SMTP globale SUPERADMIN)
+            try:
+                from email_utils import EmailContext, send_email_smtp
+                
+                # Usa configurazione globale (SUPERADMIN) per email di onboarding
+                context = EmailContext.from_global_config()
+                
+                # URL di accesso per l'azienda
+                tenant_login_url = url_for('auth.tenant_login', slug=slug, _external=True)
+                
+                subject = f'🎉 Benvenuto su Life Platform - Azienda {company.name} Attivata'
+                
+                body_text = f"""
+Ciao {admin_full_name},
+
+La tua azienda "{company.name}" è stata creata con successo su Life Platform!
+
+Dettagli Accesso:
+- URL Login: {tenant_login_url}
+- Username: {admin_username}
+- Password: (quella impostata durante la creazione)
+
+Codice Azienda: {company.code}
+Slug URL: {slug}
+Licenze disponibili: {max_licenses}
+
+Come amministratore, hai accesso completo a tutte le funzionalità di FLOW e CIRCLE.
+
+Prossimi passi:
+1. Accedi alla piattaforma usando il link sopra
+2. Configura il server SMTP della tua azienda in Amministrazione > Configurazione Email
+3. Crea le sedi aziendali e gli orari di lavoro
+4. Invita i tuoi dipendenti
+
+Per qualsiasi assistenza, contatta il supporto.
+
+---
+Life Platform - Sistema Multi-Tenant
+"""
+                
+                body_html = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+                        <h2 style="color: #28a745;">🎉 Benvenuto su Life Platform!</h2>
+                        <p>Ciao <strong>{admin_full_name}</strong>,</p>
+                        <p>La tua azienda "<strong>{company.name}</strong>" è stata creata con successo!</p>
+                        
+                        <div style="background-color: #28a745; color: white; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                            <h3 style="margin: 0;">✓ Azienda Attivata</h3>
+                        </div>
+                        
+                        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                            <h3 style="margin-top: 0; color: #333;">Dettagli Accesso</h3>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>🔗 <strong>URL Login:</strong> <a href="{tenant_login_url}">{tenant_login_url}</a></li>
+                                <li>👤 <strong>Username:</strong> {admin_username}</li>
+                                <li>🏢 <strong>Codice Azienda:</strong> {company.code}</li>
+                                <li>🔑 <strong>Slug URL:</strong> {slug}</li>
+                                <li>📊 <strong>Licenze:</strong> {max_licenses}</li>
+                            </ul>
+                            
+                            <div style="text-align: center; margin-top: 20px;">
+                                <a href="{tenant_login_url}" style="display: inline-block; padding: 12px 30px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+                                    Accedi alla Piattaforma
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <h4 style="margin-top: 0; color: #1976d2;">📝 Prossimi Passi</h4>
+                            <ol style="margin: 10px 0; padding-left: 20px;">
+                                <li>Accedi alla piattaforma usando il link sopra</li>
+                                <li>Configura il server SMTP in <em>Amministrazione > Configurazione Email</em></li>
+                                <li>Crea le sedi aziendali e gli orari di lavoro</li>
+                                <li>Invita i tuoi dipendenti</li>
+                            </ol>
+                        </div>
+                        
+                        <p style="color: #666; font-size: 14px;">
+                            Come amministratore, hai accesso completo a <strong>FLOW</strong> (gestione workforce) e <strong>CIRCLE</strong> (social intranet).
+                        </p>
+                        
+                        <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #999; text-align: center;">Life Platform - Sistema Multi-Tenant</p>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                # Invia email usando SMTP globale
+                email_sent = send_email_smtp(context, subject, [admin_email], body_text, body_html)
+                
+                if email_sent:
+                    flash(f'Azienda {company.name} creata con successo. Email di attivazione inviata a {admin_email}', 'success')
+                else:
+                    flash(f'Azienda {company.name} creata con successo. ATTENZIONE: Email di attivazione NON inviata (verifica SMTP globale)', 'warning')
+            except Exception as e:
+                # Non bloccare la creazione se l'email fallisce
+                print(f"Errore invio email attivazione: {str(e)}")
+                flash(f'Azienda {company.name} creata con successo. Admin: {admin_username}. Email non inviata.', 'success')
+            
             return redirect(url_for('companies.list_companies'))
         except Exception as e:
             db.session.rollback()
