@@ -2179,24 +2179,44 @@ class InternalMessage(db.Model):
     
     def get_all_recipients(self):
         """Restituisce tutti i destinatari se il messaggio è parte di un gruppo"""
-        if not self.message_group_id:
+        if self.message_group_id:
+            # Nuovi messaggi con group_id
+            grouped_messages = InternalMessage.query.filter_by(
+                message_group_id=self.message_group_id
+            ).all()
+            return [msg.recipient for msg in grouped_messages]
+        else:
+            # Messaggi vecchi senza group_id: raggruppa per sender+title+timestamp
+            if self.sender_id:
+                timestamp_key = self.created_at.replace(microsecond=0)
+                grouped_messages = InternalMessage.query.filter_by(
+                    sender_id=self.sender_id,
+                    title=self.title
+                ).filter(
+                    db.func.date_trunc('second', InternalMessage.created_at) == timestamp_key
+                ).all()
+                return [msg.recipient for msg in grouped_messages]
+            
             return [self.recipient]
-        
-        # Trova tutti i messaggi con lo stesso group_id
-        grouped_messages = InternalMessage.query.filter_by(
-            message_group_id=self.message_group_id
-        ).all()
-        
-        return [msg.recipient for msg in grouped_messages]
     
     def get_recipients_count(self):
         """Restituisce il numero di destinatari per messaggi raggruppati"""
-        if not self.message_group_id:
+        if self.message_group_id:
+            return InternalMessage.query.filter_by(
+                message_group_id=self.message_group_id
+            ).count()
+        else:
+            # Messaggi vecchi senza group_id: conta per sender+title+timestamp
+            if self.sender_id:
+                timestamp_key = self.created_at.replace(microsecond=0)
+                return InternalMessage.query.filter_by(
+                    sender_id=self.sender_id,
+                    title=self.title
+                ).filter(
+                    db.func.date_trunc('second', InternalMessage.created_at) == timestamp_key
+                ).count()
+            
             return 1
-        
-        return InternalMessage.query.filter_by(
-            message_group_id=self.message_group_id
-        ).count()
 
 
 

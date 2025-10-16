@@ -73,16 +73,14 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">
                                             {% if is_sent %}
-                                                {% if message.message_group_id %}
-                                                    {% set recipients = message.get_all_recipients() %}
-                                                    <i class="fas fa-arrow-right me-1"></i>A: 
-                                                    {% if recipients|length <= 3 %}
-                                                        {% for r in recipients %}{{ r.get_full_name() }}{% if not loop.last %}, {% endif %}{% endfor %}
-                                                    {% else %}
-                                                        {{ recipients[0].get_full_name() }}, {{ recipients[1].get_full_name() }} e altri {{ recipients|length - 2 }}
-                                                    {% endif %}
+                                                {% set recipients = message.get_all_recipients() %}
+                                                <i class="fas fa-arrow-right me-1"></i>A: 
+                                                {% if recipients|length == 1 %}
+                                                    {{ recipients[0].get_full_name() }}
+                                                {% elif recipients|length <= 3 %}
+                                                    {% for r in recipients %}{{ r.get_full_name() }}{% if not loop.last %}, {% endif %}{% endfor %}
                                                 {% else %}
-                                                    <i class="fas fa-arrow-right me-1"></i>A: {{ message.get_recipient_name() }}
+                                                    {{ recipients[0].get_full_name() }}, {{ recipients[1].get_full_name() }} e altri {{ recipients|length - 2 }}
                                                 {% endif %}
                                             {% else %}
                                                 <i class="fas fa-user me-1"></i>Da: {{ message.get_sender_name() }}

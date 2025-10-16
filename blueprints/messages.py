@@ -46,6 +46,8 @@ def require_messages_permission(f):
 @require_messages_permission
 def internal_messages():
     """Visualizza i messaggi interni per l'utente corrente (ricevuti e inviati)"""
+    from datetime import timedelta
+    
     # Messaggi ricevuti dall'utente corrente (with company filter)
     received_messages = filter_by_company(InternalMessage.query).filter(
         InternalMessage.recipient_id == current_user.id
@@ -60,13 +62,23 @@ def internal_messages():
     # Filtra i messaggi inviati per mostrare solo uno per gruppo
     sent_messages = []
     seen_groups = set()
+    seen_legacy_groups = set()  # Per messaggi senza group_id
+    
     for msg in sent_messages_raw:
         if msg.message_group_id:
+            # Nuovi messaggi con group_id
             if msg.message_group_id not in seen_groups:
                 sent_messages.append(msg)
                 seen_groups.add(msg.message_group_id)
         else:
-            sent_messages.append(msg)
+            # Messaggi vecchi senza group_id: raggruppa per sender+title+timestamp
+            # Crea una chiave basata su sender, titolo e timestamp (arrotondato al secondo)
+            timestamp_key = msg.created_at.replace(microsecond=0)
+            legacy_key = (msg.sender_id, msg.title, timestamp_key)
+            
+            if legacy_key not in seen_legacy_groups:
+                sent_messages.append(msg)
+                seen_legacy_groups.add(legacy_key)
     
     # Unisci e ordina tutti i messaggi per data
     messages = sorted(received_messages + sent_messages, 
@@ -111,18 +123,37 @@ def delete_message(message_id):
         return redirect(url_for('messages.internal_messages'))
     
     try:
-        # Se è il mittente e il messaggio è parte di un gruppo, cancella tutto il gruppo
-        if message.sender_id == current_user.id and message.message_group_id:
-            # Cancella tutti i messaggi del gruppo
-            grouped_messages = filter_by_company(InternalMessage.query).filter_by(
-                message_group_id=message.message_group_id
-            ).all()
-            for msg in grouped_messages:
-                db.session.delete(msg)
-            db.session.commit()
-            flash(f'Messaggio cancellato con successo ({len(grouped_messages)} destinatari)', 'success')
+        # Se è il mittente, cancella tutti i messaggi del gruppo
+        if message.sender_id == current_user.id:
+            if message.message_group_id:
+                # Nuovi messaggi con group_id
+                grouped_messages = filter_by_company(InternalMessage.query).filter_by(
+                    message_group_id=message.message_group_id
+                ).all()
+                for msg in grouped_messages:
+                    db.session.delete(msg)
+                db.session.commit()
+                flash(f'Messaggio cancellato con successo ({len(grouped_messages)} destinatari)', 'success')
+            else:
+                # Messaggi vecchi senza group_id: cancella per sender+title+timestamp
+                timestamp_key = message.created_at.replace(microsecond=0)
+                grouped_messages = filter_by_company(InternalMessage.query).filter_by(
+                    sender_id=message.sender_id,
+                    title=message.title
+                ).filter(
+                    db.func.date_trunc('second', InternalMessage.created_at) == timestamp_key
+                ).all()
+                
+                for msg in grouped_messages:
+                    db.session.delete(msg)
+                db.session.commit()
+                
+                if len(grouped_messages) > 1:
+                    flash(f'Messaggio cancellato con successo ({len(grouped_messages)} destinatari)', 'success')
+                else:
+                    flash('Messaggio cancellato con successo', 'success')
         else:
-            # Cancella solo questo messaggio
+            # Il destinatario cancella solo la sua copia
             db.session.delete(message)
             db.session.commit()
             flash('Messaggio cancellato con successo', 'success')
