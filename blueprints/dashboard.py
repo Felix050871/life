@@ -614,7 +614,7 @@ def dashboard_team():
                 entrata,
                 pausa,
                 uscita,
-                f"{user_data['daily_work_hours']:.2f}" if user_data['daily_work_hours'] > 0 else '0',
+                f"{user_data['daily_work_hours']:.2f}".replace('.', ',') if user_data['daily_work_hours'] > 0 else '0',
                 note
             ]
             
