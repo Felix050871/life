@@ -154,7 +154,7 @@ def api_sede_users(sede_id):
     if not current_user.can_view_users():
         return jsonify({'error': 'Non autorizzato'}), 403
     
-    sede = filter_by_company(Sede.query).get_or_404(sede_id)
+    sede = filter_by_company(Sede.query).filter_by(id=sede_id).first_or_404()
     
     # Verifica permessi sede
     if not current_user.all_sedi and current_user.sede_id != sede_id:
@@ -188,7 +188,7 @@ def api_sede_work_schedules(sede_id):
     if not current_user.can_view_work_schedules():
         return jsonify({'error': 'Non autorizzato'}), 403
     
-    sede = filter_by_company(Sede.query).get_or_404(sede_id)
+    sede = filter_by_company(Sede.query).filter_by(id=sede_id).first_or_404()
     
     # Verifica permessi sede
     if not current_user.all_sedi and current_user.sede_id != sede_id:
@@ -507,7 +507,7 @@ def edit_user(user_id):
         flash('Non hai i permessi per modificare gli utenti', 'danger')
         return redirect(url_for('user_management.user_management'))
     
-    user = filter_by_company(User.query).get_or_404(user_id)
+    user = filter_by_company(User.query).filter_by(id=user_id).first_or_404()
     form = UserForm(original_username=user.username, is_edit=True, obj=user)
     
     if request.method == 'GET':
@@ -585,7 +585,7 @@ def toggle_user(user_id):
         flash('Non hai i permessi per modificare utenti', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    user = filter_by_company(User.query).get_or_404(user_id)
+    user = filter_by_company(User.query).filter_by(id=user_id).first_or_404()
     if user.id == current_user.id:
         flash('Non puoi disattivare il tuo account', 'warning')
         return redirect(url_for('user_management.user_management'))
