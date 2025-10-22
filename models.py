@@ -1974,8 +1974,10 @@ class ReperibilitaCoverage(db.Model):
     end_date = db.Column(db.Date, nullable=False)    # Data fine validità
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
     
     creator = db.relationship('User', backref='reperibilita_coverages')
+    company = db.relationship('Company', backref='reperibilita_coverages')
     
     def get_day_name(self):
         """Restituisce il nome del giorno in italiano"""
@@ -2053,9 +2055,11 @@ class ReperibilitaShift(db.Model):
     description = db.Column(db.String(200))  # Descrizione del turno reperibilità
     created_at = db.Column(db.DateTime, default=italian_now)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
     
     user = db.relationship('User', foreign_keys=[user_id], backref='reperibilita_shifts')
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_reperibilita_shifts')
+    company = db.relationship('Company', backref='reperibilita_shifts')
     
     def get_duration_hours(self):
         """Calcola la durata del turno in ore"""
@@ -2081,10 +2085,12 @@ class ReperibilitaIntervention(db.Model):
     priority = db.Column(db.String(10), default='Media', nullable=False)  # 'Bassa', 'Media', 'Alta'
     is_remote = db.Column(db.Boolean, default=True, nullable=False)  # True = remoto, False = in presenza
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
     
     # Relationships
     user = db.relationship('User', backref='reperibilita_interventions')
     shift = db.relationship('ReperibilitaShift', backref='interventions')
+    company = db.relationship('Company', backref='reperibilita_interventions')
     
     @property
     def duration_minutes(self):
