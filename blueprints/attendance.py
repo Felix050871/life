@@ -1216,7 +1216,7 @@ def bulk_fill_timesheet():
         
         # Ottieni orari standard (usa i campi legacy start_time/end_time se disponibili)
         standard_start = work_schedule.start_time or work_schedule.start_time_min
-        standard_end = work_schedule.end_time or work_schedule.end_time_max
+        standard_end = work_schedule.end_time or work_schedule.end_time_min
         
         if not standard_start or not standard_end:
             return jsonify({'success': False, 'message': 'Orari standard non definiti correttamente'}), 400
