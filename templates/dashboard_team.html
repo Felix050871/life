@@ -17,6 +17,110 @@ document.addEventListener('DOMContentLoaded', function() {
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricamento...';
         });
     }
+    
+    // ===================================================================
+    // FILTRI TABELLA
+    // ===================================================================
+    
+    // Funzione per filtrare una tabella specifica
+    function filterTable(sedeId) {
+        const table = document.querySelector(`.sede-table[data-sede="${sedeId}"]`);
+        if (!table) return;
+        
+        // Ottieni valori dei filtri
+        const filterUtente = document.querySelector(`.filter-utente[data-sede="${sedeId}"]`).value.toLowerCase();
+        const filterRuolo = document.querySelector(`.filter-ruolo[data-sede="${sedeId}"]`).value;
+        const filterStato = document.querySelector(`.filter-stato[data-sede="${sedeId}"]`).value;
+        const filterData = document.querySelector(`.filter-data[data-sede="${sedeId}"]`).value;
+        
+        // Filtra le righe
+        const rows = table.querySelectorAll('tbody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const utente = row.getAttribute('data-utente').toLowerCase();
+            const ruolo = row.getAttribute('data-ruolo');
+            const stato = row.getAttribute('data-stato');
+            const data = row.getAttribute('data-data');
+            
+            let show = true;
+            
+            // Filtra per utente
+            if (filterUtente && !utente.includes(filterUtente)) {
+                show = false;
+            }
+            
+            // Filtra per ruolo
+            if (filterRuolo && ruolo !== filterRuolo) {
+                show = false;
+            }
+            
+            // Filtra per stato
+            if (filterStato && stato !== filterStato) {
+                show = false;
+            }
+            
+            // Filtra per data
+            if (filterData && data !== filterData) {
+                show = false;
+            }
+            
+            row.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+        
+        // Mostra conteggio risultati
+        updateResultCount(sedeId, visibleCount, rows.length);
+    }
+    
+    // Mostra conteggio risultati
+    function updateResultCount(sedeId, visible, total) {
+        const table = document.querySelector(`.sede-table[data-sede="${sedeId}"]`);
+        if (!table) return;
+        
+        let countElement = table.parentElement.querySelector('.filter-count');
+        
+        if (!countElement) {
+            countElement = document.createElement('div');
+            countElement.className = 'filter-count text-muted small mt-2';
+            table.parentElement.insertBefore(countElement, table.nextSibling);
+        }
+        
+        if (visible < total) {
+            countElement.innerHTML = `<i class="fas fa-filter me-1"></i>Visualizzati <strong>${visible}</strong> di <strong>${total}</strong> record`;
+        } else {
+            countElement.innerHTML = '';
+        }
+    }
+    
+    // Aggiungi event listener ai filtri
+    document.querySelectorAll('.filter-utente, .filter-ruolo, .filter-stato, .filter-data').forEach(filter => {
+        filter.addEventListener('input', function() {
+            const sedeId = this.getAttribute('data-sede');
+            filterTable(sedeId);
+        });
+        
+        filter.addEventListener('change', function() {
+            const sedeId = this.getAttribute('data-sede');
+            filterTable(sedeId);
+        });
+    });
+    
+    // Reset filtri
+    document.querySelectorAll('.reset-filters').forEach(button => {
+        button.addEventListener('click', function() {
+            const sedeId = this.getAttribute('data-sede');
+            
+            // Reset inputs
+            document.querySelector(`.filter-utente[data-sede="${sedeId}"]`).value = '';
+            document.querySelector(`.filter-ruolo[data-sede="${sedeId}"]`).value = '';
+            document.querySelector(`.filter-stato[data-sede="${sedeId}"]`).value = '';
+            document.querySelector(`.filter-data[data-sede="${sedeId}"]`).value = '';
+            
+            // Rifiltra
+            filterTable(sedeId);
+        });
+    });
 });
 </script>
 {% endblock %}
@@ -75,8 +179,49 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="card-body">
                         {% set sede_users = users_data | selectattr('user.sede_id', 'equalto', sede.id) | list %}
                         {% if sede_users %}
+                            <!-- Filtri -->
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small">Cerca Utente</label>
+                                    <input type="text" class="form-control form-control-sm filter-utente" 
+                                           data-sede="{{ sede.id }}" placeholder="Nome o username...">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label text-muted small">Ruolo</label>
+                                    <select class="form-select form-select-sm filter-ruolo" data-sede="{{ sede.id }}">
+                                        <option value="">Tutti</option>
+                                        {% set ruoli = sede_users | map(attribute='user.role') | unique | list %}
+                                        {% for ruolo in ruoli %}
+                                            <option value="{{ ruolo }}">{{ ruolo }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label text-muted small">Stato</label>
+                                    <select class="form-select form-select-sm filter-stato" data-sede="{{ sede.id }}">
+                                        <option value="">Tutti</option>
+                                        <option value="Presente">Presente</option>
+                                        <option value="In Pausa">In Pausa</option>
+                                        <option value="Uscito">Uscito</option>
+                                        <option value="Assente">Assente</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small">Data</label>
+                                    <input type="date" class="form-control form-control-sm filter-data" 
+                                           data-sede="{{ sede.id }}" placeholder="Filtra per data">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label text-muted small">&nbsp;</label>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 reset-filters" 
+                                            data-sede="{{ sede.id }}">
+                                        <i class="fas fa-redo me-1"></i>Reset
+                                    </button>
+                                </div>
+                            </div>
+                            
                             <div class="table-responsive">
-                                <table class="table table-hover">
+                                <table class="table table-hover sede-table" data-sede="{{ sede.id }}">
                                     <thead>
                                         <tr>
                                             <th>Data</th>
@@ -92,7 +237,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </thead>
                                     <tbody>
                                         {% for user_data in sede_users %}
-                                            <tr>
+                                            <tr data-utente="{{ user_data.user.get_full_name() }} @{{ user_data.user.username }}" 
+                                                data-ruolo="{{ user_data.user.role }}"
+                                                data-stato="{% if user_data.status == 'in' %}Presente{% elif user_data.status == 'on_break' %}In Pausa{% elif user_data.daily_work_hours > 0 %}Uscito{% else %}Assente{% endif %}"
+                                                data-data="{{ user_data.date.strftime('%Y-%m-%d') }}">
                                                 <td>
                                                     <strong>{{ user_data.date.strftime('%d/%m') }}</strong>
                                                     <br>
