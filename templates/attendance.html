@@ -495,7 +495,7 @@
                                         <span class="badge {% if event.event_type == 'clock_in' %}bg-success{% elif event.event_type == 'clock_out' %}bg-danger{% elif event.event_type == 'break_start' %}bg-warning{% else %}bg-info{% endif %} me-1">
                                             {{ event.event_type }}
                                         </span>
-                                        {{ event.timestamp|format_time_italian }}
+                                        {{ event.timestamp_italian.strftime('%H:%M') }}
                                         {% if event.is_manual %}
                                         <span class="badge bg-secondary ms-1" title="Inserimento manuale">
                                             <i class="fas fa-keyboard"></i>
