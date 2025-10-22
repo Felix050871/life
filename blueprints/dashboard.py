@@ -56,8 +56,8 @@ def dashboard():
     today_work_hours = 0
     today_events = []
     
-    # Get current user's status and today's events (for regular users only, PM will be handled separately)
-    if current_user.can_view_attendance() and not current_user.has_role('Amministratore'):
+    # Get current user's status and today's events (for all users who can view their own attendance)
+    if current_user.can_view_my_attendance() or current_user.can_view_attendance():
         user_status, _ = AttendanceEvent.get_user_status(current_user.id, today_date)
         today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
@@ -553,7 +553,7 @@ def ente_home():
     today_events = []
     today_work_hours = 0
     
-    if current_user.can_view_attendance():
+    if current_user.can_view_my_attendance() or current_user.can_view_attendance():
         user_status, _ = AttendanceEvent.get_user_status(current_user.id, today_date)
         today_events = AttendanceEvent.get_daily_events(current_user.id, today_date)
         today_work_hours = AttendanceEvent.get_daily_work_hours(current_user.id, today_date)
