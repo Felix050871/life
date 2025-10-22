@@ -913,6 +913,28 @@ def manual_timesheet():
         AttendanceEvent.date <= last_day
     ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
     
+    # Ottieni ferie/permessi approvati nel mese
+    from models import LeaveRequest
+    leaves_query = filter_by_company(LeaveRequest.query).filter(
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.status == 'Approved',
+        LeaveRequest.start_date <= last_day,
+        LeaveRequest.end_date >= first_day
+    ).all()
+    
+    # Crea set di date con ferie/permessi
+    leave_dates = set()
+    leave_info = {}
+    for leave in leaves_query:
+        current_date = leave.start_date
+        while current_date <= leave.end_date:
+            if first_day <= current_date <= last_day:
+                leave_dates.add(current_date)
+                # Ottieni nome tipo ferie
+                leave_type_name = leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or 'Permesso')
+                leave_info[current_date] = leave_type_name
+            current_date += timedelta(days=1)
+    
     # Organizza eventi per giorno
     events_by_day = {}
     for event in events_query:
@@ -921,11 +943,13 @@ def manual_timesheet():
             events_by_day[day] = {
                 'events': [],
                 'has_manual': False,
-                'has_live': False
+                'has_live': False,
+                'entry_type': event.entry_type if event.is_manual else 'standard'
             }
         events_by_day[day]['events'].append(event)
         if event.is_manual:
             events_by_day[day]['has_manual'] = True
+            events_by_day[day]['entry_type'] = event.entry_type
         else:
             events_by_day[day]['has_live'] = True
     
@@ -933,7 +957,11 @@ def manual_timesheet():
     days_data = []
     for day in range(1, last_day_num + 1):
         day_date = date(year, month, day)
-        day_events = events_by_day.get(day, {'events': [], 'has_manual': False, 'has_live': False})
+        day_events = events_by_day.get(day, {'events': [], 'has_manual': False, 'has_live': False, 'entry_type': 'standard'})
+        
+        # Verifica se il giorno ha ferie/permessi
+        has_leave = day_date in leave_dates
+        leave_type = leave_info.get(day_date, '')
         
         # Trova primo clock_in e ultimo clock_out
         clock_in_time = None
@@ -954,7 +982,10 @@ def manual_timesheet():
             'has_manual': day_events['has_manual'],
             'has_live': day_events['has_live'],
             'is_weekend': day_date.weekday() >= 5,
-            'is_future': day_date > date.today()
+            'is_future': day_date > date.today(),
+            'has_leave': has_leave,
+            'leave_type': leave_type,
+            'entry_type': day_events['entry_type']
         })
     
     # Nomi mesi in italiano
@@ -983,6 +1014,7 @@ def save_manual_timesheet():
         day = int(data.get('day'))
         clock_in_str = data.get('clock_in', '').strip()
         clock_out_str = data.get('clock_out', '').strip()
+        entry_type = data.get('entry_type', 'standard')
         
         # Ottieni il timesheet mensile
         company_id = get_user_company_id()
@@ -998,6 +1030,19 @@ def save_manual_timesheet():
         # Blocca inserimenti futuri
         if day_date > date.today():
             return jsonify({'success': False, 'message': 'Non è possibile inserire orari per giorni futuri'}), 400
+        
+        # Blocca inserimenti su giorni con ferie/permessi approvati
+        from models import LeaveRequest
+        existing_leave = filter_by_company(LeaveRequest.query).filter(
+            LeaveRequest.user_id == current_user.id,
+            LeaveRequest.status == 'Approved',
+            LeaveRequest.start_date <= day_date,
+            LeaveRequest.end_date >= day_date
+        ).first()
+        
+        if existing_leave:
+            leave_type_name = existing_leave.leave_type_obj.name if existing_leave.leave_type_obj else (existing_leave.leave_type or 'Permesso')
+            return jsonify({'success': False, 'message': f'Impossibile inserire orari: giorno con {leave_type_name} approvato'}), 400
         
         # Elimina eventi manuali esistenti per questo giorno
         filter_by_company(AttendanceEvent.query).filter(
@@ -1028,7 +1073,8 @@ def save_manual_timesheet():
                     event_type='clock_in',
                     timestamp=clock_in_datetime,
                     sede_id=current_user.sede_id,
-                    is_manual=True
+                    is_manual=True,
+                    entry_type=entry_type
                 )
                 set_company_on_create(clock_in_event)
                 db.session.add(clock_in_event)
@@ -1051,7 +1097,8 @@ def save_manual_timesheet():
                     event_type='clock_out',
                     timestamp=clock_out_datetime,
                     sede_id=current_user.sede_id,
-                    is_manual=True
+                    is_manual=True,
+                    entry_type=entry_type
                 )
                 set_company_on_create(clock_out_event)
                 db.session.add(clock_out_event)
@@ -1096,4 +1143,153 @@ def consolidate_manual_timesheet():
         db.session.rollback()
         import logging
         logging.error(f"Errore consolidamento timesheet: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+@attendance_bp.route('/manual_timesheet/bulk_fill', methods=['POST'])
+@login_required
+def bulk_fill_timesheet():
+    """Compila automaticamente il mese con orari standard della sede"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        # Ottieni orari standard della sede utente
+        from models import WorkSchedule, LeaveRequest
+        work_schedule = None
+        if current_user.sede_id:
+            work_schedule = filter_by_company(WorkSchedule.query).filter(
+                WorkSchedule.sede_id == current_user.sede_id,
+                WorkSchedule.active == True
+            ).first()
+        
+        if not work_schedule:
+            return jsonify({'success': False, 'message': 'Nessun orario standard configurato per la tua sede'}), 400
+        
+        # Calcola range mese
+        from calendar import monthrange
+        first_day = date(year, month, 1)
+        last_day_num = monthrange(year, month)[1]
+        last_day = date(year, month, last_day_num)
+        
+        # Ottieni ferie/permessi approvati nel mese
+        leaves_query = filter_by_company(LeaveRequest.query).filter(
+            LeaveRequest.user_id == current_user.id,
+            LeaveRequest.status == 'Approved',
+            LeaveRequest.start_date <= last_day,
+            LeaveRequest.end_date >= first_day
+        ).all()
+        
+        # Crea set di date con ferie/permessi
+        leave_dates = set()
+        for leave in leaves_query:
+            current_date = leave.start_date
+            while current_date <= leave.end_date:
+                if first_day <= current_date <= last_day:
+                    leave_dates.add(current_date)
+                current_date += timedelta(days=1)
+        
+        # Ottieni eventi già esistenti
+        existing_events = filter_by_company(AttendanceEvent.query).filter(
+            AttendanceEvent.user_id == current_user.id,
+            AttendanceEvent.date >= first_day,
+            AttendanceEvent.date <= last_day
+        ).all()
+        
+        # Crea set di date con eventi esistenti
+        existing_dates = set(event.date for event in existing_events)
+        
+        # Compila automaticamente
+        days_filled = 0
+        today = date.today()
+        
+        # Ottieni orari standard (usa i campi legacy start_time/end_time se disponibili)
+        standard_start = work_schedule.start_time or work_schedule.start_time_min
+        standard_end = work_schedule.end_time or work_schedule.end_time_max
+        
+        if not standard_start or not standard_end:
+            return jsonify({'success': False, 'message': 'Orari standard non definiti correttamente'}), 400
+        
+        for day in range(1, last_day_num + 1):
+            day_date = date(year, month, day)
+            
+            # Salta se:
+            # - Giorno futuro
+            # - Weekend
+            # - Ha ferie/permessi
+            # - Ha già eventi
+            # - Non è nel days_of_week della sede (se definito)
+            if day_date > today:
+                continue
+            if day_date.weekday() >= 5:  # Weekend
+                continue
+            if day_date in leave_dates:
+                continue
+            if day_date in existing_dates:
+                continue
+            
+            # Verifica se il giorno è coperto dal WorkSchedule
+            if work_schedule.days_of_week and day_date.weekday() not in work_schedule.days_of_week:
+                continue
+            
+            # Crea eventi di entrata e uscita
+            from zoneinfo import ZoneInfo
+            italy_tz = ZoneInfo('Europe/Rome')
+            
+            clock_in_datetime = datetime.combine(day_date, standard_start).replace(tzinfo=italy_tz)
+            clock_out_datetime = datetime.combine(day_date, standard_end).replace(tzinfo=italy_tz)
+            
+            # Crea evento entrata
+            clock_in_event = AttendanceEvent(
+                user_id=current_user.id,
+                date=day_date,
+                event_type='clock_in',
+                timestamp=clock_in_datetime,
+                sede_id=current_user.sede_id,
+                is_manual=True,
+                entry_type='standard'
+            )
+            set_company_on_create(clock_in_event)
+            db.session.add(clock_in_event)
+            
+            # Crea evento uscita
+            clock_out_event = AttendanceEvent(
+                user_id=current_user.id,
+                date=day_date,
+                event_type='clock_out',
+                timestamp=clock_out_datetime,
+                sede_id=current_user.sede_id,
+                is_manual=True,
+                entry_type='standard'
+            )
+            set_company_on_create(clock_out_event)
+            db.session.add(clock_out_event)
+            
+            days_filled += 1
+        
+        # Aggiorna timestamp timesheet
+        timesheet.updated_at = italian_now()
+        
+        db.session.commit()
+        
+        if days_filled == 0:
+            return jsonify({'success': True, 'message': 'Nessun giorno compilato (tutti i giorni lavorativi sono già coperti o nel futuro)'})
+        
+        return jsonify({'success': True, 'message': f'{days_filled} giorni compilati con orari standard'})
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore compilazione massiva timesheet: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500

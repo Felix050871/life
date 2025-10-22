@@ -12,7 +12,12 @@
                         <i class="fas fa-calendar-alt me-2"></i>
                         Timesheet Manuale - {{ month_name }} {{ year }}
                     </h5>
-                    <div>
+                    <div class="d-flex gap-2">
+                        {% if can_edit %}
+                        <button type="button" class="btn btn-success btn-sm" onclick="bulkFillMonth()">
+                            <i class="fas fa-magic me-1"></i>Compila Mese
+                        </button>
+                        {% endif %}
                         <a href="{{ url_for('attendance.attendance') }}" class="btn btn-outline-secondary btn-sm">
                             <i class="fas fa-arrow-left me-1"></i>Torna alle Presenze
                         </a>
@@ -71,22 +76,25 @@
                         <table class="table table-hover table-bordered">
                             <thead class="table-dark">
                                 <tr>
-                                    <th style="width: 10%;">Giorno</th>
+                                    <th style="width: 8%;">Giorno</th>
                                     <th style="width: 10%;">Data</th>
-                                    <th style="width: 25%;">Entrata</th>
-                                    <th style="width: 25%;">Uscita</th>
-                                    <th style="width: 20%;">Stato</th>
-                                    <th style="width: 10%;">Azioni</th>
+                                    <th style="width: 15%;">Entrata</th>
+                                    <th style="width: 15%;">Uscita</th>
+                                    <th style="width: 18%;">Tipologia</th>
+                                    <th style="width: 22%;">Stato</th>
+                                    <th style="width: 12%;">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="timesheetTable">
                                 {% for day_data in days_data %}
-                                <tr class="{% if day_data.is_weekend %}table-secondary{% elif day_data.is_future %}table-light text-muted{% endif %}" data-day="{{ day_data.day }}">
+                                <tr class="{% if day_data.is_weekend %}table-secondary{% elif day_data.is_future %}table-light text-muted{% elif day_data.has_leave %}table-warning bg-opacity-25{% endif %}" data-day="{{ day_data.day }}">
                                     <td class="fw-bold">{{ day_data.weekday }}</td>
                                     <td>
                                         {{ day_data.date.strftime('%d/%m/%Y') }}
                                         {% if day_data.is_future %}
                                         <small class="text-muted d-block"><i class="fas fa-clock"></i> Futuro</small>
+                                        {% elif day_data.has_leave %}
+                                        <small class="text-warning d-block"><i class="fas fa-umbrella-beach"></i> {{ day_data.leave_type }}</small>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -94,7 +102,7 @@
                                                class="form-control time-input" 
                                                id="clock_in_{{ day_data.day }}" 
                                                value="{{ day_data.clock_in or '' }}"
-                                               {% if not can_edit or day_data.is_future %}disabled{% endif %}
+                                               {% if not can_edit or day_data.is_future or day_data.has_leave %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
                                                data-type="clock_in">
                                     </td>
@@ -103,25 +111,44 @@
                                                class="form-control time-input" 
                                                id="clock_out_{{ day_data.day }}" 
                                                value="{{ day_data.clock_out or '' }}"
-                                               {% if not can_edit or day_data.is_future %}disabled{% endif %}
+                                               {% if not can_edit or day_data.is_future or day_data.has_leave %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
                                                data-type="clock_out">
                                     </td>
+                                    <td>
+                                        <select class="form-select form-select-sm entry-type-select" 
+                                                id="entry_type_{{ day_data.day }}"
+                                                {% if not can_edit or day_data.is_future or day_data.has_leave %}disabled{% endif %}
+                                                data-day="{{ day_data.day }}">
+                                            <option value="standard" {% if day_data.entry_type == 'standard' %}selected{% endif %}>Standard</option>
+                                            <option value="business_trip" {% if day_data.entry_type == 'business_trip' %}selected{% endif %}>Trasferta</option>
+                                            <option value="other" {% if day_data.entry_type == 'other' %}selected{% endif %}>Altro</option>
+                                        </select>
+                                    </td>
                                     <td class="status-cell" id="status_{{ day_data.day }}">
-                                        {% if day_data.has_manual and day_data.has_live %}
-                                        <span class="badge bg-warning text-dark">
+                                        {% if day_data.has_leave %}
+                                        <span class="badge bg-warning text-dark" title="{{ day_data.leave_type }}">
+                                            <i class="fas fa-umbrella-beach"></i> {{ day_data.leave_type }}
+                                        </span>
+                                        {% elif day_data.has_manual and day_data.has_live %}
+                                        <span class="badge bg-warning text-dark" title="Dati misti: Live e Manuale">
                                             <i class="fas fa-exclamation-circle"></i> Misto
                                         </span>
                                         {% elif day_data.has_manual %}
-                                        <span class="badge bg-info">
+                                        <span class="badge bg-info" title="Inserimento manuale">
                                             <i class="fas fa-keyboard"></i> Manuale
+                                            {% if day_data.entry_type == 'business_trip' %}
+                                            <small>(Trasferta)</small>
+                                            {% elif day_data.entry_type == 'other' %}
+                                            <small>(Altro)</small>
+                                            {% endif %}
                                         </span>
                                         {% elif day_data.has_live %}
-                                        <span class="badge bg-success">
+                                        <span class="badge bg-success" title="Registrato in tempo reale">
                                             <i class="fas fa-mobile-alt"></i> Live
                                         </span>
                                         {% else %}
-                                        <span class="badge bg-secondary">
+                                        <span class="badge bg-secondary" title="Nessuna presenza registrata">
                                             <i class="fas fa-minus"></i> Vuoto
                                         </span>
                                         {% endif %}
@@ -184,6 +211,7 @@ function saveDayData(day) {
 
     const clockInInput = document.getElementById(`clock_in_${day}`);
     const clockOutInput = document.getElementById(`clock_out_${day}`);
+    const entryTypeSelect = document.getElementById(`entry_type_${day}`);
     const saveBtn = document.querySelector(`button[data-day="${day}"]`);
     
     // Mostra loading sul pulsante
@@ -196,7 +224,8 @@ function saveDayData(day) {
         month: MONTH,
         day: day,
         clock_in: clockInInput.value,
-        clock_out: clockOutInput.value
+        clock_out: clockOutInput.value,
+        entry_type: entryTypeSelect.value
     };
     
     fetch('{{ url_for("attendance.save_manual_timesheet") }}', {
@@ -249,6 +278,45 @@ function consolidateTimesheet() {
     };
     
     fetch('{{ url_for("attendance.consolidate_manual_timesheet") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showFlashMessage('success', data.message);
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showFlashMessage('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showFlashMessage('danger', 'Errore di connessione');
+    });
+}
+
+function bulkFillMonth() {
+    if (!CAN_EDIT) {
+        alert('Timesheet consolidato, non modificabile');
+        return;
+    }
+
+    if (!confirm('Vuoi compilare automaticamente tutto il mese con gli orari standard della tua sede?\n\nI giorni già inseriti, futuri, weekend e con ferie/permessi verranno saltati.')) {
+        return;
+    }
+    
+    const data = {
+        year: YEAR,
+        month: MONTH
+    };
+    
+    fetch('{{ url_for("attendance.bulk_fill_timesheet") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
