@@ -336,8 +336,7 @@ class User(UserMixin, db.Model):
     
     def get_role_obj(self):
         """Ottieni l'oggetto UserRole associato"""
-        from utils_tenant import filter_by_company
-        return filter_by_company(UserRole.query).filter_by(name=self.role).first()
+        return UserRole.query.filter_by(name=self.role, company_id=self.company_id).first()
     
     def has_permission(self, permission):
         """Verifica se l'utente ha un determinato permesso tramite il suo ruolo

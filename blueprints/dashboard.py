@@ -174,8 +174,8 @@ def dashboard():
     daily_attendance_data = {}
     if current_user.can_view_daily_attendance_widget():
         # Get users visible to current user based on role and sede access
-        if current_user.role == 'Amministratore':
-            # Amministratori vedono tutti gli utenti di tutte le sedi
+        if current_user.role == 'Amministratore' or current_user.all_sedi:
+            # Amministratori e utenti multi-sede vedono tutti gli utenti di tutte le sedi
             visible_users = filter_by_company(User.query).filter(
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
@@ -184,12 +184,6 @@ def dashboard():
             # Responsabili e Management vedono solo utenti della propria sede
             visible_users = filter_by_company(User.query).filter(
                 User.sede_id == current_user.sede_id,
-                User.active.is_(True),
-                ~User.role.in_(['Admin', 'Staff'])
-            ).all()
-        elif current_user.all_sedi:
-            # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
-            visible_users = filter_by_company(User.query).filter(
                 User.active.is_(True),
                 ~User.role.in_(['Admin', 'Staff'])
             ).all()
@@ -374,8 +368,8 @@ def dashboard_team():
         return redirect(url_for('dashboard.dashboard'))
     
     # Get users visible to current user based on role and sede access - consistent with attendance logic
-    if current_user.role == 'Amministratore':
-        # Amministratori vedono tutti gli utenti di tutte le sedi
+    if current_user.role == 'Amministratore' or current_user.all_sedi:
+        # Amministratori e utenti multi-sede vedono tutti gli utenti di tutte le sedi
         all_users = filter_by_company(User.query).filter(
             User.active.is_(True),
             ~User.role.in_(['Admin', 'Staff'])
@@ -384,12 +378,6 @@ def dashboard_team():
         # Responsabili e Management vedono solo utenti della propria sede
         all_users = filter_by_company(User.query).filter(
             User.sede_id == current_user.sede_id,
-            User.active.is_(True),
-            ~User.role.in_(['Admin', 'Staff'])
-        ).all()
-    elif current_user.all_sedi:
-        # Utenti multi-sede vedono tutti gli utenti attivi di tutte le sedi
-        all_users = filter_by_company(User.query).filter(
             User.active.is_(True),
             ~User.role.in_(['Admin', 'Staff'])
         ).all()

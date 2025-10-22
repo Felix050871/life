@@ -11,6 +11,13 @@ The platform aims to reduce bureaucracy, enhance productivity, and foster corpor
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Bug Fixes (October 2025)
+
+### Critical Multi-Tenant Fixes
+- **User.get_role_obj() Bug**: Fixed method to use explicit `company_id` filtering instead of `filter_by_company()` context-based lookup. Previously, the method could return roles from wrong companies, causing incorrect permission checks.
+- **Dashboard all_sedi Logic Bug**: Corrected role-based filtering in dashboard widgets. Previously, Responsabile/Management users with `all_sedi=True` were incorrectly filtered to only their sede because role check happened before `all_sedi` check. Now properly checks `all_sedi` first for all roles.
+- **Attendance Dashboard Permission Fix**: Changed attendance status display condition from `can_view_attendance()` to `can_view_my_attendance() OR can_view_attendance()` to support Operatore role viewing their own presence data.
+
 ## System Architecture
 
 ### Core Technologies
