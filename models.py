@@ -904,6 +904,7 @@ class AttendanceEvent(db.Model):
     shift_status = db.Column(db.String(20), nullable=True)  # 'anticipo', 'normale', 'ritardo' per entrate/uscite
     created_at = db.Column(db.DateTime, default=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
+    is_manual = db.Column(db.Boolean, default=False, nullable=False)  # Indica se inserito manualmente a posteriori
     
     user = db.relationship('User', backref='attendance_events')
     sede = db.relationship('Sede', backref='sede_attendance_events')
@@ -1456,6 +1457,62 @@ class AttendanceEvent(db.Model):
                 })
         
         return issues
+
+class MonthlyTimesheet(db.Model):
+    """Modello per gestire lo stato di consolidamento del timesheet mensile"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=False)  # 1-12
+    is_consolidated = db.Column(db.Boolean, default=False, nullable=False)
+    consolidated_at = db.Column(db.DateTime, nullable=True)
+    consolidated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
+    
+    user = db.relationship('User', foreign_keys=[user_id], backref='monthly_timesheets')
+    consolidator = db.relationship('User', foreign_keys=[consolidated_by])
+    
+    def __repr__(self):
+        return f'<MonthlyTimesheet {self.user_id} {self.year}-{self.month:02d}>'
+    
+    @staticmethod
+    def get_or_create(user_id, year, month, company_id):
+        """Ottieni o crea un timesheet mensile"""
+        timesheet = MonthlyTimesheet.query.filter_by(
+            user_id=user_id,
+            year=year,
+            month=month,
+            company_id=company_id
+        ).first()
+        
+        if not timesheet:
+            timesheet = MonthlyTimesheet(
+                user_id=user_id,
+                year=year,
+                month=month,
+                company_id=company_id
+            )
+            db.session.add(timesheet)
+            db.session.commit()
+        
+        return timesheet
+    
+    def can_edit(self):
+        """Verifica se il timesheet può essere modificato"""
+        return not self.is_consolidated
+    
+    def consolidate(self, consolidator_id):
+        """Consolida il timesheet rendendolo immutabile"""
+        if not self.is_consolidated:
+            self.is_consolidated = True
+            self.consolidated_at = italian_now()
+            self.consolidated_by = consolidator_id
+            db.session.commit()
+            return True
+        return False
 
 # =============================================================================
 # LEAVE MANAGEMENT MODELS
