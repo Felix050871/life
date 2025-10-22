@@ -630,8 +630,8 @@ def clock_in():
 
         return jsonify({
             'success': True,
-            'message': f'Entrata registrata alle {attendance_event.timestamp_italian.strftime("%H:%M")}',
-            'timestamp': attendance_event.timestamp_italian.strftime('%H:%M'),
+            'message': f'Entrata registrata alle {attendance_event.timestamp.strftime("%H:%M")}',
+            'timestamp': attendance_event.timestamp.strftime('%H:%M'),
             'active_intervention': intervention_info
         })
 
@@ -675,8 +675,8 @@ def clock_out():
 
         return jsonify({
             'success': True,
-            'message': f'Uscita registrata alle {attendance_event.timestamp_italian.strftime("%H:%M")}',
-            'timestamp': attendance_event.timestamp_italian.strftime('%H:%M')
+            'message': f'Uscita registrata alle {attendance_event.timestamp.strftime("%H:%M")}',
+            'timestamp': attendance_event.timestamp.strftime('%H:%M')
         })
 
     except Exception as e:
@@ -721,8 +721,8 @@ def break_start():
 
         return jsonify({
             'success': True,
-            'message': f'Inizio pausa registrato alle {attendance_event.timestamp_italian.strftime("%H:%M")}',
-            'timestamp': attendance_event.timestamp_italian.strftime('%H:%M')
+            'message': f'Inizio pausa registrato alle {attendance_event.timestamp.strftime("%H:%M")}',
+            'timestamp': attendance_event.timestamp.strftime('%H:%M')
         })
 
     except Exception as e:
@@ -763,8 +763,8 @@ def break_end():
 
         return jsonify({
             'success': True,
-            'message': f'Fine pausa registrata alle {attendance_event.timestamp_italian.strftime("%H:%M")}',
-            'timestamp': attendance_event.timestamp_italian.strftime('%H:%M')
+            'message': f'Fine pausa registrata alle {attendance_event.timestamp.strftime("%H:%M")}',
+            'timestamp': attendance_event.timestamp.strftime('%H:%M')
         })
 
     except Exception as e:
@@ -815,10 +815,10 @@ def export_attendance_excel():
     # Dati
     for event in events:
         writer.writerow([
-            event.timestamp_italian.strftime('%d/%m/%Y'),
+            event.timestamp.strftime('%d/%m/%Y'),
             f"{event.user.first_name} {event.user.last_name}" if event.user else 'N/A',
             event.event_type,
-            event.timestamp_italian.strftime('%H:%M:%S'),
+            event.timestamp.strftime('%H:%M:%S'),
             event.sede.name if event.sede else 'N/A'
         ])
 
@@ -896,7 +896,7 @@ def quick_attendance(action):
                 'break_end': 'Fine pausa registrata'
             }
             
-            flash(f'{action_messages[action]} alle {attendance_event.timestamp_italian.strftime("%H:%M")}', 'success')
+            flash(f'{action_messages[action]} alle {attendance_event.timestamp.strftime("%H:%M")}', 'success')
             return redirect(url_for('attendance.attendance'))
 
         except Exception as e:
