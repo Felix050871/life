@@ -215,7 +215,8 @@ class UserForm(FlaskForm):
         
         # Popola le scelte dei ruoli dinamicamente
         try:
-            ruoli_attivi = UserRole.query.filter_by(active=True).all()
+            from utils_tenant import filter_by_company
+            ruoli_attivi = filter_by_company(UserRole.query).filter_by(active=True).all()
             self.role.choices = [(role.name, role.display_name) for role in ruoli_attivi]
             # Se non ci sono ruoli personalizzati, inizializza con lista vuota
             if not self.role.choices:
@@ -474,8 +475,9 @@ class PresidioCoverageForm(FlaskForm):
         super(PresidioCoverageForm, self).__init__(*args, **kwargs)
         # Popola i ruoli dinamicamente dal database, escludendo Admin
         from models import UserRole
+        from utils_tenant import filter_by_company
         try:
-            roles = UserRole.query.filter(UserRole.name != 'Admin').all()
+            roles = filter_by_company(UserRole.query).filter(UserRole.name != 'Admin').all()
             self.required_roles.choices = [(role.name, role.name) for role in roles]
         except:
             # Fallback se il database non è disponibile
@@ -545,9 +547,10 @@ class ReperibilitaCoverageForm(FlaskForm):
         super(ReperibilitaCoverageForm, self).__init__(*args, **kwargs)
         # Popola i ruoli dinamicamente dal database, escludendo Admin
         from models import UserRole, Sede
+        from utils_tenant import filter_by_company
         try:
             # Popola ruoli escludendo Admin
-            roles = UserRole.query.filter(UserRole.name != 'Admin').all()
+            roles = filter_by_company(UserRole.query).filter(UserRole.name != 'Admin').all()
             self.required_roles.choices = [(role.name, role.name) for role in roles]
             
             # Popola sedi
@@ -1204,7 +1207,8 @@ class RoleForm(FlaskForm):
             return
             
         if name.data != self.original_name:
-            role = UserRole.query.filter_by(name=name.data).first()
+            from utils_tenant import filter_by_company
+            role = filter_by_company(UserRole.query).filter_by(name=name.data).first()
             if role:
                 raise ValidationError('Nome ruolo già esistente. Scegli un altro nome.')
     
