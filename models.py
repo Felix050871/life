@@ -981,10 +981,12 @@ class AttendanceEvent(db.Model):
                 return 0
             
             # Use SQLAlchemy ORM with multi-tenant filtering
+            # IMPORTANT: Use db.func.date() on timestamp instead of date field
+            # because date field may contain incorrect values
             db_events = AttendanceEvent.query.filter(
                 AttendanceEvent.user_id == user_id,
                 AttendanceEvent.company_id == user.company_id,
-                AttendanceEvent.date == target_date
+                db.func.date(AttendanceEvent.timestamp) == target_date
             ).order_by(AttendanceEvent.timestamp).all()
             
             events = []

@@ -37,8 +37,8 @@ def get_current_user_sede(user):
     """Get current user's sede - copy from routes.py"""
     if hasattr(user, 'sedi') and user.sedi:
         return user.sedi[0]  # Return first sede
-    elif hasattr(user, 'sede') and user.sede:
-        return user.sede  # Return direct sede relationship
+    elif hasattr(user, 'sede_obj') and user.sede_obj:
+        return user.sede_obj  # Return direct sede relationship
     elif hasattr(user, 'sede_id') and user.sede_id:
         # Fallback: get sede by ID
         from models import Sede

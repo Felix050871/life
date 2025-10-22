@@ -851,7 +851,7 @@ def _collect_user_personal_data(user_id):
             'created_at': user.created_at.isoformat() if user.created_at else None,
         },
         'work_data': {
-            'sede': user.sede.name if user.sede else None,
+            'sede': user.sede_obj.name if user.sede_obj else None,
             'work_schedule': user.work_schedule.name if user.work_schedule else None,
             'part_time_percentage': user.part_time_percentage,
             'banca_ore_enabled': user.banca_ore_enabled,

@@ -538,7 +538,7 @@ def dashboard_team():
     if current_user.role == 'Amministratore' or current_user.all_sedi:
         all_sedi = filter_by_company(Sede.query).filter_by(active=True).order_by(Sede.name).all()
     elif current_user.sede_id:
-        all_sedi = [current_user.sede]
+        all_sedi = [current_user.sede_obj]
     
     # Check if export to Excel is requested
     if request.args.get('export') == 'excel':
@@ -663,7 +663,7 @@ def dashboard_sede():
     if current_user.role == 'Amministratore' or current_user.all_sedi:
         available_sedi = filter_by_company(Sede.query).filter_by(active=True).order_by(Sede.name).all()
     elif current_user.sede_id:
-        available_sedi = [current_user.sede]
+        available_sedi = [current_user.sede_obj]
     else:
         available_sedi = []
     
@@ -684,7 +684,7 @@ def dashboard_sede():
     
     # If no valid sede selected, default to user's sede
     if not selected_sede and current_user.sede_id:
-        selected_sede = current_user.sede
+        selected_sede = current_user.sede_obj
     
     sede_data = {}
     if selected_sede:
