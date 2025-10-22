@@ -460,6 +460,105 @@ def dashboard_team():
     elif current_user.sede_id:
         all_sedi = [current_user.sede]
     
+    # Check if export to Excel is requested
+    if request.args.get('export') == 'excel':
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from io import BytesIO
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Dashboard Team"
+        
+        # Header styling
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        thin_border = Border(
+            left=Side(style='thin'), right=Side(style='thin'),
+            top=Side(style='thin'), bottom=Side(style='thin')
+        )
+        
+        # Header
+        headers = ['Data', 'Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+        
+        # Dati
+        for row_idx, user_data in enumerate(users_data, 2):
+            # Determina orario entrata
+            entrata = '-'
+            if user_data['daily_events']:
+                first_in = next((e for e in user_data['daily_events'] if e.event_type == 'clock_in'), None)
+                if first_in:
+                    entrata = first_in.timestamp.strftime('%H:%M')
+            
+            # Determina orario uscita
+            uscita = '-'
+            if user_data['last_event'] and user_data['last_event'].event_type == 'clock_out':
+                uscita = user_data['last_event'].timestamp.strftime('%H:%M')
+            
+            # Determina stato
+            stato = {
+                'in': 'Presente',
+                'on_break': 'In Pausa',
+                'out': 'Uscito' if user_data['daily_work_hours'] > 0 else 'Assente'
+            }.get(user_data['status'], 'Assente')
+            
+            # Note
+            note = ''
+            if user_data['last_event'] and user_data['last_event'].notes:
+                note = user_data['last_event'].notes
+            
+            row_data = [
+                user_data['date'].strftime('%d/%m/%Y'),
+                user_data['user'].get_full_name(),
+                user_data['user'].role,
+                user_data['user'].sede_obj.name if user_data['user'].sede_obj else 'Nessuna Sede',
+                stato,
+                entrata,
+                uscita,
+                f"{user_data['daily_work_hours']:.2f}h" if user_data['daily_work_hours'] > 0 else '0h',
+                note
+            ]
+            
+            for col, value in enumerate(row_data, 1):
+                cell = ws.cell(row=row_idx, column=col, value=value)
+                cell.border = thin_border
+                if col in [1, 6, 7]:  # Data e Orari
+                    cell.alignment = Alignment(horizontal='center')
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to BytesIO
+        excel_file = BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+        
+        # Generate filename
+        filename = f"dashboard_team_{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}.xlsx"
+        
+        # Create response
+        response = make_response(excel_file.getvalue())
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+        
+        return response
+    
     return render_template('dashboard_team.html', 
                          users_data=users_data,
                          all_sedi=all_sedi,
