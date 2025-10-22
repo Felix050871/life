@@ -72,11 +72,12 @@ def admin_qr_codes():
     # Verifica se i QR code statici esistono
     qr_exist = qr_codes_exist()
     
-    # Genera URL completi per i QR codes
+    # Genera URL completi per i QR codes con tenant slug
     base_url = request.url_root.rstrip('/')
+    tenant_slug = current_user.company.slug
     qr_urls = {
-        'entrata': f"{base_url}/qr_login/entrata",
-        'uscita': f"{base_url}/qr_login/uscita"
+        'entrata': f"{base_url}/tenant/{tenant_slug}/qr_login/entrata",
+        'uscita': f"{base_url}/tenant/{tenant_slug}/qr_login/uscita"
     }
     
     # Se esistono, ottieni gli URL per visualizzarli
@@ -102,7 +103,9 @@ def admin_generate_static_qr():
     
     from utils import generate_static_qr_codes
     
-    if generate_static_qr_codes():
+    # Genera i codici QR con tenant slug
+    tenant_slug = current_user.company.slug
+    if generate_static_qr_codes(tenant_slug):
         flash('QR code generati con successo e salvati come file statici', 'success')
     else:
         flash('Errore nella generazione dei QR code statici', 'danger')
@@ -123,11 +126,12 @@ def view_qr_codes():
     # Verifica se i QR code statici esistono
     qr_exist = qr_codes_exist()
     
-    # Genera URL completi per i QR codes
+    # Genera URL completi per i QR codes con tenant slug
     base_url = request.url_root.rstrip('/')
+    tenant_slug = current_user.company.slug
     qr_urls = {
-        'entrata': f"{base_url}/qr_login/entrata",
-        'uscita': f"{base_url}/qr_login/uscita"
+        'entrata': f"{base_url}/tenant/{tenant_slug}/qr_login/entrata",
+        'uscita': f"{base_url}/tenant/{tenant_slug}/qr_login/uscita"
     }
     
     # Se esistono, ottieni gli URL per visualizzarli
