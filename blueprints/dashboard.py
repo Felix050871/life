@@ -439,6 +439,14 @@ def dashboard_team():
             AttendanceEvent.timestamp <= datetime.combine(end_date, time.max)
         ).order_by(AttendanceEvent.timestamp).all()
         
+        # Fetch all approved leave requests in the date range
+        all_leaves = filter_by_company(LeaveRequest.query).filter(
+            LeaveRequest.user_id.in_(user_ids),
+            LeaveRequest.status == 'approved',
+            LeaveRequest.start_date <= end_date,
+            LeaveRequest.end_date >= start_date
+        ).all()
+        
         # Build a map: (user_id, date) -> [events]
         events_by_user_date = {}
         for event in all_events:
@@ -448,11 +456,21 @@ def dashboard_team():
                 events_by_user_date[key] = []
             events_by_user_date[key].append(event)
         
+        # Build a map: (user_id, date) -> leave_request
+        leaves_by_user_date = {}
+        for leave in all_leaves:
+            current = leave.start_date
+            while current <= leave.end_date:
+                key = (leave.user_id, current)
+                leaves_by_user_date[key] = leave
+                current += timedelta(days=1)
+        
         # Process each user/date combination using the pre-fetched data
         for user in all_users:
             for check_date in date_list:
                 key = (user.id, check_date)
                 daily_events = events_by_user_date.get(key, [])
+                leave_request = leaves_by_user_date.get(key, None)
                 
                 # Calculate status and work hours from daily_events
                 user_status = 'out'
@@ -503,7 +521,8 @@ def dashboard_team():
                     'status': user_status,
                     'last_event': last_event,
                     'daily_events': daily_events,
-                    'daily_work_hours': daily_work_hours
+                    'daily_work_hours': daily_work_hours,
+                    'leave_request': leave_request
                 })
     
     # Sort by date (most recent first), then sede, then name
@@ -562,12 +581,15 @@ def dashboard_team():
             if user_data['last_event'] and user_data['last_event'].event_type == 'clock_out':
                 uscita = user_data['last_event'].timestamp.strftime('%H:%M')
             
-            # Determina stato
-            stato = {
-                'in': 'Presente',
-                'on_break': 'In Pausa',
-                'out': 'Uscito' if user_data['daily_work_hours'] > 0 else 'Assente'
-            }.get(user_data['status'], 'Assente')
+            # Determina stato - check leave_request first
+            if user_data.get('leave_request'):
+                stato = user_data['leave_request'].leave_type
+            else:
+                stato = {
+                    'in': 'Presente',
+                    'on_break': 'In Pausa',
+                    'out': 'Uscito' if user_data['daily_work_hours'] > 0 else 'Assente'
+                }.get(user_data['status'], 'Assente')
             
             # Note
             note = ''

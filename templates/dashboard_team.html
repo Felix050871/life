@@ -203,6 +203,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <option value="Presente">Presente</option>
                                         <option value="In Pausa">In Pausa</option>
                                         <option value="Uscito">Uscito</option>
+                                        <option value="Ferie">Ferie</option>
+                                        <option value="Permesso">Permesso</option>
+                                        <option value="Malattia">Malattia</option>
                                         <option value="Assente">Assente</option>
                                     </select>
                                 </div>
@@ -260,7 +263,25 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    {% if user_data.status == 'in' %}
+                                                    {% if user_data.leave_request %}
+                                                        {% if user_data.leave_request.leave_type == 'Ferie' %}
+                                                            <span class="badge bg-info">
+                                                                <i class="fas fa-umbrella-beach me-1"></i>Ferie
+                                                            </span>
+                                                        {% elif user_data.leave_request.leave_type == 'Permesso' %}
+                                                            <span class="badge bg-warning text-dark">
+                                                                <i class="fas fa-clock me-1"></i>Permesso
+                                                            </span>
+                                                        {% elif user_data.leave_request.leave_type == 'Malattia' %}
+                                                            <span class="badge bg-danger">
+                                                                <i class="fas fa-notes-medical me-1"></i>Malattia
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">
+                                                                <i class="fas fa-calendar-times me-1"></i>{{ user_data.leave_request.leave_type }}
+                                                            </span>
+                                                        {% endif %}
+                                                    {% elif user_data.status == 'in' %}
                                                         <span class="badge bg-success">
                                                             <i class="fas fa-check-circle me-1"></i>Presente
                                                         </span>
