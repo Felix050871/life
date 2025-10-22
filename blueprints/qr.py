@@ -296,7 +296,7 @@ def api_status():
             'today_hours': f"{today_hours:.2f}",
             'last_event': {
                 'type': last_event.event_type if last_event else None,
-                'time': last_event.timestamp.strftime('%H:%M') if last_event else None
+                'time': last_event.timestamp_italian.strftime('%H:%M') if last_event else None
             }
         })
     except Exception as e:

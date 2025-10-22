@@ -17,6 +17,11 @@ Preferred communication style: Simple, everyday language.
 - **User.get_role_obj() Bug**: Fixed method to use explicit `company_id` filtering instead of `filter_by_company()` context-based lookup. Previously, the method could return roles from wrong companies, causing incorrect permission checks.
 - **Dashboard all_sedi Logic Bug**: Corrected role-based filtering in dashboard widgets. Previously, Responsabile/Management users with `all_sedi=True` were incorrectly filtered to only their sede because role check happened before `all_sedi` check. Now properly checks `all_sedi` first for all roles.
 - **Attendance Dashboard Permission Fix**: Changed attendance status display condition from `can_view_attendance()` to `can_view_my_attendance() OR can_view_attendance()` to support Operatore role viewing their own presence data.
+- **Timezone Display Bug (October 22, 2025)**: Fixed critical timezone issue where attendance timestamps were displayed in UTC instead of Italian time. 
+  - **Root Cause**: `AttendanceEvent.timestamp` column is `db.DateTime` (without timezone), causing SQLAlchemy to save timezone-aware datetimes (from `italian_now()`) as naive UTC in PostgreSQL.
+  - **Solution**: Added `timestamp_italian` property to `AttendanceEvent` model that converts UTC timestamps to Italian time on read. Updated all templates and blueprints to use `timestamp_italian` instead of `timestamp` for display.
+  - **Files Updated**: models.py, templates/dashboard.html, templates/dashboard_team.html, blueprints/attendance.py, blueprints/qr.py
+  - **Impact**: All attendance event times now display correctly in Italian time (UTC+1/+2) across dashboard, QR attendance, team views, and exports.
 
 ## System Architecture
 

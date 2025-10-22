@@ -917,6 +917,31 @@ class AttendanceEvent(db.Model):
     user = db.relationship('User', backref='attendance_events')
     sede = db.relationship('Sede', backref='sede_attendance_events')
     
+    @property
+    def timestamp_italian(self):
+        """Restituisce il timestamp convertito da UTC a ora italiana
+        
+        NOTA: I timestamp sono salvati come naive datetime in UTC nel database.
+        Questa property li converte a Italian time per la visualizzazione.
+        """
+        if self.timestamp is None:
+            return None
+        
+        # Il timestamp è salvato come naive datetime in UTC
+        # Lo rendiamo timezone-aware in UTC e poi convertiamo a Italian time
+        italy_tz = ZoneInfo('Europe/Rome')
+        from datetime import timezone
+        
+        # Se il timestamp è naive, assumiamo che sia UTC
+        if self.timestamp.tzinfo is None:
+            utc_time = self.timestamp.replace(tzinfo=timezone.utc)
+        else:
+            utc_time = self.timestamp
+        
+        # Converti a Italian time
+        italian_time = utc_time.astimezone(italy_tz)
+        return italian_time
+    
     @staticmethod
     def get_user_status(user_id, target_date=None):
         """Restituisce lo stato attuale dell'utente (dentro/fuori/in pausa)"""

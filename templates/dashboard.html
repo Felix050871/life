@@ -91,7 +91,7 @@ SECTIONS (1207 lines total):
                                     {% elif event.event_type == 'break_start' %}Pausa
                                     {% elif event.event_type == 'break_end' %}Ripresa
                                     {% endif %}
-                                    {{ event.timestamp.strftime('%H:%M') }}
+                                    {{ event.timestamp_italian.strftime('%H:%M') }}
                                 </span>
                             </div>
                             {% endfor %}
