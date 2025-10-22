@@ -1145,6 +1145,54 @@ def consolidate_manual_timesheet():
         logging.error(f"Errore consolidamento timesheet: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
 
+@attendance_bp.route('/manual_timesheet/delete_day', methods=['POST'])
+@login_required
+def delete_manual_timesheet_day():
+    """Cancella i dati manuali di un giorno specifico"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        day = int(data.get('day'))
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        # Crea data
+        day_date = date(year, month, day)
+        
+        # Cancella tutti gli eventi manuali del giorno
+        events_to_delete = filter_by_company(AttendanceEvent.query).filter(
+            AttendanceEvent.user_id == current_user.id,
+            AttendanceEvent.date == day_date,
+            AttendanceEvent.source == 'manual'
+        ).all()
+        
+        for event in events_to_delete:
+            db.session.delete(event)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Dati del {day_date.strftime("%d/%m/%Y")} cancellati con successo',
+            'deleted_count': len(events_to_delete)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore cancellazione giorno timesheet: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
 @attendance_bp.route('/manual_timesheet/bulk_fill', methods=['POST'])
 @login_required
 def bulk_fill_timesheet():
