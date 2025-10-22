@@ -1089,7 +1089,8 @@ class AttendanceEvent(db.Model):
                 'timestamp': convert_to_italian_time(event.timestamp),
                 'notes': event.notes,
                 'created_at': event.created_at,
-                'user': event.user
+                'user': event.user,
+                'is_manual': event.is_manual
             })()
             converted_events.append(event_data)
         

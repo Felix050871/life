@@ -19,16 +19,24 @@
                         {% endif %}
                     </h5>
                     
-                    {% if current_user.can_view_sede_attendance() %}
-                    <div class="btn-group" role="group">
-                        <a href="{{ url_for('attendance.attendance') }}" class="btn {% if not show_team_data %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
-                            <i class="fas fa-user me-1"></i>Le Mie
+                    <div class="d-flex gap-2">
+                        {% if not show_team_data %}
+                        <a href="{{ url_for('attendance.manual_timesheet') }}" class="btn btn-info btn-sm">
+                            <i class="fas fa-keyboard me-1"></i>Timesheet Manuale
                         </a>
-                        <a href="{{ url_for('attendance.attendance', view='sede') }}" class="btn {% if show_team_data and view_mode == 'sede' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
-                            <i class="fas fa-building me-1"></i>Sede
-                        </a>
+                        {% endif %}
+                        
+                        {% if current_user.can_view_sede_attendance() %}
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('attendance.attendance') }}" class="btn {% if not show_team_data %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+                                <i class="fas fa-user me-1"></i>Le Mie
+                            </a>
+                            <a href="{{ url_for('attendance.attendance', view='sede') }}" class="btn {% if show_team_data and view_mode == 'sede' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+                                <i class="fas fa-building me-1"></i>Sede
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
 
                 <div class="card-body">
@@ -488,6 +496,11 @@
                                             {{ event.event_type }}
                                         </span>
                                         {{ event.timestamp|format_time_italian }}
+                                        {% if hasattr(event, 'is_manual') and event.is_manual %}
+                                        <span class="badge bg-secondary ms-1" title="Inserimento manuale">
+                                            <i class="fas fa-keyboard"></i>
+                                        </span>
+                                        {% endif %}
                                     </small>
                                     {% endfor %}
                                 </p>
