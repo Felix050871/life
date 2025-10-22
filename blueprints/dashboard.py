@@ -2,7 +2,7 @@
 # DASHBOARD ROUTES BLUEPRINT
 # =============================================================================
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, make_response
 from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta, time
 
