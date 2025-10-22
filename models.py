@@ -1104,24 +1104,8 @@ class AttendanceEvent(db.Model):
             db.func.date(AttendanceEvent.timestamp) == target_date
         ).order_by(AttendanceEvent.timestamp).all()
         
-        # Crea lista di eventi con timestamp convertiti senza modificare gli originali
-        converted_events = []
-        for event in events:
-            # Crea un oggetto semplice con i dati necessari
-            event_data = type('Event', (), {
-                'id': event.id,
-                'user_id': event.user_id,
-                'date': event.date,
-                'event_type': event.event_type,
-                'timestamp': convert_to_italian_time(event.timestamp),
-                'notes': event.notes,
-                'created_at': event.created_at,
-                'user': event.user,
-                'is_manual': event.is_manual
-            })()
-            converted_events.append(event_data)
-        
-        return converted_events
+        # Restituisci eventi direttamente - i timestamp sono già in orario italiano
+        return events
     
     @staticmethod
     def get_daily_summary(user_id, target_date):
@@ -1259,13 +1243,13 @@ class AttendanceEvent(db.Model):
         
         for event in events_list:
             if event.event_type == 'clock_in' and first_clock_in is None:
-                first_clock_in = convert_to_italian_time(event.timestamp)
+                first_clock_in = event.timestamp
             elif event.event_type == 'clock_out':
-                last_clock_out = convert_to_italian_time(event.timestamp)
+                last_clock_out = event.timestamp
             elif event.event_type == 'break_start' and first_break_start is None:
-                first_break_start = convert_to_italian_time(event.timestamp)
+                first_break_start = event.timestamp
             elif event.event_type == 'break_end':
-                last_break_end = convert_to_italian_time(event.timestamp)
+                last_break_end = event.timestamp
         
         if not first_clock_in:
             return None
@@ -1319,13 +1303,13 @@ class AttendanceEvent(db.Model):
             
             for event in day_events:
                 if event.event_type == 'clock_in' and first_clock_in is None:
-                    first_clock_in = convert_to_italian_time(event.timestamp)
+                    first_clock_in = event.timestamp
                 elif event.event_type == 'clock_out':
-                    last_clock_out = convert_to_italian_time(event.timestamp)
+                    last_clock_out = event.timestamp
                 elif event.event_type == 'break_start' and first_break_start is None:
-                    first_break_start = convert_to_italian_time(event.timestamp)
+                    first_break_start = event.timestamp
                 elif event.event_type == 'break_end':
-                    last_break_end = convert_to_italian_time(event.timestamp)
+                    last_break_end = event.timestamp
                 
                 if event.notes:
                     all_notes.append(event.notes)
