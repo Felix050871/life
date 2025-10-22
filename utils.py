@@ -73,10 +73,11 @@ def format_hours(hours_decimal):
 # QR CODE MANAGEMENT
 # =============================================================================
 
-def generate_static_qr_codes(tenant_slug):
+def generate_static_qr_codes():
     """
     Genera QR code statici per entrata e uscita e li salva nella cartella static/qr
-    Accetta il tenant_slug per generare URL tenant-specific
+    Gli URL generati sono globali (/qr/login/...) e l'isolamento multi-tenant
+    avviene tramite il login utente
     Restituisce True se la generazione è riuscita, False altrimenti
     """
     try:
@@ -95,10 +96,10 @@ def generate_static_qr_codes(tenant_slug):
             config = get_config()
             base_url = config.BASE_URL
         
-        # URL per entrata e uscita con tenant slug
+        # URL globali per entrata e uscita (tenant isolation tramite user login)
         urls = {
-            'entrata': f"{base_url}/tenant/{tenant_slug}/qr_login/entrata",
-            'uscita': f"{base_url}/tenant/{tenant_slug}/qr_login/uscita"
+            'entrata': f"{base_url}/qr/login/entrata",
+            'uscita': f"{base_url}/qr/login/uscita"
         }
         
         # Ottieni configurazione QR centralizzata

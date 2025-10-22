@@ -69,12 +69,11 @@ def admin_qr_codes():
     # Verifica se i QR code statici esistono
     qr_exist = qr_codes_exist()
     
-    # Genera URL completi per i QR codes con tenant slug
+    # Genera URL globali per i QR codes (tenant isolation tramite user login)
     base_url = request.url_root.rstrip('/')
-    tenant_slug = current_user.company.slug
     qr_urls = {
-        'entrata': f"{base_url}/tenant/{tenant_slug}/qr_login/entrata",
-        'uscita': f"{base_url}/tenant/{tenant_slug}/qr_login/uscita"
+        'entrata': f"{base_url}/qr/login/entrata",
+        'uscita': f"{base_url}/qr/login/uscita"
     }
     
     # Se esistono, ottieni gli URL per visualizzarli
@@ -107,12 +106,11 @@ def view_qr_codes():
     # Verifica se i QR code statici esistono
     qr_exist = qr_codes_exist()
     
-    # Genera URL completi per i QR codes con tenant slug
+    # Genera URL globali per i QR codes (tenant isolation tramite user login)
     base_url = request.url_root.rstrip('/')
-    tenant_slug = current_user.company.slug
     qr_urls = {
-        'entrata': f"{base_url}/tenant/{tenant_slug}/qr_login/entrata",
-        'uscita': f"{base_url}/tenant/{tenant_slug}/qr_login/uscita"
+        'entrata': f"{base_url}/qr/login/entrata",
+        'uscita': f"{base_url}/qr/login/uscita"
     }
     
     # Se esistono, ottieni gli URL per visualizzarli
@@ -142,9 +140,8 @@ def generate_qr_codes():
     try:
         from utils import generate_static_qr_codes
         
-        # Genera i codici QR con tenant slug
-        tenant_slug = current_user.company.slug
-        result = generate_static_qr_codes(tenant_slug)
+        # Genera i codici QR
+        result = generate_static_qr_codes()
         
         if result:
             flash('Codici QR generati con successo', 'success')
