@@ -967,11 +967,27 @@ def manual_timesheet():
         clock_in_time = None
         clock_out_time = None
         
+        # Funzione helper per convertire timestamp a orario italiano
+        from zoneinfo import ZoneInfo
+        italy_tz = ZoneInfo('Europe/Rome')
+        
+        def to_italian_time_str(timestamp):
+            """Converte timestamp a stringa HH:MM in orario italiano"""
+            if not timestamp:
+                return None
+            # Se non ha timezone, assume UTC
+            if timestamp.tzinfo is None:
+                utc_tz = ZoneInfo('UTC')
+                timestamp = timestamp.replace(tzinfo=utc_tz)
+            # Converti a orario italiano
+            italian_time = timestamp.astimezone(italy_tz)
+            return italian_time.strftime('%H:%M')
+        
         for event in day_events['events']:
             if event.event_type == 'clock_in' and clock_in_time is None:
-                clock_in_time = event.timestamp.strftime('%H:%M')
+                clock_in_time = to_italian_time_str(event.timestamp)
             elif event.event_type == 'clock_out':
-                clock_out_time = event.timestamp.strftime('%H:%M')
+                clock_out_time = to_italian_time_str(event.timestamp)
         
         days_data.append({
             'day': day,
