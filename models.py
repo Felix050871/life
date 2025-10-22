@@ -1284,18 +1284,22 @@ class AttendanceEvent(db.Model):
     def get_events_as_records(user_id, start_date, end_date):
         """Converte gli eventi in UN SOLO record per giorno per evitare duplicati"""
         from utils_tenant import filter_by_company
+        # IMPORTANT: Use db.func.date() on timestamp instead of date field
+        # because date field may contain incorrect values
         events = filter_by_company(AttendanceEvent.query).filter(
             AttendanceEvent.user_id == user_id,
-            AttendanceEvent.date >= start_date,
-            AttendanceEvent.date <= end_date
-        ).order_by(AttendanceEvent.date.asc(), AttendanceEvent.timestamp.asc()).all()
+            db.func.date(AttendanceEvent.timestamp) >= start_date,
+            db.func.date(AttendanceEvent.timestamp) <= end_date
+        ).order_by(AttendanceEvent.timestamp.asc()).all()
         
-        # Raggruppa eventi per data
+        # Raggruppa eventi per data estratta dal timestamp
         events_by_date = {}
         for event in events:
-            if event.date not in events_by_date:
-                events_by_date[event.date] = []
-            events_by_date[event.date].append(event)
+            # Extract date from timestamp, not from date field
+            event_date = event.timestamp.date() if event.timestamp else event.date
+            if event_date not in events_by_date:
+                events_by_date[event_date] = []
+            events_by_date[event_date].append(event)
         
         records = []
         
