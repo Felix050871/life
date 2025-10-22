@@ -897,7 +897,7 @@ def manual_timesheet():
         return redirect(url_for('attendance.attendance'))
     
     # Ottieni o crea il timesheet mensile
-    company_id = get_user_company_id(current_user)
+    company_id = get_user_company_id()
     timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
     
     # Calcola primo e ultimo giorno del mese
@@ -984,7 +984,7 @@ def save_manual_timesheet():
         clock_out_str = data.get('clock_out', '').strip()
         
         # Ottieni il timesheet mensile
-        company_id = get_user_company_id(current_user)
+        company_id = get_user_company_id()
         timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
         
         # Verifica se può essere modificato
@@ -1078,7 +1078,7 @@ def consolidate_manual_timesheet():
         month = int(data.get('month'))
         
         # Ottieni il timesheet mensile
-        company_id = get_user_company_id(current_user)
+        company_id = get_user_company_id()
         timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
         
         # Consolida
