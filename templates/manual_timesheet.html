@@ -232,6 +232,7 @@ function saveDayData(day) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
         },
         body: JSON.stringify(data)
     })
@@ -281,6 +282,7 @@ function consolidateTimesheet() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
         },
         body: JSON.stringify(data)
     })
@@ -320,6 +322,7 @@ function bulkFillMonth() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
         },
         body: JSON.stringify(data)
     })
