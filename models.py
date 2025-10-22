@@ -905,6 +905,7 @@ class AttendanceEvent(db.Model):
     created_at = db.Column(db.DateTime, default=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     is_manual = db.Column(db.Boolean, default=False, nullable=False)  # Indica se inserito manualmente a posteriori
+    entry_type = db.Column(db.String(20), default='standard', nullable=False)  # 'standard', 'business_trip', 'other'
     
     user = db.relationship('User', backref='attendance_events')
     sede = db.relationship('Sede', backref='sede_attendance_events')
