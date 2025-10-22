@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     {% if user_data.daily_events and user_data.daily_events|length > 0 %}
                                                         {% set first_in = user_data.daily_events|selectattr('event_type', 'equalto', 'clock_in')|first %}
                                                         {% if first_in %}
-                                                            {{ first_in.timestamp.strftime('%H:%M') }}
+                                                            {{ first_in.timestamp_italian.strftime('%H:%M') }}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -313,9 +313,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                                         {% set break_start = user_data.daily_events|selectattr('event_type', 'equalto', 'break_start')|first %}
                                                         {% set break_end = user_data.daily_events|selectattr('event_type', 'equalto', 'break_end')|first %}
                                                         {% if break_start %}
-                                                            {{ break_start.timestamp.strftime('%H:%M') }}
+                                                            {{ break_start.timestamp_italian.strftime('%H:%M') }}
                                                             {% if break_end %}
-                                                                - {{ break_end.timestamp.strftime('%H:%M') }}
+                                                                - {{ break_end.timestamp_italian.strftime('%H:%M') }}
                                                             {% endif %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 </td>
                                                 <td>
                                                     {% if user_data.last_event and user_data.last_event.event_type == 'clock_out' %}
-                                                        {{ user_data.last_event.timestamp.strftime('%H:%M') }}
+                                                        {{ user_data.last_event.timestamp_italian.strftime('%H:%M') }}
                                                     {% else %}
                                                         <span class="text-muted">-</span>
                                                     {% endif %}
