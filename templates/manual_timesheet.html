@@ -157,9 +157,18 @@
                                         {% if can_edit %}
                                         <button class="btn btn-sm btn-primary save-day-btn" 
                                                 data-day="{{ day_data.day }}"
-                                                onclick="saveDayData({{ day_data.day }})">
+                                                onclick="saveDayData({{ day_data.day }})"
+                                                title="Salva modifiche">
                                             <i class="fas fa-save"></i>
                                         </button>
+                                        {% if day_data.has_manual %}
+                                        <button class="btn btn-sm btn-danger delete-day-btn ms-1" 
+                                                data-day="{{ day_data.day }}"
+                                                onclick="deleteDayData({{ day_data.day }})"
+                                                title="Cancella dati manuali">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
                                         {% else %}
                                         <button class="btn btn-sm btn-secondary" disabled>
                                             <i class="fas fa-lock"></i>
@@ -260,6 +269,68 @@ function saveDayData(day) {
     .finally(() => {
         saveBtn.innerHTML = originalHTML;
         saveBtn.disabled = false;
+    });
+}
+
+function deleteDayData(day) {
+    if (!CAN_EDIT) {
+        alert('Timesheet consolidato, non modificabile');
+        return;
+    }
+
+    if (!confirm(`Sei sicuro di voler cancellare tutti i dati manuali del giorno ${day}?`)) {
+        return;
+    }
+    
+    const deleteBtn = document.querySelector(`.delete-day-btn[data-day="${day}"]`);
+    
+    // Mostra loading sul pulsante
+    const originalHTML = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    deleteBtn.disabled = true;
+    
+    const data = {
+        year: YEAR,
+        month: MONTH,
+        day: day
+    };
+    
+    fetch('{{ url_for("attendance.delete_manual_timesheet_day") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Svuota gli input
+            document.getElementById(`clock_in_${day}`).value = '';
+            document.getElementById(`clock_out_${day}`).value = '';
+            document.getElementById(`entry_type_${day}`).value = 'standard';
+            
+            // Aggiorna badge stato
+            const statusCell = document.getElementById(`status_${day}`);
+            statusCell.innerHTML = '<span class="badge bg-secondary"><i class="fas fa-minus"></i> Vuoto</span>';
+            
+            // Rimuovi il pulsante cancella
+            deleteBtn.remove();
+            
+            // Flash success
+            showFlashMessage('success', data.message);
+        } else {
+            showFlashMessage('danger', data.message);
+            deleteBtn.innerHTML = originalHTML;
+            deleteBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showFlashMessage('danger', 'Errore di connessione');
+        deleteBtn.innerHTML = originalHTML;
+        deleteBtn.disabled = false;
     });
 }
 
