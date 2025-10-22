@@ -422,10 +422,32 @@ def dashboard_team():
     elif current_user.sede_id:
         all_sedi = [current_user.sede]
     
-    # Aggiungi date per il filtro nel template
+    # Parse date range from query parameters or use default
     today = date.today()
-    start_date = today - timedelta(days=30)  # Ultimi 30 giorni default
-    end_date = today
+    
+    # Check for custom date range in query parameters
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            # Generate period label
+            if start_date == end_date:
+                period_label = start_date.strftime('%d/%m/%Y')
+            else:
+                period_label = f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
+        except ValueError:
+            # Invalid date format, use default
+            start_date = today - timedelta(days=30)
+            end_date = today
+            period_label = "Ultimi 30 giorni"
+    else:
+        # No custom range specified, use default (last 30 days)
+        start_date = today - timedelta(days=30)
+        end_date = today
+        period_label = "Ultimi 30 giorni"
     
     return render_template('dashboard_team.html', 
                          users_data=users_data,
@@ -433,6 +455,7 @@ def dashboard_team():
                          today=today,
                          start_date=start_date,
                          end_date=end_date,
+                         period_label=period_label,
                          format_hours=format_hours)
 
 @dashboard_bp.route('/dashboard_sede')
