@@ -27,7 +27,7 @@ The platform features a modern, responsive dark-themed Bootstrap design with gen
   - **Data Isolation**: All core entities are scoped by `company_id` to ensure data separation. User credentials (username, email) are unique per company.
   - **Security**: Complete multi-tenant filtering across all blueprints and database queries.
 - **User Management**: A permission-based access control system with over 70 granular permissions and 5 configurable standard roles. Supports advanced work schedule assignments and multi-location access. Enhanced user profiles include social fields for CIRCLE integration.
-- **Attendance Tracking**: Includes clock-in/out, break tracking, historical viewing, and a static QR code system for attendance marking.
+- **Attendance Tracking**: Includes clock-in/out, break tracking, historical viewing, and a static QR code system for attendance marking. Features **manual monthly timesheet** entry allowing users to insert attendance data retrospectively with progressive saving, consolidation locking, and clear visual distinction between manually-entered and live-recorded data.
 - **Shift Management**: Supports intelligent shift generation, recurring shift patterns via templates, and on-call duty management, adhering to operational safety rules.
 - **Mileage Reimbursement System**: Manages requests, calculates distances using ACI tables, and incorporates a manager approval workflow.
 - **Data Export**: Supports CSV to Excel (.xlsx) conversion using `openpyxl` (server-side) and `SheetJS` (client-side).
@@ -37,7 +37,7 @@ The platform features a modern, responsive dark-themed Bootstrap design with gen
 - **Database**: Exclusively designed for PostgreSQL for robustness.
 
 ### Feature Specifications
-- **FLOW**: Attendance tracking, intelligent shift scheduling, leave request workflow, overtime and mileage reimbursements, time bank (Banca ore), on-call duty management (Reperibilità), and reports.
+- **FLOW**: Attendance tracking (live and manual monthly timesheets), intelligent shift scheduling, leave request workflow, overtime and mileage reimbursements, time bank (Banca ore), on-call duty management (Reperibilità), and reports.
 - **CIRCLE**: News feed and announcements (posts with comments/likes, optional email notifications), company history (Delorean), groups, polls and surveys, company calendar, document management, tool links, and employee directory (Personas).
   - **Email Notifications for Announcements**: Option to send email notifications to all active company users for "comunicazione" posts, utilizing the multi-tenant email system.
 
