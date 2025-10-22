@@ -22,9 +22,9 @@ def index():
     
     # Gruppi pubblici
     public_groups = filter_by_company(
-        CircleGroup.query.filter_by(is_private=False),
+        CircleGroup.query,
         current_user
-    ).order_by(desc(CircleGroup.created_at)).all()
+    ).filter_by(is_private=False).order_by(desc(CircleGroup.created_at)).all()
     
     # Gruppi di cui l'utente è membro (anche privati)
     user_groups_query = db.session.query(CircleGroup).join(

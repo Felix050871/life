@@ -774,12 +774,12 @@ def _delete_user_cascade(user_id):
     MileageRequest.query.filter_by(approved_by=user_id).update({MileageRequest.approved_by: None})
     
     # 12. Delete CIRCLE social content
-    # Delete likes and comments first (FK constraints)
+    # Delete likes and comments first (FK constraints) - NO filter needed (isolated by FK)
     CircleLike.query.filter_by(user_id=user_id).delete()
     CircleComment.query.filter_by(author_id=user_id).delete()
     
     # Delete posts
-    CirclePost.query.filter_by(author_id=user_id).delete()
+    filter_by_company(CirclePost.query).filter_by(author_id=user_id).delete()
     
     # 13. Delete poll votes
     CirclePollVote.query.filter_by(user_id=user_id).delete()
@@ -789,28 +789,28 @@ def _delete_user_cascade(user_id):
     db.session.execute(
         circle_group_members.delete().where(circle_group_members.c.user_id == user_id)
     )
-    CircleGroup.query.filter_by(creator_id=user_id).delete()
+    filter_by_company(CircleGroup.query).filter_by(creator_id=user_id).delete()
     CircleGroupMembershipRequest.query.filter_by(user_id=user_id).delete()
     CircleGroupMembershipRequest.query.filter_by(reviewed_by=user_id).update({CircleGroupMembershipRequest.reviewed_by: None})
     
-    # 15. Delete group messages
+    # 15. Delete group messages - NO filter needed (isolated by group_id FK)
     CircleGroupMessage.query.filter_by(sender_id=user_id).delete()
     CircleGroupMessage.query.filter_by(recipient_id=user_id).delete()
     
     # 16. Delete documents uploaded by user
-    CircleDocument.query.filter_by(uploader_id=user_id).delete()
+    filter_by_company(CircleDocument.query).filter_by(uploader_id=user_id).delete()
     
     # 17. Delete calendar events
-    CircleCalendarEvent.query.filter_by(creator_id=user_id).delete()
+    filter_by_company(CircleCalendarEvent.query).filter_by(creator_id=user_id).delete()
     
     # 18. Delete polls created by user
     # First delete poll options and votes for polls created by user
-    polls = CirclePoll.query.filter_by(creator_id=user_id).all()
+    polls = filter_by_company(CirclePoll.query).filter_by(creator_id=user_id).all()
     for poll in polls:
         from models import CirclePollOption
         CirclePollOption.query.filter_by(poll_id=poll.id).delete()
         CirclePollVote.query.filter_by(poll_id=poll.id).delete()
-    CirclePoll.query.filter_by(creator_id=user_id).delete()
+    filter_by_company(CirclePoll.query).filter_by(creator_id=user_id).delete()
     
     # 19. Update presidio coverage (set created_by to NULL)
     PresidioCoverage.query.filter_by(created_by=user_id).update({PresidioCoverage.created_by: None})
@@ -868,10 +868,10 @@ def _collect_user_personal_data(user_id):
             'total_expense_reports': ExpenseReport.query.filter_by(employee_id=user_id).count(),
             'total_overtime_requests': OvertimeRequest.query.filter_by(employee_id=user_id).count(),
             'total_mileage_requests': MileageRequest.query.filter_by(user_id=user_id).count(),
-            'total_circle_posts': CirclePost.query.filter_by(author_id=user_id).count(),
-            'total_circle_polls': CirclePoll.query.filter_by(creator_id=user_id).count(),
-            'total_circle_documents': CircleDocument.query.filter_by(uploader_id=user_id).count(),
-            'total_circle_events': CircleCalendarEvent.query.filter_by(creator_id=user_id).count(),
+            'total_circle_posts': filter_by_company(CirclePost.query).filter_by(author_id=user_id).count(),
+            'total_circle_polls': filter_by_company(CirclePoll.query).filter_by(creator_id=user_id).count(),
+            'total_circle_documents': filter_by_company(CircleDocument.query).filter_by(uploader_id=user_id).count(),
+            'total_circle_events': filter_by_company(CircleCalendarEvent.query).filter_by(creator_id=user_id).count(),
         },
         'export_date': datetime.now().isoformat(),
         'export_format': 'GDPR Personal Data Export'

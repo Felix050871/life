@@ -93,9 +93,9 @@ def delorean():
         abort(403)
     
     delorean_posts = filter_by_company(
-        CirclePost.query.filter_by(post_type='delorean', published=True),
+        CirclePost.query,
         current_user
-    ).order_by(desc(CirclePost.created_at)).all()
+    ).filter_by(post_type='delorean', published=True).order_by(desc(CirclePost.created_at)).all()
     
     return render_template('circle/delorean.html', posts=delorean_posts)
 
@@ -379,9 +379,9 @@ def tech_feed():
         abort(403)
     
     tech_posts = filter_by_company(
-        CirclePost.query.filter_by(post_type='tech_feed', published=True),
+        CirclePost.query,
         current_user
-    ).order_by(desc(CirclePost.created_at)).all()
+    ).filter_by(post_type='tech_feed', published=True).order_by(desc(CirclePost.created_at)).all()
     
     return render_template('circle/tech_feed.html', posts=tech_posts)
 

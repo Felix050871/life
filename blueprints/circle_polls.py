@@ -75,9 +75,9 @@ def create():
             creator_id=current_user.id,
             is_anonymous=is_anonymous,
             multiple_choice=multiple_choice,
-            end_date=end_date,
-            company_id=get_user_company_id()
+            end_date=end_date
         )
+        set_company_on_create(poll)
         
         db.session.add(poll)
         db.session.flush()  # Per ottenere poll.id
