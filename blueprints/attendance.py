@@ -164,7 +164,7 @@ def attendance():
             # Fallback to default if invalid dates
             end_date = datetime.now().date()
             from datetime import timedelta
-        start_date = end_date - timedelta(days=30)
+            start_date = end_date - timedelta(days=30)
     
     if show_team_data:
         # Get team attendance data for PM, Management, Responsabili and Ente
