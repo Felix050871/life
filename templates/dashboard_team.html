@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         {% for user_data in sede_users %}
                                             <tr data-utente="{{ user_data.user.get_full_name() }} @{{ user_data.user.username }}" 
                                                 data-ruolo="{{ user_data.user.role }}"
-                                                data-stato="{% if user_data.status == 'in' %}Presente{% elif user_data.status == 'on_break' %}In Pausa{% elif user_data.daily_work_hours > 0 %}Uscito{% else %}Assente{% endif %}"
+                                                data-stato="{% if user_data.leave_request %}{{ user_data.leave_request.leave_type }}{% elif user_data.status == 'in' %}Presente{% elif user_data.status == 'on_break' %}In Pausa{% elif user_data.status == 'out' %}{% if user_data.daily_work_hours > 0 %}Uscito{% else %}Assente{% endif %}{% endif %}"
                                                 data-data="{{ user_data.date.strftime('%Y-%m-%d') }}">
                                                 <td>
                                                     <strong>{{ user_data.date.strftime('%d/%m') }}</strong>
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                         <i class="fas fa-building me-1"></i>{{ user_data.user.sede_obj.name if user_data.user.sede_obj else 'Nessuna Sede' }}
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-status="{% if user_data.leave_request %}{{ user_data.leave_request.leave_type }}{% elif user_data.status == 'in' %}Presente{% elif user_data.status == 'on_break' %}In Pausa{% elif user_data.status == 'out' %}{% if user_data.daily_work_hours > 0 %}Uscito{% else %}Assente{% endif %}{% endif %}">
                                                     {% if user_data.leave_request %}
                                                         {% if user_data.leave_request.leave_type == 'Ferie' %}
                                                             <span class="badge bg-info">
