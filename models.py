@@ -915,8 +915,9 @@ class AttendanceEvent(db.Model):
         """Restituisce lo stato attuale dell'utente (dentro/fuori/in pausa)"""
         if target_date is None:
             target_date = date.today()
-            
-        events = AttendanceEvent.query.filter(
+        
+        from utils_tenant import filter_by_company
+        events = filter_by_company(AttendanceEvent.query).filter(
             AttendanceEvent.user_id == user_id,
             AttendanceEvent.date == target_date
         ).order_by(AttendanceEvent.timestamp).all()
@@ -961,28 +962,25 @@ class AttendanceEvent(db.Model):
             target_date = date.today()
         
         try:
-            # Import db here to avoid circular imports
-            from app import db
+            from utils_tenant import filter_by_company
             
-            # Use raw SQL to avoid SQLAlchemy object encoding issues
-            from sqlalchemy import text
-            result = db.session.execute(
-                text("SELECT event_type, timestamp FROM attendance_event WHERE user_id = :user_id AND date = :target_date ORDER BY timestamp"),
-                {"user_id": user_id, "target_date": target_date}
-            )
+            # Use SQLAlchemy ORM with multi-tenant filtering
+            db_events = filter_by_company(AttendanceEvent.query).filter(
+                AttendanceEvent.user_id == user_id,
+                AttendanceEvent.date == target_date
+            ).order_by(AttendanceEvent.timestamp).all()
             
             events = []
-            for row in result:
+            for event in db_events:
                 events.append({
-                    'event_type': row[0],
-                    'timestamp': row[1]
+                    'event_type': event.event_type,
+                    'timestamp': event.timestamp
                 })
             
             if not events:
                 return 0
         except Exception as e:
             # Log error and return 0 hours if query fails
-            # Log error without exposing database details
             import traceback
             traceback.print_exc()
             return 0
@@ -1072,8 +1070,9 @@ class AttendanceEvent(db.Model):
         """Restituisce tutti gli eventi della giornata ordinati per timestamp"""
         if target_date is None:
             target_date = date.today()
-            
-        events = AttendanceEvent.query.filter(
+        
+        from utils_tenant import filter_by_company
+        events = filter_by_company(AttendanceEvent.query).filter(
             AttendanceEvent.user_id == user_id,
             AttendanceEvent.date == target_date
         ).order_by(AttendanceEvent.timestamp).all()
@@ -1259,7 +1258,8 @@ class AttendanceEvent(db.Model):
     @staticmethod
     def get_events_as_records(user_id, start_date, end_date):
         """Converte gli eventi in UN SOLO record per giorno per evitare duplicati"""
-        events = AttendanceEvent.query.filter(
+        from utils_tenant import filter_by_company
+        events = filter_by_company(AttendanceEvent.query).filter(
             AttendanceEvent.user_id == user_id,
             AttendanceEvent.date >= start_date,
             AttendanceEvent.date <= end_date
@@ -1410,8 +1410,9 @@ class AttendanceEvent(db.Model):
     def validate_data_integrity(user_id=None, date_range_days=7):
         """Identifica incongruenze nei dati di presenza (clock_in senza clock_out, etc.)"""
         from datetime import date, timedelta
+        from utils_tenant import filter_by_company
         
-        query = AttendanceEvent.query
+        query = filter_by_company(AttendanceEvent.query)
         if user_id:
             query = query.filter(AttendanceEvent.user_id == user_id)
         
