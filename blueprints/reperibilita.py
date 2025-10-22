@@ -358,7 +358,7 @@ def edit_reperibilita_coverage(coverage_id):
         flash('Non hai i permessi per modificare coperture reperibilità', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    coverage = filter_by_company(ReperibilitaCoverage.query).get_or_404(coverage_id)
+    coverage = filter_by_company(ReperibilitaCoverage.query).filter_by(id=coverage_id).first_or_404()
     form = ReperibilitaCoverageForm()
     
     if form.validate_on_submit():
@@ -401,7 +401,7 @@ def delete_reperibilita_coverage(coverage_id):
         flash('Non hai i permessi per eliminare coperture reperibilità', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    coverage = filter_by_company(ReperibilitaCoverage.query).get_or_404(coverage_id)
+    coverage = filter_by_company(ReperibilitaCoverage.query).filter_by(id=coverage_id).first_or_404()
     
     try:
         db.session.delete(coverage)
@@ -749,7 +749,7 @@ def regenerate_reperibilita_template(template_id):
     from utils import generate_reperibilita_shifts
     
     # Trova il template esistente
-    template = filter_by_company(ReperibilitaTemplate.query).get_or_404(template_id)
+    template = filter_by_company(ReperibilitaTemplate.query).filter_by(id=template_id).first_or_404()
     
     try:
         # Elimina turni esistenti nel periodo del template
@@ -802,7 +802,7 @@ def delete_reperibilita_template(template_id):
     
     from models import ReperibilitaTemplate
     
-    template = filter_by_company(ReperibilitaTemplate.query).get_or_404(template_id)
+    template = filter_by_company(ReperibilitaTemplate.query).filter_by(id=template_id).first_or_404()
     
     try:
         # Elimina tutti i turni del periodo del template
