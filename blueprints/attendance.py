@@ -800,7 +800,7 @@ def export_attendance_excel():
         return redirect(url_for('attendance.attendance'))
 
     # Query per ottenere tutti gli eventi nel periodo
-    events = AttendanceEvent.query.filter(
+    events = filter_by_company(AttendanceEvent.query).filter(
         AttendanceEvent.timestamp >= start_date,
         AttendanceEvent.timestamp <= end_date + timedelta(days=1)
     ).order_by(AttendanceEvent.timestamp).all()

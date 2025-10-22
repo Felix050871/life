@@ -738,12 +738,12 @@ def overtime_requests_excel():
     
     # Query con filtri sede
     if current_user.all_sedi:
-        requests = OvertimeRequest.query.options(
+        requests = filter_by_company(OvertimeRequest.query).options(
             joinedload(OvertimeRequest.employee),
             joinedload(OvertimeRequest.overtime_type)
         ).order_by(OvertimeRequest.created_at.desc()).all()
     else:
-        requests = OvertimeRequest.query.join(User).filter(
+        requests = filter_by_company(OvertimeRequest.query).join(User).filter(
             User.sede_id == current_user.sede_id
         ).options(
             joinedload(OvertimeRequest.employee),

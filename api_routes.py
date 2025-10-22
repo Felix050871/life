@@ -6,6 +6,7 @@ from models import User, Shift, PresidioCoverageTemplate, PresidioCoverage
 import json
 import logging
 from utils import split_coverage_into_segments_by_user_capacity
+from utils_tenant import filter_by_company
 # TEMPORARY DISABLED: from new_shift_generation import calculate_shift_duration
 
 # Setup logging for API routes
@@ -17,8 +18,8 @@ def api_get_shifts_for_template(template_id):
     """API RISCRITTA COMPLETAMENTE - CALCOLO MISSING_ROLES SEMPLICE E FUNZIONANTE"""
     
     try:
-        template = PresidioCoverageTemplate.query.get_or_404(template_id)
-        shifts = Shift.query.filter(
+        template = filter_by_company(PresidioCoverageTemplate.query).filter(PresidioCoverageTemplate.id == template_id).first_or_404()
+        shifts = filter_by_company(Shift.query).filter(
             Shift.date >= template.start_date,
             Shift.date <= template.end_date
         ).all()
@@ -63,7 +64,7 @@ def api_get_shifts_for_template(template_id):
             week_data['unique_users'] = len(week_data['unique_users'])
         
         # STEP 3: CALCOLA MISSING_ROLES - LOGICA SEMPLIFICATA
-        coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
+        coverages = filter_by_company(PresidioCoverage.query).filter_by(template_id=template_id, active=True).all()
         total_missing = 0
         
         for week_data in weeks_data.values():
@@ -115,7 +116,7 @@ def api_get_shifts_for_template(template_id):
 def api_get_coverage_requirements(template_id):
     """API per ottenere i requisiti di copertura di un template"""
     
-    coverages = PresidioCoverage.query.filter_by(template_id=template_id, active=True).all()
+    coverages = filter_by_company(PresidioCoverage.query).filter_by(template_id=template_id, active=True).all()
     
     coverage_data = []
     for coverage in coverages:

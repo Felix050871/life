@@ -157,7 +157,7 @@ def create_leave_request():
             end_date = form.end_date.data if form.end_date.data else form.start_date.data
             
             # Verifica sovrapposizioni esistenti
-            existing_requests = LeaveRequest.query.filter(
+            existing_requests = filter_by_company(LeaveRequest.query).filter(
                 LeaveRequest.user_id == current_user.id,
                 LeaveRequest.status.in_(['Pending', 'Approved']),
                 LeaveRequest.start_date <= end_date,
@@ -230,7 +230,7 @@ def approve_leave_request(request_id):
         return redirect(url_for('leave.leave_requests'))
     
     try:
-        leave_request = LeaveRequest.query.get_or_404(request_id)
+        leave_request = filter_by_company(LeaveRequest.query).filter(LeaveRequest.id == request_id).first_or_404()
         
         # Controllo sede se non multi-sede
         if not current_user.all_sedi:
@@ -305,7 +305,7 @@ def reject_leave_request(request_id):
         return redirect(url_for('leave.leave_requests'))
     
     try:
-        leave_request = LeaveRequest.query.get_or_404(request_id)
+        leave_request = filter_by_company(LeaveRequest.query).filter(LeaveRequest.id == request_id).first_or_404()
         
         # Controllo sede se non multi-sede
         if not current_user.all_sedi:
@@ -354,7 +354,7 @@ def reject_leave_request(request_id):
 @login_required  
 def view_leave_request(request_id):
     """Visualizza dettagli di una singola richiesta ferie/permessi"""
-    leave_request = LeaveRequest.query.get_or_404(request_id)
+    leave_request = filter_by_company(LeaveRequest.query).filter(LeaveRequest.id == request_id).first_or_404()
     
     # Controllo permessi: solo proprietario o chi può visualizzare tutte le richieste
     if leave_request.user_id != current_user.id and not current_user.can_view_leave():
@@ -377,7 +377,7 @@ def view_leave_request(request_id):
 @login_required
 def delete_leave_request(request_id):
     """Elimina richiesta ferie/permessi"""
-    leave_request = LeaveRequest.query.get_or_404(request_id)
+    leave_request = filter_by_company(LeaveRequest.query).filter(LeaveRequest.id == request_id).first_or_404()
     
     # Verifica che sia l'utente proprietario della richiesta
     if leave_request.user_id != current_user.id:
@@ -426,7 +426,7 @@ def leave_balance_api(user_id, year):
                 return jsonify({'error': 'Non puoi visualizzare dati di altre sedi'}), 403
         
         # Calcola saldo ferie semplificato
-        approved_requests = LeaveRequest.query.filter(
+        approved_requests = filter_by_company(LeaveRequest.query).filter(
             LeaveRequest.user_id == user_id,
             LeaveRequest.status == 'Approved',
             db.extract('year', LeaveRequest.start_date) == year
@@ -457,7 +457,7 @@ def leave_types():
         flash('Non hai i permessi per gestire le tipologie di permesso', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    leave_types = LeaveType.query.order_by(LeaveType.name).all()
+    leave_types = filter_by_company(LeaveType.query).order_by(LeaveType.name).all()
     return render_template('leave_types.html', leave_types=leave_types)
 
 @leave_bp.route('/leave_types/add', methods=['GET', 'POST'])
@@ -476,7 +476,7 @@ def add_leave_type_page():
             active_status = 'active' in request.form
             
             # Verifica duplicati
-            if LeaveType.query.filter_by(name=name).first():
+            if filter_by_company(LeaveType.query).filter_by(name=name).first():
                 flash('Esiste già una tipologia con questo nome', 'warning')
                 return render_template('add_leave_type.html')
             
@@ -487,6 +487,7 @@ def add_leave_type_page():
                 active=active_status
             )
             
+            set_company_on_create(leave_type)
             db.session.add(leave_type)
             db.session.commit()
             flash(f'Tipologia "{name}" creata con successo', 'success')
@@ -507,14 +508,14 @@ def edit_leave_type_page(id):
         flash('Non hai i permessi per modificare tipologie di permesso', 'danger')
         return redirect(url_for('leave.leave_types'))
     
-    leave_type = LeaveType.query.get_or_404(id)
+    leave_type = filter_by_company(LeaveType.query).filter(LeaveType.id == id).first_or_404()
     
     if request.method == 'POST':
         try:
             name = request.form.get('name')
             
             # Verifica duplicati (escludendo il record corrente)
-            existing = LeaveType.query.filter(LeaveType.name == name, LeaveType.id != id).first()
+            existing = filter_by_company(LeaveType.query).filter(LeaveType.name == name, LeaveType.id != id).first()
             if existing:
                 flash('Esiste già una tipologia con questo nome', 'warning')
                 return render_template('edit_leave_type.html', leave_type=leave_type)
@@ -544,7 +545,7 @@ def delete_leave_type(id):
         flash('Non hai i permessi per eliminare tipologie di permesso', 'danger')
         return redirect(url_for('leave.leave_types'))
     
-    leave_type = LeaveType.query.get_or_404(id)
+    leave_type = filter_by_company(LeaveType.query).filter(LeaveType.id == id).first_or_404()
     
     # Verifica che non ci siano richieste associate
     if leave_type.leave_requests.count() > 0:

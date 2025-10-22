@@ -170,7 +170,7 @@ def manage_sedi():
         flash('Non hai i permessi per accedere alle sedi', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    sedi = Sede.query.order_by(Sede.created_at.desc()).all()
+    sedi = filter_by_company(Sede.query).order_by(Sede.created_at.desc()).all()
     
     # Calcola statistiche aggiuntive per ogni sede
     sedi_stats = {}
@@ -219,6 +219,7 @@ def create_sede():
             tipologia=form.tipologia.data,
             active=form.active.data
         )
+        set_company_on_create(sede)
         db.session.add(sede)
         db.session.commit()
         flash('Sede creata con successo', 'success')
@@ -238,7 +239,7 @@ def edit_sede(sede_id):
         flash('Non hai i permessi per modificare sedi', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    sede = Sede.query.get_or_404(sede_id)
+    sede = filter_by_company(Sede.query).filter(Sede.id == sede_id).first_or_404()
     form = SedeForm(original_name=sede.name, obj=sede)
     
     if form.validate_on_submit():
@@ -263,7 +264,7 @@ def toggle_sede(sede_id):
         flash('Non hai i permessi per modificare sedi', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    sede = Sede.query.get_or_404(sede_id)
+    sede = filter_by_company(Sede.query).filter(Sede.id == sede_id).first_or_404()
     sede.active = not sede.active
     db.session.commit()
     
