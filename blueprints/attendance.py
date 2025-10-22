@@ -19,7 +19,7 @@
 
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, make_response
 from flask_login import login_required, current_user
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, time
 from functools import wraps
 from app import db
 from models import User, AttendanceEvent, Shift, Sede, ReperibilitaShift, Intervention, LeaveRequest, WorkSchedule, MonthlyTimesheet, italian_now
@@ -1342,9 +1342,23 @@ def bulk_fill_timesheet():
         days_replaced = 0
         today = date.today()
         
-        # Ottieni orari standard (usa i campi legacy start_time/end_time se disponibili)
-        standard_start = work_schedule.start_time or work_schedule.start_time_min
-        standard_end = work_schedule.end_time or work_schedule.end_time_min
+        # Calcola orari medi quando c'è flessibilità
+        # Se ci sono i campi legacy usa quelli, altrimenti calcola la media tra min e max
+        if work_schedule.start_time and work_schedule.end_time:
+            # Usa i campi legacy (deprecati)
+            standard_start = work_schedule.start_time
+            standard_end = work_schedule.end_time
+        else:
+            # Calcola orario medio tra min e max
+            start_min_minutes = work_schedule.start_time_min.hour * 60 + work_schedule.start_time_min.minute
+            start_max_minutes = work_schedule.start_time_max.hour * 60 + work_schedule.start_time_max.minute
+            avg_start_minutes = (start_min_minutes + start_max_minutes) // 2
+            standard_start = time(avg_start_minutes // 60, avg_start_minutes % 60)
+            
+            end_min_minutes = work_schedule.end_time_min.hour * 60 + work_schedule.end_time_min.minute
+            end_max_minutes = work_schedule.end_time_max.hour * 60 + work_schedule.end_time_max.minute
+            avg_end_minutes = (end_min_minutes + end_max_minutes) // 2
+            standard_end = time(avg_end_minutes // 60, avg_end_minutes % 60)
         
         if not standard_start or not standard_end:
             return jsonify({'success': False, 'message': 'Orari standard non definiti correttamente'}), 400
