@@ -231,7 +231,7 @@ def check_weekly_rest_compliance(user_id, week_start_date, new_shift_date):
     
     # Controlla turni reperibilità
     from models import ReperibilitaShift
-    reperibilita_shifts = ReperibilitaShift.query.filter(
+    reperibilita_shifts = filter_by_company(ReperibilitaShift.query).filter(
         ReperibilitaShift.user_id == user_id,
         ReperibilitaShift.date >= week_start_date,
         ReperibilitaShift.date < week_start_date + timedelta(days=7),
@@ -312,7 +312,7 @@ def check_weekly_hours_compliance(user_id, week_start_date, new_shift_start, new
     
     # Conta ore dai turni reperibilità
     from models import ReperibilitaShift
-    reperibilita_shifts = ReperibilitaShift.query.filter(
+    reperibilita_shifts = filter_by_company(ReperibilitaShift.query).filter(
         ReperibilitaShift.user_id == user_id,
         ReperibilitaShift.date >= week_start_date,
         ReperibilitaShift.date < week_start_date + timedelta(days=7)
@@ -1024,7 +1024,7 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
         users_by_role[user.role].append(user)
     
     # Get coverage configurations for the time period
-    coverage_configs = ReperibilitaCoverage.query.filter(
+    coverage_configs = filter_by_company(ReperibilitaCoverage.query).filter(
         ReperibilitaCoverage.active == True
     ).all()
     
@@ -1170,6 +1170,7 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
                 shift.end_time = coverage.end_time
                 shift.description = coverage.description or f"Reperibilità {coverage.get_day_name()}"
                 shift.created_by = created_by_id
+                set_company_on_create(shift)
                 db.session.add(shift)
                 
                 # Update reperibilità utilization tracking (independent from presidio)

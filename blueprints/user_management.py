@@ -744,10 +744,10 @@ def _delete_user_cascade(user_id):
     ShiftTemplate.query.filter_by(created_by=user_id).delete()
     
     # 5. Delete reperibilità shifts and templates
-    ReperibilitaShift.query.filter_by(user_id=user_id).delete()
-    ReperibilitaShift.query.filter_by(created_by=user_id).delete()
+    filter_by_company(ReperibilitaShift.query).filter_by(user_id=user_id).delete()
+    filter_by_company(ReperibilitaShift.query).filter_by(created_by=user_id).delete()
     ReperibilitaTemplate.query.filter_by(created_by=user_id).delete()
-    ReperibilitaIntervention.query.filter_by(user_id=user_id).delete()
+    filter_by_company(ReperibilitaIntervention.query).filter_by(user_id=user_id).delete()
     
     # 6. Delete general interventions
     Intervention.query.filter_by(user_id=user_id).delete()
@@ -861,7 +861,7 @@ def _collect_user_personal_data(user_id):
             'total_attendance_events': AttendanceEvent.query.filter_by(user_id=user_id).count(),
             'total_leave_requests': LeaveRequest.query.filter_by(user_id=user_id).count(),
             'total_shifts': Shift.query.filter_by(user_id=user_id).count(),
-            'total_reperibilita_shifts': ReperibilitaShift.query.filter_by(user_id=user_id).count(),
+            'total_reperibilita_shifts': filter_by_company(ReperibilitaShift.query).filter_by(user_id=user_id).count(),
             'total_interventions': Intervention.query.filter_by(user_id=user_id).count(),
             'total_messages_received': InternalMessage.query.filter_by(recipient_id=user_id).count(),
             'total_messages_sent': InternalMessage.query.filter_by(sender_id=user_id).count(),

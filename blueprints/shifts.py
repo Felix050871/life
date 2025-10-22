@@ -529,7 +529,7 @@ def team_shifts():
     ).order_by(Shift.date, Shift.start_time).all()
     
     # Prendi tutti i turni di reperibilità della settimana
-    weekly_reperibilita = ReperibilitaShift.query.filter(
+    weekly_reperibilita = filter_by_company(ReperibilitaShift.query).filter(
         ReperibilitaShift.date >= week_start,
         ReperibilitaShift.date <= week_end
     ).order_by(ReperibilitaShift.date, ReperibilitaShift.start_time).all()

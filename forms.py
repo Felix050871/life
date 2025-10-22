@@ -651,7 +651,7 @@ class ReperibilitaTemplateForm(FlaskForm):
         from datetime import date
         try:
             # Raggruppa le coperture per periodo (start_date + end_date)
-            coverages = ReperibilitaCoverage.query.filter(
+            coverages = filter_by_company(ReperibilitaCoverage.query).filter(
                 ReperibilitaCoverage.active == True,
                 ReperibilitaCoverage.end_date >= date.today()
             ).all()
