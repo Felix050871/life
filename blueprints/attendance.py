@@ -22,7 +22,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from functools import wraps
 from app import db
-from models import User, AttendanceEvent, Shift, Sede, ReperibilitaShift, Intervention, LeaveRequest, WorkSchedule, italian_now
+from models import User, AttendanceEvent, Shift, Sede, ReperibilitaShift, Intervention, LeaveRequest, WorkSchedule, MonthlyTimesheet, italian_now
 from utils_tenant import get_user_company_id, filter_by_company, set_company_on_create
 from io import StringIO
 from defusedcsv import csv
@@ -870,3 +870,225 @@ def quick_attendance(action):
                          action=action,
                          action_title=action_titles.get(action, 'Azione'),
                          current_time=italian_now())
+
+# =============================================================================
+# MANUAL TIMESHEET ROUTES
+# =============================================================================
+
+@attendance_bp.route('/manual_timesheet', methods=['GET'])
+@login_required
+def manual_timesheet():
+    """Interfaccia per inserimento manuale timesheet mensile"""
+    if not current_user.can_access_attendance():
+        flash('Non hai i permessi per accedere alle presenze.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni mese e anno dal parametro GET o usa mese corrente
+    try:
+        year = int(request.args.get('year', datetime.now().year))
+        month = int(request.args.get('month', datetime.now().month))
+    except ValueError:
+        year = datetime.now().year
+        month = datetime.now().month
+    
+    # Verifica che mese sia valido
+    if month < 1 or month > 12:
+        flash('Mese non valido', 'danger')
+        return redirect(url_for('attendance.attendance'))
+    
+    # Ottieni o crea il timesheet mensile
+    company_id = get_user_company_id(current_user)
+    timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+    
+    # Calcola primo e ultimo giorno del mese
+    from calendar import monthrange
+    first_day = date(year, month, 1)
+    last_day_num = monthrange(year, month)[1]
+    last_day = date(year, month, last_day_num)
+    
+    # Ottieni tutti gli eventi del mese per l'utente
+    events_query = filter_by_company(AttendanceEvent.query).filter(
+        AttendanceEvent.user_id == current_user.id,
+        AttendanceEvent.date >= first_day,
+        AttendanceEvent.date <= last_day
+    ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+    
+    # Organizza eventi per giorno
+    events_by_day = {}
+    for event in events_query:
+        day = event.date.day
+        if day not in events_by_day:
+            events_by_day[day] = {
+                'events': [],
+                'has_manual': False,
+                'has_live': False
+            }
+        events_by_day[day]['events'].append(event)
+        if event.is_manual:
+            events_by_day[day]['has_manual'] = True
+        else:
+            events_by_day[day]['has_live'] = True
+    
+    # Crea lista giorni del mese con info
+    days_data = []
+    for day in range(1, last_day_num + 1):
+        day_date = date(year, month, day)
+        day_events = events_by_day.get(day, {'events': [], 'has_manual': False, 'has_live': False})
+        
+        # Trova primo clock_in e ultimo clock_out
+        clock_in_time = None
+        clock_out_time = None
+        
+        for event in day_events['events']:
+            if event.event_type == 'clock_in' and clock_in_time is None:
+                clock_in_time = event.timestamp.strftime('%H:%M')
+            elif event.event_type == 'clock_out':
+                clock_out_time = event.timestamp.strftime('%H:%M')
+        
+        days_data.append({
+            'day': day,
+            'date': day_date,
+            'weekday': day_date.strftime('%a'),
+            'clock_in': clock_in_time,
+            'clock_out': clock_out_time,
+            'has_manual': day_events['has_manual'],
+            'has_live': day_events['has_live'],
+            'is_weekend': day_date.weekday() >= 5
+        })
+    
+    # Nomi mesi in italiano
+    month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+    
+    return render_template('manual_timesheet.html',
+                         timesheet=timesheet,
+                         year=year,
+                         month=month,
+                         month_name=month_names[month],
+                         days_data=days_data,
+                         can_edit=timesheet.can_edit())
+
+@attendance_bp.route('/manual_timesheet/save', methods=['POST'])
+@login_required
+def save_manual_timesheet():
+    """Salva orari inseriti manualmente (salvataggio progressivo)"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        day = int(data.get('day'))
+        clock_in_str = data.get('clock_in', '').strip()
+        clock_out_str = data.get('clock_out', '').strip()
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id(current_user)
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        # Crea data
+        day_date = date(year, month, day)
+        
+        # Elimina eventi manuali esistenti per questo giorno
+        filter_by_company(AttendanceEvent.query).filter(
+            AttendanceEvent.user_id == current_user.id,
+            AttendanceEvent.date == day_date,
+            AttendanceEvent.is_manual == True
+        ).delete()
+        
+        # Se entrambi i campi sono vuoti, elimina e basta
+        if not clock_in_str and not clock_out_str:
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Orari rimossi'})
+        
+        # Valida e crea nuovi eventi
+        if clock_in_str:
+            try:
+                clock_in_time = datetime.strptime(clock_in_str, '%H:%M').time()
+                clock_in_datetime = datetime.combine(day_date, clock_in_time)
+                
+                # Converti in timezone italiano
+                from zoneinfo import ZoneInfo
+                italy_tz = ZoneInfo('Europe/Rome')
+                clock_in_datetime = clock_in_datetime.replace(tzinfo=italy_tz)
+                
+                clock_in_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    date=day_date,
+                    event_type='clock_in',
+                    timestamp=clock_in_datetime,
+                    sede_id=current_user.sede_id,
+                    is_manual=True
+                )
+                set_company_on_create(clock_in_event)
+                db.session.add(clock_in_event)
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Formato orario entrata non valido'}), 400
+        
+        if clock_out_str:
+            try:
+                clock_out_time = datetime.strptime(clock_out_str, '%H:%M').time()
+                clock_out_datetime = datetime.combine(day_date, clock_out_time)
+                
+                # Converti in timezone italiano
+                from zoneinfo import ZoneInfo
+                italy_tz = ZoneInfo('Europe/Rome')
+                clock_out_datetime = clock_out_datetime.replace(tzinfo=italy_tz)
+                
+                clock_out_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    date=day_date,
+                    event_type='clock_out',
+                    timestamp=clock_out_datetime,
+                    sede_id=current_user.sede_id,
+                    is_manual=True
+                )
+                set_company_on_create(clock_out_event)
+                db.session.add(clock_out_event)
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Formato orario uscita non valido'}), 400
+        
+        # Aggiorna timestamp timesheet
+        timesheet.updated_at = italian_now()
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Orari salvati con successo'})
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore salvataggio timesheet manuale: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+@attendance_bp.route('/manual_timesheet/consolidate', methods=['POST'])
+@login_required
+def consolidate_manual_timesheet():
+    """Consolida il timesheet mensile rendendolo immutabile"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id(current_user)
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Consolida
+        if timesheet.consolidate(current_user.id):
+            return jsonify({'success': True, 'message': 'Timesheet consolidato con successo'})
+        else:
+            return jsonify({'success': False, 'message': 'Timesheet già consolidato'}), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore consolidamento timesheet: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
