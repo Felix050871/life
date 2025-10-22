@@ -81,15 +81,20 @@
                             </thead>
                             <tbody id="timesheetTable">
                                 {% for day_data in days_data %}
-                                <tr class="{% if day_data.is_weekend %}table-secondary{% endif %}" data-day="{{ day_data.day }}">
+                                <tr class="{% if day_data.is_weekend %}table-secondary{% elif day_data.is_future %}table-light text-muted{% endif %}" data-day="{{ day_data.day }}">
                                     <td class="fw-bold">{{ day_data.weekday }}</td>
-                                    <td>{{ day_data.date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {{ day_data.date.strftime('%d/%m/%Y') }}
+                                        {% if day_data.is_future %}
+                                        <small class="text-muted d-block"><i class="fas fa-clock"></i> Futuro</small>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <input type="time" 
                                                class="form-control time-input" 
                                                id="clock_in_{{ day_data.day }}" 
                                                value="{{ day_data.clock_in or '' }}"
-                                               {% if not can_edit %}disabled{% endif %}
+                                               {% if not can_edit or day_data.is_future %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
                                                data-type="clock_in">
                                     </td>
@@ -98,7 +103,7 @@
                                                class="form-control time-input" 
                                                id="clock_out_{{ day_data.day }}" 
                                                value="{{ day_data.clock_out or '' }}"
-                                               {% if not can_edit %}disabled{% endif %}
+                                               {% if not can_edit or day_data.is_future %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
                                                data-type="clock_out">
                                     </td>

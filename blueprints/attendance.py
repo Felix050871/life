@@ -953,7 +953,8 @@ def manual_timesheet():
             'clock_out': clock_out_time,
             'has_manual': day_events['has_manual'],
             'has_live': day_events['has_live'],
-            'is_weekend': day_date.weekday() >= 5
+            'is_weekend': day_date.weekday() >= 5,
+            'is_future': day_date > date.today()
         })
     
     # Nomi mesi in italiano
@@ -993,6 +994,10 @@ def save_manual_timesheet():
         
         # Crea data
         day_date = date(year, month, day)
+        
+        # Blocca inserimenti futuri
+        if day_date > date.today():
+            return jsonify({'success': False, 'message': 'Non è possibile inserire orari per giorni futuri'}), 400
         
         # Elimina eventi manuali esistenti per questo giorno
         filter_by_company(AttendanceEvent.query).filter(
