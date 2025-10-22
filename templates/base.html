@@ -902,8 +902,8 @@
                 });
             });
 
-            // Links that cause navigation (excluding anchors, modals, export links, modal dismiss buttons, and no-loading class)
-            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle]):not([href*="export"]):not([data-bs-dismiss]):not(.no-loading)').forEach(link => {
+            // Links that cause navigation (excluding anchors, modals, export links, download links, modal dismiss buttons, and no-loading class)
+            document.querySelectorAll('a[href]:not([href^="#"]):not([data-bs-toggle]):not([href*="export"]):not([href*="download"]):not([data-bs-dismiss]):not(.no-loading)').forEach(link => {
                 link.addEventListener('click', function(e) {
                     const href = this.getAttribute('href');
                     // Only show loading for internal navigation
@@ -949,6 +949,26 @@
                         this.className = originalClass;
                         this.style.pointerEvents = 'auto';
                     }, 5000);
+                });
+            });
+
+            // Download buttons - Solo feedback sul pulsante senza overlay
+            document.querySelectorAll('a[href*="download"]').forEach(downloadBtn => {
+                downloadBtn.addEventListener('click', function(e) {
+                    // Cambia il testo del pulsante per indicare download in corso
+                    const originalHTML = this.innerHTML;
+                    const originalClass = this.className;
+                    
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Download...';
+                    this.classList.add('disabled');
+                    this.style.pointerEvents = 'none';
+                    
+                    // Ripristina dopo 3 secondi (tempo ragionevole per iniziare il download)
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                        this.className = originalClass;
+                        this.style.pointerEvents = 'auto';
+                    }, 3000);
                 });
             });
 
