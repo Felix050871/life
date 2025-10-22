@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Timesheet Manuale - {{ month_name }} {{ year }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Timesheet Manuale - {{ month_name }} {{ year }}
+                    </h5>
+                    <div>
+                        <a href="{{ url_for('attendance.attendance') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Torna alle Presenze
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    {% if timesheet.is_consolidated %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-lock me-2"></i>
+                        <strong>Timesheet Consolidato</strong><br>
+                        Questo timesheet è stato consolidato il {{ timesheet.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }} e non può più essere modificato.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Modalità Inserimento Manuale</strong><br>
+                        Inserisci gli orari di entrata e uscita per ogni giorno. Puoi salvare man mano i tuoi progressi. 
+                        Una volta completato l'inserimento, consolida il timesheet per renderlo definitivo.
+                    </div>
+                    {% endif %}
+
+                    <!-- Navigazione mese -->
+                    <div class="row mb-4">
+                        <div class="col-md-12 text-center">
+                            <div class="btn-group" role="group">
+                                {% if month > 1 %}
+                                <a href="{{ url_for('attendance.manual_timesheet', year=year, month=month-1) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-chevron-left"></i> {{ ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'][month-1] }}
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('attendance.manual_timesheet', year=year-1, month=12) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-chevron-left"></i> Dicembre {{ year - 1 }}
+                                </a>
+                                {% endif %}
+                                
+                                <button type="button" class="btn btn-primary" disabled>
+                                    {{ month_name }} {{ year }}
+                                </button>
+                                
+                                {% if month < 12 %}
+                                <a href="{{ url_for('attendance.manual_timesheet', year=year, month=month+1) }}" class="btn btn-outline-primary">
+                                    {{ ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'][month+1] }} <i class="fas fa-chevron-right"></i>
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('attendance.manual_timesheet', year=year+1, month=1) }}" class="btn btn-outline-primary">
+                                    Gennaio {{ year + 1 }} <i class="fas fa-chevron-right"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabella timesheet -->
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 10%;">Giorno</th>
+                                    <th style="width: 10%;">Data</th>
+                                    <th style="width: 25%;">Entrata</th>
+                                    <th style="width: 25%;">Uscita</th>
+                                    <th style="width: 20%;">Stato</th>
+                                    <th style="width: 10%;">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="timesheetTable">
+                                {% for day_data in days_data %}
+                                <tr class="{% if day_data.is_weekend %}table-secondary{% endif %}" data-day="{{ day_data.day }}">
+                                    <td class="fw-bold">{{ day_data.weekday }}</td>
+                                    <td>{{ day_data.date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <input type="time" 
+                                               class="form-control time-input" 
+                                               id="clock_in_{{ day_data.day }}" 
+                                               value="{{ day_data.clock_in or '' }}"
+                                               {% if not can_edit %}disabled{% endif %}
+                                               data-day="{{ day_data.day }}"
+                                               data-type="clock_in">
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               class="form-control time-input" 
+                                               id="clock_out_{{ day_data.day }}" 
+                                               value="{{ day_data.clock_out or '' }}"
+                                               {% if not can_edit %}disabled{% endif %}
+                                               data-day="{{ day_data.day }}"
+                                               data-type="clock_out">
+                                    </td>
+                                    <td class="status-cell" id="status_{{ day_data.day }}">
+                                        {% if day_data.has_manual and day_data.has_live %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-exclamation-circle"></i> Misto
+                                        </span>
+                                        {% elif day_data.has_manual %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-keyboard"></i> Manuale
+                                        </span>
+                                        {% elif day_data.has_live %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-mobile-alt"></i> Live
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-minus"></i> Vuoto
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if can_edit %}
+                                        <button class="btn btn-sm btn-primary save-day-btn" 
+                                                data-day="{{ day_data.day }}"
+                                                onclick="saveDayData({{ day_data.day }})">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-lock"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Azioni finali -->
+                    {% if can_edit %}
+                    <div class="row mt-4">
+                        <div class="col-md-12 text-center">
+                            <button type="button" class="btn btn-success btn-lg" onclick="consolidateTimesheet()">
+                                <i class="fas fa-lock me-2"></i>Consolida Timesheet
+                            </button>
+                            <p class="text-muted mt-2 mb-0">
+                                <small><i class="fas fa-info-circle me-1"></i>Una volta consolidato, il timesheet non potrà più essere modificato</small>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if timesheet.notes %}
+                    <div class="mt-3">
+                        <strong>Note:</strong>
+                        <p>{{ timesheet.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const YEAR = {{ year }};
+const MONTH = {{ month }};
+const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+
+function saveDayData(day) {
+    if (!CAN_EDIT) {
+        alert('Timesheet consolidato, non modificabile');
+        return;
+    }
+
+    const clockInInput = document.getElementById(`clock_in_${day}`);
+    const clockOutInput = document.getElementById(`clock_out_${day}`);
+    const saveBtn = document.querySelector(`button[data-day="${day}"]`);
+    
+    // Mostra loading sul pulsante
+    const originalHTML = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    saveBtn.disabled = true;
+    
+    const data = {
+        year: YEAR,
+        month: MONTH,
+        day: day,
+        clock_in: clockInInput.value,
+        clock_out: clockOutInput.value
+    };
+    
+    fetch('{{ url_for("attendance.save_manual_timesheet") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Aggiorna badge stato
+            const statusCell = document.getElementById(`status_${day}`);
+            if (clockInInput.value || clockOutInput.value) {
+                statusCell.innerHTML = '<span class="badge bg-info"><i class="fas fa-keyboard"></i> Manuale</span>';
+            } else {
+                statusCell.innerHTML = '<span class="badge bg-secondary"><i class="fas fa-minus"></i> Vuoto</span>';
+            }
+            
+            // Flash success
+            showFlashMessage('success', data.message);
+        } else {
+            showFlashMessage('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showFlashMessage('danger', 'Errore di connessione');
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalHTML;
+        saveBtn.disabled = false;
+    });
+}
+
+function consolidateTimesheet() {
+    if (!CAN_EDIT) {
+        alert('Timesheet già consolidato');
+        return;
+    }
+
+    if (!confirm('Sei sicuro di voler consolidare questo timesheet? Una volta consolidato non potrà più essere modificato.')) {
+        return;
+    }
+    
+    const data = {
+        year: YEAR,
+        month: MONTH
+    };
+    
+    fetch('{{ url_for("attendance.consolidate_manual_timesheet") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showFlashMessage('success', data.message);
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showFlashMessage('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showFlashMessage('danger', 'Errore di connessione');
+    });
+}
+
+function showFlashMessage(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss dopo 3 secondi
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// Auto-save on blur
+if (CAN_EDIT) {
+    document.querySelectorAll('.time-input').forEach(input => {
+        input.addEventListener('blur', function() {
+            const day = this.dataset.day;
+            // Salva automaticamente quando l'utente esce dal campo
+            // (commenta questa riga se preferisci solo salvataggio manuale)
+            // saveDayData(day);
+        });
+    });
+}
+</script>
+
+{% endblock %}
