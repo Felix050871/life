@@ -267,51 +267,97 @@ def attendance():
             
             # Calcola indicatori di ENTRATA solo se l'utente ha un orario che richiede controlli
             if hasattr(record, 'clock_in') and record.clock_in and record.user.should_check_attendance_timing():
-                # Crea l'orario di inizio turno in timezone italiana
-                shift_start_datetime = datetime.combine(record.date, shift.start_time)
-                shift_start_datetime = shift_start_datetime.replace(tzinfo=italy_tz)
-                # Limiti più ragionevoli: anticipo oltre 30min, ritardo oltre 15min
-                early_limit = shift_start_datetime - timedelta(minutes=30)
-                late_limit = shift_start_datetime + timedelta(minutes=15)
+                # Recupera il WorkSchedule della sede per controllare la flessibilità
+                work_schedule = None
+                if record.user.sede_id:
+                    work_schedule = filter_by_company(WorkSchedule.query).filter(
+                        WorkSchedule.sede_id == record.user.sede_id,
+                        WorkSchedule.active == True
+                    ).first()
                 
                 # Converti il timestamp di clock_in da UTC a orario italiano
                 clock_in_time = record.clock_in
                 if clock_in_time.tzinfo is None:
                     clock_in_time = clock_in_time.replace(tzinfo=utc_tz)
-                
-                # Converte a orario italiano per il confronto
                 clock_in_time_italy = clock_in_time.astimezone(italy_tz)
                 
-                if clock_in_time_italy < early_limit:
-                    record.shift_status = 'anticipo'
-                elif clock_in_time_italy > late_limit:
-                    record.shift_status = 'ritardo'
+                # Se c'è un WorkSchedule con flessibilità, usa quello
+                if work_schedule and work_schedule.start_time_min and work_schedule.start_time_max:
+                    # Usa gli orari flessibili
+                    start_min_datetime = datetime.combine(record.date, work_schedule.start_time_min).replace(tzinfo=italy_tz)
+                    start_max_datetime = datetime.combine(record.date, work_schedule.start_time_max).replace(tzinfo=italy_tz)
+                    
+                    # Anticipo: prima di start_min - 30min
+                    early_limit = start_min_datetime - timedelta(minutes=30)
+                    # Ritardo: dopo start_max + 15min
+                    late_limit = start_max_datetime + timedelta(minutes=15)
+                    
+                    if clock_in_time_italy < early_limit:
+                        record.shift_status = 'anticipo'
+                    elif clock_in_time_italy > late_limit:
+                        record.shift_status = 'ritardo'
+                    else:
+                        record.shift_status = 'normale'
                 else:
-                    record.shift_status = 'normale'
+                    # Fallback: usa l'orario fisso del turno
+                    shift_start_datetime = datetime.combine(record.date, shift.start_time)
+                    shift_start_datetime = shift_start_datetime.replace(tzinfo=italy_tz)
+                    early_limit = shift_start_datetime - timedelta(minutes=30)
+                    late_limit = shift_start_datetime + timedelta(minutes=15)
+                    
+                    if clock_in_time_italy < early_limit:
+                        record.shift_status = 'anticipo'
+                    elif clock_in_time_italy > late_limit:
+                        record.shift_status = 'ritardo'
+                    else:
+                        record.shift_status = 'normale'
             
             # Calcola indicatori di USCITA solo se l'utente ha un orario che richiede controlli
             if hasattr(record, 'clock_out') and record.clock_out and record.user.should_check_attendance_timing():
-                # Crea l'orario di fine turno in timezone italiana
-                shift_end_datetime = datetime.combine(record.date, shift.end_time)
-                shift_end_datetime = shift_end_datetime.replace(tzinfo=italy_tz)
-                # Tolleranza uscita: 5 minuti prima per anticipata, 10 minuti dopo per straordinario
-                early_exit_limit = shift_end_datetime - timedelta(minutes=5)
-                late_exit_limit = shift_end_datetime + timedelta(minutes=10)
+                # Recupera il WorkSchedule della sede per controllare la flessibilità
+                work_schedule = None
+                if record.user.sede_id:
+                    work_schedule = filter_by_company(WorkSchedule.query).filter(
+                        WorkSchedule.sede_id == record.user.sede_id,
+                        WorkSchedule.active == True
+                    ).first()
                 
                 # Converti il timestamp di clock_out da UTC a orario italiano
                 clock_out_time = record.clock_out
                 if clock_out_time.tzinfo is None:
                     clock_out_time = clock_out_time.replace(tzinfo=utc_tz)
-                
-                # Converte a orario italiano per il confronto
                 clock_out_time_italy = clock_out_time.astimezone(italy_tz)
                 
-                if clock_out_time_italy < early_exit_limit:
-                    record.exit_status = 'anticipo'  # Uscita anticipata
-                elif clock_out_time_italy > late_exit_limit:
-                    record.exit_status = 'straordinario'  # Straordinario (oltre 10 min)
+                # Se c'è un WorkSchedule con flessibilità, usa quello
+                if work_schedule and work_schedule.end_time_min and work_schedule.end_time_max:
+                    # Usa gli orari flessibili
+                    end_min_datetime = datetime.combine(record.date, work_schedule.end_time_min).replace(tzinfo=italy_tz)
+                    end_max_datetime = datetime.combine(record.date, work_schedule.end_time_max).replace(tzinfo=italy_tz)
+                    
+                    # Uscita anticipata: prima di end_min - 5min
+                    early_exit_limit = end_min_datetime - timedelta(minutes=5)
+                    # Straordinario: dopo end_max + 10min
+                    late_exit_limit = end_max_datetime + timedelta(minutes=10)
+                    
+                    if clock_out_time_italy < early_exit_limit:
+                        record.exit_status = 'anticipo'
+                    elif clock_out_time_italy > late_exit_limit:
+                        record.exit_status = 'straordinario'
+                    else:
+                        record.exit_status = 'normale'
                 else:
-                    record.exit_status = 'normale'
+                    # Fallback: usa l'orario fisso del turno
+                    shift_end_datetime = datetime.combine(record.date, shift.end_time)
+                    shift_end_datetime = shift_end_datetime.replace(tzinfo=italy_tz)
+                    early_exit_limit = shift_end_datetime - timedelta(minutes=5)
+                    late_exit_limit = shift_end_datetime + timedelta(minutes=10)
+                    
+                    if clock_out_time_italy < early_exit_limit:
+                        record.exit_status = 'anticipo'
+                    elif clock_out_time_italy > late_exit_limit:
+                        record.exit_status = 'straordinario'
+                    else:
+                        record.exit_status = 'normale'
     
     # Non ci sono più turni da controllare - rimosso controllo assenze basato su turni
     
