@@ -1096,10 +1096,12 @@ class AttendanceEvent(db.Model):
             return []
         
         # Query events with proper company_id filtering
+        # IMPORTANT: Use db.func.date() on timestamp instead of date field
+        # because date field may contain incorrect values
         events = AttendanceEvent.query.filter(
             AttendanceEvent.user_id == user_id,
             AttendanceEvent.company_id == user.company_id,
-            AttendanceEvent.date == target_date
+            db.func.date(AttendanceEvent.timestamp) == target_date
         ).order_by(AttendanceEvent.timestamp).all()
         
         # Crea lista di eventi con timestamp convertiti senza modificare gli originali
