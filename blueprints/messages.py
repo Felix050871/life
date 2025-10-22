@@ -98,7 +98,7 @@ def internal_messages():
 @login_required  
 def mark_message_read(message_id):
     """Segna un messaggio come letto"""
-    message = filter_by_company(InternalMessage.query).get_or_404(message_id)
+    message = filter_by_company(InternalMessage.query).filter_by(id=message_id).first_or_404()
     
     # Verifica che sia il destinatario del messaggio
     if message.recipient_id != current_user.id:
@@ -115,7 +115,7 @@ def mark_message_read(message_id):
 @login_required  
 def delete_message(message_id):
     """Cancella un messaggio (ricevuto o inviato)"""
-    message = filter_by_company(InternalMessage.query).get_or_404(message_id)
+    message = filter_by_company(InternalMessage.query).filter_by(id=message_id).first_or_404()
     
     # Verifica che sia il destinatario o il mittente del messaggio
     if message.recipient_id != current_user.id and message.sender_id != current_user.id:
