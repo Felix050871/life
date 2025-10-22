@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                             <i class="fas fa-pause-circle me-1"></i>In Pausa
                                                         </span>
                                                     {% elif user_data.status == 'out' %}
-                                                        {% if user_data.today_work_hours > 0 %}
+                                                        {% if user_data.daily_work_hours > 0 %}
                                                             <span class="badge bg-secondary">
                                                                 <i class="fas fa-sign-out-alt me-1"></i>Uscito
                                                             </span>
@@ -133,8 +133,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     {% endif %}
                                                 </td>
                                                 <td>
-                                                    {% if user_data.today_events and user_data.today_events|length > 0 %}
-                                                        {% set first_in = user_data.today_events|selectattr('event_type', 'equalto', 'clock_in')|first %}
+                                                    {% if user_data.daily_events and user_data.daily_events|length > 0 %}
+                                                        {% set first_in = user_data.daily_events|selectattr('event_type', 'equalto', 'clock_in')|first %}
                                                         {% if first_in %}
                                                             {{ first_in.timestamp.strftime('%H:%M') }}
                                                         {% else %}
