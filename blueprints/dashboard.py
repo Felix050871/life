@@ -574,7 +574,7 @@ def dashboard_team():
             if user_data['daily_events']:
                 first_in = next((e for e in user_data['daily_events'] if e.event_type == 'clock_in'), None)
                 if first_in:
-                    entrata = first_in.timestamp.strftime('%H:%M')
+                    entrata = first_in.timestamp_italian.strftime('%H:%M')
             
             # Determina orario pausa
             pausa = '-'
@@ -582,14 +582,14 @@ def dashboard_team():
                 break_start = next((e for e in user_data['daily_events'] if e.event_type == 'break_start'), None)
                 break_end = next((e for e in user_data['daily_events'] if e.event_type == 'break_end'), None)
                 if break_start:
-                    pausa = break_start.timestamp.strftime('%H:%M')
+                    pausa = break_start.timestamp_italian.strftime('%H:%M')
                     if break_end:
-                        pausa += f" - {break_end.timestamp.strftime('%H:%M')}"
+                        pausa += f" - {break_end.timestamp_italian.strftime('%H:%M')}"
             
             # Determina orario uscita
             uscita = '-'
             if user_data['last_event'] and user_data['last_event'].event_type == 'clock_out':
-                uscita = user_data['last_event'].timestamp.strftime('%H:%M')
+                uscita = user_data['last_event'].timestamp_italian.strftime('%H:%M')
             
             # Determina stato - check leave_request first
             if user_data.get('leave_request'):

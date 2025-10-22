@@ -23,9 +23,16 @@ Preferred communication style: Simple, everyday language.
     1. **SQLAlchemy Event Listener**: Added `normalize_attendance_timestamp` listener in models.py that automatically converts ANY timezone-aware datetime to naive UTC before saving, ensuring consistent UTC storage.
     2. **Display Conversion**: Created `timestamp_italian` property on AttendanceEvent model that converts naive UTC timestamps to Italian time (UTC+1/+2) for display.
     3. **Schedule Checking**: Updated `check_user_schedule_with_permissions()` in utils.py to correctly interpret naive timestamps as UTC before converting to Italian time for comparisons with work schedules.
-  - **Files Updated**: models.py (event listener + property), templates/dashboard.html, templates/attendance.html, utils.py (schedule checking)
+  - **Files Updated**: 
+    - models.py (event listener + timestamp_italian property)
+    - templates/dashboard.html, templates/attendance.html, templates/dashboard_team.html (all use timestamp_italian)
+    - utils.py (schedule checking with UTC→Italian conversion)
+    - blueprints/attendance.py (export CSV/Excel, JSON responses, flash messages)
+    - blueprints/dashboard.py (PDF export)
+    - blueprints/qr.py (API JSON responses)
   - **Architecture**: All AttendanceEvent timestamps are ALWAYS stored as naive UTC in PostgreSQL. Conversion to Italian time happens only at display (via `timestamp_italian` property) and during schedule validation (via utils.py conversion).
-  - **Impact**: All attendance event times display correctly in Italian time across dashboard, attendance pages, team views, and all schedule indicators (anticipo/ritardo/straordinario) work correctly.
+  - **Impact**: All attendance event times display correctly in Italian time across dashboard, attendance pages, team views, exports (CSV/Excel/PDF), API responses, and all schedule indicators (anticipo/ritardo/straordinario) work correctly.
+  - **Data Migration**: Fixed 466 records with date mismatch, 48 manual timestamps, and removed 116 duplicate/batch events to ensure data consistency.
 
 ## System Architecture
 
