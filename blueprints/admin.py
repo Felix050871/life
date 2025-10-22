@@ -842,3 +842,66 @@ def system_info():
     except Exception as e:
         flash(f'Errore nel caricamento informazioni sistema: {str(e)}', 'danger')
         return redirect(url_for('admin.admin_settings'))
+
+
+# =============================================================================
+# TIMEZONE DATA MIGRATION (One-time fix)
+# =============================================================================
+
+@admin_bp.route('/migrate_attendance_timestamps', methods=['GET', 'POST'])
+@login_required
+@require_admin_permission
+def migrate_attendance_timestamps():
+    """
+    Migrazione dati una tantum per correggere i timestamp AttendanceEvent.
+    
+    Converte i timestamp esistenti da Italian time (salvati erroneamente come naive)
+    a UTC naive corretto.
+    
+    IMPORTANTE: Questa operazione deve essere eseguita UNA SOLA VOLTA.
+    """
+    from models import AttendanceEvent
+    from zoneinfo import ZoneInfo
+    from datetime import timezone
+    
+    if request.method == 'GET':
+        # Conta quanti record devono essere migrati
+        total_events = AttendanceEvent.query.count()
+        
+        flash(f'Trovati {total_events} eventi di presenza. Clicca "Esegui Migrazione" per convertire i timestamp da Italian time a UTC.', 'info')
+        
+        return render_template('admin_system_info.html', 
+                             show_migration=True,
+                             total_events=total_events)
+    
+    # POST: Esegui la migrazione
+    try:
+        italy_tz = ZoneInfo('Europe/Rome')
+        events = AttendanceEvent.query.all()
+        migrated_count = 0
+        
+        for event in events:
+            if event.timestamp:
+                # Interpreta il timestamp corrente come Italian time naive
+                # (è quello che è stato salvato erroneamente)
+                italian_naive = event.timestamp
+                
+                # Aggiungi il timezone italiano
+                italian_aware = italian_naive.replace(tzinfo=italy_tz)
+                
+                # Converti in UTC
+                utc_aware = italian_aware.astimezone(timezone.utc)
+                
+                # Salva come naive UTC (l'event listener non serve qui poiché modifichiamo direttamente)
+                event.timestamp = utc_aware.replace(tzinfo=None)
+                migrated_count += 1
+        
+        db.session.commit()
+        
+        flash(f'✅ Migrazione completata con successo! {migrated_count} eventi aggiornati.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Errore durante la migrazione: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.system_info'))

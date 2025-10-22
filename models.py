@@ -1501,6 +1501,42 @@ class AttendanceEvent(db.Model):
         
         return issues
 
+
+# =============================================================================
+# ATTENDANCE EVENT TIMEZONE NORMALIZATION
+# =============================================================================
+
+from sqlalchemy import event
+
+@event.listens_for(AttendanceEvent.timestamp, 'set', retval=True)
+def normalize_attendance_timestamp(target, value, oldvalue, initiator):
+    """
+    Normalizza automaticamente tutti i timestamp AttendanceEvent in UTC naive.
+    
+    Questo listener viene chiamato automaticamente prima di salvare un AttendanceEvent.
+    Converte qualsiasi datetime timezone-aware in naive UTC per garantire consistenza.
+    
+    Esempi:
+    - Input: 18:15+02:00 (Italian time) → Output: 16:15 (naive UTC)
+    - Input: 16:15+00:00 (UTC) → Output: 16:15 (naive UTC)
+    - Input: 16:15 (naive, assume UTC) → Output: 16:15 (naive UTC)
+    """
+    if value is None:
+        return value
+    
+    from datetime import timezone
+    
+    # Se il timestamp ha timezone info, convertilo in UTC e rimuovi il timezone
+    if value.tzinfo is not None:
+        # Converti a UTC
+        utc_time = value.astimezone(timezone.utc)
+        # Ritorna come naive datetime (rimuovi timezone info)
+        return utc_time.replace(tzinfo=None)
+    
+    # Se il timestamp è già naive, assumiamo sia già UTC
+    return value
+
+
 class MonthlyTimesheet(db.Model):
     """Modello per gestire lo stato di consolidamento del timesheet mensile"""
     id = db.Column(db.Integer, primary_key=True)
