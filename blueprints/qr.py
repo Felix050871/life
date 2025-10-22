@@ -49,9 +49,10 @@ def login(action):
         flash('Azione non valida', 'error')
         return redirect(url_for('auth.login'))
     
-    # Se già loggato, vai direttamente alla marcatura
+    # Forza logout per permettere nuovo login da QR
     if current_user.is_authenticated:
-        return redirect(url_for('qr.quick_attendance', action=action))
+        logout_user()
+        session.clear()
     
     form = LoginForm()
     

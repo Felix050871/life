@@ -108,6 +108,7 @@
                     </div>
                     
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         {% if available_sedi %}
                         <div class="mb-3">
                             <label for="sede_id" class="form-label text-white">Seleziona Sede</label>
