@@ -559,7 +559,7 @@ def dashboard_team():
         )
         
         # Header
-        headers = ['Data', 'Utente', 'Ruolo', 'Sede', 'Stato', 'Entrata', 'Uscita', 'Ore Lavorate', 'Note']
+        headers = ['Data', 'Utente', 'Ruolo', 'Stato', 'Entrata', 'Pausa', 'Uscita', 'Ore Lavorate', 'Note']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.font = header_font
@@ -575,6 +575,16 @@ def dashboard_team():
                 first_in = next((e for e in user_data['daily_events'] if e.event_type == 'clock_in'), None)
                 if first_in:
                     entrata = first_in.timestamp.strftime('%H:%M')
+            
+            # Determina orario pausa
+            pausa = '-'
+            if user_data['daily_events']:
+                break_start = next((e for e in user_data['daily_events'] if e.event_type == 'break_start'), None)
+                break_end = next((e for e in user_data['daily_events'] if e.event_type == 'break_end'), None)
+                if break_start:
+                    pausa = break_start.timestamp.strftime('%H:%M')
+                    if break_end:
+                        pausa += f" - {break_end.timestamp.strftime('%H:%M')}"
             
             # Determina orario uscita
             uscita = '-'
@@ -600,9 +610,9 @@ def dashboard_team():
                 user_data['date'].strftime('%d/%m/%Y'),
                 user_data['user'].get_full_name(),
                 user_data['user'].role,
-                user_data['user'].sede_obj.name if user_data['user'].sede_obj else 'Nessuna Sede',
                 stato,
                 entrata,
+                pausa,
                 uscita,
                 f"{user_data['daily_work_hours']:.2f}h" if user_data['daily_work_hours'] > 0 else '0h',
                 note
@@ -611,7 +621,7 @@ def dashboard_team():
             for col, value in enumerate(row_data, 1):
                 cell = ws.cell(row=row_idx, column=col, value=value)
                 cell.border = thin_border
-                if col in [1, 6, 7]:  # Data e Orari
+                if col in [1, 5, 6, 7]:  # Data e Orari (Entrata, Pausa, Uscita)
                     cell.alignment = Alignment(horizontal='center')
         
         # Auto-adjust column widths
