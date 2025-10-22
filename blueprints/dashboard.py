@@ -429,21 +429,82 @@ def dashboard_team():
         date_list.append(current_date)
         current_date += timedelta(days=1)
     
-    # For each user, get data for each date in range
-    for user in all_users:
-        for check_date in date_list:
-            user_status, last_event = AttendanceEvent.get_user_status(user.id, check_date)
-            daily_events = AttendanceEvent.get_daily_events(user.id, check_date)
-            daily_work_hours = AttendanceEvent.get_daily_work_hours(user.id, check_date)
-            
-            users_data.append({
-                'user': user,
-                'date': check_date,
-                'status': user_status,
-                'last_event': last_event,
-                'daily_events': daily_events,
-                'daily_work_hours': daily_work_hours
-            })
+    # OPTIMIZATION: Single query to fetch ALL events for ALL users in the date range
+    user_ids = [u.id for u in all_users]
+    
+    if user_ids:
+        all_events = filter_by_company(AttendanceEvent.query).filter(
+            AttendanceEvent.user_id.in_(user_ids),
+            AttendanceEvent.timestamp >= datetime.combine(start_date, time.min),
+            AttendanceEvent.timestamp <= datetime.combine(end_date, time.max)
+        ).order_by(AttendanceEvent.timestamp).all()
+        
+        # Build a map: (user_id, date) -> [events]
+        events_by_user_date = {}
+        for event in all_events:
+            event_date = event.timestamp.date()
+            key = (event.user_id, event_date)
+            if key not in events_by_user_date:
+                events_by_user_date[key] = []
+            events_by_user_date[key].append(event)
+        
+        # Process each user/date combination using the pre-fetched data
+        for user in all_users:
+            for check_date in date_list:
+                key = (user.id, check_date)
+                daily_events = events_by_user_date.get(key, [])
+                
+                # Calculate status and work hours from daily_events
+                user_status = 'out'
+                last_event = None
+                daily_work_hours = 0
+                
+                if daily_events:
+                    last_event = daily_events[-1]
+                    
+                    # Determine status from last event
+                    if last_event.event_type == 'clock_in':
+                        user_status = 'in'
+                    elif last_event.event_type == 'break_start':
+                        user_status = 'on_break'
+                    elif last_event.event_type in ['clock_out', 'break_end']:
+                        user_status = 'out'
+                    
+                    # Calculate work hours
+                    total_seconds = 0
+                    clock_in_time = None
+                    break_start_time = None
+                    
+                    for event in daily_events:
+                        if event.event_type == 'clock_in':
+                            clock_in_time = event.timestamp
+                        elif event.event_type == 'clock_out' and clock_in_time:
+                            total_seconds += (event.timestamp - clock_in_time).total_seconds()
+                            clock_in_time = None
+                        elif event.event_type == 'break_start' and clock_in_time:
+                            total_seconds += (event.timestamp - clock_in_time).total_seconds()
+                            break_start_time = event.timestamp
+                            clock_in_time = None
+                        elif event.event_type == 'break_end':
+                            clock_in_time = event.timestamp
+                            break_start_time = None
+                    
+                    # If still clocked in, count until end of day or now
+                    if clock_in_time:
+                        end_time = min(datetime.now(), datetime.combine(check_date, time.max))
+                        if clock_in_time.date() == check_date:
+                            total_seconds += (end_time - clock_in_time).total_seconds()
+                    
+                    daily_work_hours = total_seconds / 3600
+                
+                users_data.append({
+                    'user': user,
+                    'date': check_date,
+                    'status': user_status,
+                    'last_event': last_event,
+                    'daily_events': daily_events,
+                    'daily_work_hours': daily_work_hours
+                })
     
     # Sort by date (most recent first), then sede, then name
     users_data.sort(key=lambda x: (
