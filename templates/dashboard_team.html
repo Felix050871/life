@@ -94,9 +94,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         {% for user_data in sede_users %}
                                             <tr>
                                                 <td>
-                                                    <strong>{{ today.strftime('%d/%m') }}</strong>
+                                                    <strong>{{ user_data.date.strftime('%d/%m') }}</strong>
                                                     <br>
-                                                    <small class="text-muted">{{ today.strftime('%a') }}</small>
+                                                    <small class="text-muted">{{ user_data.date.strftime('%a') }}</small>
                                                 </td>
                                                 <td>
                                                     <strong>{{ user_data.user.get_full_name() }}</strong>
@@ -152,8 +152,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     {% endif %}
                                                 </td>
                                                 <td>
-                                                    {% if user_data.today_work_hours > 0 %}
-                                                        {{ format_hours(user_data.today_work_hours) }}
+                                                    {% if user_data.daily_work_hours > 0 %}
+                                                        {{ format_hours(user_data.daily_work_hours) }}
                                                     {% else %}
                                                         <span class="text-muted">0h</span>
                                                     {% endif %}

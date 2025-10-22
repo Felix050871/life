@@ -392,37 +392,7 @@ def dashboard_team():
         else:
             all_users = []
     
-    # Get today's date for attendance status
-    today = date.today()
-    
-    # Build user data with attendance status
-    users_data = []
-    for user in all_users:
-        user_status, last_event = AttendanceEvent.get_user_status(user.id, today)
-        today_events = AttendanceEvent.get_daily_events(user.id, today)
-        today_work_hours = AttendanceEvent.get_daily_work_hours(user.id, today)
-        
-        users_data.append({
-            'user': user,
-            'status': user_status,
-            'last_event': last_event,
-            'today_events': today_events,
-            'today_work_hours': today_work_hours
-        })
-    
-    # Sort by sede and then by name
-    users_data.sort(key=lambda x: (x['user'].sede_obj.name if x['user'].sede_obj else 'ZZZ', 
-                                  x['user'].last_name, 
-                                  x['user'].first_name))
-    
-    # Get all sedi for filtering
-    all_sedi = []
-    if current_user.role == 'Amministratore' or current_user.all_sedi:
-        all_sedi = filter_by_company(Sede.query).filter_by(active=True).order_by(Sede.name).all()
-    elif current_user.sede_id:
-        all_sedi = [current_user.sede]
-    
-    # Parse date range from query parameters or use default
+    # Parse date range from query parameters or use default FIRST
     today = date.today()
     
     # Check for custom date range in query parameters
@@ -448,6 +418,47 @@ def dashboard_team():
         start_date = today - timedelta(days=30)
         end_date = today
         period_label = "Ultimi 30 giorni"
+    
+    # Build user data with attendance status for ALL dates in range
+    users_data = []
+    
+    # Generate list of all dates in range
+    current_date = start_date
+    date_list = []
+    while current_date <= end_date:
+        date_list.append(current_date)
+        current_date += timedelta(days=1)
+    
+    # For each user, get data for each date in range
+    for user in all_users:
+        for check_date in date_list:
+            user_status, last_event = AttendanceEvent.get_user_status(user.id, check_date)
+            daily_events = AttendanceEvent.get_daily_events(user.id, check_date)
+            daily_work_hours = AttendanceEvent.get_daily_work_hours(user.id, check_date)
+            
+            users_data.append({
+                'user': user,
+                'date': check_date,
+                'status': user_status,
+                'last_event': last_event,
+                'daily_events': daily_events,
+                'daily_work_hours': daily_work_hours
+            })
+    
+    # Sort by date (most recent first), then sede, then name
+    users_data.sort(key=lambda x: (
+        -x['date'].toordinal(),  # Negative for reverse chronological
+        x['user'].sede_obj.name if x['user'].sede_obj else 'ZZZ',
+        x['user'].last_name,
+        x['user'].first_name
+    ))
+    
+    # Get all sedi for filtering
+    all_sedi = []
+    if current_user.role == 'Amministratore' or current_user.all_sedi:
+        all_sedi = filter_by_company(Sede.query).filter_by(active=True).order_by(Sede.name).all()
+    elif current_user.sede_id:
+        all_sedi = [current_user.sede]
     
     return render_template('dashboard_team.html', 
                          users_data=users_data,
