@@ -441,7 +441,7 @@ def manage_roles():
         flash('Non hai i permessi per accedere ai ruoli', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    roles = UserRole.query.order_by(UserRole.name).all()
+    roles = filter_by_company(UserRole.query).order_by(UserRole.name).all()
     
     # Force cache refresh with headers
     response = make_response(render_template('manage_roles.html', roles=roles))
@@ -468,7 +468,7 @@ def create_role():
             permissions=form.get_permissions_dict(),
             active=form.active.data
         )
-        
+        set_company_on_create(new_role)
         db.session.add(new_role)
         db.session.commit()
         
@@ -486,7 +486,7 @@ def edit_role(role_id):
         flash('Non hai i permessi per modificare ruoli', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    role = UserRole.query.get_or_404(role_id)
+    role = filter_by_company(UserRole.query).filter_by(id=role_id).first_or_404()
     
     # Verifica che non sia un ruolo di sistema protetto (solo Admin rimane completamente protetto)
     fully_protected_roles = ['Admin']
@@ -559,7 +559,7 @@ def toggle_role(role_id):
         flash('Non hai i permessi per modificare ruoli', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    role = UserRole.query.get_or_404(role_id)
+    role = filter_by_company(UserRole.query).filter_by(id=role_id).first_or_404()
     
     # Verifica che non sia un ruolo di sistema protetto
     protected_roles = ['Admin', 'Amministratore']
@@ -583,7 +583,7 @@ def delete_role(role_id):
         flash('Non hai i permessi per eliminare ruoli', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    role = UserRole.query.get_or_404(role_id)
+    role = filter_by_company(UserRole.query).filter_by(id=role_id).first_or_404()
     
     # Verifica che non sia un ruolo di sistema protetto
     protected_roles = ['Admin', 'Amministratore']

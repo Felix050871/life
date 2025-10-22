@@ -60,13 +60,20 @@ user_sede_association = db.Table('user_sede_association',
 
 class UserRole(db.Model):
     """Modello per la gestione dinamica dei ruoli utente"""
+    __table_args__ = (
+        db.UniqueConstraint('name', 'company_id', name='_name_company_uc'),
+    )
+    
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(50), nullable=False)  # Rimosso unique=True, ora in UniqueConstraint
     display_name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     permissions = db.Column(db.JSON, default=dict)  # Permessi in formato JSON
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    company = db.relationship('Company', backref='user_roles')
     
     def __repr__(self):
         return f'<UserRole {self.display_name}>'
@@ -329,7 +336,8 @@ class User(UserMixin, db.Model):
     
     def get_role_obj(self):
         """Ottieni l'oggetto UserRole associato"""
-        return UserRole.query.filter_by(name=self.role).first()
+        from utils_tenant import filter_by_company
+        return filter_by_company(UserRole.query).filter_by(name=self.role).first()
     
     def has_permission(self, permission):
         """Verifica se l'utente ha un determinato permesso tramite il suo ruolo
