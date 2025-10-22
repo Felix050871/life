@@ -157,12 +157,12 @@ def quick_attendance(action):
                 message = "Non sei dentro! Non puoi registrare un'uscita."
         
         if success:
-            flash(message, 'success')
+            # Redirect a pagina di successo invece che tornare al form
+            return redirect(url_for('qr.attendance_success', action=action, message=message))
         else:
             flash(message, 'warning')
-        
-        # Redirect per evitare re-submit
-        return redirect(url_for('qr.quick_attendance', action=action))
+            # Torna al form solo in caso di errore
+            return redirect(url_for('qr.quick_attendance', action=action))
     
     # GET request: mostra il form
     available_sedi = []
@@ -180,6 +180,33 @@ def quick_attendance(action):
                          today_events=today_events,
                          today_hours=today_hours,
                          available_sedi=available_sedi,
+                         current_time=now)
+
+@qr_bp.route('/success/<action>')
+@require_login
+def attendance_success(action):
+    """Pagina di conferma dopo registrazione entrata/uscita"""
+    if action not in ['entrata', 'uscita']:
+        return redirect(url_for('dashboard.dashboard'))
+    
+    message = request.args.get('message', 'Operazione completata')
+    
+    from zoneinfo import ZoneInfo
+    italy_tz = ZoneInfo('Europe/Rome')
+    now = datetime.now(italy_tz)
+    
+    # Ottieni statistiche aggiornate
+    today_events = AttendanceEvent.get_daily_events(current_user.id)
+    today_hours = AttendanceEvent.get_daily_work_hours(current_user.id)
+    user_status, last_event = AttendanceEvent.get_user_status(current_user.id)
+    
+    return render_template('qr_attendance_success.html',
+                         action=action,
+                         message=message,
+                         today_events=today_events,
+                         today_hours=today_hours,
+                         user_status=user_status,
+                         last_event=last_event,
                          current_time=now)
 
 # =============================================================================
