@@ -1343,22 +1343,16 @@ def bulk_fill_timesheet():
         today = date.today()
         
         # Calcola orari medi quando c'è flessibilità
-        # Se ci sono i campi legacy usa quelli, altrimenti calcola la media tra min e max
-        if work_schedule.start_time and work_schedule.end_time:
-            # Usa i campi legacy (deprecati)
-            standard_start = work_schedule.start_time
-            standard_end = work_schedule.end_time
-        else:
-            # Calcola orario medio tra min e max
-            start_min_minutes = work_schedule.start_time_min.hour * 60 + work_schedule.start_time_min.minute
-            start_max_minutes = work_schedule.start_time_max.hour * 60 + work_schedule.start_time_max.minute
-            avg_start_minutes = (start_min_minutes + start_max_minutes) // 2
-            standard_start = time(avg_start_minutes // 60, avg_start_minutes % 60)
-            
-            end_min_minutes = work_schedule.end_time_min.hour * 60 + work_schedule.end_time_min.minute
-            end_max_minutes = work_schedule.end_time_max.hour * 60 + work_schedule.end_time_max.minute
-            avg_end_minutes = (end_min_minutes + end_max_minutes) // 2
-            standard_end = time(avg_end_minutes // 60, avg_end_minutes % 60)
+        # Usa sempre i campi min/max per calcolare la media (i legacy sono deprecati)
+        start_min_minutes = work_schedule.start_time_min.hour * 60 + work_schedule.start_time_min.minute
+        start_max_minutes = work_schedule.start_time_max.hour * 60 + work_schedule.start_time_max.minute
+        avg_start_minutes = (start_min_minutes + start_max_minutes) // 2
+        standard_start = time(avg_start_minutes // 60, avg_start_minutes % 60)
+        
+        end_min_minutes = work_schedule.end_time_min.hour * 60 + work_schedule.end_time_min.minute
+        end_max_minutes = work_schedule.end_time_max.hour * 60 + work_schedule.end_time_max.minute
+        avg_end_minutes = (end_min_minutes + end_max_minutes) // 2
+        standard_end = time(avg_end_minutes // 60, avg_end_minutes % 60)
         
         if not standard_start or not standard_end:
             return jsonify({'success': False, 'message': 'Orari standard non definiti correttamente'}), 400

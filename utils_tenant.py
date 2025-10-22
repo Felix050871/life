@@ -32,17 +32,23 @@ def filter_by_company(query, user=None):
     """
     # Usa current_user se user non specificato
     if user is None:
-        user = current_user
+        try:
+            user = current_user
+        except:
+            # current_user non disponibile (fuori dal contesto di richiesta)
+            return query
     
     # Ottieni company_id dall'utente
-    if not user.is_authenticated:
+    if user is None or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return query
     
     # System admin vedono tutto
-    if user.is_system_admin:
+    if hasattr(user, 'is_system_admin') and user.is_system_admin:
         return query
     
-    company_id = user.company_id
+    company_id = user.company_id if hasattr(user, 'company_id') else None
+    if company_id is None:
+        return query
     
     # Estrai il model_class dalla query
     # Prova diversi metodi per ottenere l'entità dalla query
