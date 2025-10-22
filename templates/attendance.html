@@ -496,7 +496,7 @@
                                             {{ event.event_type }}
                                         </span>
                                         {{ event.timestamp|format_time_italian }}
-                                        {% if hasattr(event, 'is_manual') and event.is_manual %}
+                                        {% if event.is_manual %}
                                         <span class="badge bg-secondary ms-1" title="Inserimento manuale">
                                             <i class="fas fa-keyboard"></i>
                                         </span>
