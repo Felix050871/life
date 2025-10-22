@@ -1173,7 +1173,7 @@ def delete_manual_timesheet_day():
         events_to_delete = filter_by_company(AttendanceEvent.query).filter(
             AttendanceEvent.user_id == current_user.id,
             AttendanceEvent.date == day_date,
-            AttendanceEvent.source == 'manual'
+            AttendanceEvent.is_manual == True
         ).all()
         
         for event in events_to_delete:
@@ -1255,11 +1255,19 @@ def bulk_fill_timesheet():
             AttendanceEvent.date <= last_day
         ).all()
         
-        # Crea set di date con eventi esistenti
-        existing_dates = set(event.date for event in existing_events)
+        # Raggruppa eventi per data e controlla se ha eventi Live
+        from collections import defaultdict
+        events_by_date = defaultdict(list)
+        dates_with_live = set()
+        
+        for event in existing_events:
+            events_by_date[event.date].append(event)
+            if not event.is_manual:  # Evento Live
+                dates_with_live.add(event.date)
         
         # Compila automaticamente
         days_filled = 0
+        days_replaced = 0
         today = date.today()
         
         # Ottieni orari standard (usa i campi legacy start_time/end_time se disponibili)
@@ -1276,7 +1284,7 @@ def bulk_fill_timesheet():
             # - Giorno futuro
             # - Weekend
             # - Ha ferie/permessi
-            # - Ha già eventi
+            # - Ha eventi Live (non toccare mai dati Live!)
             # - Non è nel days_of_week della sede (se definito)
             if day_date > today:
                 continue
@@ -1284,12 +1292,19 @@ def bulk_fill_timesheet():
                 continue
             if day_date in leave_dates:
                 continue
-            if day_date in existing_dates:
+            if day_date in dates_with_live:
+                # Ha eventi Live, non toccare
                 continue
             
             # Verifica se il giorno è coperto dal WorkSchedule
             if work_schedule.days_of_week and day_date.weekday() not in work_schedule.days_of_week:
                 continue
+            
+            # Se ha eventi manuali esistenti, cancellali prima
+            if day_date in events_by_date:
+                for event in events_by_date[day_date]:
+                    db.session.delete(event)
+                days_replaced += 1
             
             # Crea eventi di entrata e uscita
             from zoneinfo import ZoneInfo
@@ -1334,7 +1349,12 @@ def bulk_fill_timesheet():
         if days_filled == 0:
             return jsonify({'success': True, 'message': 'Nessun giorno compilato (tutti i giorni lavorativi sono già coperti o nel futuro)'})
         
-        return jsonify({'success': True, 'message': f'{days_filled} giorni compilati con orari standard'})
+        # Messaggio con dettagli sostituzioni
+        message = f'{days_filled} giorni compilati con orari standard'
+        if days_replaced > 0:
+            message += f' ({days_replaced} giorni sostituiti)'
+        
+        return jsonify({'success': True, 'message': message})
         
     except Exception as e:
         db.session.rollback()
