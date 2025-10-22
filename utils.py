@@ -911,9 +911,11 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
             'message': 'Giorno non lavorativo secondo l\'orario della sede'
         }
     
-    # Orari base dalla sede
-    base_start_time = schedule.start_time_min
-    base_end_time = schedule.end_time_min
+    # Orari base dalla sede con flessibilità
+    base_start_time_min = schedule.start_time_min
+    base_start_time_max = schedule.start_time_max if schedule.start_time_max else schedule.start_time_min
+    base_end_time_min = schedule.end_time_min
+    base_end_time_max = schedule.end_time_max if schedule.end_time_max else schedule.end_time_min
     
     # Controlla se ci sono permessi approvati per oggi
     approved_leaves = LeaveRequest.query.filter(
@@ -924,8 +926,10 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
     ).all()
     
     # Calcola gli orari effettivi considerando i permessi
-    effective_start_time = base_start_time
-    effective_end_time = base_end_time
+    effective_start_time_min = base_start_time_min
+    effective_start_time_max = base_start_time_max
+    effective_end_time_min = base_end_time_min
+    effective_end_time_max = base_end_time_max
     
     for leave in approved_leaves:
         if leave.leave_type == 'Permesso':
@@ -933,50 +937,53 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
             # Se il permesso copre l'inizio della giornata, sposta l'orario di entrata
             if hasattr(leave, 'start_time') and hasattr(leave, 'end_time'):
                 # Se il permesso inizia dall'orario di lavoro, sposta l'entrata
-                if leave.start_time <= base_start_time:
-                    effective_start_time = leave.end_time
-    
-    # Calcola lo stato di entrata/uscita
-    entry_status = 'normale'
-    exit_status = 'normale'
-    
-    # Tolleranza: 15 minuti per l'entrata, 5 minuti per l'uscita
-    entry_tolerance = timedelta(minutes=15)
-    exit_tolerance = timedelta(minutes=5)
+                if leave.start_time <= base_start_time_min:
+                    effective_start_time_min = leave.end_time
+                    effective_start_time_max = leave.end_time
     
     # Converti i tempi in datetime per il confronto con timezone italiana
     from zoneinfo import ZoneInfo
     italy_tz = ZoneInfo('Europe/Rome')
     
-    effective_start_datetime = datetime.combine(check_date, effective_start_time).replace(tzinfo=italy_tz)
-    effective_end_datetime = datetime.combine(check_date, effective_end_time).replace(tzinfo=italy_tz)
-    
     # Assicurati che check_datetime abbia timezone
     if check_datetime.tzinfo is None:
         check_datetime = check_datetime.replace(tzinfo=italy_tz)
     
+    # Calcola lo stato di entrata/uscita con orari flessibili
+    entry_status = 'normale'
+    exit_status = 'normale'
+    
+    # Tolleranze per anticipo/ritardo
+    # Entrata: anticipo se prima di min-30min, ritardo se dopo max+15min
+    entry_early_limit = datetime.combine(check_date, effective_start_time_min).replace(tzinfo=italy_tz) - timedelta(minutes=30)
+    entry_late_limit = datetime.combine(check_date, effective_start_time_max).replace(tzinfo=italy_tz) + timedelta(minutes=15)
+    
+    # Uscita: anticipo se prima di min-5min, straordinario se dopo max+10min
+    exit_early_limit = datetime.combine(check_date, effective_end_time_min).replace(tzinfo=italy_tz) - timedelta(minutes=5)
+    exit_late_limit = datetime.combine(check_date, effective_end_time_max).replace(tzinfo=italy_tz) + timedelta(minutes=10)
+    
     # Controlla lo stato di entrata
-    if check_time <= effective_start_time:
+    if check_datetime < entry_early_limit:
         entry_status = 'anticipo'
-    elif check_datetime > effective_start_datetime + entry_tolerance:
+    elif check_datetime > entry_late_limit:
         entry_status = 'ritardo'
     else:
         entry_status = 'normale'
     
     # Controlla lo stato di uscita
-    if check_time < effective_end_time:
+    if check_datetime < exit_early_limit:
         exit_status = 'anticipo'
-    elif check_datetime > effective_end_datetime + exit_tolerance:
+    elif check_datetime > exit_late_limit:
         exit_status = 'straordinario'
     else:
         exit_status = 'normale'
     
     schedule_info = {
         'sede_name': user.sede_obj.name if user.sede_obj else 'Sconosciuta',
-        'base_start_time': base_start_time.strftime('%H:%M'),
-        'base_end_time': base_end_time.strftime('%H:%M'),
-        'effective_start_time': effective_start_time.strftime('%H:%M'),
-        'effective_end_time': effective_end_time.strftime('%H:%M'),
+        'base_start_time': base_start_time_min.strftime('%H:%M'),
+        'base_end_time': base_end_time_min.strftime('%H:%M'),
+        'effective_start_time': effective_start_time_min.strftime('%H:%M'),
+        'effective_end_time': effective_end_time_min.strftime('%H:%M'),
         'has_permissions': len(approved_leaves) > 0,
         'permissions': [{'type': l.leave_type, 'reason': l.reason} for l in approved_leaves]
     }
