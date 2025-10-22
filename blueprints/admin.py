@@ -319,6 +319,7 @@ def create_work_schedule():
             description=form.description.data,
             active=form.active.data
         )
+        set_company_on_create(schedule)
         db.session.add(schedule)
         db.session.commit()
         flash('Orario di lavoro creato con successo', 'success')
