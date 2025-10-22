@@ -278,7 +278,6 @@ def toggle_sede(sede_id):
 
 @admin_bp.route('/orari')
 @login_required
-@require_admin_permission
 def manage_work_schedules():
     """Gestione degli orari di lavoro"""
     if not (current_user.can_manage_schedules() or current_user.can_view_schedules()):
@@ -291,7 +290,6 @@ def manage_work_schedules():
 
 @admin_bp.route('/orari/create', methods=['POST'])
 @login_required
-@require_admin_permission
 def create_work_schedule():
     """Crea un nuovo orario di lavoro"""
     if not current_user.can_manage_schedules():
@@ -333,7 +331,6 @@ def create_work_schedule():
 
 @admin_bp.route('/orari/edit/<int:schedule_id>', methods=['GET', 'POST'])
 @login_required
-@require_admin_permission
 def edit_work_schedule(schedule_id):
     """Modifica un orario di lavoro esistente"""
     if not current_user.can_manage_schedules():
@@ -391,7 +388,6 @@ def edit_work_schedule(schedule_id):
 
 @admin_bp.route('/orari/toggle/<int:schedule_id>')
 @login_required
-@require_admin_permission
 def toggle_work_schedule(schedule_id):
     """Attiva/disattiva un orario di lavoro"""
     if not current_user.can_manage_schedules():
