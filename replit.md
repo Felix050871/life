@@ -17,11 +17,15 @@ Preferred communication style: Simple, everyday language.
 - **User.get_role_obj() Bug**: Fixed method to use explicit `company_id` filtering instead of `filter_by_company()` context-based lookup. Previously, the method could return roles from wrong companies, causing incorrect permission checks.
 - **Dashboard all_sedi Logic Bug**: Corrected role-based filtering in dashboard widgets. Previously, Responsabile/Management users with `all_sedi=True` were incorrectly filtered to only their sede because role check happened before `all_sedi` check. Now properly checks `all_sedi` first for all roles.
 - **Attendance Dashboard Permission Fix**: Changed attendance status display condition from `can_view_attendance()` to `can_view_my_attendance() OR can_view_attendance()` to support Operatore role viewing their own presence data.
-- **Timezone Display Bug (October 22, 2025)**: Fixed critical timezone issue where attendance timestamps were displayed in UTC instead of Italian time. 
-  - **Root Cause**: `AttendanceEvent.timestamp` column is `db.DateTime` (without timezone), causing SQLAlchemy to save timezone-aware datetimes (from `italian_now()`) as naive UTC in PostgreSQL.
-  - **Solution**: Added `timestamp_italian` property to `AttendanceEvent` model that converts UTC timestamps to Italian time on read. Updated all templates and blueprints to use `timestamp_italian` instead of `timestamp` for display.
-  - **Files Updated**: models.py, templates/dashboard.html, templates/dashboard_team.html, blueprints/attendance.py, blueprints/qr.py
-  - **Impact**: All attendance event times now display correctly in Italian time (UTC+1/+2) across dashboard, QR attendance, team views, and exports.
+- **Timezone Architecture & Complete Fix (October 22, 2025)**: Implemented comprehensive timezone handling for attendance timestamps with automatic UTC normalization.
+  - **Root Cause**: `AttendanceEvent.timestamp` column is `db.DateTime` (naive, without timezone). SQLAlchemy automatically converts timezone-aware datetimes to UTC before stripping timezone info, creating a naive UTC storage pattern.
+  - **Solution**:
+    1. **SQLAlchemy Event Listener**: Added `normalize_attendance_timestamp` listener in models.py that automatically converts ANY timezone-aware datetime to naive UTC before saving, ensuring consistent UTC storage.
+    2. **Display Conversion**: Created `timestamp_italian` property on AttendanceEvent model that converts naive UTC timestamps to Italian time (UTC+1/+2) for display.
+    3. **Schedule Checking**: Updated `check_user_schedule_with_permissions()` in utils.py to correctly interpret naive timestamps as UTC before converting to Italian time for comparisons with work schedules.
+  - **Files Updated**: models.py (event listener + property), templates/dashboard.html, templates/attendance.html, utils.py (schedule checking)
+  - **Architecture**: All AttendanceEvent timestamps are ALWAYS stored as naive UTC in PostgreSQL. Conversion to Italian time happens only at display (via `timestamp_italian` property) and during schedule validation (via utils.py conversion).
+  - **Impact**: All attendance event times display correctly in Italian time across dashboard, attendance pages, team views, and all schedule indicators (anticipo/ritardo/straordinario) work correctly.
 
 ## System Architecture
 

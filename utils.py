@@ -948,8 +948,11 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
     italy_tz = ZoneInfo('Europe/Rome')
     
     # Assicurati che check_datetime abbia timezone
+    # IMPORTANTE: I timestamp nel DB sono salvati come naive UTC
     if check_datetime.tzinfo is None:
-        check_datetime = check_datetime.replace(tzinfo=italy_tz)
+        # Il timestamp è naive UTC, convertilo in Italian time
+        from datetime import timezone as dt_timezone
+        check_datetime = check_datetime.replace(tzinfo=dt_timezone.utc).astimezone(italy_tz)
     
     # Calcola lo stato di entrata/uscita con orari flessibili
     entry_status = 'normale'
