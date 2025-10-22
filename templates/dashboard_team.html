@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </h5>
                     </div>
                     <div class="card-body">
-                        {% set sede_users = all_users | selectattr('sede_id', 'equalto', sede.id) | list %}
+                        {% set sede_users = users_data | selectattr('user.sede_id', 'equalto', sede.id) | list %}
                         {% if sede_users %}
                             <div class="table-responsive">
                                 <table class="table table-hover">
@@ -91,203 +91,82 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% if start_date == end_date %}
-                                            {% for user in sede_users %}
-                                            {% if user.id in attendance_data %}
-                                            {% set attendance = attendance_data[user.id] %}
+                                        {% for user_data in sede_users %}
                                             <tr>
                                                 <td>
-                                                    <strong>{{ start_date.strftime('%d/%m') }}</strong>
+                                                    <strong>{{ today.strftime('%d/%m') }}</strong>
                                                     <br>
-                                                    <small class="text-muted">{{ start_date.strftime('%a') }}</small>
+                                                    <small class="text-muted">{{ today.strftime('%a') }}</small>
                                                 </td>
                                                 <td>
-                                                    <strong>{{ user.get_full_name() }}</strong>
+                                                    <strong>{{ user_data.user.get_full_name() }}</strong>
                                                     <br>
-                                                    <small class="text-muted">@{{ user.username }}</small>
+                                                    <small class="text-muted">@{{ user_data.user.username }}</small>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-secondary">{{ user.role }}</span>
+                                                    <span class="badge bg-secondary">{{ user_data.user.role }}</span>
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-info">
-                                                        <i class="fas fa-building me-1"></i>{{ user.sede_obj.name if user.sede_obj else 'Nessuna Sede' }}
+                                                        <i class="fas fa-building me-1"></i>{{ user_data.user.sede_obj.name if user_data.user.sede_obj else 'Nessuna Sede' }}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    {% if attendance.leave_request %}
-                                                        {% if attendance.leave_request.leave_type == 'Ferie' %}
-                                                            <span class="badge bg-info">
-                                                                <i class="fas fa-umbrella-beach me-1"></i>Ferie
+                                                    {% if user_data.status == 'in' %}
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check-circle me-1"></i>Presente
+                                                        </span>
+                                                    {% elif user_data.status == 'on_break' %}
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-pause-circle me-1"></i>In Pausa
+                                                        </span>
+                                                    {% elif user_data.status == 'out' %}
+                                                        {% if user_data.today_work_hours > 0 %}
+                                                            <span class="badge bg-secondary">
+                                                                <i class="fas fa-sign-out-alt me-1"></i>Uscito
                                                             </span>
-                                                        {% elif attendance.leave_request.leave_type == 'Permesso' %}
-                                                            <span class="badge bg-warning">
-                                                                <i class="fas fa-clock me-1"></i>Permesso
+                                                        {% else %}
+                                                            <span class="badge bg-light text-dark">
+                                                                <i class="fas fa-minus-circle me-1"></i>Assente
                                                             </span>
-                                                        {% elif attendance.leave_request.leave_type == 'Malattia' %}
-                                                            <span class="badge bg-danger">
-                                                                <i class="fas fa-notes-medical me-1"></i>Malattia
-                                                            </span>
-                                                        {% endif %}
-                                                    {% else %}
-                                                        {% if attendance.status == 'in' %}
-                                                            <span class="badge bg-success">
-                                                                <i class="fas fa-check-circle me-1"></i>Presente
-                                                            </span>
-                                                        {% elif attendance.status == 'break' %}
-                                                            <span class="badge bg-warning">
-                                                                <i class="fas fa-pause-circle me-1"></i>In Pausa
-                                                            </span>
-                                                        {% elif attendance.status == 'out' %}
-                                                            {% if attendance.daily_summary and attendance.daily_summary.clock_in %}
-                                                                <span class="badge bg-secondary">
-                                                                    <i class="fas fa-sign-out-alt me-1"></i>Uscito
-                                                                </span>
-                                                            {% else %}
-                                                                <span class="badge bg-light text-dark">
-                                                                    <i class="fas fa-minus-circle me-1"></i>Assente
-                                                                </span>
-                                                            {% endif %}
                                                         {% endif %}
                                                     {% endif %}
                                                 </td>
                                                 <td>
-                                                    {% if attendance.daily_summary and attendance.daily_summary.clock_in %}
-                                                        {{ attendance.daily_summary.clock_in.strftime('%H:%M') }}
+                                                    {% if user_data.today_events and user_data.today_events|length > 0 %}
+                                                        {% set first_in = user_data.today_events|selectattr('event_type', 'equalto', 'clock_in')|first %}
+                                                        {% if first_in %}
+                                                            {{ first_in.timestamp.strftime('%H:%M') }}
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
                                                     {% else %}
                                                         <span class="text-muted">-</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
-                                                    {% if attendance.daily_summary and attendance.daily_summary.clock_out %}
-                                                        {{ attendance.daily_summary.clock_out.strftime('%H:%M') }}
+                                                    {% if user_data.last_event and user_data.last_event.event_type == 'clock_out' %}
+                                                        {{ user_data.last_event.timestamp.strftime('%H:%M') }}
                                                     {% else %}
                                                         <span class="text-muted">-</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
-                                                    {% if attendance.daily_summary and attendance.daily_summary.total_hours %}
-                                                        {{ "%.1f"|format(attendance.daily_summary.total_hours) }}h
+                                                    {% if user_data.today_work_hours > 0 %}
+                                                        {{ format_hours(user_data.today_work_hours) }}
                                                     {% else %}
                                                         <span class="text-muted">0h</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
-                                                    {% if attendance.leave_request and attendance.leave_request.reason %}
-                                                        <small class="text-muted">{{ attendance.leave_request.reason[:50] }}{% if attendance.leave_request.reason|length > 50 %}...{% endif %}</small>
-                                                    {% elif attendance.last_event and attendance.last_event.notes %}
-                                                        <small class="text-muted">{{ attendance.last_event.notes[:50] }}{% if attendance.last_event.notes|length > 50 %}...{% endif %}</small>
+                                                    {% if user_data.last_event and user_data.last_event.notes %}
+                                                        <small class="text-muted">{{ user_data.last_event.notes[:50] }}{% if user_data.last_event.notes|length > 50 %}...{% endif %}</small>
                                                     {% else %}
                                                         <span class="text-muted">-</span>
                                                     {% endif %}
                                                 </td>
                                             </tr>
-                                            {% endif %}
                                             {% endfor %}
-                                        {% else %}
-                                            {% set all_daily_entries = [] %}
-                                            {% for user in sede_users %}
-                                                {% if user.id in attendance_data %}
-                                                {% set attendance = attendance_data[user.id] %}
-                                                {% for daily in attendance.daily_details %}
-                                                    {% set _ = all_daily_entries.append((daily.date, user, daily)) %}
-                                                {% endfor %}
-                                                {% endif %}
-                                            {% endfor %}
-                                            {% for date, user, daily in all_daily_entries|sort(attribute='0') %}
-                                                <tr>
-                                                    <td>
-                                                        <strong>{{ date.strftime('%d/%m') }}</strong>
-                                                        <br>
-                                                        <small class="text-muted">{{ date.strftime('%a') }}</small>
-                                                    </td>
-                                                    <td>
-                                                        <strong>{{ user.get_full_name() }}</strong>
-                                                        <br>
-                                                        <small class="text-muted">@{{ user.username }}</small>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-secondary">{{ user.role }}</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-info">
-                                                            <i class="fas fa-building me-1"></i>{{ user.sede_obj.name if user.sede_obj else 'Nessuna Sede' }}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        {% if daily.leave_request %}
-                                                            {% if daily.leave_request.leave_type == 'Ferie' %}
-                                                                <span class="badge bg-info">
-                                                                    <i class="fas fa-umbrella-beach me-1"></i>Ferie
-                                                                </span>
-                                                            {% elif daily.leave_request.leave_type == 'Permesso' %}
-                                                                <span class="badge bg-warning">
-                                                                    <i class="fas fa-clock me-1"></i>Permesso
-                                                                </span>
-                                                            {% elif daily.leave_request.leave_type == 'Malattia' %}
-                                                                <span class="badge bg-danger">
-                                                                    <i class="fas fa-notes-medical me-1"></i>Malattia
-                                                                </span>
-                                                            {% endif %}
-                                                        {% else %}
-                                                            {% if daily.status == 'in' %}
-                                                                <span class="badge bg-success">
-                                                                    <i class="fas fa-check-circle me-1"></i>Presente
-                                                                </span>
-                                                            {% elif daily.status == 'break' %}
-                                                                <span class="badge bg-warning">
-                                                                    <i class="fas fa-pause-circle me-1"></i>In Pausa
-                                                                </span>
-                                                            {% elif daily.status == 'out' %}
-                                                                {% if daily.daily_summary and daily.daily_summary.clock_in %}
-                                                                    <span class="badge bg-secondary">
-                                                                        <i class="fas fa-sign-out-alt me-1"></i>Uscito
-                                                                    </span>
-                                                                {% else %}
-                                                                    <span class="badge bg-outline-danger text-danger">
-                                                                        <i class="fas fa-minus-circle me-1"></i>Assente
-                                                                    </span>
-                                                                {% endif %}
-                                                            {% else %}
-                                                                <span class="badge bg-outline-danger text-danger">
-                                                                    <i class="fas fa-minus-circle me-1"></i>Assente
-                                                                </span>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {% if daily.daily_summary and daily.daily_summary.clock_in %}
-                                                            {{ daily.daily_summary.clock_in.strftime('%H:%M') }}
-                                                        {% else %}
-                                                            <span class="text-muted">-</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {% if daily.daily_summary and daily.daily_summary.clock_out %}
-                                                            {{ daily.daily_summary.clock_out.strftime('%H:%M') }}
-                                                        {% else %}
-                                                            <span class="text-muted">-</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {% if daily.daily_summary and daily.daily_summary.total_hours %}
-                                                            {{ "%.1f"|format(daily.daily_summary.total_hours) }}h
-                                                        {% else %}
-                                                            <span class="text-muted">0h</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {% if daily.leave_request and daily.leave_request.reason %}
-                                                            <small class="text-muted">{{ daily.leave_request.reason[:50] }}{% if daily.leave_request.reason|length > 50 %}...{% endif %}</small>
-                                                        {% elif daily.last_event and daily.last_event.notes %}
-                                                            <small class="text-muted">{{ daily.last_event.notes[:50] }}{% if daily.last_event.notes|length > 50 %}...{% endif %}</small>
-                                                        {% else %}
-                                                            <span class="text-muted">-</span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        {% endif %}
                                     </tbody>
                                 </table>
                             </div>
