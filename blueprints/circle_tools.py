@@ -84,7 +84,7 @@ def edit(tool_id):
     if not current_user.has_permission('can_manage_tools'):
         abort(403)
     
-    tool = filter_by_company(CircleToolLink.query, current_user).get_or_404(tool_id)
+    tool = filter_by_company(CircleToolLink.query, current_user).filter_by(id=tool_id).first_or_404()
     
     if request.method == 'POST':
         tool.name = request.form.get('name')
@@ -108,7 +108,7 @@ def delete(tool_id):
     if not current_user.has_permission('can_manage_tools'):
         abort(403)
     
-    tool = filter_by_company(CircleToolLink.query, current_user).get_or_404(tool_id)
+    tool = filter_by_company(CircleToolLink.query, current_user).filter_by(id=tool_id).first_or_404()
     
     db.session.delete(tool)
     db.session.commit()

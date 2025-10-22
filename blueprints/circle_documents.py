@@ -75,13 +75,17 @@ def upload():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             
+            # Usa percorso assoluto per compatibilità Apache
+            from flask import current_app
+            upload_path = os.path.join(current_app.root_path, UPLOAD_FOLDER)
+            
             # Crea cartella se non esiste
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            os.makedirs(upload_path, exist_ok=True)
             
             # Nome file univoco
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             unique_filename = f"{timestamp}_{filename}"
-            filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
+            filepath = os.path.join(upload_path, unique_filename)
             
             file.save(filepath)
             
@@ -117,8 +121,11 @@ def download(document_id):
     if not current_user.has_permission('can_view_documents'):
         abort(403)
     
-    document = filter_by_company(CircleDocument.query, current_user).get_or_404(document_id)
-    filepath = os.path.join(UPLOAD_FOLDER, document.file_path)
+    document = filter_by_company(CircleDocument.query, current_user).filter_by(id=document_id).first_or_404()
+    
+    # Usa percorso assoluto per compatibilità Apache
+    from flask import current_app
+    filepath = os.path.join(current_app.root_path, UPLOAD_FOLDER, document.file_path)
     
     if os.path.exists(filepath):
         return send_file(filepath, as_attachment=True, download_name=document.file_path)
@@ -133,10 +140,11 @@ def delete(document_id):
     if not current_user.has_permission('can_manage_documents'):
         abort(403)
     
-    document = filter_by_company(CircleDocument.query, current_user).get_or_404(document_id)
+    document = filter_by_company(CircleDocument.query, current_user).filter_by(id=document_id).first_or_404()
     
     # Elimina file fisico
-    filepath = os.path.join(UPLOAD_FOLDER, document.file_path)
+    from flask import current_app
+    filepath = os.path.join(current_app.root_path, UPLOAD_FOLDER, document.file_path)
     if os.path.exists(filepath):
         os.remove(filepath)
     
