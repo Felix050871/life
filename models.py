@@ -924,9 +924,15 @@ class AttendanceEvent(db.Model):
         if target_date is None:
             target_date = date.today()
         
-        from utils_tenant import filter_by_company
-        events = filter_by_company(AttendanceEvent.query).filter(
+        # Get user's company_id to filter events correctly
+        user = User.query.get(user_id)
+        if not user:
+            return 'out', None
+        
+        # Query events with proper company_id filtering
+        events = AttendanceEvent.query.filter(
             AttendanceEvent.user_id == user_id,
+            AttendanceEvent.company_id == user.company_id,
             AttendanceEvent.date == target_date
         ).order_by(AttendanceEvent.timestamp).all()
         
@@ -970,11 +976,15 @@ class AttendanceEvent(db.Model):
             target_date = date.today()
         
         try:
-            from utils_tenant import filter_by_company
+            # Get user's company_id to filter events correctly
+            user = User.query.get(user_id)
+            if not user:
+                return 0
             
             # Use SQLAlchemy ORM with multi-tenant filtering
-            db_events = filter_by_company(AttendanceEvent.query).filter(
+            db_events = AttendanceEvent.query.filter(
                 AttendanceEvent.user_id == user_id,
+                AttendanceEvent.company_id == user.company_id,
                 AttendanceEvent.date == target_date
             ).order_by(AttendanceEvent.timestamp).all()
             
@@ -1079,9 +1089,15 @@ class AttendanceEvent(db.Model):
         if target_date is None:
             target_date = date.today()
         
-        from utils_tenant import filter_by_company
-        events = filter_by_company(AttendanceEvent.query).filter(
+        # Get user's company_id to filter events correctly
+        user = User.query.get(user_id)
+        if not user:
+            return []
+        
+        # Query events with proper company_id filtering
+        events = AttendanceEvent.query.filter(
             AttendanceEvent.user_id == user_id,
+            AttendanceEvent.company_id == user.company_id,
             AttendanceEvent.date == target_date
         ).order_by(AttendanceEvent.timestamp).all()
         
