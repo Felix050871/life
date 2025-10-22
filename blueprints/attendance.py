@@ -1073,14 +1073,15 @@ def save_manual_timesheet():
             return jsonify({'success': True, 'message': 'Orari rimossi'})
         
         # Valida e crea nuovi eventi
+        from zoneinfo import ZoneInfo
+        italy_tz = ZoneInfo('Europe/Rome')
+        clock_in_datetime = None
+        clock_out_datetime = None
+        
         if clock_in_str:
             try:
                 clock_in_time = datetime.strptime(clock_in_str, '%H:%M').time()
                 clock_in_datetime = datetime.combine(day_date, clock_in_time)
-                
-                # Converti in timezone italiano
-                from zoneinfo import ZoneInfo
-                italy_tz = ZoneInfo('Europe/Rome')
                 clock_in_datetime = clock_in_datetime.replace(tzinfo=italy_tz)
                 
                 clock_in_event = AttendanceEvent(
@@ -1101,10 +1102,6 @@ def save_manual_timesheet():
             try:
                 clock_out_time = datetime.strptime(clock_out_str, '%H:%M').time()
                 clock_out_datetime = datetime.combine(day_date, clock_out_time)
-                
-                # Converti in timezone italiano
-                from zoneinfo import ZoneInfo
-                italy_tz = ZoneInfo('Europe/Rome')
                 clock_out_datetime = clock_out_datetime.replace(tzinfo=italy_tz)
                 
                 clock_out_event = AttendanceEvent(
@@ -1120,6 +1117,65 @@ def save_manual_timesheet():
                 db.session.add(clock_out_event)
             except ValueError:
                 return jsonify({'success': False, 'message': 'Formato orario uscita non valido'}), 400
+        
+        # Pausa automatica: se il turno è > 5 ore, inserisci 1h di pausa
+        if clock_in_datetime and clock_out_datetime:
+            work_duration = (clock_out_datetime - clock_in_datetime).total_seconds() / 3600  # ore
+            
+            if work_duration > 5:
+                # Prova a posizionare la pausa alle 12:30-13:30 se il turno lo copre
+                lunch_start = datetime.combine(day_date, datetime.strptime('12:30', '%H:%M').time()).replace(tzinfo=italy_tz)
+                lunch_end = lunch_start + timedelta(hours=1)
+                
+                # Limiti di sicurezza: almeno 30 min dopo entrata e 30 min prima di uscita
+                min_break_start = clock_in_datetime + timedelta(minutes=30)
+                max_break_end = clock_out_datetime - timedelta(minutes=30)
+                
+                # Verifica se la pausa 12:30-13:30 sta completamente dentro il turno E rispetta i limiti
+                if (lunch_start >= min_break_start and 
+                    lunch_end <= max_break_end):
+                    break_start_datetime = lunch_start
+                    break_end_datetime = lunch_end
+                else:
+                    # Altrimenti, posiziona la pausa al centro del turno
+                    # Assicurandosi che rimanga dentro [clock_in, clock_out]
+                    mid_point = clock_in_datetime + timedelta(hours=work_duration / 2)
+                    break_start_datetime = mid_point - timedelta(minutes=30)
+                    break_end_datetime = mid_point + timedelta(minutes=30)
+                    
+                    # Verifica che la pausa rimanga dentro i limiti (già calcolati sopra)
+                    if break_start_datetime < min_break_start:
+                        break_start_datetime = min_break_start
+                        break_end_datetime = break_start_datetime + timedelta(hours=1)
+                    elif break_end_datetime > max_break_end:
+                        break_end_datetime = max_break_end
+                        break_start_datetime = break_end_datetime - timedelta(hours=1)
+                
+                # Crea evento inizio pausa
+                break_start_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    date=day_date,
+                    event_type='break_start',
+                    timestamp=break_start_datetime,
+                    sede_id=current_user.sede_id,
+                    is_manual=True,
+                    entry_type=entry_type
+                )
+                set_company_on_create(break_start_event)
+                db.session.add(break_start_event)
+                
+                # Crea evento fine pausa
+                break_end_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    date=day_date,
+                    event_type='break_end',
+                    timestamp=break_end_datetime,
+                    sede_id=current_user.sede_id,
+                    is_manual=True,
+                    entry_type=entry_type
+                )
+                set_company_on_create(break_end_event)
+                db.session.add(break_end_event)
         
         # Aggiorna timestamp timesheet
         timesheet.updated_at = italian_now()
@@ -1354,6 +1410,64 @@ def bulk_fill_timesheet():
             )
             set_company_on_create(clock_out_event)
             db.session.add(clock_out_event)
+            
+            # Pausa automatica: se il turno è > 5 ore, inserisci 1h di pausa
+            work_duration = (clock_out_datetime - clock_in_datetime).total_seconds() / 3600  # ore
+            
+            if work_duration > 5:
+                # Prova a posizionare la pausa alle 12:30-13:30 se il turno lo copre
+                lunch_start = datetime.combine(day_date, datetime.strptime('12:30', '%H:%M').time()).replace(tzinfo=italy_tz)
+                lunch_end = lunch_start + timedelta(hours=1)
+                
+                # Limiti di sicurezza: almeno 30 min dopo entrata e 30 min prima di uscita
+                min_break_start = clock_in_datetime + timedelta(minutes=30)
+                max_break_end = clock_out_datetime - timedelta(minutes=30)
+                
+                # Verifica se la pausa 12:30-13:30 sta completamente dentro il turno E rispetta i limiti
+                if (lunch_start >= min_break_start and 
+                    lunch_end <= max_break_end):
+                    break_start_datetime = lunch_start
+                    break_end_datetime = lunch_end
+                else:
+                    # Altrimenti, posiziona la pausa al centro del turno
+                    # Assicurandosi che rimanga dentro [clock_in, clock_out]
+                    mid_point = clock_in_datetime + timedelta(hours=work_duration / 2)
+                    break_start_datetime = mid_point - timedelta(minutes=30)
+                    break_end_datetime = mid_point + timedelta(minutes=30)
+                    
+                    # Verifica che la pausa rimanga dentro i limiti (già calcolati sopra)
+                    if break_start_datetime < min_break_start:
+                        break_start_datetime = min_break_start
+                        break_end_datetime = break_start_datetime + timedelta(hours=1)
+                    elif break_end_datetime > max_break_end:
+                        break_end_datetime = max_break_end
+                        break_start_datetime = break_end_datetime - timedelta(hours=1)
+                
+                # Crea evento inizio pausa
+                break_start_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    date=day_date,
+                    event_type='break_start',
+                    timestamp=break_start_datetime,
+                    sede_id=current_user.sede_id,
+                    is_manual=True,
+                    entry_type='standard'
+                )
+                set_company_on_create(break_start_event)
+                db.session.add(break_start_event)
+                
+                # Crea evento fine pausa
+                break_end_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    date=day_date,
+                    event_type='break_end',
+                    timestamp=break_end_datetime,
+                    sede_id=current_user.sede_id,
+                    is_manual=True,
+                    entry_type='standard'
+                )
+                set_company_on_create(break_end_event)
+                db.session.add(break_end_event)
             
             days_filled += 1
         
