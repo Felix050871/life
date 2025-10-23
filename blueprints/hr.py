@@ -124,12 +124,15 @@ def hr_detail(user_id):
             hr_data.birth_province = request.form.get('birth_province', '').strip().upper() or None
             hr_data.birth_country = request.form.get('birth_country', '').strip() or 'Italia'
             
-            # Residenza
+            # Residenza e contatti
             hr_data.address = request.form.get('address', '').strip() or None
             hr_data.city = request.form.get('city', '').strip() or None
             hr_data.province = request.form.get('province', '').strip().upper() or None
             hr_data.postal_code = request.form.get('postal_code', '').strip() or None
             hr_data.country = request.form.get('country', '').strip() or 'Italia'
+            hr_data.alternative_domicile = request.form.get('alternative_domicile', '').strip() or None
+            hr_data.phone = request.form.get('phone', '').strip() or None
+            hr_data.law_104_benefits = request.form.get('law_104_benefits') == 'on'
             
             # Dati contrattuali
             hr_data.contract_type = request.form.get('contract_type', '').strip() or None
@@ -156,10 +159,25 @@ def hr_detail(user_id):
             
             hr_data.ccnl = request.form.get('ccnl', '').strip() or None
             hr_data.ccnl_level = request.form.get('ccnl_level', '').strip() or None
+            hr_data.mansione = request.form.get('mansione', '').strip() or None
+            hr_data.qualifica = request.form.get('qualifica', '').strip() or None
+            hr_data.cliente = request.form.get('cliente', '').strip() or None
+            hr_data.rischio_inail = request.form.get('rischio_inail', '').strip() or None
+            hr_data.tipo_assunzione = request.form.get('tipo_assunzione', '').strip() or None
+            hr_data.ticket_restaurant = request.form.get('ticket_restaurant') == 'on'
+            hr_data.other_notes = request.form.get('other_notes', '').strip() or None
             
             work_hours_str = request.form.get('work_hours_week', '').strip()
             if work_hours_str:
                 hr_data.work_hours_week = float(work_hours_str.replace(',', '.'))
+            
+            superminimo_str = request.form.get('superminimo', '').strip()
+            if superminimo_str:
+                hr_data.superminimo = float(superminimo_str.replace(',', '.'))
+            
+            rimborsi_str = request.form.get('rimborsi_diarie', '').strip()
+            if rimborsi_str:
+                hr_data.rimborsi_diarie = float(rimborsi_str.replace(',', '.'))
             
             # Dati economici
             gross_salary_str = request.form.get('gross_salary', '').strip()
@@ -267,6 +285,101 @@ def hr_detail(user_id):
             banca_ore_periodo_str = request.form.get('banca_ore_periodo_mesi', '').strip()
             if banca_ore_periodo_str:
                 hr_data.banca_ore_periodo_mesi = int(banca_ore_periodo_str)
+            
+            # Requisiti e sicurezza
+            hr_data.minimum_requirements = request.form.get('minimum_requirements', '').strip() or None
+            
+            # Visita medica
+            medical_visit_date_str = request.form.get('medical_visit_date', '').strip()
+            if medical_visit_date_str:
+                hr_data.medical_visit_date = datetime.strptime(medical_visit_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.medical_visit_date = None
+            
+            medical_visit_expiry_str = request.form.get('medical_visit_expiry', '').strip()
+            if medical_visit_expiry_str:
+                hr_data.medical_visit_expiry = datetime.strptime(medical_visit_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.medical_visit_expiry = None
+            
+            # Formazioni
+            # Formazione generale
+            training_general_date_str = request.form.get('training_general_date', '').strip()
+            if training_general_date_str:
+                hr_data.training_general_date = datetime.strptime(training_general_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_general_date = None
+            
+            training_general_expiry_str = request.form.get('training_general_expiry', '').strip()
+            if training_general_expiry_str:
+                hr_data.training_general_expiry = datetime.strptime(training_general_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_general_expiry = None
+            
+            # Formazione RSPP
+            training_rspp_date_str = request.form.get('training_rspp_date', '').strip()
+            if training_rspp_date_str:
+                hr_data.training_rspp_date = datetime.strptime(training_rspp_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_rspp_date = None
+            
+            training_rspp_expiry_str = request.form.get('training_rspp_expiry', '').strip()
+            if training_rspp_expiry_str:
+                hr_data.training_rspp_expiry = datetime.strptime(training_rspp_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_rspp_expiry = None
+            
+            # Formazione RLS
+            training_rls_date_str = request.form.get('training_rls_date', '').strip()
+            if training_rls_date_str:
+                hr_data.training_rls_date = datetime.strptime(training_rls_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_rls_date = None
+            
+            training_rls_expiry_str = request.form.get('training_rls_expiry', '').strip()
+            if training_rls_expiry_str:
+                hr_data.training_rls_expiry = datetime.strptime(training_rls_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_rls_expiry = None
+            
+            # Formazione primo soccorso
+            training_first_aid_date_str = request.form.get('training_first_aid_date', '').strip()
+            if training_first_aid_date_str:
+                hr_data.training_first_aid_date = datetime.strptime(training_first_aid_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_first_aid_date = None
+            
+            training_first_aid_expiry_str = request.form.get('training_first_aid_expiry', '').strip()
+            if training_first_aid_expiry_str:
+                hr_data.training_first_aid_expiry = datetime.strptime(training_first_aid_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_first_aid_expiry = None
+            
+            # Formazione emergenza
+            training_emergency_date_str = request.form.get('training_emergency_date', '').strip()
+            if training_emergency_date_str:
+                hr_data.training_emergency_date = datetime.strptime(training_emergency_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_emergency_date = None
+            
+            training_emergency_expiry_str = request.form.get('training_emergency_expiry', '').strip()
+            if training_emergency_expiry_str:
+                hr_data.training_emergency_expiry = datetime.strptime(training_emergency_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_emergency_expiry = None
+            
+            # Formazione preposto
+            training_supervisor_date_str = request.form.get('training_supervisor_date', '').strip()
+            if training_supervisor_date_str:
+                hr_data.training_supervisor_date = datetime.strptime(training_supervisor_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_supervisor_date = None
+            
+            training_supervisor_expiry_str = request.form.get('training_supervisor_expiry', '').strip()
+            if training_supervisor_expiry_str:
+                hr_data.training_supervisor_expiry = datetime.strptime(training_supervisor_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.training_supervisor_expiry = None
             
             hr_data.updated_at = datetime.now()
             db.session.commit()
