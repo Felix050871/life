@@ -427,19 +427,29 @@ def hr_export():
         top=Side(style='thin'), bottom=Side(style='thin')
     )
     
-    # Headers
+    # Headers - Seguendo struttura file Excel: DATI CONTRATTUALI | ANAGRAFICA | VISITE E FORMAZIONE
     headers = [
-        'Matricola', 'Nome', 'Cognome', 'Email', 'Codice Fiscale',
-        'Data Nascita', 'Età', 'Città Nascita', 'Sesso',
-        'Indirizzo', 'Città', 'CAP',
-        'Tipo Contratto', 'Data Assunzione', 'Inizio Contratto', 'Fine Contratto',
-        'CCNL', 'Livello', 'Ore Sett.', 'RAL', 'Netto Mensile',
-        'Buoni Pasto (€/gg)', 'Carta Carburante',
-        'Stato Civile', 'Familiari a Carico',
-        'Contatto Emergenza', 'Tel. Emergenza',
-        'Titolo Studio', 'Campo Studio',
+        # DATI CONTRATTUALI
+        'COD SI', 'Cognome', 'Nome',  'Data Assunzione', 'Data Fine Rapporto',
+        'Tipologia Contratto', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 'Orario',
+        'Sede di Assunzione', 'Cliente', 'Superminimo/SM Assorbibile', 'Rimborsi/Diarie',
+        'Ticket', 'Rischio INAIL', 'Tipo di Assunzione', 'Altro/Note',
+        # ANAGRAFICA RISORSA
+        'Titolo di Studio', 'Luogo di Nascita', 'Data di Nascita', 'Età', 'Sesso', 'C.F.',
+        'Comune di Residenza', 'Indirizzo Residenza', 'Domicilio Alternativo', 'CAP',
+        'Recapito Telefonico', 'Fruizione Permessi L. 104/92', 'E-mail Personale', 'E-mail Aziendale',
+        'Stato Civile', 'Familiari a Carico', 'Contatto Emergenza', 'Tel. Emergenza',
         'Patente Numero', 'Patente Tipo', 'Patente Scadenza',
-        'Sede', 'Veicolo ACI', 'Banca Ore', 'Limite Ore', 'Periodo Mesi'
+        'Veicolo ACI', 'Banca Ore', 'Limite Ore', 'Periodo Mesi',
+        # VISITE E FORMAZIONE
+        'Possesso Requisiti Minimi',
+        'Visita Medica - Data', 'Visita Medica - Scadenza',
+        'Formazione Generale - Data', 'Formazione Generale - Scadenza',
+        'Formazione RSPP - Data', 'Formazione RSPP - Scadenza',
+        'Formazione RLS - Data', 'Formazione RLS - Scadenza',
+        'Formazione Primo Soccorso - Data', 'Formazione Primo Soccorso - Scadenza',
+        'Formazione Emergenza - Data', 'Formazione Emergenza - Scadenza',
+        'Formazione Preposto - Data', 'Formazione Preposto - Scadenza'
     ]
     
     for col, header in enumerate(headers, 1):
@@ -454,43 +464,68 @@ def hr_export():
         hr_data = user.hr_data
         
         row_data = [
+            # DATI CONTRATTUALI
             hr_data.matricola if hr_data else '',
-            user.first_name,
             user.last_name,
-            user.email,
-            hr_data.codice_fiscale if hr_data else '',
-            hr_data.birth_date.strftime('%d/%m/%Y') if hr_data and hr_data.birth_date else '',
-            hr_data.get_age() if hr_data else '',
-            hr_data.birth_city if hr_data else '',
-            hr_data.gender if hr_data else '',
-            hr_data.address if hr_data else '',
-            hr_data.city if hr_data else '',
-            hr_data.postal_code if hr_data else '',
-            hr_data.contract_type if hr_data else '',
+            user.first_name,
             hr_data.hire_date.strftime('%d/%m/%Y') if hr_data and hr_data.hire_date else '',
-            hr_data.contract_start_date.strftime('%d/%m/%Y') if hr_data and hr_data.contract_start_date else '',
             hr_data.contract_end_date.strftime('%d/%m/%Y') if hr_data and hr_data.contract_end_date else '',
+            hr_data.contract_type if hr_data else '',
             hr_data.ccnl if hr_data else '',
+            hr_data.mansione if hr_data else '',
+            hr_data.qualifica if hr_data else '',
             hr_data.ccnl_level if hr_data else '',
             str(hr_data.work_hours_week).replace('.', ',') if hr_data and hr_data.work_hours_week else '',
-            str(hr_data.gross_salary).replace('.', ',') if hr_data and hr_data.gross_salary else '',
-            str(hr_data.net_salary).replace('.', ',') if hr_data and hr_data.net_salary else '',
-            str(hr_data.meal_vouchers_value).replace('.', ',') if hr_data and hr_data.meal_vouchers_value else '',
-            'Sì' if hr_data and hr_data.fuel_card else 'No' if hr_data else '',
+            hr_data.sede.name if hr_data and hr_data.sede else '',
+            hr_data.cliente if hr_data else '',
+            str(hr_data.superminimo).replace('.', ',') if hr_data and hr_data.superminimo else '',
+            str(hr_data.rimborsi_diarie).replace('.', ',') if hr_data and hr_data.rimborsi_diarie else '',
+            'Sì' if hr_data and hr_data.ticket_restaurant else 'No' if hr_data else '',
+            hr_data.rischio_inail if hr_data else '',
+            hr_data.tipo_assunzione if hr_data else '',
+            hr_data.other_notes if hr_data else '',
+            # ANAGRAFICA RISORSA
+            hr_data.education_level if hr_data else '',
+            hr_data.birth_city if hr_data else '',
+            hr_data.birth_date.strftime('%d/%m/%Y') if hr_data and hr_data.birth_date else '',
+            hr_data.get_age() if hr_data else '',
+            hr_data.gender if hr_data else '',
+            hr_data.codice_fiscale if hr_data else '',
+            hr_data.city if hr_data else '',
+            hr_data.address if hr_data else '',
+            hr_data.alternative_domicile if hr_data else '',
+            hr_data.postal_code if hr_data else '',
+            hr_data.phone if hr_data else '',
+            'Sì' if hr_data and hr_data.law_104_benefits else 'No' if hr_data else '',
+            user.email,
+            user.work_email if user.work_email else user.email,
             hr_data.marital_status if hr_data else '',
             hr_data.dependents_number if hr_data and hr_data.dependents_number else '',
             hr_data.emergency_contact_name if hr_data else '',
             hr_data.emergency_contact_phone if hr_data else '',
-            hr_data.education_level if hr_data else '',
-            hr_data.education_field if hr_data else '',
             hr_data.driver_license_number if hr_data else '',
             hr_data.driver_license_type if hr_data else '',
             hr_data.driver_license_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.driver_license_expiry else '',
-            hr_data.sede.name if hr_data and hr_data.sede else '',
             f"{hr_data.aci_vehicle.vehicle_description} - {hr_data.aci_vehicle.category}" if hr_data and hr_data.aci_vehicle else '',
             'Sì' if hr_data and hr_data.banca_ore_enabled else 'No' if hr_data else '',
             str(hr_data.banca_ore_limite_max).replace('.', ',') if hr_data and hr_data.banca_ore_limite_max else '',
-            str(hr_data.banca_ore_periodo_mesi) if hr_data and hr_data.banca_ore_periodo_mesi else ''
+            str(hr_data.banca_ore_periodo_mesi) if hr_data and hr_data.banca_ore_periodo_mesi else '',
+            # VISITE E FORMAZIONE
+            hr_data.minimum_requirements if hr_data else '',
+            hr_data.medical_visit_date.strftime('%d/%m/%Y') if hr_data and hr_data.medical_visit_date else '',
+            hr_data.medical_visit_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.medical_visit_expiry else '',
+            hr_data.training_general_date.strftime('%d/%m/%Y') if hr_data and hr_data.training_general_date else '',
+            hr_data.training_general_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.training_general_expiry else '',
+            hr_data.training_rspp_date.strftime('%d/%m/%Y') if hr_data and hr_data.training_rspp_date else '',
+            hr_data.training_rspp_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.training_rspp_expiry else '',
+            hr_data.training_rls_date.strftime('%d/%m/%Y') if hr_data and hr_data.training_rls_date else '',
+            hr_data.training_rls_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.training_rls_expiry else '',
+            hr_data.training_first_aid_date.strftime('%d/%m/%Y') if hr_data and hr_data.training_first_aid_date else '',
+            hr_data.training_first_aid_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.training_first_aid_expiry else '',
+            hr_data.training_emergency_date.strftime('%d/%m/%Y') if hr_data and hr_data.training_emergency_date else '',
+            hr_data.training_emergency_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.training_emergency_expiry else '',
+            hr_data.training_supervisor_date.strftime('%d/%m/%Y') if hr_data and hr_data.training_supervisor_date else '',
+            hr_data.training_supervisor_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.training_supervisor_expiry else ''
         ]
         
         for col, value in enumerate(row_data, 1):
