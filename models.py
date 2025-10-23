@@ -935,12 +935,15 @@ class UserHRData(db.Model):
     birth_country = db.Column(db.String(100), nullable=True, default='Italia')  # Paese di nascita
     gender = db.Column(db.String(1), nullable=True)  # M/F/A (altro)
     
-    # Residenza
-    address = db.Column(db.String(255), nullable=True)  # Indirizzo
-    city = db.Column(db.String(100), nullable=True)  # Città
+    # Residenza e domicilio
+    address = db.Column(db.String(255), nullable=True)  # Indirizzo residenza
+    city = db.Column(db.String(100), nullable=True)  # Città residenza
     province = db.Column(db.String(2), nullable=True)  # Provincia (sigla)
     postal_code = db.Column(db.String(10), nullable=True)  # CAP
     country = db.Column(db.String(100), nullable=True, default='Italia')  # Paese
+    alternative_domicile = db.Column(db.String(255), nullable=True)  # Domicilio se diverso dalla residenza
+    phone = db.Column(db.String(20), nullable=True)  # Recapito telefonico personale
+    law_104_benefits = db.Column(db.Boolean, default=False)  # Fruizione permessi L. 104/92
     
     # Dati contrattuali
     contract_type = db.Column(db.String(100), nullable=True)  # Tipo contratto (TD, TI, Stage, ecc.)
@@ -951,6 +954,15 @@ class UserHRData(db.Model):
     ccnl = db.Column(db.String(100), nullable=True)  # CCNL applicato
     ccnl_level = db.Column(db.String(50), nullable=True)  # Livello contrattuale
     work_hours_week = db.Column(db.Float, nullable=True)  # Ore settimanali contratto
+    mansione = db.Column(db.String(100), nullable=True)  # Mansione/ruolo
+    qualifica = db.Column(db.String(100), nullable=True)  # Qualifica
+    cliente = db.Column(db.String(200), nullable=True)  # Cliente assegnato
+    superminimo = db.Column(db.Float, nullable=True)  # Superminimo/SM assorbibile (€)
+    rimborsi_diarie = db.Column(db.Float, nullable=True)  # Rimborsi/Diarie (€)
+    rischio_inail = db.Column(db.String(100), nullable=True)  # Rischio INAIL
+    tipo_assunzione = db.Column(db.String(100), nullable=True)  # Tipo di assunzione
+    ticket_restaurant = db.Column(db.Boolean, default=False)  # Ha ticket restaurant
+    other_notes = db.Column(db.Text, nullable=True)  # Altro/Note specifiche contratto
     
     # Dati economici
     gross_salary = db.Column(db.Float, nullable=True)  # RAL (Reddito Annuo Lordo)
@@ -993,6 +1005,25 @@ class UserHRData(db.Model):
     banca_ore_enabled = db.Column(db.Boolean, default=False)  # Abilitazione banca ore
     banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo ore accumulabili
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo mesi per usufruire ore
+    
+    # Sicurezza e requisiti
+    minimum_requirements = db.Column(db.String(50), nullable=True)  # Possesso requisiti minimi (SI/NO/DA FORMARE)
+    
+    # Visite mediche e formazione obbligatoria
+    medical_visit_date = db.Column(db.Date, nullable=True)  # Data ultima visita medica
+    medical_visit_expiry = db.Column(db.Date, nullable=True)  # Scadenza visita medica
+    training_general_date = db.Column(db.Date, nullable=True)  # Formazione generale (art.36-37) - data
+    training_general_expiry = db.Column(db.Date, nullable=True)  # Formazione generale - scadenza (5 anni)
+    training_rspp_date = db.Column(db.Date, nullable=True)  # Formazione RSPP - data
+    training_rspp_expiry = db.Column(db.Date, nullable=True)  # Formazione RSPP - scadenza (5 anni)
+    training_rls_date = db.Column(db.Date, nullable=True)  # Formazione RLS - data
+    training_rls_expiry = db.Column(db.Date, nullable=True)  # Formazione RLS - scadenza (annuale)
+    training_first_aid_date = db.Column(db.Date, nullable=True)  # Formazione primo soccorso - data
+    training_first_aid_expiry = db.Column(db.Date, nullable=True)  # Formazione primo soccorso - scadenza (3 anni)
+    training_emergency_date = db.Column(db.Date, nullable=True)  # Formazione emergenza - data
+    training_emergency_expiry = db.Column(db.Date, nullable=True)  # Formazione emergenza - scadenza (3 anni)
+    training_supervisor_date = db.Column(db.Date, nullable=True)  # Formazione preposto - data
+    training_supervisor_expiry = db.Column(db.Date, nullable=True)  # Formazione preposto - scadenza (2 anni)
     
     # Note HR
     notes = db.Column(db.Text, nullable=True)  # Note interne HR
@@ -1053,6 +1084,28 @@ class UserHRData(db.Model):
             expiring.append(f'Passaporto (scade il {self.passport_expiry.strftime("%d/%m/%Y")})')
         if self.driver_license_expiry and (self.driver_license_expiry - today).days <= days:
             expiring.append(f'Patente (scade il {self.driver_license_expiry.strftime("%d/%m/%Y")})')
+        
+        return expiring
+    
+    def get_training_expiring_soon(self, days=60):
+        """Verifica se formazioni/visite sono in scadenza"""
+        expiring = []
+        today = date.today()
+        
+        if self.medical_visit_expiry and (self.medical_visit_expiry - today).days <= days:
+            expiring.append(f'Visita medica (scade il {self.medical_visit_expiry.strftime("%d/%m/%Y")})')
+        if self.training_general_expiry and (self.training_general_expiry - today).days <= days:
+            expiring.append(f'Formazione generale (scade il {self.training_general_expiry.strftime("%d/%m/%Y")})')
+        if self.training_rspp_expiry and (self.training_rspp_expiry - today).days <= days:
+            expiring.append(f'Formazione RSPP (scade il {self.training_rspp_expiry.strftime("%d/%m/%Y")})')
+        if self.training_rls_expiry and (self.training_rls_expiry - today).days <= days:
+            expiring.append(f'Formazione RLS (scade il {self.training_rls_expiry.strftime("%d/%m/%Y")})')
+        if self.training_first_aid_expiry and (self.training_first_aid_expiry - today).days <= days:
+            expiring.append(f'Primo soccorso (scade il {self.training_first_aid_expiry.strftime("%d/%m/%Y")})')
+        if self.training_emergency_expiry and (self.training_emergency_expiry - today).days <= days:
+            expiring.append(f'Formazione emergenza (scade il {self.training_emergency_expiry.strftime("%d/%m/%Y")})')
+        if self.training_supervisor_expiry and (self.training_supervisor_expiry - today).days <= days:
+            expiring.append(f'Formazione preposto (scade il {self.training_supervisor_expiry.strftime("%d/%m/%Y")})')
         
         return expiring
 
