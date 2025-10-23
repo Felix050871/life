@@ -85,7 +85,7 @@
                     <tr>
                         <th>Matricola</th>
                         <th>Dipendente</th>
-                        <th>Email</th>
+                        <th>Sede</th>
                         <th>Tipo Contratto</th>
                         <th>Data Assunzione</th>
                         <th>Stato</th>
@@ -114,7 +114,13 @@
                             <strong>{{ data.user.get_full_name() }}</strong>
                             <br><small class="text-muted">{{ data.user.role }}</small>
                         </td>
-                        <td><small>{{ data.user.email }}</small></td>
+                        <td>
+                            {% if data.hr_data and data.hr_data.sede %}
+                            <i class="fas fa-building me-1 text-primary"></i>{{ data.hr_data.sede.name }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
                         <td>{{ data.contract_type }}</td>
                         <td>{{ data.hire_date }}</td>
                         <td>

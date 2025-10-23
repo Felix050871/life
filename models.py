@@ -957,6 +957,8 @@ class UserHRData(db.Model):
     net_salary = db.Column(db.Float, nullable=True)  # Netto mensile
     iban = db.Column(db.String(34), nullable=True)  # IBAN per bonifico stipendio
     payment_method = db.Column(db.String(50), nullable=True)  # Metodo pagamento (bonifico, assegno, ecc.)
+    meal_vouchers_value = db.Column(db.Float, nullable=True)  # Valore buoni pasto giornalieri (€)
+    fuel_card = db.Column(db.Boolean, default=False)  # Ha carta carburante aziendale
     
     # Documenti identità
     id_card_type = db.Column(db.String(50), nullable=True)  # Tipo documento (CI, Patente, ecc.)
@@ -966,6 +968,9 @@ class UserHRData(db.Model):
     id_card_issued_by = db.Column(db.String(100), nullable=True)  # Ente rilascio
     passport_number = db.Column(db.String(50), nullable=True)  # Numero passaporto
     passport_expiry = db.Column(db.Date, nullable=True)  # Scadenza passaporto
+    driver_license_number = db.Column(db.String(50), nullable=True)  # Numero patente
+    driver_license_type = db.Column(db.String(20), nullable=True)  # Tipo patente (A, B, C, D, E, ecc.)
+    driver_license_expiry = db.Column(db.Date, nullable=True)  # Scadenza patente
     
     # Contatto emergenza
     emergency_contact_name = db.Column(db.String(100), nullable=True)  # Nome contatto emergenza
@@ -982,6 +987,13 @@ class UserHRData(db.Model):
     disability = db.Column(db.Boolean, default=False)  # Disabilità certificata
     disability_percentage = db.Column(db.Integer, nullable=True)  # Percentuale disabilità
     
+    # Dati operativi (spostati da User)
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede di assegnazione
+    aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
+    banca_ore_enabled = db.Column(db.Boolean, default=False)  # Abilitazione banca ore
+    banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo ore accumulabili
+    banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo mesi per usufruire ore
+    
     # Note HR
     notes = db.Column(db.Text, nullable=True)  # Note interne HR
     
@@ -993,6 +1005,8 @@ class UserHRData(db.Model):
     # Relationships
     user = db.relationship('User', backref=db.backref('hr_data', uselist=False, lazy=True))
     company = db.relationship('Company', backref='hr_data_records')
+    sede = db.relationship('Sede', foreign_keys=[sede_id], backref='hr_employees')
+    aci_vehicle = db.relationship('ACITable', foreign_keys=[aci_vehicle_id], backref='hr_assigned_users')
     
     def __repr__(self):
         return f'<UserHRData {self.matricola} - {self.user.get_full_name() if self.user else "N/A"}>'
@@ -1037,6 +1051,8 @@ class UserHRData(db.Model):
             expiring.append(f'Documento identità (scade il {self.id_card_expiry.strftime("%d/%m/%Y")})')
         if self.passport_expiry and (self.passport_expiry - today).days <= days:
             expiring.append(f'Passaporto (scade il {self.passport_expiry.strftime("%d/%m/%Y")})')
+        if self.driver_license_expiry and (self.driver_license_expiry - today).days <= days:
+            expiring.append(f'Patente (scade il {self.driver_license_expiry.strftime("%d/%m/%Y")})')
         
         return expiring
 

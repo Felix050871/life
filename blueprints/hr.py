@@ -15,7 +15,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 from functools import wraps
 from app import db
-from models import User, UserHRData
+from models import User, UserHRData, ACITable, Sede
 from utils_tenant import filter_by_company, set_company_on_create
 from io import BytesIO
 from openpyxl import Workbook
@@ -52,8 +52,8 @@ def hr_list():
         # HR Manager vedono tutti i dipendenti della company
         users_query = filter_by_company(User.query).filter_by(active=True).order_by(User.last_name, User.first_name)
     else:
-        # Utenti normali vedono solo i propri dati
-        users_query = User.query.filter_by(id=current_user.id)
+        # Utenti normali vedono solo i propri dati (con filtro company)
+        users_query = filter_by_company(User.query).filter_by(id=current_user.id)
     
     users = users_query.all()
     
@@ -64,7 +64,7 @@ def hr_list():
         
         users_data.append({
             'user': user,
-            'hr_data': hr_data,
+            'hr_data': hr_data,  # Pass the actual object so template can access sede relationship
             'has_data': hr_data is not None,
             'matricola': hr_data.matricola if hr_data else '-',
             'contract_type': hr_data.contract_type if hr_data else '-',
@@ -217,6 +217,58 @@ def hr_detail(user_id):
             # Note
             hr_data.notes = request.form.get('notes', '').strip() or None
             
+            # Benefit aziendali
+            meal_vouchers_str = request.form.get('meal_vouchers_value', '').strip()
+            if meal_vouchers_str:
+                hr_data.meal_vouchers_value = float(meal_vouchers_str.replace(',', '.'))
+            else:
+                hr_data.meal_vouchers_value = None
+            
+            hr_data.fuel_card = request.form.get('fuel_card') == 'on'
+            
+            # Patente
+            hr_data.driver_license_number = request.form.get('driver_license_number', '').strip() or None
+            hr_data.driver_license_type = request.form.get('driver_license_type', '').strip() or None
+            
+            driver_license_expiry_str = request.form.get('driver_license_expiry', '').strip()
+            if driver_license_expiry_str:
+                hr_data.driver_license_expiry = datetime.strptime(driver_license_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.driver_license_expiry = None
+            
+            # Dati operativi - con validazione multi-tenant
+            sede_id_str = request.form.get('sede_id', '').strip()
+            if sede_id_str:
+                sede_id = int(sede_id_str)
+                # Verifica che la sede appartenga alla company dell'utente
+                from models import Sede
+                sede = filter_by_company(Sede.query).filter_by(id=sede_id).first()
+                if sede:
+                    hr_data.sede_id = sede_id
+                else:
+                    flash('Sede non valida per questa azienda', 'warning')
+                    hr_data.sede_id = None
+            else:
+                hr_data.sede_id = None
+            
+            aci_vehicle_id_str = request.form.get('aci_vehicle_id', '').strip()
+            if aci_vehicle_id_str:
+                aci_vehicle_id = int(aci_vehicle_id_str)
+                # ACI table è globale, non serve validazione multi-tenant
+                hr_data.aci_vehicle_id = aci_vehicle_id
+            else:
+                hr_data.aci_vehicle_id = None
+            
+            hr_data.banca_ore_enabled = request.form.get('banca_ore_enabled') == 'on'
+            
+            banca_ore_limite_str = request.form.get('banca_ore_limite_max', '').strip()
+            if banca_ore_limite_str:
+                hr_data.banca_ore_limite_max = float(banca_ore_limite_str.replace(',', '.'))
+            
+            banca_ore_periodo_str = request.form.get('banca_ore_periodo_mesi', '').strip()
+            if banca_ore_periodo_str:
+                hr_data.banca_ore_periodo_mesi = int(banca_ore_periodo_str)
+            
             hr_data.updated_at = datetime.now()
             db.session.commit()
             
@@ -227,10 +279,14 @@ def hr_detail(user_id):
             db.session.rollback()
             flash(f'Errore nel salvataggio: {str(e)}', 'error')
     
+    # Carica lista veicoli ACI per il dropdown
+    aci_vehicles = ACITable.query.order_by(ACITable.category, ACITable.vehicle_description).all()
+    
     return render_template('hr_detail.html', 
                          user=user, 
                          hr_data=hr_data,
-                         can_edit=can_edit)
+                         can_edit=can_edit,
+                         aci_vehicles=aci_vehicles)
 
 
 @hr_bp.route('/export')
@@ -266,9 +322,12 @@ def hr_export():
         'Indirizzo', 'Città', 'CAP',
         'Tipo Contratto', 'Data Assunzione', 'Inizio Contratto', 'Fine Contratto',
         'CCNL', 'Livello', 'Ore Sett.', 'RAL', 'Netto Mensile',
+        'Buoni Pasto (€/gg)', 'Carta Carburante',
         'Stato Civile', 'Familiari a Carico',
         'Contatto Emergenza', 'Tel. Emergenza',
-        'Titolo Studio', 'Campo Studio'
+        'Titolo Studio', 'Campo Studio',
+        'Patente Numero', 'Patente Tipo', 'Patente Scadenza',
+        'Sede', 'Veicolo ACI', 'Banca Ore', 'Limite Ore', 'Periodo Mesi'
     ]
     
     for col, header in enumerate(headers, 1):
@@ -304,12 +363,22 @@ def hr_export():
             str(hr_data.work_hours_week).replace('.', ',') if hr_data and hr_data.work_hours_week else '',
             str(hr_data.gross_salary).replace('.', ',') if hr_data and hr_data.gross_salary else '',
             str(hr_data.net_salary).replace('.', ',') if hr_data and hr_data.net_salary else '',
+            str(hr_data.meal_vouchers_value).replace('.', ',') if hr_data and hr_data.meal_vouchers_value else '',
+            'Sì' if hr_data and hr_data.fuel_card else 'No' if hr_data else '',
             hr_data.marital_status if hr_data else '',
             hr_data.dependents_number if hr_data and hr_data.dependents_number else '',
             hr_data.emergency_contact_name if hr_data else '',
             hr_data.emergency_contact_phone if hr_data else '',
             hr_data.education_level if hr_data else '',
-            hr_data.education_field if hr_data else ''
+            hr_data.education_field if hr_data else '',
+            hr_data.driver_license_number if hr_data else '',
+            hr_data.driver_license_type if hr_data else '',
+            hr_data.driver_license_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.driver_license_expiry else '',
+            hr_data.sede.name if hr_data and hr_data.sede else '',
+            f"{hr_data.aci_vehicle.vehicle_description} - {hr_data.aci_vehicle.category}" if hr_data and hr_data.aci_vehicle else '',
+            'Sì' if hr_data and hr_data.banca_ore_enabled else 'No' if hr_data else '',
+            str(hr_data.banca_ore_limite_max).replace('.', ',') if hr_data and hr_data.banca_ore_limite_max else '',
+            str(hr_data.banca_ore_periodo_mesi) if hr_data and hr_data.banca_ore_periodo_mesi else ''
         ]
         
         for col, value in enumerate(row_data, 1):

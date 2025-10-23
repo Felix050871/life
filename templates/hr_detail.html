@@ -238,6 +238,26 @@
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Buoni Pasto (€/giorno)</label>
+                    <input type="number" name="meal_vouchers_value" class="form-control" 
+                           value="{{ hr_data.meal_vouchers_value or '' }}" 
+                           step="0.01" min="0"
+                           placeholder="es. 7.00"
+                           {% if not can_edit %}disabled{% endif %}>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="form-check mt-4">
+                        <input type="checkbox" name="fuel_card" class="form-check-input" 
+                               {% if hr_data.fuel_card %}checked{% endif %}
+                               {% if not can_edit %}disabled{% endif %}>
+                        <label class="form-check-label">
+                            <i class="fas fa-gas-pump me-1"></i> Carta Carburante Aziendale
+                        </label>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -250,8 +270,9 @@
             </h5>
         </div>
         <div class="card-body">
+            <h6 class="text-muted mb-3"><i class="fas fa-address-card me-2"></i>Documento Identità</h6>
             <div class="row">
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                     <label class="form-label">Tipo Documento</label>
                     <select name="id_card_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
                         <option value="">Seleziona...</option>
@@ -260,16 +281,77 @@
                         <option value="Passaporto" {% if hr_data.id_card_type == 'Passaporto' %}selected{% endif %}>Passaporto</option>
                     </select>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                     <label class="form-label">Numero Documento</label>
                     <input type="text" name="id_card_number" class="form-control" 
                            value="{{ hr_data.id_card_number or '' }}"
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Scadenza Documento</label>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Data Rilascio</label>
+                    <input type="date" name="id_card_issue_date" class="form-control" 
+                           value="{{ hr_data.id_card_issue_date.strftime('%Y-%m-%d') if hr_data.id_card_issue_date else '' }}"
+                           {% if not can_edit %}disabled{% endif %}>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Scadenza</label>
                     <input type="date" name="id_card_expiry" class="form-control" 
                            value="{{ hr_data.id_card_expiry.strftime('%Y-%m-%d') if hr_data.id_card_expiry else '' }}"
+                           {% if not can_edit %}disabled{% endif %}>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Ente Rilascio</label>
+                    <input type="text" name="id_card_issued_by" class="form-control" 
+                           value="{{ hr_data.id_card_issued_by or '' }}"
+                           placeholder="es. Comune di Roma"
+                           {% if not can_edit %}disabled{% endif %}>
+                </div>
+            </div>
+
+            <hr class="my-4">
+            <h6 class="text-muted mb-3"><i class="fas fa-passport me-2"></i>Passaporto</h6>
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Numero Passaporto</label>
+                    <input type="text" name="passport_number" class="form-control" 
+                           value="{{ hr_data.passport_number or '' }}"
+                           {% if not can_edit %}disabled{% endif %}>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Scadenza Passaporto</label>
+                    <input type="date" name="passport_expiry" class="form-control" 
+                           value="{{ hr_data.passport_expiry.strftime('%Y-%m-%d') if hr_data.passport_expiry else '' }}"
+                           {% if not can_edit %}disabled{% endif %}>
+                </div>
+            </div>
+
+            <hr class="my-4">
+            <h6 class="text-muted mb-3"><i class="fas fa-car me-2"></i>Patente di Guida</h6>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Numero Patente</label>
+                    <input type="text" name="driver_license_number" class="form-control" 
+                           value="{{ hr_data.driver_license_number or '' }}"
+                           {% if not can_edit %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Tipo Patente</label>
+                    <select name="driver_license_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Seleziona...</option>
+                        <option value="A" {% if hr_data.driver_license_type == 'A' %}selected{% endif %}>A (Moto)</option>
+                        <option value="B" {% if hr_data.driver_license_type == 'B' %}selected{% endif %}>B (Auto)</option>
+                        <option value="C" {% if hr_data.driver_license_type == 'C' %}selected{% endif %}>C (Camion)</option>
+                        <option value="D" {% if hr_data.driver_license_type == 'D' %}selected{% endif %}>D (Autobus)</option>
+                        <option value="E" {% if hr_data.driver_license_type == 'E' %}selected{% endif %}>E (Rimorchi)</option>
+                        <option value="BE" {% if hr_data.driver_license_type == 'BE' %}selected{% endif %}>BE (Auto + Rimorchio)</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Scadenza Patente</label>
+                    <input type="date" name="driver_license_expiry" class="form-control" 
+                           value="{{ hr_data.driver_license_expiry.strftime('%Y-%m-%d') if hr_data.driver_license_expiry else '' }}"
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
             </div>
@@ -307,6 +389,72 @@
                         <option value="Fratello/Sorella" {% if hr_data.emergency_contact_relation == 'Fratello/Sorella' %}selected{% endif %}>Fratello/Sorella</option>
                         <option value="Altro" {% if hr_data.emergency_contact_relation == 'Altro' %}selected{% endif %}>Altro</option>
                     </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dati Operativi -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-briefcase me-2"></i>Dati Operativi
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Sede di Assegnazione</label>
+                    <select name="sede_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Nessuna sede</option>
+                        {% for sede in user.company.sedi if sede.active %}
+                        <option value="{{ sede.id }}" {% if hr_data.sede_id == sede.id %}selected{% endif %}>
+                            {{ sede.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Veicolo ACI (Rimborsi Km)</label>
+                    <select name="aci_vehicle_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Nessun veicolo</option>
+                        {% for vehicle in aci_vehicles %}
+                        <option value="{{ vehicle.id }}" {% if hr_data.aci_vehicle_id == vehicle.id %}selected{% endif %}>
+                            {{ vehicle.vehicle_description }} - {{ vehicle.category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Seleziona il veicolo per calcolare i rimborsi chilometrici</small>
+                </div>
+            </div>
+            <hr class="my-3">
+            <h6 class="text-muted mb-3"><i class="fas fa-clock me-2"></i>Banca Ore</h6>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="form-check mt-2">
+                        <input type="checkbox" name="banca_ore_enabled" class="form-check-input" 
+                               {% if hr_data.banca_ore_enabled %}checked{% endif %}
+                               {% if not can_edit %}disabled{% endif %}>
+                        <label class="form-check-label">
+                            <strong>Abilitato alla Banca Ore</strong>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Limite Massimo Ore</label>
+                    <input type="number" name="banca_ore_limite_max" class="form-control" 
+                           value="{{ hr_data.banca_ore_limite_max or '40.0' }}" 
+                           step="0.5" min="0"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <small class="text-muted">Ore massime accumulabili</small>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Periodo (Mesi)</label>
+                    <input type="number" name="banca_ore_periodo_mesi" class="form-control" 
+                           value="{{ hr_data.banca_ore_periodo_mesi or '12' }}" 
+                           min="1"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <small class="text-muted">Mesi entro cui usufruire</small>
                 </div>
             </div>
         </div>
