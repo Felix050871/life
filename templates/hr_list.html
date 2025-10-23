@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione HR - Life Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">
+        <i class="fas fa-id-card me-2"></i>
+        Gestione Risorse Umane
+    </h1>
+    {% if current_user.can_manage_hr_data() %}
+    <a href="{{ url_for('hr.hr_export') }}" class="btn btn-success">
+        <i class="fas fa-file-excel me-2"></i>Export Excel
+    </a>
+    {% endif %}
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Dipendenti Totali</h6>
+                        <h3 class="card-title mb-0">{{ users_data|length }}</h3>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Con Dati HR</h6>
+                        <h3 class="card-title mb-0">{{ users_data|selectattr('has_data')|list|length }}</h3>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Contratti Attivi</h6>
+                        <h3 class="card-title mb-0">{{ users_data|selectattr('contract_status', 'equalto', 'Attivo')|list|length }}</h3>
+                    </div>
+                    <i class="fas fa-file-contract fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">In Prova</h6>
+                        <h3 class="card-title mb-0">{{ users_data|selectattr('is_probation')|list|length }}</h3>
+                    </div>
+                    <i class="fas fa-hourglass-half fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HR Data Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>Elenco Dipendenti
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Matricola</th>
+                        <th>Dipendente</th>
+                        <th>Email</th>
+                        <th>Tipo Contratto</th>
+                        <th>Data Assunzione</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in users_data %}
+                    <tr>
+                        <td>
+                            {% if data.has_data %}
+                            <strong>{{ data.matricola }}</strong>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if data.user.profile_image %}
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + data.user.profile_image) }}" 
+                                 alt="{{ data.user.get_full_name() }}" 
+                                 class="rounded-circle me-2" 
+                                 style="width: 32px; height: 32px; object-fit: cover;">
+                            {% else %}
+                            <i class="fas fa-user-circle fa-2x me-2 text-muted"></i>
+                            {% endif %}
+                            <strong>{{ data.user.get_full_name() }}</strong>
+                            <br><small class="text-muted">{{ data.user.role }}</small>
+                        </td>
+                        <td><small>{{ data.user.email }}</small></td>
+                        <td>{{ data.contract_type }}</td>
+                        <td>{{ data.hire_date }}</td>
+                        <td>
+                            {% if data.contract_status == 'Attivo' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>Attivo
+                            </span>
+                            {% elif data.contract_status == 'Non attivo' %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times me-1"></i>Non attivo
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ data.contract_status }}</span>
+                            {% endif %}
+                            
+                            {% if data.is_probation %}
+                            <span class="badge bg-warning ms-1">
+                                <i class="fas fa-hourglass-half me-1"></i>In prova
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('hr.hr_detail', user_id=data.user.id) }}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Visualizza Dettagli">
+                                <i class="fas fa-eye"></i>
+                                {% if current_user.can_manage_hr_data() %}Gestisci{% else %}Visualizza{% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Nessun dipendente trovato.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.opacity-50 {
+    opacity: 0.5;
+}
+</style>
+{% endblock %}
