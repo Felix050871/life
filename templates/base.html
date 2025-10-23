@@ -296,6 +296,34 @@
                 </li>
                 {% endif %}
 
+                <!-- HR - Human Resources - Solo se ha almeno un permesso HR -->
+                {% if current_user.can_access_hr_menu() %}
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-id-card"></i>
+                        <span>HR</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        {% if current_user.can_manage_hr_data() or current_user.can_view_hr_data() %}
+                        <li><a href="{{ url_for('hr.hr_list') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-list"></i>Elenco Dipendenti
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_my_hr_data() %}
+                        <li><a href="{{ url_for('hr.hr_detail', user_id=current_user.id) }}" class="sidebar-submenu-link">
+                            <i class="fas fa-user"></i>I Miei Dati HR
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_manage_hr_data() or current_user.can_view_hr_data() %}
+                        <li><a href="{{ url_for('hr.hr_export') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-file-excel"></i>Export Excel
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
                 <!-- SEDI - Solo se ha almeno un permesso sedi -->
                 {% set has_sedi_permission = current_user.can_manage_sedi() or current_user.can_view_sedi() %}
                 {% if has_sedi_permission %}
