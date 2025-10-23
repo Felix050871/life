@@ -894,6 +894,130 @@ class User(UserMixin, db.Model):
         ).all()
 
 
+class UserHRData(db.Model):
+    """Modello per gestire dati HR (Human Resources) degli utenti
+    Separato dal modello User per privacy, sicurezza e performance.
+    Relazione 1-to-1 con User."""
+    
+    __tablename__ = 'user_hr_data'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    
+    # Dati anagrafici
+    matricola = db.Column(db.String(50), nullable=True)  # Employee number
+    codice_fiscale = db.Column(db.String(16), nullable=True)  # Tax code
+    birth_date = db.Column(db.Date, nullable=True)  # Data di nascita
+    birth_city = db.Column(db.String(100), nullable=True)  # Città di nascita
+    birth_province = db.Column(db.String(2), nullable=True)  # Provincia di nascita (sigla)
+    birth_country = db.Column(db.String(100), nullable=True, default='Italia')  # Paese di nascita
+    gender = db.Column(db.String(1), nullable=True)  # M/F/A (altro)
+    
+    # Residenza
+    address = db.Column(db.String(255), nullable=True)  # Indirizzo
+    city = db.Column(db.String(100), nullable=True)  # Città
+    province = db.Column(db.String(2), nullable=True)  # Provincia (sigla)
+    postal_code = db.Column(db.String(10), nullable=True)  # CAP
+    country = db.Column(db.String(100), nullable=True, default='Italia')  # Paese
+    
+    # Dati contrattuali
+    contract_type = db.Column(db.String(100), nullable=True)  # Tipo contratto (TD, TI, Stage, ecc.)
+    hire_date = db.Column(db.Date, nullable=True)  # Data assunzione
+    contract_start_date = db.Column(db.Date, nullable=True)  # Data inizio contratto
+    contract_end_date = db.Column(db.Date, nullable=True)  # Data fine contratto (solo TD)
+    probation_end_date = db.Column(db.Date, nullable=True)  # Fine periodo di prova
+    ccnl = db.Column(db.String(100), nullable=True)  # CCNL applicato
+    ccnl_level = db.Column(db.String(50), nullable=True)  # Livello contrattuale
+    work_hours_week = db.Column(db.Float, nullable=True)  # Ore settimanali contratto
+    
+    # Dati economici
+    gross_salary = db.Column(db.Float, nullable=True)  # RAL (Reddito Annuo Lordo)
+    net_salary = db.Column(db.Float, nullable=True)  # Netto mensile
+    iban = db.Column(db.String(34), nullable=True)  # IBAN per bonifico stipendio
+    payment_method = db.Column(db.String(50), nullable=True)  # Metodo pagamento (bonifico, assegno, ecc.)
+    
+    # Documenti identità
+    id_card_type = db.Column(db.String(50), nullable=True)  # Tipo documento (CI, Patente, ecc.)
+    id_card_number = db.Column(db.String(50), nullable=True)  # Numero documento
+    id_card_issue_date = db.Column(db.Date, nullable=True)  # Data rilascio
+    id_card_expiry = db.Column(db.Date, nullable=True)  # Data scadenza
+    id_card_issued_by = db.Column(db.String(100), nullable=True)  # Ente rilascio
+    passport_number = db.Column(db.String(50), nullable=True)  # Numero passaporto
+    passport_expiry = db.Column(db.Date, nullable=True)  # Scadenza passaporto
+    
+    # Contatto emergenza
+    emergency_contact_name = db.Column(db.String(100), nullable=True)  # Nome contatto emergenza
+    emergency_contact_phone = db.Column(db.String(20), nullable=True)  # Telefono emergenza
+    emergency_contact_relation = db.Column(db.String(50), nullable=True)  # Relazione (coniuge, genitore, ecc.)
+    
+    # Formazione
+    education_level = db.Column(db.String(100), nullable=True)  # Titolo studio (diploma, laurea, ecc.)
+    education_field = db.Column(db.String(100), nullable=True)  # Campo di studio
+    
+    # Altri dati
+    marital_status = db.Column(db.String(50), nullable=True)  # Stato civile
+    dependents_number = db.Column(db.Integer, nullable=True)  # Numero familiari a carico
+    disability = db.Column(db.Boolean, default=False)  # Disabilità certificata
+    disability_percentage = db.Column(db.Integer, nullable=True)  # Percentuale disabilità
+    
+    # Note HR
+    notes = db.Column(db.Text, nullable=True)  # Note interne HR
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('hr_data', uselist=False, lazy=True))
+    company = db.relationship('Company', backref='hr_data_records')
+    
+    def __repr__(self):
+        return f'<UserHRData {self.matricola} - {self.user.get_full_name() if self.user else "N/A"}>'
+    
+    def get_age(self):
+        """Calcola l'età dell'utente"""
+        if not self.birth_date:
+            return None
+        today = date.today()
+        return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+    
+    def is_contract_active(self):
+        """Verifica se il contratto è attivo"""
+        if not self.contract_start_date:
+            return False
+        today = date.today()
+        if self.contract_start_date > today:
+            return False
+        if self.contract_end_date and self.contract_end_date < today:
+            return False
+        return True
+    
+    def is_probation_period(self):
+        """Verifica se l'utente è in periodo di prova"""
+        if not self.probation_end_date:
+            return False
+        return date.today() <= self.probation_end_date
+    
+    def days_until_contract_end(self):
+        """Giorni rimanenti al termine del contratto (solo TD)"""
+        if not self.contract_end_date:
+            return None
+        days = (self.contract_end_date - date.today()).days
+        return days if days >= 0 else 0
+    
+    def is_document_expiring_soon(self, days=30):
+        """Verifica se documenti sono in scadenza"""
+        expiring = []
+        today = date.today()
+        
+        if self.id_card_expiry and (self.id_card_expiry - today).days <= days:
+            expiring.append(f'Documento identità (scade il {self.id_card_expiry.strftime("%d/%m/%Y")})')
+        if self.passport_expiry and (self.passport_expiry - today).days <= days:
+            expiring.append(f'Passaporto (scade il {self.passport_expiry.strftime("%d/%m/%Y")})')
+        
+        return expiring
+
 
 # =============================================================================
 # ATTENDANCE & TIME TRACKING MODELS
