@@ -241,7 +241,6 @@ def hr_detail(user_id):
             if sede_id_str:
                 sede_id = int(sede_id_str)
                 # Verifica che la sede appartenga alla company dell'utente
-                from models import Sede
                 sede = filter_by_company(Sede.query).filter_by(id=sede_id).first()
                 if sede:
                     hr_data.sede_id = sede_id
