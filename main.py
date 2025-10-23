@@ -20,6 +20,7 @@ from blueprints.reperibilita import reperibilita_bp
 from blueprints.reports import reports_bp
 from blueprints.expense import expense_bp
 from blueprints.user_management import user_management_bp
+from blueprints.hr import hr_bp
 from blueprints.admin import admin_bp
 from blueprints.presidio import presidio_bp
 from blueprints.export import export_bp
@@ -53,6 +54,7 @@ app.register_blueprint(reperibilita_bp)
 app.register_blueprint(reports_bp)
 app.register_blueprint(expense_bp)
 app.register_blueprint(user_management_bp)
+app.register_blueprint(hr_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(presidio_bp)
 app.register_blueprint(export_bp)
