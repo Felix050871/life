@@ -64,9 +64,16 @@ The platform features a modern, responsive dark-themed Bootstrap design with gen
 - **Database**: Exclusively designed for PostgreSQL for robustness.
 
 ### Feature Specifications
-- **FLOW**: Attendance tracking (live and manual monthly timesheets), intelligent shift scheduling, leave request workflow, overtime and mileage reimbursements, time bank (Banca ore), on-call duty management (Reperibilità), and reports.
+- **FLOW**: Attendance tracking (live and manual monthly timesheets), intelligent shift scheduling, leave request workflow, overtime and mileage reimbursements, time bank (Banca ore), on-call duty management (Reperibilità), HR data management, and reports.
 - **CIRCLE**: News feed and announcements (posts with comments/likes, optional email notifications), company history (Delorean), groups, polls and surveys, company calendar, document management, tool links, and employee directory (Personas).
   - **Email Notifications for Announcements**: Option to send email notifications to all active company users for "comunicazione" posts, utilizing the multi-tenant email system.
+- **HR Data Management (October 2025)**: Comprehensive employee information system with sensitive data protection, featuring:
+  - **UserHRData Model**: Separate table with 1-to-1 relationship to User for GDPR compliance and security isolation
+  - **Employee Fields**: Matricola (employee ID), codice fiscale (tax code), birth data (date, city, province), complete address (via, CAP, city, province), contract details (type, start/end dates, hours/week, CCNL), economic data (RAL, base salary, meal vouchers, fuel card), bank details (IBAN), emergency contacts, and document management (ID card, driver's license, passport)
+  - **Permission-Based Access**: Three-tier permission system (can_manage_hr_data for full edit, can_view_hr_data for read-only company-wide access, can_view_my_hr_data for personal data viewing)
+  - **Excel Export**: Single-click export of complete employee database in Excel format with Italian formatting
+  - **Multi-Tenant Isolation**: All HR data properly scoped by company_id with filter_by_company() throughout
+  - **UI/UX**: Bootstrap-styled templates (hr_list.html for employee directory, hr_detail.html for individual record editing) with sidebar menu integration
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.

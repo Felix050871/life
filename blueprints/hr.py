@@ -94,13 +94,19 @@ def hr_detail(user_id):
         flash('Non hai i permessi per visualizzare questi dati', 'error')
         return redirect(url_for('hr.hr_list'))
     
-    # Ottieni o crea record HR
+    # Ottieni record HR esistente
     hr_data = user.hr_data
-    if not hr_data:
+    
+    # Crea record HR solo se l'utente ha permessi di modifica
+    if not hr_data and can_edit:
         hr_data = UserHRData(user_id=user.id, company_id=user.company_id)
         set_company_on_create(hr_data)
         db.session.add(hr_data)
         db.session.commit()
+    elif not hr_data:
+        # Per utenti read-only, crea oggetto vuoto non persistito
+        # in modo che il template possa accedere agli attributi senza errori
+        hr_data = UserHRData(user_id=user.id, company_id=user.company_id)
     
     if request.method == 'POST' and can_edit:
         try:
