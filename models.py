@@ -224,7 +224,12 @@ class UserRole(db.Model):
             'can_manage_tools': 'Gestire Strumenti Esterni',
             'can_view_tools': 'Visualizzare Strumenti',
             'can_comment_posts': 'Commentare Post',
-            'can_like_posts': 'Mettere Like ai Post'
+            'can_like_posts': 'Mettere Like ai Post',
+            
+            # HR - Human Resources
+            'can_manage_hr_data': 'Gestire Dati HR',
+            'can_view_hr_data': 'Visualizzare Tutti i Dati HR',
+            'can_view_my_hr_data': 'Visualizzare I Miei Dati HR'
         }
 
 class User(UserMixin, db.Model):
@@ -680,6 +685,23 @@ class User(UserMixin, db.Model):
         return (self.can_create_mileage_requests() or self.can_view_mileage_requests() or 
                 self.can_manage_mileage_requests() or self.can_approve_mileage_requests() or
                 self.can_view_my_mileage_requests())
+    
+    # === HR - HUMAN RESOURCES ===
+    def can_manage_hr_data(self):
+        """Gestire dati HR (creare, modificare, eliminare)"""
+        return self.has_permission('can_manage_hr_data')
+    
+    def can_view_hr_data(self):
+        """Visualizzare tutti i dati HR dell'azienda"""
+        return self.has_permission('can_view_hr_data')
+    
+    def can_view_my_hr_data(self):
+        """Visualizzare i propri dati HR"""
+        return self.has_permission('can_view_my_hr_data')
+    
+    def can_access_hr_menu(self):
+        """Accesso al menu HR"""
+        return self.can_manage_hr_data() or self.can_view_hr_data() or self.can_view_my_hr_data()
     
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):
