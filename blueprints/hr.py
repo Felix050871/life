@@ -119,6 +119,8 @@ def hr_detail(user_id):
             birth_date_str = request.form.get('birth_date', '').strip()
             if birth_date_str:
                 hr_data.birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.birth_date = None
             
             hr_data.birth_city = request.form.get('birth_city', '').strip() or None
             hr_data.birth_province = request.form.get('birth_province', '').strip().upper() or None
@@ -140,10 +142,14 @@ def hr_detail(user_id):
             hire_date_str = request.form.get('hire_date', '').strip()
             if hire_date_str:
                 hr_data.hire_date = datetime.strptime(hire_date_str, '%Y-%m-%d').date()
+            else:
+                hr_data.hire_date = None
             
             contract_start_str = request.form.get('contract_start_date', '').strip()
             if contract_start_str:
                 hr_data.contract_start_date = datetime.strptime(contract_start_str, '%Y-%m-%d').date()
+            else:
+                hr_data.contract_start_date = None
             
             contract_end_str = request.form.get('contract_end_date', '').strip()
             if contract_end_str:
@@ -170,23 +176,33 @@ def hr_detail(user_id):
             work_hours_str = request.form.get('work_hours_week', '').strip()
             if work_hours_str:
                 hr_data.work_hours_week = float(work_hours_str.replace(',', '.'))
+            else:
+                hr_data.work_hours_week = None
             
             superminimo_str = request.form.get('superminimo', '').strip()
             if superminimo_str:
                 hr_data.superminimo = float(superminimo_str.replace(',', '.'))
+            else:
+                hr_data.superminimo = None
             
             rimborsi_str = request.form.get('rimborsi_diarie', '').strip()
             if rimborsi_str:
                 hr_data.rimborsi_diarie = float(rimborsi_str.replace(',', '.'))
+            else:
+                hr_data.rimborsi_diarie = None
             
             # Dati economici
             gross_salary_str = request.form.get('gross_salary', '').strip()
             if gross_salary_str:
                 hr_data.gross_salary = float(gross_salary_str.replace(',', '.'))
+            else:
+                hr_data.gross_salary = None
             
             net_salary_str = request.form.get('net_salary', '').strip()
             if net_salary_str:
                 hr_data.net_salary = float(net_salary_str.replace(',', '.'))
+            else:
+                hr_data.net_salary = None
             
             hr_data.iban = request.form.get('iban', '').strip().upper() or None
             hr_data.payment_method = request.form.get('payment_method', '').strip() or None
@@ -198,10 +214,14 @@ def hr_detail(user_id):
             id_issue_str = request.form.get('id_card_issue_date', '').strip()
             if id_issue_str:
                 hr_data.id_card_issue_date = datetime.strptime(id_issue_str, '%Y-%m-%d').date()
+            else:
+                hr_data.id_card_issue_date = None
             
             id_expiry_str = request.form.get('id_card_expiry', '').strip()
             if id_expiry_str:
                 hr_data.id_card_expiry = datetime.strptime(id_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.id_card_expiry = None
             
             hr_data.id_card_issued_by = request.form.get('id_card_issued_by', '').strip() or None
             hr_data.passport_number = request.form.get('passport_number', '').strip() or None
@@ -209,6 +229,8 @@ def hr_detail(user_id):
             passport_expiry_str = request.form.get('passport_expiry', '').strip()
             if passport_expiry_str:
                 hr_data.passport_expiry = datetime.strptime(passport_expiry_str, '%Y-%m-%d').date()
+            else:
+                hr_data.passport_expiry = None
             
             # Contatto emergenza
             hr_data.emergency_contact_name = request.form.get('emergency_contact_name', '').strip() or None
@@ -225,12 +247,16 @@ def hr_detail(user_id):
             dependents_str = request.form.get('dependents_number', '').strip()
             if dependents_str:
                 hr_data.dependents_number = int(dependents_str)
+            else:
+                hr_data.dependents_number = None
             
             hr_data.disability = request.form.get('disability') == 'on'
             
             disability_perc_str = request.form.get('disability_percentage', '').strip()
             if disability_perc_str and hr_data.disability:
                 hr_data.disability_percentage = int(disability_perc_str)
+            else:
+                hr_data.disability_percentage = None
             
             # Note
             hr_data.notes = request.form.get('notes', '').strip() or None
@@ -281,10 +307,14 @@ def hr_detail(user_id):
             banca_ore_limite_str = request.form.get('banca_ore_limite_max', '').strip()
             if banca_ore_limite_str:
                 hr_data.banca_ore_limite_max = float(banca_ore_limite_str.replace(',', '.'))
+            else:
+                hr_data.banca_ore_limite_max = None
             
             banca_ore_periodo_str = request.form.get('banca_ore_periodo_mesi', '').strip()
             if banca_ore_periodo_str:
                 hr_data.banca_ore_periodo_mesi = int(banca_ore_periodo_str)
+            else:
+                hr_data.banca_ore_periodo_mesi = None
             
             # Requisiti e sicurezza
             hr_data.minimum_requirements = request.form.get('minimum_requirements', '').strip() or None

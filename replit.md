@@ -68,12 +68,16 @@ The platform features a modern, responsive dark-themed Bootstrap design with gen
 - **CIRCLE**: News feed and announcements (posts with comments/likes, optional email notifications), company history (Delorean), groups, polls and surveys, company calendar, document management, tool links, and employee directory (Personas).
   - **Email Notifications for Announcements**: Option to send email notifications to all active company users for "comunicazione" posts, utilizing the multi-tenant email system.
 - **HR Data Management (October 2025)**: Comprehensive employee information system with sensitive data protection, featuring:
-  - **UserHRData Model**: Separate table with 1-to-1 relationship to User for GDPR compliance and security isolation
-  - **Employee Fields**: Matricola (employee ID), codice fiscale (tax code), birth data (date, city, province), complete address (via, CAP, city, province), contract details (type, start/end dates, hours/week, CCNL), economic data (RAL, base salary, meal vouchers, fuel card), bank details (IBAN), emergency contacts, and document management (ID card, driver's license, passport)
+  - **UserHRData Model**: Separate table (~50 fields) with 1-to-1 relationship to User for GDPR compliance and security isolation
+  - **Three-Section Structure** (aligned with anagraficaHR.xlsx):
+    1. **DATI CONTRATTUALI** (14 fields): Matricola, hire date, contract type/dates, CCNL, job title (mansione), qualification (qualifica), level, work hours/week, sede, client, salary components (superminimo, rimborsi/diarie, ticket restaurant), INAIL risk level, hiring type, notes
+    2. **ANAGRAFICA RISORSA** (20 fields): Education level, birth data (city/date/age), gender, tax code (codice fiscale), residence (city/address/domicile/CAP), phone, Law 104/92 benefits, emails (personal/work), marital status, dependents, emergency contacts, driver's license (number/type/expiry), ACI vehicle, banca ore settings
+    3. **VISITE E FORMAZIONE** (13 date/expiry pairs): Minimum requirements possession, medical visit (visita medica), and 6 mandatory training certifications (general safety, RSPP, RLS, first aid, emergency, supervisor) - each with data and scadenza tracking for expiry monitoring
   - **Permission-Based Access**: Three-tier permission system (can_manage_hr_data for full edit, can_view_hr_data for read-only company-wide access, can_view_my_hr_data for personal data viewing)
-  - **Excel Export**: Single-click export of complete employee database in Excel format with Italian formatting
+  - **Excel Export**: Single-click export with 47 columns in exact Excel file structure (COD SI, employee names, all contractual/registry/training fields) with Italian formatting (DD/MM/YYYY dates, comma decimals, Sì/No booleans)
   - **Multi-Tenant Isolation**: All HR data properly scoped by company_id with filter_by_company() throughout
-  - **UI/UX**: Bootstrap-styled templates (hr_list.html for employee directory, hr_detail.html for individual record editing) with sidebar menu integration
+  - **UI/UX**: Bootstrap accordion-style templates (hr_list.html for employee directory, hr_detail.html with 3 collapsible sections matching Excel structure) with sidebar menu integration
+  - **Database Migration** (October 23, 2025): Added 30+ new fields via ALTER TABLE statements for complete Excel template alignment
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.
