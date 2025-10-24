@@ -75,13 +75,19 @@ The platform features a modern, responsive dark-themed Bootstrap design with gen
     3. **Record-level `sede_id`** (in Shift, AttendanceEvent, LeaveRequest, etc.) - Actual sede where event occurred, persisted at creation time to preserve historical accuracy through employee transfers
   - **Three-Section Structure** (aligned with anagraficaHR.xlsx):
     1. **DATI CONTRATTUALI** (14 fields): Matricola, hire date, contract type/dates, CCNL, job title (mansione), qualification (qualifica), level, work hours/week, client, salary components (superminimo, rimborsi/diarie, ticket restaurant), INAIL risk level, hiring type, notes
-    2. **ANAGRAFICA RISORSA** (20 fields): Education level, birth data (city/date/age), gender, tax code (codice fiscale, read-only), residence (city/address/domicile/CAP), phone, Law 104/92 benefits, emails (personal/work - personal_email is editable), marital status, dependents, emergency contacts, driver's license (number/type/expiry), ACI vehicle, banca ore settings
+    2. **ANAGRAFICA RISORSA** (20 fields): Education level, birth data (city/date/age), gender, tax code (codice fiscale, read-only), residence (city/address/domicile/CAP), phone, Law 104/92 benefits, emails (personal/work - personal_email is editable), marital status, dependents, emergency contacts, driver's license (number/type/expiry), ACI vehicle with 3-tier cascading selection (Type→Brand→Model), vehicle registration document upload (libretto di circolazione), banca ore settings
     3. **VISITE E FORMAZIONE** (13 date/expiry pairs): Minimum requirements possession, medical visit (visita medica), and 6 mandatory training certifications (general safety, RSPP, RLS, first aid, emergency, supervisor) - each with data and scadenza tracking for expiry monitoring
   - **Permission-Based Access**: Three-tier permission system (can_manage_hr_data for full edit, can_view_hr_data for read-only company-wide access, can_view_my_hr_data for personal data viewing)
   - **Excel Export**: Single-click export with 47 columns in exact Excel file structure (COD SI, employee names, all contractual/registry/training fields) with Italian formatting (DD/MM/YYYY dates, comma decimals, Sì/No booleans). Exports "Sede di Assunzione" from UserHRData.sede_id.
   - **Multi-Tenant Isolation**: All HR data properly scoped by company_id with filter_by_company() throughout
   - **UI/UX**: Bootstrap accordion-style templates (hr_list.html for employee directory, hr_detail.html with 3 collapsible sections matching Excel structure) with sidebar menu integration. Clear field labels distinguish "Sede di assunzione" (HR) from "Sede operativa" (User Management).
-  - **Database Migration** (October 23, 2025): Added 30+ new fields via ALTER TABLE statements for complete Excel template alignment. October 24, 2025: Clarified three-tier sede architecture with distinct purposes for each sede_id field.
+  - **Database Migration** (October 23, 2025): Added 30+ new fields via ALTER TABLE statements for complete Excel template alignment. October 24, 2025: Clarified three-tier sede architecture with distinct purposes for each sede_id field. Added `vehicle_registration_document` field for uploading vehicle registration documents.
+  - **Vehicle Registration Document Upload** (October 24, 2025): Added support for uploading, viewing, downloading, and deleting vehicle registration documents (libretto di circolazione) with secure file handling:
+    - Accepts PDF, JPG, PNG formats (max 5MB)
+    - Files stored in `static/uploads/vehicle_docs/` with unique timestamped filenames
+    - Automatic cleanup of old files when replaced or deleted
+    - View and download buttons in HR detail form
+    - Path stored in `UserHRData.vehicle_registration_document` field
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.

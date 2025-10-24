@@ -20,6 +20,8 @@ from utils_tenant import filter_by_company, set_company_on_create
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+import os
+from werkzeug.utils import secure_filename
 
 # Create blueprint
 hr_bp = Blueprint('hr', __name__, url_prefix='/hr')
@@ -445,6 +447,55 @@ def hr_detail(user_id):
                 hr_data.aci_vehicle_id = aci_vehicle_id
             else:
                 hr_data.aci_vehicle_id = None
+            
+            # Gestione upload libretto di circolazione
+            delete_vehicle_doc = request.form.get('delete_vehicle_doc') == '1'
+            if delete_vehicle_doc and hr_data.vehicle_registration_document:
+                # Elimina il file esistente
+                old_file_path = os.path.join('static', 'uploads', 'vehicle_docs', hr_data.vehicle_registration_document.split('/')[-1])
+                if os.path.exists(old_file_path):
+                    os.remove(old_file_path)
+                hr_data.vehicle_registration_document = None
+                flash('Libretto di circolazione eliminato con successo', 'success')
+            
+            if 'vehicle_registration_document' in request.files:
+                file = request.files['vehicle_registration_document']
+                if file and file.filename:
+                    # Verifica dimensione file (max 5MB)
+                    file.seek(0, os.SEEK_END)
+                    file_size = file.tell()
+                    file.seek(0)
+                    
+                    if file_size > 5 * 1024 * 1024:  # 5MB
+                        flash('Il file è troppo grande. Dimensione massima: 5MB', 'error')
+                    else:
+                        # Verifica estensione
+                        allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png'}
+                        filename = secure_filename(file.filename)
+                        file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+                        
+                        if file_ext in allowed_extensions:
+                            # Crea directory se non esiste
+                            upload_dir = os.path.join('static', 'uploads', 'vehicle_docs')
+                            os.makedirs(upload_dir, exist_ok=True)
+                            
+                            # Genera nome univoco per il file
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                            unique_filename = f"libretto_{user.id}_{timestamp}.{file_ext}"
+                            file_path = os.path.join(upload_dir, unique_filename)
+                            
+                            # Elimina il file precedente se esiste
+                            if hr_data.vehicle_registration_document:
+                                old_file_path = os.path.join('static', 'uploads', 'vehicle_docs', hr_data.vehicle_registration_document.split('/')[-1])
+                                if os.path.exists(old_file_path):
+                                    os.remove(old_file_path)
+                            
+                            # Salva il nuovo file
+                            file.save(file_path)
+                            hr_data.vehicle_registration_document = f"/uploads/vehicle_docs/{unique_filename}"
+                            flash('Libretto di circolazione caricato con successo', 'success')
+                        else:
+                            flash('Formato file non supportato. Usa PDF, JPG o PNG', 'error')
             
             hr_data.banca_ore_enabled = request.form.get('banca_ore_enabled') == 'on'
             

@@ -13,7 +13,7 @@
     </a>
 </div>
 
-<form method="POST" action="{{ url_for('hr.hr_detail', user_id=user.id) }}">
+<form method="POST" action="{{ url_for('hr.hr_detail', user_id=user.id) }}" enctype="multipart/form-data">
     
     <!-- ========================================= -->
     <!-- SEZIONE 1: DATI CONTRATTUALI -->
@@ -421,6 +421,43 @@
                     <small class="text-muted">Modello specifico con costo chilometrico</small>
                 </div>
             </div>
+            
+            <!-- Upload Libretto di Circolazione -->
+            <div class="row mt-3">
+                <div class="col-md-8 mb-3">
+                    <label class="form-label">Libretto di Circolazione</label>
+                    {% if hr_data.vehicle_registration_document %}
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" value="{{ hr_data.vehicle_registration_document.split('/')[-1] }}" disabled>
+                        <a href="/static/uploads/vehicle_docs/{{ hr_data.vehicle_registration_document.split('/')[-1] }}" 
+                           target="_blank" class="btn btn-outline-primary" title="Visualizza libretto">
+                            <i class="fas fa-eye me-1"></i>Visualizza
+                        </a>
+                        <a href="/static/uploads/vehicle_docs/{{ hr_data.vehicle_registration_document.split('/')[-1] }}" 
+                           download class="btn btn-outline-success" title="Scarica libretto">
+                            <i class="fas fa-download me-1"></i>Scarica
+                        </a>
+                    </div>
+                    {% endif %}
+                    <input type="file" name="vehicle_registration_document" class="form-control" 
+                           accept=".pdf,.jpg,.jpeg,.png"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <small class="text-muted">Carica una copia del libretto di circolazione (PDF, JPG, PNG - max 5MB)</small>
+                </div>
+                <div class="col-md-4 mb-3">
+                    {% if hr_data.vehicle_registration_document %}
+                    <label class="form-label">Azioni</label>
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-danger" 
+                                onclick="if(confirm('Confermi l\'eliminazione del libretto caricato?')) { document.getElementById('deleteVehicleDoc').value='1'; this.form.submit(); }"
+                                {% if not can_edit %}disabled{% endif %}>
+                            <i class="fas fa-trash me-1"></i>Elimina Documento
+                        </button>
+                        <input type="hidden" id="deleteVehicleDoc" name="delete_vehicle_doc" value="0">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 
@@ -592,7 +629,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!tipoSelect || !marcaSelect || !modelloSelect) return;
     
     // Salva il veicolo corrente per pre-selezionarlo
-    const currentVehicleId = {{ hr_data.aci_vehicle_id|default('null') }};
+    const currentVehicleId = {% if hr_data.aci_vehicle_id %}{{ hr_data.aci_vehicle_id }}{% else %}null{% endif %};
     
     tipoSelect.addEventListener('change', function() {
         const tipo = this.value;

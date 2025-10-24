@@ -1003,6 +1003,7 @@ class UserHRData(db.Model):
     # Dati operativi
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede di assunzione (amministrativo/contrattuale)
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
+    vehicle_registration_document = db.Column(db.String(255), nullable=True)  # Path del libretto di circolazione caricato
     banca_ore_enabled = db.Column(db.Boolean, default=False)  # Abilitazione banca ore
     banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo ore accumulabili
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo mesi per usufruire ore
