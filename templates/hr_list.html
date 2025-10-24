@@ -15,9 +15,9 @@
     {% endif %}
 </div>
 
-<!-- Summary Cards -->
-<div class="row g-3 mb-4">
-    <!-- Totale Dipendenti -->
+<!-- Summary Cards - Row 1: Demografia e Contratti -->
+<div class="row g-3 mb-3">
+    <!-- 1. Dipendenti Totali -->
     <div class="col-lg-3 col-md-6">
         <div class="card bg-primary text-white h-100">
             <div class="card-body">
@@ -35,9 +35,31 @@
         </div>
     </div>
 
-    <!-- Donne -->
+    <!-- 2. Dipendenti Uomini -->
     <div class="col-lg-3 col-md-6">
         <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 opacity-75">Dipendenti Uomini</h6>
+                        <h2 class="card-title mb-0">{{ statistics.male_count }}</h2>
+                        <small class="opacity-75">
+                            {% if statistics.total_employees > 0 %}
+                            {{ (statistics.male_count / statistics.total_employees * 100)|round(1) }}% del totale
+                            {% else %}
+                            0% del totale
+                            {% endif %}
+                        </small>
+                    </div>
+                    <i class="fas fa-mars fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Dipendenti Donne -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card text-white h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
@@ -57,25 +79,7 @@
         </div>
     </div>
 
-    <!-- Under 36 -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card bg-warning text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-subtitle mb-2 opacity-75">Under 36</h6>
-                        <h2 class="card-title mb-0">{{ statistics.under_36 }}</h2>
-                        <small class="opacity-75">
-                            <i class="fas fa-birthday-cake me-1"></i>Giovani lavoratori
-                        </small>
-                    </div>
-                    <i class="fas fa-user-graduate fa-3x opacity-50"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Contratti Attivi -->
+    <!-- 4. Contratti Attivi -->
     <div class="col-lg-3 col-md-6">
         <div class="card bg-success text-white h-100">
             <div class="card-body">
@@ -94,79 +98,75 @@
     </div>
 </div>
 
-<!-- Second row of statistics -->
+<!-- Summary Cards - Row 2: Tipologie Contrattuali e Fasce d'Età -->
 <div class="row g-3 mb-4">
-    <!-- Uomini -->
+    <!-- 5. Tempo Indeterminato -->
     <div class="col-lg-3 col-md-6">
-        <div class="card border-info h-100">
+        <div class="card text-white h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-subtitle mb-2 text-muted">Dipendenti Uomini</h6>
-                        <h3 class="card-title mb-0">{{ statistics.male_count }}</h3>
-                        <small class="text-muted">
-                            {% if statistics.total_employees > 0 %}
-                            {{ (statistics.male_count / statistics.total_employees * 100)|round(1) }}% del totale
-                            {% else %}
-                            0% del totale
-                            {% endif %}
-                        </small>
-                    </div>
-                    <i class="fas fa-mars fa-2x text-info opacity-50"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tempo Indeterminato -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-success h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-subtitle mb-2 text-muted">Tempo Indeterminato</h6>
-                        <h3 class="card-title mb-0">{{ statistics.tempo_indeterminato }}</h3>
-                        <small class="text-muted">
+                        <h6 class="card-subtitle mb-2 opacity-75">Tempo Indeterminato</h6>
+                        <h2 class="card-title mb-0">{{ statistics.tempo_indeterminato }}</h2>
+                        <small class="opacity-75">
                             <i class="fas fa-infinity me-1"></i>Contratti permanenti
                         </small>
                     </div>
-                    <i class="fas fa-handshake fa-2x text-success opacity-50"></i>
+                    <i class="fas fa-handshake fa-3x opacity-50"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tempo Determinato -->
+    <!-- 6. Tempo Determinato -->
     <div class="col-lg-3 col-md-6">
-        <div class="card border-warning h-100">
+        <div class="card bg-warning text-dark h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-subtitle mb-2 text-muted">Tempo Determinato</h6>
-                        <h3 class="card-title mb-0">{{ statistics.tempo_determinato }}</h3>
-                        <small class="text-muted">
+                        <h6 class="card-subtitle mb-2 opacity-75">Tempo Determinato</h6>
+                        <h2 class="card-title mb-0">{{ statistics.tempo_determinato }}</h2>
+                        <small class="opacity-75">
                             <i class="fas fa-calendar-alt me-1"></i>Contratti a termine
                         </small>
                     </div>
-                    <i class="fas fa-clock fa-2x text-warning opacity-50"></i>
+                    <i class="fas fa-clock fa-3x opacity-50"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Over 36 -->
+    <!-- 7. Under 36 -->
     <div class="col-lg-3 col-md-6">
-        <div class="card border-secondary h-100">
+        <div class="card text-white h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-subtitle mb-2 text-muted">Over 36</h6>
-                        <h3 class="card-title mb-0">{{ statistics.total_employees - statistics.under_36 }}</h3>
-                        <small class="text-muted">
+                        <h6 class="card-subtitle mb-2 opacity-75">Under 36</h6>
+                        <h2 class="card-title mb-0">{{ statistics.under_36 }}</h2>
+                        <small class="opacity-75">
+                            <i class="fas fa-birthday-cake me-1"></i>Giovani lavoratori
+                        </small>
+                    </div>
+                    <i class="fas fa-user-graduate fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Over 36 -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-secondary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 opacity-75">Over 36</h6>
+                        <h2 class="card-title mb-0">{{ statistics.total_employees - statistics.under_36 }}</h2>
+                        <small class="opacity-75">
                             <i class="fas fa-user-tie me-1"></i>Esperienza matura
                         </small>
                     </div>
-                    <i class="fas fa-user-check fa-2x text-secondary opacity-50"></i>
+                    <i class="fas fa-user-check fa-3x opacity-50"></i>
                 </div>
             </div>
         </div>
