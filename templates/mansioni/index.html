@@ -52,6 +52,7 @@
                         <tr>
                             <th>Nome</th>
                             <th>Descrizione</th>
+                            <th>Abilitazioni</th>
                             <th>Stato</th>
                             <th>Data Creazione</th>
                             {% if can_manage %}
@@ -64,6 +65,21 @@
                         <tr {% if not mansione.active %}class="table-secondary"{% endif %}>
                             <td><strong>{{ mansione.nome }}</strong></td>
                             <td>{{ mansione.descrizione or '-' }}</td>
+                            <td>
+                                {% if mansione.abilita_turnazioni %}
+                                <span class="badge bg-info me-1" title="Abilitato a Turnazioni">
+                                    <i class="fas fa-calendar-alt"></i> Turnazioni
+                                </span>
+                                {% endif %}
+                                {% if mansione.abilita_reperibilita %}
+                                <span class="badge bg-warning" title="Abilitato a Reperibilità">
+                                    <i class="fas fa-phone"></i> Reperibilità
+                                </span>
+                                {% endif %}
+                                {% if not mansione.abilita_turnazioni and not mansione.abilita_reperibilita %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if mansione.active %}
                                 <span class="badge bg-success">Attiva</span>
