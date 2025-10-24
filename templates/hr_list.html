@@ -9,9 +9,9 @@
         Gestione Risorse Umane
     </h1>
     {% if current_user.can_manage_hr_data() %}
-    <a href="{{ url_for('hr.hr_export') }}" class="btn btn-success">
-        <i class="fas fa-file-excel me-2"></i>Export Excel
-    </a>
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exportConfigModal">
+        <i class="fas fa-file-excel me-2"></i>Export Personalizzato
+    </button>
     {% endif %}
 </div>
 
@@ -385,6 +385,228 @@
     </div>
 </div>
 
+<!-- Modal Export Personalizzato -->
+<div class="modal fade" id="exportConfigModal" tabindex="-1" aria-labelledby="exportConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportConfigModalLabel">
+                    <i class="fas fa-sliders-h me-2"></i>Configura Export Personalizzato
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="exportConfigForm" method="POST" action="{{ url_for('hr.hr_list') }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Seleziona i campi da includere nell'export e applica eventuali filtri. La lista a video e l'export Excel saranno filtrati di conseguenza.
+                    </div>
+                    
+                    <!-- Pulsanti Seleziona Tutto / Deseleziona Tutto -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllFields()">
+                            <i class="fas fa-check-double me-1"></i>Seleziona Tutti
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllFields()">
+                            <i class="fas fa-times me-1"></i>Deseleziona Tutti
+                        </button>
+                    </div>
+                    
+                    <!-- Accordion per categorie -->
+                    <div class="accordion" id="exportFieldsAccordion">
+                        <!-- SEZIONE 1: DATI CONTRATTUALI -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#contrattualiSection">
+                                    <i class="fas fa-file-contract me-2"></i>DATI CONTRATTUALI
+                                </button>
+                            </h2>
+                            <div id="contrattualiSection" class="accordion-collapse collapse show" data-bs-parent="#exportFieldsAccordion">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="matricola" id="field_matricola" checked>
+                                                <label class="form-check-label" for="field_matricola">Matricola</label>
+                                            </div>
+                                            <input type="text" class="form-control form-control-sm mt-1" name="filter_matricola" placeholder="Filtro...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="hire_date" id="field_hire_date" checked>
+                                                <label class="form-check-label" for="field_hire_date">Data Assunzione</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="contract_type" id="field_contract_type" checked>
+                                                <label class="form-check-label" for="field_contract_type">Tipo Contratto</label>
+                                            </div>
+                                            <select class="form-select form-select-sm mt-1" name="filter_contract_type">
+                                                <option value="">Tutti</option>
+                                                <option value="Tempo indeterminato">Tempo indeterminato</option>
+                                                <option value="Tempo determinato">Tempo determinato</option>
+                                                <option value="Apprendistato">Apprendistato</option>
+                                                <option value="Stage">Stage</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="ccnl" id="field_ccnl" checked>
+                                                <label class="form-check-label" for="field_ccnl">CCNL</label>
+                                            </div>
+                                            <input type="text" class="form-control form-control-sm mt-1" name="filter_ccnl" placeholder="Filtro...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="mansione" id="field_mansione" checked>
+                                                <label class="form-check-label" for="field_mansione">Mansione</label>
+                                            </div>
+                                            <input type="text" class="form-control form-control-sm mt-1" name="filter_mansione" placeholder="Filtro...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="qualifica" id="field_qualifica" checked>
+                                                <label class="form-check-label" for="field_qualifica">Qualifica</label>
+                                            </div>
+                                            <input type="text" class="form-control form-control-sm mt-1" name="filter_qualifica" placeholder="Filtro...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="sede_assunzione" id="field_sede_assunzione" checked>
+                                                <label class="form-check-label" for="field_sede_assunzione">Sede Assunzione</label>
+                                            </div>
+                                            <select class="form-select form-select-sm mt-1" name="filter_sede_assunzione">
+                                                <option value="">Tutte</option>
+                                                {% for sede in all_sedi %}
+                                                <option value="{{ sede.id }}">{{ sede.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- SEZIONE 2: ANAGRAFICA RISORSA -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#anagraficaSection">
+                                    <i class="fas fa-address-card me-2"></i>ANAGRAFICA RISORSA
+                                </button>
+                            </h2>
+                            <div id="anagraficaSection" class="accordion-collapse collapse" data-bs-parent="#exportFieldsAccordion">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="education_level" id="field_education_level" checked>
+                                                <label class="form-check-label" for="field_education_level">Titolo di Studio</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="birth_date" id="field_birth_date" checked>
+                                                <label class="form-check-label" for="field_birth_date">Data di Nascita</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="gender" id="field_gender" checked>
+                                                <label class="form-check-label" for="field_gender">Sesso</label>
+                                            </div>
+                                            <select class="form-select form-select-sm mt-1" name="filter_gender">
+                                                <option value="">Tutti</option>
+                                                <option value="M">Maschio</option>
+                                                <option value="F">Femmina</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="codice_fiscale" id="field_codice_fiscale" checked>
+                                                <label class="form-check-label" for="field_codice_fiscale">Codice Fiscale</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="city" id="field_city" checked>
+                                                <label class="form-check-label" for="field_city">Città Residenza</label>
+                                            </div>
+                                            <input type="text" class="form-control form-control-sm mt-1" name="filter_city" placeholder="Filtro...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="phone" id="field_phone" checked>
+                                                <label class="form-check-label" for="field_phone">Telefono</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="driver_license" id="field_driver_license" checked>
+                                                <label class="form-check-label" for="field_driver_license">Patente</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- SEZIONE 3: VISITE E FORMAZIONE -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#formazioneSection">
+                                    <i class="fas fa-graduation-cap me-2"></i>VISITE E FORMAZIONE
+                                </button>
+                            </h2>
+                            <div id="formazioneSection" class="accordion-collapse collapse" data-bs-parent="#exportFieldsAccordion">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="medical_visit" id="field_medical_visit" checked>
+                                                <label class="form-check-label" for="field_medical_visit">Visita Medica</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="training_general" id="field_training_general" checked>
+                                                <label class="form-check-label" for="field_training_general">Formazione Generale</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="training_rspp" id="field_training_rspp" checked>
+                                                <label class="form-check-label" for="field_training_rspp">Formazione RSPP</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="training_first_aid" id="field_training_first_aid" checked>
+                                                <label class="form-check-label" for="field_training_first_aid">Formazione Primo Soccorso</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </button>
+                    <button type="submit" name="action" value="apply_filters" class="btn btn-primary">
+                        <i class="fas fa-filter me-1"></i>Applica Filtri
+                    </button>
+                    <button type="submit" name="action" value="export" class="btn btn-success">
+                        <i class="fas fa-file-excel me-1"></i>Export Excel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
 .opacity-50 {
     opacity: 0.5;
@@ -395,6 +617,14 @@
 </style>
 
 <script>
+function selectAllFields() {
+    document.querySelectorAll('.field-checkbox').forEach(cb => cb.checked = true);
+}
+
+function deselectAllFields() {
+    document.querySelectorAll('.field-checkbox').forEach(cb => cb.checked = false);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Bootstrap tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

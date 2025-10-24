@@ -10,7 +10,7 @@
 # Total routes: 3
 # =============================================================================
 
-from flask import Blueprint, request, render_template, redirect, url_for, flash, make_response
+from flask import Blueprint, request, render_template, redirect, url_for, flash, make_response, session
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from functools import wraps
@@ -134,11 +134,38 @@ def get_worst_expiry_status(hr_data):
 # HR ROUTES
 # =============================================================================
 
-@hr_bp.route('/')
+@hr_bp.route('/', methods=['GET', 'POST'])
 @login_required
 @require_hr_permission
 def hr_list():
-    """Lista dipendenti con dati HR"""
+    """Lista dipendenti con dati HR con filtri personalizzabili"""
+    
+    # Gestione POST - salva configurazione filtri e reindirizza all'export o mostra lista filtrata
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        # Salva campi selezionati in session
+        selected_fields = request.form.getlist('fields')
+        session['hr_export_fields'] = selected_fields if selected_fields else None
+        
+        # Salva filtri in session
+        filters = {}
+        for key in request.form.keys():
+            if key.startswith('filter_') and request.form.get(key):
+                filter_name = key.replace('filter_', '')
+                filters[filter_name] = request.form.get(key)
+        
+        session['hr_export_filters'] = filters if filters else None
+        
+        # Se azione è export, reindirizza all'export
+        if action == 'export':
+            return redirect(url_for('hr.hr_export'))
+        
+        # Altrimenti refresh con filtri applicati (apply_filters)
+        flash(f'Filtri applicati: {len(filters)} attivi', 'success')
+    
+    # Ottieni filtri da session
+    active_filters = session.get('hr_export_filters', {})
     
     # Ottieni tutti gli utenti con dati HR (esclusi admin di sistema e ruolo Admin/Amministratore)
     if current_user.can_view_hr_data() or current_user.can_manage_hr_data():
@@ -211,13 +238,98 @@ def hr_list():
         'tempo_determinato': tempo_determinato,
     }
     
+    # Applica filtri personalizzati se presenti
+    if active_filters:
+        filtered_data = []
+        for data in users_data:
+            user = data['user']
+            hr_data = data['hr_data']
+            
+            # Se ci sono filtri attivi ma l'utente non ha dati HR, escludilo
+            if not hr_data:
+                continue
+            
+            matches = True
+            
+            # Filtro matricola
+            if 'matricola' in active_filters:
+                if not hr_data.matricola or active_filters['matricola'].lower() not in hr_data.matricola.lower():
+                    matches = False
+            
+            # Filtro tipo contratto
+            if 'contract_type' in active_filters:
+                if not hr_data.contract_type or hr_data.contract_type != active_filters['contract_type']:
+                    matches = False
+            
+            # Filtro CCNL
+            if 'ccnl' in active_filters:
+                if not hr_data.ccnl or active_filters['ccnl'].lower() not in hr_data.ccnl.lower():
+                    matches = False
+            
+            # Filtro mansione
+            if 'mansione' in active_filters:
+                if not hr_data.mansione or active_filters['mansione'].lower() not in hr_data.mansione.lower():
+                    matches = False
+            
+            # Filtro qualifica
+            if 'qualifica' in active_filters:
+                if not hr_data.qualifica or active_filters['qualifica'].lower() not in hr_data.qualifica.lower():
+                    matches = False
+            
+            # Filtro sede assunzione
+            if 'sede_assunzione' in active_filters:
+                if not hr_data.sede_id or str(hr_data.sede_id) != str(active_filters['sede_assunzione']):
+                    matches = False
+            
+            # Filtro genere
+            if 'gender' in active_filters:
+                if not hr_data.gender or hr_data.gender != active_filters['gender']:
+                    matches = False
+            
+            # Filtro città
+            if 'city' in active_filters:
+                if not hr_data.city or active_filters['city'].lower() not in hr_data.city.lower():
+                    matches = False
+            
+            if matches:
+                filtered_data.append(data)
+        
+        users_data = filtered_data
+    
+    # Ricalcola statistiche sui dati filtrati
+    total_employees = len(users_data)
+    with_hr_data = sum(1 for d in users_data if d['has_data'])
+    active_contracts = sum(1 for d in users_data if d['contract_status'] == 'Attivo')
+    in_probation = sum(1 for d in users_data if d['is_probation'])
+    
+    female_count = sum(1 for d in users_data if d['gender'] == 'F')
+    male_count = sum(1 for d in users_data if d['gender'] == 'M')
+    under_36 = sum(1 for d in users_data if d['age'] is not None and d['age'] < 36)
+    
+    tempo_indeterminato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Indeterminato')
+    tempo_determinato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Determinato')
+    
+    statistics = {
+        'total_employees': total_employees,
+        'with_hr_data': with_hr_data,
+        'active_contracts': active_contracts,
+        'in_probation': in_probation,
+        'female_count': female_count,
+        'male_count': male_count,
+        'under_36': under_36,
+        'tempo_indeterminato': tempo_indeterminato,
+        'tempo_determinato': tempo_determinato,
+    }
+    
     # Ottieni lista sedi per filtri
-    sedi = filter_by_company(Sede.query).order_by(Sede.name).all()
+    all_sedi = filter_by_company(Sede.query).order_by(Sede.name).all()
     
     return render_template('hr_list.html', 
                          users_data=users_data, 
                          statistics=statistics,
-                         sedi=sedi)
+                         all_sedi=all_sedi,
+                         sedi=all_sedi,  # Backward compatibility
+                         active_filters=active_filters)
 
 
 @hr_bp.route('/detail/<int:user_id>', methods=['GET', 'POST'])
@@ -630,14 +742,80 @@ def hr_detail(user_id):
 @login_required
 @require_hr_permission
 def hr_export():
-    """Export Excel con dati HR completi"""
+    """Export Excel con dati HR personalizzato (campi e filtri selezionabili)"""
     
     if not (current_user.can_view_hr_data() or current_user.can_manage_hr_data()):
         flash('Non hai i permessi per esportare i dati HR', 'error')
         return redirect(url_for('hr.hr_list'))
     
-    # Ottieni tutti gli utenti con dati HR
-    users = filter_by_company(User.query).filter_by(active=True).order_by(User.last_name, User.first_name).all()
+    # Ottieni campi selezionati e filtri da session
+    selected_fields = session.get('hr_export_fields', None)
+    active_filters = session.get('hr_export_filters', {})
+    
+    # Se non ci sono campi selezionati, usa tutti i campi (comportamento predefinito)
+    if not selected_fields:
+        # Export completo di default
+        selected_fields = None
+    
+    # Ottieni tutti gli utenti con dati HR (escludi admin)
+    users_query = filter_by_company(User.query).filter_by(active=True).filter(
+        User.role != 'Admin',
+        User.role != 'ADMIN',
+        User.role != 'Amministratore',
+        User.is_system_admin == False
+    ).order_by(User.last_name, User.first_name)
+    
+    users = users_query.all()
+    
+    # Applica filtri personalizzati
+    if active_filters:
+        filtered_users = []
+        for user in users:
+            hr_data = user.hr_data
+            
+            # Se ci sono filtri attivi ma l'utente non ha dati HR, escludilo
+            if not hr_data:
+                continue
+            
+            matches = True
+            
+            # Applica gli stessi filtri usati nella lista
+            if 'matricola' in active_filters:
+                if not hr_data.matricola or active_filters['matricola'].lower() not in hr_data.matricola.lower():
+                    matches = False
+            
+            if 'contract_type' in active_filters:
+                if not hr_data.contract_type or hr_data.contract_type != active_filters['contract_type']:
+                    matches = False
+            
+            if 'ccnl' in active_filters:
+                if not hr_data.ccnl or active_filters['ccnl'].lower() not in hr_data.ccnl.lower():
+                    matches = False
+            
+            if 'mansione' in active_filters:
+                if not hr_data.mansione or active_filters['mansione'].lower() not in hr_data.mansione.lower():
+                    matches = False
+            
+            if 'qualifica' in active_filters:
+                if not hr_data.qualifica or active_filters['qualifica'].lower() not in hr_data.qualifica.lower():
+                    matches = False
+            
+            if 'sede_assunzione' in active_filters:
+                if not hr_data.sede_id or str(hr_data.sede_id) != str(active_filters['sede_assunzione']):
+                    matches = False
+            
+            if 'gender' in active_filters:
+                if not hr_data.gender or hr_data.gender != active_filters['gender']:
+                    matches = False
+            
+            if 'city' in active_filters:
+                if not hr_data.city or active_filters['city'].lower() not in hr_data.city.lower():
+                    matches = False
+            
+            if matches:
+                filtered_users.append(user)
+        
+        users = filtered_users
     
     # Crea workbook
     wb = Workbook()
