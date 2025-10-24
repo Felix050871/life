@@ -3,7 +3,7 @@
 # Comprehensive utility functions organized in logical sections for
 # maintaining a scalable and organized codebase.
 #
-# SECTIONS (22 functions total):
+# SECTIONS (23 functions total):
 # 1. Core Imports
 # 2. Holiday & Date Management (2 functions)
 # 3. QR Code Management (3 functions)
@@ -12,6 +12,7 @@
 # 6. Statistics & Analytics (2 functions)
 # 7. User Schedule Management (1 function)
 # 8. Reperibilità Management (5 functions)
+# 9. Shift Generation from Presidio Coverage Templates (1 function)
 # =============================================================================
 
 from datetime import datetime, date, timedelta, time
@@ -1416,3 +1417,164 @@ def send_overtime_request_message(overtime_request, action_type, sender_user=Non
         pass  # Silent error handling
         import traceback
         traceback.print_exc()
+
+# =============================================================================
+# SHIFT GENERATION FROM PRESIDIO COVERAGE TEMPLATES
+# =============================================================================
+
+def generate_shifts_from_template(template):
+    """
+    Genera turni automaticamente da un template di copertura presidio.
+    
+    Args:
+        template: PresidioCoverageTemplate con coverages associate
+    
+    Returns:
+        dict con chiavi:
+            - success: bool
+            - generated_count: numero di turni generati
+            - message: messaggio descrittivo
+            - errors: lista di errori se presenti
+    """
+    from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User, UserHRData, LeaveRequest
+    from datetime import datetime, timedelta
+    
+    try:
+        # Validazione template
+        if not template:
+            return {'success': False, 'message': 'Template non valido', 'generated_count': 0}
+        
+        if not template.active:
+            return {'success': False, 'message': 'Template non attivo', 'generated_count': 0}
+        
+        # Ottieni tutte le coverage attive del template
+        coverages = template.coverages.filter_by(active=True).all()
+        if not coverages:
+            return {'success': False, 'message': 'Nessuna copertura definita nel template', 'generated_count': 0}
+        
+        # Organizza coverages per giorno della settimana
+        coverages_by_day = {}
+        for coverage in coverages:
+            if coverage.day_of_week not in coverages_by_day:
+                coverages_by_day[coverage.day_of_week] = []
+            coverages_by_day[coverage.day_of_week].append(coverage)
+        
+        generated_count = 0
+        errors = []
+        current_date = template.start_date
+        
+        # Itera attraverso ogni giorno nel periodo del template
+        while current_date <= template.end_date:
+            # Determina il giorno della settimana (0=Lunedì, 6=Domenica)
+            day_of_week = current_date.weekday()
+            
+            # Verifica se ci sono coverages per questo giorno
+            if day_of_week in coverages_by_day:
+                for coverage in coverages_by_day[day_of_week]:
+                    # Estrai ruoli richiesti dal JSON
+                    roles_dict = coverage.get_required_roles_dict()
+                    
+                    for role_name, role_count in roles_dict.items():
+                        # Trova utenti con questa mansione
+                        eligible_users = User.query.join(UserHRData).filter(
+                            User.company_id == template.company_id,
+                            User.active == True,
+                            UserHRData.mansione == role_name
+                        ).all()
+                        
+                        if not eligible_users:
+                            errors.append(f"Nessun utente trovato con mansione '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                            continue
+                        
+                        # Filtra utenti in ferie per questa data
+                        available_users = []
+                        for user in eligible_users:
+                            # Verifica se l'utente è in ferie in questa data
+                            on_leave = LeaveRequest.query.filter(
+                                LeaveRequest.user_id == user.id,
+                                LeaveRequest.status == 'Approvata',
+                                LeaveRequest.start_date <= current_date,
+                                LeaveRequest.end_date >= current_date
+                            ).first()
+                            
+                            if not on_leave:
+                                available_users.append(user)
+                        
+                        if not available_users:
+                            errors.append(f"Nessun utente disponibile (non in ferie) con mansione '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                            continue
+                        
+                        # Calcola carico di lavoro per bilanciamento
+                        user_workload = {}
+                        for user in available_users:
+                            # Conta turni già assegnati nel periodo del template
+                            shift_count = Shift.query.filter(
+                                Shift.user_id == user.id,
+                                Shift.date >= template.start_date,
+                                Shift.date <= template.end_date
+                            ).count()
+                            user_workload[user.id] = shift_count
+                        
+                        # Ordina utenti per carico di lavoro (meno carichi prima)
+                        available_users.sort(key=lambda u: user_workload[u.id])
+                        
+                        # Assegna utenti ai turni (prendi i primi N con meno carico)
+                        users_to_assign = available_users[:role_count]
+                        
+                        for user in users_to_assign:
+                            # Verifica se esiste già un turno per questo utente in questa data e fascia oraria
+                            existing_shift = Shift.query.filter(
+                                Shift.user_id == user.id,
+                                Shift.date == current_date,
+                                Shift.start_time == coverage.start_time,
+                                Shift.end_time == coverage.end_time
+                            ).first()
+                            
+                            if not existing_shift:
+                                # Crea nuovo turno
+                                new_shift = Shift(
+                                    user_id=user.id,
+                                    date=current_date,
+                                    start_time=coverage.start_time,
+                                    end_time=coverage.end_time,
+                                    shift_type='Presidio',
+                                    created_by=template.created_by,
+                                    company_id=template.company_id
+                                )
+                                db.session.add(new_shift)
+                                generated_count += 1
+            
+            # Passa al giorno successivo
+            current_date += timedelta(days=1)
+        
+        # Commit dei turni generati
+        try:
+            db.session.commit()
+            
+            message = f"Generati {generated_count} turni per il periodo {template.start_date.strftime('%d/%m/%Y')} - {template.end_date.strftime('%d/%m/%Y')}"
+            if errors:
+                message += f"\n{len(errors)} avvisi: alcuni ruoli potrebbero non essere stati coperti completamente"
+            
+            return {
+                'success': True,
+                'generated_count': generated_count,
+                'message': message,
+                'errors': errors
+            }
+        except Exception as e:
+            db.session.rollback()
+            return {
+                'success': False,
+                'message': f'Errore durante il salvataggio dei turni: {str(e)}',
+                'generated_count': 0,
+                'errors': errors
+            }
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            'success': False,
+            'message': f'Errore durante la generazione: {str(e)}',
+            'generated_count': 0
+        }
