@@ -65,32 +65,17 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             {{ form.password.label(class="form-label") }}
                             {{ form.password(class="form-control") }}
                             <small class="text-muted">Minimo 6 caratteri</small>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             {{ form.role.label(class="form-label") }}
                             {{ form.role(class="form-select", id="roleSelectNew") }}
                             {% if form.role.errors %}
                                 <div class="text-danger">
                                     {% for error in form.role.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            {{ form.part_time_percentage.label(class="form-label") }}
-                            <div class="input-group">
-                                {{ form.part_time_percentage(class="form-control") }}
-                                <span class="input-group-text">%</span>
-                            </div>
-                            <small class="text-muted">Es: 100, 75,5, 50 (usa virgola per decimali)</small>
-                            {% if form.part_time_percentage.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.part_time_percentage.errors %}
                                         <small>{{ error }}</small>
                                     {% endfor %}
                                 </div>
@@ -267,12 +252,9 @@
                                     Orario <i class="fas fa-sort ms-1"></i>
                                 </th>
                                 <th class="sortable" data-column="5">
-                                    % Lavoro <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th class="sortable" data-column="7">
                                     Stato <i class="fas fa-sort ms-1"></i>
                                 </th>
-                                <th class="sortable" data-column="8">
+                                <th class="sortable" data-column="6">
                                     Registrato <i class="fas fa-sort ms-1"></i>
                                 </th>
                                 <th>Azioni</th>
@@ -333,9 +315,6 @@
                                     {% else %}
                                         <span class="text-muted">Nessun orario</span>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-light text-dark">{{ user.part_time_percentage }}%</span>
                                 </td>
                                 <td>
                                     {% if user.active %}
@@ -667,35 +646,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(style);
 
     function initializeUserFormHandlers() {
-        const roleSelect = document.querySelector('select[name="role"]');
-        const partTimeGroup = document.querySelector('input[name="part_time_percentage"]')?.closest('.col-md-4');
         const allSediCheck = document.getElementById('allSediCheckNew');
         const sedeSelect = document.getElementById('sedeSelectNew');
         
-        if (!roleSelect) return; // Exit if elements not found
-        
-        // Role-based part-time percentage visibility
-        function togglePartTimePercentage() {
-            if (partTimeGroup) {
-                if (roleSelect.value === 'Operatore') {
-                    partTimeGroup.style.display = 'block';
-                } else {
-                    partTimeGroup.style.display = 'none';
-                    const partTimeInput = partTimeGroup.querySelector('input[name="part_time_percentage"]');
-                    if (partTimeInput) partTimeInput.value = 100;
-                }
-            }
-        }
-        
         // Add event listeners
-        roleSelect.addEventListener('change', togglePartTimePercentage);
-        
         if (allSediCheck) {
             allSediCheck.addEventListener('change', toggleSedeSelect);
         }
         
         // Initial call
-        togglePartTimePercentage();
         toggleSedeSelect();
         loadAllWorkSchedules();
         
