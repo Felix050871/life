@@ -124,12 +124,12 @@ class UserRole(db.Model):
             'can_view_sede_attendance': 'Visualizzare Presenze Sede',
             
             # Gestione ferie/permessi
-            'can_manage_leave': 'Gestisci Tipologie Ferie/Permessi',
-            'can_manage_leave_types': 'Gestire Tipologie Permessi',
-            'can_approve_leave': 'Approvare Ferie/Permessi',
-            'can_request_leave': 'Richiedere Ferie/Permessi',
-            'can_view_leave': 'Visualizzare Tutte le Ferie/Permessi',
-            'can_view_my_leave': 'Visualizzare Le Mie Ferie/Permessi',
+            'can_manage_leave': 'Gestisci Tipologie Assenze',
+            'can_manage_leave_types': 'Gestire Tipologie Assenze',
+            'can_approve_leave': 'Approvare Assenze',
+            'can_request_leave': 'Richiedere Assenze',
+            'can_view_leave': 'Visualizzare Tutte le Assenze',
+            'can_view_my_leave': 'Visualizzare Le Mie Assenze',
             
             # Gestione interventi
             'can_manage_interventions': 'Gestire Interventi',
@@ -178,7 +178,7 @@ class UserRole(db.Model):
             'can_view_my_shifts_widget': 'Widget I Miei Turni', 
             'can_view_my_reperibilita_widget': 'Widget Le Mie Reperibilità',
             'can_view_expense_reports_widget': 'Widget Note Spese',
-            'can_view_leave_requests_widget': 'Widget Ferie/Permessi',
+            'can_view_leave_requests_widget': 'Widget Assenze',
             'can_view_daily_attendance_widget': 'Widget Presenze per Sede',
             'can_view_shifts_coverage_widget': 'Widget Coperture Turni',
             'can_view_reperibilita_widget': 'Widget Reperibilità',
@@ -650,7 +650,7 @@ class User(UserMixin, db.Model):
         return self.can_manage_attendance() or self.can_view_attendance() or self.can_access_attendance() or self.can_view_sede_attendance()
     
     def can_access_leave_menu(self):
-        """Accesso al menu Ferie/Permessi"""
+        """Accesso al menu Assenze"""
         return self.can_manage_leave() or self.can_approve_leave() or self.can_request_leave() or self.can_view_leave()
     
     def can_access_interventions_menu(self):
@@ -1840,15 +1840,21 @@ class MonthlyTimesheet(db.Model):
 # =============================================================================
 
 class LeaveType(db.Model):
-    """Modello per la gestione delle tipologie di permesso configurabili dall'amministratore"""
+    """Modello per la gestione delle tipologie di assenza configurabili dall'amministratore"""
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
+    code = db.Column(db.String(20), nullable=False)  # Codice identificativo (es: FE, PER, MAL)
+    name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     requires_approval = db.Column(db.Boolean, default=True)  # Se richiede autorizzazione
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
+    
+    # Unique constraint: codice unico per company
+    __table_args__ = (
+        db.UniqueConstraint('code', 'company_id', name='_code_company_uc'),
+    )
     
     # Nota: la relazione è definita in LeaveRequest con backref='requests'
     

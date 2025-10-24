@@ -470,17 +470,19 @@ def add_leave_type_page():
     
     if request.method == 'POST':
         try:
+            code = request.form.get('code', '').upper().strip()
             name = request.form.get('name')
             description = request.form.get('description')
             requires_approval = 'requires_approval' in request.form
             active_status = 'active' in request.form
             
-            # Verifica duplicati
-            if filter_by_company(LeaveType.query).filter_by(name=name).first():
-                flash('Esiste già una tipologia con questo nome', 'warning')
+            # Verifica duplicati per codice
+            if filter_by_company(LeaveType.query).filter_by(code=code).first():
+                flash('Esiste già una tipologia con questo codice', 'warning')
                 return render_template('add_leave_type.html')
             
             leave_type = LeaveType(
+                code=code,
                 name=name,
                 description=description,
                 requires_approval=requires_approval,
@@ -512,14 +514,16 @@ def edit_leave_type_page(id):
     
     if request.method == 'POST':
         try:
+            code = request.form.get('code', '').upper().strip()
             name = request.form.get('name')
             
-            # Verifica duplicati (escludendo il record corrente)
-            existing = filter_by_company(LeaveType.query).filter(LeaveType.name == name, LeaveType.id != id).first()
+            # Verifica duplicati per codice (escludendo il record corrente)
+            existing = filter_by_company(LeaveType.query).filter(LeaveType.code == code, LeaveType.id != id).first()
             if existing:
-                flash('Esiste già una tipologia con questo nome', 'warning')
+                flash('Esiste già una tipologia con questo codice', 'warning')
                 return render_template('edit_leave_type.html', leave_type=leave_type)
             
+            leave_type.code = code
             leave_type.name = name
             leave_type.description = request.form.get('description')
             leave_type.requires_approval = 'requires_approval' in request.form

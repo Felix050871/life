@@ -8,12 +8,21 @@
         <div class="card">
             <div class="card-header">
                 <h4 class="mb-0">
-                    <i class="fas fa-edit me-2"></i>Modifica Tipologia di Permesso
+                    <i class="fas fa-edit me-2"></i>Modifica Tipologia di Assenza
                 </h4>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        <label for="code" class="form-label">Codice *</label>
+                        <input type="text" class="form-control" id="code" name="code" 
+                               value="{{ leave_type.code }}" required minlength="2" maxlength="20" style="text-transform: uppercase;">
+                        <small class="form-text text-muted">
+                            Codice identificativo breve (es: FE per Ferie, PER per Permesso, MAL per Malattia)
+                        </small>
+                    </div>
                     
                     <div class="mb-3">
                         <label for="name" class="form-label">Nome Tipologia *</label>

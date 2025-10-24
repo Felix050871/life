@@ -356,23 +356,29 @@ class AttendanceForm(FlaskForm):
 # =============================================================================
 
 class LeaveTypeForm(FlaskForm):
-    """Form per la gestione delle tipologie di permesso"""
+    """Form per la gestione delle tipologie di assenza"""
+    code = StringField('Codice', validators=[DataRequired(), Length(min=2, max=20)], 
+                      render_kw={'placeholder': 'Es: FE, PER, MAL'})
     name = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Descrizione', validators=[Length(max=500)])
     requires_approval = BooleanField('Richiede Autorizzazione', default=True)
     active = BooleanField('Attiva', default=True)
     submit = SubmitField('Salva Tipologia')
     
-    def __init__(self, original_name=None, *args, **kwargs):
+    def __init__(self, original_code=None, *args, **kwargs):
         super(LeaveTypeForm, self).__init__(*args, **kwargs)
-        self.original_name = original_name
+        self.original_code = original_code
     
-    def validate_name(self, name):
-        if name.data != self.original_name:
+    def validate_code(self, code):
+        if code.data != self.original_code:
             from models import LeaveType
-            existing_type = LeaveType.query.filter_by(name=name.data).first()
+            from utils_tenant import get_user_company_id
+            existing_type = LeaveType.query.filter_by(
+                code=code.data, 
+                company_id=get_user_company_id()
+            ).first()
             if existing_type:
-                raise ValidationError('Esiste già una tipologia con questo nome.')
+                raise ValidationError('Esiste già una tipologia con questo codice.')
 
 class LeaveRequestForm(FlaskForm):
     leave_type_id = SelectField('Tipo Richiesta', coerce=lambda x: int(x) if x and x != '' else None, validators=[DataRequired()])

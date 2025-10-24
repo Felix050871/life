@@ -504,13 +504,13 @@
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
                         <i class="fas fa-calendar-check"></i>
-                        <span>Ferie/Permessi</span>
+                        <span>Assenze</span>
                         <i class="fas fa-chevron-right dropdown-arrow"></i>
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_request_leave() %}
                         <li><a href="{{ url_for('leave.create_leave_request') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-plus"></i>Richiedi Ferie/Permessi
+                            <i class="fas fa-plus"></i>Richiedi Assenza
                         </a></li>
                         <li><a href="{{ url_for('leave.leave_requests', view='my') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user"></i>Le Mie Richieste
