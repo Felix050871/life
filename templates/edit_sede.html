@@ -51,22 +51,6 @@
                         </div>
                         
                         <div class="mb-3">
-                            {{ form.tipologia.label(class="form-label") }}
-                            {{ form.tipologia(class="form-control") }}
-                            <div class="form-text">
-                                <strong>Oraria:</strong> Gestione basata su orari di lavoro (sistema attuale)<br>
-                                <strong>Turni:</strong> Gestione basata su turnazioni con coperture e assegnazioni
-                            </div>
-                            {% if form.tipologia.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.tipologia.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
                             <div class="form-check">
                                 {{ form.active(class="form-check-input") }}
                                 {{ form.active.label(class="form-check-label") }}
@@ -75,38 +59,19 @@
                         
                         <div class="mb-3">
                             <h6>Informazioni Associate</h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p class="mb-1"><strong>Utenti:</strong> 
-                                        <span class="badge bg-info">{{ sede.users|length }}</span>
-                                    </p>
-                                    {% if sede.users %}
-                                    <ul class="list-unstyled ms-3">
-                                        {% for user in sede.users[:5] %}
-                                        <li><small>• {{ user.get_full_name() }} ({{ user.role }})</small></li>
-                                        {% endfor %}
-                                        {% if sede.users|length > 5 %}
-                                        <li><small>• ... e altri {{ sede.users|length - 5 }}</small></li>
-                                        {% endif %}
-                                    </ul>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6">
-                                    <p class="mb-1"><strong>Orari di Lavoro:</strong> 
-                                        <span class="badge bg-success">{{ sede.work_schedules.count() }}</span>
-                                    </p>
-                                    {% if sede.work_schedules %}
-                                    <ul class="list-unstyled ms-3">
-                                        {% for schedule in sede.work_schedules[:5] %}
-                                        <li><small>• {{ schedule.name }} ({{ schedule.start_time.strftime('%H:%M') }}-{{ schedule.end_time.strftime('%H:%M') }})</small></li>
-                                        {% endfor %}
-                                        {% if sede.work_schedules.count() > 5 %}
-                                        <li><small>• ... e altri {{ sede.work_schedules.count() - 5 }}</small></li>
-                                        {% endif %}
-                                    </ul>
-                                    {% endif %}
-                                </div>
-                            </div>
+                            <p class="mb-1"><strong>Utenti:</strong> 
+                                <span class="badge bg-info">{{ sede.users|length }}</span>
+                            </p>
+                            {% if sede.users %}
+                            <ul class="list-unstyled ms-3">
+                                {% for user in sede.users[:5] %}
+                                <li><small>• {{ user.get_full_name() }} ({{ user.role }})</small></li>
+                                {% endfor %}
+                                {% if sede.users|length > 5 %}
+                                <li><small>• ... e altri {{ sede.users|length - 5 }}</small></li>
+                                {% endif %}
+                            </ul>
+                            {% endif %}
                         </div>
                         
                         <div class="d-flex justify-content-between">

@@ -172,33 +172,8 @@ def manage_sedi():
     
     sedi = filter_by_company(Sede.query).order_by(Sede.created_at.desc()).all()
     
-    # Calcola statistiche aggiuntive per ogni sede
-    sedi_stats = {}
-    for sede in sedi:
-        stats = {
-            'turni_count': 0,
-            'reperibilita_turni_count': 0
-        }
-        
-        # Conta turni regolari per utenti di questa sede
-        if sede.is_turni_mode():
-            turni_count = db.session.query(Shift).join(User, Shift.user_id == User.id).filter(
-                User.sede_id == sede.id,
-                User.active == True
-            ).count()
-            stats['turni_count'] = turni_count
-            
-            # Conta turni reperibilità per utenti di questa sede
-            reperibilita_count = db.session.query(ReperibilitaShift).join(User, ReperibilitaShift.user_id == User.id).filter(
-                User.sede_id == sede.id,
-                User.active == True
-            ).count()
-            stats['reperibilita_turni_count'] = reperibilita_count
-        
-        sedi_stats[sede.id] = stats
-    
     form = SedeForm()
-    return render_template('manage_sedi.html', sedi=sedi, sedi_stats=sedi_stats, form=form)
+    return render_template('manage_sedi.html', sedi=sedi, form=form)
 
 @admin_bp.route('/sedi/create', methods=['POST'])
 @login_required
@@ -215,7 +190,6 @@ def create_sede():
             name=form.name.data,
             address=form.address.data,
             description=form.description.data,
-            tipologia=form.tipologia.data,
             active=form.active.data
         )
         set_company_on_create(sede)
@@ -245,7 +219,6 @@ def edit_sede(sede_id):
         sede.name = form.name.data
         sede.address = form.address.data
         sede.description = form.description.data
-        sede.tipologia = form.tipologia.data
         sede.active = form.active.data
         
         db.session.commit()

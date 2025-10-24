@@ -19,22 +19,17 @@
                     <form method="POST" action="{{ url_for('admin.create_sede') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 {{ form.name.label(class="form-label") }}
                                 {{ form.name(class="form-control") }}
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 {{ form.address.label(class="form-label") }}
                                 {{ form.address(class="form-control") }}
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 {{ form.description.label(class="form-label") }}
                                 {{ form.description(class="form-control", rows="2") }}
-                            </div>
-                            <div class="col-md-3">
-                                {{ form.tipologia.label(class="form-label") }}
-                                {{ form.tipologia(class="form-control") }}
-                                <div class="form-text">Scegli il tipo di gestione</div>
                             </div>
                         </div>
                         <div class="row mt-3">
@@ -65,11 +60,9 @@
                             <thead>
                                 <tr>
                                     <th>Nome</th>
-                                    <th>Tipologia</th>
                                     <th>Indirizzo</th>
                                     <th>Descrizione</th>
                                     <th>Utenti</th>
-                                    <th>Orari/Turni</th>
                                     <th>Stato</th>
                                     <th>Creata</th>
                                     <th>Azioni</th>
@@ -84,29 +77,10 @@
                                         <span class="badge bg-secondary ms-2">Disattivata</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        {% if sede.tipologia == 'Turni' %}
-                                        <span class="badge bg-primary">Turni</span>
-                                        {% else %}
-                                        <span class="badge bg-success">Oraria</span>
-                                        {% endif %}
-                                    </td>
                                     <td>{{ sede.address or "-" }}</td>
                                     <td>{{ sede.description or "-" }}</td>
                                     <td>
                                         <span class="badge bg-info">{{ sede.users|length }} utenti</span>
-                                    </td>
-                                    <td>
-                                        {% set stats = sedi_stats.get(sede.id, {}) %}
-                                        {% if sede.tipologia == 'Turni' %}
-                                            <div class="d-flex flex-column gap-1">
-                                                <span class="badge bg-primary">{{ stats.get('turni_count', 0) }} turni</span>
-                                                <span class="badge bg-info">{{ stats.get('reperibilita_turni_count', 0) }} reperibilità</span>
-                                                <span class="badge bg-secondary">{{ stats.get('orari_count', 0) }} orari</span>
-                                            </div>
-                                        {% else %}
-                                            <span class="badge bg-success">{{ stats.get('orari_count', 0) }} orari</span>
-                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if sede.active %}
