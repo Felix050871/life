@@ -104,7 +104,7 @@ def edit(id):
         flash('Non hai i permessi per modificare mansioni', 'danger')
         return redirect(url_for('mansioni.index'))
     
-    mansione = filter_by_company(Mansione.query).get_or_404(id)
+    mansione = filter_by_company(Mansione.query).filter_by(id=id).first_or_404()
     
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
@@ -153,7 +153,7 @@ def delete(id):
         flash('Non hai i permessi per eliminare mansioni', 'danger')
         return redirect(url_for('mansioni.index'))
     
-    mansione = filter_by_company(Mansione.query).get_or_404(id)
+    mansione = filter_by_company(Mansione.query).filter_by(id=id).first_or_404()
     
     try:
         nome = mansione.nome
@@ -177,7 +177,7 @@ def toggle_active(id):
         flash('Non hai i permessi per modificare mansioni', 'danger')
         return redirect(url_for('mansioni.index'))
     
-    mansione = filter_by_company(Mansione.query).get_or_404(id)
+    mansione = filter_by_company(Mansione.query).filter_by(id=id).first_or_404()
     
     try:
         mansione.active = not mansione.active
