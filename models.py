@@ -229,7 +229,11 @@ class UserRole(db.Model):
             # HR - Human Resources
             'can_manage_hr_data': 'Gestire Dati HR',
             'can_view_hr_data': 'Visualizzare Tutti i Dati HR',
-            'can_view_my_hr_data': 'Visualizzare I Miei Dati HR'
+            'can_view_my_hr_data': 'Visualizzare I Miei Dati HR',
+            
+            # Commesse - Project Management
+            'can_manage_commesse': 'Gestire Commesse',
+            'can_view_commesse': 'Visualizzare Commesse'
         }
 
 class User(UserMixin, db.Model):
@@ -703,6 +707,19 @@ class User(UserMixin, db.Model):
     def can_access_hr_menu(self):
         """Accesso al menu HR"""
         return self.can_manage_hr_data() or self.can_view_hr_data() or self.can_view_my_hr_data()
+    
+    # === COMMESSE - PROJECT MANAGEMENT ===
+    def can_manage_commesse(self):
+        """Gestire commesse (creare, modificare, eliminare)"""
+        return self.has_permission('can_manage_commesse')
+    
+    def can_view_commesse(self):
+        """Visualizzare commesse"""
+        return self.has_permission('can_view_commesse')
+    
+    def can_access_commesse_menu(self):
+        """Accesso al menu Commesse"""
+        return self.can_manage_commesse() or self.can_view_commesse()
     
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):

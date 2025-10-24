@@ -35,8 +35,12 @@ def require_commesse_permission(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for('auth.login'))
-        # TODO: aggiungere permessi specifici quando implementati nel sistema permessi
-        # Per ora consentiamo a tutti gli utenti autenticati
+        
+        # Verifica permessi commesse
+        if not current_user.can_access_commesse_menu():
+            flash('Non hai i permessi necessari per accedere a questa sezione.', 'danger')
+            return redirect(url_for('dashboard.dashboard'))
+        
         return f(*args, **kwargs)
     return decorated_function
 
@@ -94,6 +98,11 @@ def manage_commesse():
 @require_commesse_permission
 def create_commessa():
     """Creazione nuova commessa"""
+    # Verifica permesso di gestione
+    if not current_user.can_manage_commesse():
+        flash('Non hai i permessi necessari per creare commesse.', 'danger')
+        return redirect(url_for('commesse.manage_commesse'))
+    
     form = CommessaForm()
     
     if form.validate_on_submit():
@@ -125,6 +134,11 @@ def create_commessa():
 @require_commesse_permission
 def edit_commessa(commessa_id):
     """Modifica commessa esistente"""
+    # Verifica permesso di gestione
+    if not current_user.can_manage_commesse():
+        flash('Non hai i permessi necessari per modificare commesse.', 'danger')
+        return redirect(url_for('commesse.manage_commesse'))
+    
     commessa = filter_by_company(Commessa.query).filter_by(id=commessa_id).first_or_404()
     form = CommessaForm(original_titolo=commessa.titolo, obj=commessa)
     
@@ -152,6 +166,11 @@ def edit_commessa(commessa_id):
 @require_commesse_permission
 def delete_commessa(commessa_id):
     """Eliminazione commessa"""
+    # Verifica permesso di gestione
+    if not current_user.can_manage_commesse():
+        flash('Non hai i permessi necessari per eliminare commesse.', 'danger')
+        return redirect(url_for('commesse.manage_commesse'))
+    
     commessa = filter_by_company(Commessa.query).filter_by(id=commessa_id).first_or_404()
     
     # Verifica se ci sono risorse assegnate
@@ -199,6 +218,10 @@ def commessa_detail(commessa_id):
 @require_commesse_permission
 def assign_user():
     """Assegnazione risorsa a commessa"""
+    # Verifica permesso di gestione
+    if not current_user.can_manage_commesse():
+        flash('Non hai i permessi necessari per assegnare risorse.', 'danger')
+        return redirect(url_for('commesse.manage_commesse'))
     commessa_id = request.form.get('commessa_id', type=int)
     user_id = request.form.get('user_id', type=int)
     
@@ -227,6 +250,10 @@ def assign_user():
 @require_commesse_permission
 def unassign_user():
     """Rimozione assegnazione risorsa da commessa"""
+    # Verifica permesso di gestione
+    if not current_user.can_manage_commesse():
+        flash('Non hai i permessi necessari per rimuovere assegnazioni.', 'danger')
+        return redirect(url_for('commesse.manage_commesse'))
     commessa_id = request.form.get('commessa_id', type=int)
     user_id = request.form.get('user_id', type=int)
     
