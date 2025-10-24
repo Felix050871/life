@@ -60,6 +60,8 @@ def create():
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         descrizione = request.form.get('descrizione', '').strip()
+        abilita_turnazioni = request.form.get('abilita_turnazioni') == 'on'
+        abilita_reperibilita = request.form.get('abilita_reperibilita') == 'on'
         
         if not nome:
             flash('Il nome della mansione è obbligatorio', 'danger')
@@ -75,6 +77,8 @@ def create():
             mansione = Mansione(
                 nome=nome,
                 descrizione=descrizione if descrizione else None,
+                abilita_turnazioni=abilita_turnazioni,
+                abilita_reperibilita=abilita_reperibilita,
                 created_by_id=current_user.id
             )
             set_company_on_create(mansione)
@@ -106,6 +110,8 @@ def edit(id):
         nome = request.form.get('nome', '').strip()
         descrizione = request.form.get('descrizione', '').strip()
         active = request.form.get('active') == 'on'
+        abilita_turnazioni = request.form.get('abilita_turnazioni') == 'on'
+        abilita_reperibilita = request.form.get('abilita_reperibilita') == 'on'
         
         if not nome:
             flash('Il nome della mansione è obbligatorio', 'danger')
@@ -124,6 +130,8 @@ def edit(id):
             mansione.nome = nome
             mansione.descrizione = descrizione if descrizione else None
             mansione.active = active
+            mansione.abilita_turnazioni = abilita_turnazioni
+            mansione.abilita_reperibilita = abilita_reperibilita
             db.session.commit()
             
             flash(f'✅ Mansione "{nome}" modificata con successo', 'success')
