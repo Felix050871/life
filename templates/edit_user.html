@@ -134,10 +134,10 @@
                                 </div>
                                 <small class="text-muted">Se abilitato, può accedere a tutte le sedi</small>
                             </div>
-                            <div class="col-md-6 mb-3" id="workScheduleGroup" style="{% if user.work_schedule_id %}display: block;{% else %}display: none;{% endif %}">
+                            <div class="col-md-6 mb-3" id="workScheduleGroup">
                                 {{ form.work_schedule.label(class="form-label") }}
                                 {{ form.work_schedule(class="form-select", id="workScheduleSelect") }}
-                                <small class="text-muted">Seleziona "Turni" per modalità turnazioni, orario specifico per modalità ORARIA, o "Nessun orario" per accesso senza controlli</small>
+                                <small class="text-muted">Orario di lavoro (indipendente dalla sede operativa)</small>
                                 {% if form.work_schedule.errors %}
                                     <div class="text-danger">
                                         {% for error in form.work_schedule.errors %}
@@ -271,48 +271,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (allSediCheck && allSediCheck.checked) {
             sedeSelect.disabled = true;
             sedeSelect.value = ''; // Imposta valore vuoto per evitare validazione
-            const workScheduleGroup = document.getElementById('workScheduleGroup');
-            if (workScheduleGroup) {
-                workScheduleGroup.style.display = 'none';
-            }
         } else {
             sedeSelect.disabled = false;
-            updateWorkSchedules();
         }
     }
     
-    function updateWorkSchedules() {
-        const sedeSelect = document.getElementById('sedeSelect');
-        const workScheduleGroup = document.getElementById('workScheduleGroup');
+    function loadAllWorkSchedules() {
         const workScheduleSelect = document.getElementById('workScheduleSelect');
         
-        if (!sedeSelect || !workScheduleGroup || !workScheduleSelect) return;
+        if (!workScheduleSelect) return;
         
-        const sedeId = sedeSelect.value;
+        // Mantieni la selezione corrente se presente
+        const currentValue = workScheduleSelect.value;
         
-        if (sedeId <= 0) {
-            workScheduleGroup.style.display = 'none';
-            return;
-        }
-        
-        // Chiamata API per ottenere gli orari della sede
-        fetch(`/api/sede/${sedeId}/work_schedules`)
+        // Carica TUTTI gli orari disponibili, indipendentemente dalla sede
+        fetch('/api/work_schedules')
             .then(response => response.json())
             .then(data => {
-                if (data.success && data.has_schedules) {
-                    // Mantieni la selezione corrente se presente
-                    const currentValue = workScheduleSelect.value;
-                    
-                    // Popola il select con gli orari disponibili
+                if (data.success) {
+                    // Popola il select con tutti gli orari disponibili
                     workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
                     data.work_schedules.forEach(schedule => {
                         const option = document.createElement('option');
                         option.value = schedule.id;
-                        if (schedule.name === 'Turni') {
-                            option.textContent = `${schedule.name} (Modalità Turnazioni)`;
-                        } else {
-                            option.textContent = `${schedule.name} (${schedule.start_time}-${schedule.end_time})`;
-                        }
+                        option.textContent = schedule.name;
                         workScheduleSelect.appendChild(option);
                     });
                     
@@ -320,15 +302,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (currentValue && workScheduleSelect.querySelector(`option[value="${currentValue}"]`)) {
                         workScheduleSelect.value = currentValue;
                     }
-                    
-                    workScheduleGroup.style.display = 'block';
                 } else {
-                    workScheduleGroup.style.display = 'none';
+                    workScheduleSelect.innerHTML = '<option value="">Nessun orario disponibile</option>';
                 }
             })
             .catch(error => {
                 console.error('Errore nel caricamento orari:', error);
-                workScheduleGroup.style.display = 'none';
+                workScheduleSelect.innerHTML = '<option value="">Errore caricamento orari</option>';
             });
     }
     
@@ -345,16 +325,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (allSediCheck && sedeSelect) {
         allSediCheck.addEventListener('change', toggleSedeSelect);
-        sedeSelect.addEventListener('change', updateWorkSchedules);
         toggleSedeSelect(); // Chiamata iniziale
-        
-        // Carica inizialmente gli orari se c'è già una sede selezionata
-        if (sedeSelect.value > 0) {
-            setTimeout(() => {
-                updateWorkSchedules();
-            }, 100); // Piccolo delay per permettere al DOM di essere pronto
-        }
     }
+    
+    // Carica tutti gli orari disponibili all'inizializzazione
+    loadAllWorkSchedules();
     
     // Gestisce il submit del form per campo sede disabilitato
     const form = document.querySelector('form');
