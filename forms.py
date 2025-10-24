@@ -956,7 +956,7 @@ class SedeForm(FlaskForm):
 
 class WorkScheduleForm(FlaskForm):
     """Form per gestire gli orari di lavoro"""
-    sede = SelectField('Sede', coerce=int, validators=[DataRequired()])
+    sede = SelectField('Sede (opzionale)', coerce=int, validators=[Optional()])
     name = StringField('Nome Orario', validators=[DataRequired(), Length(max=100)])
     
     # Range orari di entrata
@@ -991,13 +991,14 @@ class WorkScheduleForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(WorkScheduleForm, self).__init__(*args, **kwargs)
-        # Popola le scelte delle sedi attive
+        # Popola le scelte delle sedi attive, con opzione vuota per orari globali
         try:
             from models import Sede as SedeModel
-            sedi_attive = SedeModel.query.filter_by(active=True).all()
-            self.sede.choices = [(sede.id, sede.name) for sede in sedi_attive]
+            from utils_tenant import filter_by_company
+            sedi_attive = filter_by_company(SedeModel.query).filter_by(active=True).all()
+            self.sede.choices = [('', '-- Orario Globale (nessuna sede) --')] + [(sede.id, sede.name) for sede in sedi_attive]
         except:
-            self.sede.choices = []
+            self.sede.choices = [('', '-- Orario Globale (nessuna sede) --')]
     
     def validate_days_of_week(self, days_of_week):
         """Valida che almeno un giorno sia selezionato"""
