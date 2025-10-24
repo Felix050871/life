@@ -1331,17 +1331,12 @@ def bulk_fill_timesheet():
         if not timesheet.can_edit():
             return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
         
-        # Ottieni orari standard della sede utente
+        # Ottieni orario di lavoro assegnato all'utente (company-level global, non più legato alla sede)
         from models import WorkSchedule, LeaveRequest
-        work_schedule = None
-        if current_user.sede_id:
-            work_schedule = filter_by_company(WorkSchedule.query).filter(
-                WorkSchedule.sede_id == current_user.sede_id,
-                WorkSchedule.active == True
-            ).first()
+        work_schedule = current_user.work_schedule if current_user.work_schedule_id else None
         
         if not work_schedule:
-            return jsonify({'success': False, 'message': 'Nessun orario standard configurato per la tua sede'}), 400
+            return jsonify({'success': False, 'message': 'Nessun orario di lavoro configurato per il tuo profilo'}), 400
         
         # Calcola range mese
         from calendar import monthrange
