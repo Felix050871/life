@@ -497,6 +497,25 @@
                         </div>
 
                         <div class="row">
+                            <!-- Commesse - Project Management -->
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-project-diagram me-1"></i>Commesse</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_commesse() }}
+                                            {{ form.can_manage_commesse.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_commesse() }}
+                                            {{ form.can_view_commesse.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Gestione QR -->
                             <div class="col-lg-4 col-md-6 mb-3">
                                 <div class="card border h-100">
