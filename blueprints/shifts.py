@@ -148,16 +148,17 @@ def turni_automatici():
         except (ValueError, TypeError):
             pass
     
-    # Ottieni utenti disponibili per creazione turni raggruppati per ruolo
+    # Ottieni utenti disponibili per creazione turni raggruppati per mansione
     from collections import defaultdict
-    users_by_role = defaultdict(list)
+    users_by_mansione = defaultdict(list)
     available_users = User.query.filter(
         User.active.is_(True)
     ).all()
     
     for user in available_users:
-        if hasattr(user, 'role') and user.role:
-            users_by_role[user.role].append(user)
+        mansione_name = user.get_mansione_name()
+        if mansione_name and user.is_abilitato_turnazioni():
+            users_by_mansione[mansione_name].append(user)
     
     from datetime import date, timedelta
     return render_template('turni_automatici.html', 
@@ -165,7 +166,7 @@ def turni_automatici():
                          selected_template=selected_template,
                          turni_per_settimana=turni_per_settimana,
                          settimane_stats=settimane_stats,
-                         users_by_role=dict(users_by_role),
+                         users_by_mansione=dict(users_by_mansione),
                          shifts=shifts,
                          today=date.today(),
                          timedelta=timedelta,
@@ -319,36 +320,41 @@ def visualizza_turni():
                          selected_sede=sede_filter,
                          can_manage_shifts=current_user.can_manage_shifts())
 
-@shifts_bp.route('/api/get_template_roles/<int:template_id>')
+@shifts_bp.route('/api/get_template_mansioni/<int:template_id>')
 @login_required
-def get_template_roles(template_id):
-    """API per ottenere i ruoli richiesti da un template e gli utenti disponibili per ciascun ruolo"""
+def get_template_mansioni(template_id):
+    """API per ottenere le mansioni richieste da un template e gli utenti disponibili per ciascuna mansione"""
     if not current_user.can_manage_shifts():
         return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
     
     try:
+        from models import UserHRData, Mansione
         template = PresidioCoverageTemplate.query.get_or_404(template_id)
         
         # Ottieni tutte le coverage del template
         coverages = template.coverages.filter_by(active=True).all()
         
-        # Estrai tutti i ruoli richiesti
-        all_roles = {}
+        # Estrai tutte le mansioni richieste
+        all_mansioni = {}
         for coverage in coverages:
-            roles_dict = coverage.get_required_roles_dict()
-            for role_name, count in roles_dict.items():
-                if role_name not in all_roles:
-                    all_roles[role_name] = count
+            mansioni_dict = coverage.get_required_mansioni_dict()
+            for mansione_name, count in mansioni_dict.items():
+                if mansione_name not in all_mansioni:
+                    all_mansioni[mansione_name] = count
                 else:
-                    all_roles[role_name] = max(all_roles[role_name], count)
+                    all_mansioni[mansione_name] = max(all_mansioni[mansione_name], count)
         
-        # Per ogni ruolo, trova gli utenti disponibili
-        roles_data = []
-        for role_name, count in all_roles.items():
-            users = User.query.filter(
+        # Per ogni mansione, trova gli utenti disponibili (con mansione abilitata ai turni)
+        mansioni_data = []
+        for mansione_name, count in all_mansioni.items():
+            users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
+                Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+            ).filter(
                 User.company_id == current_user.company_id,
                 User.active == True,
-                User.role == role_name
+                UserHRData.mansione == mansione_name,
+                Mansione.active == True,
+                Mansione.abilita_turnazioni == True
             ).all()
             
             users_data = [{
@@ -356,15 +362,15 @@ def get_template_roles(template_id):
                 'full_name': user.get_full_name()
             } for user in users]
             
-            roles_data.append({
-                'role': role_name,
+            mansioni_data.append({
+                'mansione': mansione_name,
                 'count': count,
                 'users': users_data
             })
         
         return jsonify({
             'success': True,
-            'roles': roles_data,
+            'mansioni': mansioni_data,
             'template_name': template.name,
             'template_period': template.get_period_display()
         })
@@ -501,15 +507,19 @@ def edit_shift(shift_id):
     
     form = EditShiftForm()
     
-    # Get available users for assignment (only from the same sede as the shift)
-    users = User.query.filter(
-        User.role.in_(['Management', 'Redattore', 'Sviluppatore', 'Operatore']),
+    # Get available users for assignment (only from the same sede as the shift, with mansione abilitata ai turni)
+    from models import UserHRData, Mansione
+    users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
+        Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+    ).filter(
         User.active.is_(True),
-        User.sede_id == shift.user.sede_id
+        User.sede_id == shift.user.sede_id,
+        Mansione.active == True,
+        Mansione.abilita_turnazioni == True
     ).order_by(User.first_name, User.last_name).all()
     
     # Popola le scelte del form con gli utenti disponibili
-    form.user_id.choices = [(user.id, f"{user.get_full_name()} - {user.role}") for user in users]
+    form.user_id.choices = [(user.id, f"{user.get_full_name()} - {user.get_mansione_name()}") for user in users]
     
     if form.validate_on_submit():
         try:
@@ -1346,13 +1356,18 @@ def process_generate_turni_from_coverage():
                     db.session.delete(existing_shift)
                     turni_sostituiti += 1
                 
-                required_roles_dict = copertura.get_required_roles_dict()
+                required_mansioni_dict = copertura.get_required_mansioni_dict()
                 
-                for role, count_needed in required_roles_dict.items():
-                    available_users = User.query.filter(
+                for mansione, count_needed in required_mansioni_dict.items():
+                    from models import UserHRData, Mansione
+                    available_users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
+                        Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+                    ).filter(
                         User.sede_id == sede_id,
                         User.active == True,
-                        User.role == role
+                        UserHRData.mansione == mansione,
+                        Mansione.active == True,
+                        Mansione.abilita_turnazioni == True
                     ).all()
                     
                     if len(available_users) >= count_needed:
@@ -1548,14 +1563,18 @@ def regenerate_turni_from_coverage():
                            c.day_of_week == day_of_week]
             
             for coverage in day_coverages:
-                available_users = User.query.filter(
+                from models import UserHRData, Mansione
+                available_users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
+                    Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+                ).filter(
                     User.sede_id == sede_id,
                     User.active == True,
-                    User.role.in_(['Operatore', 'Sviluppatore', 'Redattore', 'Management'])
+                    Mansione.active == True,
+                    Mansione.abilita_turnazioni == True
                 ).all()
                 
-                roles_dict = coverage.get_required_roles_dict()
-                total_required_staff = sum(roles_dict.values()) if roles_dict else 1
+                mansioni_dict = coverage.get_required_mansioni_dict()
+                total_required_staff = sum(mansioni_dict.values()) if mansioni_dict else 1
                 
                 if available_users and total_required_staff > 0:
                     selected_users = available_users[:total_required_staff]

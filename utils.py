@@ -1472,15 +1472,20 @@ def generate_shifts_from_template(template, allowed_user_ids=None):
             # Verifica se ci sono coverages per questo giorno
             if day_of_week in coverages_by_day:
                 for coverage in coverages_by_day[day_of_week]:
-                    # Estrai ruoli richiesti dal JSON
-                    roles_dict = coverage.get_required_roles_dict()
+                    # Estrai mansioni richieste dal JSON
+                    mansioni_dict = coverage.get_required_mansioni_dict()
                     
-                    for role_name, role_count in roles_dict.items():
-                        # Trova utenti con questo ruolo
-                        query = User.query.filter(
+                    for mansione_name, mansione_count in mansioni_dict.items():
+                        # Trova utenti con questa mansione (abilitata ai turni)
+                        from models import UserHRData, Mansione
+                        query = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
+                            Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+                        ).filter(
                             User.company_id == template.company_id,
                             User.active == True,
-                            User.role == role_name
+                            UserHRData.mansione == mansione_name,
+                            Mansione.active == True,
+                            Mansione.abilita_turnazioni == True
                         )
                         
                         # Filtra solo gli utenti consentiti se specificato
@@ -1491,9 +1496,9 @@ def generate_shifts_from_template(template, allowed_user_ids=None):
                         
                         if not eligible_users:
                             if allowed_user_ids:
-                                errors.append(f"Nessun utente selezionato con ruolo '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                                errors.append(f"Nessun utente selezionato con mansione '{mansione_name}' per {current_date.strftime('%d/%m/%Y')}")
                             else:
-                                errors.append(f"Nessun utente trovato con ruolo '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                                errors.append(f"Nessun utente trovato con mansione '{mansione_name}' abilitata ai turni per {current_date.strftime('%d/%m/%Y')}")
                             continue
                         
                         # Filtra utenti in ferie per questa data
@@ -1511,7 +1516,7 @@ def generate_shifts_from_template(template, allowed_user_ids=None):
                                 available_users.append(user)
                         
                         if not available_users:
-                            errors.append(f"Nessun utente disponibile (non in ferie) con ruolo '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                            errors.append(f"Nessun utente disponibile (non in ferie) con mansione '{mansione_name}' per {current_date.strftime('%d/%m/%Y')}")
                             continue
                         
                         # Calcola carico di lavoro per bilanciamento
@@ -1529,7 +1534,7 @@ def generate_shifts_from_template(template, allowed_user_ids=None):
                         available_users.sort(key=lambda u: user_workload[u.id])
                         
                         # Assegna utenti ai turni (prendi i primi N con meno carico)
-                        users_to_assign = available_users[:role_count]
+                        users_to_assign = available_users[:mansione_count]
                         
                         for user in users_to_assign:
                             # Verifica se esiste già un turno per questo utente in questa data e fascia oraria

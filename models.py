@@ -723,6 +723,30 @@ class User(UserMixin, db.Model):
         """Accesso al menu Mansionario"""
         return self.can_manage_mansioni() or self.can_view_mansioni()
     
+    def get_mansione_name(self):
+        """Ottiene il nome della mansione dall'HR data"""
+        if hasattr(self, 'hr_data') and self.hr_data and self.hr_data.mansione:
+            return self.hr_data.mansione
+        return None
+    
+    def get_mansione_object(self):
+        """Ottiene l'oggetto Mansione completo"""
+        mansione_name = self.get_mansione_name()
+        if not mansione_name:
+            return None
+        # Mansione è definita nello stesso file, non serve import
+        return filter_by_company(Mansione.query).filter_by(nome=mansione_name, active=True).first()
+    
+    def is_abilitato_turnazioni(self):
+        """Verifica se l'utente ha una mansione abilitata ai turni"""
+        mansione = self.get_mansione_object()
+        return mansione.abilita_turnazioni if mansione else False
+    
+    def is_abilitato_reperibilita(self):
+        """Verifica se l'utente ha una mansione abilitata alla reperibilità"""
+        mansione = self.get_mansione_object()
+        return mansione.abilita_reperibilita if mansione else False
+    
     # === COMMESSE - PROJECT MANAGEMENT ===
     def can_manage_commesse(self):
         """Gestire commesse (creare, modificare, eliminare)"""
