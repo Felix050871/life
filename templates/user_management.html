@@ -102,7 +102,7 @@
                         <div class="col-md-6 mb-3">
                             {{ form.sede.label(class="form-label") }}
                             {{ form.sede(class="form-select", id="sedeSelectNew") }}
-                            <small class="text-muted">Sede operativa corrente (usata per turni, presenze, ferie)</small>
+                            <small class="text-muted">Sede operativa per filtri visualizzazione dati e default nuovi eventi</small>
                             {% if form.sede.errors %}
                                 <div class="text-danger">
                                     {% for error in form.sede.errors %}

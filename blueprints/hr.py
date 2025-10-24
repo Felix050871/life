@@ -282,7 +282,20 @@ def hr_detail(user_id):
                 hr_data.driver_license_expiry = None
             
             # Dati operativi - con validazione multi-tenant
-            # Nota: la sede operativa si gestisce tramite User.sede_id (gestione utenti)
+            # Sede di assunzione (campo amministrativo HR)
+            sede_id_str = request.form.get('sede_id', '').strip()
+            if sede_id_str:
+                sede_id = int(sede_id_str)
+                # Verifica che la sede appartenga alla company dell'utente
+                sede = filter_by_company(Sede.query).filter_by(id=sede_id).first()
+                if sede:
+                    hr_data.sede_id = sede_id
+                else:
+                    flash('Sede non valida per questa azienda', 'warning')
+                    hr_data.sede_id = None
+            else:
+                hr_data.sede_id = None
+            
             aci_vehicle_id_str = request.form.get('aci_vehicle_id', '').strip()
             if aci_vehicle_id_str:
                 aci_vehicle_id = int(aci_vehicle_id_str)
@@ -451,7 +464,7 @@ def hr_export():
         # DATI CONTRATTUALI
         'COD SI', 'Cognome', 'Nome',  'Data Assunzione', 'Data Fine Rapporto',
         'Tipologia Contratto', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 'Orario',
-        'Sede Operativa', 'Cliente', 'Superminimo/SM Assorbibile', 'Rimborsi/Diarie',
+        'Sede di Assunzione', 'Cliente', 'Superminimo/SM Assorbibile', 'Rimborsi/Diarie',
         'Ticket', 'Rischio INAIL', 'Tipo di Assunzione', 'Altro/Note',
         # ANAGRAFICA RISORSA
         'Titolo di Studio', 'Luogo di Nascita', 'Data di Nascita', 'Età', 'Sesso', 'C.F.',
@@ -495,7 +508,7 @@ def hr_export():
             hr_data.qualifica if hr_data else '',
             hr_data.ccnl_level if hr_data else '',
             str(hr_data.work_hours_week).replace('.', ',') if hr_data and hr_data.work_hours_week else '',
-            user.sede.name if user.sede else '',
+            hr_data.sede.name if hr_data and hr_data.sede else '',
             hr_data.cliente if hr_data else '',
             str(hr_data.superminimo).replace('.', ',') if hr_data and hr_data.superminimo else '',
             str(hr_data.rimborsi_diarie).replace('.', ',') if hr_data and hr_data.rimborsi_diarie else '',

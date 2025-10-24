@@ -89,22 +89,34 @@
                 </div>
             </div>
 
-            <!-- Riga 3: Orario, Cliente, Tipo Assunzione (Sede operativa gestita in User Management) -->
+            <!-- Riga 3: Orario, Sede di Assunzione, Cliente, Tipo Assunzione -->
             <div class="row">
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                     <label class="form-label">Orario (h/sett.)</label>
                     <input type="number" step="0.1" name="work_hours_week" class="form-control" 
                            value="{{ hr_data.work_hours_week or '' }}"
                            placeholder="40"
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Sede di Assunzione</label>
+                    <select name="sede_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Nessuna</option>
+                        {% for sede in user.company.sedi %}
+                        <option value="{{ sede.id }}" {% if hr_data.sede_id == sede.id %}selected{% endif %}>
+                            {{ sede.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Sede indicata nel contratto di assunzione</small>
+                </div>
+                <div class="col-md-3 mb-3">
                     <label class="form-label">Cliente</label>
                     <input type="text" name="cliente" class="form-control" 
                            value="{{ hr_data.cliente or '' }}"
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                     <label class="form-label">Tipo di Assunzione</label>
                     <input type="text" name="tipo_assunzione" class="form-control" 
                            value="{{ hr_data.tipo_assunzione or '' }}"
