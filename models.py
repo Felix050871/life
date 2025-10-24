@@ -1888,6 +1888,11 @@ class LeaveType(db.Model):
     description = db.Column(db.Text)
     requires_approval = db.Column(db.Boolean, default=True)  # Se richiede autorizzazione
     active = db.Column(db.Boolean, default=True)
+    
+    # Gestione durate: permessi parziali vs durata minima
+    allows_partial = db.Column(db.Boolean, default=True)  # Se True, permette permessi parziali (es. dalle 10:00 alle 12:00)
+    minimum_duration_type = db.Column(db.String(20), default='none')  # 'none', 'half_day' (4h), 'full_day' (8h/1gg)
+    
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
@@ -1902,18 +1907,29 @@ class LeaveType(db.Model):
     def __repr__(self):
         return f'<LeaveType {self.name}>'
     
+    def get_duration_description(self):
+        """Restituisce una descrizione leggibile delle restrizioni di durata"""
+        if self.minimum_duration_type == 'full_day':
+            return "Minimo 1 giorno intero (8 ore)"
+        elif self.minimum_duration_type == 'half_day':
+            return "Minimo mezza giornata (4 ore)"
+        elif self.allows_partial:
+            return "Permette permessi parziali (orari)"
+        else:
+            return "Nessuna restrizione particolare"
+    
     @classmethod
     def get_default_types(cls):
         """Restituisce le tipologie di permesso predefinite per l'inizializzazione"""
         return [
-            {'name': 'Ferie', 'description': 'Giorni di ferie annuali', 'requires_approval': True},
-            {'name': 'Permesso retribuito', 'description': 'Permesso retribuito per necessità personali', 'requires_approval': True},
-            {'name': 'Permesso non retribuito', 'description': 'Permesso non retribuito per necessità personali', 'requires_approval': True},
-            {'name': 'Permesso per malattia del dipendente', 'description': 'Assenza per malattia del dipendente', 'requires_approval': False},
-            {'name': 'Permesso per assistenza a familiari (104)', 'description': 'Permesso ex legge 104 per assistenza familiari', 'requires_approval': True},
-            {'name': 'Permesso per studio', 'description': 'Permesso per motivi di studio', 'requires_approval': True},
-            {'name': 'Permesso per partecipazione a corsi di formazione', 'description': 'Permesso per formazione volontaria', 'requires_approval': True},
-            {'name': 'Permesso per partecipazione a corsi di formazione obbligatori', 'description': 'Permesso per formazione obbligatoria aziendale', 'requires_approval': False}
+            {'name': 'Ferie', 'description': 'Giorni di ferie annuali', 'requires_approval': True, 'allows_partial': False, 'minimum_duration_type': 'full_day'},
+            {'name': 'Permesso retribuito', 'description': 'Permesso retribuito per necessità personali', 'requires_approval': True, 'allows_partial': True, 'minimum_duration_type': 'none'},
+            {'name': 'Permesso non retribuito', 'description': 'Permesso non retribuito per necessità personali', 'requires_approval': True, 'allows_partial': True, 'minimum_duration_type': 'none'},
+            {'name': 'Permesso per malattia del dipendente', 'description': 'Assenza per malattia del dipendente', 'requires_approval': False, 'allows_partial': False, 'minimum_duration_type': 'full_day'},
+            {'name': 'Permesso per assistenza a familiari (104)', 'description': 'Permesso ex legge 104 per assistenza familiari', 'requires_approval': True, 'allows_partial': False, 'minimum_duration_type': 'full_day'},
+            {'name': 'Permesso per studio', 'description': 'Permesso per motivi di studio', 'requires_approval': True, 'allows_partial': True, 'minimum_duration_type': 'none'},
+            {'name': 'Permesso per partecipazione a corsi di formazione', 'description': 'Permesso per formazione volontaria', 'requires_approval': True, 'allows_partial': False, 'minimum_duration_type': 'half_day'},
+            {'name': 'Permesso per partecipazione a corsi di formazione obbligatori', 'description': 'Permesso per formazione obbligatoria aziendale', 'requires_approval': False, 'allows_partial': False, 'minimum_duration_type': 'half_day'}
         ]
 
 class LeaveRequest(db.Model):

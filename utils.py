@@ -875,24 +875,23 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
     check_date = check_datetime.date()
     check_time = check_datetime.time()
     
-    # Ottieni l'utente e la sua sede
+    # Ottieni l'utente
     user = User.query.get(user_id)
-    if not user or not user.sede_id:
+    if not user:
         return {
             'has_schedule': False,
             'schedule_info': None,
             'entry_status': 'normale',
             'exit_status': 'normale',
-            'message': 'Utente non ha una sede assegnata'
+            'message': 'Utente non trovato'
         }
     
-    # Trova l'orario di lavoro per la sede dell'utente
+    # Trova l'orario di lavoro assegnato all'utente (company-level global, indipendente dalla sede)
     # Controlla se è un giorno della settimana coperto dagli orari
     day_of_week = check_date.weekday()  # 0=Lunedì, 6=Domenica
     
-    schedule = WorkSchedule.query.filter_by(
-        sede_id=user.sede_id
-    ).first()
+    # Ottieni il work schedule assegnato all'utente
+    schedule = user.work_schedule_obj if user.work_schedule_id else None
     
     if not schedule:
         return {
@@ -900,7 +899,7 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
             'schedule_info': None,
             'entry_status': 'normale',
             'exit_status': 'normale',
-            'message': 'Nessun orario di lavoro configurato per la sede'
+            'message': 'Nessun orario di lavoro configurato per l\'utente'
         }
     
     # Controlla se questo giorno è coperto dall'orario
@@ -911,10 +910,10 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
             'schedule_info': None,
             'entry_status': 'normale',
             'exit_status': 'normale',
-            'message': 'Giorno non lavorativo secondo l\'orario della sede'
+            'message': 'Giorno non lavorativo secondo l\'orario di lavoro assegnato'
         }
     
-    # Orari base dalla sede con flessibilità
+    # Orari base dal work schedule con flessibilità
     base_start_time_min = schedule.start_time_min
     base_start_time_max = schedule.start_time_max if schedule.start_time_max else schedule.start_time_min
     base_end_time_min = schedule.end_time_min

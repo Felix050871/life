@@ -136,6 +136,18 @@ def leave_requests():
                          can_create=current_user.can_request_leave(),
                          today=date.today())
 
+def get_leave_types_info():
+    """Helper per ottenere informazioni sui tipi di permesso per il JavaScript"""
+    from models import LeaveType
+    leave_types_info = {}
+    for lt in filter_by_company(LeaveType.query).filter_by(active=True).all():
+        leave_types_info[str(lt.id)] = {
+            'allows_partial': lt.allows_partial,
+            'minimum_duration_type': lt.minimum_duration_type,
+            'description': lt.get_duration_description()
+        }
+    return leave_types_info
+
 @leave_bp.route('/create_leave_request', methods=['GET', 'POST'])
 @login_required
 def create_leave_request():
@@ -151,7 +163,7 @@ def create_leave_request():
             # Verifica che le date siano valide
             if not form.start_date.data:
                 flash('Data di inizio richiesta', 'danger')
-                return render_template('create_leave_request.html', form=form, today=date.today())
+                return render_template('create_leave_request.html', form=form, today=date.today(), leave_types_info=get_leave_types_info())
             
             # Per permessi orari, usa la stessa data per inizio e fine
             end_date = form.end_date.data if form.end_date.data else form.start_date.data
@@ -166,7 +178,7 @@ def create_leave_request():
             
             if existing_requests:
                 flash('Hai già una richiesta nel periodo selezionato', 'warning')
-                return render_template('create_leave_request.html', form=form, today=date.today())
+                return render_template('create_leave_request.html', form=form, today=date.today(), leave_types_info=get_leave_types_info())
             
             # Crea nuova richiesta
             new_request = LeaveRequest()
@@ -201,10 +213,10 @@ def create_leave_request():
                     else:
                         available = wallet['ore_saldo'] if wallet else 0.0
                         flash(f'Ore banca ore insufficienti. Disponibili: {available:.1f}h, Richieste: {hours_needed:.1f}h', 'warning')
-                        return render_template('create_leave_request.html', form=form, today=date.today())
+                        return render_template('create_leave_request.html', form=form, today=date.today(), leave_types_info=get_leave_types_info())
                 else:
                     flash('La banca ore può essere utilizzata solo per permessi orari', 'warning')
-                    return render_template('create_leave_request.html', form=form, today=date.today())
+                    return render_template('create_leave_request.html', form=form, today=date.today(), leave_types_info=get_leave_types_info())
             
             # Imposta company_id automaticamente
             set_company_on_create(new_request)
@@ -219,7 +231,8 @@ def create_leave_request():
             db.session.rollback()
             flash(f'Errore nella creazione richiesta: {str(e)}', 'danger')
     
-    return render_template('create_leave_request.html', form=form, today=date.today())
+    # Ritorna il template con le informazioni sui leave types
+    return render_template('create_leave_request.html', form=form, today=date.today(), leave_types_info=get_leave_types_info())
 
 @leave_bp.route('/approve_leave_request/<int:request_id>', methods=['POST'])
 @login_required

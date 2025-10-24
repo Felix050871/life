@@ -28,6 +28,13 @@
                         {% endif %}
                     </div>
                     
+                    <!-- Info box restrizioni durata -->
+                    <div id="duration_info" class="alert alert-info" style="display: none;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Informazioni sulla durata:</strong>
+                        <span id="duration_text"></span>
+                    </div>
+                    
                     <!-- Campi per date -->
                     <div id="date_fields" class="row" style="display: none;">
                         <div class="col-md-6 mb-3">
@@ -135,6 +142,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const reasonField = document.getElementById('reason_field');
     const submitButton = document.getElementById('submit_button');
     const endDateField = document.getElementById('end_date_field');
+    const durationInfo = document.getElementById('duration_info');
+    const durationText = document.getElementById('duration_text');
+    
+    // Informazioni sui tipi di permesso dal backend
+    const leaveTypesInfo = {{ leave_types_info|tojson }};
     
     leaveTypeSelect.addEventListener('change', function() {
         const selectedValue = this.value;
@@ -144,6 +156,14 @@ document.addEventListener('DOMContentLoaded', function() {
             dateFields.style.display = 'flex';
             reasonField.style.display = 'block';
             submitButton.style.display = 'flex';
+            
+            // Mostra informazioni sulla durata del permesso
+            if (leaveTypesInfo[selectedValue]) {
+                durationText.textContent = leaveTypesInfo[selectedValue].description;
+                durationInfo.style.display = 'block';
+            } else {
+                durationInfo.style.display = 'none';
+            }
             
             // Logica specifica per tipo di permesso
             const selectedText = this.options[this.selectedIndex].text.toLowerCase();
@@ -180,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
             timeFields.style.display = 'none';
             reasonField.style.display = 'none';
             submitButton.style.display = 'none';
+            durationInfo.style.display = 'none';
             
             // Nascondi anche sezione banca ore
             {% if current_user.banca_ore_enabled %}
