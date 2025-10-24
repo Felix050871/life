@@ -3902,6 +3902,10 @@ class Mansione(db.Model):
     descrizione = db.Column(db.Text, nullable=True)
     active = db.Column(db.Boolean, default=True)
     
+    # Abilitazioni funzionali
+    abilita_turnazioni = db.Column(db.Boolean, default=True)
+    abilita_reperibilita = db.Column(db.Boolean, default=True)
+    
     # Multi-tenant
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
     
