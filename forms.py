@@ -1042,7 +1042,7 @@ class WorkScheduleForm(FlaskForm):
         """Valida che il nome dell'orario sia unico per l'azienda"""
         if name.data and name.data != self.original_name:
             from models import WorkSchedule as WorkScheduleModel
-            from middleware_tenant import filter_by_company
+            from utils_tenant import filter_by_company
             
             # Verifica unicità del nome a livello aziendale
             existing = filter_by_company(WorkScheduleModel.query).filter_by(
