@@ -103,6 +103,11 @@
                                                 <i class="fas fa-exclamation-circle text-danger ms-2" title="Nessuna presenza"></i>
                                                 {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
                                                 <i class="fas fa-calendar-alt text-info ms-2" title="{{ record.shift_status|title }}"></i>
+                                                {% if record.is_pending %}
+                                                <span class="badge bg-warning text-dark ms-2" title="In attesa di approvazione">
+                                                    <i class="fas fa-clock me-1"></i>Pending
+                                                </span>
+                                                {% endif %}
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -269,6 +274,11 @@
                                         <i class="fas fa-exclamation-circle text-danger ms-2" title="Nessuna presenza e nessuna comunicazione di ferie/permessi/malattia"></i>
                                         {% elif record.shift_status in ['ferie', 'permesso', 'malattia'] %}
                                         <i class="fas fa-calendar-alt text-info ms-2" title="{{ record.shift_status|title }}"></i>
+                                        {% if record.is_pending %}
+                                        <span class="badge bg-warning text-dark ms-2" title="In attesa di approvazione">
+                                            <i class="fas fa-clock me-1"></i>Pending
+                                        </span>
+                                        {% endif %}
                                         {% endif %}
                                     </td>
                                     {% if show_team_data %}

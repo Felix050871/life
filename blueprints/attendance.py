@@ -373,10 +373,11 @@ def attendance():
         target_user_ids = [current_user.id]
     
     if target_user_ids:
-        # Cerca richieste di ferie approvate nel periodo per tutti gli utenti target
+        # Cerca richieste di ferie approvate E in attesa nel periodo per tutti gli utenti target
+        # Include sia Approved che Pending per mostrare all'utente tutte le assenze
         approved_leaves = LeaveRequest.query.filter(
             LeaveRequest.user_id.in_(target_user_ids),
-            LeaveRequest.status == 'Approved',
+            LeaveRequest.status.in_(['Approved', 'Pending']),  # Mostra sia validate che in attesa
             LeaveRequest.start_date <= end_date,
             LeaveRequest.end_date >= start_date
         ).all()
@@ -404,6 +405,9 @@ def attendance():
                             self.exit_status = 'normale'
                             self.leave_type = leave_type
                             self.leave_reason = reason
+                            # Aggiungi lo status della richiesta per distinguere approvate da pending
+                            self.request_status = leave_request.status if hasattr(leave_request, 'status') else 'Approved'
+                            self.is_pending = (self.request_status == 'Pending')
                             
                             # Determina orari in base al tipo di assenza
                             if (leave_type and leave_type.lower() == 'permesso') and hasattr(leave_request, 'start_time') and leave_request.start_time:
