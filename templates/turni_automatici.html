@@ -97,11 +97,10 @@
                 </div>
                 <div class="card-body">
                     {% if presidio_templates %}
-                    <form method="POST" action="{{ url_for('shifts.genera_turni_da_template') }}" class="row g-3 align-items-end">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="row g-3 align-items-end">
                         <div class="col-md-8">
                             <label for="template_id" class="form-label">Seleziona Template Presidio</label>
-                            <select class="form-select" name="template_id" id="template_id" required onchange="showTemplateInfo()">
+                            <select class="form-select" name="template_id" id="template_id" required onchange="loadTemplateRoles()">
                                 <option value="">-- Seleziona Template --</option>
                                 {% for template in presidio_templates %}
                                 <option value="{{ template.id }}" 
@@ -113,15 +112,39 @@
                                 </option>
                                 {% endfor %}
                             </select>
-                            
-
                         </div>
                         <div class="col-md-4">
-                            <button type="submit" class="btn btn-success w-100" disabled id="generate-btn">
-                                <i class="fas fa-magic me-1"></i>Genera Turni
+                            <button type="button" class="btn btn-primary w-100" onclick="loadTemplateRoles()" id="next-btn" disabled>
+                                <i class="fas fa-arrow-right me-1"></i>Avanti: Seleziona Utenti
                             </button>
                         </div>
-                    </form>
+                    </div>
+                    
+                    <!-- Sezione selezione utenti (nascosta inizialmente) -->
+                    <div id="user-selection-section" style="display: none;" class="mt-4">
+                        <hr>
+                        <h5 class="mb-3"><i class="fas fa-users me-2"></i>Seleziona Utenti per Ruolo</h5>
+                        <p class="text-muted mb-3">Seleziona gli utenti che potranno essere assegnati ai turni per ciascun ruolo richiesto.</p>
+                        
+                        <form method="POST" action="{{ url_for('shifts.genera_turni_da_template') }}" id="generate-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="template_id" id="selected_template_id" value=""/>
+                            
+                            <div id="roles-container">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="button" class="btn btn-secondary" onclick="cancelUserSelection()">
+                                    <i class="fas fa-arrow-left me-1"></i>Indietro
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-magic me-1"></i>Genera Turni
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
                     {% else %}
                     <div class="text-center py-4">
                         <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
@@ -178,30 +201,137 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('template-shifts').style.display = 'none';
 });
 
-function showTemplateInfo() {
+function loadTemplateRoles() {
     var templateId = document.getElementById('template_id').value;
-    var generateBtn = document.getElementById('generate-btn');
+    var nextBtn = document.getElementById('next-btn');
     
-    if (templateId) {
-        var selectedOption = document.getElementById('template_id').selectedOptions[0];
-        var templateName = selectedOption.text;
-        
-        // Abilita pulsante generazione
-        generateBtn.disabled = false;
-        generateBtn.className = 'btn btn-success w-100';
-        
-        // Carica turni esistenti per il template
-        loadShiftsForTemplate(templateId, templateName);
-    } else {
-        // Disabilita pulsante
-        generateBtn.disabled = true;
-        generateBtn.className = 'btn btn-secondary w-100';
-        
-        // Nascondi turni
-        document.getElementById('no-template-message').style.display = 'block';
-        document.getElementById('template-shifts').style.display = 'none';
-        document.getElementById('weeks-count').textContent = '0 settimane';
+    if (!templateId) {
+        nextBtn.disabled = true;
+        document.getElementById('user-selection-section').style.display = 'none';
+        return;
     }
+    
+    // Abilita pulsante
+    nextBtn.disabled = false;
+    
+    // Carica ruoli e utenti via AJAX
+    fetch('/shifts/api/get_template_roles/' + templateId, {
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Memorizza template ID
+            document.getElementById('selected_template_id').value = templateId;
+            
+            // Mostra sezione selezione utenti
+            document.getElementById('user-selection-section').style.display = 'block';
+            
+            // Popola ruoli
+            var rolesContainer = document.getElementById('roles-container');
+            rolesContainer.innerHTML = '';
+            
+            if (data.roles && data.roles.length > 0) {
+                data.roles.forEach(function(roleData) {
+                    var roleCard = document.createElement('div');
+                    roleCard.className = 'card mb-3';
+                    
+                    var roleHTML = `
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-user-tag me-2"></i>${roleData.role} 
+                                <span class="badge bg-light text-dark ms-2">${roleData.count} richiesti</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                    `;
+                    
+                    if (roleData.users && roleData.users.length > 0) {
+                        roleHTML += '<div class="row">';
+                        roleData.users.forEach(function(user) {
+                            roleHTML += `
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="selected_users" value="${user.id}" 
+                                               id="user_${user.id}" checked>
+                                        <label class="form-check-label" for="user_${user.id}">
+                                            ${user.full_name}
+                                        </label>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        roleHTML += '</div>';
+                        
+                        // Pulsanti seleziona/deseleziona tutti
+                        roleHTML += `
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-2" 
+                                        onclick="selectAllInRole('${roleData.role}')">
+                                    <i class="fas fa-check-square me-1"></i>Seleziona Tutti
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        onclick="deselectAllInRole('${roleData.role}')">
+                                    <i class="fas fa-square me-1"></i>Deseleziona Tutti
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        roleHTML += `
+                            <div class="alert alert-warning mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Nessun utente trovato con ruolo "${roleData.role}"
+                            </div>
+                        `;
+                    }
+                    
+                    roleHTML += '</div>';
+                    roleCard.innerHTML = roleHTML;
+                    rolesContainer.appendChild(roleCard);
+                });
+            } else {
+                rolesContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Nessun ruolo richiesto trovato nel template
+                    </div>
+                `;
+            }
+            
+            // Scorri alla sezione
+            document.getElementById('user-selection-section').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Errore nel caricamento dei ruoli: ' + (data.message || 'Errore sconosciuto'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Errore nella comunicazione con il server');
+    });
+}
+
+function selectAllInRole(role) {
+    var checkboxes = document.querySelectorAll('input[name="selected_users"]');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = true;
+    });
+}
+
+function deselectAllInRole(role) {
+    var checkboxes = document.querySelectorAll('input[name="selected_users"]');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = false;
+    });
+}
+
+function cancelUserSelection() {
+    document.getElementById('user-selection-section').style.display = 'none';
+    document.getElementById('template_id').value = '';
+    document.getElementById('next-btn').disabled = true;
 }
 
 function loadShiftsForTemplate(templateId, templateName) {

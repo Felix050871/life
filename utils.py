@@ -1422,12 +1422,13 @@ def send_overtime_request_message(overtime_request, action_type, sender_user=Non
 # SHIFT GENERATION FROM PRESIDIO COVERAGE TEMPLATES
 # =============================================================================
 
-def generate_shifts_from_template(template):
+def generate_shifts_from_template(template, allowed_user_ids=None):
     """
     Genera turni automaticamente da un template di copertura presidio.
     
     Args:
         template: PresidioCoverageTemplate con coverages associate
+        allowed_user_ids: lista opzionale di user_ids consentiti. Se None, usa tutti gli utenti del ruolo.
     
     Returns:
         dict con chiavi:
@@ -1476,14 +1477,23 @@ def generate_shifts_from_template(template):
                     
                     for role_name, role_count in roles_dict.items():
                         # Trova utenti con questo ruolo
-                        eligible_users = User.query.filter(
+                        query = User.query.filter(
                             User.company_id == template.company_id,
                             User.active == True,
                             User.role == role_name
-                        ).all()
+                        )
+                        
+                        # Filtra solo gli utenti consentiti se specificato
+                        if allowed_user_ids:
+                            query = query.filter(User.id.in_(allowed_user_ids))
+                        
+                        eligible_users = query.all()
                         
                         if not eligible_users:
-                            errors.append(f"Nessun utente trovato con ruolo '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                            if allowed_user_ids:
+                                errors.append(f"Nessun utente selezionato con ruolo '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                            else:
+                                errors.append(f"Nessun utente trovato con ruolo '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
                             continue
                         
                         # Filtra utenti in ferie per questa data

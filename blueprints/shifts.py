@@ -319,35 +319,100 @@ def visualizza_turni():
                          selected_sede=sede_filter,
                          can_manage_shifts=current_user.can_manage_shifts())
 
+@shifts_bp.route('/api/get_template_roles/<int:template_id>')
+@login_required
+def get_template_roles(template_id):
+    """API per ottenere i ruoli richiesti da un template e gli utenti disponibili per ciascun ruolo"""
+    if not current_user.can_manage_shifts():
+        return jsonify({'success': False, 'message': 'Non autorizzato'}), 403
+    
+    try:
+        template = PresidioCoverageTemplate.query.get_or_404(template_id)
+        
+        # Ottieni tutte le coverage del template
+        coverages = template.coverages.filter_by(active=True).all()
+        
+        # Estrai tutti i ruoli richiesti
+        all_roles = {}
+        for coverage in coverages:
+            roles_dict = coverage.get_required_roles_dict()
+            for role_name, count in roles_dict.items():
+                if role_name not in all_roles:
+                    all_roles[role_name] = count
+                else:
+                    all_roles[role_name] = max(all_roles[role_name], count)
+        
+        # Per ogni ruolo, trova gli utenti disponibili
+        roles_data = []
+        for role_name, count in all_roles.items():
+            users = User.query.filter(
+                User.company_id == current_user.company_id,
+                User.active == True,
+                User.role == role_name
+            ).all()
+            
+            users_data = [{
+                'id': user.id,
+                'full_name': user.get_full_name()
+            } for user in users]
+            
+            roles_data.append({
+                'role': role_name,
+                'count': count,
+                'users': users_data
+            })
+        
+        return jsonify({
+            'success': True,
+            'roles': roles_data,
+            'template_name': template.name,
+            'template_period': template.get_period_display()
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @shifts_bp.route('/genera_turni_da_template', methods=['POST'])
 @login_required
 def genera_turni_da_template():
-    """Genera turni automaticamente da template presidio selezionato"""
+    """Genera turni automaticamente da template presidio con utenti selezionati"""
     if not current_user.can_manage_shifts():
-        return jsonify({'success': False, 'message': 'Non hai i permessi per generare turni'}), 403
+        flash('Non hai i permessi per generare turni', 'danger')
+        return redirect(url_for('shifts.turni_automatici'))
     
     try:
         template_id = request.form.get('template_id')
         if not template_id:
-            return jsonify({'success': False, 'message': 'Template ID richiesto'}), 400
+            flash('Template ID richiesto', 'danger')
+            return redirect(url_for('shifts.turni_automatici'))
+        
+        # Ottieni lista di user_ids selezionati
+        selected_user_ids = request.form.getlist('selected_users')
+        if not selected_user_ids:
+            flash('Seleziona almeno un utente per generare i turni', 'warning')
+            return redirect(url_for('shifts.turni_automatici'))
+        
+        # Converti in int
+        selected_user_ids = [int(uid) for uid in selected_user_ids]
         
         template = PresidioCoverageTemplate.query.get_or_404(int(template_id))
         
         # Import logica generazione turni da utils
         from utils import generate_shifts_from_template
-        result = generate_shifts_from_template(template)
+        result = generate_shifts_from_template(template, allowed_user_ids=selected_user_ids)
         
         if result['success']:
-            return jsonify({
-                'success': True,
-                'message': f'Generati {result["generated_count"]} turni per {template.name}',
-                'generated_count': result['generated_count']
-            })
+            flash(f'✅ Generati {result["generated_count"]} turni per {template.name}', 'success')
+            if result.get('errors'):
+                flash(f'⚠️ {len(result["errors"])} avvisi - alcuni ruoli potrebbero non essere completamente coperti', 'warning')
         else:
-            return jsonify({'success': False, 'message': result.get('message', 'Errore nella generazione turni')}), 400
+            flash(f'❌ {result.get("message", "Errore nella generazione turni")}', 'danger')
+            
+        return redirect(url_for('shifts.turni_automatici'))
             
     except Exception as e:
-        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+        flash(f'Errore: {str(e)}', 'danger')
+        return redirect(url_for('shifts.turni_automatici'))
 
 @shifts_bp.route('/create_shift', methods=['POST'])
 @login_required 
