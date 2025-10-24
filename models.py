@@ -955,6 +955,9 @@ class UserHRData(db.Model):
     ccnl = db.Column(db.String(100), nullable=True)  # CCNL applicato
     ccnl_level = db.Column(db.String(50), nullable=True)  # Livello contrattuale
     work_hours_week = db.Column(db.Float, nullable=True)  # Ore settimanali contratto
+    working_time_type = db.Column(db.String(2), nullable=True)  # FT (Full Time) o PT (Part Time)
+    part_time_percentage = db.Column(db.Float, nullable=True)  # Percentuale se PT (es. 50, 75)
+    part_time_type = db.Column(db.String(20), nullable=True)  # 'Verticale' o 'Orizzontale' se PT
     mansione = db.Column(db.String(100), nullable=True)  # Mansione/ruolo
     qualifica = db.Column(db.String(100), nullable=True)  # Qualifica
     cliente = db.Column(db.String(200), nullable=True)  # Cliente assegnato

@@ -435,6 +435,17 @@ def hr_detail(user_id):
             else:
                 hr_data.work_hours_week = None
             
+            # Orario (FT/PT)
+            hr_data.working_time_type = request.form.get('working_time_type', '').strip() or None
+            
+            part_time_percentage_str = request.form.get('part_time_percentage', '').strip()
+            if part_time_percentage_str:
+                hr_data.part_time_percentage = float(part_time_percentage_str.replace(',', '.'))
+            else:
+                hr_data.part_time_percentage = None
+            
+            hr_data.part_time_type = request.form.get('part_time_type', '').strip() or None
+            
             superminimo_str = request.form.get('superminimo', '').strip()
             if superminimo_str:
                 hr_data.superminimo = float(superminimo_str.replace(',', '.'))
@@ -844,7 +855,8 @@ def hr_export():
     headers = [
         # DATI CONTRATTUALI
         'COD SI', 'Cognome', 'Nome',  'Data Assunzione', 'Data Fine Rapporto',
-        'Tipologia Contratto', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 'Orario',
+        'Tipologia Contratto', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 
+        'Orario (h/sett.)', 'Tipologia Orario', '% Part Time', 'Tipo Part Time',
         'Sede di Assunzione', 'Cliente', 'Superminimo/SM Assorbibile', 'Rimborsi/Diarie',
         'Ticket', 'Rischio INAIL', 'Tipo di Assunzione', 'Altro/Note',
         # ANAGRAFICA RISORSA
@@ -889,6 +901,9 @@ def hr_export():
             hr_data.qualifica if hr_data else '',
             hr_data.ccnl_level if hr_data else '',
             str(hr_data.work_hours_week).replace('.', ',') if hr_data and hr_data.work_hours_week else '',
+            hr_data.working_time_type if hr_data else '',
+            str(hr_data.part_time_percentage).replace('.', ',') if hr_data and hr_data.part_time_percentage else '',
+            hr_data.part_time_type if hr_data else '',
             hr_data.sede.name if hr_data and hr_data.sede else '',
             hr_data.cliente if hr_data else '',
             str(hr_data.superminimo).replace('.', ',') if hr_data and hr_data.superminimo else '',

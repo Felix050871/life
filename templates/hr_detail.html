@@ -42,6 +42,7 @@
                         <option value="Apprendistato" {% if hr_data.contract_type == 'Apprendistato' %}selected{% endif %}>Apprendistato</option>
                         <option value="Stage/Tirocinio" {% if hr_data.contract_type == 'Stage/Tirocinio' %}selected{% endif %}>Stage/Tirocinio</option>
                         <option value="Collaborazione" {% if hr_data.contract_type == 'Collaborazione' %}selected{% endif %}>Collaborazione</option>
+                        <option value="In Distacco" {% if hr_data.contract_type == 'In Distacco' %}selected{% endif %}>In Distacco</option>
                         <option value="Altro" {% if hr_data.contract_type == 'Altro' %}selected{% endif %}>Altro</option>
                     </select>
                 </div>
@@ -89,7 +90,7 @@
                 </div>
             </div>
 
-            <!-- Riga 3: Orario, Sede di Assunzione, Cliente, Tipo Assunzione -->
+            <!-- Riga 3: Orario, Tipologia Orario, %, Tipo PT -->
             <div class="row">
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Orario (h/sett.)</label>
@@ -99,6 +100,36 @@
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
                 <div class="col-md-3 mb-3">
+                    <label class="form-label">Tipologia Orario</label>
+                    <select name="working_time_type" class="form-select" id="working_time_type" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Seleziona...</option>
+                        <option value="FT" {% if hr_data.working_time_type == 'FT' %}selected{% endif %}>FT (Full Time)</option>
+                        <option value="PT" {% if hr_data.working_time_type == 'PT' %}selected{% endif %}>PT (Part Time)</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Percentuale PT (%)</label>
+                    <input type="number" step="0.1" name="part_time_percentage" class="form-control" 
+                           value="{{ hr_data.part_time_percentage or '' }}"
+                           placeholder="es. 50, 75"
+                           id="part_time_percentage"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <small class="text-muted">Solo se Part Time</small>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Tipo Part Time</label>
+                    <select name="part_time_type" class="form-select" id="part_time_type" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Seleziona...</option>
+                        <option value="Verticale" {% if hr_data.part_time_type == 'Verticale' %}selected{% endif %}>Verticale</option>
+                        <option value="Orizzontale" {% if hr_data.part_time_type == 'Orizzontale' %}selected{% endif %}>Orizzontale</option>
+                    </select>
+                    <small class="text-muted">Solo se Part Time</small>
+                </div>
+            </div>
+
+            <!-- Riga 4: Sede di Assunzione, Cliente, Tipo Assunzione -->
+            <div class="row">
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Sede di Assunzione</label>
                     <select name="sede_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
                         <option value="">Nessuna</option>
@@ -110,13 +141,13 @@
                     </select>
                     <small class="text-muted">Sede indicata nel contratto di assunzione</small>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Cliente</label>
                     <input type="text" name="cliente" class="form-control" 
                            value="{{ hr_data.cliente or '' }}"
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Tipo di Assunzione</label>
                     <input type="text" name="tipo_assunzione" class="form-control" 
                            value="{{ hr_data.tipo_assunzione or '' }}"
@@ -124,7 +155,7 @@
                 </div>
             </div>
 
-            <!-- Riga 4: Superminimo, Rimborsi, Ticket Restaurant, Rischio INAIL -->
+            <!-- Riga 5: Superminimo, Rimborsi, Ticket Restaurant, Rischio INAIL -->
             <div class="row">
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Superminimo / SM Assorbibile (€)</label>
