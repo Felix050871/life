@@ -2067,13 +2067,13 @@ class PresidioCoverageTemplate(db.Model):
             covered_days.add(coverage.day_of_week)
         return len(covered_days)
     
-    def get_involved_roles(self):
-        """Restituisce tutti i ruoli coinvolti nella copertura"""
-        all_roles = set()
+    def get_involved_mansioni(self):
+        """Restituisce tutte le mansioni coinvolte nella copertura"""
+        all_mansioni = set()
         for coverage in self.coverages.filter_by(active=True):
-            roles = coverage.get_required_roles()
-            all_roles.update(roles)
-        return list(all_roles)
+            mansioni = coverage.get_required_mansioni()
+            all_mansioni.update(mansioni)
+        return list(all_mansioni)
 
     def __repr__(self):
         return f'<PresidioCoverageTemplate {self.name}>'
@@ -2087,7 +2087,7 @@ class PresidioCoverage(db.Model):
     day_of_week = db.Column(db.Integer, nullable=False)  # 0=Lunedì, 1=Martedì, ..., 6=Domenica
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
-    required_roles = db.Column(db.Text, nullable=False)  # JSON object con ruoli e numerosità: {"Operatore": 2, "Tecnico": 1}
+    required_mansioni = db.Column(db.Text, nullable=False)  # JSON object con mansioni e numerosità: {"Operatore": 2, "Tecnico": 1}
     role_count = db.Column(db.Integer, default=1)       # Numero di persone richieste per ruolo (nuovo)
     break_start = db.Column(db.Time)                     # Ora inizio pausa (nuovo dal pacchetto)
     break_end = db.Column(db.Time)                       # Ora fine pausa (nuovo dal pacchetto)
@@ -2112,35 +2112,35 @@ class PresidioCoverage(db.Model):
         """Restituisce la fascia oraria formattata"""
         return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
     
-    def get_required_roles_dict(self):
-        """Restituisce il dizionario ruoli e numerosità dal JSON"""
+    def get_required_mansioni_dict(self):
+        """Restituisce il dizionario mansioni e numerosità dal JSON"""
         import json
         try:
-            data = json.loads(self.required_roles)
+            data = json.loads(self.required_mansioni)
             return data if isinstance(data, dict) else {}
         except (json.JSONDecodeError, TypeError):
             return {}
     
-    def set_required_roles_dict(self, roles_dict):
-        """Imposta il dizionario ruoli e numerosità come JSON"""
+    def set_required_mansioni_dict(self, mansioni_dict):
+        """Imposta il dizionario mansioni e numerosità come JSON"""
         import json
-        self.required_roles = json.dumps(roles_dict)
+        self.required_mansioni = json.dumps(mansioni_dict)
     
-    def get_required_roles_list(self):
-        """Retrocompatibilità: restituisce solo la lista dei ruoli"""
-        return list(self.get_required_roles_dict().keys())
+    def get_required_mansioni_list(self):
+        """Restituisce solo la lista delle mansioni"""
+        return list(self.get_required_mansioni_dict().keys())
     
-    def set_required_roles_list(self, roles_list):
-        """Retrocompatibilità: converte lista in dizionario con count=1"""
-        roles_dict = {role: 1 for role in roles_list}
-        self.set_required_roles_dict(roles_dict)
+    def set_required_mansioni_list(self, mansioni_list):
+        """Converte lista in dizionario con count=1"""
+        mansioni_dict = {mansione: 1 for mansione in mansioni_list}
+        self.set_required_mansioni_dict(mansioni_dict)
     
-    def get_required_roles(self):
-        """Nuovo metodo dal pacchetto: restituisce la lista dei ruoli richiesti dal JSON"""
+    def get_required_mansioni(self):
+        """Restituisce la lista delle mansioni richieste dal JSON"""
         import json
         try:
             # Prima prova formato nuovo (array)
-            data = json.loads(self.required_roles)
+            data = json.loads(self.required_mansioni)
             if isinstance(data, list):
                 return data
             elif isinstance(data, dict):
@@ -2150,39 +2150,39 @@ class PresidioCoverage(db.Model):
         except (json.JSONDecodeError, TypeError):
             return []
     
-    def set_required_roles(self, roles_list):
-        """Nuovo metodo dal pacchetto: imposta la lista dei ruoli richiesti come JSON"""
+    def set_required_mansioni(self, mansioni_list):
+        """Imposta la lista delle mansioni richieste come JSON"""
         import json
-        self.required_roles = json.dumps(roles_list)
+        self.required_mansioni = json.dumps(mansioni_list)
     
-    def get_required_roles_display(self):
-        """Restituisce i ruoli con numerosità formattati per la visualizzazione"""
-        if not self.required_roles:
-            return "Nessun ruolo"
+    def get_required_mansioni_display(self):
+        """Restituisce le mansioni con numerosità formattate per la visualizzazione"""
+        if not self.required_mansioni:
+            return "Nessuna mansione"
         
-        # Usa il metodo get_required_roles_dict che gestisce già la retrocompatibilità
-        roles_dict = self.get_required_roles_dict()
-        if not roles_dict:
-            return "Nessun ruolo"
+        # Usa il metodo get_required_mansioni_dict che gestisce già la retrocompatibilità
+        mansioni_dict = self.get_required_mansioni_dict()
+        if not mansioni_dict:
+            return "Nessuna mansione"
         
-        role_strings = []
-        for role, count in roles_dict.items():
+        mansione_strings = []
+        for mansione, count in mansioni_dict.items():
             if count == 1:
-                role_strings.append(role)
+                mansione_strings.append(mansione)
             else:
-                role_strings.append(f"{count} {role}")
+                mansione_strings.append(f"{count} {mansione}")
         
-        if len(role_strings) == 1:
-            return role_strings[0]
-        elif len(role_strings) == 2:
-            return f"{role_strings[0]} + {role_strings[1]}"
+        if len(mansione_strings) == 1:
+            return mansione_strings[0]
+        elif len(mansione_strings) == 2:
+            return f"{mansione_strings[0]} + {mansione_strings[1]}"
         else:
-            return ", ".join(role_strings[:-1]) + f" + {role_strings[-1]}"
+            return ", ".join(mansione_strings[:-1]) + f" + {mansione_strings[-1]}"
     
     def get_total_resources_needed(self):
         """Restituisce il numero totale di risorse necessarie"""
-        roles_dict = self.get_required_roles_dict()
-        return sum(roles_dict.values())
+        mansioni_dict = self.get_required_mansioni_dict()
+        return sum(mansioni_dict.values())
     
     def is_valid_for_date(self, check_date):
         """Verifica se la copertura è valida per una data specifica tramite il template o periodo diretto"""
@@ -2274,16 +2274,16 @@ def get_presidio_coverage_for_day(day_of_week, target_date=None):
     
     return query.order_by(PresidioCoverage.start_time).all()
 
-def get_required_roles_for_time_slot(day_of_week, time_slot, target_date=None):
-    """Ottieni ruoli richiesti per un giorno e orario specifico"""
+def get_required_mansioni_for_time_slot(day_of_week, time_slot, target_date=None):
+    """Ottieni mansioni richieste per un giorno e orario specifico"""
     coverages = get_presidio_coverage_for_day(day_of_week, target_date)
     
-    required_roles = set()
+    required_mansioni = set()
     for coverage in coverages:
         if coverage.start_time <= time_slot < coverage.end_time:
-            required_roles.update(coverage.get_required_roles())
+            required_mansioni.update(coverage.get_required_mansioni())
     
-    return list(required_roles)
+    return list(required_mansioni)
 
 
 # =============================================================================
@@ -2296,7 +2296,7 @@ class ReperibilitaCoverage(db.Model):
     day_of_week = db.Column(db.Integer, nullable=False)  # 0=Lunedì, 1=Martedì, ..., 6=Domenica, 7=Festivi
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
-    required_roles = db.Column(db.Text, nullable=False)  # JSON array dei ruoli richiesti per questa fascia
+    required_mansioni = db.Column(db.Text, nullable=False)  # JSON array delle mansioni richieste per questa fascia
     sedi_ids = db.Column(db.Text, nullable=False)  # JSON array degli ID delle sedi coinvolte
     description = db.Column(db.String(200))  # Descrizione opzionale della copertura
     active = db.Column(db.Boolean, default=True)
@@ -2320,23 +2320,23 @@ class ReperibilitaCoverage(db.Model):
         """Restituisce la fascia oraria formattata"""
         return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
     
-    def get_required_roles_list(self):
-        """Restituisce la lista dei ruoli richiesti dal JSON"""
+    def get_required_mansioni_list(self):
+        """Restituisce la lista delle mansioni richieste dal JSON"""
         try:
             import json
-            return json.loads(self.required_roles)
+            return json.loads(self.required_mansioni)
         except:
             return []
     
-    def set_required_roles_list(self, roles_list):
-        """Imposta la lista dei ruoli richiesti come JSON"""
+    def set_required_mansioni_list(self, mansioni_list):
+        """Imposta la lista delle mansioni richieste come JSON"""
         import json
-        self.required_roles = json.dumps(roles_list)
+        self.required_mansioni = json.dumps(mansioni_list)
     
-    def get_required_roles_display(self):
-        """Restituisce i ruoli formattati per la visualizzazione"""
-        roles = self.get_required_roles_list()
-        return ', '.join(roles) if roles else 'Nessuno'
+    def get_required_mansioni_display(self):
+        """Restituisce le mansioni formattate per la visualizzazione"""
+        mansioni = self.get_required_mansioni_list()
+        return ', '.join(mansioni) if mansioni else 'Nessuno'
     
     def get_sedi_ids_list(self):
         """Restituisce la lista degli ID delle sedi dal JSON"""
