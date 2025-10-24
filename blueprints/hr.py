@@ -197,21 +197,26 @@ def hr_list():
         hr_data = user.hr_data
         age = hr_data.get_age() if hr_data else None
         
+        # Verifica se il contratto è attivo
+        is_contract_active = hr_data.is_contract_active() if hr_data else False
+        
         # Calcola stato scadenze
         expiry_status = get_worst_expiry_status(hr_data)
         
         # Calcola giorni rimanenti contratto (per TD e Distacco)
+        # SOLO per contratti ATTIVI, altrimenti non è una criticità da gestire
         days_until_contract_end = None
         contract_expiring = False
-        if hr_data and hr_data.contract_end_date:
+        if hr_data and hr_data.contract_end_date and is_contract_active:
             days_until_contract_end = hr_data.days_until_contract_end()
-            # Contratto in scadenza se mancano 60 giorni o meno
-            contract_expiring = days_until_contract_end is not None and days_until_contract_end <= 60
+            # Contratto in scadenza se è attivo E mancano 60 giorni o meno (ma almeno 1 giorno)
+            contract_expiring = days_until_contract_end is not None and 0 < days_until_contract_end <= 60
         
         # Determina se ha certificazioni scadute o in scadenza
+        # SOLO per contratti ATTIVI
         has_expired_certs = False
         has_expiring_certs = False
-        if expiry_status:
+        if expiry_status and is_contract_active:
             if expiry_status['status'] == 'expired':
                 has_expired_certs = True
             elif expiry_status['status'] in ['urgent', 'warning']:
@@ -224,7 +229,7 @@ def hr_list():
             'matricola': hr_data.matricola if hr_data else '-',
             'contract_type': hr_data.contract_type if hr_data else '-',
             'hire_date': hr_data.hire_date.strftime('%d/%m/%Y') if hr_data and hr_data.hire_date else '-',
-            'contract_status': 'Attivo' if hr_data and hr_data.is_contract_active() else 'Non attivo' if hr_data else '-',
+            'contract_status': 'Attivo' if is_contract_active else 'Non attivo' if hr_data else '-',
             'is_probation': hr_data.is_probation_period() if hr_data else False,
             'gender': hr_data.gender if hr_data else None,
             'age': age,
