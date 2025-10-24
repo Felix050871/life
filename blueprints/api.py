@@ -56,6 +56,61 @@ def sede_users(sede_id):
     
     return jsonify(users_data)
 
+@api_bp.route('/work_schedules')
+@login_required
+def all_work_schedules():
+    """API per ottenere tutti gli orari di lavoro disponibili per l'azienda"""
+    try:
+        # Ottieni tutti gli orari attivi dell'azienda (globali e sede-specifici)
+        work_schedules = filter_by_company(WorkSchedule.query).filter_by(active=True).order_by(
+            WorkSchedule.sede_id.is_(None).desc(),  # Globali per primi
+            WorkSchedule.name
+        ).all()
+        
+        schedules_data = []
+        for schedule in work_schedules:
+            if schedule.is_turni_schedule():
+                # Visualizzazione speciale per orario "Turni"
+                sede_name = schedule.sede_obj.name if schedule.sede_obj else ''
+                schedules_data.append({
+                    'id': schedule.id,
+                    'name': f"{schedule.name} ({sede_name})" if sede_name else schedule.name,
+                    'start_time': 'Flessibile',
+                    'end_time': 'Flessibile',
+                    'days_count': 7,
+                    'is_global': False,
+                    'sede_name': sede_name
+                })
+            else:
+                # Orari standard
+                if schedule.sede_id is None:
+                    display_name = f"{schedule.name} (Globale)"
+                else:
+                    sede_name = schedule.sede_obj.name if schedule.sede_obj else 'Sede sconosciuta'
+                    display_name = f"{schedule.name} ({sede_name})"
+                
+                schedules_data.append({
+                    'id': schedule.id,
+                    'name': display_name,
+                    'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
+                    'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
+                    'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0,
+                    'is_global': schedule.sede_id is None,
+                    'sede_name': schedule.sede_obj.name if schedule.sede_obj else None
+                })
+        
+        return jsonify({
+            'success': True,
+            'work_schedules': schedules_data,
+            'has_schedules': len(schedules_data) > 0
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @api_bp.route('/sede/<int:sede_id>/work_schedules')
 @login_required
 def sede_work_schedules(sede_id):

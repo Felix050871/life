@@ -119,7 +119,7 @@
                         <div class="col-md-6 mb-3" id="workScheduleGroupNew">
                             {{ form.work_schedule.label(class="form-label") }}
                             {{ form.work_schedule(class="form-select", id="workScheduleSelectNew") }}
-                            <small class="text-muted">Orario di lavoro (globali e specifici della sede)</small>
+                            <small class="text-muted">Orario di lavoro (indipendente dalla sede operativa)</small>
                             {% if form.work_schedule.errors %}
                                 <div class="text-danger">
                                     {% for error in form.work_schedule.errors %}
@@ -694,66 +694,26 @@ document.addEventListener('DOMContentLoaded', function() {
             allSediCheck.addEventListener('change', toggleSedeSelect);
         }
         
-        if (sedeSelect) {
-            sedeSelect.addEventListener('change', updateWorkSchedulesNew);
-        }
-        
         // Initial call
         togglePartTimePercentage();
         toggleSedeSelect();
+        loadAllWorkSchedules();
         
         function toggleSedeSelect() {
             if (allSediCheck && allSediCheck.checked) {
                 sedeSelect.disabled = true;
                 sedeSelect.value = -1;
-                loadGlobalWorkSchedules();
             } else {
                 sedeSelect.disabled = false;
-                updateWorkSchedulesNew();
             }
         }
         
-        function loadGlobalWorkSchedules() {
+        function loadAllWorkSchedules() {
             const workScheduleSelect = document.getElementById('workScheduleSelectNew');
             if (!workScheduleSelect) return;
             
-            // Carica solo gli orari globali usando la prima sede disponibile
-            const firstSedeOption = sedeSelect.querySelector('option:not([value="-1"])');
-            if (firstSedeOption) {
-                const sedeId = firstSedeOption.value;
-                fetch(`/api/sede/${sedeId}/work_schedules`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
-                            // Mostra solo gli orari globali
-                            data.work_schedules.filter(s => s.is_global).forEach(schedule => {
-                                const option = document.createElement('option');
-                                option.value = schedule.id;
-                                option.textContent = schedule.name;
-                                workScheduleSelect.appendChild(option);
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading global work schedules:', error);
-                    });
-            }
-        }
-        
-        function updateWorkSchedulesNew() {
-            const workScheduleSelect = document.getElementById('workScheduleSelectNew');
-            
-            if (!sedeSelect || !workScheduleSelect) return;
-            
-            const sedeId = sedeSelect.value;
-            
-            if (sedeId <= 0) {
-                workScheduleSelect.innerHTML = '<option value="">Seleziona prima una sede</option>';
-                return;
-            }
-            
-            fetch(`/api/sede/${sedeId}/work_schedules`)
+            // Carica TUTTI gli orari disponibili, indipendentemente dalla sede
+            fetch('/api/work_schedules')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
