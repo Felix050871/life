@@ -151,20 +151,26 @@ def attendance():
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
     
-    # Default to last 30 days if no dates provided
+    # Default to current month (from first to last day) if no dates provided
     if not start_date_str or not end_date_str:
-        end_date = datetime.now().date()
-        from datetime import timedelta
-        start_date = end_date - timedelta(days=30)
+        from calendar import monthrange
+        today = datetime.now().date()
+        # Primo giorno del mese corrente
+        start_date = date(today.year, today.month, 1)
+        # Ultimo giorno del mese corrente
+        last_day_num = monthrange(today.year, today.month)[1]
+        end_date = date(today.year, today.month, last_day_num)
     else:
         try:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         except ValueError:
-            # Fallback to default if invalid dates
-            end_date = datetime.now().date()
-            from datetime import timedelta
-            start_date = end_date - timedelta(days=30)
+            # Fallback to current month if invalid dates
+            from calendar import monthrange
+            today = datetime.now().date()
+            start_date = date(today.year, today.month, 1)
+            last_day_num = monthrange(today.year, today.month)[1]
+            end_date = date(today.year, today.month, last_day_num)
     
     if show_team_data:
         # Get team attendance data for PM, Management, Responsabili and Ente
