@@ -69,15 +69,16 @@ The platform features a modern, responsive dark-themed Bootstrap design with gen
   - **Email Notifications for Announcements**: Option to send email notifications to all active company users for "comunicazione" posts, utilizing the multi-tenant email system.
 - **HR Data Management (October 2025)**: Comprehensive employee information system with sensitive data protection, featuring:
   - **UserHRData Model**: Separate table (~50 fields) with 1-to-1 relationship to User for GDPR compliance and security isolation
+  - **Sede Architecture Decision** (October 24, 2025): Removed duplicated `sede_id` from UserHRData table. **Single source of truth**: `User.sede_id` is the operational sede assignment used throughout the platform (dashboard, shifts, attendance, leave management). HR module now displays and exports the operational sede directly from User table. Historical sede tracking can be implemented via separate audit table if needed in future.
   - **Three-Section Structure** (aligned with anagraficaHR.xlsx):
-    1. **DATI CONTRATTUALI** (14 fields): Matricola, hire date, contract type/dates, CCNL, job title (mansione), qualification (qualifica), level, work hours/week, sede, client, salary components (superminimo, rimborsi/diarie, ticket restaurant), INAIL risk level, hiring type, notes
-    2. **ANAGRAFICA RISORSA** (20 fields): Education level, birth data (city/date/age), gender, tax code (codice fiscale), residence (city/address/domicile/CAP), phone, Law 104/92 benefits, emails (personal/work), marital status, dependents, emergency contacts, driver's license (number/type/expiry), ACI vehicle, banca ore settings
+    1. **DATI CONTRATTUALI** (14 fields): Matricola, hire date, contract type/dates, CCNL, job title (mansione), qualification (qualifica), level, work hours/week, client, salary components (superminimo, rimborsi/diarie, ticket restaurant), INAIL risk level, hiring type, notes
+    2. **ANAGRAFICA RISORSA** (20 fields): Education level, birth data (city/date/age), gender, tax code (codice fiscale, read-only), residence (city/address/domicile/CAP), phone, Law 104/92 benefits, emails (personal/work - personal_email is editable), marital status, dependents, emergency contacts, driver's license (number/type/expiry), ACI vehicle, banca ore settings
     3. **VISITE E FORMAZIONE** (13 date/expiry pairs): Minimum requirements possession, medical visit (visita medica), and 6 mandatory training certifications (general safety, RSPP, RLS, first aid, emergency, supervisor) - each with data and scadenza tracking for expiry monitoring
   - **Permission-Based Access**: Three-tier permission system (can_manage_hr_data for full edit, can_view_hr_data for read-only company-wide access, can_view_my_hr_data for personal data viewing)
-  - **Excel Export**: Single-click export with 47 columns in exact Excel file structure (COD SI, employee names, all contractual/registry/training fields) with Italian formatting (DD/MM/YYYY dates, comma decimals, Sì/No booleans)
+  - **Excel Export**: Single-click export with 47 columns in exact Excel file structure (COD SI, employee names, all contractual/registry/training fields) with Italian formatting (DD/MM/YYYY dates, comma decimals, Sì/No booleans). Exports "Sede Operativa" from User.sede_id.
   - **Multi-Tenant Isolation**: All HR data properly scoped by company_id with filter_by_company() throughout
-  - **UI/UX**: Bootstrap accordion-style templates (hr_list.html for employee directory, hr_detail.html with 3 collapsible sections matching Excel structure) with sidebar menu integration
-  - **Database Migration** (October 23, 2025): Added 30+ new fields via ALTER TABLE statements for complete Excel template alignment
+  - **UI/UX**: Bootstrap accordion-style templates (hr_list.html for employee directory, hr_detail.html with 3 collapsible sections matching Excel structure) with sidebar menu integration. User Management page clarifies "Sede operativa corrente (usata per turni, presenze, ferie)".
+  - **Database Migration** (October 23, 2025): Added 30+ new fields via ALTER TABLE statements for complete Excel template alignment. October 24, 2025: Removed sede_id column from user_hr_data table.
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.

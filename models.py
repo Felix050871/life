@@ -1000,8 +1000,7 @@ class UserHRData(db.Model):
     disability = db.Column(db.Boolean, default=False)  # Disabilità certificata
     disability_percentage = db.Column(db.Integer, nullable=True)  # Percentuale disabilità
     
-    # Dati operativi (spostati da User)
-    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede di assegnazione
+    # Dati operativi (nota: sede_id operativa è in User.sede_id)
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
     banca_ore_enabled = db.Column(db.Boolean, default=False)  # Abilitazione banca ore
     banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo ore accumulabili
@@ -1037,7 +1036,6 @@ class UserHRData(db.Model):
     # Relationships
     user = db.relationship('User', backref=db.backref('hr_data', uselist=False, lazy=True))
     company = db.relationship('Company', backref='hr_data_records')
-    sede = db.relationship('Sede', foreign_keys=[sede_id], backref='hr_employees')
     aci_vehicle = db.relationship('ACITable', foreign_keys=[aci_vehicle_id], backref='hr_assigned_users')
     
     def __repr__(self):
