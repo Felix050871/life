@@ -422,7 +422,7 @@ def hr_detail(user_id):
             flash(f'Errore nel salvataggio: {str(e)}', 'error')
     
     # Carica lista veicoli ACI per il dropdown
-    aci_vehicles = ACITable.query.order_by(ACITable.category, ACITable.vehicle_description).all()
+    aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
     
     return render_template('hr_detail.html', 
                          user=user, 
@@ -536,7 +536,7 @@ def hr_export():
             hr_data.driver_license_number if hr_data else '',
             hr_data.driver_license_type if hr_data else '',
             hr_data.driver_license_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.driver_license_expiry else '',
-            f"{hr_data.aci_vehicle.vehicle_description} - {hr_data.aci_vehicle.category}" if hr_data and hr_data.aci_vehicle else '',
+            f"{hr_data.aci_vehicle.marca} {hr_data.aci_vehicle.modello} ({hr_data.aci_vehicle.tipologia})" if hr_data and hr_data.aci_vehicle else '',
             'Sì' if hr_data and hr_data.banca_ore_enabled else 'No' if hr_data else '',
             str(hr_data.banca_ore_limite_max).replace('.', ',') if hr_data and hr_data.banca_ore_limite_max else '',
             str(hr_data.banca_ore_periodo_mesi) if hr_data and hr_data.banca_ore_periodo_mesi else '',
