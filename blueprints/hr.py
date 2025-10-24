@@ -744,11 +744,16 @@ def hr_detail(user_id):
     # Carica lista veicoli ACI per il dropdown
     aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
     
+    # Carica lista mansioni attive per il dropdown
+    from models import Mansione
+    mansioni = filter_by_company(Mansione.query).filter_by(active=True).order_by(Mansione.nome).all()
+    
     return render_template('hr_detail.html', 
                          user=user, 
                          hr_data=hr_data,
                          can_edit=can_edit,
-                         aci_vehicles=aci_vehicles)
+                         aci_vehicles=aci_vehicles,
+                         mansioni=mansioni)
 
 
 @hr_bp.route('/export')

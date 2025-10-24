@@ -88,9 +88,15 @@
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Mansione</label>
-                    <input type="text" name="mansione" class="form-control" 
-                           value="{{ hr_data.mansione or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
+                    <select name="mansione" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Seleziona...</option>
+                        {% for mansione in mansioni %}
+                        <option value="{{ mansione.nome }}" {% if hr_data.mansione == mansione.nome %}selected{% endif %}>
+                            {{ mansione.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Gestisci il mansionario dal menu HR</small>
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Qualifica</label>
