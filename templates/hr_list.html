@@ -16,56 +16,222 @@
 </div>
 
 <!-- Summary Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
+<div class="row g-3 mb-4">
+    <!-- Totale Dipendenti -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-primary text-white h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-subtitle mb-2">Dipendenti Totali</h6>
-                        <h3 class="card-title mb-0">{{ users_data|length }}</h3>
+                        <h6 class="card-subtitle mb-2 opacity-75">Dipendenti Totali</h6>
+                        <h2 class="card-title mb-0">{{ statistics.total_employees }}</h2>
+                        <small class="opacity-75">
+                            <i class="fas fa-check-circle me-1"></i>{{ statistics.with_hr_data }} con dati HR
+                        </small>
                     </div>
-                    <i class="fas fa-users fa-2x opacity-50"></i>
+                    <i class="fas fa-users fa-3x opacity-50"></i>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
+
+    <!-- Donne -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-info text-white h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-subtitle mb-2">Con Dati HR</h6>
-                        <h3 class="card-title mb-0">{{ users_data|selectattr('has_data')|list|length }}</h3>
+                        <h6 class="card-subtitle mb-2 opacity-75">Dipendenti Donne</h6>
+                        <h2 class="card-title mb-0">{{ statistics.female_count }}</h2>
+                        <small class="opacity-75">
+                            {% if statistics.total_employees > 0 %}
+                            {{ (statistics.female_count / statistics.total_employees * 100)|round(1) }}% del totale
+                            {% else %}
+                            0% del totale
+                            {% endif %}
+                        </small>
                     </div>
-                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                    <i class="fas fa-venus fa-3x opacity-50"></i>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
+
+    <!-- Under 36 -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-warning text-white h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-subtitle mb-2">Contratti Attivi</h6>
-                        <h3 class="card-title mb-0">{{ users_data|selectattr('contract_status', 'equalto', 'Attivo')|list|length }}</h3>
+                        <h6 class="card-subtitle mb-2 opacity-75">Under 36</h6>
+                        <h2 class="card-title mb-0">{{ statistics.under_36 }}</h2>
+                        <small class="opacity-75">
+                            <i class="fas fa-birthday-cake me-1"></i>Giovani lavoratori
+                        </small>
                     </div>
-                    <i class="fas fa-file-contract fa-2x opacity-50"></i>
+                    <i class="fas fa-user-graduate fa-3x opacity-50"></i>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-white">
+
+    <!-- Contratti Attivi -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-success text-white h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="card-subtitle mb-2">In Prova</h6>
-                        <h3 class="card-title mb-0">{{ users_data|selectattr('is_probation')|list|length }}</h3>
+                        <h6 class="card-subtitle mb-2 opacity-75">Contratti Attivi</h6>
+                        <h2 class="card-title mb-0">{{ statistics.active_contracts }}</h2>
+                        <small class="opacity-75">
+                            <i class="fas fa-hourglass-half me-1"></i>{{ statistics.in_probation }} in prova
+                        </small>
                     </div>
-                    <i class="fas fa-hourglass-half fa-2x opacity-50"></i>
+                    <i class="fas fa-file-contract fa-3x opacity-50"></i>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Second row of statistics -->
+<div class="row g-3 mb-4">
+    <!-- Uomini -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-info h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Dipendenti Uomini</h6>
+                        <h3 class="card-title mb-0">{{ statistics.male_count }}</h3>
+                        <small class="text-muted">
+                            {% if statistics.total_employees > 0 %}
+                            {{ (statistics.male_count / statistics.total_employees * 100)|round(1) }}% del totale
+                            {% else %}
+                            0% del totale
+                            {% endif %}
+                        </small>
+                    </div>
+                    <i class="fas fa-mars fa-2x text-info opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tempo Indeterminato -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Tempo Indeterminato</h6>
+                        <h3 class="card-title mb-0">{{ statistics.tempo_indeterminato }}</h3>
+                        <small class="text-muted">
+                            <i class="fas fa-infinity me-1"></i>Contratti permanenti
+                        </small>
+                    </div>
+                    <i class="fas fa-handshake fa-2x text-success opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tempo Determinato -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Tempo Determinato</h6>
+                        <h3 class="card-title mb-0">{{ statistics.tempo_determinato }}</h3>
+                        <small class="text-muted">
+                            <i class="fas fa-calendar-alt me-1"></i>Contratti a termine
+                        </small>
+                    </div>
+                    <i class="fas fa-clock fa-2x text-warning opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Over 36 -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Over 36</h6>
+                        <h3 class="card-title mb-0">{{ statistics.total_employees - statistics.under_36 }}</h3>
+                        <small class="text-muted">
+                            <i class="fas fa-user-tie me-1"></i>Esperienza matura
+                        </small>
+                    </div>
+                    <i class="fas fa-user-check fa-2x text-secondary opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label small text-muted">
+                    <i class="fas fa-search me-1"></i>Ricerca
+                </label>
+                <input type="text" id="searchInput" class="form-control" 
+                       placeholder="Cerca per nome, matricola, email...">
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small text-muted">
+                    <i class="fas fa-venus-mars me-1"></i>Genere
+                </label>
+                <select id="filterGender" class="form-select">
+                    <option value="">Tutti</option>
+                    <option value="M">Uomini</option>
+                    <option value="F">Donne</option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small text-muted">
+                    <i class="fas fa-building me-1"></i>Sede
+                </label>
+                <select id="filterSede" class="form-select">
+                    <option value="">Tutte le sedi</option>
+                    {% for sede in sedi %}
+                    <option value="{{ sede.name }}">{{ sede.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small text-muted">
+                    <i class="fas fa-file-contract me-1"></i>Tipo Contratto
+                </label>
+                <select id="filterContract" class="form-select">
+                    <option value="">Tutti</option>
+                    <option value="Tempo Indeterminato">Tempo Indeterminato</option>
+                    <option value="Tempo Determinato">Tempo Determinato</option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small text-muted">
+                    <i class="fas fa-toggle-on me-1"></i>Stato
+                </label>
+                <select id="filterStatus" class="form-select">
+                    <option value="">Tutti</option>
+                    <option value="Attivo">Attivi</option>
+                    <option value="Non attivo">Non attivi</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <button id="clearFilters" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Pulisci Filtri
+                </button>
+                <span id="filterCount" class="ms-3 text-muted small"></span>
             </div>
         </div>
     </div>
@@ -73,14 +239,15 @@
 
 <!-- HR Data Table -->
 <div class="card">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0">
             <i class="fas fa-list me-2"></i>Elenco Dipendenti
         </h5>
+        <span id="resultCount" class="badge bg-primary">{{ users_data|length }} dipendenti</span>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table id="hrTable" class="table table-hover">
                 <thead>
                     <tr>
                         <th>Matricola</th>
@@ -94,7 +261,11 @@
                 </thead>
                 <tbody>
                     {% for data in users_data %}
-                    <tr>
+                    <tr data-gender="{{ data.gender or '' }}" 
+                        data-age="{{ data.age or '' }}"
+                        data-contract="{{ data.contract_type }}"
+                        data-status="{{ data.contract_status }}"
+                        data-sede="{{ data.hr_data.sede.name if data.hr_data and data.hr_data.sede else '' }}">
                         <td>
                             {% if data.has_data %}
                             <strong>{{ data.matricola }}</strong>
@@ -112,7 +283,20 @@
                             <i class="fas fa-user-circle fa-2x me-2 text-muted"></i>
                             {% endif %}
                             <strong>{{ data.user.get_full_name() }}</strong>
-                            <br><small class="text-muted">{{ data.user.role }}</small>
+                            {% if data.gender %}
+                            <span class="ms-1 small text-muted">
+                                {% if data.gender == 'F' %}
+                                <i class="fas fa-venus text-info"></i>
+                                {% elif data.gender == 'M' %}
+                                <i class="fas fa-mars text-primary"></i>
+                                {% endif %}
+                            </span>
+                            {% endif %}
+                            <br><small class="text-muted">{{ data.user.role }}
+                            {% if data.age %}
+                            - {{ data.age }} anni
+                            {% endif %}
+                            </small>
                         </td>
                         <td>
                             {% if data.hr_data and data.hr_data.sede %}
@@ -169,5 +353,105 @@
 .opacity-50 {
     opacity: 0.5;
 }
+.opacity-75 {
+    opacity: 0.75;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const filterGender = document.getElementById('filterGender');
+    const filterSede = document.getElementById('filterSede');
+    const filterContract = document.getElementById('filterContract');
+    const filterStatus = document.getElementById('filterStatus');
+    const clearButton = document.getElementById('clearFilters');
+    const table = document.getElementById('hrTable');
+    const resultCount = document.getElementById('resultCount');
+    const filterCount = document.getElementById('filterCount');
+    
+    // Attach event listeners
+    searchInput.addEventListener('input', filterTable);
+    filterGender.addEventListener('change', filterTable);
+    filterSede.addEventListener('change', filterTable);
+    filterContract.addEventListener('change', filterTable);
+    filterStatus.addEventListener('change', filterTable);
+    clearButton.addEventListener('click', clearFilters);
+    
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const genderFilter = filterGender.value;
+        const sedeFilter = filterSede.value;
+        const contractFilter = filterContract.value;
+        const statusFilter = filterStatus.value;
+        
+        const rows = table.querySelectorAll('tbody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            // Skip empty state row
+            if (row.querySelector('td[colspan]')) {
+                row.style.display = 'none';
+                return;
+            }
+            
+            const cells = row.querySelectorAll('td');
+            const matricola = cells[0].textContent.toLowerCase();
+            const nome = cells[1].textContent.toLowerCase();
+            const sede = cells[2].textContent.trim();
+            const contratto = cells[3].textContent.trim();
+            const status = row.getAttribute('data-status');
+            const gender = row.getAttribute('data-gender');
+            const rowSede = row.getAttribute('data-sede');
+            
+            // Apply filters
+            let matchesSearch = searchTerm === '' || 
+                               matricola.includes(searchTerm) || 
+                               nome.includes(searchTerm);
+            
+            let matchesGender = genderFilter === '' || gender === genderFilter;
+            let matchesSede = sedeFilter === '' || rowSede === sedeFilter;
+            let matchesContract = contractFilter === '' || contratto === contractFilter;
+            let matchesStatus = statusFilter === '' || status === statusFilter;
+            
+            if (matchesSearch && matchesGender && matchesSede && matchesContract && matchesStatus) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update result count
+        resultCount.textContent = visibleCount + ' dipendenti';
+        
+        // Update filter count message
+        const activeFilters = [];
+        if (searchTerm) activeFilters.push('ricerca');
+        if (genderFilter) activeFilters.push('genere');
+        if (sedeFilter) activeFilters.push('sede');
+        if (contractFilter) activeFilters.push('contratto');
+        if (statusFilter) activeFilters.push('stato');
+        
+        if (activeFilters.length > 0) {
+            filterCount.textContent = `Filtri attivi: ${activeFilters.join(', ')}`;
+            filterCount.classList.add('text-primary');
+            filterCount.classList.remove('text-muted');
+        } else {
+            filterCount.textContent = '';
+            filterCount.classList.remove('text-primary');
+            filterCount.classList.add('text-muted');
+        }
+    }
+    
+    function clearFilters() {
+        searchInput.value = '';
+        filterGender.value = '';
+        filterSede.value = '';
+        filterContract.value = '';
+        filterStatus.value = '';
+        filterTable();
+    }
+});
+</script>
 {% endblock %}

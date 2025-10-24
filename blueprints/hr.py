@@ -61,6 +61,7 @@ def hr_list():
     users_data = []
     for user in users:
         hr_data = user.hr_data
+        age = hr_data.get_age() if hr_data else None
         
         users_data.append({
             'user': user,
@@ -70,10 +71,46 @@ def hr_list():
             'contract_type': hr_data.contract_type if hr_data else '-',
             'hire_date': hr_data.hire_date.strftime('%d/%m/%Y') if hr_data and hr_data.hire_date else '-',
             'contract_status': 'Attivo' if hr_data and hr_data.is_contract_active() else 'Non attivo' if hr_data else '-',
-            'is_probation': hr_data.is_probation_period() if hr_data else False
+            'is_probation': hr_data.is_probation_period() if hr_data else False,
+            'gender': hr_data.gender if hr_data else None,
+            'age': age,
+            'birth_city': hr_data.birth_city if hr_data else None,
         })
     
-    return render_template('hr_list.html', users_data=users_data)
+    # Calcola statistiche
+    total_employees = len(users_data)
+    with_hr_data = sum(1 for d in users_data if d['has_data'])
+    active_contracts = sum(1 for d in users_data if d['contract_status'] == 'Attivo')
+    in_probation = sum(1 for d in users_data if d['is_probation'])
+    
+    # Statistiche demografiche
+    female_count = sum(1 for d in users_data if d['gender'] == 'F')
+    male_count = sum(1 for d in users_data if d['gender'] == 'M')
+    under_36 = sum(1 for d in users_data if d['age'] is not None and d['age'] < 36)
+    
+    # Statistiche contratti
+    tempo_indeterminato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Indeterminato')
+    tempo_determinato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Determinato')
+    
+    statistics = {
+        'total_employees': total_employees,
+        'with_hr_data': with_hr_data,
+        'active_contracts': active_contracts,
+        'in_probation': in_probation,
+        'female_count': female_count,
+        'male_count': male_count,
+        'under_36': under_36,
+        'tempo_indeterminato': tempo_indeterminato,
+        'tempo_determinato': tempo_determinato,
+    }
+    
+    # Ottieni lista sedi per filtri
+    sedi = filter_by_company(Sede.query).order_by(Sede.name).all()
+    
+    return render_template('hr_list.html', 
+                         users_data=users_data, 
+                         statistics=statistics,
+                         sedi=sedi)
 
 
 @hr_bp.route('/detail/<int:user_id>', methods=['GET', 'POST'])
