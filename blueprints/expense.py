@@ -606,7 +606,7 @@ def create_overtime_request():
             end_time=form.end_time.data,
             motivation=form.motivation.data,
             overtime_type_id=form.overtime_type_id.data,
-            status='pending'
+            status='Pending'
         )
         set_company_on_create(overtime_request)
         db.session.add(overtime_request)
@@ -652,7 +652,7 @@ def approve_overtime_request(request_id):
         flash('Non puoi approvare richieste di altre sedi.', 'warning')
         return redirect(url_for('expense.overtime_requests_management'))
     
-    overtime_request.status = 'approved'
+    overtime_request.status = 'Approved'
     overtime_request.approval_comment = request.form.get('approval_comment', '')
     overtime_request.approved_by = current_user.id
     try:
@@ -687,7 +687,7 @@ def reject_overtime_request(request_id):
         flash('Non puoi rifiutare richieste di altre sedi.', 'warning')
         return redirect(url_for('expense.overtime_requests_management'))
     
-    overtime_request.status = 'rejected'
+    overtime_request.status = 'Rejected'
     overtime_request.approval_comment = request.form.get('approval_comment', '')
     overtime_request.approved_by = current_user.id
     try:
@@ -950,7 +950,7 @@ def approve_mileage_request(request_id):
     comment = request.form.get('comment', '')
     
     if action == 'approve':
-        mileage_request.status = 'approved'
+        mileage_request.status = 'Approved'
         mileage_request.approval_comment = comment
         mileage_request.approved_by = current_user.id
         try:
@@ -965,7 +965,7 @@ def approve_mileage_request(request_id):
             flash('Il commento è obbligatorio per rifiutare una richiesta.', 'warning')
             return redirect(url_for('expense.mileage_requests'))
         
-        mileage_request.status = 'rejected'
+        mileage_request.status = 'Rejected'
         mileage_request.approval_comment = comment
         mileage_request.approved_by = current_user.id
         try:

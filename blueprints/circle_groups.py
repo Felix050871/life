@@ -213,7 +213,7 @@ def request_membership(group_id):
     existing_request = CircleGroupMembershipRequest.query.filter_by(
         group_id=group_id,
         user_id=current_user.id,
-        status='pending'
+        status='Pending'
     ).first()
     
     if existing_request:
@@ -253,7 +253,7 @@ def manage_requests(group_id):
     # Carica richieste pendenti
     pending_requests = CircleGroupMembershipRequest.query.filter_by(
         group_id=group_id,
-        status='pending'
+        status='Pending'
     ).order_by(CircleGroupMembershipRequest.created_at.desc()).all()
     
     return render_template('circle/groups/manage_requests.html', 
@@ -272,7 +272,7 @@ def accept_request(group_id, request_id):
     membership_request = CircleGroupMembershipRequest.query.filter_by(
         id=request_id,
         group_id=group_id,
-        status='pending'
+        status='Pending'
     ).first_or_404()
     
     # Aggiungi utente al gruppo
@@ -284,7 +284,7 @@ def accept_request(group_id, request_id):
     db.session.execute(stmt)
     
     # Aggiorna stato richiesta
-    membership_request.status = 'accepted'
+    membership_request.status = 'Accepted'
     membership_request.reviewed_at = db.func.now()
     membership_request.reviewed_by = current_user.id
     
@@ -305,11 +305,11 @@ def reject_request(group_id, request_id):
     membership_request = CircleGroupMembershipRequest.query.filter_by(
         id=request_id,
         group_id=group_id,
-        status='pending'
+        status='Pending'
     ).first_or_404()
     
     # Aggiorna stato richiesta
-    membership_request.status = 'rejected'
+    membership_request.status = 'Rejected'
     membership_request.reviewed_at = db.func.now()
     membership_request.reviewed_by = current_user.id
     

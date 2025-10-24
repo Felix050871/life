@@ -563,7 +563,7 @@ def send_connection_request(user_id):
     ).first()
     
     if existing:
-        if existing.status == 'accepted':
+        if existing.status == 'Accepted':
             flash('Sei già collegato con questo utente', 'info')
         elif existing.status == 'pending':
             flash('Hai già una richiesta pendente con questo utente', 'info')
@@ -575,7 +575,7 @@ def send_connection_request(user_id):
     new_request = ConnectionRequest(
         sender_id=current_user.id,
         recipient_id=target_user.id,
-        status='pending'
+        status='Pending'
     )
     set_company_on_create(new_request)
     
@@ -597,7 +597,7 @@ def accept_connection_request(request_id):
     connection_request = filter_by_company(ConnectionRequest.query).filter_by(
         id=request_id,
         recipient_id=current_user.id,
-        status='pending'
+        status='Pending'
     ).first()
     
     if not connection_request:
@@ -605,7 +605,7 @@ def accept_connection_request(request_id):
         return redirect(url_for('circle.connection_requests'))
     
     # Accetta la richiesta
-    connection_request.status = 'accepted'
+    connection_request.status = 'Accepted'
     connection_request.responded_at = datetime.utcnow()
     
     db.session.commit()
@@ -625,7 +625,7 @@ def reject_connection_request(request_id):
     connection_request = filter_by_company(ConnectionRequest.query).filter_by(
         id=request_id,
         recipient_id=current_user.id,
-        status='pending'
+        status='Pending'
     ).first()
     
     if not connection_request:
@@ -633,7 +633,7 @@ def reject_connection_request(request_id):
         return redirect(url_for('circle.connection_requests'))
     
     # Rifiuta la richiesta
-    connection_request.status = 'rejected'
+    connection_request.status = 'Rejected'
     connection_request.responded_at = datetime.utcnow()
     
     db.session.commit()
@@ -653,7 +653,7 @@ def cancel_connection_request(request_id):
     connection_request = filter_by_company(ConnectionRequest.query).filter_by(
         id=request_id,
         sender_id=current_user.id,
-        status='pending'
+        status='Pending'
     ).first()
     
     if not connection_request:
@@ -687,7 +687,7 @@ def remove_connection(user_id):
                 ConnectionRequest.recipient_id == current_user.id
             )
         ),
-        ConnectionRequest.status == 'accepted'
+        ConnectionRequest.status == 'Accepted'
     ).first()
     
     if not connection:
@@ -712,13 +712,13 @@ def connection_requests():
     # Richieste ricevute (pendenti)
     received_requests = filter_by_company(ConnectionRequest.query).filter_by(
         recipient_id=current_user.id,
-        status='pending'
+        status='Pending'
     ).order_by(desc(ConnectionRequest.created_at)).all()
     
     # Richieste inviate (pendenti)
     sent_requests = filter_by_company(ConnectionRequest.query).filter_by(
         sender_id=current_user.id,
-        status='pending'
+        status='Pending'
     ).order_by(desc(ConnectionRequest.created_at)).all()
     
     return render_template('circle/connection_requests.html',

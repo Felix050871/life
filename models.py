@@ -917,7 +917,7 @@ class User(UserMixin, db.Model):
                     ConnectionRequest.recipient_id == self.id
                 )
             ),
-            ConnectionRequest.status == 'pending'
+            ConnectionRequest.status == 'Pending'
         ).first()
         return pending
     
@@ -2786,7 +2786,7 @@ class ExpenseReport(db.Model):
     
     def can_be_edited(self):
         """Verifica se la nota spese può essere modificata"""
-        return self.status == 'pending'
+        return self.status == 'Pending'
     
     def can_be_approved_by(self, user):
         """Verifica se l'utente può approvare questa nota spese"""
@@ -2821,7 +2821,7 @@ class ExpenseReport(db.Model):
     
     def _send_status_notification(self):
         """Invia notifica automatica di cambio stato al dipendente"""
-        if self.status == 'approved':
+        if self.status == 'Approved':
             title = "Nota Spese Approvata"
             message = f"La tua nota spese del {self.expense_date.strftime('%d/%m/%Y')} per €{self.amount} è stata approvata."
             message_type = 'success'
@@ -2960,7 +2960,7 @@ class OvertimeRequest(db.Model):
     
     def can_be_edited(self):
         """Verifica se la richiesta può essere modificata"""
-        return self.status == 'pending'
+        return self.status == 'Pending'
     
     def can_be_approved_by(self, user):
         """Verifica se l'utente può approvare questa richiesta di straordinario"""
@@ -2996,7 +2996,7 @@ class OvertimeRequest(db.Model):
     def _send_status_notification(self):
         """Invia notifica automatica del cambio di stato al dipendente"""
         try:
-            if self.status == 'approved':
+            if self.status == 'Approved':
                 title = "Straordinario Approvato"
                 message = f"La tua richiesta di straordinario per il {self.overtime_date.strftime('%d/%m/%Y')} dalle {self.start_time.strftime('%H:%M')} alle {self.end_time.strftime('%H:%M')} è stata approvata."
                 message_type = 'Successo'
@@ -3134,7 +3134,7 @@ class MileageRequest(db.Model):
     
     def can_be_edited(self):
         """Verifica se la richiesta può essere modificata"""
-        return self.status == 'pending'
+        return self.status == 'Pending'
     
     def can_be_approved_by(self, user):
         """Verifica se l'utente può approvare questa richiesta di rimborso"""
