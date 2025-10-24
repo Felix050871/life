@@ -944,6 +944,7 @@ class UserHRData(db.Model):
     alternative_domicile = db.Column(db.String(255), nullable=True)  # Domicilio se diverso dalla residenza
     phone = db.Column(db.String(20), nullable=True)  # Recapito telefonico personale
     law_104_benefits = db.Column(db.Boolean, default=False)  # Fruizione permessi L. 104/92
+    personal_email = db.Column(db.String(120), nullable=True)  # Email personale
     
     # Dati contrattuali
     contract_type = db.Column(db.String(100), nullable=True)  # Tipo contratto (TD, TI, Stage, ecc.)

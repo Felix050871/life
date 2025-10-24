@@ -135,6 +135,7 @@ def hr_detail(user_id):
             hr_data.alternative_domicile = request.form.get('alternative_domicile', '').strip() or None
             hr_data.phone = request.form.get('phone', '').strip() or None
             hr_data.law_104_benefits = request.form.get('law_104_benefits') == 'on'
+            hr_data.personal_email = request.form.get('personal_email', '').strip() or None
             
             # Dati contrattuali
             hr_data.contract_type = request.form.get('contract_type', '').strip() or None
@@ -527,8 +528,8 @@ def hr_export():
             hr_data.postal_code if hr_data else '',
             hr_data.phone if hr_data else '',
             'Sì' if hr_data and hr_data.law_104_benefits else 'No' if hr_data else '',
+            hr_data.personal_email if hr_data else '',
             user.email,
-            user.work_email if user.work_email else user.email,
             hr_data.marital_status if hr_data else '',
             hr_data.dependents_number if hr_data and hr_data.dependents_number else '',
             hr_data.emergency_contact_name if hr_data else '',

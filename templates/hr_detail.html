@@ -183,7 +183,8 @@
                     <input type="text" name="codice_fiscale" class="form-control text-uppercase" 
                            value="{{ hr_data.codice_fiscale or '' }}" 
                            maxlength="16"
-                           {% if not can_edit %}disabled{% endif %}>
+                           disabled
+                           title="Il codice fiscale viene calcolato automaticamente dai dati anagrafici">
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Data di Nascita</label>
@@ -273,11 +274,13 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">E-mail Personale</label>
-                    <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                    <input type="email" name="personal_email" class="form-control" 
+                           value="{{ hr_data.personal_email or '' }}"
+                           {% if not can_edit %}disabled{% endif %}>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">E-mail Aziendale</label>
-                    <input type="email" class="form-control" value="{{ user.work_email or user.email }}" disabled>
+                    <input type="email" class="form-control" value="{{ user.email }}" disabled>
                 </div>
             </div>
 
