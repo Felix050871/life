@@ -10,7 +10,7 @@
     </h1>
     {% if current_user.can_manage_hr_data() %}
     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exportConfigModal">
-        <i class="fas fa-file-excel me-2"></i>Export Personalizzato
+        <i class="fas fa-filter me-2"></i>Filtri e Export
     </button>
     {% endif %}
 </div>
@@ -391,7 +391,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="exportConfigModalLabel">
-                    <i class="fas fa-sliders-h me-2"></i>Configura Export Personalizzato
+                    <i class="fas fa-filter me-2"></i>Filtri Personalizzati
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -444,8 +444,8 @@
                                             </div>
                                             <select class="form-select form-select-sm mt-1" name="filter_contract_type">
                                                 <option value="">Tutti</option>
-                                                <option value="Tempo indeterminato">Tempo indeterminato</option>
-                                                <option value="Tempo determinato">Tempo determinato</option>
+                                                <option value="Tempo Indeterminato">Tempo Indeterminato</option>
+                                                <option value="Tempo Determinato">Tempo Determinato</option>
                                                 <option value="Apprendistato">Apprendistato</option>
                                                 <option value="Stage">Stage</option>
                                             </select>
