@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-md-12">
             <h1><i class="fas fa-clock me-2"></i>Gestione Orari di Lavoro</h1>
-            <p class="text-muted">Configura gli orari di entrata e uscita globali o per sede specifica</p>
+            <p class="text-muted">Configura gli orari di entrata e uscita globali dell'azienda</p>
             
             <!-- Form per aggiungere nuovo orario - Solo per gestione, non per visualizzazione -->
             {% if current_user.can_manage_schedules() %}
@@ -19,15 +19,11 @@
                     <form method="POST" action="{{ url_for('admin.create_work_schedule') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
-                            <div class="col-md-4">
-                                {{ form.sede.label(class="form-label") }}
-                                {{ form.sede(class="form-select") }}
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 {{ form.name.label(class="form-label") }}
                                 {{ form.name(class="form-control", placeholder="es. Orario Standard") }}
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 {{ form.description.label(class="form-label") }}
                                 {{ form.description(class="form-control", placeholder="Descrizione opzionale") }}
                             </div>
@@ -87,7 +83,6 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Sede</th>
                                     <th>Nome Orario</th>
                                     <th>Giorni</th>
                                     <th>Entrata</th>
@@ -102,13 +97,6 @@
                             <tbody>
                                 {% for schedule in schedules %}
                                 <tr class="{% if not schedule.active %}table-secondary{% endif %}">
-                                    <td>
-                                        {% if schedule.sede_obj %}
-                                        <span class="badge bg-info">{{ schedule.sede_obj.name }}</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary"><i class="fas fa-globe me-1"></i>Globale</span>
-                                        {% endif %}
-                                    </td>
                                     <td>
                                         <strong>{{ schedule.name }}</strong>
                                         {% if not schedule.active %}
