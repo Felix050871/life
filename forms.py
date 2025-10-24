@@ -172,6 +172,7 @@ class UserForm(FlaskForm):
     aci_vehicle_marca = SelectField('Marca', coerce=str, validators=[Optional()], validate_choice=False)
     aci_vehicle = SelectField('Modello', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
+                                     validators=[Optional()],
                                      default='100.0')
     overtime_enabled = BooleanField('Abilitato a Straordinari', default=False)
     overtime_type = SelectField('Tipologia Straordinario', 
@@ -289,21 +290,28 @@ class UserForm(FlaskForm):
     
     def validate_part_time_percentage(self, part_time_percentage):
         if part_time_percentage.data:
-            try:
-                # Replace comma with dot for proper float conversion
-                value = float(part_time_percentage.data.replace(',', '.'))
-                if not (1 <= value <= 100):
-                    raise ValidationError('La percentuale deve essere tra 1 e 100.')
-            except (ValueError, AttributeError):
-                raise ValidationError('Inserire un numero valido.')
+            # Strip whitespace first
+            data = part_time_percentage.data.strip()
+            if data:  # Only validate if there's actual content
+                try:
+                    # Replace comma with dot for proper float conversion
+                    value = float(data.replace(',', '.'))
+                    if not (1 <= value <= 100):
+                        raise ValidationError('La percentuale deve essere tra 1 e 100.')
+                except (ValueError, AttributeError):
+                    raise ValidationError('Inserire un numero valido.')
     
     def get_part_time_percentage_as_float(self):
         """Convert the percentage string to float for database storage"""
         if self.part_time_percentage.data:
-            try:
-                return float(self.part_time_percentage.data.replace(',', '.'))
-            except (ValueError, AttributeError):
-                return 100.0
+            # Strip whitespace first
+            data = self.part_time_percentage.data.strip()
+            if data:  # Only process if there's actual content
+                try:
+                    return float(data.replace(',', '.'))
+                except (ValueError, AttributeError):
+                    return 100.0
+        # Default to 100% for full-time
         return 100.0
     
     def get_banca_ore_limite_max_as_float(self):
