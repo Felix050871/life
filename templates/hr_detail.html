@@ -387,52 +387,38 @@
                 </div>
             </div>
 
-            <!-- Veicolo ACI -->
+            <!-- Veicolo ACI - Selezione a cascata -->
             <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-car me-2"></i>Veicolo ACI (Rimborsi Chilometrici)</h6>
             <div class="row">
-                <div class="col-md-12 mb-3">
-                    <label class="form-label">Veicolo ACI Assegnato</label>
-                    <select name="aci_vehicle_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Nessun veicolo assegnato</option>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Tipo Veicolo</label>
+                    <select id="tipoVeicoloSelectHR" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Seleziona tipo</option>
+                        {% set tipi = [] %}
                         {% for vehicle in aci_vehicles %}
-                        <option value="{{ vehicle.id }}" 
-                                {% if hr_data.aci_vehicle_id == vehicle.id %}selected{% endif %}>
-                            {{ vehicle.tipologia }} - {{ vehicle.marca }} {{ vehicle.modello }} 
-                            ({{ vehicle.anno_immatricolazione }} - {{ vehicle.alimentazione }})
-                        </option>
+                            {% if vehicle.tipologia not in tipi %}
+                                {% set _ = tipi.append(vehicle.tipologia) %}
+                            {% endif %}
+                        {% endfor %}
+                        {% for tipo in tipi|sort %}
+                        <option value="{{ tipo }}">{{ tipo }}</option>
                         {% endfor %}
                     </select>
-                    <small class="text-muted">Utilizzato per il calcolo dei rimborsi chilometrici</small>
-                </div>
-            </div>
-
-            <!-- Banca Ore -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-clock me-2"></i>Banca Ore</h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Banca Ore Abilitata</label>
-                    <div class="form-check form-switch mt-2">
-                        <input type="checkbox" name="banca_ore_enabled" class="form-check-input" 
-                               {% if hr_data.banca_ore_enabled %}checked{% endif %}
-                               {% if not can_edit %}disabled{% endif %}>
-                        <label class="form-check-label">Dipendente abilitato alla banca ore</label>
-                    </div>
+                    <small class="text-muted">Tipo di veicolo (es. Autovettura, Motociclo)</small>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <label class="form-label">Limite Massimo Ore</label>
-                    <input type="number" step="0.5" name="banca_ore_limite_max" class="form-control" 
-                           value="{{ hr_data.banca_ore_limite_max or '' }}"
-                           placeholder="40"
-                           {% if not can_edit %}disabled{% endif %}>
-                    <small class="text-muted">Ore massime accumulabili</small>
+                    <label class="form-label">Marca</label>
+                    <select id="marcaVeicoloSelectHR" class="form-select" disabled>
+                        <option value="">Seleziona prima il tipo</option>
+                    </select>
+                    <small class="text-muted">Marca del veicolo</small>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <label class="form-label">Periodo Validità (Mesi)</label>
-                    <input type="number" name="banca_ore_periodo_mesi" class="form-control" 
-                           value="{{ hr_data.banca_ore_periodo_mesi or '' }}"
-                           placeholder="12"
-                           {% if not can_edit %}disabled{% endif %}>
-                    <small class="text-muted">Periodo entro cui usufruire delle ore</small>
+                    <label class="form-label">Modello e Costo/km</label>
+                    <select name="aci_vehicle_id" id="modelloVeicoloSelectHR" class="form-select" disabled>
+                        <option value="">Seleziona prima la marca</option>
+                    </select>
+                    <small class="text-muted">Modello specifico con costo chilometrico</small>
                 </div>
             </div>
         </div>
@@ -594,4 +580,98 @@
     </div>
     {% endif %}
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('tipoVeicoloSelectHR');
+    const marcaSelect = document.getElementById('marcaVeicoloSelectHR');
+    const modelloSelect = document.getElementById('modelloVeicoloSelectHR');
+    
+    if (!tipoSelect || !marcaSelect || !modelloSelect) return;
+    
+    // Salva il veicolo corrente per pre-selezionarlo
+    const currentVehicleId = {{ hr_data.aci_vehicle_id|default('null') }};
+    
+    tipoSelect.addEventListener('change', function() {
+        const tipo = this.value;
+        marcaSelect.disabled = true;
+        modelloSelect.disabled = true;
+        marcaSelect.innerHTML = '<option value="">Caricamento...</option>';
+        modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+        
+        if (tipo) {
+            fetch(`/api/aci/marche/${encodeURIComponent(tipo)}`)
+                .then(response => response.json())
+                .then(data => {
+                    marcaSelect.innerHTML = '<option value="">Seleziona marca</option>';
+                    if (data.success && data.marche.length > 0) {
+                        data.marche.forEach(marca => {
+                            const option = document.createElement('option');
+                            option.value = marca[0];
+                            option.textContent = marca[1];
+                            marcaSelect.appendChild(option);
+                        });
+                        marcaSelect.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading marche:', error);
+                    marcaSelect.innerHTML = '<option value="">Errore caricamento</option>';
+                });
+        } else {
+            marcaSelect.innerHTML = '<option value="">Seleziona prima il tipo</option>';
+            modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+        }
+    });
+    
+    marcaSelect.addEventListener('change', function() {
+        const tipo = tipoSelect.value;
+        const marca = this.value;
+        modelloSelect.disabled = true;
+        modelloSelect.innerHTML = '<option value="">Caricamento...</option>';
+        
+        if (tipo && marca) {
+            fetch(`/api/aci/modelli/${encodeURIComponent(tipo)}/${encodeURIComponent(marca)}`)
+                .then(response => response.json())
+                .then(data => {
+                    modelloSelect.innerHTML = '<option value="">Seleziona modello</option>';
+                    if (data.success && data.modelli.length > 0) {
+                        data.modelli.forEach(modello => {
+                            const option = document.createElement('option');
+                            option.value = modello[0];
+                            option.textContent = modello[1];
+                            modelloSelect.appendChild(option);
+                        });
+                        modelloSelect.disabled = false;
+                        
+                        // Se c'è un veicolo corrente, selezionalo
+                        if (currentVehicleId) {
+                            modelloSelect.value = currentVehicleId;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading modelli:', error);
+                    modelloSelect.innerHTML = '<option value="">Errore caricamento</option>';
+                });
+        } else {
+            modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+        }
+    });
+    
+    // Pre-carica il veicolo selezionato se esiste
+    {% if hr_data.aci_vehicle %}
+    tipoSelect.value = '{{ hr_data.aci_vehicle.tipologia }}';
+    tipoSelect.dispatchEvent(new Event('change'));
+    
+    // Aspetta che le marche vengano caricate
+    setTimeout(() => {
+        marcaSelect.value = '{{ hr_data.aci_vehicle.marca }}';
+        marcaSelect.dispatchEvent(new Event('change'));
+    }, 500);
+    {% endif %}
+});
+</script>
 {% endblock %}
