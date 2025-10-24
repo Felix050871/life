@@ -210,11 +210,11 @@ h2, h4 {
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{{ url_for('presidio_coverage_edit', template_id=template.id) }}" 
+                                            <a href="{{ url_for('presidio.presidio_coverage_edit', template_id=template.id) }}" 
                                                class="btn btn-outline-warning btn-sm" title="Modifica template">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <form method="POST" action="{{ url_for('delete_presidio_template', template_id=template.id) }}" 
+                                            <form method="POST" action="{{ url_for('presidio.delete_presidio_template', template_id=template.id) }}" 
                                                   style="display: inline;" onsubmit="return confirmDelete('Sei sicuro di voler eliminare questo template?')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Elimina template">
@@ -506,9 +506,10 @@ h2, h4 {
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <form method="POST" action="{{ url_for('delete_presidio_coverage', coverage_id=coverage.id) }}" 
-                                                      style="display: inline;" onsubmit="return confirm('Vuoi eliminare definitivamente questa copertura presidio? Tutti i turni associati verranno rimossi.')">
+                                                <form method="POST" style="display: inline;" onsubmit="return confirm('Vuoi eliminare definitivamente questa copertura presidio? Tutti i turni associati verranno rimossi.')">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <input type="hidden" name="action" value="delete_coverage">
+                                                    <input type="hidden" name="coverage_id" value="{{ coverage.id }}">
                                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina copertura">
                                                         <i class="fa fa-trash"></i>
                                                     </button>
