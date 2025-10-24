@@ -29,8 +29,19 @@ import re
 
 
 # =============================================================================
-# CUSTOM VALIDATORS
+# CUSTOM VALIDATORS & HELPERS
 # =============================================================================
+
+def coerce_nullable_int(value):
+    """
+    Coerce function for SelectField that handles nullable integer values.
+    Converts empty strings to None instead of raising ValueError.
+    Used for optional foreign key fields like sede_id.
+    """
+    if value == '' or value is None:
+        return None
+    return int(value)
+
 
 class StrongPassword:
     """
@@ -956,7 +967,7 @@ class SedeForm(FlaskForm):
 
 class WorkScheduleForm(FlaskForm):
     """Form per gestire gli orari di lavoro"""
-    sede = SelectField('Sede (opzionale)', coerce=int, validators=[Optional()])
+    sede = SelectField('Sede (opzionale)', coerce=coerce_nullable_int, validators=[Optional()])
     name = StringField('Nome Orario', validators=[DataRequired(), Length(max=100)])
     
     # Range orari di entrata
