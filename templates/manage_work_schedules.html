@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-md-12">
             <h1><i class="fas fa-clock me-2"></i>Gestione Orari di Lavoro</h1>
-            <p class="text-muted">Configura gli orari di entrata e uscita per ogni sede</p>
+            <p class="text-muted">Configura gli orari di entrata e uscita globali o per sede specifica</p>
             
             <!-- Form per aggiungere nuovo orario - Solo per gestione, non per visualizzazione -->
             {% if current_user.can_manage_schedules() %}
@@ -16,7 +16,6 @@
                     <h5><i class="fas fa-plus me-2"></i>Aggiungi Nuovo Orario</h5>
                 </div>
                 <div class="card-body">
-                    {% if form.sede.choices|length > 0 %}
                     <form method="POST" action="{{ url_for('admin.create_work_schedule') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
@@ -73,12 +72,6 @@
                             </div>
                         </div>
                     </form>
-                    {% else %}
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Nessuna sede attiva disponibile. <a href="{{ url_for('admin.manage_sedi') }}">Crea prima una sede</a> per aggiungere orari di lavoro.
-                    </div>
-                    {% endif %}
                 </div>
             </div>
             {% endif %}
@@ -110,7 +103,11 @@
                                 {% for schedule in schedules %}
                                 <tr class="{% if not schedule.active %}table-secondary{% endif %}">
                                     <td>
+                                        {% if schedule.sede_obj %}
                                         <span class="badge bg-info">{{ schedule.sede_obj.name }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary"><i class="fas fa-globe me-1"></i>Globale</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <strong>{{ schedule.name }}</strong>
