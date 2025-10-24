@@ -324,6 +324,16 @@
                 </li>
                 {% endif %}
 
+                <!-- MANSIONARIO - Gestione Mansioni Aziendali -->
+                {% if current_user.can_access_mansioni_menu() %}
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('mansioni.index') }}" class="sidebar-nav-link">
+                        <i class="fas fa-briefcase"></i>
+                        <span>Mansionario</span>
+                    </a>
+                </li>
+                {% endif %}
+
                 <!-- COMMESSE - Gestione Progetti -->
                 {% if current_user.can_access_commesse_menu() %}
                 <li class="sidebar-nav-item">
