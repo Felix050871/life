@@ -162,8 +162,13 @@ class UserForm(FlaskForm):
     aci_vehicle = SelectField('Modello', coerce=lambda x: int(x) if x and x != '' else None, validators=[Optional()], validate_choice=False)
     part_time_percentage = StringField('Percentuale di Lavoro (%)', 
                                      default='100.0')
-    banca_ore_enabled = BooleanField('Abilitato Banca Ore', default=False)
-    banca_ore_limite_max = StringField('Limite Massimo Ore Banca', 
+    overtime_enabled = BooleanField('Abilitato a Straordinari', default=False)
+    overtime_type = SelectField('Tipologia Straordinario', 
+                              choices=[('', 'Seleziona...'), 
+                                       ('Straordinario Pagato', 'Straordinario Pagato'), 
+                                       ('Banca Ore', 'Banca Ore')],
+                              validators=[Optional()])
+    banca_ore_limite_max = StringField('Limite Massimo Ore', 
                                      default='40.0')
     banca_ore_periodo_mesi = StringField('Periodo Validità (mesi)', 
                                        default='12')

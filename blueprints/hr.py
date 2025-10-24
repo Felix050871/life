@@ -621,7 +621,8 @@ def hr_detail(user_id):
                         else:
                             flash('Formato file non supportato. Usa PDF, JPG o PNG', 'error')
             
-            hr_data.banca_ore_enabled = request.form.get('banca_ore_enabled') == 'on'
+            hr_data.overtime_enabled = request.form.get('overtime_enabled') == 'on'
+            hr_data.overtime_type = request.form.get('overtime_type', '').strip() or None
             
             banca_ore_limite_str = request.form.get('banca_ore_limite_max', '').strip()
             if banca_ore_limite_str:
@@ -867,7 +868,7 @@ def hr_export():
         'Recapito Telefonico', 'Fruizione Permessi L. 104/92', 'E-mail Personale', 'E-mail Aziendale',
         'Stato Civile', 'Familiari a Carico', 'Contatto Emergenza', 'Tel. Emergenza',
         'Patente Numero', 'Patente Tipo', 'Patente Scadenza',
-        'Veicolo ACI', 'Banca Ore', 'Limite Ore', 'Periodo Mesi',
+        'Veicolo ACI', 'Straordinari', 'Tipologia Straordinario', 'Limite Ore', 'Periodo Mesi',
         # VISITE E FORMAZIONE
         'Possesso Requisiti Minimi',
         'Visita Medica - Data', 'Visita Medica - Scadenza',
@@ -939,7 +940,8 @@ def hr_export():
             hr_data.driver_license_type if hr_data else '',
             hr_data.driver_license_expiry.strftime('%d/%m/%Y') if hr_data and hr_data.driver_license_expiry else '',
             f"{hr_data.aci_vehicle.marca} {hr_data.aci_vehicle.modello} ({hr_data.aci_vehicle.tipologia})" if hr_data and hr_data.aci_vehicle else '',
-            'Sì' if hr_data and hr_data.banca_ore_enabled else 'No' if hr_data else '',
+            'Sì' if hr_data and hr_data.overtime_enabled else 'No' if hr_data else '',
+            hr_data.overtime_type if hr_data and hr_data.overtime_type else '',
             str(hr_data.banca_ore_limite_max).replace('.', ',') if hr_data and hr_data.banca_ore_limite_max else '',
             str(hr_data.banca_ore_periodo_mesi) if hr_data and hr_data.banca_ore_periodo_mesi else '',
             # VISITE E FORMAZIONE

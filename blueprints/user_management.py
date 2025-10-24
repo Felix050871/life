@@ -480,7 +480,8 @@ def new_user():
             work_schedule_id=form.work_schedule.data,
             aci_vehicle_id=form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None,
             part_time_percentage=form.get_part_time_percentage_as_float(),
-            banca_ore_enabled=form.banca_ore_enabled.data,
+            overtime_enabled=form.overtime_enabled.data,
+            overtime_type=form.overtime_type.data if form.overtime_enabled.data else None,
             banca_ore_limite_max=form.get_banca_ore_limite_max_as_float(),
             banca_ore_periodo_mesi=form.get_banca_ore_periodo_mesi_as_int(),
             active=form.active.data
@@ -567,7 +568,8 @@ def edit_user(user_id):
         user.work_schedule_id = form.work_schedule.data
         user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
         user.part_time_percentage = form.get_part_time_percentage_as_float()
-        user.banca_ore_enabled = form.banca_ore_enabled.data
+        user.overtime_enabled = form.overtime_enabled.data
+        user.overtime_type = form.overtime_type.data if form.overtime_enabled.data else None
         user.banca_ore_limite_max = form.get_banca_ore_limite_max_as_float()
         user.banca_ore_periodo_mesi = form.get_banca_ore_periodo_mesi_as_int()
         user.active = form.active.data
