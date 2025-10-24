@@ -3244,43 +3244,10 @@ class Sede(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
     
     # Relationships (users già definito tramite backref in User)
-    work_schedules = db.relationship('WorkSchedule', backref='sede_obj', lazy='dynamic')
     company = db.relationship('Company', back_populates='sedi')
     
     def __repr__(self):
         return f'<Sede {self.name}>'
-    
-    def get_active_schedules(self):
-        """Restituisce gli orari di lavoro attivi per questa sede"""
-        return self.work_schedules.filter_by(active=True).all()
-    
-    def has_turni_schedule(self):
-        """Verifica se la sede ha un orario di tipo 'Turni'"""
-        return self.work_schedules.filter_by(name='Turni', active=True).first() is not None
-    
-    def get_or_create_turni_schedule(self):
-        """Ottiene o crea l'orario di tipo 'Turni' per questa sede"""
-        from datetime import time
-        turni_schedule = self.work_schedules.filter_by(name='Turni', active=True).first()
-        
-        if not turni_schedule and self.is_turni_mode():
-            # Crea automaticamente l'orario 'Turni' per sedi con modalità turni
-            turni_schedule = WorkSchedule()
-            turni_schedule.sede_id = self.id
-            turni_schedule.name = 'Turni'
-            turni_schedule.start_time_min = time(0, 0)    # 00:00
-            turni_schedule.start_time_max = time(23, 59)  # 23:59
-            turni_schedule.end_time_min = time(0, 0)      # 00:00  
-            turni_schedule.end_time_max = time(23, 59)    # 23:59
-            turni_schedule.start_time = time(0, 0)        # Compatibilità
-            turni_schedule.end_time = time(23, 59)        # Compatibilità
-            turni_schedule.days_of_week = [0, 1, 2, 3, 4, 5, 6]  # Tutti i giorni
-            turni_schedule.description = 'Orario flessibile per turnazioni'
-            turni_schedule.active = True
-            db.session.add(turni_schedule)
-            db.session.commit()
-        
-        return turni_schedule
     
     def is_turni_mode(self):
         """Restituisce True se la sede opera con modalità turni"""
