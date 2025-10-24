@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Commessa{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('commesse.manage_commesse') }}">Commesse</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('commesse.commessa_detail', commessa_id=commessa.id) }}">{{ commessa.titolo }}</a></li>
+                    <li class="breadcrumb-item active">Modifica</li>
+                </ol>
+            </nav>
+            
+            <h1><i class="fas fa-edit me-2"></i>Modifica Commessa</h1>
+            <p class="text-muted">Modifica i dati della commessa "{{ commessa.titolo }}"</p>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-edit me-2"></i>Dati Commessa</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('commesse.edit_commessa', commessa_id=commessa.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Informazioni base -->
+                        <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Informazioni Base</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.cliente.label(class="form-label") }}
+                                    {{ form.cliente(class="form-control" + (" is-invalid" if form.cliente.errors else "")) }}
+                                    {% if form.cliente.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.cliente.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.titolo.label(class="form-label") }}
+                                    {{ form.titolo(class="form-control" + (" is-invalid" if form.titolo.errors else "")) }}
+                                    {% if form.titolo.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.titolo.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.descrizione.label(class="form-label") }}
+                                    {{ form.descrizione(class="form-control" + (" is-invalid" if form.descrizione.errors else "")) }}
+                                    {% if form.descrizione.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.descrizione.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.attivita.label(class="form-label") }}
+                                    {{ form.attivita(class="form-control" + (" is-invalid" if form.attivita.errors else "")) }}
+                                    {% if form.attivita.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.attivita.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.stato.label(class="form-label") }}
+                                    {{ form.stato(class="form-select" + (" is-invalid" if form.stato.errors else "")) }}
+                                    {% if form.stato.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.stato.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Date e ore -->
+                        <h6 class="mb-3"><i class="fas fa-calendar-alt me-2"></i>Tempi e Scadenze</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.data_inizio.label(class="form-label") }}
+                                    {{ form.data_inizio(class="form-control" + (" is-invalid" if form.data_inizio.errors else "")) }}
+                                    {% if form.data_inizio.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.data_inizio.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.data_fine.label(class="form-label") }}
+                                    {{ form.data_fine(class="form-control" + (" is-invalid" if form.data_fine.errors else "")) }}
+                                    {% if form.data_fine.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.data_fine.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.durata_prevista_ore.label(class="form-label") }}
+                                    {{ form.durata_prevista_ore(class="form-control" + (" is-invalid" if form.durata_prevista_ore.errors else "")) }}
+                                    {% if form.durata_prevista_ore.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.durata_prevista_ore.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.budget_ore.label(class="form-label") }}
+                                    {{ form.budget_ore(class="form-control" + (" is-invalid" if form.budget_ore.errors else "")) }}
+                                    {% if form.budget_ore.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.budget_ore.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Lascia vuoto se non definito</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Note -->
+                        <h6 class="mb-3"><i class="fas fa-sticky-note me-2"></i>Note</h6>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.note.label(class="form-label") }}
+                                    {{ form.note(class="form-control" + (" is-invalid" if form.note.errors else "")) }}
+                                    {% if form.note.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.note.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Azioni -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{ form.submit(class="btn btn-primary") }}
+                                <a href="{{ url_for('commesse.commessa_detail', commessa_id=commessa.id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Annulla
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

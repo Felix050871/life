@@ -3842,3 +3842,85 @@ class ConnectionRequest(db.Model):
     
     def __repr__(self):
         return f'<ConnectionRequest From#{self.sender_id} To#{self.recipient_id} Status:{self.status}>'
+
+
+# =============================================================================
+# PROJECT MANAGEMENT MODELS (COMMESSE)
+# =============================================================================
+
+# Tabella di associazione many-to-many tra User e Commessa
+commessa_assignment = db.Table('commessa_assignment',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('commessa_id', db.Integer, db.ForeignKey('commessa.id'), primary_key=True),
+    db.Column('assigned_at', db.DateTime, default=italian_now),
+    db.Column('assigned_by_id', db.Integer, db.ForeignKey('user.id'), nullable=True)
+)
+
+
+class Commessa(db.Model):
+    """Modello per la gestione delle commesse aziendali"""
+    __tablename__ = 'commessa'
+    __table_args__ = (
+        db.UniqueConstraint('titolo', 'company_id', name='_titolo_company_uc'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    cliente = db.Column(db.String(200), nullable=False)
+    titolo = db.Column(db.String(200), nullable=False)
+    descrizione = db.Column(db.Text, nullable=True)
+    attivita = db.Column(db.String(100), nullable=False)
+    data_inizio = db.Column(db.Date, nullable=False)
+    data_fine = db.Column(db.Date, nullable=False)
+    durata_prevista_ore = db.Column(db.Integer, nullable=False)
+    stato = db.Column(db.String(20), nullable=False, default='attiva')  # 'attiva', 'in corso', 'chiusa'
+    budget_ore = db.Column(db.Integer, nullable=True)
+    note = db.Column(db.Text, nullable=True)
+    
+    # Multi-tenant
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    # Relationships
+    company = db.relationship('Company', backref='commesse')
+    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='created_commesse')
+    assigned_users = db.relationship('User', 
+                                     secondary=commessa_assignment, 
+                                     primaryjoin='Commessa.id==commessa_assignment.c.commessa_id',
+                                     secondaryjoin='User.id==commessa_assignment.c.user_id',
+                                     backref='assigned_commesse')
+    
+    def __repr__(self):
+        return f'<Commessa {self.titolo} - {self.cliente}>'
+    
+    def get_ore_consumate(self):
+        """Calcola le ore consumate sulla commessa (placeholder per futura integrazione con timesheet)"""
+        # TODO: implementare calcolo ore dalle presenze/timesheet
+        return 0
+    
+    def get_ore_residue(self):
+        """Calcola le ore residue della commessa"""
+        if self.budget_ore:
+            return self.budget_ore - self.get_ore_consumate()
+        return None
+    
+    def get_percentuale_completamento(self):
+        """Calcola la percentuale di completamento"""
+        if self.budget_ore and self.budget_ore > 0:
+            ore_consumate = self.get_ore_consumate()
+            return min(100, int((ore_consumate / self.budget_ore) * 100))
+        return 0
+    
+    def is_scaduta(self):
+        """Verifica se la commessa è scaduta"""
+        return date.today() > self.data_fine and self.stato != 'chiusa'
+    
+    def get_giorni_rimanenti(self):
+        """Calcola i giorni rimanenti alla scadenza"""
+        if self.stato == 'chiusa':
+            return 0
+        delta = self.data_fine - date.today()
+        return max(0, delta.days)

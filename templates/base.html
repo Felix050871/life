@@ -324,6 +324,23 @@
                 </li>
                 {% endif %}
 
+                <!-- COMMESSE - Gestione Progetti -->
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-project-diagram"></i>
+                        <span>Commesse</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        <li><a href="{{ url_for('commesse.manage_commesse') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-list"></i>Elenco Commesse
+                        </a></li>
+                        <li><a href="{{ url_for('commesse.create_commessa') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-plus"></i>Nuova Commessa
+                        </a></li>
+                    </ul>
+                </li>
+
                 <!-- SEDI - Solo se ha almeno un permesso sedi -->
                 {% set has_sedi_permission = current_user.can_manage_sedi() or current_user.can_view_sedi() %}
                 {% if has_sedi_permission %}

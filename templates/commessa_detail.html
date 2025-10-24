@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}{{ commessa.titolo }} - Dettaglio Commessa{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('commesse.manage_commesse') }}">Commesse</a></li>
+                    <li class="breadcrumb-item active">{{ commessa.titolo }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1><i class="fas fa-project-diagram me-2"></i>{{ commessa.titolo }}</h1>
+                    <p class="text-muted">{{ commessa.cliente }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('commesse.edit_commessa', commessa_id=commessa.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>Modifica
+                    </a>
+                    <a href="{{ url_for('commesse.manage_commesse') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Torna all'elenco
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Informazioni commessa -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-info-circle me-2"></i>Dettagli Commessa</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Cliente:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {{ commessa.cliente }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Attività/Categoria:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    <span class="badge bg-secondary">{{ commessa.attivita }}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Stato:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {% if commessa.stato == 'attiva' %}
+                                    <span class="badge bg-info">Attiva</span>
+                                    {% elif commessa.stato == 'in corso' %}
+                                    <span class="badge bg-warning">In Corso</span>
+                                    {% elif commessa.stato == 'chiusa' %}
+                                    <span class="badge bg-success">Chiusa</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Periodo:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    Dal {{ commessa.data_inizio.strftime('%d/%m/%Y') }} al {{ commessa.data_fine.strftime('%d/%m/%Y') }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Durata Prevista:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {{ commessa.durata_prevista_ore }} ore
+                                </div>
+                            </div>
+                            {% if commessa.budget_ore %}
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Budget Ore:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {{ commessa.budget_ore }} ore
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if commessa.descrizione %}
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Descrizione:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {{ commessa.descrizione }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if commessa.note %}
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <strong>Note:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {{ commessa.note }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <!-- Riepilogo scadenze -->
+                    <div class="card mb-3 {% if commessa.is_scaduta() %}border-danger{% endif %}">
+                        <div class="card-header {% if commessa.is_scaduta() %}bg-danger text-white{% else %}bg-primary text-white{% endif %}">
+                            <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Scadenza</h6>
+                        </div>
+                        <div class="card-body text-center">
+                            {% if commessa.is_scaduta() %}
+                            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                            <h4 class="text-danger">Scaduta</h4>
+                            <p>Scadenza: {{ commessa.data_fine.strftime('%d/%m/%Y') }}</p>
+                            {% else %}
+                            <i class="fas fa-clock fa-3x text-primary mb-3"></i>
+                            <h2 class="text-primary">{{ commessa.get_giorni_rimanenti() }}</h2>
+                            <p class="mb-0">giorni rimanenti</p>
+                            <small class="text-muted">Scadenza: {{ commessa.data_fine.strftime('%d/%m/%Y') }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Riepilogo budget -->
+                    {% if commessa.budget_ore %}
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Budget Ore</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <strong>Budget:</strong> {{ commessa.budget_ore }} ore
+                            </div>
+                            <div class="mb-2">
+                                <strong>Consumate:</strong> {{ commessa.get_ore_consumate() }} ore
+                            </div>
+                            {% if commessa.get_ore_residue() is not none %}
+                            <div class="mb-2">
+                                <strong>Residue:</strong> {{ commessa.get_ore_residue() }} ore
+                            </div>
+                            {% endif %}
+                            <div class="progress mt-3" style="height: 25px;">
+                                <div class="progress-bar {% if commessa.get_percentuale_completamento() > 90 %}bg-danger{% elif commessa.get_percentuale_completamento() > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ commessa.get_percentuale_completamento() }}%;" 
+                                     aria-valuenow="{{ commessa.get_percentuale_completamento() }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ commessa.get_percentuale_completamento() }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Gestione risorse assegnate -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-users me-2"></i>Risorse Assegnate</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Form assegnazione nuova risorsa -->
+                    {% if available_users %}
+                    <form method="POST" action="{{ url_for('commesse.assign_user') }}" class="mb-4">
+                        <input type="hidden" name="commessa_id" value="{{ commessa.id }}">
+                        <div class="row">
+                            <div class="col-md-9">
+                                <select name="user_id" class="form-select" required>
+                                    <option value="">Seleziona risorsa da assegnare...</option>
+                                    {% for user in available_users %}
+                                    <option value="{{ user.id }}">{{ user.get_full_name() }} - {{ user.role }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-user-plus me-2"></i>Assegna
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Tutte le risorse disponibili sono già assegnate a questa commessa.
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Lista risorse assegnate -->
+                    {% if assigned_users %}
+                    <h6 class="mb-3">Risorse Assegnate ({{ assigned_users|length }})</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Ruolo</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in assigned_users %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-user me-2"></i>
+                                        <strong>{{ user.get_full_name() }}</strong>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td><span class="badge bg-secondary">{{ user.role }}</span></td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('commesse.unassign_user') }}" style="display: inline;">
+                                            <input type="hidden" name="commessa_id" value="{{ commessa.id }}">
+                                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="return confirm('Rimuovere {{ user.get_full_name() }} da questa commessa?')">
+                                                <i class="fas fa-user-times me-1"></i>Rimuovi
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Nessuna risorsa assegnata. Assegna delle risorse per iniziare a lavorare sulla commessa.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

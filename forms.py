@@ -2094,3 +2094,59 @@ class PlatformNewsForm(FlaskForm):
                         render_kw={'placeholder': '0 = primo, numeri più alti vengono dopo'})
     active = BooleanField('Attiva', default=True)
     submit = SubmitField('Salva Novità')
+
+
+# =============================================================================
+# PROJECT/COMMESSA MANAGEMENT FORMS
+# =============================================================================
+
+class CommessaForm(FlaskForm):
+    """Form per gestire le commesse aziendali"""
+    cliente = StringField('Cliente', validators=[DataRequired(), Length(max=200)],
+                         render_kw={'placeholder': 'Nome del cliente'})
+    titolo = StringField('Titolo Commessa', validators=[DataRequired(), Length(max=200)],
+                        render_kw={'placeholder': 'Titolo sintetico della commessa'})
+    descrizione = TextAreaField('Descrizione', validators=[Optional()],
+                               render_kw={'placeholder': 'Descrizione dettagliata (opzionale)', 'rows': 4})
+    attivita = StringField('Attività/Categoria', validators=[DataRequired(), Length(max=100)],
+                          render_kw={'placeholder': 'Es: Sviluppo Software, Consulenza, etc.'})
+    data_inizio = DateField('Data Inizio', validators=[DataRequired()], format='%Y-%m-%d')
+    data_fine = DateField('Data Fine', validators=[DataRequired()], format='%Y-%m-%d')
+    durata_prevista_ore = IntegerField('Durata Prevista (ore)', validators=[DataRequired(), NumberRange(min=1)],
+                                      render_kw={'placeholder': 'Ore previste totali'})
+    stato = SelectField('Stato', 
+                       choices=[
+                           ('attiva', 'Attiva'),
+                           ('in corso', 'In Corso'),
+                           ('chiusa', 'Chiusa')
+                       ],
+                       default='attiva',
+                       validators=[DataRequired()])
+    budget_ore = IntegerField('Budget Ore (opzionale)', validators=[Optional(), NumberRange(min=0)],
+                             render_kw={'placeholder': 'Budget ore (lascia vuoto se non definito)'})
+    note = TextAreaField('Note', validators=[Optional()],
+                        render_kw={'placeholder': 'Note aggiuntive (opzionale)', 'rows': 3})
+    submit = SubmitField('Salva Commessa')
+    
+    def __init__(self, original_titolo=None, *args, **kwargs):
+        super(CommessaForm, self).__init__(*args, **kwargs)
+        self.original_titolo = original_titolo
+    
+    def validate_data_fine(self, data_fine):
+        """Valida che la data fine sia successiva alla data inizio"""
+        if self.data_inizio.data and data_fine.data:
+            if data_fine.data < self.data_inizio.data:
+                raise ValidationError('La data di fine deve essere successiva o uguale alla data di inizio.')
+    
+    def validate_titolo(self, titolo):
+        """Valida che il titolo della commessa sia unico per l'azienda"""
+        if titolo.data and titolo.data != self.original_titolo:
+            from models import Commessa
+            from utils_tenant import filter_by_company
+            
+            # Verifica unicità del titolo a livello aziendale
+            existing = filter_by_company(Commessa.query).filter_by(
+                titolo=titolo.data
+            ).first()
+            if existing:
+                raise ValidationError('Esiste già una commessa con questo titolo. Scegli un titolo diverso.')

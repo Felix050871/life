@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Commesse{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1><i class="fas fa-project-diagram me-2"></i>Gestione Commesse</h1>
+            <p class="text-muted">Gestisci i progetti e le assegnazioni delle risorse</p>
+            
+            <!-- Statistiche -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-tasks me-2"></i>Totale Commesse</h5>
+                            <h2 class="mb-0">{{ totale_commesse }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-play-circle me-2"></i>Attive</h5>
+                            <h2 class="mb-0">{{ commesse_attive }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-spinner me-2"></i>In Corso</h5>
+                            <h2 class="mb-0">{{ commesse_in_corso }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-check-circle me-2"></i>Chiuse</h5>
+                            <h2 class="mb-0">{{ commesse_chiuse }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtri e azioni -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-filter me-2"></i>Filtri</h5>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{{ url_for('commesse.create_commessa') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Nuova Commessa
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('commesse.manage_commesse') }}" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="stato" class="form-label">Stato</label>
+                            <select name="stato" id="stato" class="form-select">
+                                <option value="">Tutti gli stati</option>
+                                <option value="attiva" {% if stato_filter == 'attiva' %}selected{% endif %}>Attiva</option>
+                                <option value="in corso" {% if stato_filter == 'in corso' %}selected{% endif %}>In Corso</option>
+                                <option value="chiusa" {% if stato_filter == 'chiusa' %}selected{% endif %}>Chiusa</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cliente" class="form-label">Cliente</label>
+                            <input type="text" name="cliente" id="cliente" class="form-control" 
+                                   placeholder="Cerca per cliente" value="{{ cliente_filter }}">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-secondary me-2">
+                                <i class="fas fa-search me-2"></i>Filtra
+                            </button>
+                            <a href="{{ url_for('commesse.manage_commesse') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Pulisci
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Lista commesse -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list me-2"></i>Elenco Commesse</h5>
+                </div>
+                <div class="card-body">
+                    {% if commesse %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Titolo</th>
+                                    <th>Attività</th>
+                                    <th>Periodo</th>
+                                    <th>Stato</th>
+                                    <th>Scadenza</th>
+                                    <th>Budget Ore</th>
+                                    <th>Risorse</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for commessa in commesse %}
+                                <tr class="{% if commessa.is_scaduta() %}table-danger{% endif %}">
+                                    <td><strong>{{ commessa.cliente }}</strong></td>
+                                    <td>{{ commessa.titolo }}</td>
+                                    <td><span class="badge bg-secondary">{{ commessa.attivita }}</span></td>
+                                    <td>
+                                        <small>{{ commessa.data_inizio.strftime('%d/%m/%Y') }}</small>
+                                        <br>
+                                        <small>{{ commessa.data_fine.strftime('%d/%m/%Y') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if commessa.stato == 'attiva' %}
+                                        <span class="badge bg-info">Attiva</span>
+                                        {% elif commessa.stato == 'in corso' %}
+                                        <span class="badge bg-warning">In Corso</span>
+                                        {% elif commessa.stato == 'chiusa' %}
+                                        <span class="badge bg-success">Chiusa</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if commessa.is_scaduta() %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Scaduta
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-primary">
+                                            {{ commessa.get_giorni_rimanenti() }} giorni
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if commessa.budget_ore %}
+                                        {{ commessa.budget_ore }} ore
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark">
+                                            <i class="fas fa-users me-1"></i>{{ commessa.assigned_users|length }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('commesse.commessa_detail', commessa_id=commessa.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="Dettagli">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('commesse.edit_commessa', commessa_id=commessa.id) }}" 
+                                               class="btn btn-sm btn-outline-warning" title="Modifica">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form method="POST" action="{{ url_for('commesse.delete_commessa', commessa_id=commessa.id) }}" 
+                                                  style="display: inline;">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina"
+                                                        onclick="return confirm('Vuoi eliminare la commessa \'{{ commessa.titolo }}\'? Questa azione non può essere annullata.')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-project-diagram fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nessuna commessa trovata. Crea la prima commessa per iniziare.</p>
+                        <a href="{{ url_for('commesse.create_commessa') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Nuova Commessa
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
