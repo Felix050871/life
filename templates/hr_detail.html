@@ -506,6 +506,49 @@
                     {% endif %}
                 </div>
             </div>
+            
+            <!-- Gestione Straordinari / Banca Ore -->
+            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-clock me-2"></i>Gestione Straordinari</h6>
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="form-check mt-4">
+                        <input type="checkbox" id="overtime_enabled" name="overtime_enabled" class="form-check-input" 
+                               {% if hr_data.overtime_enabled %}checked{% endif %}
+                               {% if not can_edit %}disabled{% endif %}>
+                        <label class="form-check-label fw-bold" for="overtime_enabled">
+                            Abilitato a Straordinari
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3" id="overtimeTypeField" style="display: none;">
+                    <label class="form-label">Tipologia Straordinario</label>
+                    <select name="overtime_type" id="overtime_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Seleziona...</option>
+                        <option value="Straordinario Pagato" {% if hr_data.overtime_type == 'Straordinario Pagato' %}selected{% endif %}>Straordinario Pagato</option>
+                        <option value="Banca Ore" {% if hr_data.overtime_type == 'Banca Ore' %}selected{% endif %}>Banca Ore</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3" id="bancaOreLimiteField" style="display: none;">
+                    <label class="form-label">Limite Massimo Ore</label>
+                    <div class="input-group">
+                        <input type="text" name="banca_ore_limite_max" class="form-control" 
+                               value="{{ (hr_data.banca_ore_limite_max|string).replace('.', ',') if hr_data.banca_ore_limite_max else '' }}"
+                               {% if not can_edit %}disabled{% endif %}>
+                        <span class="input-group-text">ore</span>
+                    </div>
+                    <small class="text-muted">Limite massimo ore accumulabili</small>
+                </div>
+                <div class="col-md-3 mb-3" id="bancaOrePeriodoField" style="display: none;">
+                    <label class="form-label">Periodo Validità</label>
+                    <div class="input-group">
+                        <input type="text" name="banca_ore_periodo_mesi" class="form-control" 
+                               value="{{ hr_data.banca_ore_periodo_mesi if hr_data.banca_ore_periodo_mesi else '' }}"
+                               {% if not can_edit %}disabled{% endif %}>
+                        <span class="input-group-text">mesi</span>
+                    </div>
+                    <small class="text-muted">Periodo entro cui usufruire ore</small>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -783,6 +826,44 @@ document.addEventListener('DOMContentLoaded', function() {
         marcaSelect.dispatchEvent(new Event('change'));
     }, 500);
     {% endif %}
+    
+    // Gestione visibilità campi straordinari/banca ore
+    const overtimeEnabled = document.getElementById('overtime_enabled');
+    const overtimeTypeField = document.getElementById('overtimeTypeField');
+    const overtimeType = document.getElementById('overtime_type');
+    const bancaOreLimiteField = document.getElementById('bancaOreLimiteField');
+    const bancaOrePeriodoField = document.getElementById('bancaOrePeriodoField');
+    
+    function toggleOvertimeFields() {
+        if (overtimeEnabled && overtimeEnabled.checked) {
+            overtimeTypeField.style.display = 'block';
+            toggleBancaOreFields();
+        } else {
+            overtimeTypeField.style.display = 'none';
+            bancaOreLimiteField.style.display = 'none';
+            bancaOrePeriodoField.style.display = 'none';
+            if (overtimeType) overtimeType.value = '';
+        }
+    }
+    
+    function toggleBancaOreFields() {
+        if (overtimeEnabled && overtimeEnabled.checked && overtimeType && overtimeType.value === 'Banca Ore') {
+            bancaOreLimiteField.style.display = 'block';
+            bancaOrePeriodoField.style.display = 'block';
+        } else {
+            bancaOreLimiteField.style.display = 'none';
+            bancaOrePeriodoField.style.display = 'none';
+        }
+    }
+    
+    if (overtimeEnabled) {
+        overtimeEnabled.addEventListener('change', toggleOvertimeFields);
+        toggleOvertimeFields(); // Initialize on load
+    }
+    
+    if (overtimeType) {
+        overtimeType.addEventListener('change', toggleBancaOreFields);
+    }
 });
 </script>
 {% endblock %}

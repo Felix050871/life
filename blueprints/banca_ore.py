@@ -30,7 +30,7 @@ def calculate_overtime_from_attendance(user_id, work_date):
         float: Ore di straordinario accumulate (0.0 se nessuna)
     """
     user = filter_by_company(User.query).filter(User.id == user_id).first()
-    if not user or not user.banca_ore_enabled:
+    if not user or not user.overtime_enabled or user.overtime_type != 'Banca Ore':
         return 0.0
     
     # Verifica se l'utente ha già una richiesta di straordinario per questa data
@@ -83,7 +83,7 @@ def calculate_banca_ore_balance(user_id):
         dict: Dizionario con informazioni complete del wallet banca ore
     """
     user = filter_by_company(User.query).filter(User.id == user_id).first()
-    if not user or not user.banca_ore_enabled:
+    if not user or not user.overtime_enabled or user.overtime_type != 'Banca Ore':
         return None
     
     # Controlli di sicurezza sui tipi
@@ -217,7 +217,7 @@ def my_banca_ore():
         flash('Non hai i permessi per visualizzare questa sezione.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    if not current_user.banca_ore_enabled:
+    if not current_user.overtime_enabled or current_user.overtime_type != 'Banca Ore':
         flash('Non hai la banca ore abilitata.', 'info')
         return redirect(url_for('dashboard.dashboard'))
     
@@ -239,7 +239,7 @@ def my_banca_ore():
 @login_required
 def api_calculate_banca_ore_balance():
     """API per ottenere il saldo attuale della banca ore dell'utente"""
-    if not current_user.banca_ore_enabled:
+    if not current_user.overtime_enabled or current_user.overtime_type != 'Banca Ore':
         return jsonify({'error': 'Banca ore non abilitata'}), 403
     
     wallet = calculate_banca_ore_balance(current_user.id)
@@ -253,7 +253,7 @@ def api_calculate_banca_ore_balance():
 @login_required  
 def api_calculate_daily_overtime():
     """API per calcolare straordinario giornaliero da presenza"""
-    if not current_user.banca_ore_enabled:
+    if not current_user.overtime_enabled or current_user.overtime_type != 'Banca Ore':
         return jsonify({'error': 'Banca ore non abilitata'}), 403
     
     date_str = request.args.get('date')

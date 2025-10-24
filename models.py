@@ -1932,7 +1932,8 @@ class LeaveRequest(db.Model):
     
     def can_use_banca_ore(self):
         """Verifica se questa richiesta può utilizzare ore dalla banca ore"""
-        return (self.user and self.user.banca_ore_enabled and 
+        return (self.user and self.user.overtime_enabled and 
+                self.user.overtime_type == 'Banca Ore' and 
                 self.is_time_based())  # Solo permessi orari possono usare banca ore
     
     def calculate_banca_ore_hours_needed(self):

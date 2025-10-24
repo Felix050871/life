@@ -185,7 +185,7 @@ def create_leave_request():
                 new_request.end_time = form.end_time.data
             
             # Gestisci banca ore
-            if form.use_banca_ore.data and current_user.banca_ore_enabled:
+            if form.use_banca_ore.data and current_user.overtime_enabled and current_user.overtime_type == 'Banca Ore':
                 # Verifica se è un permesso orario (prerequisito per banca ore)
                 if new_request.is_time_based():
                     # Calcola ore necessarie
@@ -253,7 +253,7 @@ def approve_leave_request(request_id):
             leave_request.approval_notes = approval_notes
         
         # Scala ore dalla banca ore se richiesto
-        if leave_request.use_banca_ore and leave_request.user.banca_ore_enabled:
+        if leave_request.use_banca_ore and leave_request.user.overtime_enabled and leave_request.user.overtime_type == 'Banca Ore':
             hours_to_deduct = leave_request.calculate_banca_ore_hours_needed()
             
             # Verifica nuovamente il saldo disponibile al momento dell'approvazione
