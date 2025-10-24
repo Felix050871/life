@@ -133,12 +133,19 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <div class="form-check mb-3">
-                                {{ form.banca_ore_enabled(class="form-check-input", id="bancaOreEnabledNew") }}
-                                {{ form.banca_ore_enabled.label(class="form-check-label") }}
+                                {{ form.overtime_enabled(class="form-check-input", id="overtimeEnabledNew") }}
+                                {{ form.overtime_enabled.label(class="form-check-label") }}
                             </div>
-                            <small class="text-muted">Abilita la gestione della banca ore</small>
+                            <small class="text-muted">Abilita la gestione degli straordinari</small>
                         </div>
-                        <div class="col-md-4 mb-3" id="bancaOreLimiteGroupNew" style="display: none;">
+                        <div class="col-md-4 mb-3" id="overtimeTypeGroupNew" style="display: none;">
+                            {{ form.overtime_type.label(class="form-label") }}
+                            {{ form.overtime_type(class="form-select", id="overtimeTypeSelectNew") }}
+                            <small class="text-muted">Tipo di gestione straordinari</small>
+                        </div>
+                    </div>
+                    <div class="row" id="bancaOreFieldsGroupNew" style="display: none;">
+                        <div class="col-md-6 mb-3">
                             {{ form.banca_ore_limite_max.label(class="form-label") }}
                             <div class="input-group">
                                 {{ form.banca_ore_limite_max(class="form-control") }}
@@ -146,7 +153,7 @@
                             </div>
                             <small class="text-muted">Limite massimo di ore accumulabili</small>
                         </div>
-                        <div class="col-md-4 mb-3" id="bancaOrePeriodoGroupNew" style="display: none;">
+                        <div class="col-md-6 mb-3">
                             {{ form.banca_ore_periodo_mesi.label(class="form-label") }}
                             <div class="input-group">
                                 {{ form.banca_ore_periodo_mesi(class="form-control") }}
@@ -745,26 +752,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Banca ore toggle functionality for new user form
-    const bancaOreEnabledNew = document.getElementById('bancaOreEnabledNew');
-    const bancaOreLimiteGroupNew = document.getElementById('bancaOreLimiteGroupNew');
-    const bancaOrePeriodoGroupNew = document.getElementById('bancaOrePeriodoGroupNew');
+    // Overtime toggle functionality for new user form
+    const overtimeEnabledNew = document.getElementById('overtimeEnabledNew');
+    const overtimeTypeGroupNew = document.getElementById('overtimeTypeGroupNew');
+    const overtimeTypeSelectNew = document.getElementById('overtimeTypeSelectNew');
+    const bancaOreFieldsGroupNew = document.getElementById('bancaOreFieldsGroupNew');
     
-    function toggleBancaOreFieldsNew() {
-        if (bancaOreEnabledNew && bancaOreLimiteGroupNew && bancaOrePeriodoGroupNew) {
-            if (bancaOreEnabledNew.checked) {
-                bancaOreLimiteGroupNew.style.display = 'block';
-                bancaOrePeriodoGroupNew.style.display = 'block';
+    function toggleOvertimeFieldsNew() {
+        if (overtimeEnabledNew && overtimeTypeGroupNew && bancaOreFieldsGroupNew && overtimeTypeSelectNew) {
+            if (overtimeEnabledNew.checked) {
+                overtimeTypeGroupNew.style.display = 'block';
+                // Check overtime type to show/hide banca ore fields
+                if (overtimeTypeSelectNew.value === 'Banca Ore') {
+                    bancaOreFieldsGroupNew.style.display = 'block';
+                } else {
+                    bancaOreFieldsGroupNew.style.display = 'none';
+                }
             } else {
-                bancaOreLimiteGroupNew.style.display = 'none';
-                bancaOrePeriodoGroupNew.style.display = 'none';
+                overtimeTypeGroupNew.style.display = 'none';
+                bancaOreFieldsGroupNew.style.display = 'none';
             }
         }
     }
     
-    if (bancaOreEnabledNew) {
-        bancaOreEnabledNew.addEventListener('change', toggleBancaOreFieldsNew);
-        toggleBancaOreFieldsNew(); // Initialize visibility on page load
+    if (overtimeEnabledNew) {
+        overtimeEnabledNew.addEventListener('change', toggleOvertimeFieldsNew);
+        toggleOvertimeFieldsNew(); // Initialize visibility on page load
+    }
+    
+    if (overtimeTypeSelectNew) {
+        overtimeTypeSelectNew.addEventListener('change', toggleOvertimeFieldsNew);
     }
 });
 </script>
