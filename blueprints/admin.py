@@ -284,7 +284,12 @@ def manage_work_schedules():
         flash('Non hai i permessi per accedere agli orari', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
-    schedules = filter_by_company(WorkSchedule.query).join(Sede).order_by(Sede.name, WorkSchedule.start_time).all()
+    # Left outer join per includere anche gli orari globali senza sede
+    schedules = filter_by_company(WorkSchedule.query).outerjoin(Sede).order_by(
+        Sede.name.is_(None),  # Orari globali per primi (None viene prima)
+        Sede.name, 
+        WorkSchedule.name
+    ).all()
     form = WorkScheduleForm()
     return render_template('manage_work_schedules.html', schedules=schedules, form=form)
 
@@ -304,8 +309,11 @@ def create_work_schedule():
         else:
             days_of_week = form.days_of_week.data
         
+        # Gestisce sede opzionale: stringa vuota diventa None
+        sede_id = form.sede.data if form.sede.data and form.sede.data != '' else None
+        
         schedule = WorkSchedule(
-            sede_id=form.sede.data,
+            sede_id=sede_id,
             name=form.name.data,
             start_time_min=form.start_time_min.data,
             start_time_max=form.start_time_max.data,
@@ -342,6 +350,9 @@ def edit_work_schedule(schedule_id):
     
     # Precompila i campi basandosi sui dati esistenti
     if request.method == 'GET':
+        # Precompila sede (può essere None per orari globali)
+        form.sede.data = schedule.sede_id if schedule.sede_id else ''
+        
         # Precompila range orari
         form.start_time_min.data = schedule.start_time_min
         form.start_time_max.data = schedule.start_time_max
@@ -367,7 +378,8 @@ def edit_work_schedule(schedule_id):
         else:
             days_of_week = form.days_of_week.data
         
-        schedule.sede_id = form.sede.data
+        # Gestisce sede opzionale: stringa vuota diventa None
+        schedule.sede_id = form.sede.data if form.sede.data and form.sede.data != '' else None
         schedule.name = form.name.data
         schedule.start_time_min = form.start_time_min.data
         schedule.start_time_max = form.start_time_max.data
