@@ -307,7 +307,7 @@
                 </label>
                 <select id="filterStatus" class="form-select">
                     <option value="">Tutti</option>
-                    <option value="Attivo">Attivi</option>
+                    <option value="Attivo" selected>Attivi</option>
                     <option value="Non attivo">Non attivi</option>
                 </select>
             </div>
@@ -968,6 +968,9 @@ document.addEventListener('DOMContentLoaded', function() {
             rows.forEach(row => tbody.appendChild(row));
         });
     });
+    
+    // Apply default filter on page load (show only active contracts)
+    filterTable();
 });
 </script>
 {% endblock %}
