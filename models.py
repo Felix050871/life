@@ -1117,10 +1117,12 @@ class UserHRData(db.Model):
     
     def is_contract_active(self):
         """Verifica se il contratto è attivo"""
-        if not self.contract_start_date:
+        # Use contract_start_date if available, otherwise fallback to hire_date
+        start_date = self.contract_start_date or self.hire_date
+        if not start_date:
             return False
         today = date.today()
-        if self.contract_start_date > today:
+        if start_date > today:
             return False
         if self.contract_end_date and self.contract_end_date < today:
             return False
