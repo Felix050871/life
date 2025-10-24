@@ -246,9 +246,10 @@ class User(UserMixin, db.Model):
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
     active = db.Column(db.Boolean, default=True)  # Renamed to avoid UserMixin conflict
     part_time_percentage = db.Column(db.Float, default=100.0)  # Percentuale di lavoro: 100% = tempo pieno, 50% = metà tempo, ecc.
-    banca_ore_enabled = db.Column(db.Boolean, default=False)  # True se l'utente è abilitato alla banca ore
-    banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo di ore accumulabili nella banca ore
-    banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo in mesi entro cui le ore devono essere usufruite
+    overtime_enabled = db.Column(db.Boolean, default=False)  # True se l'utente è abilitato a fare straordinari
+    overtime_type = db.Column(db.String(50), nullable=True)  # "Straordinario Pagato" o "Banca Ore"
+    banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo di ore accumulabili (solo per Banca Ore)
+    banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo in mesi per usufruire ore (solo per Banca Ore)
     profile_image = db.Column(db.String(255), nullable=True)  # Path dell'immagine del profilo
     created_at = db.Column(db.DateTime, default=italian_now)
     
@@ -774,7 +775,8 @@ class User(UserMixin, db.Model):
     
     def can_view_my_banca_ore_widget(self):
         """Può visualizzare widget della propria banca ore"""
-        return self.has_permission('can_view_my_banca_ore_widget') and self.banca_ore_enabled
+        return (self.has_permission('can_view_my_banca_ore_widget') and 
+                self.overtime_enabled and self.overtime_type == 'Banca Ore')
     
     # === TABELLE ACI ===
     def can_manage_aci_tables(self):
@@ -1009,9 +1011,10 @@ class UserHRData(db.Model):
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede di assunzione (amministrativo/contrattuale)
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
     vehicle_registration_document = db.Column(db.String(255), nullable=True)  # Path del libretto di circolazione caricato
-    banca_ore_enabled = db.Column(db.Boolean, default=False)  # Abilitazione banca ore
-    banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo ore accumulabili
-    banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo mesi per usufruire ore
+    overtime_enabled = db.Column(db.Boolean, default=False)  # Abilitazione straordinari
+    overtime_type = db.Column(db.String(50), nullable=True)  # "Straordinario Pagato" o "Banca Ore"
+    banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo ore accumulabili (solo per Banca Ore)
+    banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo mesi per usufruire ore (solo per Banca Ore)
     
     # Sicurezza e requisiti
     minimum_requirements = db.Column(db.String(50), nullable=True)  # Possesso requisiti minimi (SI/NO/DA FORMARE)
