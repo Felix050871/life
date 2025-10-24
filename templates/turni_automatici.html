@@ -213,7 +213,7 @@ function loadShiftsForTemplate(templateId, templateName) {
     document.getElementById('weeks-container').innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
     
     // Richiesta AJAX per caricare i turni con credentials
-    fetch('/api/get_shifts_for_template/' + templateId, {
+    fetch('/shifts/api/get_shifts_for_template/' + templateId, {
         credentials: 'same-origin',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
