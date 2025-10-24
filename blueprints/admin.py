@@ -338,7 +338,7 @@ def edit_work_schedule(schedule_id):
         return redirect(url_for('dashboard.dashboard'))
     
     schedule = filter_by_company(WorkSchedule.query).filter_by(id=schedule_id).first_or_404()
-    form = WorkScheduleForm(obj=schedule)
+    form = WorkScheduleForm(original_name=schedule.name, obj=schedule)
     
     # Precompila i campi basandosi sui dati esistenti
     if request.method == 'GET':

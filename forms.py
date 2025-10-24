@@ -999,6 +999,10 @@ class WorkScheduleForm(FlaskForm):
     active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Orario')
     
+    def __init__(self, original_name=None, *args, **kwargs):
+        super(WorkScheduleForm, self).__init__(*args, **kwargs)
+        self.original_name = original_name
+    
     def validate_days_of_week(self, days_of_week):
         """Valida che almeno un giorno sia selezionato"""
         if not days_of_week.data:
@@ -1035,15 +1039,17 @@ class WorkScheduleForm(FlaskForm):
                     raise ValidationError('L\'orario di uscita deve essere successivo all\'entrata.')
     
     def validate_name(self, name):
-        """Valida che il nome dell'orario sia unico per la sede"""
-        if self.sede.data and name.data:
+        """Valida che il nome dell'orario sia unico per l'azienda"""
+        if name.data and name.data != self.original_name:
             from models import WorkSchedule as WorkScheduleModel
-            existing = WorkScheduleModel.query.filter_by(
-                sede_id=self.sede.data, 
+            from middleware_tenant import filter_by_company
+            
+            # Verifica unicità del nome a livello aziendale
+            existing = filter_by_company(WorkScheduleModel.query).filter_by(
                 name=name.data
             ).first()
             if existing:
-                raise ValidationError('Nome orario già esistente per questa sede. Scegli un altro nome.')
+                raise ValidationError('Nome orario già esistente per questa azienda. Scegli un altro nome.')
 
 
 class RoleForm(FlaskForm):
