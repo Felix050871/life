@@ -891,7 +891,7 @@ def check_user_schedule_with_permissions(user_id, check_datetime=None):
     day_of_week = check_date.weekday()  # 0=Lunedì, 6=Domenica
     
     # Ottieni il work schedule assegnato all'utente
-    schedule = user.work_schedule_obj if user.work_schedule_id else None
+    schedule = user.work_schedule if user.work_schedule_id else None
     
     if not schedule:
         return {
