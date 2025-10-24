@@ -59,45 +59,22 @@ def sede_users(sede_id):
 @api_bp.route('/work_schedules')
 @login_required
 def all_work_schedules():
-    """API per ottenere tutti gli orari di lavoro disponibili per l'azienda"""
+    """API per ottenere tutti gli orari di lavoro globali disponibili per l'azienda"""
     try:
-        # Ottieni tutti gli orari attivi dell'azienda (globali e sede-specifici)
+        # Ottieni tutti gli orari attivi dell'azienda (tutti globali ora)
         work_schedules = filter_by_company(WorkSchedule.query).filter_by(active=True).order_by(
-            WorkSchedule.sede_id.is_(None).desc(),  # Globali per primi
             WorkSchedule.name
         ).all()
         
         schedules_data = []
         for schedule in work_schedules:
-            if schedule.is_turni_schedule():
-                # Visualizzazione speciale per orario "Turni"
-                sede_name = schedule.sede_obj.name if schedule.sede_obj else ''
-                schedules_data.append({
-                    'id': schedule.id,
-                    'name': f"{schedule.name} ({sede_name})" if sede_name else schedule.name,
-                    'start_time': 'Flessibile',
-                    'end_time': 'Flessibile',
-                    'days_count': 7,
-                    'is_global': False,
-                    'sede_name': sede_name
-                })
-            else:
-                # Orari standard
-                if schedule.sede_id is None:
-                    display_name = f"{schedule.name} (Globale)"
-                else:
-                    sede_name = schedule.sede_obj.name if schedule.sede_obj else 'Sede sconosciuta'
-                    display_name = f"{schedule.name} ({sede_name})"
-                
-                schedules_data.append({
-                    'id': schedule.id,
-                    'name': display_name,
-                    'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
-                    'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
-                    'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0,
-                    'is_global': schedule.sede_id is None,
-                    'sede_name': schedule.sede_obj.name if schedule.sede_obj else None
-                })
+            schedules_data.append({
+                'id': schedule.id,
+                'name': schedule.name,
+                'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
+                'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
+                'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0
+            })
         
         return jsonify({
             'success': True,
@@ -114,59 +91,13 @@ def all_work_schedules():
 @api_bp.route('/sede/<int:sede_id>/work_schedules')
 @login_required
 def sede_work_schedules(sede_id):
-    """API per ottenere gli orari di lavoro globali e di una sede specifica"""
-    try:
-        sede = filter_by_company(Sede.query).filter(Sede.id == sede_id).first_or_404()
-        
-        # Ottieni orari globali (sede_id=NULL) - disponibili per tutti
-        global_schedules = filter_by_company(WorkSchedule.query).filter_by(sede_id=None, active=True).all()
-        
-        # Ottieni orari specifici della sede
-        sede_schedules = filter_by_company(WorkSchedule.query).filter_by(sede_id=sede_id, active=True).all()
-        
-        # Combina gli orari
-        work_schedules = list(global_schedules) + list(sede_schedules)
-        
-        # Se la sede supporta modalità turni e non ha ancora l'orario 'Turni', crealo
-        if sede.is_turni_mode() and not sede.has_turni_schedule():
-            turni_schedule = sede.get_or_create_turni_schedule()
-            work_schedules.append(turni_schedule)
-        
-        schedules_data = []
-        for schedule in work_schedules:
-            # Visualizzazione speciale per orario "Turni"
-            if schedule.is_turni_schedule():
-                schedules_data.append({
-                    'id': schedule.id,
-                    'name': schedule.name,
-                    'start_time': 'Flessibile',
-                    'end_time': 'Flessibile',
-                    'days_count': 7,
-                    'is_global': False
-                })
-            else:
-                schedules_data.append({
-                    'id': schedule.id,
-                    'name': schedule.name + (' (Globale)' if schedule.sede_id is None else ''),
-                    'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
-                    'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
-                    'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0,
-                    'is_global': schedule.sede_id is None
-                })
-        
-        return jsonify({
-            'success': True,
-            'work_schedules': schedules_data,
-            'sede_name': sede.name,
-            'has_schedules': len(schedules_data) > 0,
-            'is_turni_mode': sede.is_turni_mode()
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+    """
+    DEPRECATED: API per ottenere gli orari di lavoro.
+    Gli orari ora sono globali a livello aziendale, non più per sede.
+    Questo endpoint è mantenuto per retrocompatibilità e restituisce tutti gli orari globali.
+    """
+    # Reindirizza alla funzione all_work_schedules per evitare duplicazione
+    return all_work_schedules()
 
 # =============================================================================
 # ROLE API ROUTES
