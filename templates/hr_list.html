@@ -396,7 +396,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="exportConfigForm" method="POST" action="{{ url_for('hr.hr_list') }}">
-                <div class="modal-body">
+                <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
                         Seleziona i campi da includere nell'export e applica eventuali filtri. La lista a video e l'export Excel saranno filtrati di conseguenza.
