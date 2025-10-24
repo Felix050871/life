@@ -555,28 +555,44 @@ def edit_user(user_id):
         return render_template('edit_user.html', form=form, user=user)
     
     if form.validate_on_submit():
-        # Aggiorna i dati dell'utente
-        user.username = form.username.data
-        user.email = form.email.data
-        if form.password.data:
-            user.password_hash = generate_password_hash(form.password.data)
-        user.role = form.role.data
-        user.first_name = form.first_name.data
-        user.last_name = form.last_name.data
-        user.all_sedi = form.all_sedi.data
-        user.sede_id = form.sede.data if not form.all_sedi.data else None
-        user.work_schedule_id = form.work_schedule.data
-        user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
-        user.part_time_percentage = form.get_part_time_percentage_as_float()
-        user.overtime_enabled = form.overtime_enabled.data
-        user.overtime_type = form.overtime_type.data if form.overtime_enabled.data else None
-        user.banca_ore_limite_max = form.get_banca_ore_limite_max_as_float()
-        user.banca_ore_periodo_mesi = form.get_banca_ore_periodo_mesi_as_int()
-        user.active = form.active.data
-        
-        db.session.commit()
-        flash('Utente modificato con successo', 'success')
-        return redirect(url_for('user_management.user_management'))
+        try:
+            # Aggiorna i dati dell'utente
+            user.username = form.username.data
+            user.email = form.email.data
+            if form.password.data and form.password.data.strip():
+                user.password_hash = generate_password_hash(form.password.data)
+                flash(f'Password aggiornata per utente {user.username}', 'info')
+            user.role = form.role.data
+            user.first_name = form.first_name.data
+            user.last_name = form.last_name.data
+            user.all_sedi = form.all_sedi.data
+            user.sede_id = form.sede.data if not form.all_sedi.data else None
+            user.work_schedule_id = form.work_schedule.data
+            user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
+            user.part_time_percentage = form.get_part_time_percentage_as_float()
+            user.overtime_enabled = form.overtime_enabled.data
+            user.overtime_type = form.overtime_type.data if form.overtime_enabled.data else None
+            user.banca_ore_limite_max = form.get_banca_ore_limite_max_as_float()
+            user.banca_ore_periodo_mesi = form.get_banca_ore_periodo_mesi_as_int()
+            user.active = form.active.data
+            
+            db.session.commit()
+            flash('Utente modificato con successo', 'success')
+            return redirect(url_for('user_management.user_management'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore durante il salvataggio: {str(e)}', 'danger')
+            import logging
+            logging.error(f'Errore modifica utente {user_id}: {str(e)}', exc_info=True)
+    else:
+        # Se il form non valida, logga gli errori per debug
+        if request.method == 'POST':
+            import logging
+            logging.debug(f'Form validation failed for user {user_id}. Errors: {form.errors}')
+            if form.errors:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        flash(f'Errore nel campo {field}: {error}', 'danger')
     
     return render_template('edit_user.html', form=form, user=user)
 
