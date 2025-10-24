@@ -211,34 +211,7 @@ def hr_list():
             'expiry_status': expiry_status,
         })
     
-    # Calcola statistiche
-    total_employees = len(users_data)
-    with_hr_data = sum(1 for d in users_data if d['has_data'])
-    active_contracts = sum(1 for d in users_data if d['contract_status'] == 'Attivo')
-    in_probation = sum(1 for d in users_data if d['is_probation'])
-    
-    # Statistiche demografiche
-    female_count = sum(1 for d in users_data if d['gender'] == 'F')
-    male_count = sum(1 for d in users_data if d['gender'] == 'M')
-    under_36 = sum(1 for d in users_data if d['age'] is not None and d['age'] < 36)
-    
-    # Statistiche contratti
-    tempo_indeterminato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Indeterminato')
-    tempo_determinato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Determinato')
-    
-    statistics = {
-        'total_employees': total_employees,
-        'with_hr_data': with_hr_data,
-        'active_contracts': active_contracts,
-        'in_probation': in_probation,
-        'female_count': female_count,
-        'male_count': male_count,
-        'under_36': under_36,
-        'tempo_indeterminato': tempo_indeterminato,
-        'tempo_determinato': tempo_determinato,
-    }
-    
-    # Applica filtri personalizzati se presenti
+    # Applica filtri personalizzati PRIMA di calcolare le statistiche
     if active_filters:
         filtered_data = []
         for data in users_data:
