@@ -176,7 +176,6 @@ def manage_sedi():
     sedi_stats = {}
     for sede in sedi:
         stats = {
-            'orari_count': sede.work_schedules.filter_by(active=True).count(),
             'turni_count': 0,
             'reperibilita_turni_count': 0
         }
