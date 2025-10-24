@@ -116,10 +116,10 @@
                             </div>
                             <small class="text-muted">Se abilitato, può accedere a tutte le sedi</small>
                         </div>
-                        <div class="col-md-6 mb-3" id="workScheduleGroupNew" style="display: none;">
+                        <div class="col-md-6 mb-3" id="workScheduleGroupNew">
                             {{ form.work_schedule.label(class="form-label") }}
                             {{ form.work_schedule(class="form-select", id="workScheduleSelectNew") }}
-                            <small class="text-muted">Orario specifico per questa sede</small>
+                            <small class="text-muted">Orario di lavoro (globali e specifici della sede)</small>
                             {% if form.work_schedule.errors %}
                                 <div class="text-danger">
                                     {% for error in form.work_schedule.errors %}
@@ -706,33 +706,57 @@ document.addEventListener('DOMContentLoaded', function() {
             if (allSediCheck && allSediCheck.checked) {
                 sedeSelect.disabled = true;
                 sedeSelect.value = -1;
-                const workScheduleGroupNew = document.getElementById('workScheduleGroupNew');
-                if (workScheduleGroupNew) {
-                    workScheduleGroupNew.style.display = 'none';
-                }
+                loadGlobalWorkSchedules();
             } else {
                 sedeSelect.disabled = false;
                 updateWorkSchedulesNew();
             }
         }
         
+        function loadGlobalWorkSchedules() {
+            const workScheduleSelect = document.getElementById('workScheduleSelectNew');
+            if (!workScheduleSelect) return;
+            
+            // Carica solo gli orari globali usando la prima sede disponibile
+            const firstSedeOption = sedeSelect.querySelector('option:not([value="-1"])');
+            if (firstSedeOption) {
+                const sedeId = firstSedeOption.value;
+                fetch(`/api/sede/${sedeId}/work_schedules`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
+                            // Mostra solo gli orari globali
+                            data.work_schedules.filter(s => s.is_global).forEach(schedule => {
+                                const option = document.createElement('option');
+                                option.value = schedule.id;
+                                option.textContent = schedule.name;
+                                workScheduleSelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading global work schedules:', error);
+                    });
+            }
+        }
+        
         function updateWorkSchedulesNew() {
-            const workScheduleGroup = document.getElementById('workScheduleGroupNew');
             const workScheduleSelect = document.getElementById('workScheduleSelectNew');
             
-            if (!sedeSelect || !workScheduleGroup || !workScheduleSelect) return;
+            if (!sedeSelect || !workScheduleSelect) return;
             
             const sedeId = sedeSelect.value;
             
             if (sedeId <= 0) {
-                workScheduleGroup.style.display = 'none';
+                workScheduleSelect.innerHTML = '<option value="">Seleziona prima una sede</option>';
                 return;
             }
             
             fetch(`/api/sede/${sedeId}/work_schedules`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success && data.has_schedules) {
+                    if (data.success) {
                         workScheduleSelect.innerHTML = '<option value="">Nessun orario</option>';
                         data.work_schedules.forEach(schedule => {
                             const option = document.createElement('option');
@@ -740,14 +764,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             option.textContent = schedule.name;
                             workScheduleSelect.appendChild(option);
                         });
-                        workScheduleGroup.style.display = 'block';
                     } else {
-                        workScheduleGroup.style.display = 'none';
+                        workScheduleSelect.innerHTML = '<option value="">Nessun orario disponibile</option>';
                     }
                 })
                 .catch(error => {
                     console.error('Error loading work schedules:', error);
-                    workScheduleGroup.style.display = 'none';
+                    workScheduleSelect.innerHTML = '<option value="">Errore caricamento orari</option>';
                 });
         }
     }

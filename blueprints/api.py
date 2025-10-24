@@ -59,10 +59,18 @@ def sede_users(sede_id):
 @api_bp.route('/sede/<int:sede_id>/work_schedules')
 @login_required
 def sede_work_schedules(sede_id):
-    """API per ottenere gli orari di lavoro di una sede"""
+    """API per ottenere gli orari di lavoro globali e di una sede specifica"""
     try:
         sede = filter_by_company(Sede.query).filter(Sede.id == sede_id).first_or_404()
-        work_schedules = filter_by_company(WorkSchedule.query).filter_by(sede_id=sede_id, active=True).all()
+        
+        # Ottieni orari globali (sede_id=NULL) - disponibili per tutti
+        global_schedules = filter_by_company(WorkSchedule.query).filter_by(sede_id=None, active=True).all()
+        
+        # Ottieni orari specifici della sede
+        sede_schedules = filter_by_company(WorkSchedule.query).filter_by(sede_id=sede_id, active=True).all()
+        
+        # Combina gli orari
+        work_schedules = list(global_schedules) + list(sede_schedules)
         
         # Se la sede supporta modalità turni e non ha ancora l'orario 'Turni', crealo
         if sede.is_turni_mode() and not sede.has_turni_schedule():
@@ -78,15 +86,17 @@ def sede_work_schedules(sede_id):
                     'name': schedule.name,
                     'start_time': 'Flessibile',
                     'end_time': 'Flessibile',
-                    'days_count': 7
+                    'days_count': 7,
+                    'is_global': False
                 })
             else:
                 schedules_data.append({
                     'id': schedule.id,
-                    'name': schedule.name,
+                    'name': schedule.name + (' (Globale)' if schedule.sede_id is None else ''),
                     'start_time': schedule.start_time.strftime('%H:%M') if schedule.start_time else '',
                     'end_time': schedule.end_time.strftime('%H:%M') if schedule.end_time else '',
-                    'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0
+                    'days_count': len(schedule.days_of_week) if schedule.days_of_week else 0,
+                    'is_global': schedule.sede_id is None
                 })
         
         return jsonify({
