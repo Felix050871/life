@@ -36,6 +36,23 @@
                             <textarea class="form-control" id="descrizione" name="descrizione" rows="4" placeholder="Descrizione dettagliata della mansione (opzionale)"></textarea>
                         </div>
                         
+                        <div class="mb-3">
+                            <label class="form-label">Abilitazioni</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="abilita_turnazioni" name="abilita_turnazioni" checked>
+                                <label class="form-check-label" for="abilita_turnazioni">
+                                    <i class="fas fa-calendar-alt me-1"></i>Abilitato a Turnazioni
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="abilita_reperibilita" name="abilita_reperibilita" checked>
+                                <label class="form-check-label" for="abilita_reperibilita">
+                                    <i class="fas fa-phone me-1"></i>Abilitato a Reperibilità
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Definisci per quali funzionalità questa mansione è abilitata</small>
+                        </div>
+                        
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('mansioni.index') }}" class="btn btn-secondary">
                                 <i class="fas fa-times me-1"></i>Annulla
