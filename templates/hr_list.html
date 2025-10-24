@@ -436,6 +436,7 @@
                                                 <input class="form-check-input field-checkbox" type="checkbox" name="fields" value="hire_date" id="field_hire_date" checked>
                                                 <label class="form-check-label" for="field_hire_date">Data Assunzione</label>
                                             </div>
+                                            <input type="date" class="form-control form-control-sm mt-1" name="filter_hire_date" placeholder="Filtro data...">
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-check">
@@ -595,6 +596,9 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-1"></i>Annulla
                     </button>
+                    <a href="{{ url_for('hr.hr_reset_filters') }}" class="btn btn-warning">
+                        <i class="fas fa-redo me-1"></i>Resetta Filtri
+                    </a>
                     <button type="submit" name="action" value="apply_filters" class="btn btn-primary">
                         <i class="fas fa-filter me-1"></i>Applica Filtri
                     </button>

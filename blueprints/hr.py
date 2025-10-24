@@ -164,8 +164,10 @@ def hr_list():
         # Altrimenti refresh con filtri applicati (apply_filters)
         flash(f'Filtri applicati: {len(filters)} attivi', 'success')
     
-    # Ottieni filtri da session
-    active_filters = session.get('hr_export_filters', {})
+    # Ottieni filtri da session (solo se esistono e non sono vuoti)
+    active_filters = session.get('hr_export_filters')
+    if not active_filters or len(active_filters) == 0:
+        active_filters = None
     
     # Ottieni tutti gli utenti con dati HR (esclusi admin di sistema e ruolo Admin/Amministratore)
     if current_user.can_view_hr_data() or current_user.can_manage_hr_data():
@@ -228,6 +230,17 @@ def hr_list():
             if 'matricola' in active_filters:
                 if not hr_data.matricola or active_filters['matricola'].lower() not in hr_data.matricola.lower():
                     matches = False
+            
+            # Filtro data assunzione (filtra per anno)
+            if 'hire_date' in active_filters:
+                filter_date_str = active_filters['hire_date']
+                try:
+                    from datetime import datetime
+                    filter_date = datetime.strptime(filter_date_str, '%Y-%m-%d').date()
+                    if not hr_data.hire_date or hr_data.hire_date.year != filter_date.year:
+                        matches = False
+                except:
+                    pass  # Se parsing fallisce, ignora il filtro
             
             # Filtro tipo contratto
             if 'contract_type' in active_filters:
@@ -303,6 +316,17 @@ def hr_list():
                          all_sedi=all_sedi,
                          sedi=all_sedi,  # Backward compatibility
                          active_filters=active_filters)
+
+
+@hr_bp.route('/reset-filters')
+@login_required
+@require_hr_permission
+def hr_reset_filters():
+    """Resetta tutti i filtri HR attivi"""
+    session.pop('hr_export_filters', None)
+    session.pop('hr_export_fields', None)
+    flash('Filtri resettati con successo', 'success')
+    return redirect(url_for('hr.hr_list'))
 
 
 @hr_bp.route('/detail/<int:user_id>', methods=['GET', 'POST'])
@@ -756,6 +780,17 @@ def hr_export():
             if 'matricola' in active_filters:
                 if not hr_data.matricola or active_filters['matricola'].lower() not in hr_data.matricola.lower():
                     matches = False
+            
+            # Filtro data assunzione (filtra per anno)
+            if 'hire_date' in active_filters:
+                filter_date_str = active_filters['hire_date']
+                try:
+                    from datetime import datetime
+                    filter_date = datetime.strptime(filter_date_str, '%Y-%m-%d').date()
+                    if not hr_data.hire_date or hr_data.hire_date.year != filter_date.year:
+                        matches = False
+                except:
+                    pass  # Se parsing fallisce, ignora il filtro
             
             if 'contract_type' in active_filters:
                 if not hr_data.contract_type or hr_data.contract_type != active_filters['contract_type']:
