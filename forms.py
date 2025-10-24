@@ -289,9 +289,9 @@ class UserForm(FlaskForm):
             raise ValidationError('La password deve essere lunga almeno 6 caratteri.')
     
     def validate_part_time_percentage(self, part_time_percentage):
-        if part_time_percentage.data:
-            # Strip whitespace first
-            data = part_time_percentage.data.strip()
+        if part_time_percentage.data is not None and part_time_percentage.data != '':
+            # Convert to string first (in case it's a float from DB)
+            data = str(part_time_percentage.data).strip()
             if data:  # Only validate if there's actual content
                 try:
                     # Replace comma with dot for proper float conversion
@@ -303,9 +303,9 @@ class UserForm(FlaskForm):
     
     def get_part_time_percentage_as_float(self):
         """Convert the percentage string to float for database storage"""
-        if self.part_time_percentage.data:
-            # Strip whitespace first
-            data = self.part_time_percentage.data.strip()
+        if self.part_time_percentage.data is not None and self.part_time_percentage.data != '':
+            # Convert to string first (in case it's already a float from DB)
+            data = str(self.part_time_percentage.data).strip()
             if data:  # Only process if there's actual content
                 try:
                     return float(data.replace(',', '.'))
