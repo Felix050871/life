@@ -348,7 +348,7 @@ def get_template_mansioni(template_id):
         mansioni_data = []
         for mansione_name, count in all_mansioni.items():
             users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
-                Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+                Mansione, db.and_(Mansione.nome == UserHRData.mansione, Mansione.company_id == User.company_id), isouter=False
             ).filter(
                 User.company_id == current_user.company_id,
                 User.active == True,
@@ -510,7 +510,7 @@ def edit_shift(shift_id):
     # Get available users for assignment (only from the same sede as the shift, with mansione abilitata ai turni)
     from models import UserHRData, Mansione
     users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
-        Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+        Mansione, db.and_(Mansione.nome == UserHRData.mansione, Mansione.company_id == User.company_id), isouter=False
     ).filter(
         User.active.is_(True),
         User.sede_id == shift.user.sede_id,
@@ -1361,7 +1361,7 @@ def process_generate_turni_from_coverage():
                 for mansione, count_needed in required_mansioni_dict.items():
                     from models import UserHRData, Mansione
                     available_users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
-                        Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+                        Mansione, db.and_(Mansione.nome == UserHRData.mansione, Mansione.company_id == User.company_id), isouter=False
                     ).filter(
                         User.sede_id == sede_id,
                         User.active == True,
@@ -1565,7 +1565,7 @@ def regenerate_turni_from_coverage():
             for coverage in day_coverages:
                 from models import UserHRData, Mansione
                 available_users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
-                    Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+                    Mansione, db.and_(Mansione.nome == UserHRData.mansione, Mansione.company_id == User.company_id), isouter=False
                 ).filter(
                     User.sede_id == sede_id,
                     User.active == True,

@@ -1017,17 +1017,30 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
     from datetime import timedelta
     from collections import defaultdict
     
-    # Get all users grouped by role (excluding administrators, and only those with special "Turni" work schedule)
+    # Get company_id from created_by user to ensure multi-tenant isolation
+    created_by_user = User.query.get(created_by_id)
+    if not created_by_user:
+        raise ValueError("Invalid created_by_id")
+    company_id = created_by_user.company_id
+    
+    # Get all users grouped by mansione (with mansione abilitata reperibilità, and only those with special "Turni" work schedule)
     # Note: "Turni" is different from normal schedules like "Orario per sede Turni" - only "Turni" users are eligible for automatic shift generation
-    all_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+    from models import UserHRData, Mansione
+    all_users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
+        Mansione, db.and_(Mansione.nome == UserHRData.mansione, Mansione.company_id == User.company_id), isouter=False
+    ).join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+        User.company_id == company_id,
         User.active == True,
-        User.role != 'Amministratore',
+        Mansione.active == True,
+        Mansione.abilita_reperibilita == True,
         WorkSchedule.name == 'Turni'  # Only the special "Turni" schedule type
     ).all()
     
-    users_by_role = defaultdict(list)
+    users_by_mansione = defaultdict(list)
     for user in all_users:
-        users_by_role[user.role].append(user)
+        mansione_name = user.get_mansione_name()
+        if mansione_name:
+            users_by_mansione[mansione_name].append(user)
     
     # Get coverage configurations for the time period
     coverage_configs = filter_by_company(ReperibilitaCoverage.query).filter(
@@ -1105,15 +1118,15 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
             if not coverage.is_valid_for_date(current_date):
                 continue
                 
-            # Get required roles for this coverage slot
-            required_roles = coverage.get_required_roles_list()
+            # Get required mansioni for this coverage slot
+            required_mansioni = coverage.get_required_mansioni_list()
             
             # For reperibilità, we typically assign one person per shift (no segmentation needed)
-            # Find eligible users for any of the required roles
+            # Find eligible users for any of the required mansioni
             eligible_users = []
-            for role in required_roles:
-                if role in users_by_role:
-                    eligible_users.extend(users_by_role[role])
+            for mansione in required_mansioni:
+                if mansione in users_by_mansione:
+                    eligible_users.extend(users_by_mansione[mansione])
             
             # Remove duplicates and filter out users on leave
             available_users = [
@@ -1121,11 +1134,15 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
                 if user.id not in user_leave_dates or current_date not in user_leave_dates[user.id]
             ]
             
-            # If no users available from required roles, expand to all active users with "Turni" schedule to ensure coverage
+            # If no users available from required mansioni, expand to all active users with "Turni" schedule and reperibilità enabled to ensure coverage
             if not available_users:
-                fallback_users = User.query.join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+                fallback_users = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
+                    Mansione, db.and_(Mansione.nome == UserHRData.mansione, Mansione.company_id == User.company_id), isouter=False
+                ).join(WorkSchedule, User.work_schedule_id == WorkSchedule.id, isouter=True).filter(
+                    User.company_id == company_id,
                     User.active == True,
-                    User.role != 'Amministratore',
+                    Mansione.active == True,
+                    Mansione.abilita_reperibilita == True,
                     WorkSchedule.name == 'Turni'
                 ).all()
                 
@@ -1155,8 +1172,9 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
                 # Assign the best available user (lowest score)
                 selected_user = final_available_users[0]
                 
-                # Check if we had to use fallback to users outside required roles
-                role_fallback_used = selected_user.role not in required_roles if required_roles else False
+                # Check if we had to use fallback to users outside required mansioni
+                user_mansione = selected_user.get_mansione_name()
+                mansione_fallback_used = user_mansione not in required_mansioni if required_mansioni else False
                 
                 # Calculate shift hours for tracking
                 start_hour = coverage.start_time.hour + coverage.start_time.minute / 60.0
@@ -1186,18 +1204,18 @@ def generate_reperibilita_shifts(start_date, end_date, created_by_id):
                 # Simply add hours without complex percentage calculations for reperibilità
                 current_utilization[selected_user.id] += shift_hours
                 
-                # Add informational warning if we used a different role
-                if role_fallback_used:
-                    required_roles_str = " o ".join(required_roles) if len(required_roles) > 1 else required_roles[0]
+                # Add informational warning if we used a different mansione
+                if mansione_fallback_used:
+                    required_mansioni_str = " o ".join(required_mansioni) if len(required_mansioni) > 1 else required_mansioni[0]
                     time_range = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
-                    fallback_warning = f"{current_date.strftime('%d/%m/%Y')} {time_range}: Assegnato {selected_user.role} {selected_user.first_name} {selected_user.last_name} (richiesto: {required_roles_str})"
+                    fallback_warning = f"{current_date.strftime('%d/%m/%Y')} {time_range}: Assegnato {user_mansione} {selected_user.first_name} {selected_user.last_name} (richiesto: {required_mansioni_str})"
                     coverage_warnings.append(fallback_warning)
                 
                 shifts_created += 1
             else:
                 # This should only happen if ALL users in the system are on leave for this date
                 # which is extremely unlikely but we handle it gracefully
-                roles_str = " o ".join(required_roles) if len(required_roles) > 1 else required_roles[0] if required_roles else "utente"
+                mansioni_str = " o ".join(required_mansioni) if len(required_mansioni) > 1 else required_mansioni[0] if required_mansioni else "utente"
                 time_range = f"{coverage.start_time.strftime('%H:%M')}-{coverage.end_time.strftime('%H:%M')}"
                 
                 total_users = len(all_users)
@@ -1479,7 +1497,7 @@ def generate_shifts_from_template(template, allowed_user_ids=None):
                         # Trova utenti con questa mansione (abilitata ai turni)
                         from models import UserHRData, Mansione
                         query = User.query.join(UserHRData, User.id == UserHRData.user_id, isouter=False).join(
-                            Mansione, Mansione.nome == UserHRData.mansione, isouter=False
+                            Mansione, db.and_(Mansione.nome == UserHRData.mansione, Mansione.company_id == User.company_id), isouter=False
                         ).filter(
                             User.company_id == template.company_id,
                             User.active == True,
