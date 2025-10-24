@@ -565,7 +565,7 @@ def send_connection_request(user_id):
     if existing:
         if existing.status == 'Accepted':
             flash('Sei già collegato con questo utente', 'info')
-        elif existing.status == 'pending':
+        elif existing.status == 'Pending':
             flash('Hai già una richiesta pendente con questo utente', 'info')
         else:
             flash('Esiste già una richiesta con questo utente', 'warning')

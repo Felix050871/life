@@ -295,7 +295,7 @@ def dashboard():
     
     if current_user.can_approve_overtime_requests():
         recent_overtime_requests = filter_by_company(OvertimeRequest.query).filter(
-            OvertimeRequest.status == 'pending'
+            OvertimeRequest.status == 'Pending'
         ).order_by(OvertimeRequest.created_at.desc()).limit(5).all()
     
     # Widget mileage requests
@@ -308,7 +308,7 @@ def dashboard():
     
     if current_user.can_approve_mileage_requests():
         recent_mileage_requests = filter_by_company(MileageRequest.query).filter(
-            MileageRequest.status == 'pending'
+            MileageRequest.status == 'Pending'
         ).order_by(MileageRequest.created_at.desc()).limit(5).all()
     
     # Widget banca ore wallet
@@ -442,7 +442,7 @@ def dashboard_team():
         # Fetch all approved leave requests in the date range
         all_leaves = filter_by_company(LeaveRequest.query).filter(
             LeaveRequest.user_id.in_(user_ids),
-            LeaveRequest.status == 'approved',
+            LeaveRequest.status == 'Approved',
             LeaveRequest.start_date <= end_date,
             LeaveRequest.end_date >= start_date
         ).all()

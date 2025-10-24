@@ -1006,7 +1006,7 @@ def delete_mileage_request(request_id):
         return redirect(url_for('expense.mileage_requests'))
     
     # Non permettere cancellazione se già approvata
-    if mileage_request.status == 'approved':
+    if mileage_request.status == 'Approved':
         flash('Non è possibile cancellare una richiesta già approvata.', 'warning')
         return redirect(url_for('expense.mileage_requests'))
     
@@ -1269,9 +1269,9 @@ def export_mileage_requests():
             
             # Stato con colore
             status_cell = ws.cell(row=row, column=7, value=req.get_status_display())
-            if req.status == 'approved':
+            if req.status == 'Approved':
                 status_cell.fill = PatternFill(start_color="D4F4DD", end_color="D4F4DD", fill_type="solid")
-            elif req.status == 'rejected':
+            elif req.status == 'Rejected':
                 status_cell.fill = PatternFill(start_color="F8D7DA", end_color="F8D7DA", fill_type="solid")
             
             ws.cell(row=row, column=8, value=req.purpose)
