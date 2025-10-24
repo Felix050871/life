@@ -271,13 +271,12 @@ class UserForm(FlaskForm):
         if work_schedule.data and work_schedule.data is not None:
             # Verifica che esista un orario con quell'ID
             from models import WorkSchedule
-            schedule = WorkSchedule.query.get(work_schedule.data)
+            from utils_tenant import filter_by_company
+            schedule = filter_by_company(WorkSchedule.query).filter_by(id=work_schedule.data).first()
             if not schedule:
                 raise ValidationError('Orario di lavoro selezionato non valido.')
-            # Se c'è una sede selezionata, verifica che l'orario appartenga a quella sede
-            if self.sede.data and self.sede.data > 0:
-                if schedule.sede_id != self.sede.data:
-                    raise ValidationError('L\'orario di lavoro deve appartenere alla sede selezionata.')
+            # Work schedules sono ora globali a livello aziendale (company-level)
+            # Non c'è più associazione con le sedi
     
     def validate_password(self, password):
         # For new users, password is required
