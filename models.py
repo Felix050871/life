@@ -3292,9 +3292,8 @@ class Sede(db.Model):
 
 
 class WorkSchedule(db.Model):
-    """Modello per gli orari di lavoro aziendali (opzionalmente associati a una sede)"""
+    """Modello per gli orari di lavoro aziendali globali (a livello company)"""
     id = db.Column(db.Integer, primary_key=True)
-    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Opzionale: orari globali o per sede
     name = db.Column(db.String(100), nullable=False)
     
     # Range orario di inizio (entrata)
@@ -3315,16 +3314,11 @@ class WorkSchedule(db.Model):
     created_at = db.Column(db.DateTime, default=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
-    # Relazione con Sede (usa backref esistente da Sede)
-    # La relazione è gestita dal backref 'sede_obj' definito nel modello Sede
-    
     # Constraint per evitare duplicati nella stessa azienda
     __table_args__ = (db.UniqueConstraint('company_id', 'name', name='_company_schedule_name_uc'),)
     
     def __repr__(self):
-        if self.sede_obj:
-            return f'<WorkSchedule {self.name} at {self.sede_obj.name}>'
-        return f'<WorkSchedule {self.name} (globale)>'
+        return f'<WorkSchedule {self.name}>'
     
     def get_days_of_week_list(self):
         """Restituisce la lista dei giorni della settimana come interi"""
