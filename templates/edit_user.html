@@ -76,7 +76,7 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 {{ form.password.label(class="form-label") }}
                                 {{ form.password(class="form-control", placeholder="Lascia vuoto per non modificare") }}
                                 <small class="text-muted">Lascia vuoto per mantenere la password attuale</small>
@@ -88,27 +88,12 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 {{ form.role.label(class="form-label") }}
                                 {{ form.role(class="form-select", id="role") }}
                                 {% if form.role.errors %}
                                     <div class="text-danger">
                                         {% for error in form.role.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                {{ form.part_time_percentage.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.part_time_percentage(class="form-control") }}
-                                    <span class="input-group-text">%</span>
-                                </div>
-                                <small class="text-muted">Es: 100, 75,5, 50 (usa virgola per decimali)</small>
-                                {% if form.part_time_percentage.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.part_time_percentage.errors %}
                                             <small>{{ error }}</small>
                                         {% endfor %}
                                     </div>
@@ -141,45 +126,6 @@
                                 {% if form.work_schedule.errors %}
                                     <div class="text-danger">
                                         {% for error in form.work_schedule.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                {{ form.aci_vehicle_tipo.label(class="form-label") }}
-                                {{ form.aci_vehicle_tipo(class="form-select", id="tipoVeicoloSelect") }}
-                                <small class="text-muted">Tipo di veicolo</small>
-                                {% if form.aci_vehicle_tipo.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.aci_vehicle_tipo.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                {{ form.aci_vehicle_marca.label(class="form-label") }}
-                                {{ form.aci_vehicle_marca(class="form-select", id="marcaVeicoloSelect", disabled=true) }}
-                                <small class="text-muted">Marca del veicolo</small>
-                                {% if form.aci_vehicle_marca.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.aci_vehicle_marca.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                {{ form.aci_vehicle.label(class="form-label") }}
-                                {{ form.aci_vehicle(class="form-select", id="modelloVeicoloSelect", disabled=true) }}
-                                <small class="text-muted">Modello e costo/km</small>
-                                {% if form.aci_vehicle.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.aci_vehicle.errors %}
                                             <small>{{ error }}</small>
                                         {% endfor %}
                                     </div>
@@ -253,10 +199,8 @@
 
 {% block scripts %}
 <script>
-// Role-based part-time percentage visibility, sede management and banca ore controls
+// Sede management and banca ore controls
 document.addEventListener('DOMContentLoaded', function() {
-    const roleSelect = document.getElementById('role');
-    const partTimeGroup = document.querySelector('input[name="part_time_percentage"]').closest('.col-md-4');
     const allSediCheck = document.getElementById('allSediCheck');
     
     // Overtime/Banca ore controls
@@ -312,17 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    function togglePartTimeField() {
-        // Campo % Lavoro sempre visibile per tutti i ruoli
-        // Nessuna azione necessaria, campo sempre visibile
-    }
-    
     // Event listeners
-    if (roleSelect) {
-        roleSelect.addEventListener('change', togglePartTimeField);
-        togglePartTimeField(); // Initial call
-    }
-    
     if (allSediCheck && sedeSelect) {
         allSediCheck.addEventListener('change', toggleSedeSelect);
         toggleSedeSelect(); // Chiamata iniziale
@@ -339,75 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (allSediCheck && allSediCheck.checked && sedeSelect && sedeSelect.disabled) {
                 sedeSelect.disabled = false;
                 sedeSelect.value = ''; // Assicurati che sia vuoto
-            }
-        });
-    }
-
-    // ACI Vehicle Progressive Selection
-    const tipoSelect = document.getElementById('tipoVeicoloSelect');
-    const marcaSelect = document.getElementById('marcaVeicoloSelect');
-    const modelloSelect = document.getElementById('modelloVeicoloSelect');
-
-    if (tipoSelect) {
-        tipoSelect.addEventListener('change', function() {
-            const tipo = this.value;
-            marcaSelect.disabled = true;
-            modelloSelect.disabled = true;
-            marcaSelect.innerHTML = '<option value="">Caricamento...</option>';
-            modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
-
-            if (tipo) {
-                fetch(`/api/aci/marche/${encodeURIComponent(tipo)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        marcaSelect.innerHTML = '<option value="">Seleziona marca</option>';
-                        if (data.success && data.marche.length > 0) {
-                            data.marche.forEach(marca => {
-                                const option = document.createElement('option');
-                                option.value = marca;
-                                option.textContent = marca;
-                                marcaSelect.appendChild(option);
-                            });
-                            marcaSelect.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading marche:', error);
-                        marcaSelect.innerHTML = '<option value="">Errore caricamento</option>';
-                    });
-            } else {
-                marcaSelect.innerHTML = '<option value="">Seleziona prima il tipo</option>';
-                modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
-            }
-        });
-
-        marcaSelect.addEventListener('change', function() {
-            const tipo = tipoSelect.value;
-            const marca = this.value;
-            modelloSelect.disabled = true;
-            modelloSelect.innerHTML = '<option value="">Caricamento...</option>';
-
-            if (tipo && marca) {
-                fetch(`/api/aci/modelli/${encodeURIComponent(tipo)}/${encodeURIComponent(marca)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        modelloSelect.innerHTML = '<option value="">Seleziona modello</option>';
-                        if (data.success && data.modelli.length > 0) {
-                            data.modelli.forEach(modello => {
-                                const option = document.createElement('option');
-                                option.value = modello[0];
-                                option.textContent = modello[1];
-                                modelloSelect.appendChild(option);
-                            });
-                            modelloSelect.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading modelli:', error);
-                        modelloSelect.innerHTML = '<option value="">Errore caricamento</option>';
-                    });
-            } else {
-                modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
             }
         });
     }
