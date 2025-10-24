@@ -27,6 +27,7 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>Nome</th>
+                                    <th>Codice</th>
                                     <th>Descrizione</th>
                                     <th>Autorizzazione</th>
                                     <th>Stato</th>
@@ -39,6 +40,9 @@
                                 <tr{% if not leave_type.active %} class="table-secondary"{% endif %}>
                                     <td>
                                         <strong>{{ leave_type.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ leave_type.code }}</span>
                                     </td>
                                     <td>
                                         {{ leave_type.description or '-' }}
