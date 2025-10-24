@@ -2744,7 +2744,7 @@ class ExpenseReport(db.Model):
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('expense_category.id'), nullable=False)
     receipt_filename = db.Column(db.String(255))  # Nome file allegato
-    status = db.Column(db.String(20), default='pending', nullable=False)  # pending, approved, rejected
+    status = db.Column(db.String(20), default='Pending', nullable=False)  # Pending, Approved, Rejected
     
     # Approvazione
     approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -2768,9 +2768,9 @@ class ExpenseReport(db.Model):
     def status_display(self):
         """Mostra lo stato in italiano"""
         status_map = {
-            'pending': 'In Attesa',
-            'approved': 'Approvata',
-            'rejected': 'Rifiutata'
+            'Pending': 'In Attesa',
+            'Approved': 'Approvata',
+            'Rejected': 'Rifiutata'
         }
         return status_map.get(self.status, self.status)
     
@@ -2778,9 +2778,9 @@ class ExpenseReport(db.Model):
     def status_color(self):
         """Restituisce il colore Bootstrap per lo stato"""
         color_map = {
-            'pending': 'warning',
-            'approved': 'success',
-            'rejected': 'danger'
+            'Pending': 'warning',
+            'Approved': 'success',
+            'Rejected': 'danger'
         }
         return color_map.get(self.status, 'secondary')
     
@@ -2898,7 +2898,7 @@ class OvertimeRequest(db.Model):
     end_time = db.Column(db.Time, nullable=False)
     motivation = db.Column(db.Text, nullable=False)
     overtime_type_id = db.Column(db.Integer, db.ForeignKey('overtime_type.id'), nullable=False)
-    status = db.Column(db.String(20), default='pending', nullable=False)  # pending, approved, rejected
+    status = db.Column(db.String(20), default='Pending', nullable=False)  # Pending, Approved, Rejected
     
     # Approvazione
     approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -2922,9 +2922,9 @@ class OvertimeRequest(db.Model):
     def status_display(self):
         """Mostra lo stato in italiano"""
         status_map = {
-            'pending': 'In Attesa',
-            'approved': 'Approvata',
-            'rejected': 'Rifiutata'
+            'Pending': 'In Attesa',
+            'Approved': 'Approvata',
+            'Rejected': 'Rifiutata'
         }
         return status_map.get(self.status, self.status)
     
@@ -2932,9 +2932,9 @@ class OvertimeRequest(db.Model):
     def status_color(self):
         """Restituisce il colore Bootstrap per lo stato"""
         color_map = {
-            'pending': 'warning',
-            'approved': 'success',
-            'rejected': 'danger'
+            'Pending': 'warning',
+            'Approved': 'success',
+            'Rejected': 'danger'
         }
         return color_map.get(self.status, 'secondary')
     
@@ -3069,7 +3069,7 @@ class MileageRequest(db.Model):
     notes = db.Column(db.Text)  # Note aggiuntive
     
     # Status e approvazione
-    status = db.Column(db.String(20), default='pending', nullable=False)  # pending, approved, rejected
+    status = db.Column(db.String(20), default='Pending', nullable=False)  # Pending, Approved, Rejected
     approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     approved_at = db.Column(db.DateTime, nullable=True)
     approval_comment = db.Column(db.Text)
@@ -3091,9 +3091,9 @@ class MileageRequest(db.Model):
     def status_display(self):
         """Mostra lo stato in italiano"""
         status_map = {
-            'pending': 'In Attesa',
-            'approved': 'Approvata',
-            'rejected': 'Rifiutata'
+            'Pending': 'In Attesa',
+            'Approved': 'Approvata',
+            'Rejected': 'Rifiutata'
         }
         return status_map.get(self.status, self.status)
     
@@ -3101,9 +3101,9 @@ class MileageRequest(db.Model):
     def status_color(self):
         """Restituisce il colore Bootstrap per lo stato"""
         color_map = {
-            'pending': 'warning',
-            'approved': 'success',
-            'rejected': 'danger'
+            'Pending': 'warning',
+            'Approved': 'success',
+            'Rejected': 'danger'
         }
         return color_map.get(self.status, 'secondary')
     
@@ -3794,7 +3794,7 @@ class CircleGroupMembershipRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey('circle_group.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    status = db.Column(db.String(20), default='pending')  # 'pending', 'accepted', 'rejected'
+    status = db.Column(db.String(20), default='Pending')  # 'Pending', 'Accepted', 'Rejected'
     message = db.Column(db.Text, nullable=True)  # Messaggio di richiesta
     created_at = db.Column(db.DateTime, default=italian_now)
     reviewed_at = db.Column(db.DateTime, nullable=True)
@@ -3906,7 +3906,7 @@ class ConnectionRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'accepted', 'rejected'
+    status = db.Column(db.String(20), nullable=False, default='Pending')  # 'Pending', 'Accepted', 'Rejected'
     created_at = db.Column(db.DateTime, default=italian_now)
     responded_at = db.Column(db.DateTime, nullable=True)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
