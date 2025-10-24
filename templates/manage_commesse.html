@@ -53,9 +53,11 @@
                             <h5><i class="fas fa-filter me-2"></i>Filtri</h5>
                         </div>
                         <div class="col-md-6 text-end">
+                            {% if current_user.can_manage_commesse() %}
                             <a href="{{ url_for('commesse.create_commessa') }}" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>Nuova Commessa
                             </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -181,10 +183,14 @@
                     {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-project-diagram fa-3x text-muted mb-3"></i>
+                        {% if current_user.can_manage_commesse() %}
                         <p class="text-muted">Nessuna commessa trovata. Crea la prima commessa per iniziare.</p>
                         <a href="{{ url_for('commesse.create_commessa') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-2"></i>Nuova Commessa
                         </a>
+                        {% else %}
+                        <p class="text-muted">Nessuna commessa trovata.</p>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
