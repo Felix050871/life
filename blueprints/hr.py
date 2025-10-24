@@ -138,13 +138,21 @@ def get_worst_expiry_status(hr_data):
 def hr_list():
     """Lista dipendenti con dati HR"""
     
-    # Ottieni tutti gli utenti con dati HR (esclusi admin)
+    # Ottieni tutti gli utenti con dati HR (esclusi admin di sistema e ruolo Admin)
     if current_user.can_view_hr_data() or current_user.can_manage_hr_data():
         # HR Manager vedono tutti i dipendenti della company (esclusi admin)
-        users_query = filter_by_company(User.query).filter_by(active=True).filter(User.role != 'ADMIN').order_by(User.last_name, User.first_name)
+        users_query = filter_by_company(User.query).filter_by(active=True).filter(
+            User.role != 'Admin',
+            User.role != 'ADMIN',
+            User.is_system_admin == False
+        ).order_by(User.last_name, User.first_name)
     else:
         # Utenti normali vedono solo i propri dati (con filtro company), esclusi se admin
-        users_query = filter_by_company(User.query).filter_by(id=current_user.id).filter(User.role != 'ADMIN')
+        users_query = filter_by_company(User.query).filter_by(id=current_user.id).filter(
+            User.role != 'Admin',
+            User.role != 'ADMIN',
+            User.is_system_admin == False
+        )
     
     users = users_query.all()
     
