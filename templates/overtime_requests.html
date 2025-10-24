@@ -89,11 +89,11 @@
                                 {{ request.overtime_type.name }}
                             </td>
                             <td>
-                                {% if request.status == 'pending' %}
+                                {% if request.status == 'Pending' %}
                                 <span class="badge bg-warning">In Attesa</span>
-                                {% elif request.status == 'approved' %}
+                                {% elif request.status == 'Approved' %}
                                 <span class="badge bg-success">Approvata</span>
-                                {% elif request.status == 'rejected' %}
+                                {% elif request.status == 'Rejected' %}
                                 <span class="badge bg-danger">Rifiutata</span>
                                 {% endif %}
                             </td>
@@ -104,7 +104,7 @@
                                             data-bs-target="#detailModal{{ request.id }}">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    {% if request.status == 'pending' and current_user.can_approve_overtime_requests() %}
+                                    {% if request.status == 'Pending' and current_user.can_approve_overtime_requests() %}
                                     <button type="button" class="btn btn-outline-success" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#approveModal{{ request.id }}">
@@ -156,11 +156,11 @@
                     <div class="col-md-6">
                         <p><strong>Tipologia:</strong> {{ request.overtime_type.name }}</p>
                         <p><strong>Stato:</strong> 
-                            {% if request.status == 'pending' %}
+                            {% if request.status == 'Pending' %}
                             <span class="badge bg-warning">In Attesa</span>
-                            {% elif request.status == 'approved' %}
+                            {% elif request.status == 'Approved' %}
                             <span class="badge bg-success">Approvata</span>
-                            {% elif request.status == 'rejected' %}
+                            {% elif request.status == 'Rejected' %}
                             <span class="badge bg-danger">Rifiutata</span>
                             {% endif %}
                         </p>
@@ -177,7 +177,7 @@
 </div>
 
 <!-- Modal Approvazione -->
-{% if request.status == 'pending' and current_user.can_approve_overtime_requests() %}
+{% if request.status == 'Pending' and current_user.can_approve_overtime_requests() %}
 <div class="modal fade" id="approveModal{{ request.id }}" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

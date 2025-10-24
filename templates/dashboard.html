@@ -424,11 +424,11 @@ SECTIONS (1207 lines total):
                                 <td>{{ request.hours }}h</td>
                                 <td><span class="badge bg-secondary">{{ request.overtime_type.name }}</span></td>
                                 <td>
-                                    {% if request.status == 'pending' %}
+                                    {% if request.status == 'Pending' %}
                                         <span class="badge bg-warning text-dark">In Attesa</span>
-                                    {% elif request.status == 'approved' %}
+                                    {% elif request.status == 'Approved' %}
                                         <span class="badge bg-success">Approvata</span>
-                                    {% elif request.status == 'rejected' %}
+                                    {% elif request.status == 'Rejected' %}
                                         <span class="badge bg-danger">Rifiutata</span>
                                     {% endif %}
                                 </td>
@@ -879,11 +879,11 @@ SECTIONS (1207 lines total):
                                 </td>
                                 <td>€{{ "%.2f"|format(expense.amount) }}</td>
                                 <td>
-                                    {% if expense.status == 'pending' %}
+                                    {% if expense.status == 'Pending' %}
                                         <span class="badge bg-warning">In Attesa</span>
-                                    {% elif expense.status == 'approved' %}
+                                    {% elif expense.status == 'Approved' %}
                                         <span class="badge bg-success">Approvata</span>
-                                    {% elif expense.status == 'rejected' %}
+                                    {% elif expense.status == 'Rejected' %}
                                         <span class="badge bg-danger">Rifiutata</span>
                                     {% endif %}
                                 </td>
@@ -939,13 +939,13 @@ SECTIONS (1207 lines total):
                                 <td>€{{ "%.2f"|format(request.total_amount) }}</td>
                                 <td>
                                     <span class="badge 
-                                        {% if request.status == 'pending' %}bg-warning text-dark
-                                        {% elif request.status == 'approved' %}bg-success
-                                        {% elif request.status == 'rejected' %}bg-danger
+                                        {% if request.status == 'Pending' %}bg-warning text-dark
+                                        {% elif request.status == 'Approved' %}bg-success
+                                        {% elif request.status == 'Rejected' %}bg-danger
                                         {% endif %}">
-                                        {% if request.status == 'pending' %}In Attesa
-                                        {% elif request.status == 'approved' %}Approvato
-                                        {% elif request.status == 'rejected' %}Rifiutato
+                                        {% if request.status == 'Pending' %}In Attesa
+                                        {% elif request.status == 'Approved' %}Approvato
+                                        {% elif request.status == 'Rejected' %}Rifiutato
                                         {% endif %}
                                     </span>
                                 </td>
@@ -1080,19 +1080,19 @@ SECTIONS (1207 lines total):
                     </div>
                     <div class="col-6 mb-3">
                         <div class="text-center">
-                            <div class="h4 mb-0 text-warning">{{ recent_mileage_requests|selectattr("status", "equalto", "pending")|list|length }}</div>
+                            <div class="h4 mb-0 text-warning">{{ recent_mileage_requests|selectattr("status", "equalto", "Pending")|list|length }}</div>
                             <small class="text-muted">In Attesa</small>
                         </div>
                     </div>
                     <div class="col-6 mb-3">
                         <div class="text-center">
-                            <div class="h4 mb-0 text-success">{{ recent_mileage_requests|selectattr("status", "equalto", "approved")|list|length }}</div>
+                            <div class="h4 mb-0 text-success">{{ recent_mileage_requests|selectattr("status", "equalto", "Approved")|list|length }}</div>
                             <small class="text-muted">Approvate</small>
                         </div>
                     </div>
                     <div class="col-6 mb-3">
                         <div class="text-center">
-                            <div class="h4 mb-0 text-info">€{{ "%.0f"|format(recent_mileage_requests|selectattr("status", "equalto", "approved")|map(attribute="total_amount")|sum) }}</div>
+                            <div class="h4 mb-0 text-info">€{{ "%.0f"|format(recent_mileage_requests|selectattr("status", "equalto", "Approved")|map(attribute="total_amount")|sum) }}</div>
                             <small class="text-muted">Importo Mensile</small>
                         </div>
                     </div>

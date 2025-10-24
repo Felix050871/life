@@ -21,11 +21,11 @@
                         </div>
                         <div class="col-md-4">
                             <small class="text-muted">Stato:</small><br>
-                            {% if expense.status == 'pending' %}
+                            {% if expense.status == 'Pending' %}
                             <span class="badge bg-warning text-dark">In Attesa</span>
-                            {% elif expense.status == 'approved' %}
+                            {% elif expense.status == 'Approved' %}
                             <span class="badge bg-success">Approvata</span>
-                            {% elif expense.status == 'rejected' %}
+                            {% elif expense.status == 'Rejected' %}
                             <span class="badge bg-danger">Rifiutata</span>
                             {% endif %}
                         </div>

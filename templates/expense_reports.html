@@ -102,11 +102,11 @@
                                         <strong>€ {{ "%.2f"|format(expense.amount) }}</strong>
                                     </td>
                                     <td>
-                                        {% if expense.status == 'pending' %}
+                                        {% if expense.status == 'Pending' %}
                                         <span class="badge bg-warning text-dark">In Attesa</span>
-                                        {% elif expense.status == 'approved' %}
+                                        {% elif expense.status == 'Approved' %}
                                         <span class="badge bg-success">Approvata</span>
-                                        {% elif expense.status == 'rejected' %}
+                                        {% elif expense.status == 'Rejected' %}
                                         <span class="badge bg-danger">Rifiutata</span>
                                         {% endif %}
                                     </td>
@@ -131,7 +131,7 @@
                                             {% endif %}
                                             
                                             <!-- Approva/Rifiuta (solo se può approvare e in attesa) -->
-                                            {% if expense.can_be_approved_by(current_user) and expense.status == 'pending' %}
+                                            {% if expense.can_be_approved_by(current_user) and expense.status == 'Pending' %}
                                             <a href="{{ url_for('approve_expense_report', expense_id=expense.id) }}" 
                                                class="btn btn-sm btn-outline-success" title="Approva/Rifiuta">
                                                 <i class="fas fa-check"></i>
@@ -139,7 +139,7 @@
                                             {% endif %}
                                             
                                             <!-- Elimina (solo se propria o admin, e solo se in attesa) -->
-                                            {% if (expense.employee_id == current_user.id or current_user.can_manage_expense_reports()) and expense.status == 'pending' %}
+                                            {% if (expense.employee_id == current_user.id or current_user.can_manage_expense_reports()) and expense.status == 'Pending' %}
                                             <form method="POST" action="{{ url_for('delete_expense_report', expense_id=expense.id) }}" 
                                                   style="display:inline;" onsubmit="return confirm('Vuoi eliminare definitivamente questa nota spese? Tutti i dati verranno persi per sempre.')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

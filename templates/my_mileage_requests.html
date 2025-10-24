@@ -29,10 +29,10 @@
 
     <!-- Statistiche personali -->
     <div class="row mb-4">
-        {% set my_pending = requests|selectattr("status", "equalto", "pending")|list|length %}
-        {% set my_approved = requests|selectattr("status", "equalto", "approved")|list|length %}
-        {% set my_rejected = requests|selectattr("status", "equalto", "rejected")|list|length %}
-        {% set my_total_amount = requests|selectattr("status", "equalto", "approved")|sum(attribute="total_amount") %}
+        {% set my_pending = requests|selectattr("status", "equalto", "Pending")|list|length %}
+        {% set my_approved = requests|selectattr("status", "equalto", "Approved")|list|length %}
+        {% set my_rejected = requests|selectattr("status", "equalto", "Rejected")|list|length %}
+        {% set my_total_amount = requests|selectattr("status", "equalto", "Approved")|sum(attribute="total_amount") %}
         {% set my_total_km = requests|sum(attribute="total_km") %}
         
         <div class="col-md-2">
@@ -98,14 +98,14 @@
                     {% for req in requests %}
                     <div class="timeline-item">
                         <div class="timeline-marker 
-                            {% if req.status == 'pending' %}bg-warning{% endif %}
-                            {% if req.status == 'approved' %}bg-success{% endif %}
-                            {% if req.status == 'rejected' %}bg-danger{% endif %}">
-                            {% if req.status == 'pending' %}
+                            {% if req.status == 'Pending' %}bg-warning{% endif %}
+                            {% if req.status == 'Approved' %}bg-success{% endif %}
+                            {% if req.status == 'Rejected' %}bg-danger{% endif %}">
+                            {% if req.status == 'Pending' %}
                                 <i class="fas fa-clock text-white"></i>
-                            {% elif req.status == 'approved' %}
+                            {% elif req.status == 'Approved' %}
                                 <i class="fas fa-check text-white"></i>
-                            {% elif req.status == 'rejected' %}
+                            {% elif req.status == 'Rejected' %}
                                 <i class="fas fa-times text-white"></i>
                             {% endif %}
                         </div>
@@ -114,11 +114,11 @@
                                 <div class="flex-grow-1">
                                     <h6 class="mb-1">
                                         Viaggio del {{ req.travel_date.strftime('%d/%m/%Y') }}
-                                        {% if req.status == 'pending' %}
+                                        {% if req.status == 'Pending' %}
                                             <span class="badge bg-warning ms-2">In Attesa</span>
-                                        {% elif req.status == 'approved' %}
+                                        {% elif req.status == 'Approved' %}
                                             <span class="badge bg-success ms-2">Approvata</span>
-                                        {% elif req.status == 'rejected' %}
+                                        {% elif req.status == 'Rejected' %}
                                             <span class="badge bg-danger ms-2">Rifiutata</span>
                                         {% endif %}
                                     </h6>
@@ -159,10 +159,10 @@
                                         </p>
                                     {% endif %}
                                     
-                                    {% if req.status in ['approved', 'rejected'] and req.approver %}
+                                    {% if req.status in ['Approved', 'Rejected'] and req.approver %}
                                         <p class="mb-1">
                                             <i class="fas fa-user-check text-muted me-1"></i>
-                                            {% if req.status == 'approved' %}Approvata{% else %}Rifiutata{% endif %} 
+                                            {% if req.status == 'Approved' %}Approvata{% else %}Rifiutata{% endif %} 
                                             da <strong>{{ req.approver.get_full_name() }}</strong>
                                             il {{ req.approved_at.strftime('%d/%m/%Y alle %H:%M') }}
                                         </p>

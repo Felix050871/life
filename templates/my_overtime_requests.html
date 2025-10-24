@@ -51,11 +51,11 @@
                                 {{ request.motivation[:50] }}{% if request.motivation|length > 50 %}...{% endif %}
                             </td>
                             <td>
-                                {% if request.status == 'pending' %}
+                                {% if request.status == 'Pending' %}
                                 <span class="badge bg-warning">In Attesa</span>
-                                {% elif request.status == 'approved' %}
+                                {% elif request.status == 'Approved' %}
                                 <span class="badge bg-success">Approvata</span>
-                                {% elif request.status == 'rejected' %}
+                                {% elif request.status == 'Rejected' %}
                                 <span class="badge bg-danger">Rifiutata</span>
                                 {% endif %}
                             </td>
@@ -66,7 +66,7 @@
                                             data-bs-target="#detailModal{{ request.id }}">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    {% if request.status == 'pending' %}
+                                    {% if request.status == 'Pending' %}
                                     <button type="button" class="btn btn-outline-danger" 
                                             onclick="confirmDelete('richiesta del {{ request.overtime_date.strftime('%d/%m/%Y') }}', '{{ url_for('delete_overtime_request', request_id=request.id) }}')">
                                         <i class="fas fa-trash"></i>
@@ -116,11 +116,11 @@
                     </div>
                     <div class="col-md-6">
                         <p><strong>Stato:</strong> 
-                            {% if request.status == 'pending' %}
+                            {% if request.status == 'Pending' %}
                             <span class="badge bg-warning">In Attesa</span>
-                            {% elif request.status == 'approved' %}
+                            {% elif request.status == 'Approved' %}
                             <span class="badge bg-success">Approvata</span>
-                            {% elif request.status == 'rejected' %}
+                            {% elif request.status == 'Rejected' %}
                             <span class="badge bg-danger">Rifiutata</span>
                             {% endif %}
                         </p>

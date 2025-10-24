@@ -70,10 +70,10 @@
 
     <!-- Statistiche rapide -->
     <div class="row mb-4">
-        {% set pending_count = requests|selectattr("status", "equalto", "pending")|list|length %}
-        {% set approved_count = requests|selectattr("status", "equalto", "approved")|list|length %}
-        {% set rejected_count = requests|selectattr("status", "equalto", "rejected")|list|length %}
-        {% set total_approved_amount = requests|selectattr("status", "equalto", "approved")|sum(attribute="total_amount") %}
+        {% set pending_count = requests|selectattr("status", "equalto", "Pending")|list|length %}
+        {% set approved_count = requests|selectattr("status", "equalto", "Approved")|list|length %}
+        {% set rejected_count = requests|selectattr("status", "equalto", "Rejected")|list|length %}
+        {% set total_approved_amount = requests|selectattr("status", "equalto", "Approved")|sum(attribute="total_amount") %}
         
         <div class="col-md-3">
             <div class="card bg-warning text-dark">
@@ -167,11 +167,11 @@
                                     <strong>€{{ "%.2f"|format(req.total_amount or 0) }}</strong>
                                 </td>
                                 <td>
-                                    {% if req.status == 'pending' %}
+                                    {% if req.status == 'Pending' %}
                                         <span class="badge bg-warning">In Attesa</span>
-                                    {% elif req.status == 'approved' %}
+                                    {% elif req.status == 'Approved' %}
                                         <span class="badge bg-success">Approvata</span>
-                                    {% elif req.status == 'rejected' %}
+                                    {% elif req.status == 'Rejected' %}
                                         <span class="badge bg-danger">Rifiutata</span>
                                     {% endif %}
                                 </td>
@@ -183,7 +183,7 @@
                                         </button>
                                         
                                         <!-- Approvazione (solo per pending) -->
-                                        {% if req.status == 'pending' and current_user.can_approve_mileage_requests() %}
+                                        {% if req.status == 'Pending' and current_user.can_approve_mileage_requests() %}
                                             <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#approveModal{{ req.id }}">
                                                 <i class="fas fa-check"></i>
                                             </button>
@@ -264,14 +264,14 @@
                         
                         <h6><i class="fas fa-info-circle me-1"></i>Stato</h6>
                         <p>
-                            {% if req.status == 'pending' %}
+                            {% if req.status == 'Pending' %}
                                 <span class="badge bg-warning">In Attesa di Approvazione</span>
-                            {% elif req.status == 'approved' %}
+                            {% elif req.status == 'Approved' %}
                                 <span class="badge bg-success">Approvata</span>
                                 {% if req.approver %}
                                     <br><small>da {{ req.approver.get_full_name() }} il {{ req.approved_at.strftime('%d/%m/%Y %H:%M') }}</small>
                                 {% endif %}
-                            {% elif req.status == 'rejected' %}
+                            {% elif req.status == 'Rejected' %}
                                 <span class="badge bg-danger">Rifiutata</span>
                                 {% if req.approver %}
                                     <br><small>da {{ req.approver.get_full_name() }} il {{ req.approved_at.strftime('%d/%m/%Y %H:%M') }}</small>
@@ -320,7 +320,7 @@
 </div>
 
 <!-- Modal per approvazione/rifiuto -->
-{% if req.status == 'pending' and current_user.can_approve_mileage_requests() %}
+{% if req.status == 'Pending' and current_user.can_approve_mileage_requests() %}
 <div class="modal fade" id="approveModal{{ req.id }}" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
