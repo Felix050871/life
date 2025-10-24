@@ -38,10 +38,11 @@ The platform features a modern, responsive dark-themed Bootstrap design. It incl
 - **Database**: Exclusively designed for PostgreSQL.
 
 ### Feature Specifications
-- **FLOW**: Attendance tracking (live and manual monthly timesheets), intelligent shift scheduling, leave request workflow, overtime and mileage reimbursements, time bank (Banca ore), on-call duty management (Reperibilità), HR data management, and reports.
+- **FLOW**: Attendance tracking (live and manual monthly timesheets), intelligent shift scheduling, leave request workflow, overtime and mileage reimbursements, time bank (Banca ore), on-call duty management (Reperibilità), HR data management, project/job management (Commesse), and reports.
 - **CIRCLE**: News feed and announcements (posts, comments, likes, optional email notifications), company history, groups, polls/surveys, company calendar, document management, tool links, and employee directory.
 - **HR Data Management**: Comprehensive employee information system with GDPR compliance. Features a `UserHRData` model for sensitive data, a three-tier "Sede" architecture distinguishing administrative, operational, and event-specific locations, and a three-section structure for contractual data, personal registry, and visits/training. Includes permission-based access, Excel export with Italian formatting, and multi-tenant isolation. Supports uploading vehicle registration documents.
 - **Overtime Management System**: Flexible system with two types: "Straordinario Pagato" (paid directly) and "Banca Ore" (accumulated in time bank). Configurable per employee with conditional UI for time bank features.
+- **Project/Job Management (Commesse)** (Added October 24, 2025): Complete CRUD system for managing client projects and jobs. Features include client tracking, project categorization by activity type, date range management, optional duration estimation (hours), project status tracking (attiva/in corso/chiusa), optional hourly rate (Tariffa Oraria), resource assignment via many-to-many relationships, progress tracking with visual indicators, deadline alerts, and estimated value calculation (duration × hourly rate). Multi-tenant isolated with company-scoped filtering. Blueprint: `blueprints/commesse.py`, Model: `Commessa` with `commessa_assignment` association table.
 
 ## External Dependencies
 - **PostgreSQL**: Primary database.

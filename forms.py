@@ -2112,8 +2112,8 @@ class CommessaForm(FlaskForm):
                           render_kw={'placeholder': 'Es: Sviluppo Software, Consulenza, etc.'})
     data_inizio = DateField('Data Inizio', validators=[DataRequired()], format='%Y-%m-%d')
     data_fine = DateField('Data Fine', validators=[DataRequired()], format='%Y-%m-%d')
-    durata_prevista_ore = IntegerField('Durata Prevista (ore)', validators=[DataRequired(), NumberRange(min=1)],
-                                      render_kw={'placeholder': 'Ore previste totali'})
+    durata_prevista_ore = IntegerField('Durata Prevista (ore)', validators=[Optional(), NumberRange(min=1)],
+                                      render_kw={'placeholder': 'Ore previste totali (opzionale)'})
     stato = SelectField('Stato', 
                        choices=[
                            ('attiva', 'Attiva'),
@@ -2122,8 +2122,8 @@ class CommessaForm(FlaskForm):
                        ],
                        default='attiva',
                        validators=[DataRequired()])
-    budget_ore = IntegerField('Budget Ore (opzionale)', validators=[Optional(), NumberRange(min=0)],
-                             render_kw={'placeholder': 'Budget ore (lascia vuoto se non definito)'})
+    tariffa_oraria = DecimalField('Tariffa Oraria (€)', validators=[Optional(), NumberRange(min=0)],
+                                 render_kw={'placeholder': 'Tariffa oraria in euro (opzionale)', 'step': '0.01'})
     note = TextAreaField('Note', validators=[Optional()],
                         render_kw={'placeholder': 'Note aggiuntive (opzionale)', 'rows': 3})
     submit = SubmitField('Salva Commessa')

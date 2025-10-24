@@ -74,6 +74,7 @@
                                     Dal {{ commessa.data_inizio.strftime('%d/%m/%Y') }} al {{ commessa.data_fine.strftime('%d/%m/%Y') }}
                                 </div>
                             </div>
+                            {% if commessa.durata_prevista_ore %}
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <strong>Durata Prevista:</strong>
@@ -82,13 +83,14 @@
                                     {{ commessa.durata_prevista_ore }} ore
                                 </div>
                             </div>
-                            {% if commessa.budget_ore %}
+                            {% endif %}
+                            {% if commessa.tariffa_oraria %}
                             <div class="row mb-3">
                                 <div class="col-md-4">
-                                    <strong>Budget Ore:</strong>
+                                    <strong>Tariffa Oraria:</strong>
                                 </div>
                                 <div class="col-md-8">
-                                    {{ commessa.budget_ore }} ore
+                                    € {{ "%.2f"|format(commessa.tariffa_oraria) }}
                                 </div>
                             </div>
                             {% endif %}
@@ -136,15 +138,16 @@
                         </div>
                     </div>
                     
-                    <!-- Riepilogo budget -->
-                    {% if commessa.budget_ore %}
+                    <!-- Riepilogo durata e tariffa -->
+                    {% if commessa.durata_prevista_ore or commessa.tariffa_oraria %}
                     <div class="card">
                         <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Budget Ore</h6>
+                            <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Riepilogo Ore</h6>
                         </div>
                         <div class="card-body">
+                            {% if commessa.durata_prevista_ore %}
                             <div class="mb-2">
-                                <strong>Budget:</strong> {{ commessa.budget_ore }} ore
+                                <strong>Durata prevista:</strong> {{ commessa.durata_prevista_ore }} ore
                             </div>
                             <div class="mb-2">
                                 <strong>Consumate:</strong> {{ commessa.get_ore_consumate() }} ore
@@ -164,6 +167,18 @@
                                     {{ commessa.get_percentuale_completamento() }}%
                                 </div>
                             </div>
+                            {% endif %}
+                            {% if commessa.tariffa_oraria %}
+                            <hr>
+                            <div class="mb-0">
+                                <strong>Tariffa oraria:</strong> € {{ "%.2f"|format(commessa.tariffa_oraria) }}
+                            </div>
+                            {% if commessa.durata_prevista_ore %}
+                            <div class="text-muted mt-2">
+                                <small>Valore stimato: € {{ "%.2f"|format(commessa.durata_prevista_ore * commessa.tariffa_oraria) }}</small>
+                            </div>
+                            {% endif %}
+                            {% endif %}
                         </div>
                     </div>
                     {% endif %}

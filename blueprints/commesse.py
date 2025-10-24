@@ -106,7 +106,7 @@ def create_commessa():
             data_fine=form.data_fine.data,
             durata_prevista_ore=form.durata_prevista_ore.data,
             stato=form.stato.data,
-            budget_ore=form.budget_ore.data,
+            tariffa_oraria=form.tariffa_oraria.data,
             note=form.note.data,
             created_by_id=current_user.id
         )
@@ -137,7 +137,7 @@ def edit_commessa(commessa_id):
         commessa.data_fine = form.data_fine.data
         commessa.durata_prevista_ore = form.durata_prevista_ore.data
         commessa.stato = form.stato.data
-        commessa.budget_ore = form.budget_ore.data
+        commessa.tariffa_oraria = form.tariffa_oraria.data
         commessa.note = form.note.data
         
         db.session.commit()

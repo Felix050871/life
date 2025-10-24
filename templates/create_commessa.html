@@ -133,11 +133,11 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.budget_ore.label(class="form-label") }}
-                                    {{ form.budget_ore(class="form-control" + (" is-invalid" if form.budget_ore.errors else "")) }}
-                                    {% if form.budget_ore.errors %}
+                                    {{ form.tariffa_oraria.label(class="form-label") }}
+                                    {{ form.tariffa_oraria(class="form-control" + (" is-invalid" if form.tariffa_oraria.errors else "")) }}
+                                    {% if form.tariffa_oraria.errors %}
                                     <div class="invalid-feedback">
-                                        {% for error in form.budget_ore.errors %}{{ error }}{% endfor %}
+                                        {% for error in form.tariffa_oraria.errors %}{{ error }}{% endfor %}
                                     </div>
                                     {% endif %}
                                     <small class="form-text text-muted">Lascia vuoto se non definito</small>

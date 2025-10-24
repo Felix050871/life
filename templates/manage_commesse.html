@@ -104,7 +104,7 @@
                                     <th>Periodo</th>
                                     <th>Stato</th>
                                     <th>Scadenza</th>
-                                    <th>Budget Ore</th>
+                                    <th>Tariffa Oraria</th>
                                     <th>Risorse</th>
                                     <th>Azioni</th>
                                 </tr>
@@ -141,8 +141,8 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if commessa.budget_ore %}
-                                        {{ commessa.budget_ore }} ore
+                                        {% if commessa.tariffa_oraria %}
+                                        € {{ "%.2f"|format(commessa.tariffa_oraria) }}
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}

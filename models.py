@@ -3871,9 +3871,9 @@ class Commessa(db.Model):
     attivita = db.Column(db.String(100), nullable=False)
     data_inizio = db.Column(db.Date, nullable=False)
     data_fine = db.Column(db.Date, nullable=False)
-    durata_prevista_ore = db.Column(db.Integer, nullable=False)
+    durata_prevista_ore = db.Column(db.Integer, nullable=True)
     stato = db.Column(db.String(20), nullable=False, default='attiva')  # 'attiva', 'in corso', 'chiusa'
-    budget_ore = db.Column(db.Integer, nullable=True)
+    tariffa_oraria = db.Column(db.Numeric(10, 2), nullable=True)
     note = db.Column(db.Text, nullable=True)
     
     # Multi-tenant
@@ -3903,15 +3903,15 @@ class Commessa(db.Model):
     
     def get_ore_residue(self):
         """Calcola le ore residue della commessa"""
-        if self.budget_ore:
-            return self.budget_ore - self.get_ore_consumate()
+        if self.durata_prevista_ore:
+            return self.durata_prevista_ore - self.get_ore_consumate()
         return None
     
     def get_percentuale_completamento(self):
         """Calcola la percentuale di completamento"""
-        if self.budget_ore and self.budget_ore > 0:
+        if self.durata_prevista_ore and self.durata_prevista_ore > 0:
             ore_consumate = self.get_ore_consumate()
-            return min(100, int((ore_consumate / self.budget_ore) * 100))
+            return min(100, int((ore_consumate / self.durata_prevista_ore) * 100))
         return 0
     
     def is_scaduta(self):
