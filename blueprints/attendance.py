@@ -971,11 +971,11 @@ def manual_timesheet():
         AttendanceEvent.date <= last_day
     ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
     
-    # Ottieni ferie/permessi approvati nel mese
+    # Ottieni ferie/permessi approvati E in attesa nel mese
     from models import LeaveRequest
     leaves_query = filter_by_company(LeaveRequest.query).filter(
         LeaveRequest.user_id == current_user.id,
-        LeaveRequest.status == 'Approved',
+        LeaveRequest.status.in_(['Approved', 'Pending']),  # Include sia approvate che in attesa
         LeaveRequest.start_date <= last_day,
         LeaveRequest.end_date >= first_day
     ).all()

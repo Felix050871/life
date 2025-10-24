@@ -94,7 +94,16 @@
                                         {% if day_data.is_future %}
                                         <small class="text-muted d-block"><i class="fas fa-clock"></i> Futuro</small>
                                         {% elif day_data.has_leave %}
-                                        <small class="text-warning d-block"><i class="fas fa-umbrella-beach"></i> {{ day_data.leave_type }}</small>
+                                        <small class="text-warning d-block">
+                                            {% if 'Malattia' in day_data.leave_type %}
+                                            <i class="fas fa-thermometer-half" style="color: #fd7e14;"></i>
+                                            {% elif 'Ferie' in day_data.leave_type %}
+                                            <i class="fas fa-umbrella-beach" style="color: #28a745;"></i>
+                                            {% else %}
+                                            <i class="fas fa-clock" style="color: #6f42c1;"></i>
+                                            {% endif %}
+                                            {{ day_data.leave_type }}
+                                        </small>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -128,7 +137,14 @@
                                     <td class="status-cell" id="status_{{ day_data.day }}">
                                         {% if day_data.has_leave %}
                                         <span class="badge bg-warning text-dark" title="{{ day_data.leave_type }}">
-                                            <i class="fas fa-umbrella-beach"></i> {{ day_data.leave_type }}
+                                            {% if 'Malattia' in day_data.leave_type %}
+                                            <i class="fas fa-thermometer-half" style="color: #fd7e14;"></i>
+                                            {% elif 'Ferie' in day_data.leave_type %}
+                                            <i class="fas fa-umbrella-beach" style="color: #28a745;"></i>
+                                            {% else %}
+                                            <i class="fas fa-clock" style="color: #6f42c1;"></i>
+                                            {% endif %}
+                                            {{ day_data.leave_type }}
                                         </span>
                                         {% elif day_data.has_manual and day_data.has_live %}
                                         <span class="badge bg-warning text-dark" title="Dati misti: Live e Manuale">
