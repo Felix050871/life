@@ -639,15 +639,15 @@ document.addEventListener('DOMContentLoaded', function() {
         modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
         
         if (tipo) {
-            fetch(`/api/aci/marche/${encodeURIComponent(tipo)}`)
+            fetch(`/aci/api/marcas?tipologia=${encodeURIComponent(tipo)}`)
                 .then(response => response.json())
                 .then(data => {
                     marcaSelect.innerHTML = '<option value="">Seleziona marca</option>';
-                    if (data.success && data.marche.length > 0) {
-                        data.marche.forEach(marca => {
+                    if (data.success && data.marcas && data.marcas.length > 0) {
+                        data.marcas.forEach(marca => {
                             const option = document.createElement('option');
-                            option.value = marca[0];
-                            option.textContent = marca[1];
+                            option.value = marca;
+                            option.textContent = marca;
                             marcaSelect.appendChild(option);
                         });
                         marcaSelect.disabled = false;
@@ -670,15 +670,15 @@ document.addEventListener('DOMContentLoaded', function() {
         modelloSelect.innerHTML = '<option value="">Caricamento...</option>';
         
         if (tipo && marca) {
-            fetch(`/api/aci/modelli/${encodeURIComponent(tipo)}/${encodeURIComponent(marca)}`)
+            fetch(`/aci/api/modelos?tipologia=${encodeURIComponent(tipo)}&marca=${encodeURIComponent(marca)}`)
                 .then(response => response.json())
                 .then(data => {
                     modelloSelect.innerHTML = '<option value="">Seleziona modello</option>';
-                    if (data.success && data.modelli.length > 0) {
-                        data.modelli.forEach(modello => {
+                    if (data.success && data.modelos && data.modelos.length > 0) {
+                        data.modelos.forEach(item => {
                             const option = document.createElement('option');
-                            option.value = modello[0];
-                            option.textContent = modello[1];
+                            option.value = item.id;
+                            option.textContent = `${item.modello} (€${item.costo_km}/km)`;
                             modelloSelect.appendChild(option);
                         });
                         modelloSelect.disabled = false;

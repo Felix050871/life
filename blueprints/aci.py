@@ -406,10 +406,6 @@ def bulk_delete():
 @login_required
 def api_marcas():
     """API per ottenere le marche filtrate per tipologia"""
-    # Verifica permessi con risposta JSON
-    if not current_user.is_authenticated or current_user.role not in ['Admin', 'Amministratore']:
-        return jsonify({'success': False, 'error': 'Accesso non autorizzato'}), 403
-        
     tipologia = request.args.get('tipologia')
     
     try:
@@ -430,27 +426,29 @@ def api_marcas():
 @aci_bp.route("/api/modelos")
 @login_required
 def api_modelos():
-    """API per ottenere i modelli filtrati per tipologia e marca"""
-    # Verifica permessi con risposta JSON
-    if not current_user.is_authenticated or current_user.role not in ['Admin', 'Amministratore']:
-        return jsonify({'success': False, 'error': 'Accesso non autorizzato'}), 403
-        
+    """API per ottenere i modelli filtrati per tipologia e marca con ID e costo km"""
     tipologia = request.args.get('tipologia')
     marca = request.args.get('marca')
     
     try:
-        # Query con filtro company
-        base_query = filter_by_company(ACITable.query)
-        query = db.session.query(ACITable.modello).distinct().filter(ACITable.id.in_(
-            db.session.query(ACITable.id).select_from(base_query.subquery())
-        ))
+        # Query con filtro company - ritorna record completi invece di solo i nomi
+        query = filter_by_company(ACITable.query)
         
         if tipologia:
             query = query.filter(ACITable.tipologia == tipologia)
         if marca:
             query = query.filter(ACITable.marca == marca)
         
-        modelos = [row.modello for row in query.order_by(ACITable.modello).all()]
+        # Ritorna record completi con id, modello e costo_km
+        vehicles = query.order_by(ACITable.modello).all()
+        modelos = [
+            {
+                'id': v.id,
+                'modello': v.modello,
+                'costo_km': float(v.costo_km) if v.costo_km else 0.0
+            }
+            for v in vehicles
+        ]
         return jsonify({'success': True, 'modelos': modelos})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
