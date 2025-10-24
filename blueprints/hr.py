@@ -310,23 +310,26 @@ def hr_list():
         
         users_data = filtered_data
     
-    # Ricalcola statistiche sui dati filtrati
-    total_employees = len(users_data)
-    with_hr_data = sum(1 for d in users_data if d['has_data'])
-    active_contracts = sum(1 for d in users_data if d['contract_status'] == 'Attivo')
-    in_probation = sum(1 for d in users_data if d['is_probation'])
+    # Ricalcola statistiche sui dati filtrati - SOLO CONTRATTI ATTIVI
+    # I dipendenti con contratti non attivi sono solo storico, non vanno conteggiati
+    active_employees_data = [d for d in users_data if d['contract_status'] == 'Attivo']
     
-    female_count = sum(1 for d in users_data if d['gender'] == 'F')
-    male_count = sum(1 for d in users_data if d['gender'] == 'M')
-    under_36 = sum(1 for d in users_data if d['age'] is not None and d['age'] < 36)
+    total_employees = len(active_employees_data)
+    with_hr_data = sum(1 for d in active_employees_data if d['has_data'])
+    active_contracts = len(active_employees_data)  # Tutti sono attivi per definizione
+    in_probation = sum(1 for d in active_employees_data if d['is_probation'])
     
-    tempo_indeterminato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Indeterminato')
-    tempo_determinato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Determinato')
+    female_count = sum(1 for d in active_employees_data if d['gender'] == 'F')
+    male_count = sum(1 for d in active_employees_data if d['gender'] == 'M')
+    under_36 = sum(1 for d in active_employees_data if d['age'] is not None and d['age'] < 36)
     
-    # Statistiche criticità
-    contracts_expiring = sum(1 for d in users_data if d['contract_expiring'])
-    expired_certifications = sum(1 for d in users_data if d['has_expired_certs'])
-    expiring_certifications = sum(1 for d in users_data if d['has_expiring_certs'])
+    tempo_indeterminato = sum(1 for d in active_employees_data if d['contract_type'] == 'Tempo Indeterminato')
+    tempo_determinato = sum(1 for d in active_employees_data if d['contract_type'] == 'Tempo Determinato')
+    
+    # Statistiche criticità (già filtrate per contratti attivi nella logica precedente)
+    contracts_expiring = sum(1 for d in active_employees_data if d['contract_expiring'])
+    expired_certifications = sum(1 for d in active_employees_data if d['has_expired_certs'])
+    expiring_certifications = sum(1 for d in active_employees_data if d['has_expiring_certs'])
     
     statistics = {
         'total_employees': total_employees,
