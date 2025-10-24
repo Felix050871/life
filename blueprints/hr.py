@@ -140,7 +140,7 @@ def get_worst_expiry_status(hr_data):
 def hr_list():
     """Lista dipendenti con dati HR con filtri personalizzabili"""
     
-    # Gestione POST - salva configurazione filtri e reindirizza all'export o mostra lista filtrata
+    # Gestione POST - salva configurazione filtri e mostra lista filtrata
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -161,12 +161,14 @@ def hr_list():
         if action == 'export':
             return redirect(url_for('hr.hr_export'))
         
-        # Altrimenti refresh con filtri applicati (apply_filters)
-        flash(f'Filtri applicati: {len(filters)} attivi', 'success')
-    
-    # Ottieni filtri da session (solo se esistono e non sono vuoti)
-    active_filters = session.get('hr_export_filters')
-    if not active_filters or len(active_filters) == 0:
+        # Altrimenti mostra lista filtrata (non fare redirect, gestisci tutto nel POST)
+        if filters:
+            flash(f'Filtri applicati: {len(filters)} attivi', 'success')
+        active_filters = filters if filters else None
+    else:
+        # GET: azzera sempre i filtri (nuova visita alla pagina)
+        session.pop('hr_export_filters', None)
+        session.pop('hr_export_fields', None)
         active_filters = None
     
     # Ottieni tutti gli utenti con dati HR (esclusi admin di sistema e ruolo Admin/Amministratore)
