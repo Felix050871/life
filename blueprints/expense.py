@@ -266,7 +266,7 @@ def approve_expense_report(expense_id):
         flash('Non hai i permessi per approvare questa nota spese', 'danger')
         return redirect(url_for('expense.expense_reports'))
     
-    if expense.status != 'pending':
+    if expense.status != 'Pending':
         flash('Questa nota spese è già stata processata', 'warning')
         return redirect(url_for('expense.expense_reports'))
     
@@ -327,7 +327,7 @@ def delete_expense_report(expense_id):
         return redirect(url_for('expense.expense_reports'))
     
     # Solo note in attesa possono essere eliminate
-    if expense.status != 'pending':
+    if expense.status != 'Pending':
         flash('Solo le note spese in attesa possono essere eliminate', 'warning')
         return redirect(url_for('expense.expense_reports'))
     
@@ -666,7 +666,7 @@ def approve_overtime_request(request_id):
     # Invia notifica automatica all'utente (se la funzione esiste)
     try:
         from utils import send_overtime_request_message
-        send_overtime_request_message(overtime_request, 'approved', current_user)
+        send_overtime_request_message(overtime_request, 'Approved', current_user)
     except ImportError:
         pass  # Funzione di notifica non disponibile
     
@@ -701,7 +701,7 @@ def reject_overtime_request(request_id):
     # Invia notifica automatica all'utente (se la funzione esiste)
     try:
         from utils import send_overtime_request_message
-        send_overtime_request_message(overtime_request, 'rejected', current_user)
+        send_overtime_request_message(overtime_request, 'Rejected', current_user)
     except ImportError:
         pass  # Funzione di notifica non disponibile
     
@@ -719,7 +719,7 @@ def delete_overtime_request(request_id):
         flash('Non puoi cancellare richieste di altri utenti.', 'warning')
         return redirect(url_for('expense.my_overtime_requests'))
     
-    if overtime_request.status != 'pending':
+    if overtime_request.status != 'Pending':
         flash('Non puoi cancellare richieste già approvate o rifiutate.', 'warning')
         return redirect(url_for('expense.my_overtime_requests'))
     

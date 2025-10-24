@@ -11,6 +11,9 @@ The platform aims to reduce bureaucracy, enhance productivity, and foster corpor
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Updates (October 24, 2025)
+**Status Field Normalization**: Completed comprehensive system-wide status value normalization from lowercase to capitalized format for all request/approval entities (LeaveRequest, OvertimeRequest, MileageRequest, ExpenseReport, ConnectionRequest, CircleGroupMembershipRequest). All status values now use consistent capitalization: 'Pending', 'Approved', 'Rejected', 'Accepted'. Changes include model defaults, property methods, blueprint logic, template comparisons (==, !=, in, selectattr), and database data migration. This ensures uniform behavior across all status checks and prevents filtering bugs.
+
 ## System Architecture
 
 ### Core Technologies

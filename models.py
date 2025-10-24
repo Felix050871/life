@@ -900,7 +900,7 @@ class User(UserMixin, db.Model):
                     ConnectionRequest.recipient_id == self.id
                 )
             ),
-            ConnectionRequest.status == 'accepted'
+            ConnectionRequest.status == 'Accepted'
         ).first()
         return connection is not None
     
@@ -950,7 +950,7 @@ class User(UserMixin, db.Model):
             ConnectionRequest.recipient_id == User.id
         ).filter(
             ConnectionRequest.sender_id == self.id,
-            ConnectionRequest.status == 'accepted'
+            ConnectionRequest.status == 'Accepted'
         ).all()
         
         # Richieste ricevute e accettate
@@ -959,7 +959,7 @@ class User(UserMixin, db.Model):
             ConnectionRequest.sender_id == User.id
         ).filter(
             ConnectionRequest.recipient_id == self.id,
-            ConnectionRequest.status == 'accepted'
+            ConnectionRequest.status == 'Accepted'
         ).all()
         
         # Unisci e rimuovi duplicati
@@ -970,7 +970,7 @@ class User(UserMixin, db.Model):
         """Restituisce tutte le richieste di connessione pendenti ricevute"""
         return ConnectionRequest.query.filter_by(
             recipient_id=self.id,
-            status='pending'
+            status='Pending'
         ).all()
 
 
@@ -2801,7 +2801,7 @@ class ExpenseReport(db.Model):
     
     def approve(self, approver, comment=None):
         """Approva la nota spese"""
-        self.status = 'approved'
+        self.status = 'Approved'
         self.approved_by = approver.id
         self.approved_at = italian_now()
         self.approval_comment = comment
@@ -2811,7 +2811,7 @@ class ExpenseReport(db.Model):
     
     def reject(self, approver, comment=None):
         """Rifiuta la nota spese"""
-        self.status = 'rejected'
+        self.status = 'Rejected'
         self.approved_by = approver.id
         self.approved_at = italian_now()
         self.approval_comment = comment
@@ -2844,7 +2844,7 @@ class ExpenseReport(db.Model):
         db.session.add(notification)
     
     @classmethod
-    def get_monthly_total(cls, employee_id, year, month, status='approved'):
+    def get_monthly_total(cls, employee_id, year, month, status='Approved'):
         """Calcola il totale mensile delle note spese per un dipendente"""
         from sqlalchemy import extract, func
         
@@ -2858,7 +2858,7 @@ class ExpenseReport(db.Model):
         return result or 0
     
     @classmethod
-    def get_yearly_total(cls, employee_id, year, status='approved'):
+    def get_yearly_total(cls, employee_id, year, status='Approved'):
         """Calcola il totale annuale delle note spese per un dipendente"""
         from sqlalchemy import extract, func
         
@@ -2975,7 +2975,7 @@ class OvertimeRequest(db.Model):
     
     def approve(self, approver, comment=None):
         """Approva la richiesta di straordinario"""
-        self.status = 'approved'
+        self.status = 'Approved'
         self.approved_by = approver.id
         self.approved_at = italian_now()
         self.approval_comment = comment
@@ -2985,7 +2985,7 @@ class OvertimeRequest(db.Model):
     
     def reject(self, approver, comment=None):
         """Rifiuta la richiesta di straordinario"""
-        self.status = 'rejected'
+        self.status = 'Rejected'
         self.approved_by = approver.id
         self.approved_at = italian_now()
         self.approval_comment = comment
@@ -3023,7 +3023,7 @@ class OvertimeRequest(db.Model):
             pass
 
     @classmethod
-    def get_monthly_hours(cls, employee_id, year, month, status='approved'):
+    def get_monthly_hours(cls, employee_id, year, month, status='Approved'):
         """Calcola il totale mensile delle ore di straordinario per un dipendente"""
         from sqlalchemy import extract, func
         
@@ -3149,7 +3149,7 @@ class MileageRequest(db.Model):
     
     def approve(self, approver, comment=None):
         """Approva la richiesta di rimborso chilometrico"""
-        self.status = 'approved'
+        self.status = 'Approved'
         self.approved_by = approver.id
         self.approved_at = italian_now()
         self.approval_comment = comment
@@ -3165,7 +3165,7 @@ class MileageRequest(db.Model):
     
     def reject(self, approver, comment=None):
         """Rifiuta la richiesta di rimborso chilometrico"""
-        self.status = 'rejected'
+        self.status = 'Rejected'
         self.approved_by = approver.id
         self.approved_at = italian_now()
         self.approval_comment = comment
@@ -3202,7 +3202,7 @@ class MileageRequest(db.Model):
     @classmethod
     def get_pending_count_for_user(cls, user):
         """Restituisce il numero di richieste in attesa per l'utente"""
-        query = cls.query.filter_by(status='pending')
+        query = cls.query.filter_by(status='Pending')
         
         if user.all_sedi:
             return query.count()
@@ -3223,9 +3223,9 @@ class MileageRequest(db.Model):
         )
         
         # Calcola totali per stato
-        pending = query.filter_by(status='pending').all()
-        approved = query.filter_by(status='approved').all()
-        rejected = query.filter_by(status='rejected').all()
+        pending = query.filter_by(status='Pending').all()
+        approved = query.filter_by(status='Approved').all()
+        rejected = query.filter_by(status='Rejected').all()
         
         return {
             'pending_count': len(pending),
@@ -3575,7 +3575,7 @@ class CircleGroup(db.Model):
         return CircleGroupMembershipRequest.query.filter_by(
             group_id=self.id,
             user_id=user.id,
-            status='pending'
+            status='Pending'
         ).first() is not None
     
     def can_access(self, user):

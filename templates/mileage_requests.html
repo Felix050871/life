@@ -190,7 +190,7 @@
                                         {% endif %}
                                         
                                         <!-- Cancellazione -->
-                                        {% if req.status != 'approved' and (req.user_id == current_user.id or current_user.can_manage_mileage_requests()) %}
+                                        {% if req.status != 'Approved' and (req.user_id == current_user.id or current_user.can_manage_mileage_requests()) %}
                                             <form method="POST" action="{{ url_for('expense.delete_mileage_request', request_id=req.id) }}" style="display: inline;" onsubmit="return confirm('Sei sicuro di voler cancellare questa richiesta?')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <button type="submit" class="btn btn-outline-danger">
