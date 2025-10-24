@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Mansione - Life{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-edit me-2"></i>Modifica Mansione
+        </h1>
+        <a href="{{ url_for('mansioni.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Torna all'Elenco
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-briefcase me-2"></i>Dati Mansione
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('mansioni.edit', id=mansione.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="mb-3">
+                            <label for="nome" class="form-label">Nome Mansione <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nome" name="nome" required maxlength="200" value="{{ mansione.nome }}">
+                            <small class="form-text text-muted">Il nome della mansione deve essere univoco</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="descrizione" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="descrizione" name="descrizione" rows="4">{{ mansione.descrizione or '' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="active" name="active" {% if mansione.active %}checked{% endif %}>
+                                <label class="form-check-label" for="active">
+                                    Mansione attiva
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Le mansioni disattivate non sono selezionabili nei profili HR</small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('mansioni.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Annulla
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Salva Modifiche
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

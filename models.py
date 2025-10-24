@@ -228,6 +228,8 @@ class UserRole(db.Model):
             
             # HR - Human Resources
             'can_manage_hr_data': 'Gestire Dati HR',
+            'can_manage_mansioni': 'Gestire Mansionario',
+            'can_view_mansioni': 'Visualizzare Mansionario',
             'can_view_hr_data': 'Visualizzare Tutti i Dati HR',
             'can_view_my_hr_data': 'Visualizzare I Miei Dati HR',
             
@@ -707,6 +709,19 @@ class User(UserMixin, db.Model):
     def can_access_hr_menu(self):
         """Accesso al menu HR"""
         return self.can_manage_hr_data() or self.can_view_hr_data() or self.can_view_my_hr_data()
+    
+    # === MANSIONARIO - JOB TITLE MANAGEMENT ===
+    def can_manage_mansioni(self):
+        """Gestire mansionario (creare, modificare, eliminare)"""
+        return self.has_permission('can_manage_mansioni')
+    
+    def can_view_mansioni(self):
+        """Visualizzare mansionario"""
+        return self.has_permission('can_view_mansioni')
+    
+    def can_access_mansioni_menu(self):
+        """Accesso al menu Mansionario"""
+        return self.can_manage_mansioni() or self.can_view_mansioni()
     
     # === COMMESSE - PROJECT MANAGEMENT ===
     def can_manage_commesse(self):
@@ -3869,6 +3884,41 @@ class ConnectionRequest(db.Model):
 
 # =============================================================================
 # PROJECT MANAGEMENT MODELS (COMMESSE)
+# =============================================================================
+
+# =============================================================================
+# MANSIONARIO - JOB TITLE MANAGEMENT
+# =============================================================================
+
+class Mansione(db.Model):
+    """Modello per la gestione del mansionario aziendale"""
+    __tablename__ = 'mansione'
+    __table_args__ = (
+        db.UniqueConstraint('nome', 'company_id', name='_nome_company_uc'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(200), nullable=False)
+    descrizione = db.Column(db.Text, nullable=True)
+    active = db.Column(db.Boolean, default=True)
+    
+    # Multi-tenant
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    # Relationships
+    company = db.relationship('Company', backref='mansioni')
+    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='created_mansioni')
+    
+    def __repr__(self):
+        return f'<Mansione {self.nome}>'
+
+# =============================================================================
+# COMMESSE - PROJECT/JOB MANAGEMENT
 # =============================================================================
 
 # Tabella di associazione many-to-many tra User e Commessa
