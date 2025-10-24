@@ -37,6 +37,97 @@ def require_hr_permission(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def get_expiry_status(expiry_date):
+    """
+    Calcola lo stato di scadenza in base ai giorni rimanenti
+    Returns: dict con 'status' (ok/warning/danger/expired), 'color', 'days_left', 'text'
+    """
+    if not expiry_date:
+        return None
+    
+    today = date.today()
+    days_left = (expiry_date - today).days
+    
+    if days_left < 0:
+        # Scaduta
+        return {
+            'status': 'expired',
+            'color': 'danger',
+            'icon': 'fa-times-circle',
+            'days_left': days_left,
+            'text': f'Scaduta da {abs(days_left)} giorni'
+        }
+    elif days_left <= 30:
+        # < 1 mese - arancione
+        return {
+            'status': 'urgent',
+            'color': 'warning',
+            'icon': 'fa-exclamation-triangle',
+            'days_left': days_left,
+            'text': f'Scade tra {days_left} giorni'
+        }
+    elif days_left <= 90:
+        # < 3 mesi - giallo
+        return {
+            'status': 'warning',
+            'color': 'orange',
+            'icon': 'fa-exclamation-circle',
+            'days_left': days_left,
+            'text': f'Scade tra {days_left} giorni'
+        }
+    else:
+        # > 3 mesi - verde
+        return {
+            'status': 'ok',
+            'color': 'success',
+            'icon': 'fa-check-circle',
+            'days_left': days_left,
+            'text': f'Valida per {days_left} giorni'
+        }
+
+def get_worst_expiry_status(hr_data):
+    """
+    Ottiene lo stato peggiore tra tutte le scadenze di un dipendente
+    Returns: dict con info sulla scadenza più critica
+    """
+    if not hr_data:
+        return None
+    
+    expiries = [
+        ('Visita Medica', hr_data.medical_visit_expiry),
+        ('Form. Generale', hr_data.training_general_expiry),
+        ('RSPP', hr_data.training_rspp_expiry),
+        ('RLS', hr_data.training_rls_expiry),
+        ('Primo Soccorso', hr_data.training_first_aid_expiry),
+        ('Emergenza', hr_data.training_emergency_expiry),
+        ('Preposto', hr_data.training_supervisor_expiry),
+    ]
+    
+    worst_status = None
+    worst_priority = 999  # ok=3, warning=2, urgent=1, expired=0
+    worst_name = None
+    
+    priority_map = {
+        'expired': 0,
+        'urgent': 1,
+        'warning': 2,
+        'ok': 3
+    }
+    
+    for name, expiry_date in expiries:
+        status = get_expiry_status(expiry_date)
+        if status:
+            priority = priority_map.get(status['status'], 999)
+            if priority < worst_priority:
+                worst_priority = priority
+                worst_status = status
+                worst_name = name
+    
+    if worst_status:
+        worst_status['name'] = worst_name
+    
+    return worst_status
+
 # =============================================================================
 # HR ROUTES
 # =============================================================================
@@ -63,6 +154,9 @@ def hr_list():
         hr_data = user.hr_data
         age = hr_data.get_age() if hr_data else None
         
+        # Calcola stato scadenze
+        expiry_status = get_worst_expiry_status(hr_data)
+        
         users_data.append({
             'user': user,
             'hr_data': hr_data,  # Pass the actual object so template can access sede relationship
@@ -75,6 +169,7 @@ def hr_list():
             'gender': hr_data.gender if hr_data else None,
             'age': age,
             'birth_city': hr_data.birth_city if hr_data else None,
+            'expiry_status': expiry_status,
         })
     
     # Calcola statistiche

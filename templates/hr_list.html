@@ -255,6 +255,7 @@
                         <th>Sede</th>
                         <th>Tipo Contratto</th>
                         <th>Data Assunzione</th>
+                        <th>Certificazioni</th>
                         <th>Stato</th>
                         <th>Azioni</th>
                     </tr>
@@ -307,6 +308,41 @@
                         </td>
                         <td>{{ data.contract_type }}</td>
                         <td>{{ data.hire_date }}</td>
+                        <td class="text-center">
+                            {% if data.expiry_status %}
+                                {% if data.expiry_status.color == 'danger' %}
+                                    <span class="badge bg-danger" 
+                                          data-bs-toggle="tooltip" 
+                                          data-bs-placement="top" 
+                                          title="{{ data.expiry_status.name }}: {{ data.expiry_status.text }}">
+                                        <i class="fas {{ data.expiry_status.icon }} me-1"></i>Scaduta
+                                    </span>
+                                {% elif data.expiry_status.color == 'warning' %}
+                                    <span class="badge bg-warning text-dark" 
+                                          data-bs-toggle="tooltip" 
+                                          data-bs-placement="top" 
+                                          title="{{ data.expiry_status.name }}: {{ data.expiry_status.text }}">
+                                        <i class="fas {{ data.expiry_status.icon }} me-1"></i>{{ data.expiry_status.days_left }}gg
+                                    </span>
+                                {% elif data.expiry_status.color == 'orange' %}
+                                    <span class="badge bg-info text-dark" 
+                                          data-bs-toggle="tooltip" 
+                                          data-bs-placement="top" 
+                                          title="{{ data.expiry_status.name }}: {{ data.expiry_status.text }}">
+                                        <i class="fas {{ data.expiry_status.icon }} me-1"></i>{{ data.expiry_status.days_left }}gg
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success" 
+                                          data-bs-toggle="tooltip" 
+                                          data-bs-placement="top" 
+                                          title="{{ data.expiry_status.name }}: {{ data.expiry_status.text }}">
+                                        <i class="fas {{ data.expiry_status.icon }} me-1"></i>OK
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted small">N/D</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if data.contract_status == 'Attivo' %}
                             <span class="badge bg-success">
@@ -337,7 +373,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             <i class="fas fa-info-circle me-2"></i>
                             Nessun dipendente trovato.
                         </td>
@@ -360,6 +396,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
     const searchInput = document.getElementById('searchInput');
     const filterGender = document.getElementById('filterGender');
     const filterSede = document.getElementById('filterSede');
