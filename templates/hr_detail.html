@@ -43,6 +43,7 @@
                         <option value="Stage/Tirocinio" {% if hr_data.contract_type == 'Stage/Tirocinio' %}selected{% endif %}>Stage/Tirocinio</option>
                         <option value="Collaborazione" {% if hr_data.contract_type == 'Collaborazione' %}selected{% endif %}>Collaborazione</option>
                         <option value="In Distacco" {% if hr_data.contract_type == 'In Distacco' %}selected{% endif %}>In Distacco</option>
+                        <option value="Consulente/P.IVA" {% if hr_data.contract_type == 'Consulente/P.IVA' %}selected{% endif %}>Consulente/P.IVA</option>
                         <option value="Altro" {% if hr_data.contract_type == 'Altro' %}selected{% endif %}>Altro</option>
                     </select>
                 </div>
@@ -53,6 +54,14 @@
                            placeholder="Nome azienda"
                            {% if not can_edit %}disabled{% endif %}>
                     <small class="text-muted">Azienda che fornisce il personale</small>
+                </div>
+                <div class="col-md-3 mb-3" id="consulente_vat_field" style="display: {% if hr_data.contract_type == 'Consulente/P.IVA' %}block{% else %}none{% endif %};">
+                    <label class="form-label">Partita IVA</label>
+                    <input type="text" name="consulente_vat" class="form-control" 
+                           value="{{ hr_data.consulente_vat or '' }}"
+                           placeholder="IT12345678901"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <small class="text-muted">Partita IVA del consulente</small>
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Data Assunzione</label>
@@ -661,16 +670,27 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gestione visibilità campo "Fornitore" per contratti "In Distacco"
+    // Gestione visibilità campi condizionali per tipo contratto
     const contractTypeSelect = document.getElementById('contract_type');
     const distaccoSupplierField = document.getElementById('distacco_supplier_field');
+    const consulenteVatField = document.getElementById('consulente_vat_field');
     
-    if (contractTypeSelect && distaccoSupplierField) {
+    if (contractTypeSelect && distaccoSupplierField && consulenteVatField) {
         contractTypeSelect.addEventListener('change', function() {
+            // Nascondi tutti i campi condizionali e azzera i loro valori
+            const distaccoInput = distaccoSupplierField.querySelector('input');
+            const consulenteInput = consulenteVatField.querySelector('input');
+            
+            distaccoSupplierField.style.display = 'none';
+            consulenteVatField.style.display = 'none';
+            if (distaccoInput) distaccoInput.value = '';
+            if (consulenteInput) consulenteInput.value = '';
+            
+            // Mostra solo il campo appropriato
             if (this.value === 'In Distacco') {
                 distaccoSupplierField.style.display = 'block';
-            } else {
-                distaccoSupplierField.style.display = 'none';
+            } else if (this.value === 'Consulente/P.IVA') {
+                consulenteVatField.style.display = 'block';
             }
         });
     }

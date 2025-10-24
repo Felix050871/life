@@ -949,6 +949,7 @@ class UserHRData(db.Model):
     # Dati contrattuali
     contract_type = db.Column(db.String(100), nullable=True)  # Tipo contratto (TD, TI, Stage, ecc.)
     distacco_supplier = db.Column(db.String(200), nullable=True)  # Azienda distaccante (solo per "In Distacco")
+    consulente_vat = db.Column(db.String(20), nullable=True)  # Partita IVA (solo per "Consulente/P.IVA")
     hire_date = db.Column(db.Date, nullable=True)  # Data assunzione
     contract_start_date = db.Column(db.Date, nullable=True)  # Data inizio contratto
     contract_end_date = db.Column(db.Date, nullable=True)  # Data fine contratto (solo TD)
