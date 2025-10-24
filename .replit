@@ -34,16 +34,16 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 34211
-externalPort = 3003
-
-[[ports]]
 localPort = 35755
 externalPort = 3000
 
 [[ports]]
 localPort = 40409
 externalPort = 3001
+
+[[ports]]
+localPort = 40527
+externalPort = 3002
 
 [agent]
 integrations = ["styling_replit==1.0.0", "python_database==1.0.0"]
