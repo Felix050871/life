@@ -35,7 +35,7 @@
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Tipologia Contratto</label>
-                    <select name="contract_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <select name="contract_type" id="contract_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
                         <option value="">Seleziona...</option>
                         <option value="Tempo Indeterminato" {% if hr_data.contract_type == 'Tempo Indeterminato' %}selected{% endif %}>Tempo Indeterminato</option>
                         <option value="Tempo Determinato" {% if hr_data.contract_type == 'Tempo Determinato' %}selected{% endif %}>Tempo Determinato</option>
@@ -45,6 +45,14 @@
                         <option value="In Distacco" {% if hr_data.contract_type == 'In Distacco' %}selected{% endif %}>In Distacco</option>
                         <option value="Altro" {% if hr_data.contract_type == 'Altro' %}selected{% endif %}>Altro</option>
                     </select>
+                </div>
+                <div class="col-md-3 mb-3" id="distacco_supplier_field" style="display: {% if hr_data.contract_type == 'In Distacco' %}block{% else %}none{% endif %};">
+                    <label class="form-label">Fornitore / Azienda Distaccante</label>
+                    <input type="text" name="distacco_supplier" class="form-control" 
+                           value="{{ hr_data.distacco_supplier or '' }}"
+                           placeholder="Nome azienda"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <small class="text-muted">Azienda che fornisce il personale</small>
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Data Assunzione</label>
@@ -653,6 +661,21 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Gestione visibilità campo "Fornitore" per contratti "In Distacco"
+    const contractTypeSelect = document.getElementById('contract_type');
+    const distaccoSupplierField = document.getElementById('distacco_supplier_field');
+    
+    if (contractTypeSelect && distaccoSupplierField) {
+        contractTypeSelect.addEventListener('change', function() {
+            if (this.value === 'In Distacco') {
+                distaccoSupplierField.style.display = 'block';
+            } else {
+                distaccoSupplierField.style.display = 'none';
+            }
+        });
+    }
+    
+    // Gestione cascading selection veicoli ACI
     const tipoSelect = document.getElementById('tipoVeicoloSelectHR');
     const marcaSelect = document.getElementById('marcaVeicoloSelectHR');
     const modelloSelect = document.getElementById('modelloVeicoloSelectHR');

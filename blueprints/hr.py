@@ -394,6 +394,7 @@ def hr_detail(user_id):
             
             # Dati contrattuali
             hr_data.contract_type = request.form.get('contract_type', '').strip() or None
+            hr_data.distacco_supplier = request.form.get('distacco_supplier', '').strip() or None
             
             hire_date_str = request.form.get('hire_date', '').strip()
             if hire_date_str:
@@ -855,7 +856,7 @@ def hr_export():
     headers = [
         # DATI CONTRATTUALI
         'COD SI', 'Cognome', 'Nome',  'Data Assunzione', 'Data Fine Rapporto',
-        'Tipologia Contratto', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 
+        'Tipologia Contratto', 'Fornitore', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 
         'Orario (h/sett.)', 'Tipologia Orario', '% Part Time', 'Tipo Part Time',
         'Sede di Assunzione', 'Cliente', 'Superminimo/SM Assorbibile', 'Rimborsi/Diarie',
         'Ticket', 'Rischio INAIL', 'Tipo di Assunzione', 'Altro/Note',
@@ -896,6 +897,7 @@ def hr_export():
             hr_data.hire_date.strftime('%d/%m/%Y') if hr_data and hr_data.hire_date else '',
             hr_data.contract_end_date.strftime('%d/%m/%Y') if hr_data and hr_data.contract_end_date else '',
             hr_data.contract_type if hr_data else '',
+            hr_data.distacco_supplier if hr_data else '',
             hr_data.ccnl if hr_data else '',
             hr_data.mansione if hr_data else '',
             hr_data.qualifica if hr_data else '',
