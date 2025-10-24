@@ -1436,7 +1436,7 @@ def generate_shifts_from_template(template):
             - message: messaggio descrittivo
             - errors: lista di errori se presenti
     """
-    from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User, UserHRData, LeaveRequest
+    from models import PresidioCoverageTemplate, PresidioCoverage, Shift, User, LeaveRequest
     from datetime import datetime, timedelta
     
     try:
@@ -1475,15 +1475,15 @@ def generate_shifts_from_template(template):
                     roles_dict = coverage.get_required_roles_dict()
                     
                     for role_name, role_count in roles_dict.items():
-                        # Trova utenti con questa mansione
-                        eligible_users = User.query.join(UserHRData).filter(
+                        # Trova utenti con questo ruolo
+                        eligible_users = User.query.filter(
                             User.company_id == template.company_id,
                             User.active == True,
-                            UserHRData.mansione == role_name
+                            User.role == role_name
                         ).all()
                         
                         if not eligible_users:
-                            errors.append(f"Nessun utente trovato con mansione '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                            errors.append(f"Nessun utente trovato con ruolo '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
                             continue
                         
                         # Filtra utenti in ferie per questa data
@@ -1501,7 +1501,7 @@ def generate_shifts_from_template(template):
                                 available_users.append(user)
                         
                         if not available_users:
-                            errors.append(f"Nessun utente disponibile (non in ferie) con mansione '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
+                            errors.append(f"Nessun utente disponibile (non in ferie) con ruolo '{role_name}' per {current_date.strftime('%d/%m/%Y')}")
                             continue
                         
                         # Calcola carico di lavoro per bilanciamento
