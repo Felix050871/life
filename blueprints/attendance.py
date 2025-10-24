@@ -463,9 +463,11 @@ def attendance():
                         def get_attendance_indicators(self):
                             return {'entry': None, 'exit': None}
                     
+                    # Usa la relazione leave_type_obj invece del campo testuale legacy
+                    leave_type_name = leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or 'Permesso')
                     leave_records.append(LeaveRecord(
                         date=current_date,
-                        leave_type=leave.leave_type,
+                        leave_type=leave_type_name,
                         reason=leave.reason,
                         user_id=leave.user_id,
                         leave_request=leave
