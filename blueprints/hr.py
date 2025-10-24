@@ -200,6 +200,23 @@ def hr_list():
         # Calcola stato scadenze
         expiry_status = get_worst_expiry_status(hr_data)
         
+        # Calcola giorni rimanenti contratto (per TD e Distacco)
+        days_until_contract_end = None
+        contract_expiring = False
+        if hr_data and hr_data.contract_end_date:
+            days_until_contract_end = hr_data.days_until_contract_end()
+            # Contratto in scadenza se mancano 60 giorni o meno
+            contract_expiring = days_until_contract_end is not None and days_until_contract_end <= 60
+        
+        # Determina se ha certificazioni scadute o in scadenza
+        has_expired_certs = False
+        has_expiring_certs = False
+        if expiry_status:
+            if expiry_status['status'] == 'expired':
+                has_expired_certs = True
+            elif expiry_status['status'] in ['urgent', 'warning']:
+                has_expiring_certs = True
+        
         users_data.append({
             'user': user,
             'hr_data': hr_data,  # Pass the actual object so template can access sede relationship
@@ -213,6 +230,10 @@ def hr_list():
             'age': age,
             'birth_city': hr_data.birth_city if hr_data else None,
             'expiry_status': expiry_status,
+            'days_until_contract_end': days_until_contract_end,
+            'contract_expiring': contract_expiring,
+            'has_expired_certs': has_expired_certs,
+            'has_expiring_certs': has_expiring_certs,
         })
     
     # Applica filtri personalizzati PRIMA di calcolare le statistiche
@@ -297,6 +318,11 @@ def hr_list():
     tempo_indeterminato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Indeterminato')
     tempo_determinato = sum(1 for d in users_data if d['contract_type'] == 'Tempo Determinato')
     
+    # Statistiche criticità
+    contracts_expiring = sum(1 for d in users_data if d['contract_expiring'])
+    expired_certifications = sum(1 for d in users_data if d['has_expired_certs'])
+    expiring_certifications = sum(1 for d in users_data if d['has_expiring_certs'])
+    
     statistics = {
         'total_employees': total_employees,
         'with_hr_data': with_hr_data,
@@ -307,6 +333,9 @@ def hr_list():
         'under_36': under_36,
         'tempo_indeterminato': tempo_indeterminato,
         'tempo_determinato': tempo_determinato,
+        'contracts_expiring': contracts_expiring,
+        'expired_certifications': expired_certifications,
+        'expiring_certifications': expiring_certifications,
     }
     
     # Ottieni lista sedi per filtri

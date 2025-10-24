@@ -173,6 +173,92 @@
     </div>
 </div>
 
+<!-- Criticità Cards -->
+{% if statistics.contracts_expiring > 0 or statistics.expired_certifications > 0 or statistics.expiring_certifications > 0 %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <h5 class="text-warning mb-3">
+            <i class="fas fa-exclamation-triangle me-2"></i>Criticità da Gestire
+        </h5>
+    </div>
+    
+    <!-- Contratti in Scadenza -->
+    {% if statistics.contracts_expiring > 0 %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card bg-danger text-white h-100 alert-card" style="cursor: pointer;" data-filter-type="contract-expiring">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 opacity-75">Contratti in Scadenza</h6>
+                        <h2 class="card-title mb-0">{{ statistics.contracts_expiring }}</h2>
+                        <small class="opacity-75">
+                            <i class="fas fa-calendar-times me-1"></i>Entro 60 giorni
+                        </small>
+                    </div>
+                    <i class="fas fa-hourglass-end fa-3x opacity-50"></i>
+                </div>
+                <div class="mt-3">
+                    <small class="opacity-75">
+                        <i class="fas fa-hand-pointer me-1"></i>Clicca per filtrare
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Certificazioni Scadute -->
+    {% if statistics.expired_certifications > 0 %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card text-white h-100 alert-card" style="cursor: pointer; background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);" data-filter-type="cert-expired">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 opacity-75">Certificazioni Scadute</h6>
+                        <h2 class="card-title mb-0">{{ statistics.expired_certifications }}</h2>
+                        <small class="opacity-75">
+                            <i class="fas fa-times-circle me-1"></i>Immediate
+                        </small>
+                    </div>
+                    <i class="fas fa-certificate fa-3x opacity-50"></i>
+                </div>
+                <div class="mt-3">
+                    <small class="opacity-75">
+                        <i class="fas fa-hand-pointer me-1"></i>Clicca per filtrare
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Certificazioni in Scadenza -->
+    {% if statistics.expiring_certifications > 0 %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card bg-warning text-dark h-100 alert-card" style="cursor: pointer;" data-filter-type="cert-expiring">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 opacity-75">Certificazioni in Scadenza</h6>
+                        <h2 class="card-title mb-0">{{ statistics.expiring_certifications }}</h2>
+                        <small class="opacity-75">
+                            <i class="fas fa-exclamation-circle me-1"></i>In scadenza
+                        </small>
+                    </div>
+                    <i class="fas fa-award fa-3x opacity-50"></i>
+                </div>
+                <div class="mt-3">
+                    <small class="opacity-75">
+                        <i class="fas fa-hand-pointer me-1"></i>Clicca per filtrare
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
 <!-- Filters Bar -->
 <div class="card mb-4">
     <div class="card-body">
@@ -280,7 +366,10 @@
                         data-age="{{ data.age or '' }}"
                         data-contract="{{ data.contract_type }}"
                         data-status="{{ data.contract_status }}"
-                        data-sede="{{ data.hr_data.sede.name if data.hr_data and data.hr_data.sede else '' }}">
+                        data-sede="{{ data.hr_data.sede.name if data.hr_data and data.hr_data.sede else '' }}"
+                        data-contract-expiring="{{ 'true' if data.contract_expiring else 'false' }}"
+                        data-cert-expired="{{ 'true' if data.has_expired_certs else 'false' }}"
+                        data-cert-expiring="{{ 'true' if data.has_expiring_certs else 'false' }}">
                         <td>
                             {% if data.has_data %}
                             <strong>{{ data.matricola }}</strong>
@@ -664,6 +753,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultCount = document.getElementById('resultCount');
     const filterCount = document.getElementById('filterCount');
     
+    // Variable to track alert card filter
+    let alertCardFilter = null;
+    
+    // Alert card click handlers
+    const alertCards = document.querySelectorAll('.alert-card');
+    alertCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const filterType = this.getAttribute('data-filter-type');
+            
+            // Toggle filter if clicking same card
+            if (alertCardFilter === filterType) {
+                alertCardFilter = null;
+                // Remove active styling from all cards
+                alertCards.forEach(c => {
+                    c.style.border = '';
+                    c.style.boxShadow = '';
+                });
+            } else {
+                alertCardFilter = filterType;
+                // Remove active styling from all cards
+                alertCards.forEach(c => {
+                    c.style.border = '';
+                    c.style.boxShadow = '';
+                });
+                // Add active styling to clicked card
+                this.style.border = '3px solid white';
+                this.style.boxShadow = '0 0 20px rgba(255,255,255,0.5)';
+            }
+            
+            // Clear other filters when clicking alert card
+            searchInput.value = '';
+            filterGender.value = '';
+            filterSede.value = '';
+            filterContract.value = '';
+            filterStatus.value = '';
+            
+            filterTable();
+        });
+    });
+    
     // Attach event listeners
     searchInput.addEventListener('input', filterTable);
     filterGender.addEventListener('change', filterTable);
@@ -697,6 +826,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const status = row.getAttribute('data-status');
             const gender = row.getAttribute('data-gender');
             const rowSede = row.getAttribute('data-sede');
+            const contractExpiring = row.getAttribute('data-contract-expiring');
+            const certExpired = row.getAttribute('data-cert-expired');
+            const certExpiring = row.getAttribute('data-cert-expiring');
             
             // Apply filters
             let matchesSearch = searchTerm === '' || 
@@ -708,7 +840,17 @@ document.addEventListener('DOMContentLoaded', function() {
             let matchesContract = contractFilter === '' || contratto === contractFilter;
             let matchesStatus = statusFilter === '' || status === statusFilter;
             
-            if (matchesSearch && matchesGender && matchesSede && matchesContract && matchesStatus) {
+            // Alert card filter
+            let matchesAlertFilter = true;
+            if (alertCardFilter === 'contract-expiring') {
+                matchesAlertFilter = contractExpiring === 'true';
+            } else if (alertCardFilter === 'cert-expired') {
+                matchesAlertFilter = certExpired === 'true';
+            } else if (alertCardFilter === 'cert-expiring') {
+                matchesAlertFilter = certExpiring === 'true';
+            }
+            
+            if (matchesSearch && matchesGender && matchesSede && matchesContract && matchesStatus && matchesAlertFilter) {
                 row.style.display = '';
                 visibleCount++;
             } else {
@@ -726,6 +868,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (sedeFilter) activeFilters.push('sede');
         if (contractFilter) activeFilters.push('contratto');
         if (statusFilter) activeFilters.push('stato');
+        if (alertCardFilter === 'contract-expiring') activeFilters.push('contratti in scadenza');
+        if (alertCardFilter === 'cert-expired') activeFilters.push('certificazioni scadute');
+        if (alertCardFilter === 'cert-expiring') activeFilters.push('certificazioni in scadenza');
         
         if (activeFilters.length > 0) {
             filterCount.textContent = `Filtri attivi: ${activeFilters.join(', ')}`;
@@ -744,6 +889,14 @@ document.addEventListener('DOMContentLoaded', function() {
         filterSede.value = '';
         filterContract.value = '';
         filterStatus.value = '';
+        alertCardFilter = null;
+        
+        // Remove active styling from all alert cards
+        alertCards.forEach(c => {
+            c.style.border = '';
+            c.style.boxShadow = '';
+        });
+        
         filterTable();
     }
     
