@@ -1117,6 +1117,10 @@ class RoleForm(FlaskForm):
     can_view_hr_data = BooleanField('Visualizzare Tutti i Dati HR')
     can_view_my_hr_data = BooleanField('Visualizzare I Miei Dati HR')
     
+    # Commesse - Project Management
+    can_manage_commesse = BooleanField('Gestire Commesse')
+    can_view_commesse = BooleanField('Visualizzare Commesse')
+    
     # Gestione QR
     can_manage_qr = BooleanField('Gestire QR')
     can_view_qr = BooleanField('Visualizzare QR')
@@ -1289,6 +1293,10 @@ class RoleForm(FlaskForm):
             'can_view_hr_data': self.can_view_hr_data.data,
             'can_view_my_hr_data': self.can_view_my_hr_data.data,
             
+            # Commesse - Project Management
+            'can_manage_commesse': self.can_manage_commesse.data,
+            'can_view_commesse': self.can_view_commesse.data,
+            
             # Gestione QR
             'can_manage_qr': self.can_manage_qr.data,
             'can_view_qr': self.can_view_qr.data,
@@ -1432,6 +1440,10 @@ class RoleForm(FlaskForm):
         self.can_manage_hr_data.data = permissions_dict.get('can_manage_hr_data', False)
         self.can_view_hr_data.data = permissions_dict.get('can_view_hr_data', False)
         self.can_view_my_hr_data.data = permissions_dict.get('can_view_my_hr_data', False)
+        
+        # Commesse - Project Management
+        self.can_manage_commesse.data = permissions_dict.get('can_manage_commesse', False)
+        self.can_view_commesse.data = permissions_dict.get('can_view_commesse', False)
         
         # Gestione QR
         self.can_manage_qr.data = permissions_dict.get('can_manage_qr', False)
