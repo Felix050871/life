@@ -1105,18 +1105,19 @@ def save_manual_timesheet():
         if day_date > date.today():
             return jsonify({'success': False, 'message': 'Non è possibile inserire orari per giorni futuri'}), 400
         
-        # Blocca inserimenti su giorni con ferie/permessi approvati
+        # Blocca inserimenti su giorni con ferie/permessi approvati o in attesa
         from models import LeaveRequest
         existing_leave = filter_by_company(LeaveRequest.query).filter(
             LeaveRequest.user_id == current_user.id,
-            LeaveRequest.status == 'Approved',
+            LeaveRequest.status.in_(['Approved', 'Pending']),  # Include anche richieste in attesa
             LeaveRequest.start_date <= day_date,
             LeaveRequest.end_date >= day_date
         ).first()
         
         if existing_leave:
             leave_type_name = existing_leave.leave_type_obj.name if existing_leave.leave_type_obj else (existing_leave.leave_type or 'Permesso')
-            return jsonify({'success': False, 'message': f'Impossibile inserire orari: giorno con {leave_type_name} approvato'}), 400
+            status_text = 'approvato' if existing_leave.status == 'Approved' else 'in attesa di approvazione'
+            return jsonify({'success': False, 'message': f'Impossibile inserire orari: giorno con {leave_type_name} {status_text}'}), 400
         
         # Elimina eventi manuali esistenti per questo giorno
         filter_by_company(AttendanceEvent.query).filter(
@@ -1356,10 +1357,10 @@ def bulk_fill_timesheet():
         last_day_num = monthrange(year, month)[1]
         last_day = date(year, month, last_day_num)
         
-        # Ottieni ferie/permessi approvati nel mese
+        # Ottieni ferie/permessi approvati e in attesa nel mese
         leaves_query = filter_by_company(LeaveRequest.query).filter(
             LeaveRequest.user_id == current_user.id,
-            LeaveRequest.status == 'Approved',
+            LeaveRequest.status.in_(['Approved', 'Pending']),  # Include anche richieste in attesa
             LeaveRequest.start_date <= last_day,
             LeaveRequest.end_date >= first_day
         ).all()
