@@ -575,6 +575,29 @@ def attendance():
             all_days.append(day_info)
             current_day += timedelta(days=1)
     
+    # Verifica stato consolidamento del timesheet
+    from models import MonthlyTimesheet, TimesheetReopenRequest
+    current_month_timesheet = None
+    timesheet_is_consolidated = False
+    pending_reopen_request = None
+    
+    if not show_team_data:
+        # Ottieni il timesheet del mese corrente
+        current_month_timesheet = MonthlyTimesheet.get_or_create(
+            user_id=current_user.id,
+            year=start_date.year,
+            month=start_date.month,
+            company_id=current_user.company_id
+        )
+        timesheet_is_consolidated = current_month_timesheet.is_consolidated
+        
+        # Verifica se c'è una richiesta di riapertura pendente
+        if timesheet_is_consolidated:
+            pending_reopen_request = TimesheetReopenRequest.query.filter_by(
+                timesheet_id=current_month_timesheet.id,
+                status='Pending'
+            ).first()
+    
     return render_template('attendance.html', 
                          form=form, 
                          records=records,
@@ -589,7 +612,10 @@ def attendance():
                          today_work_hours=today_work_hours,
                          view_mode=view_mode,
                          show_team_data=show_team_data,
-                         is_multi_sede=current_user.all_sedi)
+                         is_multi_sede=current_user.all_sedi,
+                         timesheet_is_consolidated=timesheet_is_consolidated,
+                         pending_reopen_request=pending_reopen_request,
+                         current_month_timesheet=current_month_timesheet)
 
 # =============================================================================
 # CLOCK IN/OUT PRE-CHECK ROUTES

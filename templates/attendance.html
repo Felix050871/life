@@ -40,6 +40,46 @@
                 </div>
 
                 <div class="card-body">
+                    <!-- Timesheet Consolidation Alert -->
+                    {% if timesheet_is_consolidated and not show_team_data %}
+                    <div class="alert alert-warning border-warning mb-4">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-lock fa-2x me-3 mt-1"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="alert-heading mb-2">
+                                    <strong>Timesheet Consolidato</strong>
+                                </h6>
+                                <p class="mb-2">
+                                    Il timesheet per <strong>{{ current_month_timesheet.month }}/{{ current_month_timesheet.year }}</strong> 
+                                    è stato consolidato il <strong>{{ current_month_timesheet.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }}</strong> 
+                                    {% if current_month_timesheet.consolidator %}da <strong>{{ current_month_timesheet.consolidator.get_full_name() }}</strong>{% endif %}.
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Non puoi inserire, modificare o eliminare presenze per questo periodo.
+                                </p>
+                                {% if pending_reopen_request %}
+                                <div class="alert alert-info mb-0 mt-3">
+                                    <i class="fas fa-clock me-1"></i>
+                                    <strong>Richiesta di Riapertura Pendente</strong>
+                                    <p class="mb-0 mt-1 small">
+                                        Hai già inviato una richiesta di riapertura il {{ pending_reopen_request.requested_at.strftime('%d/%m/%Y alle %H:%M') }}. 
+                                        Attendi l'approvazione da parte di un responsabile.
+                                    </p>
+                                </div>
+                                {% else %}
+                                <div class="mt-3">
+                                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#requestReopenModal">
+                                        <i class="fas fa-unlock-alt me-1"></i>
+                                        Richiedi Riapertura
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <!-- Date Filter Form -->
                     <form method="GET" action="{{ url_for('attendance.attendance') }}" class="row g-3 mb-4">
                         {% if current_user.role == 'Management' or current_user.can_view_sede_attendance() %}
@@ -796,6 +836,49 @@
     </div>
 </div>
 
+<!-- Modal for Timesheet Reopen Request -->
+{% if timesheet_is_consolidated and not pending_reopen_request and current_month_timesheet %}
+<div class="modal fade" id="requestReopenModal" tabindex="-1" aria-labelledby="requestReopenModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="requestReopenModalLabel">
+                    <i class="fas fa-unlock-alt me-2"></i>Richiedi Riapertura Timesheet
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('attendance.request_timesheet_reopen', year=current_month_timesheet.year, month=current_month_timesheet.month) }}" id="requestReopenForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Stai richiedendo la riapertura del timesheet per <strong>{{ current_month_timesheet.month }}/{{ current_month_timesheet.year }}</strong>.
+                        Un responsabile dovrà approvare la tua richiesta.
+                    </div>
+                    <div class="mb-3">
+                        <label for="reopen_reason" class="form-label">
+                            <i class="fas fa-comment-alt me-1"></i>Motivazione della richiesta <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="reopen_reason" name="reason" rows="4" required 
+                                  placeholder="Spiega perché hai bisogno di riaprire questo timesheet..."></textarea>
+                        <div class="form-text">
+                            Fornisci una spiegazione dettagliata per aiutare il responsabile a valutare la tua richiesta.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-paper-plane me-1"></i>Invia Richiesta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <script>
 // Funzione per aprire il modale di inserimento/modifica
 function openManualEntryModal(dateStr = null) {
@@ -846,6 +929,19 @@ function openManualEntryModal(dateStr = null) {
         document.getElementById('entry_date').readOnly = false;
         modal.show();
     }
+}
+
+// Funzione per richiedere riapertura timesheet
+function requestTimesheetReopen() {
+    const form = document.getElementById('requestReopenForm');
+    const reason = document.getElementById('reopen_reason').value.trim();
+    
+    if (!reason) {
+        alert('Devi fornire una motivazione per la richiesta');
+        return;
+    }
+    
+    form.submit();
 }
 
 // Funzione per eliminare una presenza manuale

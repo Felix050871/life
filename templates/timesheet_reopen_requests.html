@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Richieste Riapertura Timesheet{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-unlock-alt me-2"></i>
+                        Richieste di Riapertura Timesheet
+                    </h5>
+                    <a href="{{ url_for('attendance.attendance') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alle Presenze
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <!-- Pending Requests Section -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <i class="fas fa-clock me-2"></i>Richieste Pendenti
+                        <span class="badge bg-primary ms-2">{{ pending_requests|length }}</span>
+                    </h6>
+
+                    {% if pending_requests %}
+                    <div class="table-responsive mb-5">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Dipendente</th>
+                                    <th>Periodo</th>
+                                    <th>Data Richiesta</th>
+                                    <th>Motivazione</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in pending_requests %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ req.requester.get_full_name() }}</strong>
+                                        <small class="text-muted d-block">{{ req.requester.role }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ req.timesheet.month }}/{{ req.timesheet.year }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ req.requested_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;" 
+                                             data-bs-toggle="tooltip" 
+                                             title="{{ req.reason }}">
+                                            {{ req.reason }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" 
+                                                    class="btn btn-success btn-sm" 
+                                                    onclick="approveRequest({{ req.id }}, '{{ req.requester.get_full_name() }}', '{{ req.timesheet.month }}/{{ req.timesheet.year }}')">
+                                                <i class="fas fa-check me-1"></i>Approva
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-danger btn-sm" 
+                                                    onclick="rejectRequest({{ req.id }}, '{{ req.requester.get_full_name() }}', '{{ req.timesheet.month }}/{{ req.timesheet.year }}')">
+                                                <i class="fas fa-times me-1"></i>Rifiuta
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Non ci sono richieste di riapertura pendenti.
+                    </div>
+                    {% endif %}
+
+                    <!-- Completed Requests Section -->
+                    <h6 class="text-secondary border-bottom pb-2 mb-3 mt-4">
+                        <i class="fas fa-history me-2"></i>Storico Richieste
+                        <span class="badge bg-secondary ms-2">{{ completed_requests|length }}</span>
+                    </h6>
+
+                    {% if completed_requests %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Dipendente</th>
+                                    <th>Periodo</th>
+                                    <th>Data Richiesta</th>
+                                    <th>Stato</th>
+                                    <th>Revisore</th>
+                                    <th>Data Revisione</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in completed_requests %}
+                                <tr>
+                                    <td>
+                                        {{ req.requester.get_full_name() }}
+                                    </td>
+                                    <td>
+                                        {{ req.timesheet.month }}/{{ req.timesheet.year }}
+                                    </td>
+                                    <td>
+                                        {{ req.requested_at.strftime('%d/%m/%Y') }}
+                                    </td>
+                                    <td>
+                                        {% if req.status == 'Approved' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Approvata
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>Rifiutata
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.reviewer %}
+                                        {{ req.reviewer.get_full_name() }}
+                                        {% else %}
+                                        --
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.reviewed_at %}
+                                        {{ req.reviewed_at.strftime('%d/%m/%Y %H:%M') }}
+                                        {% else %}
+                                        --
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.review_notes %}
+                                        <div class="text-truncate" style="max-width: 200px;" 
+                                             data-bs-toggle="tooltip" 
+                                             title="{{ req.review_notes }}">
+                                            {{ req.review_notes }}
+                                        </div>
+                                        {% else %}
+                                        --
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-secondary">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Nessuna richiesta nello storico.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Approval -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Approva Richiesta
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="approveForm">
+                <div class="modal-body">
+                    <p>Stai per approvare la richiesta di <strong id="approveUserName"></strong> per il periodo <strong id="approvePeriod"></strong>.</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Il timesheet verrà riaperto e l'utente potrà modificare le presenze.
+                    </div>
+                    <div class="mb-3">
+                        <label for="approve_notes" class="form-label">Note (opzionale)</label>
+                        <textarea class="form-control" id="approve_notes" name="review_notes" rows="3" 
+                                  placeholder="Eventuali note per l'utente..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>Conferma Approvazione
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Rejection -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-times-circle me-2"></i>Rifiuta Richiesta
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="rejectForm">
+                <div class="modal-body">
+                    <p>Stai per rifiutare la richiesta di <strong id="rejectUserName"></strong> per il periodo <strong id="rejectPeriod"></strong>.</p>
+                    <div class="mb-3">
+                        <label for="reject_notes" class="form-label">
+                            Motivazione del rifiuto <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="reject_notes" name="review_notes" rows="3" required
+                                  placeholder="Spiega perché stai rifiutando questa richiesta..."></textarea>
+                        <div class="form-text">
+                            La motivazione verrà comunicata all'utente.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-arrow-left me-1"></i>Annulla
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>Conferma Rifiuto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function approveRequest(requestId, userName, period) {
+    const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+    const form = document.getElementById('approveForm');
+    
+    form.action = `/attendance/approve_timesheet_reopen/${requestId}`;
+    document.getElementById('approveUserName').textContent = userName;
+    document.getElementById('approvePeriod').textContent = period;
+    document.getElementById('approve_notes').value = '';
+    
+    modal.show();
+}
+
+function rejectRequest(requestId, userName, period) {
+    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    const form = document.getElementById('rejectForm');
+    
+    form.action = `/attendance/reject_timesheet_reopen/${requestId}`;
+    document.getElementById('rejectUserName').textContent = userName;
+    document.getElementById('rejectPeriod').textContent = period;
+    document.getElementById('reject_notes').value = '';
+    
+    modal.show();
+}
+</script>
+{% endblock %}
