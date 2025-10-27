@@ -196,7 +196,7 @@
                     <!-- Form assegnazione nuova risorsa -->
                     {% if current_user.can_manage_commesse() %}
                         {% if available_users %}
-                        <form method="POST" action="{{ url_for('commesse.assign_user') }}" class="mb-4 border rounded p-3 bg-dark">
+                        <form method="POST" action="{{ url_for('commesse.assign_user') }}" class="mb-4 border rounded p-3 bg-light">
                             <input type="hidden" name="commessa_id" value="{{ commessa.id }}">
                             <h6 class="mb-3"><i class="fas fa-user-plus me-2"></i>Assegna Nuova Risorsa</h6>
                             <div class="row g-3">
