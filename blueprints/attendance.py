@@ -1606,3 +1606,264 @@ def bulk_fill_timesheet():
         import logging
         logging.error(f"Errore compilazione massiva timesheet: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+# =============================================================================
+# MANUAL ATTENDANCE ENTRY/EDIT ROUTES
+# =============================================================================
+
+@attendance_bp.route('/manual_entry', methods=['POST'])
+@login_required
+def manual_entry():
+    """Inserisce manualmente una presenza (clock_in/out, pause)"""
+    try:
+        from zoneinfo import ZoneInfo
+        italy_tz = ZoneInfo('Europe/Rome')
+        
+        # Ottieni dati dal form
+        entry_date_str = request.form.get('entry_date')
+        clock_in_time = request.form.get('clock_in_time')
+        clock_out_time = request.form.get('clock_out_time')
+        break_start_time = request.form.get('break_start_time')
+        break_end_time = request.form.get('break_end_time')
+        notes = request.form.get('notes', '').strip()
+        
+        # Validazione data
+        if not entry_date_str:
+            flash('Data obbligatoria', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
+        entry_date = datetime.strptime(entry_date_str, '%Y-%m-%d').date()
+        
+        # Blocca date future
+        if entry_date > date.today():
+            flash('Non puoi inserire presenze per date future', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
+        # Validazione orari
+        if not clock_in_time or not clock_out_time:
+            flash('Orario di entrata e uscita obbligatori', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
+        # Crea timestamp in Italian time
+        clock_in_dt = datetime.strptime(f"{entry_date_str} {clock_in_time}", '%Y-%m-%d %H:%M')
+        clock_in_dt = clock_in_dt.replace(tzinfo=italy_tz)
+        
+        clock_out_dt = datetime.strptime(f"{entry_date_str} {clock_out_time}", '%Y-%m-%d %H:%M')
+        clock_out_dt = clock_out_dt.replace(tzinfo=italy_tz)
+        
+        # Validazione logica orari
+        if clock_out_dt <= clock_in_dt:
+            flash('L\'orario di uscita deve essere successivo all\'entrata', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
+        # Converti a UTC naive per storage
+        from datetime import timezone
+        clock_in_utc = clock_in_dt.astimezone(timezone.utc).replace(tzinfo=None)
+        clock_out_utc = clock_out_dt.astimezone(timezone.utc).replace(tzinfo=None)
+        
+        # Verifica se esistono già eventi per questo giorno
+        existing_events = AttendanceEvent.query.filter_by(
+            user_id=current_user.id,
+            date=entry_date
+        ).all()
+        
+        # Se ci sono eventi non manuali, blocca inserimento
+        if any(not event.is_manual for event in existing_events):
+            flash('Esistono già timbrature automatiche per questo giorno. Non puoi inserire dati manuali.', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
+        # Elimina eventi esistenti manuali per questo giorno (sovrascrittura)
+        for event in existing_events:
+            if event.is_manual:
+                db.session.delete(event)
+        
+        # Crea evento entrata
+        clock_in_event = AttendanceEvent(
+            user_id=current_user.id,
+            date=entry_date,
+            event_type='clock_in',
+            timestamp=clock_in_utc,
+            sede_id=current_user.sede_id,
+            notes=notes,
+            is_manual=True,
+            entry_type='standard'
+        )
+        set_company_on_create(clock_in_event)
+        db.session.add(clock_in_event)
+        
+        # Crea evento uscita
+        clock_out_event = AttendanceEvent(
+            user_id=current_user.id,
+            date=entry_date,
+            event_type='clock_out',
+            timestamp=clock_out_utc,
+            sede_id=current_user.sede_id,
+            notes=notes,
+            is_manual=True,
+            entry_type='standard'
+        )
+        set_company_on_create(clock_out_event)
+        db.session.add(clock_out_event)
+        
+        # Gestione pausa (opzionale)
+        if break_start_time and break_end_time:
+            break_start_dt = datetime.strptime(f"{entry_date_str} {break_start_time}", '%Y-%m-%d %H:%M')
+            break_start_dt = break_start_dt.replace(tzinfo=italy_tz)
+            
+            break_end_dt = datetime.strptime(f"{entry_date_str} {break_end_time}", '%Y-%m-%d %H:%M')
+            break_end_dt = break_end_dt.replace(tzinfo=italy_tz)
+            
+            # Validazione pausa
+            if break_start_dt >= break_end_dt:
+                flash('Fine pausa deve essere successiva all\'inizio pausa', 'danger')
+                return redirect(url_for('attendance.attendance'))
+            
+            if break_start_dt <= clock_in_dt or break_end_dt >= clock_out_dt:
+                flash('La pausa deve essere compresa tra entrata e uscita', 'danger')
+                return redirect(url_for('attendance.attendance'))
+            
+            # Converti a UTC
+            break_start_utc = break_start_dt.astimezone(timezone.utc).replace(tzinfo=None)
+            break_end_utc = break_end_dt.astimezone(timezone.utc).replace(tzinfo=None)
+            
+            # Crea eventi pausa
+            break_start_event = AttendanceEvent(
+                user_id=current_user.id,
+                date=entry_date,
+                event_type='break_start',
+                timestamp=break_start_utc,
+                sede_id=current_user.sede_id,
+                is_manual=True,
+                entry_type='standard'
+            )
+            set_company_on_create(break_start_event)
+            db.session.add(break_start_event)
+            
+            break_end_event = AttendanceEvent(
+                user_id=current_user.id,
+                date=entry_date,
+                event_type='break_end',
+                timestamp=break_end_utc,
+                sede_id=current_user.sede_id,
+                is_manual=True,
+                entry_type='standard'
+            )
+            set_company_on_create(break_end_event)
+            db.session.add(break_end_event)
+        
+        db.session.commit()
+        flash('Presenza inserita manualmente con successo', 'success')
+        return redirect(url_for('attendance.attendance'))
+        
+    except ValueError as ve:
+        db.session.rollback()
+        flash(f'Formato orario non valido: {str(ve)}', 'danger')
+        return redirect(url_for('attendance.attendance'))
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore inserimento manuale presenza: {str(e)}")
+        flash(f'Errore inserimento presenza: {str(e)}', 'danger')
+        return redirect(url_for('attendance.attendance'))
+
+@attendance_bp.route('/edit_manual_entry/<date_str>', methods=['GET'])
+@login_required
+def edit_manual_entry(date_str):
+    """Ottieni i dati di una presenza manuale per la modifica"""
+    try:
+        entry_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        # Blocca date future
+        if entry_date > date.today():
+            return jsonify({'success': False, 'message': 'Non puoi modificare date future'})
+        
+        # Ottieni eventi per questo giorno
+        events = AttendanceEvent.query.filter_by(
+            user_id=current_user.id,
+            date=entry_date
+        ).order_by(AttendanceEvent.timestamp).all()
+        
+        # Verifica che tutti gli eventi siano manuali
+        if not events or any(not event.is_manual for event in events):
+            return jsonify({'success': False, 'message': 'Questa presenza non è modificabile (timbratura automatica)'})
+        
+        from zoneinfo import ZoneInfo
+        italy_tz = ZoneInfo('Europe/Rome')
+        
+        # Estrai dati
+        data = {
+            'date': date_str,
+            'clock_in': None,
+            'clock_out': None,
+            'break_start': None,
+            'break_end': None,
+            'notes': ''
+        }
+        
+        for event in events:
+            # Converti timestamp a Italian time
+            if event.timestamp:
+                from datetime import timezone
+                utc_time = event.timestamp.replace(tzinfo=timezone.utc)
+                italian_time = utc_time.astimezone(italy_tz)
+                time_str = italian_time.strftime('%H:%M')
+                
+                if event.event_type == 'clock_in':
+                    data['clock_in'] = time_str
+                    if event.notes:
+                        data['notes'] = event.notes
+                elif event.event_type == 'clock_out':
+                    data['clock_out'] = time_str
+                elif event.event_type == 'break_start':
+                    data['break_start'] = time_str
+                elif event.event_type == 'break_end':
+                    data['break_end'] = time_str
+        
+        return jsonify({'success': True, 'data': data})
+        
+    except Exception as e:
+        import logging
+        logging.error(f"Errore caricamento presenza per modifica: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@attendance_bp.route('/delete_manual_entry/<date_str>', methods=['POST'])
+@login_required
+def delete_manual_entry(date_str):
+    """Elimina una presenza inserita manualmente"""
+    try:
+        entry_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        # Blocca date future
+        if entry_date > date.today():
+            flash('Non puoi eliminare date future', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
+        # Ottieni eventi per questo giorno
+        events = AttendanceEvent.query.filter_by(
+            user_id=current_user.id,
+            date=entry_date
+        ).all()
+        
+        # Verifica che tutti gli eventi siano manuali
+        if not events:
+            flash('Nessuna presenza trovata per questa data', 'warning')
+            return redirect(url_for('attendance.attendance'))
+        
+        if any(not event.is_manual for event in events):
+            flash('Non puoi eliminare una presenza con timbratura automatica', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
+        # Elimina tutti gli eventi
+        for event in events:
+            db.session.delete(event)
+        
+        db.session.commit()
+        flash('Presenza eliminata con successo', 'success')
+        return redirect(url_for('attendance.attendance'))
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore eliminazione presenza manuale: {str(e)}")
+        flash(f'Errore eliminazione presenza: {str(e)}', 'danger')
+        return redirect(url_for('attendance.attendance'))
