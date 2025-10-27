@@ -285,6 +285,59 @@ def assign_user():
     return redirect(url_for('commesse.commessa_detail', commessa_id=commessa_id))
 
 
+@commesse_bp.route('/edit_assignment', methods=['POST'])
+@login_required
+@require_commesse_permission
+def edit_assignment():
+    """Modifica assegnazione risorsa (date e flag responsabile)"""
+    # Verifica permesso di gestione
+    if not current_user.can_manage_commesse():
+        flash('Non hai i permessi necessari per modificare assegnazioni.', 'danger')
+        return redirect(url_for('commesse.manage_commesse'))
+    
+    assignment_id = request.form.get('assignment_id', type=int)
+    
+    if not assignment_id:
+        flash('ID assegnazione mancante', 'danger')
+        return redirect(url_for('commesse.manage_commesse'))
+    
+    # Trova l'assegnazione (con controllo multi-tenant via commessa)
+    assignment = CommessaAssignment.query.filter_by(id=assignment_id).first_or_404()
+    commessa = filter_by_company(Commessa.query).filter_by(id=assignment.commessa_id).first_or_404()
+    
+    # Ottieni nuove date e flag dal form
+    data_inizio_str = request.form.get('data_inizio')
+    data_fine_str = request.form.get('data_fine')
+    is_responsabile = request.form.get('is_responsabile') == 'on'
+    
+    # Parse date
+    try:
+        data_inizio = datetime.strptime(data_inizio_str, '%Y-%m-%d').date() if data_inizio_str else assignment.data_inizio
+        data_fine = datetime.strptime(data_fine_str, '%Y-%m-%d').date() if data_fine_str else assignment.data_fine
+    except ValueError:
+        flash('Formato date non valido', 'danger')
+        return redirect(url_for('commesse.commessa_detail', commessa_id=commessa.id))
+    
+    # Aggiorna i campi
+    assignment.data_inizio = data_inizio
+    assignment.data_fine = data_fine
+    assignment.is_responsabile = is_responsabile
+    
+    # Valida le nuove date
+    validation_errors = assignment.validate_dates(commessa=commessa)
+    if validation_errors:
+        db.session.rollback()
+        for error in validation_errors:
+            flash(error, 'danger')
+        return redirect(url_for('commesse.commessa_detail', commessa_id=commessa.id))
+    
+    db.session.commit()
+    
+    role_msg = " (Responsabile)" if is_responsabile else ""
+    flash(f'Assegnazione di {assignment.user.get_full_name()} aggiornata{role_msg}: {data_inizio} - {data_fine}', 'success')
+    return redirect(url_for('commesse.commessa_detail', commessa_id=commessa.id))
+
+
 @commesse_bp.route('/unassign', methods=['POST'])
 @login_required
 @require_commesse_permission

@@ -295,13 +295,21 @@
                                     </td>
                                     <td>
                                         {% if current_user.can_manage_commesse() %}
-                                        <form method="POST" action="{{ url_for('commesse.unassign_user') }}" style="display: inline;">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="openEditAssignmentModal({{ assignment.id }}, '{{ assignment.user.get_full_name() }}', '{{ assignment.data_inizio.strftime('%Y-%m-%d') }}', '{{ assignment.data_fine.strftime('%Y-%m-%d') }}', {{ 'true' if assignment.is_responsabile else 'false' }})"
+                                                    title="Modifica assegnazione">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="if(confirm('Rimuovere {{ assignment.user.get_full_name() }} da questa commessa?')) { document.getElementById('unassign-form-{{ assignment.id }}').submit(); }"
+                                                    title="Rimuovi assegnazione">
+                                                <i class="fas fa-user-times"></i>
+                                            </button>
+                                        </div>
+                                        <form id="unassign-form-{{ assignment.id }}" method="POST" action="{{ url_for('commesse.unassign_user') }}" style="display: none;">
                                             <input type="hidden" name="commessa_id" value="{{ commessa.id }}">
                                             <input type="hidden" name="user_id" value="{{ assignment.user.id }}">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                                    onclick="return confirm('Rimuovere {{ assignment.user.get_full_name() }} da questa commessa?')">
-                                                <i class="fas fa-user-times me-1"></i>Rimuovi
-                                            </button>
                                         </form>
                                         {% else %}
                                         -
@@ -322,4 +330,70 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Modifica Assegnazione -->
+<div class="modal fade" id="editAssignmentModal" tabindex="-1" aria-labelledby="editAssignmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAssignmentModalLabel">
+                    <i class="fas fa-edit me-2"></i>Modifica Assegnazione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('commesse.edit_assignment') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="assignment_id" id="edit_assignment_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Risorsa:</strong></label>
+                        <p class="form-control-plaintext" id="edit_user_name"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_data_inizio" class="form-label">Data Inizio Assegnazione</label>
+                        <input type="date" class="form-control" name="data_inizio" id="edit_data_inizio" 
+                               min="{{ commessa.data_inizio.strftime('%Y-%m-%d') }}"
+                               max="{{ commessa.data_fine.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_data_fine" class="form-label">Data Fine Assegnazione</label>
+                        <input type="date" class="form-control" name="data_fine" id="edit_data_fine"
+                               min="{{ commessa.data_inizio.strftime('%Y-%m-%d') }}"
+                               max="{{ commessa.data_fine.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_responsabile" id="edit_is_responsabile">
+                        <label class="form-check-label" for="edit_is_responsabile">
+                            <i class="fas fa-star text-warning me-1"></i>Responsabile della commessa
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Salva Modifiche
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openEditAssignmentModal(assignmentId, userName, dataInizio, dataFine, isResponsabile) {
+    document.getElementById('edit_assignment_id').value = assignmentId;
+    document.getElementById('edit_user_name').textContent = userName;
+    document.getElementById('edit_data_inizio').value = dataInizio;
+    document.getElementById('edit_data_fine').value = dataFine;
+    document.getElementById('edit_is_responsabile').checked = isResponsabile;
+    
+    var modal = new bootstrap.Modal(document.getElementById('editAssignmentModal'));
+    modal.show();
+}
+</script>
 {% endblock %}
