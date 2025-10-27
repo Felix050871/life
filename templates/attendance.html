@@ -881,7 +881,8 @@
 <script>
 // Funzione per aprire il modale di inserimento/modifica
 function openManualEntryModal(dateStr = null) {
-    const modal = new bootstrap.Modal(document.getElementById('manualEntryModal'));
+    const modalElement = document.getElementById('manualEntryModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     const form = document.getElementById('manualEntryForm');
     const modalTitle = document.getElementById('manualEntryModalLabel');
     
