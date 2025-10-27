@@ -21,7 +21,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 from functools import wraps
 from app import db
-from models import Commessa, User, commessa_assignment, italian_now
+from models import Commessa, User, CommessaAssignment, italian_now
 from forms import CommessaForm
 from utils_tenant import filter_by_company, set_company_on_create, get_user_company_id
 

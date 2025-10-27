@@ -3967,13 +3967,56 @@ class Mansione(db.Model):
 # COMMESSE - PROJECT/JOB MANAGEMENT
 # =============================================================================
 
-# Tabella di associazione many-to-many tra User e Commessa
-commessa_assignment = db.Table('commessa_assignment',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-    db.Column('commessa_id', db.Integer, db.ForeignKey('commessa.id'), primary_key=True),
-    db.Column('assigned_at', db.DateTime, default=italian_now),
-    db.Column('assigned_by_id', db.Integer, db.ForeignKey('user.id'), nullable=True)
-)
+class CommessaAssignment(db.Model):
+    """Modello per gestire l'assegnazione temporale delle risorse alle commesse"""
+    __tablename__ = 'commessa_assignment'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    commessa_id = db.Column(db.Integer, db.ForeignKey('commessa.id'), nullable=False)
+    
+    # Periodo di assegnazione (default = durata commessa)
+    data_inizio = db.Column(db.Date, nullable=False)
+    data_fine = db.Column(db.Date, nullable=False)
+    
+    # Flag responsabile commessa
+    is_responsabile = db.Column(db.Boolean, default=False, nullable=False)
+    
+    # Metadati assegnazione
+    assigned_at = db.Column(db.DateTime, default=italian_now)
+    assigned_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    # Relazioni
+    user = db.relationship('User', foreign_keys=[user_id], backref='commessa_assignments')
+    commessa = db.relationship('Commessa', foreign_keys=[commessa_id], backref='resource_assignments')
+    assigned_by = db.relationship('User', foreign_keys=[assigned_by_id])
+    
+    def __repr__(self):
+        return f'<CommessaAssignment user={self.user_id} commessa={self.commessa_id} {self.data_inizio} - {self.data_fine}>'
+    
+    def validate_dates(self):
+        """Valida che le date di assegnazione siano entro il range della commessa"""
+        errors = []
+        
+        if self.data_inizio < self.commessa.data_inizio:
+            errors.append(f"Data inizio assegnazione ({self.data_inizio}) non può essere prima dell'inizio commessa ({self.commessa.data_inizio})")
+        
+        if self.data_fine > self.commessa.data_fine:
+            errors.append(f"Data fine assegnazione ({self.data_fine}) non può essere dopo la fine commessa ({self.commessa.data_fine})")
+        
+        if self.data_inizio > self.data_fine:
+            errors.append("Data inizio assegnazione non può essere dopo la data fine")
+        
+        return errors
+    
+    def get_duration_days(self):
+        """Calcola la durata dell'assegnazione in giorni"""
+        return (self.data_fine - self.data_inizio).days + 1
+    
+    def is_active_now(self):
+        """Verifica se l'assegnazione è attiva oggi"""
+        today = date.today()
+        return self.data_inizio <= today <= self.data_fine
 
 
 class Commessa(db.Model):
@@ -4006,11 +4049,7 @@ class Commessa(db.Model):
     # Relationships
     company = db.relationship('Company', backref='commesse')
     created_by = db.relationship('User', foreign_keys=[created_by_id], backref='created_commesse')
-    assigned_users = db.relationship('User', 
-                                     secondary=commessa_assignment, 
-                                     primaryjoin='Commessa.id==commessa_assignment.c.commessa_id',
-                                     secondaryjoin='User.id==commessa_assignment.c.user_id',
-                                     backref='assigned_commesse')
+    # Note: resource_assignments backref già definito in CommessaAssignment
     
     def __repr__(self):
         return f'<Commessa {self.titolo} - {self.cliente}>'
@@ -4043,3 +4082,32 @@ class Commessa(db.Model):
             return 0
         delta = self.data_fine - date.today()
         return max(0, delta.days)
+    
+    @property
+    def assigned_users(self):
+        """Restituisce lista utenti assegnati (tutti)"""
+        return [assignment.user for assignment in self.resource_assignments]
+    
+    def get_active_assignments(self):
+        """Restituisce assegnazioni attive oggi"""
+        return [a for a in self.resource_assignments if a.is_active_now()]
+    
+    def get_responsabili(self):
+        """Restituisce lista responsabili della commessa"""
+        return [assignment.user for assignment in self.resource_assignments if assignment.is_responsabile]
+    
+    def is_responsabile(self, user):
+        """Verifica se l'utente è responsabile della commessa"""
+        return any(a.user_id == user.id and a.is_responsabile for a in self.resource_assignments)
+    
+    def get_assignment_for_user(self, user):
+        """Ottiene l'assegnazione per un utente specifico"""
+        for assignment in self.resource_assignments:
+            if assignment.user_id == user.id:
+                return assignment
+        return None
+    
+    def has_active_assignment(self, user):
+        """Verifica se l'utente ha un'assegnazione attiva oggi"""
+        assignment = self.get_assignment_for_user(user)
+        return assignment and assignment.is_active_now() if assignment else False
