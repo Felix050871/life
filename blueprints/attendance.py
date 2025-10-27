@@ -531,9 +531,10 @@ def attendance():
         works_on_saturday = False
         works_on_sunday = False
         
-        if user_work_schedule:
-            works_on_saturday = user_work_schedule.saturday_enabled
-            works_on_sunday = user_work_schedule.sunday_enabled
+        if user_work_schedule and user_work_schedule.days_of_week:
+            # days_of_week è un array JSON: [0,1,2,3,4] = Lun-Ven, 5=Sabato, 6=Domenica
+            works_on_saturday = 5 in user_work_schedule.days_of_week
+            works_on_sunday = 6 in user_work_schedule.days_of_week
         
         # Crea dict di lookup per records esistenti (per data)
         records_by_date = {}
