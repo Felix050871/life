@@ -760,6 +760,20 @@ class User(UserMixin, db.Model):
         """Accesso al menu Commesse"""
         return self.can_manage_commesse() or self.can_view_commesse()
     
+    def get_commesse_as_responsabile(self):
+        """Restituisce le commesse di cui l'utente è responsabile"""
+        return [a.commessa for a in self.commessa_assignments if a.is_responsabile]
+    
+    def get_active_commesse(self):
+        """Restituisce le commesse con assegnazione attiva oggi"""
+        from datetime import date
+        today = date.today()
+        return [a.commessa for a in self.commessa_assignments if a.is_active_now()]
+    
+    def is_responsabile_of_commessa(self, commessa_id):
+        """Verifica se l'utente è responsabile di una commessa specifica"""
+        return any(a.commessa_id == commessa_id and a.is_responsabile for a in self.commessa_assignments)
+    
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):
         """Widget statistiche team nella dashboard"""
