@@ -196,10 +196,12 @@
                     <!-- Form assegnazione nuova risorsa -->
                     {% if current_user.can_manage_commesse() %}
                         {% if available_users %}
-                        <form method="POST" action="{{ url_for('commesse.assign_user') }}" class="mb-4">
+                        <form method="POST" action="{{ url_for('commesse.assign_user') }}" class="mb-4 border rounded p-3 bg-dark">
                             <input type="hidden" name="commessa_id" value="{{ commessa.id }}">
-                            <div class="row">
-                                <div class="col-md-9">
+                            <h6 class="mb-3"><i class="fas fa-user-plus me-2"></i>Assegna Nuova Risorsa</h6>
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Risorsa</label>
                                     <select name="user_id" class="form-select" required>
                                         <option value="">Seleziona risorsa da assegnare...</option>
                                         {% for user in available_users %}
@@ -207,9 +209,33 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-5">
+                                    <label class="form-label">Data Inizio Assegnazione</label>
+                                    <input type="date" name="data_inizio" class="form-control" 
+                                           value="{{ commessa.data_inizio.strftime('%Y-%m-%d') }}"
+                                           min="{{ commessa.data_inizio.strftime('%Y-%m-%d') }}"
+                                           max="{{ commessa.data_fine.strftime('%Y-%m-%d') }}">
+                                    <small class="text-muted">Default: inizio commessa</small>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Data Fine Assegnazione</label>
+                                    <input type="date" name="data_fine" class="form-control" 
+                                           value="{{ commessa.data_fine.strftime('%Y-%m-%d') }}"
+                                           min="{{ commessa.data_inizio.strftime('%Y-%m-%d') }}"
+                                           max="{{ commessa.data_fine.strftime('%Y-%m-%d') }}">
+                                    <small class="text-muted">Default: fine commessa</small>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_responsabile" id="is_responsabile">
+                                        <label class="form-check-label" for="is_responsabile">
+                                            <i class="fas fa-star text-warning me-1"></i>Responsabile
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
                                     <button type="submit" class="btn btn-primary w-100">
-                                        <i class="fas fa-user-plus me-2"></i>Assegna
+                                        <i class="fas fa-user-plus me-2"></i>Assegna Risorsa
                                     </button>
                                 </div>
                             </div>
@@ -222,34 +248,58 @@
                     {% endif %}
                     
                     <!-- Lista risorse assegnate -->
-                    {% if assigned_users %}
-                    <h6 class="mb-3">Risorse Assegnate ({{ assigned_users|length }})</h6>
+                    {% if commessa.resource_assignments %}
+                    <h6 class="mb-3">Risorse Assegnate ({{ commessa.resource_assignments|length }})</h6>
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Nome</th>
-                                    <th>Email</th>
-                                    <th>Ruolo</th>
+                                    <th>Periodo Assegnazione</th>
+                                    <th>Durata</th>
+                                    <th>Stato</th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for user in assigned_users %}
-                                <tr>
+                                {% for assignment in commessa.resource_assignments %}
+                                <tr {% if assignment.is_active_now() %}class="table-success"{% endif %}>
                                     <td>
                                         <i class="fas fa-user me-2"></i>
-                                        <strong>{{ user.get_full_name() }}</strong>
+                                        <strong>{{ assignment.user.get_full_name() }}</strong>
+                                        {% if assignment.is_responsabile %}
+                                        <span class="badge bg-warning text-dark ms-2">
+                                            <i class="fas fa-star me-1"></i>RESPONSABILE
+                                        </span>
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ assignment.user.email }}</small>
                                     </td>
-                                    <td>{{ user.email }}</td>
-                                    <td><span class="badge bg-secondary">{{ user.role }}</span></td>
+                                    <td>
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ assignment.data_inizio.strftime('%d/%m/%Y') }} - {{ assignment.data_fine.strftime('%d/%m/%Y') }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ assignment.get_duration_days() }} giorni</span>
+                                    </td>
+                                    <td>
+                                        {% if assignment.is_active_now() %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>ATTIVO
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-clock me-1"></i>Non attivo
+                                        </span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if current_user.can_manage_commesse() %}
                                         <form method="POST" action="{{ url_for('commesse.unassign_user') }}" style="display: inline;">
                                             <input type="hidden" name="commessa_id" value="{{ commessa.id }}">
-                                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                                            <input type="hidden" name="user_id" value="{{ assignment.user.id }}">
                                             <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                                    onclick="return confirm('Rimuovere {{ user.get_full_name() }} da questa commessa?')">
+                                                    onclick="return confirm('Rimuovere {{ assignment.user.get_full_name() }} da questa commessa?')">
                                                 <i class="fas fa-user-times me-1"></i>Rimuovi
                                             </button>
                                         </form>

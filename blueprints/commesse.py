@@ -200,12 +200,11 @@ def commessa_detail(commessa_id):
     ).order_by(User.first_name, User.last_name).all()
     
     # Filtra gli utenti non ancora assegnati
-    assigned_user_ids = [u.id for u in commessa.assigned_users]
+    assigned_user_ids = [assignment.user_id for assignment in commessa.resource_assignments]
     available_users = [u for u in all_users if u.id not in assigned_user_ids]
     
     return render_template('commessa_detail.html',
                          commessa=commessa,
-                         assigned_users=commessa.assigned_users,
                          available_users=available_users)
 
 
@@ -222,6 +221,7 @@ def assign_user():
     if not current_user.can_manage_commesse():
         flash('Non hai i permessi necessari per assegnare risorse.', 'danger')
         return redirect(url_for('commesse.manage_commesse'))
+    
     commessa_id = request.form.get('commessa_id', type=int)
     user_id = request.form.get('user_id', type=int)
     
@@ -233,15 +233,55 @@ def assign_user():
     user = filter_by_company(User.query).filter_by(id=user_id).first_or_404()
     
     # Verifica se l'assegnazione esiste già
-    if user in commessa.assigned_users:
+    existing_assignment = commessa.get_assignment_for_user(user)
+    if existing_assignment:
         flash(f'{user.get_full_name()} è già assegnato a questa commessa', 'warning')
         return redirect(url_for('commesse.commessa_detail', commessa_id=commessa_id))
     
-    # Aggiungi assegnazione
-    commessa.assigned_users.append(user)
+    # Ottieni date e flag responsabile dal form (default = durata commessa)
+    data_inizio_str = request.form.get('data_inizio')
+    data_fine_str = request.form.get('data_fine')
+    is_responsabile = request.form.get('is_responsabile') == 'on'
+    
+    # Parse date o usa default
+    if data_inizio_str:
+        try:
+            data_inizio = datetime.strptime(data_inizio_str, '%Y-%m-%d').date()
+        except ValueError:
+            data_inizio = commessa.data_inizio
+    else:
+        data_inizio = commessa.data_inizio
+    
+    if data_fine_str:
+        try:
+            data_fine = datetime.strptime(data_fine_str, '%Y-%m-%d').date()
+        except ValueError:
+            data_fine = commessa.data_fine
+    else:
+        data_fine = commessa.data_fine
+    
+    # Crea nuova assegnazione
+    assignment = CommessaAssignment(
+        user_id=user.id,
+        commessa_id=commessa.id,
+        data_inizio=data_inizio,
+        data_fine=data_fine,
+        is_responsabile=is_responsabile,
+        assigned_by_id=current_user.id
+    )
+    
+    # Valida le date
+    validation_errors = assignment.validate_dates()
+    if validation_errors:
+        for error in validation_errors:
+            flash(error, 'danger')
+        return redirect(url_for('commesse.commessa_detail', commessa_id=commessa_id))
+    
+    db.session.add(assignment)
     db.session.commit()
     
-    flash(f'{user.get_full_name()} assegnato con successo alla commessa "{commessa.titolo}"', 'success')
+    role_msg = " come RESPONSABILE" if is_responsabile else ""
+    flash(f'{user.get_full_name()} assegnato{role_msg} alla commessa "{commessa.titolo}" ({data_inizio} - {data_fine})', 'success')
     return redirect(url_for('commesse.commessa_detail', commessa_id=commessa_id))
 
 
@@ -254,6 +294,7 @@ def unassign_user():
     if not current_user.can_manage_commesse():
         flash('Non hai i permessi necessari per rimuovere assegnazioni.', 'danger')
         return redirect(url_for('commesse.manage_commesse'))
+    
     commessa_id = request.form.get('commessa_id', type=int)
     user_id = request.form.get('user_id', type=int)
     
@@ -264,13 +305,14 @@ def unassign_user():
     commessa = filter_by_company(Commessa.query).filter_by(id=commessa_id).first_or_404()
     user = filter_by_company(User.query).filter_by(id=user_id).first_or_404()
     
-    # Verifica se l'assegnazione esiste
-    if user not in commessa.assigned_users:
+    # Trova l'assegnazione
+    assignment = commessa.get_assignment_for_user(user)
+    if not assignment:
         flash(f'{user.get_full_name()} non è assegnato a questa commessa', 'warning')
         return redirect(url_for('commesse.commessa_detail', commessa_id=commessa_id))
     
     # Rimuovi assegnazione
-    commessa.assigned_users.remove(user)
+    db.session.delete(assignment)
     db.session.commit()
     
     flash(f'{user.get_full_name()} rimosso dalla commessa "{commessa.titolo}"', 'success')
