@@ -292,10 +292,67 @@
                     {% else %}
                     <!-- Visualizzazione standard (utenti sede-specifica o visualizzazione normale) -->
                     {% if not show_team_data %}
-                    <div class="mb-3">
-                        <button type="button" class="btn btn-success" onclick="openManualEntryModal()">
-                            <i class="fas fa-plus me-2"></i>Inserisci Presenza Manuale
-                        </button>
+                    <!-- Form inline per inserimento presenza manuale -->
+                    <div class="card mb-4 {% if timesheet_is_consolidated %}border-warning{% else %}border-success{% endif %}">
+                        <div class="card-header {% if timesheet_is_consolidated %}bg-warning bg-opacity-10{% else %}bg-success bg-opacity-10{% endif %}">
+                            <h6 class="mb-0">
+                                <i class="fas fa-plus-circle me-2"></i>Nuova Presenza Manuale
+                                {% if timesheet_is_consolidated %}
+                                <span class="badge bg-warning ms-2">
+                                    <i class="fas fa-lock me-1"></i>Timesheet Consolidato
+                                </span>
+                                {% endif %}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if timesheet_is_consolidated %}
+                            <div class="alert alert-warning mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Il timesheet del mese corrente è consolidato. Non puoi inserire nuove presenze.
+                                {% if not pending_reopen_request %}
+                                <a href="#" onclick="$('#requestReopenModal').modal('show'); return false;" class="alert-link">
+                                    Richiedi riapertura
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('attendance.manual_entry') }}" class="row g-3">
+                                <div class="col-md-2">
+                                    <label for="entry_date_inline" class="form-label">Data <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control form-control-sm" id="entry_date_inline" name="entry_date" required max="{{ today_date.strftime('%Y-%m-%d') }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="clock_in_time_inline" class="form-label">Ora Entrata <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control form-control-sm" id="clock_in_time_inline" name="clock_in_time" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="clock_out_time_inline" class="form-label">Ora Uscita <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control form-control-sm" id="clock_out_time_inline" name="clock_out_time" required>
+                                </div>
+                                <div class="col-md-1">
+                                    <label for="break_start_time_inline" class="form-label">Pausa Inizio</label>
+                                    <input type="time" class="form-control form-control-sm" id="break_start_time_inline" name="break_start_time">
+                                </div>
+                                <div class="col-md-1">
+                                    <label for="break_end_time_inline" class="form-label">Pausa Fine</label>
+                                    <input type="time" class="form-control form-control-sm" id="break_end_time_inline" name="break_end_time">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="notes_inline" class="form-label">Note</label>
+                                    <input type="text" class="form-control form-control-sm" id="notes_inline" name="notes" placeholder="Note opzionali...">
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-success btn-sm w-100">
+                                        <i class="fas fa-save me-1"></i>Salva
+                                    </button>
+                                </div>
+                            </form>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Puoi inserire presenze manualmente solo per date passate e se non ci sono già timbrature automatiche.
+                            </small>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endif %}
                     
@@ -775,66 +832,6 @@
 </div>
 {% endif %}
 
-<!-- Modale Inserimento/Modifica Presenza Manuale -->
-<div class="modal fade" id="manualEntryModal" tabindex="-1" aria-labelledby="manualEntryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="manualEntryModalLabel">Inserimento Presenza Manuale</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="manualEntryForm" method="POST" action="{{ url_for('attendance.manual_entry') }}">
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Nota:</strong> Puoi inserire presenze manualmente solo per date passate e se non ci sono già timbrature automatiche per quel giorno.
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label for="entry_date" class="form-label">Data <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="entry_date" name="entry_date" required max="{{ today_date.strftime('%Y-%m-%d') }}">
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="clock_in_time" class="form-label">Ora Entrata <span class="text-danger">*</span></label>
-                            <input type="time" class="form-control" id="clock_in_time" name="clock_in_time" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="clock_out_time" class="form-label">Ora Uscita <span class="text-danger">*</span></label>
-                            <input type="time" class="form-control" id="clock_out_time" name="clock_out_time" required>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="break_start_time" class="form-label">Inizio Pausa (opzionale)</label>
-                            <input type="time" class="form-control" id="break_start_time" name="break_start_time">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="break_end_time" class="form-label">Fine Pausa (opzionale)</label>
-                            <input type="time" class="form-control" id="break_end_time" name="break_end_time">
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="notes" class="form-label">Note (opzionali)</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i>Salva Presenza
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <!-- Modal for Timesheet Reopen Request -->
 {% if timesheet_is_consolidated and not pending_reopen_request and current_month_timesheet %}
 <div class="modal fade" id="requestReopenModal" tabindex="-1" aria-labelledby="requestReopenModalLabel" aria-hidden="true">
@@ -879,75 +876,9 @@
 {% endif %}
 
 <script>
-// Funzione per aprire il modale di inserimento/modifica
-function openManualEntryModal(dateStr = null) {
-    const modalElement = document.getElementById('manualEntryModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-    const form = document.getElementById('manualEntryForm');
-    const modalTitle = document.getElementById('manualEntryModalLabel');
-    
-    // Prova a caricare i dati se esiste una data (potrebbe essere modifica o inserimento)
-    if (dateStr) {
-        // Prova a caricare i dati via AJAX per vedere se ci sono già presenze
-        fetch(`/attendance/edit_manual_entry/${dateStr}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Modalità modifica - presenze esistenti
-                    modalTitle.textContent = 'Modifica Presenza Manuale';
-                    document.getElementById('entry_date').value = data.data.date;
-                    document.getElementById('clock_in_time').value = data.data.clock_in || '';
-                    document.getElementById('clock_out_time').value = data.data.clock_out || '';
-                    document.getElementById('break_start_time').value = data.data.break_start || '';
-                    document.getElementById('break_end_time').value = data.data.break_end || '';
-                    document.getElementById('notes').value = data.data.notes || '';
-                    
-                    // Disabilita il campo data (non modificabile)
-                    document.getElementById('entry_date').readOnly = true;
-                } else {
-                    // Modalità inserimento - nessuna presenza esistente, pre-popola solo la data
-                    modalTitle.textContent = 'Inserimento Presenza Manuale';
-                    form.reset();
-                    document.getElementById('entry_date').value = dateStr;
-                    document.getElementById('entry_date').readOnly = false;
-                }
-                modal.show();
-            })
-            .catch(error => {
-                // Errore - assume modalità inserimento con data pre-popolata
-                console.error('Errore:', error);
-                modalTitle.textContent = 'Inserimento Presenza Manuale';
-                form.reset();
-                document.getElementById('entry_date').value = dateStr;
-                document.getElementById('entry_date').readOnly = false;
-                modal.show();
-            });
-    } else {
-        // Modalità inserimento - pulisci il form
-        modalTitle.textContent = 'Inserimento Presenza Manuale';
-        form.reset();
-        document.getElementById('entry_date').readOnly = false;
-        modal.show();
-    }
-}
-
-// Funzione per richiedere riapertura timesheet
-function requestTimesheetReopen() {
-    const form = document.getElementById('requestReopenForm');
-    const reason = document.getElementById('reopen_reason').value.trim();
-    
-    if (!reason) {
-        alert('Devi fornire una motivazione per la richiesta');
-        return;
-    }
-    
-    form.submit();
-}
-
 // Funzione per eliminare una presenza manuale
 function deleteManualEntry(dateStr) {
     if (confirm('Sei sicuro di voler eliminare questa presenza?')) {
-        // Crea form e invia
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/attendance/delete_manual_entry/${dateStr}`;
