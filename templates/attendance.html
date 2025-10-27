@@ -498,7 +498,7 @@
                                             <td>
                                                 {# Pulsanti modifica/elimina solo per presenze manuali e date passate #}
                                                 {% if record.is_manual and day.date <= today_date %}
-                                                <button type="button" class="btn btn-sm btn-warning me-1" onclick="openManualEntryModal('{{ day.date.strftime('%Y-%m-%d') }}')" title="Modifica">
+                                                <button type="button" class="btn btn-sm btn-warning me-1" onclick="editManualEntry('{{ day.date.strftime('%Y-%m-%d') }}')" title="Modifica">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-danger" onclick="deleteManualEntry('{{ day.date.strftime('%Y-%m-%d') }}')" title="Elimina">
@@ -549,7 +549,7 @@
                                             <td>
                                                 {# Pulsante aggiungi solo per date passate e giorni lavorativi #}
                                                 {% if day.date <= today_date and day.day_enabled %}
-                                                <button type="button" class="btn btn-sm btn-success" onclick="openManualEntryModal('{{ day.date.strftime('%Y-%m-%d') }}')" title="Aggiungi presenza">
+                                                <button type="button" class="btn btn-sm btn-success" onclick="addManualEntry('{{ day.date.strftime('%Y-%m-%d') }}')" title="Aggiungi presenza">
                                                     <i class="fas fa-plus"></i>
                                                 </button>
                                                 {% elif day.date > today_date %}
@@ -876,6 +876,52 @@
 {% endif %}
 
 <script>
+// Funzione per caricare una presenza nel form inline per modifica
+function editManualEntry(dateStr) {
+    // Scroll al form
+    document.getElementById('entry_date_inline').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Carica i dati via AJAX
+    fetch(`/attendance/edit_manual_entry/${dateStr}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('entry_date_inline').value = data.data.date;
+                document.getElementById('clock_in_time_inline').value = data.data.clock_in || '';
+                document.getElementById('clock_out_time_inline').value = data.data.clock_out || '';
+                document.getElementById('break_start_time_inline').value = data.data.break_start || '';
+                document.getElementById('break_end_time_inline').value = data.data.break_end || '';
+                document.getElementById('notes_inline').value = data.data.notes || '';
+                
+                // Focus sul primo campo
+                document.getElementById('clock_in_time_inline').focus();
+            } else {
+                alert('Impossibile caricare i dati della presenza');
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            alert('Errore nel caricamento dei dati');
+        });
+}
+
+// Funzione per pre-popolare la data nel form inline
+function addManualEntry(dateStr) {
+    // Scroll al form
+    document.getElementById('entry_date_inline').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Pre-popola solo la data
+    document.getElementById('entry_date_inline').value = dateStr;
+    document.getElementById('clock_in_time_inline').value = '';
+    document.getElementById('clock_out_time_inline').value = '';
+    document.getElementById('break_start_time_inline').value = '';
+    document.getElementById('break_end_time_inline').value = '';
+    document.getElementById('notes_inline').value = '';
+    
+    // Focus sul campo ora entrata
+    document.getElementById('clock_in_time_inline').focus();
+}
+
 // Funzione per eliminare una presenza manuale
 function deleteManualEntry(dateStr) {
     if (confirm('Sei sicuro di voler eliminare questa presenza?')) {
