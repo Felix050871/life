@@ -270,8 +270,8 @@ def assign_user():
         assigned_by_id=current_user.id
     )
     
-    # Valida le date
-    validation_errors = assignment.validate_dates()
+    # Valida le date (passa commessa esplicitamente perché la relazione non è ancora caricata)
+    validation_errors = assignment.validate_dates(commessa=commessa)
     if validation_errors:
         for error in validation_errors:
             flash(error, 'danger')

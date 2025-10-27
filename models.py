@@ -4008,15 +4008,25 @@ class CommessaAssignment(db.Model):
     def __repr__(self):
         return f'<CommessaAssignment user={self.user_id} commessa={self.commessa_id} {self.data_inizio} - {self.data_fine}>'
     
-    def validate_dates(self):
-        """Valida che le date di assegnazione siano entro il range della commessa"""
+    def validate_dates(self, commessa=None):
+        """Valida che le date di assegnazione siano entro il range della commessa
+        
+        Args:
+            commessa: Oggetto Commessa (opzionale). Se non fornito, usa self.commessa
+        """
         errors = []
         
-        if self.data_inizio < self.commessa.data_inizio:
-            errors.append(f"Data inizio assegnazione ({self.data_inizio}) non può essere prima dell'inizio commessa ({self.commessa.data_inizio})")
+        # Usa il parametro o la relazione
+        commessa_obj = commessa or self.commessa
+        if not commessa_obj:
+            errors.append("Commessa non trovata per validazione")
+            return errors
         
-        if self.data_fine > self.commessa.data_fine:
-            errors.append(f"Data fine assegnazione ({self.data_fine}) non può essere dopo la fine commessa ({self.commessa.data_fine})")
+        if self.data_inizio < commessa_obj.data_inizio:
+            errors.append(f"Data inizio assegnazione ({self.data_inizio}) non può essere prima dell'inizio commessa ({commessa_obj.data_inizio})")
+        
+        if self.data_fine > commessa_obj.data_fine:
+            errors.append(f"Data fine assegnazione ({self.data_fine}) non può essere dopo la fine commessa ({commessa_obj.data_fine})")
         
         if self.data_inizio > self.data_fine:
             errors.append("Data inizio assegnazione non può essere dopo la data fine")
