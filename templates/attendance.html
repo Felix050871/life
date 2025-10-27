@@ -649,9 +649,9 @@
                         </table>
                     </div>
                     {% endif %}
+                    {% endif %}
                     
                     <!-- Legenda indicatori -->
-                    {% if records %}
                     <div class="mt-3 p-3 bg-dark border rounded">
                         <h6 class="mb-2 text-light">Legenda Indicatori:</h6>
                         <div class="row g-2">
@@ -701,12 +701,12 @@
                             </div>
                         </div>
                     </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Nessuna presenza registrata nel periodo selezionato.
-                    </div>
-                    {% endif %}
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Nessuna presenza registrata nel periodo selezionato.
+                </div>
+                {% endif %}
                 </div>
             </div>
         </div>
