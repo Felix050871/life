@@ -523,9 +523,62 @@ def attendance():
         if not records_by_sede['Nessuna Sede']:
             del records_by_sede['Nessuna Sede']
     
+    # Genera tutti i giorni del periodo per vista personale (Le Mie Presenze)
+    all_days = []
+    if not show_team_data:
+        # Ottieni work schedule dell'utente per determinare se sabati/domeniche sono abilitati
+        user_work_schedule = current_user.work_schedule
+        works_on_saturday = False
+        works_on_sunday = False
+        
+        if user_work_schedule:
+            works_on_saturday = user_work_schedule.saturday_enabled
+            works_on_sunday = user_work_schedule.sunday_enabled
+        
+        # Crea dict di lookup per records esistenti (per data)
+        records_by_date = {}
+        for record in records:
+            record_date = record.date
+            if record_date not in records_by_date:
+                records_by_date[record_date] = []
+            records_by_date[record_date].append(record)
+        
+        # Genera tutti i giorni del periodo
+        current_day = start_date
+        while current_day <= end_date:
+            day_of_week = current_day.weekday()  # 0=Monday, 6=Sunday
+            is_saturday = (day_of_week == 5)
+            is_sunday = (day_of_week == 6)
+            is_weekend = is_saturday or is_sunday
+            
+            # Determina se il giorno è lavorativo per l'utente
+            day_enabled = True
+            if is_saturday and not works_on_saturday:
+                day_enabled = False
+            elif is_sunday and not works_on_sunday:
+                day_enabled = False
+            
+            # Ottieni i record per questo giorno (se esistono)
+            day_records = records_by_date.get(current_day, [])
+            
+            # Crea oggetto per il giorno
+            day_info = {
+                'date': current_day,
+                'is_weekend': is_weekend,
+                'is_saturday': is_saturday,
+                'is_sunday': is_sunday,
+                'day_enabled': day_enabled,
+                'records': day_records,
+                'has_records': len(day_records) > 0
+            }
+            
+            all_days.append(day_info)
+            current_day += timedelta(days=1)
+    
     return render_template('attendance.html', 
                          form=form, 
                          records=records,
+                         all_days=all_days,
                          records_by_sede=records_by_sede,
                          all_sedi_list=all_sedi_list,
                          today_date=datetime.now().date(),
