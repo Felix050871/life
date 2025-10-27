@@ -1639,6 +1639,19 @@ def manual_entry():
             flash('Non puoi inserire presenze per date future', 'danger')
             return redirect(url_for('attendance.attendance'))
         
+        # Verifica se il timesheet è consolidato
+        from models import MonthlyTimesheet
+        timesheet = MonthlyTimesheet.get_or_create(
+            user_id=current_user.id,
+            year=entry_date.year,
+            month=entry_date.month,
+            company_id=current_user.company_id
+        )
+        
+        if not timesheet.can_edit():
+            flash('Il timesheet per questo mese è consolidato. Devi richiedere una riapertura per modificarlo.', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
         # Validazione orari
         if not clock_in_time or not clock_out_time:
             flash('Orario di entrata e uscita obbligatori', 'danger')
@@ -1777,6 +1790,18 @@ def edit_manual_entry(date_str):
         if entry_date > date.today():
             return jsonify({'success': False, 'message': 'Non puoi modificare date future'})
         
+        # Verifica se il timesheet è consolidato
+        from models import MonthlyTimesheet
+        timesheet = MonthlyTimesheet.get_or_create(
+            user_id=current_user.id,
+            year=entry_date.year,
+            month=entry_date.month,
+            company_id=current_user.company_id
+        )
+        
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Il timesheet per questo mese è consolidato. Devi richiedere una riapertura.'})
+        
         # Ottieni eventi per questo giorno
         events = AttendanceEvent.query.filter_by(
             user_id=current_user.id,
@@ -1838,6 +1863,19 @@ def delete_manual_entry(date_str):
             flash('Non puoi eliminare date future', 'danger')
             return redirect(url_for('attendance.attendance'))
         
+        # Verifica se il timesheet è consolidato
+        from models import MonthlyTimesheet
+        timesheet = MonthlyTimesheet.get_or_create(
+            user_id=current_user.id,
+            year=entry_date.year,
+            month=entry_date.month,
+            company_id=current_user.company_id
+        )
+        
+        if not timesheet.can_edit():
+            flash('Il timesheet per questo mese è consolidato. Devi richiedere una riapertura per modificarlo.', 'danger')
+            return redirect(url_for('attendance.attendance'))
+        
         # Ottieni eventi per questo giorno
         events = AttendanceEvent.query.filter_by(
             user_id=current_user.id,
@@ -1867,3 +1905,177 @@ def delete_manual_entry(date_str):
         logging.error(f"Errore eliminazione presenza manuale: {str(e)}")
         flash(f'Errore eliminazione presenza: {str(e)}', 'danger')
         return redirect(url_for('attendance.attendance'))
+
+# =============================================================================
+# TIMESHEET REOPEN REQUEST ROUTES
+# =============================================================================
+
+@attendance_bp.route('/request_timesheet_reopen/<int:year>/<int:month>', methods=['GET', 'POST'])
+@login_required
+def request_timesheet_reopen(year, month):
+    """Richiedi la riapertura di un timesheet consolidato"""
+    if request.method == 'POST':
+        try:
+            from models import MonthlyTimesheet, TimesheetReopenRequest
+            
+            reason = request.form.get('reason', '').strip()
+            if not reason:
+                flash('Devi fornire una motivazione per la richiesta', 'danger')
+                return redirect(url_for('attendance.attendance'))
+            
+            # Verifica che il timesheet esista e sia consolidato
+            timesheet = MonthlyTimesheet.get_or_create(
+                user_id=current_user.id,
+                year=year,
+                month=month,
+                company_id=current_user.company_id
+            )
+            
+            if not timesheet.is_consolidated:
+                flash('Il timesheet non è consolidato, non serve richiesta di riapertura', 'info')
+                return redirect(url_for('attendance.attendance'))
+            
+            # Verifica se esiste già una richiesta pendente
+            existing_request = TimesheetReopenRequest.query.filter_by(
+                timesheet_id=timesheet.id,
+                status='Pending'
+            ).first()
+            
+            if existing_request:
+                flash('Esiste già una richiesta di riapertura pendente per questo mese', 'warning')
+                return redirect(url_for('attendance.attendance'))
+            
+            # Crea la richiesta
+            reopen_request = TimesheetReopenRequest(
+                timesheet_id=timesheet.id,
+                requested_by=current_user.id,
+                reason=reason,
+                company_id=current_user.company_id
+            )
+            set_company_on_create(reopen_request)
+            db.session.add(reopen_request)
+            db.session.commit()
+            
+            flash('Richiesta di riapertura inviata con successo. Attendi l\'approvazione.', 'success')
+            return redirect(url_for('attendance.attendance'))
+            
+        except Exception as e:
+            db.session.rollback()
+            import logging
+            logging.error(f"Errore richiesta riapertura timesheet: {str(e)}")
+            flash(f'Errore invio richiesta: {str(e)}', 'danger')
+            return redirect(url_for('attendance.attendance'))
+    
+    # GET - mostra form
+    from models import MonthlyTimesheet
+    timesheet = MonthlyTimesheet.get_or_create(
+        user_id=current_user.id,
+        year=year,
+        month=month,
+        company_id=current_user.company_id
+    )
+    
+    if not timesheet.is_consolidated:
+        flash('Il timesheet non è consolidato', 'info')
+        return redirect(url_for('attendance.attendance'))
+    
+    return render_template('request_timesheet_reopen.html', 
+                         timesheet=timesheet,
+                         year=year,
+                         month=month)
+
+@attendance_bp.route('/timesheet_reopen_requests', methods=['GET'])
+@login_required
+def timesheet_reopen_requests():
+    """Visualizza le richieste di riapertura timesheet (per responsabili)"""
+    from models import TimesheetReopenRequest
+    
+    # Verifica permessi
+    if not (current_user.can_manage_hr_data() or 
+            current_user.can_manage_commesse() or 
+            current_user.role in ['Admin', 'Amministratore']):
+        flash('Non hai i permessi per visualizzare le richieste di riapertura', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni le richieste pendenti filtrate per company
+    pending_requests = filter_by_company(TimesheetReopenRequest.query).filter_by(
+        status='Pending'
+    ).order_by(TimesheetReopenRequest.requested_at.desc()).all()
+    
+    # Ottieni le richieste completate (approvate/rifiutate)
+    completed_requests = filter_by_company(TimesheetReopenRequest.query).filter(
+        TimesheetReopenRequest.status.in_(['Approved', 'Rejected'])
+    ).order_by(TimesheetReopenRequest.reviewed_at.desc()).limit(50).all()
+    
+    return render_template('timesheet_reopen_requests.html',
+                         pending_requests=pending_requests,
+                         completed_requests=completed_requests)
+
+@attendance_bp.route('/approve_timesheet_reopen/<int:request_id>', methods=['POST'])
+@login_required
+def approve_timesheet_reopen(request_id):
+    """Approva una richiesta di riapertura timesheet"""
+    try:
+        from models import TimesheetReopenRequest
+        
+        reopen_request = filter_by_company(TimesheetReopenRequest.query).get(request_id)
+        if not reopen_request:
+            flash('Richiesta non trovata', 'danger')
+            return redirect(url_for('attendance.timesheet_reopen_requests'))
+        
+        # Verifica permessi
+        if not reopen_request.can_approve(current_user):
+            flash('Non hai i permessi per approvare questa richiesta', 'danger')
+            return redirect(url_for('attendance.timesheet_reopen_requests'))
+        
+        review_notes = request.form.get('review_notes', '').strip()
+        
+        if reopen_request.approve(current_user.id, review_notes):
+            flash('Richiesta approvata e timesheet riaperto con successo', 'success')
+        else:
+            flash('Impossibile approvare questa richiesta', 'danger')
+        
+        return redirect(url_for('attendance.timesheet_reopen_requests'))
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore approvazione richiesta riapertura: {str(e)}")
+        flash(f'Errore approvazione: {str(e)}', 'danger')
+        return redirect(url_for('attendance.timesheet_reopen_requests'))
+
+@attendance_bp.route('/reject_timesheet_reopen/<int:request_id>', methods=['POST'])
+@login_required
+def reject_timesheet_reopen(request_id):
+    """Rifiuta una richiesta di riapertura timesheet"""
+    try:
+        from models import TimesheetReopenRequest
+        
+        reopen_request = filter_by_company(TimesheetReopenRequest.query).get(request_id)
+        if not reopen_request:
+            flash('Richiesta non trovata', 'danger')
+            return redirect(url_for('attendance.timesheet_reopen_requests'))
+        
+        # Verifica permessi
+        if not reopen_request.can_approve(current_user):
+            flash('Non hai i permessi per rifiutare questa richiesta', 'danger')
+            return redirect(url_for('attendance.timesheet_reopen_requests'))
+        
+        review_notes = request.form.get('review_notes', '').strip()
+        if not review_notes:
+            flash('Devi fornire una motivazione per il rifiuto', 'danger')
+            return redirect(url_for('attendance.timesheet_reopen_requests'))
+        
+        if reopen_request.reject(current_user.id, review_notes):
+            flash('Richiesta rifiutata', 'success')
+        else:
+            flash('Impossibile rifiutare questa richiesta', 'danger')
+        
+        return redirect(url_for('attendance.timesheet_reopen_requests'))
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore rifiuto richiesta riapertura: {str(e)}")
+        flash(f'Errore rifiuto: {str(e)}', 'danger')
+        return redirect(url_for('attendance.timesheet_reopen_requests'))

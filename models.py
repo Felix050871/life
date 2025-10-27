@@ -1889,6 +1889,70 @@ class MonthlyTimesheet(db.Model):
             db.session.commit()
             return True
         return False
+    
+    def reopen(self):
+        """Riapre il timesheet consolidato per correzioni"""
+        if self.is_consolidated:
+            self.is_consolidated = False
+            self.consolidated_at = None
+            self.consolidated_by = None
+            db.session.commit()
+            return True
+        return False
+
+
+class TimesheetReopenRequest(db.Model):
+    """Modello per gestire le richieste di riapertura timesheet consolidato"""
+    id = db.Column(db.Integer, primary_key=True)
+    timesheet_id = db.Column(db.Integer, db.ForeignKey('monthly_timesheet.id'), nullable=False)
+    requested_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    requested_at = db.Column(db.DateTime, default=italian_now, nullable=False)
+    reason = db.Column(db.Text, nullable=False)  # Motivazione della richiesta
+    status = db.Column(db.String(20), default='Pending', nullable=False)  # 'Pending', 'Approved', 'Rejected'
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_notes = db.Column(db.Text, nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
+    
+    timesheet = db.relationship('MonthlyTimesheet', backref='reopen_requests')
+    requester = db.relationship('User', foreign_keys=[requested_by], backref='timesheet_reopen_requests')
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by])
+    
+    def __repr__(self):
+        return f'<TimesheetReopenRequest {self.id} - {self.status}>'
+    
+    def can_approve(self, user):
+        """Verifica se l'utente può approvare questa richiesta"""
+        # Responsabili HR o responsabili di commessa possono approvare
+        return (user.can_manage_hr_data() or 
+                user.can_manage_commesse() or 
+                user.role in ['Admin', 'Amministratore'])
+    
+    def approve(self, reviewer_id, notes=None):
+        """Approva la richiesta e riapre il timesheet"""
+        if self.status == 'Pending':
+            self.status = 'Approved'
+            self.reviewed_by = reviewer_id
+            self.reviewed_at = italian_now()
+            self.review_notes = notes
+            
+            # Riapri il timesheet
+            self.timesheet.reopen()
+            
+            db.session.commit()
+            return True
+        return False
+    
+    def reject(self, reviewer_id, notes=None):
+        """Rifiuta la richiesta"""
+        if self.status == 'Pending':
+            self.status = 'Rejected'
+            self.reviewed_by = reviewer_id
+            self.reviewed_at = italian_now()
+            self.review_notes = notes
+            db.session.commit()
+            return True
+        return False
 
 # =============================================================================
 # LEAVE MANAGEMENT MODELS
