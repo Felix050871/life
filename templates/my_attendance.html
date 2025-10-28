@@ -3,6 +3,16 @@
 {% block title %}Le Mie Presenze - {{ month_name }} {{ year }}{% endblock %}
 
 {% block content %}
+<!-- Overlay di caricamento -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+    <div class="text-center">
+        <div class="spinner-border text-light" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Caricamento...</span>
+        </div>
+        <div class="mt-3 text-white h4" id="loadingText">Elaborazione in corso...</div>
+    </div>
+</div>
+
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
@@ -384,6 +394,19 @@ const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
 const HAS_MULTIPLE_SEDI = {{ 'true' if user_sedi|length > 1 else 'false' }};
 const HAS_COMMESSE = {{ 'true' if active_commesse|length > 0 else 'false' }};
 
+// Funzioni per gestire l'overlay di caricamento
+function showLoadingOverlay(message = 'Elaborazione in corso...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const text = document.getElementById('loadingText');
+    text.textContent = message;
+    overlay.style.display = 'flex';
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.display = 'none';
+}
+
 function saveDayData(day) {
     if (!CAN_EDIT) {
         showFlashMessage('warning', 'Timesheet consolidato, non modificabile');
@@ -602,7 +625,7 @@ function performBulkFill() {
     const modal = bootstrap.Modal.getInstance(document.getElementById('bulkFillModal'));
     modal.hide();
     
-    showFlashMessage('info', 'Compilazione in corso...');
+    showLoadingOverlay('Compilazione massiva in corso...');
     
     fetch('{{ url_for("attendance.bulk_fill_month") }}', {
         method: 'POST',
@@ -614,6 +637,7 @@ function performBulkFill() {
     })
     .then(response => response.json())
     .then(data => {
+        hideLoadingOverlay();
         if (data.success) {
             showFlashMessage('success', data.message);
             setTimeout(() => {
@@ -624,6 +648,7 @@ function performBulkFill() {
         }
     })
     .catch(error => {
+        hideLoadingOverlay();
         console.error('Error:', error);
         showFlashMessage('danger', 'Errore di connessione');
     });
@@ -639,7 +664,7 @@ function consolidateTimesheet() {
         return;
     }
     
-    showFlashMessage('info', 'Consolidamento in corso...');
+    showLoadingOverlay('Consolidamento in corso...');
     
     fetch('{{ url_for("attendance.consolidate_timesheet") }}', {
         method: 'POST',
@@ -654,6 +679,7 @@ function consolidateTimesheet() {
     })
     .then(response => response.json())
     .then(data => {
+        hideLoadingOverlay();
         if (data.success) {
             showFlashMessage('success', data.message);
             setTimeout(() => {
@@ -664,6 +690,7 @@ function consolidateTimesheet() {
         }
     })
     .catch(error => {
+        hideLoadingOverlay();
         console.error('Error:', error);
         showFlashMessage('danger', 'Errore di connessione');
     });
