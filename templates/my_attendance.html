@@ -20,7 +20,9 @@
                         <i class="fas fa-lock me-2"></i>
                         <strong>Timesheet Consolidato</strong><br>
                         Questo timesheet è stato consolidato il {{ timesheet.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }} e non può più essere modificato.
-                        <br><a href="{{ url_for('attendance.timesheet_reopen_requests') }}" class="alert-link">Richiedi riapertura</a>
+                        <br><button type="button" class="btn btn-sm btn-info mt-2" data-bs-toggle="modal" data-bs-target="#requestReopenModal">
+                            <i class="fas fa-envelope me-1"></i>Richiedi Riapertura
+                        </button>
                     </div>
                     {% else %}
                     <div class="alert alert-success">
@@ -328,6 +330,39 @@
                     <i class="fas fa-magic me-1"></i>Compila
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Richiesta Riapertura Timesheet -->
+<div class="modal fade" id="requestReopenModal" tabindex="-1" aria-labelledby="requestReopenModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="requestReopenModalLabel">
+                    <i class="fas fa-envelope me-2"></i>Richiedi Riapertura Timesheet
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('attendance.request_timesheet_reopen', year=year, month=month) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p>Questo timesheet è consolidato e non può essere modificato. Puoi inviare una richiesta di riapertura che dovrà essere approvata dal responsabile.</p>
+                    
+                    <div class="mb-3">
+                        <label for="reopen_reason" class="form-label">Motivazione <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="reopen_reason" name="reason" rows="4" required 
+                                  placeholder="Spiega perché hai bisogno di riaprire questo timesheet..."></textarea>
+                        <small class="text-muted">Fornisci una motivazione chiara e dettagliata per la richiesta di riapertura.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i>Invia Richiesta
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

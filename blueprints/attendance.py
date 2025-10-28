@@ -1948,7 +1948,7 @@ def request_timesheet_reopen(year, month):
             reason = request.form.get('reason', '').strip()
             if not reason:
                 flash('Devi fornire una motivazione per la richiesta', 'danger')
-                return redirect(url_for('attendance.attendance'))
+                return redirect(url_for('attendance.my_attendance', year=year, month=month))
             
             # Verifica che il timesheet esista e sia consolidato
             timesheet = MonthlyTimesheet.get_or_create(
@@ -1960,7 +1960,7 @@ def request_timesheet_reopen(year, month):
             
             if not timesheet.is_consolidated:
                 flash('Il timesheet non è consolidato, non serve richiesta di riapertura', 'info')
-                return redirect(url_for('attendance.attendance'))
+                return redirect(url_for('attendance.my_attendance', year=year, month=month))
             
             # Verifica se esiste già una richiesta pendente
             existing_request = TimesheetReopenRequest.query.filter_by(
@@ -1970,7 +1970,7 @@ def request_timesheet_reopen(year, month):
             
             if existing_request:
                 flash('Esiste già una richiesta di riapertura pendente per questo mese', 'warning')
-                return redirect(url_for('attendance.attendance'))
+                return redirect(url_for('attendance.my_attendance', year=year, month=month))
             
             # Crea la richiesta
             reopen_request = TimesheetReopenRequest(
@@ -1984,14 +1984,14 @@ def request_timesheet_reopen(year, month):
             db.session.commit()
             
             flash('Richiesta di riapertura inviata con successo. Attendi l\'approvazione.', 'success')
-            return redirect(url_for('attendance.attendance'))
+            return redirect(url_for('attendance.my_attendance', year=year, month=month))
             
         except Exception as e:
             db.session.rollback()
             import logging
             logging.error(f"Errore richiesta riapertura timesheet: {str(e)}")
             flash(f'Errore invio richiesta: {str(e)}', 'danger')
-            return redirect(url_for('attendance.attendance'))
+            return redirect(url_for('attendance.my_attendance', year=year, month=month))
     
     # GET - mostra form
     from models import MonthlyTimesheet
