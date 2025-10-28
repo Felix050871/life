@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Timesheet di {{ target_user.full_name }} - {{ month_name }} {{ year }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-clock me-2"></i>
+                        Timesheet di {{ target_user.full_name }} - {{ month_name }} {{ year }}
+                    </h5>
+                    <a href="{{ url_for('attendance.validate_timesheets') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alla Lista
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <!-- Pulsanti di azione per responsabile -->
+                    <div class="alert alert-primary mb-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-user-tie me-2"></i>Modalità Responsabile - Sola Lettura
+                                </h6>
+                                <small>
+                                    {% if timesheet.is_validated %}
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    Questo timesheet è stato validato il {{ timesheet.validated_at.strftime('%d/%m/%Y alle %H:%M') }}.
+                                    {% elif timesheet.is_consolidated %}
+                                    <i class="fas fa-lock text-info me-1"></i>
+                                    Questo timesheet è consolidato. Puoi validarlo o riaprirlo per permettere modifiche.
+                                    {% else %}
+                                    <i class="fas fa-edit text-warning me-1"></i>
+                                    Questo timesheet è ancora in compilazione.
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                {% if timesheet.is_consolidated and not timesheet.is_validated %}
+                                <div class="btn-group" role="group">
+                                    <!-- Valida -->
+                                    <form method="POST" action="{{ url_for('attendance.validate_timesheet', timesheet_id=timesheet.id) }}" style="display:inline;"
+                                          onsubmit="return confirm('Confermi la validazione di questo timesheet? Questa operazione è irreversibile.');">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-check me-1"></i>Valida
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Riapri -->
+                                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#managerReopenModal">
+                                        <i class="fas fa-unlock me-1"></i>Riapri
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabella presenze (Sola Lettura) -->
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 6%;">Giorno</th>
+                                    <th style="width: 10%;">Data</th>
+                                    <th style="width: 10%;">Sede</th>
+                                    {% if active_commesse|length > 0 %}
+                                    <th style="width: 12%;">Commessa</th>
+                                    {% endif %}
+                                    <th style="width: 12%;">Tipologia</th>
+                                    <th style="width: 10%;">Entrata</th>
+                                    <th style="width: 10%;">Inizio Pausa</th>
+                                    <th style="width: 10%;">Fine Pausa</th>
+                                    <th style="width: 10%;">Uscita</th>
+                                    <th style="width: 12%;">Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day_data in days_data %}
+                                <tr class="{% if day_data.is_weekend %}table-secondary{% elif day_data.is_future %}table-light text-muted{% elif day_data.has_leave %}table-warning bg-opacity-25{% endif %}">
+                                    <td class="fw-bold">{{ day_data.weekday }}</td>
+                                    <td>
+                                        {{ day_data.date.strftime('%d/%m/%Y') }}
+                                        {% if day_data.is_future %}
+                                        <small class="text-muted d-block"><i class="fas fa-clock"></i> Futuro</small>
+                                        {% elif day_data.has_leave %}
+                                        <small class="text-warning d-block">
+                                            {% if 'Malattia' in day_data.leave_type %}
+                                            <i class="fas fa-thermometer-half" style="color: #fd7e14;"></i>
+                                            {% elif 'Ferie' in day_data.leave_type %}
+                                            <i class="fas fa-umbrella-beach" style="color: #28a745;"></i>
+                                            {% else %}
+                                            <i class="fas fa-clock" style="color: #6f42c1;"></i>
+                                            {% endif %}
+                                            {{ day_data.leave_type }}
+                                        </small>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="text-muted">
+                                        {% if day_data.sede_id %}
+                                            {% for sede in user_sedi if sede.id == day_data.sede_id %}
+                                            {{ sede.name }}
+                                            {% endfor %}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    
+                                    {% if active_commesse|length > 0 %}
+                                    <td class="text-muted">
+                                        {% if day_data.commessa_id %}
+                                            {% for commessa in active_commesse if commessa.id == day_data.commessa_id %}
+                                            {{ commessa.codice }} - {{ commessa.cliente }}
+                                            {% endfor %}
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    {% endif %}
+                                    
+                                    <td class="text-muted">
+                                        {% if day_data.attendance_type_id %}
+                                            {% for type in attendance_types if type.id == day_data.attendance_type_id %}
+                                            {{ type.name }}
+                                            {% endfor %}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="text-center">
+                                        {% if day_data.clock_in %}
+                                        <span class="badge bg-info">{{ day_data.clock_in }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if day_data.break_start %}
+                                        <span class="badge bg-warning text-dark">{{ day_data.break_start }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if day_data.break_end %}
+                                        <span class="badge bg-warning text-dark">{{ day_data.break_end }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if day_data.clock_out %}
+                                        <span class="badge bg-danger">{{ day_data.clock_out }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if day_data.has_leave %}
+                                        <span class="badge bg-warning text-dark" title="{{ day_data.leave_type }}">
+                                            {% if 'Malattia' in day_data.leave_type %}
+                                            <i class="fas fa-thermometer-half"></i>
+                                            {% elif 'Ferie' in day_data.leave_type %}
+                                            <i class="fas fa-umbrella-beach"></i>
+                                            {% else %}
+                                            <i class="fas fa-clock"></i>
+                                            {% endif %}
+                                            {{ day_data.leave_type }}
+                                        </span>
+                                        {% elif day_data.has_live %}
+                                        <span class="badge bg-success" title="Registrato in tempo reale">
+                                            <i class="fas fa-mobile-alt"></i> Live
+                                        </span>
+                                        {% elif day_data.has_manual %}
+                                        <span class="badge bg-info" title="Inserimento manuale">
+                                            <i class="fas fa-keyboard"></i> Manuale
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary" title="Nessuna presenza">
+                                            <i class="fas fa-minus"></i> Vuoto
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Riapertura da Responsabile -->
+<div class="modal fade" id="managerReopenModal" tabindex="-1" aria-labelledby="managerReopenModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="managerReopenModalLabel">
+                    <i class="fas fa-unlock me-2"></i>Riapri Timesheet
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('attendance.manager_reopen_timesheet', timesheet_id=timesheet.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p>Riaprendo questo timesheet, <strong>{{ target_user.full_name }}</strong> potrà modificare nuovamente le proprie presenze.</p>
+                    
+                    <div class="mb-3">
+                        <label for="manager_reopen_reason" class="form-label">Motivo della riapertura <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="manager_reopen_reason" name="reason" rows="4" required 
+                                  placeholder="Es: Correzione errori di timbratura, inserimento ore straordinario non registrato, etc."></textarea>
+                        <small class="text-muted">Il dipendente vedrà questo commento quando accede al timesheet.</small>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Attenzione:</strong> Il timesheet tornerà in stato "In compilazione" e il dipendente dovrà consolidarlo nuovamente.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-unlock me-1"></i>Riapri Timesheet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

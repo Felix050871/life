@@ -2212,6 +2212,184 @@ def validate_timesheet(timesheet_id):
         flash(f'Errore validazione: {str(e)}', 'danger')
         return redirect(url_for('attendance.validate_timesheets'))
 
+@attendance_bp.route('/view_timesheet_for_validation/<int:timesheet_id>', methods=['GET'])
+@login_required
+def view_timesheet_for_validation(timesheet_id):
+    """Visualizzazione dedicata del timesheet per responsabili (senza navigazione)"""
+    from models import MonthlyTimesheet, User, AttendanceEvent, LeaveRequest, AttendanceType
+    from calendar import monthrange
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+    
+    # Ottieni il timesheet
+    timesheet = filter_by_company(MonthlyTimesheet.query).filter_by(id=timesheet_id).first()
+    if not timesheet:
+        flash('Timesheet non trovato', 'danger')
+        return redirect(url_for('attendance.validate_timesheets'))
+    
+    # Verifica permessi di visualizzazione
+    if not timesheet.can_validate(current_user):
+        flash('Non hai i permessi per visualizzare questo timesheet', 'danger')
+        return redirect(url_for('attendance.validate_timesheets'))
+    
+    target_user = timesheet.user
+    year = timesheet.year
+    month = timesheet.month
+    
+    # Calcola primo e ultimo giorno del mese
+    first_day = date(year, month, 1)
+    last_day_num = monthrange(year, month)[1]
+    last_day = date(year, month, last_day_num)
+    
+    # Ottieni tutte le sedi disponibili per l'utente
+    user_sedi = []
+    if hasattr(target_user, 'sedi') and target_user.sedi:
+        user_sedi = target_user.sedi
+    elif target_user.sede_obj:
+        user_sedi = [target_user.sede_obj]
+    
+    # Ottieni commesse attive per il periodo del mese visualizzato
+    active_commesse = target_user.get_commesse_for_period(first_day, last_day)
+    
+    # Ottieni tipologie di presenza attive
+    attendance_types = filter_by_company(AttendanceType.query).filter_by(active=True).order_by(AttendanceType.is_default.desc(), AttendanceType.name).all()
+    default_type = next((t for t in attendance_types if t.is_default), attendance_types[0] if attendance_types else None)
+    
+    # Ottieni tutti gli eventi del mese per l'utente
+    events_query = filter_by_company(AttendanceEvent.query).filter(
+        AttendanceEvent.user_id == target_user.id,
+        AttendanceEvent.date >= first_day,
+        AttendanceEvent.date <= last_day
+    ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+    
+    # Ottieni ferie/permessi approvati E in attesa nel mese
+    leaves_query = filter_by_company(LeaveRequest.query).filter(
+        LeaveRequest.user_id == target_user.id,
+        LeaveRequest.status.in_(['Approved', 'Pending']),
+        LeaveRequest.start_date <= last_day,
+        LeaveRequest.end_date >= first_day
+    ).all()
+    
+    # Crea set di date con ferie/permessi
+    leave_dates = set()
+    leave_info = {}
+    for leave in leaves_query:
+        current_date = leave.start_date
+        while current_date <= leave.end_date:
+            if first_day <= current_date <= last_day:
+                leave_dates.add(current_date)
+                leave_type_name = leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or 'Permesso')
+                leave_info[current_date] = leave_type_name
+            current_date += timedelta(days=1)
+    
+    # Organizza eventi per giorno
+    events_by_day = {}
+    for event in events_query:
+        day = event.date.day
+        if day not in events_by_day:
+            events_by_day[day] = {
+                'events': [],
+                'has_manual': False,
+                'has_live': False,
+                'sede_id': event.sede_id,
+                'commessa_id': event.commessa_id
+            }
+        events_by_day[day]['events'].append(event)
+        if event.is_manual:
+            events_by_day[day]['has_manual'] = True
+            if event.sede_id:
+                events_by_day[day]['sede_id'] = event.sede_id
+            if event.commessa_id:
+                events_by_day[day]['commessa_id'] = event.commessa_id
+        else:
+            events_by_day[day]['has_live'] = True
+    
+    # Crea lista giorni del mese con info
+    italy_tz = ZoneInfo('Europe/Rome')
+    
+    def to_italian_time_str(timestamp):
+        if not timestamp:
+            return None
+        if timestamp.tzinfo is None:
+            utc_tz = ZoneInfo('UTC')
+            timestamp = timestamp.replace(tzinfo=utc_tz)
+        italian_time = timestamp.astimezone(italy_tz)
+        return italian_time.strftime('%H:%M')
+    
+    days_data = []
+    for day in range(1, last_day_num + 1):
+        day_date = date(year, month, day)
+        day_events = events_by_day.get(day, {
+            'events': [],
+            'has_manual': False,
+            'has_live': False,
+            'sede_id': target_user.sede_id,
+            'commessa_id': None
+        })
+        
+        has_leave = day_date in leave_dates
+        leave_type = leave_info.get(day_date, '')
+        
+        clock_in_time = None
+        clock_out_time = None
+        break_start_time = None
+        break_end_time = None
+        attendance_type_id = default_type.id if default_type else None
+        
+        for event in day_events['events']:
+            if event.attendance_type_id and attendance_type_id == (default_type.id if default_type else None):
+                attendance_type_id = event.attendance_type_id
+            
+            if event.event_type == 'clock_in' and clock_in_time is None:
+                clock_in_time = to_italian_time_str(event.timestamp)
+            elif event.event_type == 'clock_out':
+                clock_out_time = to_italian_time_str(event.timestamp)
+            elif event.event_type == 'break_start' and break_start_time is None:
+                break_start_time = to_italian_time_str(event.timestamp)
+            elif event.event_type == 'break_end':
+                break_end_time = to_italian_time_str(event.timestamp)
+        
+        italian_weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+        weekday_italian = italian_weekdays[day_date.weekday()]
+        
+        default_commessa_id = day_events.get('commessa_id')
+        if default_commessa_id is None and len(active_commesse) == 1:
+            default_commessa_id = active_commesse[0].id
+        
+        days_data.append({
+            'day': day,
+            'date': day_date,
+            'weekday': weekday_italian,
+            'clock_in': clock_in_time,
+            'clock_out': clock_out_time,
+            'break_start': break_start_time,
+            'break_end': break_end_time,
+            'sede_id': day_events.get('sede_id', target_user.sede_id),
+            'commessa_id': default_commessa_id,
+            'attendance_type_id': attendance_type_id,
+            'has_manual': day_events['has_manual'],
+            'has_live': day_events['has_live'],
+            'is_weekend': day_date.weekday() >= 5,
+            'is_future': day_date > date.today(),
+            'has_leave': has_leave,
+            'leave_type': leave_type
+        })
+    
+    month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+    
+    return render_template('view_timesheet_validation.html',
+                         timesheet=timesheet,
+                         target_user=target_user,
+                         year=year,
+                         month=month,
+                         month_name=month_names[month],
+                         days_data=days_data,
+                         user_sedi=user_sedi,
+                         active_commesse=active_commesse,
+                         attendance_types=attendance_types,
+                         can_validate=True)
+
 @attendance_bp.route('/manager_reopen_timesheet/<int:timesheet_id>', methods=['POST'])
 @login_required
 def manager_reopen_timesheet(timesheet_id):

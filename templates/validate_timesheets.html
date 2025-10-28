@@ -63,8 +63,7 @@
                                         {% for ts in timesheets_to_validate %}
                                         <tr>
                                             <td>
-                                                <strong>{{ ts.user.full_name }}</strong><br>
-                                                <small class="text-muted">{{ ts.user.get_mansione_name() or 'Nessuna mansione' }}</small>
+                                                <strong>{{ ts.user.full_name }}</strong>
                                             </td>
                                             <td>
                                                 <span class="badge bg-info">
@@ -78,7 +77,7 @@
                                             <td class="text-end">
                                                 <div class="btn-group btn-group-sm" role="group">
                                                     <!-- Visualizza -->
-                                                    <a href="{{ url_for('attendance.my_attendance', year=ts.year, month=ts.month, user_id=ts.user_id) }}" 
+                                                    <a href="{{ url_for('attendance.view_timesheet_for_validation', timesheet_id=ts.id) }}" 
                                                        class="btn btn-outline-primary" title="Visualizza">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
@@ -124,8 +123,7 @@
                                         {% for ts in validated_timesheets %}
                                         <tr>
                                             <td>
-                                                <strong>{{ ts.user.full_name }}</strong><br>
-                                                <small class="text-muted">{{ ts.user.get_mansione_name() or 'Nessuna mansione' }}</small>
+                                                <strong>{{ ts.user.full_name }}</strong>
                                             </td>
                                             <td>
                                                 <span class="badge bg-success">
