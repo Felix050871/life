@@ -1146,7 +1146,14 @@
                             let confirmBtnClass = 'btn-danger';
                             
                             // Customize based on message content
-                            if (confirmMessage.includes('nota spese')) {
+                            if (confirmMessage.includes('validazione') && confirmMessage.includes('timesheet')) {
+                                title = 'Conferma Validazione';
+                                message = '<p><i class="fas fa-check-circle me-2 text-success"></i>' + confirmMessage + '</p>' +
+                                         '<div class="alert alert-info mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>' +
+                                         '<strong>Nota:</strong> Una volta validato, il timesheet non potrà più essere modificato.</small></div>';
+                                confirmBtnText = 'Conferma';
+                                confirmBtnClass = 'btn-success';
+                            } else if (confirmMessage.includes('nota spese')) {
                                 title = 'Elimina Nota Spese';
                                 message = '<p><i class="fas fa-receipt me-2 text-danger"></i>Vuoi eliminare definitivamente questa nota spese?</p>' +
                                          '<div class="alert alert-warning mt-3 mb-0"><small><i class="fas fa-info-circle me-1"></i>' +
