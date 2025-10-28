@@ -509,6 +509,11 @@
                             <i class="fas fa-tags"></i>Tipologie Presenze
                         </a></li>
                         {% endif %}
+                        {% if current_user.can_manage_hr_data() or current_user.can_manage_commesse() or current_user.role in ['Admin', 'Amministratore'] %}
+                        <li><a href="{{ url_for('attendance.validate_timesheets') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-check-double"></i>Validazione Timesheets
+                        </a></li>
+                        {% endif %}
                         {% if current_user.can_manage_hr_data() or current_user.role in ['Admin', 'Amministratore'] %}
                         <li><a href="{{ url_for('attendance.timesheet_reopen_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-unlock-alt"></i>Richieste Riapertura

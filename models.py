@@ -1959,6 +1959,43 @@ class MonthlyTimesheet(db.Model):
             return True
         return False
     
+    def can_validate(self, user):
+        """Verifica se l'utente può validare questo timesheet"""
+        # Admin/Amministratore possono validare tutto
+        if user.role in ['Admin', 'Amministratore']:
+            return True
+        
+        # Responsabili HR possono validare tutto
+        if user.can_manage_hr_data():
+            return True
+        
+        # Responsabili di commessa possono validare solo per risorse delle loro commesse
+        if user.can_manage_commesse():
+            # Ottieni le commesse di cui l'utente è responsabile
+            responsabile_commesse = user.get_commesse_as_responsabile()
+            if not responsabile_commesse:
+                return False
+            
+            # Ottieni l'employee del timesheet
+            employee = self.user
+            
+            # Verifica se l'employee è assegnato a una delle commesse del responsabile
+            # nel periodo del timesheet
+            from datetime import date
+            # Usa metà mese come riferimento
+            reference_date = date(self.year, self.month, 15)
+            
+            for commessa in responsabile_commesse:
+                # Verifica se l'employee ha un'assegnazione attiva a questa commessa nel periodo del timesheet
+                for assignment in employee.commessa_assignments:
+                    if (assignment.commessa_id == commessa.id and 
+                        assignment.data_inizio <= reference_date <= assignment.data_fine):
+                        return True
+            
+            return False
+        
+        return False
+    
     def validate(self, validator_id):
         """Valida il timesheet consolidato (operazione irreversibile)"""
         if self.is_consolidated and not self.is_validated:

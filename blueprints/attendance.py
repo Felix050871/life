@@ -2105,6 +2105,113 @@ def reject_timesheet_reopen(request_id):
         flash(f'Errore rifiuto: {str(e)}', 'danger')
         return redirect(url_for('attendance.timesheet_reopen_requests'))
 
+@attendance_bp.route('/validate_timesheets', methods=['GET'])
+@login_required
+def validate_timesheets():
+    """Visualizza i timesheets consolidati da validare (per responsabili)"""
+    from models import MonthlyTimesheet
+    from datetime import datetime
+    
+    # Verifica permessi
+    if not (current_user.can_manage_hr_data() or 
+            current_user.can_manage_commesse() or 
+            current_user.role in ['Admin', 'Amministratore']):
+        flash('Non hai i permessi per validare i timesheets', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni filtro anno (default: anno corrente)
+    try:
+        year_filter = int(request.args.get('year', datetime.now().year))
+    except ValueError:
+        year_filter = datetime.now().year
+    
+    # Ottieni tutti i timesheets consolidati ma non validati
+    all_timesheets = filter_by_company(MonthlyTimesheet.query).filter_by(
+        year=year_filter,
+        is_consolidated=True,
+        is_validated=False
+    ).order_by(MonthlyTimesheet.month.desc(), MonthlyTimesheet.user_id).all()
+    
+    # Filtra i timesheets che l'utente può validare
+    if current_user.can_manage_hr_data() or current_user.role in ['Admin', 'Amministratore']:
+        timesheets_to_validate = all_timesheets
+    else:
+        # Responsabile di commessa: filtra per risorse assegnate
+        timesheets_to_validate = [ts for ts in all_timesheets if ts.can_validate(current_user)]
+    
+    # Ottieni i timesheets già validati (ultimi 50)
+    all_validated = filter_by_company(MonthlyTimesheet.query).filter_by(
+        year=year_filter,
+        is_validated=True
+    ).order_by(MonthlyTimesheet.validated_at.desc()).limit(50).all()
+    
+    if current_user.can_manage_hr_data() or current_user.role in ['Admin', 'Amministratore']:
+        validated_timesheets = all_validated
+    else:
+        validated_timesheets = [ts for ts in all_validated if ts.can_validate(current_user)]
+    
+    # Ottieni tutti gli anni disponibili per il filtro
+    available_years_query = db.session.query(MonthlyTimesheet.year).filter(
+        MonthlyTimesheet.company_id == current_user.company_id
+    ).distinct().order_by(MonthlyTimesheet.year.desc()).all()
+    available_years = [year[0] for year in available_years_query] if available_years_query else [datetime.now().year]
+    
+    # Month names in Italian
+    month_names = {
+        1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile',
+        5: 'Maggio', 6: 'Giugno', 7: 'Luglio', 8: 'Agosto',
+        9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
+    }
+    
+    return render_template('validate_timesheets.html',
+                         timesheets_to_validate=timesheets_to_validate,
+                         validated_timesheets=validated_timesheets,
+                         year_filter=year_filter,
+                         available_years=available_years,
+                         month_names=month_names)
+
+@attendance_bp.route('/validate_timesheet/<int:timesheet_id>', methods=['POST'])
+@login_required
+def validate_timesheet(timesheet_id):
+    """Valida un timesheet consolidato"""
+    try:
+        from models import MonthlyTimesheet
+        
+        # Ottieni il timesheet
+        timesheet = filter_by_company(MonthlyTimesheet.query).filter_by(id=timesheet_id).first()
+        if not timesheet:
+            flash('Timesheet non trovato', 'danger')
+            return redirect(url_for('attendance.validate_timesheets'))
+        
+        # Verifica permessi
+        if not timesheet.can_validate(current_user):
+            flash('Non hai i permessi per validare questo timesheet', 'danger')
+            return redirect(url_for('attendance.validate_timesheets'))
+        
+        # Verifica che il timesheet sia consolidato ma non ancora validato
+        if not timesheet.is_consolidated:
+            flash('Il timesheet deve essere consolidato prima di poter essere validato', 'warning')
+            return redirect(url_for('attendance.validate_timesheets'))
+        
+        if timesheet.is_validated:
+            flash('Questo timesheet è già stato validato', 'info')
+            return redirect(url_for('attendance.validate_timesheets'))
+        
+        # Valida il timesheet
+        if timesheet.validate(current_user.id):
+            flash(f'Timesheet di {timesheet.user.full_name} per {timesheet.month}/{timesheet.year} validato con successo', 'success')
+        else:
+            flash('Impossibile validare questo timesheet', 'danger')
+        
+        return redirect(url_for('attendance.validate_timesheets'))
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore validazione timesheet: {str(e)}")
+        flash(f'Errore validazione: {str(e)}', 'danger')
+        return redirect(url_for('attendance.validate_timesheets'))
+
 # =============================================================================
 # MY ATTENDANCE - PERSONAL ATTENDANCE MANAGEMENT WITH INLINE EDITING
 # =============================================================================
