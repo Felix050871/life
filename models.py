@@ -124,6 +124,7 @@ class UserRole(db.Model):
             'can_view_sede_attendance': 'Visualizzare Presenze Sede',
             'can_manage_attendance_types': 'Gestire Tipologie Presenze',
             'can_view_attendance_types': 'Visualizzare Tipologie Presenze',
+            'can_export_validated_timesheets': 'Esportare Timesheets Validati',
             
             # Gestione ferie/permessi
             'can_manage_leave': 'Gestisci Tipologie Assenze',
@@ -476,6 +477,10 @@ class User(UserMixin, db.Model):
     def can_access_attendance_types_menu(self):
         """Accesso al menu tipologie presenze"""
         return self.can_manage_attendance_types() or self.can_view_attendance_types()
+    
+    def can_export_validated_timesheets(self):
+        """Può esportare i timesheets validati"""
+        return self.has_permission('can_export_validated_timesheets')
     
     # === FERIE/PERMESSI ===
     def can_manage_leave(self):

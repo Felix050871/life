@@ -475,7 +475,7 @@
                 {% endif %}
 
                 <!-- PRESENZE - Solo se ha almeno un permesso presenze -->
-                {% set has_attendance_permission = current_user.can_manage_attendance() or current_user.can_view_attendance() or current_user.can_access_attendance() or current_user.can_view_sede_attendance() or current_user.can_access_timesheets() or current_user.can_access_attendance_types_menu() %}
+                {% set has_attendance_permission = current_user.can_manage_attendance() or current_user.can_view_attendance() or current_user.can_access_attendance() or current_user.can_view_sede_attendance() or current_user.can_access_timesheets() or current_user.can_access_attendance_types_menu() or current_user.can_export_validated_timesheets() %}
                 {% if has_attendance_permission %}
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
@@ -514,6 +514,11 @@
                         {% if current_user.can_manage_hr_data() or current_user.role in ['Admin', 'Amministratore'] %}
                         <li><a href="{{ url_for('attendance.timesheet_reopen_requests') }}" class="sidebar-submenu-link">
                             <i class="fas fa-unlock-alt"></i>Richieste Riapertura
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_export_validated_timesheets() %}
+                        <li><a href="{{ url_for('attendance.export_validated_timesheets') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-file-excel"></i>Esporta Timesheets
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_attendance() %}

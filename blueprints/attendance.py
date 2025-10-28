@@ -3473,3 +3473,280 @@ def delete_attendance_type(type_id):
         flash('Errore nell\'eliminazione della tipologia', 'danger')
     
     return redirect(url_for('attendance.attendance_types'))
+
+
+@attendance_bp.route('/export_validated_timesheets', methods=['GET'])
+@login_required
+def export_validated_timesheets():
+    """Visualizza i timesheets validati per export"""
+    from models import MonthlyTimesheet
+    from datetime import datetime
+    
+    # Verifica permessi
+    if not current_user.can_export_validated_timesheets():
+        flash('Non hai i permessi per esportare i timesheets validati', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni filtri
+    try:
+        year_filter = int(request.args.get('year', datetime.now().year))
+    except ValueError:
+        year_filter = datetime.now().year
+    
+    month_filter = request.args.get('month', 'all')
+    
+    # Query base: tutti i timesheets validati
+    query = filter_by_company(MonthlyTimesheet.query).filter_by(
+        year=year_filter,
+        is_validated=True
+    )
+    
+    # Applica filtro mese se specificato
+    if month_filter != 'all':
+        try:
+            month_num = int(month_filter)
+            if 1 <= month_num <= 12:
+                query = query.filter_by(month=month_num)
+        except ValueError:
+            pass
+    
+    # Ordina per mese e utente
+    validated_timesheets = query.order_by(
+        MonthlyTimesheet.month.desc(),
+        MonthlyTimesheet.user_id
+    ).all()
+    
+    # Ottieni anni disponibili
+    available_years_query = db.session.query(MonthlyTimesheet.year).filter(
+        MonthlyTimesheet.company_id == current_user.company_id,
+        MonthlyTimesheet.is_validated == True
+    ).distinct().order_by(MonthlyTimesheet.year.desc()).all()
+    available_years = [year[0] for year in available_years_query] if available_years_query else [datetime.now().year]
+    
+    # Nomi mesi in italiano
+    month_names = {
+        1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile',
+        5: 'Maggio', 6: 'Giugno', 7: 'Luglio', 8: 'Agosto',
+        9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
+    }
+    
+    return render_template('export_validated_timesheets.html',
+                         validated_timesheets=validated_timesheets,
+                         year_filter=year_filter,
+                         month_filter=month_filter,
+                         available_years=available_years,
+                         month_names=month_names)
+
+
+@attendance_bp.route('/export_validated_timesheets_excel', methods=['POST'])
+@login_required
+def export_validated_timesheets_excel():
+    """Esporta i timesheets validati in Excel con dettagli completi"""
+    from models import MonthlyTimesheet, AttendanceRecord
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from datetime import datetime, timedelta
+    import calendar
+    from io import BytesIO
+    
+    # Verifica permessi
+    if not current_user.can_export_validated_timesheets():
+        flash('Non hai i permessi per esportare i timesheets validati', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    try:
+        # Ottieni filtri dal form
+        year_filter = int(request.form.get('year', datetime.now().year))
+        month_filter = request.form.get('month', 'all')
+        
+        # Query base: tutti i timesheets validati
+        query = filter_by_company(MonthlyTimesheet.query).filter_by(
+            year=year_filter,
+            is_validated=True
+        )
+        
+        # Applica filtro mese se specificato
+        if month_filter != 'all':
+            try:
+                month_num = int(month_filter)
+                if 1 <= month_num <= 12:
+                    query = query.filter_by(month=month_num)
+            except ValueError:
+                pass
+        
+        # Ottieni timesheets
+        timesheets = query.order_by(
+            MonthlyTimesheet.month,
+            MonthlyTimesheet.user_id
+        ).all()
+        
+        if not timesheets:
+            flash('Nessun timesheet validato trovato per i filtri selezionati', 'warning')
+            return redirect(url_for('attendance.export_validated_timesheets', 
+                                  year=year_filter, month=month_filter))
+        
+        # Crea workbook Excel
+        wb = Workbook()
+        wb.remove(wb.active)  # Rimuovi il foglio di default
+        
+        # Stili
+        header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
+        header_font = Font(bold=True, color='FFFFFF', size=11)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        month_names = {
+            1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile',
+            5: 'Maggio', 6: 'Giugno', 7: 'Luglio', 8: 'Agosto',
+            9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
+        }
+        
+        # Crea un foglio per ogni timesheet
+        for timesheet in timesheets:
+            user = timesheet.user
+            sheet_name = f"{user.get_full_name()[:20]} {month_names[timesheet.month][:3]}"
+            ws = wb.create_sheet(title=sheet_name)
+            
+            # Intestazione
+            ws['A1'] = 'Timesheet Validato'
+            ws['A1'].font = Font(bold=True, size=14)
+            
+            ws['A2'] = f"Dipendente: {user.get_full_name()}"
+            ws['A3'] = f"Mese: {month_names[timesheet.month]} {timesheet.year}"
+            ws['A4'] = f"Validato il: {timesheet.validated_at.strftime('%d/%m/%Y %H:%M') if timesheet.validated_at else 'N/D'}"
+            
+            # Headers della tabella presenze (riga 6)
+            headers = ['Data', 'Giorno', 'Entrata', 'Uscita', 'Pausa', 'Ore Lavorate', 
+                      'Straordinario', 'Stato', 'Note']
+            for col_num, header in enumerate(headers, 1):
+                cell = ws.cell(row=6, column=col_num)
+                cell.value = header
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+                cell.border = border
+            
+            # Ottieni tutte le presenze del mese
+            start_date = datetime(timesheet.year, timesheet.month, 1).date()
+            if timesheet.month == 12:
+                end_date = datetime(timesheet.year + 1, 1, 1).date()
+            else:
+                end_date = datetime(timesheet.year, timesheet.month + 1, 1).date()
+            
+            records = AttendanceRecord.query.filter(
+                AttendanceRecord.user_id == user.id,
+                AttendanceRecord.date >= start_date,
+                AttendanceRecord.date < end_date,
+                AttendanceRecord.company_id == current_user.company_id
+            ).order_by(AttendanceRecord.date).all()
+            
+            # Dizionario per raggruppare i record per data
+            records_by_date = {}
+            for record in records:
+                if record.date not in records_by_date:
+                    records_by_date[record.date] = []
+                records_by_date[record.date].append(record)
+            
+            # Genera tutte le date del mese
+            num_days = calendar.monthrange(timesheet.year, timesheet.month)[1]
+            row_num = 7
+            
+            day_names = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+            
+            for day in range(1, num_days + 1):
+                current_date = datetime(timesheet.year, timesheet.month, day).date()
+                day_name = day_names[current_date.weekday()]
+                
+                day_records = records_by_date.get(current_date, [])
+                
+                if day_records:
+                    # Trova entrata e uscita principali
+                    clock_in = next((r for r in day_records if r.clock_in), None)
+                    clock_out = next((r for r in reversed(day_records) if r.clock_out), None)
+                    
+                    # Calcola pausa totale
+                    total_break = timedelta()
+                    for record in day_records:
+                        if record.break_start and record.break_end:
+                            break_duration = datetime.combine(datetime.min, record.break_end) - \
+                                           datetime.combine(datetime.min, record.break_start)
+                            total_break += break_duration
+                    
+                    # Dati della riga
+                    clock_in_time = clock_in.clock_in.strftime('%H:%M') if clock_in and clock_in.clock_in else ''
+                    clock_out_time = clock_out.clock_out.strftime('%H:%M') if clock_out and clock_out.clock_out else ''
+                    break_time = f"{int(total_break.total_seconds() // 60)} min" if total_break.total_seconds() > 0 else ''
+                    
+                    hours_worked = day_records[0].hours_worked if day_records else 0
+                    overtime = day_records[0].overtime_minutes if day_records else 0
+                    
+                    shift_status = day_records[0].shift_status if day_records else ''
+                    notes = day_records[0].notes if day_records and day_records[0].notes else ''
+                    
+                else:
+                    clock_in_time = ''
+                    clock_out_time = ''
+                    break_time = ''
+                    hours_worked = 0
+                    overtime = 0
+                    shift_status = ''
+                    notes = ''
+                
+                # Scrivi i dati
+                ws.cell(row=row_num, column=1).value = current_date.strftime('%d/%m/%Y')
+                ws.cell(row=row_num, column=2).value = day_name
+                ws.cell(row=row_num, column=3).value = clock_in_time
+                ws.cell(row=row_num, column=4).value = clock_out_time
+                ws.cell(row=row_num, column=5).value = break_time
+                ws.cell(row=row_num, column=6).value = hours_worked
+                ws.cell(row=row_num, column=7).value = f"{overtime} min" if overtime > 0 else ''
+                ws.cell(row=row_num, column=8).value = shift_status
+                ws.cell(row=row_num, column=9).value = notes
+                
+                # Applica bordi
+                for col in range(1, 10):
+                    ws.cell(row=row_num, column=col).border = border
+                
+                row_num += 1
+            
+            # Adatta larghezza colonne
+            ws.column_dimensions['A'].width = 12
+            ws.column_dimensions['B'].width = 12
+            ws.column_dimensions['C'].width = 10
+            ws.column_dimensions['D'].width = 10
+            ws.column_dimensions['E'].width = 10
+            ws.column_dimensions['F'].width = 14
+            ws.column_dimensions['G'].width = 14
+            ws.column_dimensions['H'].width = 15
+            ws.column_dimensions['I'].width = 40
+        
+        # Salva in memoria
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Genera nome file
+        if month_filter != 'all':
+            filename = f"Timesheets_Validati_{month_names[int(month_filter)]}_{year_filter}.xlsx"
+        else:
+            filename = f"Timesheets_Validati_{year_filter}.xlsx"
+        
+        # Ritorna file Excel
+        from flask import send_file
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        import logging
+        logging.error(f"Errore export timesheets: {str(e)}")
+        flash(f'Errore durante l\'export: {str(e)}', 'danger')
+        return redirect(url_for('attendance.export_validated_timesheets'))
