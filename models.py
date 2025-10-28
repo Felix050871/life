@@ -460,8 +460,8 @@ class User(UserMixin, db.Model):
         return self.has_permission('can_view_sede_attendance')
     
     def can_access_timesheets(self):
-        """Accesso alla gestione timesheets personali"""
-        return self.has_permission('can_access_timesheets')
+        """Accesso alla gestione timesheets personali - stesso permesso delle presenze"""
+        return self.can_access_attendance()
     
     # === FERIE/PERMESSI ===
     def can_manage_leave(self):
