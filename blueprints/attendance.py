@@ -2532,12 +2532,22 @@ def bulk_fill_month():
         if sede_id not in user_sedi_ids:
             return jsonify({'success': False, 'message': 'Non hai accesso a questa sede'}), 403
         
-        # Helper per creare timestamp - deve creare datetime completo, non solo time
+        # Helper per creare timestamp - deve creare datetime completo in orario italiano
         def create_timestamp(day_date, time_str):
             if not time_str:
                 return None
             hour, minute = map(int, time_str.split(':'))
-            return datetime.combine(day_date, time(hour, minute))
+            # Crea datetime in orario italiano (come gli altri inserimenti manuali)
+            from zoneinfo import ZoneInfo
+            italy_tz = ZoneInfo('Europe/Rome')
+            naive_dt = datetime.combine(day_date, time(hour, minute))
+            # Localizza in timezone italiano
+            italian_dt = naive_dt.replace(tzinfo=italy_tz)
+            # Converti in UTC per il salvataggio (come fa il resto del sistema)
+            utc_tz = ZoneInfo('UTC')
+            utc_dt = italian_dt.astimezone(utc_tz)
+            # Ritorna naive UTC (il database si aspetta naive UTC)
+            return utc_dt.replace(tzinfo=None)
         
         # Determina quanti giorni ha il mese
         import calendar
