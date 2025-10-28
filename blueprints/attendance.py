@@ -693,12 +693,20 @@ def clock_in():
                     'message': 'Sei in pausa. Devi prima terminare la pausa.'
                 })
 
+        # Ottieni la tipologia di presenza di default
+        from models import AttendanceType
+        default_attendance_type = filter_by_company(AttendanceType.query).filter_by(
+            is_default=True,
+            active=True
+        ).first()
+        
         # Crea nuovo evento di entrata
         attendance_event = AttendanceEvent(
             user_id=current_user.id,
             event_type='clock_in',
             timestamp=italian_now(),
-            sede_id=get_current_user_sede(current_user).id if get_current_user_sede(current_user) else None
+            sede_id=get_current_user_sede(current_user).id if get_current_user_sede(current_user) else None,
+            attendance_type_id=default_attendance_type.id if default_attendance_type else None
         )
         # Imposta company_id automaticamente
         set_company_on_create(attendance_event)
