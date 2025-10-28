@@ -3712,11 +3712,9 @@ def export_validated_timesheets_excel():
                             entrata = event.timestamp.strftime('%H:%M')
                             if event.sede:
                                 sede_name = event.sede.name
-                            # Prendi il codice della tipologia se presente, altrimenti usa il valore deprecato entry_type
+                            # Usa solo il codice della tipologia se presente
                             if event.attendance_type:
                                 tipologia_code = event.attendance_type.code
-                            elif hasattr(event, 'entry_type') and event.entry_type:
-                                tipologia_code = event.entry_type.upper()
                         elif event.event_type == 'break_start':
                             inizio_pausa = event.timestamp.strftime('%H:%M')
                         elif event.event_type == 'break_end':
@@ -3834,11 +3832,9 @@ def export_validated_timesheets_excel():
                             entrata = event.timestamp.strftime('%H:%M')
                             if event.sede:
                                 sede_name = event.sede.name
-                            # Prendi il codice della tipologia se presente, altrimenti usa il valore deprecato entry_type
+                            # Usa solo il codice della tipologia se presente
                             if event.attendance_type:
                                 tipologia_code = event.attendance_type.code
-                            elif hasattr(event, 'entry_type') and event.entry_type:
-                                tipologia_code = event.entry_type.upper()
                         elif event.event_type == 'break_start':
                             inizio_pausa = event.timestamp.strftime('%H:%M')
                         elif event.event_type == 'break_end':
