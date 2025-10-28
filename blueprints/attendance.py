@@ -2106,3 +2106,376 @@ def reject_timesheet_reopen(request_id):
         logging.error(f"Errore rifiuto richiesta riapertura: {str(e)}")
         flash(f'Errore rifiuto: {str(e)}', 'danger')
         return redirect(url_for('attendance.timesheet_reopen_requests'))
+
+# =============================================================================
+# MY ATTENDANCE - PERSONAL ATTENDANCE MANAGEMENT WITH INLINE EDITING
+# =============================================================================
+
+@attendance_bp.route('/my_attendance', methods=['GET'])
+@login_required
+def my_attendance():
+    """Interfaccia personale per gestione presenze con editing inline"""
+    if not current_user.can_access_attendance():
+        flash('Non hai i permessi per accedere alle presenze.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni mese e anno dal parametro GET o usa mese corrente
+    try:
+        year = int(request.args.get('year', datetime.now().year))
+        month = int(request.args.get('month', datetime.now().month))
+    except ValueError:
+        year = datetime.now().year
+        month = datetime.now().month
+    
+    # Verifica che mese sia valido
+    if month < 1 or month > 12:
+        flash('Mese non valido', 'danger')
+        return redirect(url_for('attendance.my_attendance'))
+    
+    # Ottieni o crea il timesheet mensile
+    company_id = get_user_company_id()
+    timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+    
+    # Calcola primo e ultimo giorno del mese
+    from calendar import monthrange
+    first_day = date(year, month, 1)
+    last_day_num = monthrange(year, month)[1]
+    last_day = date(year, month, last_day_num)
+    
+    # Ottieni tutte le sedi disponibili per l'utente
+    user_sedi = []
+    if hasattr(current_user, 'sedi') and current_user.sedi:
+        # Utente multi-sede
+        user_sedi = current_user.sedi
+    elif current_user.sede_obj:
+        # Utente singola sede
+        user_sedi = [current_user.sede_obj]
+    
+    # Ottieni commesse attive per l'utente
+    active_commesse = current_user.get_active_commesse()
+    
+    # Ottieni tutti gli eventi del mese per l'utente
+    events_query = filter_by_company(AttendanceEvent.query).filter(
+        AttendanceEvent.user_id == current_user.id,
+        AttendanceEvent.date >= first_day,
+        AttendanceEvent.date <= last_day
+    ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+    
+    # Ottieni ferie/permessi approvati E in attesa nel mese
+    leaves_query = filter_by_company(LeaveRequest.query).filter(
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.status.in_(['Approved', 'Pending']),
+        LeaveRequest.start_date <= last_day,
+        LeaveRequest.end_date >= first_day
+    ).all()
+    
+    # Crea set di date con ferie/permessi
+    leave_dates = set()
+    leave_info = {}
+    for leave in leaves_query:
+        current_date = leave.start_date
+        while current_date <= leave.end_date:
+            if first_day <= current_date <= last_day:
+                leave_dates.add(current_date)
+                leave_type_name = leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or 'Permesso')
+                leave_info[current_date] = leave_type_name
+            current_date += timedelta(days=1)
+    
+    # Organizza eventi per giorno
+    events_by_day = {}
+    for event in events_query:
+        day = event.date.day
+        if day not in events_by_day:
+            events_by_day[day] = {
+                'events': [],
+                'has_manual': False,
+                'has_live': False,
+                'sede_id': event.sede_id,
+                'commessa_id': event.commessa_id
+            }
+        events_by_day[day]['events'].append(event)
+        if event.is_manual:
+            events_by_day[day]['has_manual'] = True
+            # Mantieni sede e commessa dal record manuale
+            if event.sede_id:
+                events_by_day[day]['sede_id'] = event.sede_id
+            if event.commessa_id:
+                events_by_day[day]['commessa_id'] = event.commessa_id
+        else:
+            events_by_day[day]['has_live'] = True
+    
+    # Crea lista giorni del mese con info
+    from zoneinfo import ZoneInfo
+    italy_tz = ZoneInfo('Europe/Rome')
+    
+    def to_italian_time_str(timestamp):
+        """Converte timestamp a stringa HH:MM in orario italiano"""
+        if not timestamp:
+            return None
+        if timestamp.tzinfo is None:
+            utc_tz = ZoneInfo('UTC')
+            timestamp = timestamp.replace(tzinfo=utc_tz)
+        italian_time = timestamp.astimezone(italy_tz)
+        return italian_time.strftime('%H:%M')
+    
+    days_data = []
+    for day in range(1, last_day_num + 1):
+        day_date = date(year, month, day)
+        day_events = events_by_day.get(day, {
+            'events': [],
+            'has_manual': False,
+            'has_live': False,
+            'sede_id': current_user.sede_id,
+            'commessa_id': None
+        })
+        
+        # Verifica se il giorno ha ferie/permessi
+        has_leave = day_date in leave_dates
+        leave_type = leave_info.get(day_date, '')
+        
+        # Trova primo clock_in e ultimo clock_out
+        clock_in_time = None
+        clock_out_time = None
+        break_start_time = None
+        break_end_time = None
+        
+        for event in day_events['events']:
+            if event.event_type == 'clock_in' and clock_in_time is None:
+                clock_in_time = to_italian_time_str(event.timestamp)
+            elif event.event_type == 'clock_out':
+                clock_out_time = to_italian_time_str(event.timestamp)
+            elif event.event_type == 'break_start' and break_start_time is None:
+                break_start_time = to_italian_time_str(event.timestamp)
+            elif event.event_type == 'break_end':
+                break_end_time = to_italian_time_str(event.timestamp)
+        
+        days_data.append({
+            'day': day,
+            'date': day_date,
+            'weekday': day_date.strftime('%a'),
+            'clock_in': clock_in_time,
+            'clock_out': clock_out_time,
+            'break_start': break_start_time,
+            'break_end': break_end_time,
+            'sede_id': day_events.get('sede_id', current_user.sede_id),
+            'commessa_id': day_events.get('commessa_id'),
+            'has_manual': day_events['has_manual'],
+            'has_live': day_events['has_live'],
+            'is_weekend': day_date.weekday() >= 5,
+            'is_future': day_date > date.today(),
+            'has_leave': has_leave,
+            'leave_type': leave_type
+        })
+    
+    # Nomi mesi in italiano
+    month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+    
+    return render_template('my_attendance.html',
+                         timesheet=timesheet,
+                         year=year,
+                         month=month,
+                         month_name=month_names[month],
+                         days_data=days_data,
+                         user_sedi=user_sedi,
+                         active_commesse=active_commesse,
+                         can_edit=timesheet.can_edit())
+
+@attendance_bp.route('/my_attendance/save', methods=['POST'])
+@login_required
+def save_my_attendance():
+    """Salva presenza giornaliera con sede e commessa"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        day = int(data.get('day'))
+        clock_in_str = data.get('clock_in', '').strip()
+        clock_out_str = data.get('clock_out', '').strip()
+        break_start_str = data.get('break_start', '').strip()
+        break_end_str = data.get('break_end', '').strip()
+        sede_id = data.get('sede_id')
+        commessa_id = data.get('commessa_id') if data.get('commessa_id') != 'none' else None
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        # Crea data
+        day_date = date(year, month, day)
+        
+        # Blocca inserimenti futuri
+        if day_date > date.today():
+            return jsonify({'success': False, 'message': 'Non è possibile inserire orari per giorni futuri'}), 400
+        
+        # Blocca inserimenti su giorni con ferie/permessi
+        existing_leave = filter_by_company(LeaveRequest.query).filter(
+            LeaveRequest.user_id == current_user.id,
+            LeaveRequest.status.in_(['Approved', 'Pending']),
+            LeaveRequest.start_date <= day_date,
+            LeaveRequest.end_date >= day_date
+        ).first()
+        
+        if existing_leave:
+            return jsonify({'success': False, 'message': 'Giorno con ferie/permesso/malattia'}), 400
+        
+        # Verifica che la sede selezionata sia valida per l'utente
+        if sede_id:
+            sede_id = int(sede_id)
+            user_sede_ids = [s.id for s in (current_user.sedi if hasattr(current_user, 'sedi') and current_user.sedi else [current_user.sede_obj] if current_user.sede_obj else [])]
+            if sede_id not in user_sede_ids:
+                return jsonify({'success': False, 'message': 'Sede non valida per questo utente'}), 400
+        
+        # Se non ci sono orari, elimina le presenze manuali esistenti
+        if not clock_in_str and not clock_out_str:
+            filter_by_company(AttendanceEvent.query).filter_by(
+                user_id=current_user.id,
+                date=day_date,
+                is_manual=True
+            ).delete()
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Presenza eliminata'})
+        
+        # Validazione orari
+        from datetime import datetime as dt
+        if clock_in_str:
+            try:
+                dt.strptime(clock_in_str, '%H:%M')
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Ora entrata non valida'}), 400
+        
+        if clock_out_str:
+            try:
+                dt.strptime(clock_out_str, '%H:%M')
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Ora uscita non valida'}), 400
+        
+        # Elimina eventi manuali esistenti per questo giorno
+        filter_by_company(AttendanceEvent.query).filter_by(
+            user_id=current_user.id,
+            date=day_date,
+            is_manual=True
+        ).delete()
+        
+        # Crea nuovi eventi
+        from zoneinfo import ZoneInfo
+        italy_tz = ZoneInfo('Europe/Rome')
+        
+        def create_timestamp(time_str):
+            """Crea timestamp da stringa HH:MM in orario italiano"""
+            hour, minute = map(int, time_str.split(':'))
+            dt_italian = datetime(year, month, day, hour, minute, tzinfo=italy_tz)
+            # Converti a UTC per storage
+            dt_utc = dt_italian.astimezone(ZoneInfo('UTC'))
+            return dt_utc.replace(tzinfo=None)  # Rimuovi tzinfo per storage naive
+        
+        if clock_in_str:
+            clock_in_event = AttendanceEvent(
+                user_id=current_user.id,
+                event_type='clock_in',
+                timestamp=create_timestamp(clock_in_str),
+                date=day_date,
+                is_manual=True,
+                sede_id=sede_id,
+                commessa_id=commessa_id,
+                company_id=company_id
+            )
+            db.session.add(clock_in_event)
+        
+        if break_start_str:
+            break_start_event = AttendanceEvent(
+                user_id=current_user.id,
+                event_type='break_start',
+                timestamp=create_timestamp(break_start_str),
+                date=day_date,
+                is_manual=True,
+                sede_id=sede_id,
+                commessa_id=commessa_id,
+                company_id=company_id
+            )
+            db.session.add(break_start_event)
+        
+        if break_end_str:
+            break_end_event = AttendanceEvent(
+                user_id=current_user.id,
+                event_type='break_end',
+                timestamp=create_timestamp(break_end_str),
+                date=day_date,
+                is_manual=True,
+                sede_id=sede_id,
+                commessa_id=commessa_id,
+                company_id=company_id
+            )
+            db.session.add(break_end_event)
+        
+        if clock_out_str:
+            clock_out_event = AttendanceEvent(
+                user_id=current_user.id,
+                event_type='clock_out',
+                timestamp=create_timestamp(clock_out_str),
+                date=day_date,
+                is_manual=True,
+                sede_id=sede_id,
+                commessa_id=commessa_id,
+                company_id=company_id
+            )
+            db.session.add(clock_out_event)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Presenza salvata'})
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore salvataggio presenza: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+@attendance_bp.route('/my_attendance/delete_day', methods=['POST'])
+@login_required
+def delete_my_attendance_day():
+    """Elimina tutti i dati manuali di un giorno"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        day = int(data.get('day'))
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        day_date = date(year, month, day)
+        
+        # Elimina tutti gli eventi manuali del giorno
+        deleted_count = filter_by_company(AttendanceEvent.query).filter_by(
+            user_id=current_user.id,
+            date=day_date,
+            is_manual=True
+        ).delete()
+        
+        db.session.commit()
+        
+        if deleted_count > 0:
+            return jsonify({'success': True, 'message': f'Presenza del {day}/{month}/{year} eliminata'})
+        else:
+            return jsonify({'success': False, 'message': 'Nessun dato manuale da eliminare'}), 400
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore eliminazione presenza: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
