@@ -465,6 +465,18 @@ class User(UserMixin, db.Model):
         """Accesso alla gestione timesheets personali - stesso permesso delle presenze"""
         return self.can_access_attendance()
     
+    def can_manage_attendance_types(self):
+        """Può gestire le tipologie di presenza"""
+        return self.has_permission('can_manage_attendance_types')
+    
+    def can_view_attendance_types(self):
+        """Può visualizzare le tipologie di presenza"""
+        return self.has_permission('can_view_attendance_types')
+    
+    def can_access_attendance_types_menu(self):
+        """Accesso al menu tipologie presenze"""
+        return self.can_manage_attendance_types() or self.can_view_attendance_types()
+    
     # === FERIE/PERMESSI ===
     def can_manage_leave(self):
         return self.has_permission('can_manage_leave')

@@ -475,7 +475,7 @@
                 {% endif %}
 
                 <!-- PRESENZE - Solo se ha almeno un permesso presenze -->
-                {% set has_attendance_permission = current_user.can_manage_attendance() or current_user.can_view_attendance() or current_user.can_access_attendance() or current_user.can_view_sede_attendance() or current_user.can_access_timesheets() %}
+                {% set has_attendance_permission = current_user.can_manage_attendance() or current_user.can_view_attendance() or current_user.can_access_attendance() or current_user.can_view_sede_attendance() or current_user.can_access_timesheets() or current_user.can_access_attendance_types_menu() %}
                 {% if has_attendance_permission %}
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
@@ -502,6 +502,11 @@
                         {% if current_user.can_manage_attendance() %}
                         <li><a href="{{ url_for('dashboard.dashboard_team') }}" class="sidebar-submenu-link">
                             <i class="fas fa-chart-line"></i>Dashboard Presenze
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_access_attendance_types_menu() %}
+                        <li><a href="{{ url_for('attendance.attendance_types') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-tags"></i>Tipologie Presenze
                         </a></li>
                         {% endif %}
                         {% if current_user.can_manage_hr_data() or current_user.can_manage_commesse() or current_user.role in ['Admin', 'Amministratore'] %}
