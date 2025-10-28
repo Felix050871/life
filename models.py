@@ -1856,6 +1856,9 @@ class MonthlyTimesheet(db.Model):
     is_consolidated = db.Column(db.Boolean, default=False, nullable=False)
     consolidated_at = db.Column(db.DateTime, nullable=True)
     consolidated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    is_validated = db.Column(db.Boolean, default=False, nullable=False)
+    validated_at = db.Column(db.DateTime, nullable=True)
+    validated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
@@ -1863,6 +1866,7 @@ class MonthlyTimesheet(db.Model):
     
     user = db.relationship('User', foreign_keys=[user_id], backref='monthly_timesheets')
     consolidator = db.relationship('User', foreign_keys=[consolidated_by])
+    validator = db.relationship('User', foreign_keys=[validated_by])
     
     def __repr__(self):
         return f'<MonthlyTimesheet {self.user_id} {self.year}-{self.month:02d}>'
@@ -1891,11 +1895,11 @@ class MonthlyTimesheet(db.Model):
     
     def can_edit(self):
         """Verifica se il timesheet può essere modificato"""
-        return not self.is_consolidated
+        return not self.is_consolidated and not self.is_validated
     
     def consolidate(self, consolidator_id):
         """Consolida il timesheet rendendolo immutabile"""
-        if not self.is_consolidated:
+        if not self.is_consolidated and not self.is_validated:
             self.is_consolidated = True
             self.consolidated_at = italian_now()
             self.consolidated_by = consolidator_id
@@ -1905,13 +1909,38 @@ class MonthlyTimesheet(db.Model):
     
     def reopen(self):
         """Riapre il timesheet consolidato per correzioni"""
-        if self.is_consolidated:
+        if self.is_consolidated and not self.is_validated:
             self.is_consolidated = False
             self.consolidated_at = None
             self.consolidated_by = None
             db.session.commit()
             return True
         return False
+    
+    def validate(self, validator_id):
+        """Valida il timesheet consolidato (operazione irreversibile)"""
+        if self.is_consolidated and not self.is_validated:
+            self.is_validated = True
+            self.validated_at = italian_now()
+            self.validated_by = validator_id
+            db.session.commit()
+            return True
+        return False
+    
+    def get_status(self):
+        """Restituisce lo stato corrente del timesheet"""
+        if self.is_validated:
+            return 'Validato'
+        if self.is_consolidated:
+            # Verifica se c'è una richiesta di riapertura pendente
+            pending_request = TimesheetReopenRequest.query.filter_by(
+                timesheet_id=self.id,
+                status='Pending'
+            ).first()
+            if pending_request:
+                return 'In attesa di riapertura'
+            return 'Consolidato'
+        return 'In compilazione'
 
 
 class TimesheetReopenRequest(db.Model):
