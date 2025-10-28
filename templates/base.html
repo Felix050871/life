@@ -494,11 +494,13 @@
                             <i class="fas fa-calendar-alt"></i>Timesheets
                         </a></li>
                         {% endif %}
+                        {# Temporaneamente disabilitato
                         {% if current_user.can_view_sede_attendance() %}
                         <li><a href="{{ url_for('attendance.attendance', view='sede') }}" class="sidebar-submenu-link">
                             <i class="fas fa-users"></i>Presenze Sede
                         </a></li>
                         {% endif %}
+                        #}
                         {% if current_user.can_manage_attendance() %}
                         <li><a href="{{ url_for('dashboard.dashboard_team') }}" class="sidebar-submenu-link">
                             <i class="fas fa-chart-line"></i>Dashboard Presenze
