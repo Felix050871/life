@@ -3658,9 +3658,9 @@ def export_validated_timesheets_excel():
             if month_filter != 'all':
                 ws['A3'].value += f" - {month_names[int(month_filter)]}"
             
-            # Headers tabella riepilogo dipendenti
+            # Headers tabella dettaglio presenze giornaliere
             row = 5
-            headers = ['Dipendente', 'Mese/Anno', 'Ore Totali', 'Validato il']
+            headers = ['Utente', 'Data', 'Sede', 'Commessa', 'Tipologia', 'Entrata', 'Inizio Pausa', 'Fine Pausa', 'Uscita', 'Ore Totali']
             for col_num, header in enumerate(headers, 1):
                 cell = ws.cell(row=row, column=col_num)
                 cell.value = header
@@ -3669,58 +3669,223 @@ def export_validated_timesheets_excel():
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.border = border
             
-            # Elenca dipendenti e loro timesheets
+            # Per ogni timesheet della commessa, estrai i dati giornalieri
             row += 1
             for ts in commessa_timesheets:
-                ws.cell(row=row, column=1).value = ts.user.get_full_name()
-                ws.cell(row=row, column=2).value = f"{month_names[ts.month]} {ts.year}"
+                user = ts.user
+                # Ottieni tutti gli eventi di presenza del mese
+                start_date = datetime(ts.year, ts.month, 1).date()
+                if ts.month == 12:
+                    end_date = datetime(ts.year + 1, 1, 1).date() - timedelta(days=1)
+                else:
+                    end_date = datetime(ts.year, ts.month + 1, 1).date() - timedelta(days=1)
                 
-                # Calcola ore totali dal timesheet
-                total_hours = 0
-                # Per ora lasciamo 0, andrà implementato il calcolo dalle presenze
-                ws.cell(row=row, column=3).value = total_hours
-                ws.cell(row=row, column=4).value = ts.validated_at.strftime('%d/%m/%Y') if ts.validated_at else 'N/D'
+                # Query eventi raggruppati per data
+                events = AttendanceEvent.query.filter(
+                    AttendanceEvent.user_id == user.id,
+                    AttendanceEvent.date >= start_date,
+                    AttendanceEvent.date <= end_date
+                ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
                 
-                for col in range(1, 5):
-                    ws.cell(row=row, column=col).border = border
+                # Raggruppa eventi per data
+                events_by_date = {}
+                for event in events:
+                    if event.date not in events_by_date:
+                        events_by_date[event.date] = []
+                    events_by_date[event.date].append(event)
                 
-                row += 1
+                # Per ogni giorno lavorato, crea una riga
+                for day_date in sorted(events_by_date.keys()):
+                    day_events = events_by_date[day_date]
+                    
+                    # Estrai timbrature del giorno
+                    entrata = None
+                    inizio_pausa = None
+                    fine_pausa = None
+                    uscita = None
+                    sede_name = ''
+                    commessa_name = commessa.titolo
+                    tipologia_code = ''
+                    
+                    for event in day_events:
+                        if event.event_type == 'clock_in':
+                            entrata = event.timestamp.strftime('%H:%M')
+                            if event.sede_obj:
+                                sede_name = event.sede_obj.nome
+                            if event.attendance_type:
+                                tipologia_code = event.attendance_type.code
+                        elif event.event_type == 'break_start':
+                            inizio_pausa = event.timestamp.strftime('%H:%M')
+                        elif event.event_type == 'break_end':
+                            fine_pausa = event.timestamp.strftime('%H:%M')
+                        elif event.event_type == 'clock_out':
+                            uscita = event.timestamp.strftime('%H:%M')
+                    
+                    # Calcola ore totali lavorate (entrata-uscita - pausa)
+                    total_hours = 0.0
+                    if entrata and uscita:
+                        from datetime import datetime as dt_class
+                        entrata_time = dt_class.strptime(entrata, '%H:%M')
+                        uscita_time = dt_class.strptime(uscita, '%H:%M')
+                        total_minutes = (uscita_time - entrata_time).total_seconds() / 60
+                        
+                        # Sottrai pausa se presente
+                        if inizio_pausa and fine_pausa:
+                            inizio_pausa_time = dt_class.strptime(inizio_pausa, '%H:%M')
+                            fine_pausa_time = dt_class.strptime(fine_pausa, '%H:%M')
+                            pausa_minutes = (fine_pausa_time - inizio_pausa_time).total_seconds() / 60
+                            total_minutes -= pausa_minutes
+                        
+                        total_hours = round(total_minutes / 60, 2)
+                    
+                    # Scrivi riga
+                    ws.cell(row=row, column=1).value = user.get_full_name()
+                    ws.cell(row=row, column=2).value = day_date.strftime('%d/%m/%Y')
+                    ws.cell(row=row, column=3).value = sede_name
+                    ws.cell(row=row, column=4).value = commessa_name
+                    ws.cell(row=row, column=5).value = tipologia_code
+                    ws.cell(row=row, column=6).value = entrata or ''
+                    ws.cell(row=row, column=7).value = inizio_pausa or ''
+                    ws.cell(row=row, column=8).value = fine_pausa or ''
+                    ws.cell(row=row, column=9).value = uscita or ''
+                    ws.cell(row=row, column=10).value = total_hours
+                    
+                    # Applica bordi
+                    for col in range(1, 11):
+                        ws.cell(row=row, column=col).border = border
+                    
+                    row += 1
             
             # Adatta larghezza colonne
-            ws.column_dimensions['A'].width = 30
-            ws.column_dimensions['B'].width = 15
-            ws.column_dimensions['C'].width = 12
-            ws.column_dimensions['D'].width = 15
+            ws.column_dimensions['A'].width = 25  # Utente
+            ws.column_dimensions['B'].width = 12  # Data
+            ws.column_dimensions['C'].width = 20  # Sede
+            ws.column_dimensions['D'].width = 25  # Commessa
+            ws.column_dimensions['E'].width = 12  # Tipologia
+            ws.column_dimensions['F'].width = 10  # Entrata
+            ws.column_dimensions['G'].width = 12  # Inizio Pausa
+            ws.column_dimensions['H'].width = 12  # Fine Pausa
+            ws.column_dimensions['I'].width = 10  # Uscita
+            ws.column_dimensions['J'].width = 10  # Ore Totali
         
         # Aggiungi foglio per dipendenti senza commessa (se ce ne sono)
         if timesheets_no_commessa:
             ws = wb.create_sheet(title="Senza Commessa")
             ws['A1'] = "Dipendenti senza assegnazione a commesse"
             ws['A1'].font = Font(bold=True, size=14)
+            ws['A2'] = f"Periodo Export: {year_filter}"
+            if month_filter != 'all':
+                ws['A2'].value += f" - {month_names[int(month_filter)]}"
             
-            row = 3
-            headers = ['Dipendente', 'Mese/Anno', 'Validato il']
+            # Headers tabella dettaglio presenze giornaliere
+            row = 4
+            headers = ['Utente', 'Data', 'Sede', 'Commessa', 'Tipologia', 'Entrata', 'Inizio Pausa', 'Fine Pausa', 'Uscita', 'Ore Totali']
             for col_num, header in enumerate(headers, 1):
                 cell = ws.cell(row=row, column=col_num)
                 cell.value = header
                 cell.fill = header_fill
                 cell.font = header_font
+                cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.border = border
             
+            # Per ogni timesheet senza commessa, estrai i dati giornalieri
             row += 1
             for ts in timesheets_no_commessa:
-                ws.cell(row=row, column=1).value = ts.user.get_full_name()
-                ws.cell(row=row, column=2).value = f"{month_names[ts.month]} {ts.year}"
-                ws.cell(row=row, column=3).value = ts.validated_at.strftime('%d/%m/%Y') if ts.validated_at else 'N/D'
+                user = ts.user
+                # Ottieni tutti gli eventi di presenza del mese
+                start_date = datetime(ts.year, ts.month, 1).date()
+                if ts.month == 12:
+                    end_date = datetime(ts.year + 1, 1, 1).date() - timedelta(days=1)
+                else:
+                    end_date = datetime(ts.year, ts.month + 1, 1).date() - timedelta(days=1)
                 
-                for col in range(1, 4):
-                    ws.cell(row=row, column=col).border = border
+                # Query eventi raggruppati per data
+                events = AttendanceEvent.query.filter(
+                    AttendanceEvent.user_id == user.id,
+                    AttendanceEvent.date >= start_date,
+                    AttendanceEvent.date <= end_date
+                ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
                 
-                row += 1
+                # Raggruppa eventi per data
+                events_by_date = {}
+                for event in events:
+                    if event.date not in events_by_date:
+                        events_by_date[event.date] = []
+                    events_by_date[event.date].append(event)
+                
+                # Per ogni giorno lavorato, crea una riga
+                for day_date in sorted(events_by_date.keys()):
+                    day_events = events_by_date[day_date]
+                    
+                    # Estrai timbrature del giorno
+                    entrata = None
+                    inizio_pausa = None
+                    fine_pausa = None
+                    uscita = None
+                    sede_name = ''
+                    commessa_name = ''  # Nessuna commessa
+                    tipologia_code = ''
+                    
+                    for event in day_events:
+                        if event.event_type == 'clock_in':
+                            entrata = event.timestamp.strftime('%H:%M')
+                            if event.sede_obj:
+                                sede_name = event.sede_obj.nome
+                            if event.attendance_type:
+                                tipologia_code = event.attendance_type.code
+                        elif event.event_type == 'break_start':
+                            inizio_pausa = event.timestamp.strftime('%H:%M')
+                        elif event.event_type == 'break_end':
+                            fine_pausa = event.timestamp.strftime('%H:%M')
+                        elif event.event_type == 'clock_out':
+                            uscita = event.timestamp.strftime('%H:%M')
+                    
+                    # Calcola ore totali lavorate (entrata-uscita - pausa)
+                    total_hours = 0.0
+                    if entrata and uscita:
+                        from datetime import datetime as dt_class
+                        entrata_time = dt_class.strptime(entrata, '%H:%M')
+                        uscita_time = dt_class.strptime(uscita, '%H:%M')
+                        total_minutes = (uscita_time - entrata_time).total_seconds() / 60
+                        
+                        # Sottrai pausa se presente
+                        if inizio_pausa and fine_pausa:
+                            inizio_pausa_time = dt_class.strptime(inizio_pausa, '%H:%M')
+                            fine_pausa_time = dt_class.strptime(fine_pausa, '%H:%M')
+                            pausa_minutes = (fine_pausa_time - inizio_pausa_time).total_seconds() / 60
+                            total_minutes -= pausa_minutes
+                        
+                        total_hours = round(total_minutes / 60, 2)
+                    
+                    # Scrivi riga
+                    ws.cell(row=row, column=1).value = user.get_full_name()
+                    ws.cell(row=row, column=2).value = day_date.strftime('%d/%m/%Y')
+                    ws.cell(row=row, column=3).value = sede_name
+                    ws.cell(row=row, column=4).value = commessa_name
+                    ws.cell(row=row, column=5).value = tipologia_code
+                    ws.cell(row=row, column=6).value = entrata or ''
+                    ws.cell(row=row, column=7).value = inizio_pausa or ''
+                    ws.cell(row=row, column=8).value = fine_pausa or ''
+                    ws.cell(row=row, column=9).value = uscita or ''
+                    ws.cell(row=row, column=10).value = total_hours
+                    
+                    # Applica bordi
+                    for col in range(1, 11):
+                        ws.cell(row=row, column=col).border = border
+                    
+                    row += 1
             
-            ws.column_dimensions['A'].width = 30
-            ws.column_dimensions['B'].width = 15
-            ws.column_dimensions['C'].width = 15
+            # Adatta larghezza colonne
+            ws.column_dimensions['A'].width = 25  # Utente
+            ws.column_dimensions['B'].width = 12  # Data
+            ws.column_dimensions['C'].width = 20  # Sede
+            ws.column_dimensions['D'].width = 25  # Commessa
+            ws.column_dimensions['E'].width = 12  # Tipologia
+            ws.column_dimensions['F'].width = 10  # Entrata
+            ws.column_dimensions['G'].width = 12  # Inizio Pausa
+            ws.column_dimensions['H'].width = 12  # Fine Pausa
+            ws.column_dimensions['I'].width = 10  # Uscita
+            ws.column_dimensions['J'].width = 10  # Ore Totali
         
         # Salva in memoria
         output = BytesIO()
