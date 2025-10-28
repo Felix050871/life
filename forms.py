@@ -1114,6 +1114,8 @@ class RoleForm(FlaskForm):
     can_view_my_attendance = BooleanField('Visualizzare Le Mie Presenze')
     can_access_attendance = BooleanField('Accedere alle Presenze', default=True)
     can_view_sede_attendance = BooleanField('Visualizzare Presenze Sede')
+    can_manage_attendance_types = BooleanField('Gestire Tipologie Presenze')
+    can_view_attendance_types = BooleanField('Visualizzare Tipologie Presenze')
     
     # Gestione ferie/permessi
     can_manage_leave = BooleanField('Gestire Ferie/Permessi')
