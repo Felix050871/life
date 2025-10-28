@@ -293,7 +293,7 @@
                         <select class="form-select" id="bulk_commessa_id">
                             <option value="none">N/A</option>
                             {% for commessa in active_commesse %}
-                            <option value="{{ commessa.id }}">{{ commessa.name }}</option>
+                            <option value="{{ commessa.id }}">{{ commessa.titolo }} - {{ commessa.cliente }}</option>
                             {% endfor %}
                         </select>
                     </div>
