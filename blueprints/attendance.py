@@ -2154,6 +2154,14 @@ def my_attendance():
     # Ottieni commesse attive per il periodo del mese visualizzato
     active_commesse = current_user.get_commesse_for_period(first_day, last_day)
     
+    # DEBUG: Log delle commesse trovate
+    import logging
+    logging.debug(f"DEBUG my_attendance: user={current_user.username}, month={month}/{year}")
+    logging.debug(f"DEBUG period: {first_day} to {last_day}")
+    logging.debug(f"DEBUG active_commesse count: {len(active_commesse)}")
+    for commessa in active_commesse:
+        logging.debug(f"DEBUG commessa: {commessa.titolo} (id={commessa.id})")
+    
     # Ottieni tutti gli eventi del mese per l'utente
     events_query = filter_by_company(AttendanceEvent.query).filter(
         AttendanceEvent.user_id == current_user.id,
