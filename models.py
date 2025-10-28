@@ -1204,6 +1204,7 @@ class AttendanceEvent(db.Model):
     event_type = db.Column(db.String(20), nullable=False)  # 'clock_in', 'clock_out', 'break_start', 'break_end'
     timestamp = db.Column(db.DateTime, nullable=False)
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede dove è avvenuto l'evento
+    commessa_id = db.Column(db.Integer, db.ForeignKey('commessa.id'), nullable=True)  # Commessa su cui ha lavorato
     notes = db.Column(db.Text)
     shift_status = db.Column(db.String(20), nullable=True)  # 'anticipo', 'normale', 'ritardo' per entrate/uscite
     created_at = db.Column(db.DateTime, default=italian_now)
@@ -1213,6 +1214,7 @@ class AttendanceEvent(db.Model):
     
     user = db.relationship('User', backref='attendance_events')
     sede = db.relationship('Sede', backref='sede_attendance_events')
+    commessa = db.relationship('Commessa', backref='attendance_events')
     
     @property
     def timestamp_italian(self):
