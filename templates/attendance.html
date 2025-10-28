@@ -643,63 +643,75 @@
                     </div>
                     {% endif %}
                     {% endif %}
-                    
-                    <!-- Legenda indicatori -->
-                    <div class="mt-3 p-3 bg-dark border rounded">
-                        <h6 class="mb-2 text-light">Legenda Indicatori:</h6>
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <small class="text-light">
-                                    <i class="fas fa-exclamation-triangle text-danger me-1"></i>
-                                    <strong>Ritardo:</strong> Entrata oltre 15 minuti dopo l'orario di lavoro della sede
-                                </small>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-light">
-                                    <i class="fas fa-thumbs-up text-info me-1"></i>
-                                    <strong>Anticipo:</strong> Entrata prima dell'orario di lavoro
-                                </small>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-light">
-                                    <i class="fas fa-exclamation-triangle text-warning me-1"></i>
-                                    <strong>Uscita Anticipata:</strong> Uscita oltre 5 minuti prima della fine orario
-                                </small>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-light">
-                                    <i class="fas fa-thumbs-up text-info me-1"></i>
-                                    <strong>Straordinario:</strong> Uscita oltre 10 minuti dopo la fine orario
-                                </small>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-success">
-                                    <span style="color: #28a745 !important;">
-                                        <i class="fas fa-calendar-alt me-1"></i>
-                                        <strong>Ferie:</strong> Orari standard di lavoro dell'utente (Verde)
-                                    </span>
-                                </small>
-                            </div>
-                            <div class="col-md-6">
-                                <small style="color: #6f42c1 !important;">
-                                    <i class="fas fa-clock me-1"></i>
-                                    <strong>Permesso:</strong> Orari specifici della richiesta (Viola)
-                                </small>
-                            </div>
-                            <div class="col-md-6">
-                                <small style="color: #fd7e14 !important;">
-                                    <i class="fas fa-thermometer-half me-1"></i>
-                                    <strong>Malattia:</strong> Orari standard di lavoro dell'utente (Arancione)
-                                </small>
-                            </div>
-                        </div>
-                    </div>
                 {% else %}
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Nessuna presenza registrata nel periodo selezionato.
                 </div>
                 {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Legenda indicatori -->
+<div class="container mt-3">
+    <div class="row">
+        <div class="col-12">
+            <div class="p-3 bg-dark border rounded">
+                <h6 class="mb-2 text-light">Legenda Indicatori:</h6>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <small class="text-light">
+                            <i class="fas fa-exclamation-triangle text-danger me-1"></i>
+                            <strong>Ritardo:</strong> Entrata oltre 15 minuti dopo l'orario di lavoro della sede
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-light">
+                            <i class="fas fa-thumbs-up text-info me-1"></i>
+                            <strong>Anticipo:</strong> Entrata prima dell'orario di lavoro
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-light">
+                            <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                            <strong>Uscita Anticipata:</strong> Uscita oltre 5 minuti prima della fine orario
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-light">
+                            <i class="fas fa-thumbs-up text-info me-1"></i>
+                            <strong>Straordinario:</strong> Uscita oltre 10 minuti dopo la fine orario
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-success">
+                            <span style="color: #28a745 !important;">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                <strong>Ferie:</strong> Orari standard di lavoro dell'utente (Verde)
+                            </span>
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small style="color: #6f42c1 !important;">
+                            <i class="fas fa-clock me-1"></i>
+                            <strong>Permesso:</strong> Orari specifici della richiesta (Viola)
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small style="color: #fd7e14 !important;">
+                            <i class="fas fa-thermometer-half me-1"></i>
+                            <strong>Malattia:</strong> Orari standard di lavoro dell'utente (Arancione)
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-light">
+                            <i class="fas fa-moon text-secondary me-1"></i>
+                            <strong>Domenica:</strong> Chiusura abituale settimanale (Grigio)
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
