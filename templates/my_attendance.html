@@ -129,31 +129,43 @@
                         </div>
                     </div>
 
-                    <!-- Tabella presenze -->
+                    <!-- Tabella presenze multi-sessione -->
                     <div class="table-responsive">
                         <table class="table table-hover table-bordered">
                             <thead class="table-dark">
                                 <tr>
-                                    <th style="width: 6%;">Giorno</th>
-                                    <th style="width: 10%;">Data</th>
+                                    <th style="width: 5%;">Giorno</th>
+                                    <th style="width: 9%;">Data</th>
                                     <th style="width: 10%;">Sede</th>
                                     {% if active_commesse|length > 0 %}
-                                    <th style="width: 10%;">Commessa</th>
+                                    <th style="width: 12%;">Commessa</th>
                                     {% endif %}
                                     <th style="width: 12%;">Tipologia</th>
-                                    <th style="width: 10%;">Entrata</th>
-                                    <th style="width: 10%;">Inizio Pausa</th>
-                                    <th style="width: 10%;">Fine Pausa</th>
-                                    <th style="width: 10%;">Uscita</th>
-                                    <th style="width: 12%;">Stato</th>
-                                    <th style="width: 8%;">Azioni</th>
+                                    <th style="width: 9%;">Inizio</th>
+                                    <th style="width: 9%;">Fine</th>
+                                    <th style="width: 8%;">Ore</th>
+                                    <th style="width: 10%;">Stato</th>
+                                    <th style="width: 10%;">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="attendanceTable">
+                                {% set current_day = None %}
                                 {% for day_data in days_data %}
-                                <tr class="{% if day_data.is_weekend %}table-secondary{% elif day_data.is_future %}table-light text-muted{% elif day_data.has_leave %}table-warning bg-opacity-25{% endif %}" data-day="{{ day_data.day }}">
-                                    <td class="fw-bold">{{ day_data.weekday }}</td>
-                                    <td>
+                                    {% if current_day != day_data.day %}
+                                        {% set current_day = day_data.day %}
+                                        {% set is_first_session = true %}
+                                    {% else %}
+                                        {% set is_first_session = false %}
+                                    {% endif %}
+                                <tr class="{% if day_data.is_weekend %}table-secondary{% elif day_data.is_future %}table-light text-muted{% elif day_data.has_leave %}table-warning bg-opacity-25{% endif %} session-row" 
+                                    data-day="{{ day_data.day }}" 
+                                    data-session-id="{{ day_data.session_id or '' }}"
+                                    data-session-index="{{ day_data.session_index }}">
+                                    
+                                    <!-- Mostra giorno e data solo sulla prima riga del giorno -->
+                                    {% if is_first_session %}
+                                    <td class="fw-bold" rowspan="{{day_data.total_sessions if day_data.total_sessions > 0 else 1}}">{{ day_data.weekday }}</td>
+                                    <td rowspan="{{day_data.total_sessions if day_data.total_sessions > 0 else 1}}">
                                         {{ day_data.date.strftime('%d/%m/%Y') }}
                                         {% if day_data.is_future %}
                                         <small class="text-muted d-block"><i class="fas fa-clock"></i> Futuro</small>
@@ -168,15 +180,19 @@
                                             {% endif %}
                                             {{ day_data.leave_type }}
                                         </small>
+                                        {% elif day_data.total_sessions > 1 %}
+                                        <small class="text-info d-block"><i class="fas fa-layer-group"></i> {{ day_data.total_sessions }} sessioni</small>
                                         {% endif %}
                                     </td>
+                                    {% endif %}
                                     
                                     <td>
                                         {% if user_sedi|length > 1 %}
                                         <select class="form-select form-select-sm sede-select" 
-                                                id="sede_{{ day_data.day }}"
+                                                id="sede_{{ day_data.day }}_{{ day_data.session_index }}"
                                                 {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
-                                                data-day="{{ day_data.day }}">
+                                                data-day="{{ day_data.day }}"
+                                                data-session-index="{{ day_data.session_index }}">
                                             {% for sede in user_sedi %}
                                             <option value="{{ sede.id }}" {% if day_data.sede_id == sede.id %}selected{% endif %}>{{ sede.name }}</option>
                                             {% endfor %}
@@ -191,9 +207,10 @@
                                     {% if active_commesse|length > 0 %}
                                     <td>
                                         <select class="form-select form-select-sm commessa-select" 
-                                                id="commessa_{{ day_data.day }}"
+                                                id="commessa_{{ day_data.day }}_{{ day_data.session_index }}"
                                                 {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
-                                                data-day="{{ day_data.day }}">
+                                                data-day="{{ day_data.day }}"
+                                                data-session-index="{{ day_data.session_index }}">
                                             <option value="none">N/A</option>
                                             {% for commessa in active_commesse %}
                                             <option value="{{ commessa.id }}" {% if day_data.commessa_id == commessa.id %}selected{% endif %}>{{ commessa.codice }} - {{ commessa.cliente }}</option>
@@ -204,9 +221,10 @@
                                     
                                     <td>
                                         <select class="form-select form-select-sm attendance-type-select" 
-                                                id="attendance_type_{{ day_data.day }}"
+                                                id="attendance_type_{{ day_data.day }}_{{ day_data.session_index }}"
                                                 {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
-                                                data-day="{{ day_data.day }}">
+                                                data-day="{{ day_data.day }}"
+                                                data-session-index="{{ day_data.session_index }}">
                                             {% for type in attendance_types %}
                                             <option value="{{ type.id }}" {% if day_data.attendance_type_id == type.id %}selected{% endif %}>{{ type.name }}</option>
                                             {% endfor %}
@@ -216,79 +234,66 @@
                                     <td>
                                         <input type="time" 
                                                class="form-control form-control-sm time-input" 
-                                               id="clock_in_{{ day_data.day }}" 
-                                               value="{{ day_data.clock_in or '' }}"
+                                               id="start_time_{{ day_data.day }}_{{ day_data.session_index }}" 
+                                               value="{{ day_data.start_time }}"
                                                {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
-                                               data-type="clock_in">
+                                               data-session-index="{{ day_data.session_index }}"
+                                               data-type="start_time">
                                     </td>
                                     <td>
                                         <input type="time" 
                                                class="form-control form-control-sm time-input" 
-                                               id="break_start_{{ day_data.day }}" 
-                                               value="{{ day_data.break_start or '' }}"
+                                               id="end_time_{{ day_data.day }}_{{ day_data.session_index }}" 
+                                               value="{{ day_data.end_time }}"
                                                {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
-                                               data-type="break_start">
+                                               data-session-index="{{ day_data.session_index }}"
+                                               data-type="end_time">
                                     </td>
-                                    <td>
-                                        <input type="time" 
-                                               class="form-control form-control-sm time-input" 
-                                               id="break_end_{{ day_data.day }}" 
-                                               value="{{ day_data.break_end or '' }}"
-                                               {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
-                                               data-day="{{ day_data.day }}"
-                                               data-type="break_end">
-                                    </td>
-                                    <td>
-                                        <input type="time" 
-                                               class="form-control form-control-sm time-input" 
-                                               id="clock_out_{{ day_data.day }}" 
-                                               value="{{ day_data.clock_out or '' }}"
-                                               {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
-                                               data-day="{{ day_data.day }}"
-                                               data-type="clock_out">
-                                    </td>
-                                    <td class="status-cell" id="status_{{ day_data.day }}">
-                                        {% if day_data.has_leave %}
-                                        <span class="badge bg-warning text-dark" title="{{ day_data.leave_type }}">
-                                            {% if 'Malattia' in day_data.leave_type %}
-                                            <i class="fas fa-thermometer-half"></i>
-                                            {% elif 'Ferie' in day_data.leave_type %}
-                                            <i class="fas fa-umbrella-beach"></i>
-                                            {% else %}
-                                            <i class="fas fa-clock"></i>
-                                            {% endif %}
-                                            {{ day_data.leave_type }}
-                                        </span>
-                                        {% elif day_data.has_live %}
-                                        <span class="badge bg-success" title="Registrato in tempo reale - Non modificabile">
-                                            <i class="fas fa-mobile-alt"></i> Live
-                                        </span>
-                                        {% elif day_data.has_manual %}
-                                        <span class="badge bg-info" title="Inserimento manuale">
-                                            <i class="fas fa-keyboard"></i> Manuale
-                                        </span>
+                                    <td class="text-center" id="duration_{{ day_data.day }}_{{ day_data.session_index }}">
+                                        {% if day_data.duration_hours %}
+                                        <span class="badge bg-primary">{{ "%.1f"|format(day_data.duration_hours) }}h</span>
                                         {% else %}
-                                        <span class="badge bg-secondary" title="Nessuna presenza registrata">
-                                            <i class="fas fa-minus"></i> Vuoto
-                                        </span>
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="status-cell">
+                                        {% if day_data.has_leave %}
+                                        <span class="badge bg-warning text-dark">Permesso</span>
+                                        {% elif day_data.has_live %}
+                                        <span class="badge bg-success"><i class="fas fa-mobile-alt"></i> Live</span>
+                                        {% elif day_data.session_id %}
+                                        <span class="badge bg-info"><i class="fas fa-keyboard"></i> Manuale</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary"><i class="fas fa-minus"></i> Vuoto</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if can_edit and not day_data.has_live %}
-                                        <button class="btn btn-sm btn-primary save-day-btn" 
+                                        {% if can_edit and not day_data.has_live and not day_data.is_future and not day_data.has_leave %}
+                                        <button class="btn btn-sm btn-primary save-session-btn" 
                                                 data-day="{{ day_data.day }}"
-                                                onclick="saveDayData({{ day_data.day }})"
-                                                title="Salva modifiche">
+                                                data-session-index="{{ day_data.session_index }}"
+                                                data-session-id="{{ day_data.session_id or '' }}"
+                                                onclick="saveSession({{ day_data.day }}, {{ day_data.session_index }})"
+                                                title="Salva sessione">
                                             <i class="fas fa-save"></i>
                                         </button>
-                                        {% if day_data.has_manual %}
-                                        <button class="btn btn-sm btn-danger delete-day-btn ms-1" 
-                                                data-day="{{ day_data.day }}"
-                                                onclick="deleteDayData({{ day_data.day }})"
-                                                title="Cancella dati manuali">
+                                        {% if day_data.session_id %}
+                                        <button class="btn btn-sm btn-danger delete-session-btn ms-1" 
+                                                data-session-id="{{ day_data.session_id }}"
+                                                onclick="deleteSession({{ day_data.session_id }})"
+                                                title="Cancella sessione">
                                             <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                        <!-- Mostra "Aggiungi Sessione" solo sull'ultima riga del giorno -->
+                                        {% if is_first_session or (day_data.session_index == day_data.total_sessions - 1) %}
+                                        <button class="btn btn-sm btn-success add-session-btn ms-1" 
+                                                data-day="{{ day_data.day }}"
+                                                onclick="addSession({{ day_data.day }})"
+                                                title="Aggiungi nuova sessione">
+                                            <i class="fas fa-plus"></i>
                                         </button>
                                         {% endif %}
                                         {% else %}
@@ -503,17 +508,17 @@ function hideLoadingOverlay() {
     overlay.style.display = 'none';
 }
 
-function saveDayData(day) {
+// Multi-sessione: salva una singola sessione
+function saveSession(day, sessionIndex) {
     if (!CAN_EDIT) {
         showFlashMessage('warning', 'Timesheet consolidato, non modificabile');
         return;
     }
 
-    const clockInInput = document.getElementById(`clock_in_${day}`);
-    const clockOutInput = document.getElementById(`clock_out_${day}`);
-    const breakStartInput = document.getElementById(`break_start_${day}`);
-    const breakEndInput = document.getElementById(`break_end_${day}`);
-    const saveBtn = document.querySelector(`.save-day-btn[data-day="${day}"]`);
+    const startTimeInput = document.getElementById(`start_time_${day}_${sessionIndex}`);
+    const endTimeInput = document.getElementById(`end_time_${day}_${sessionIndex}`);
+    const saveBtn = document.querySelector(`.save-session-btn[data-day="${day}"][data-session-index="${sessionIndex}"]`);
+    const sessionId = saveBtn.getAttribute('data-session-id');
     
     // Mostra loading sul pulsante
     const originalHTML = saveBtn.innerHTML;
@@ -524,31 +529,30 @@ function saveDayData(day) {
         year: YEAR,
         month: MONTH,
         day: day,
-        clock_in: clockInInput.value,
-        clock_out: clockOutInput.value,
-        break_start: breakStartInput.value,
-        break_end: breakEndInput.value
+        session_id: sessionId || null,
+        start_time: startTimeInput.value,
+        end_time: endTimeInput.value
     };
     
     // Aggiungi sede se multisede
     if (HAS_MULTIPLE_SEDI) {
-        const sedeSelect = document.getElementById(`sede_${day}`);
+        const sedeSelect = document.getElementById(`sede_${day}_${sessionIndex}`);
         data.sede_id = sedeSelect.value;
     }
     
     // Aggiungi commessa se disponibili
     if (HAS_COMMESSE) {
-        const commessaSelect = document.getElementById(`commessa_${day}`);
+        const commessaSelect = document.getElementById(`commessa_${day}_${sessionIndex}`);
         data.commessa_id = commessaSelect.value;
     }
     
     // Aggiungi tipologia presenza
-    const attendanceTypeSelect = document.getElementById(`attendance_type_${day}`);
+    const attendanceTypeSelect = document.getElementById(`attendance_type_${day}_${sessionIndex}`);
     if (attendanceTypeSelect) {
         data.attendance_type_id = parseInt(attendanceTypeSelect.value);
     }
     
-    fetch('{{ url_for("attendance.save_my_attendance") }}', {
+    fetch('{{ url_for("attendance.save_attendance_session") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -559,102 +563,61 @@ function saveDayData(day) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Aggiorna badge stato
-            const statusCell = document.getElementById(`status_${day}`);
-            if (clockInInput.value || clockOutInput.value) {
-                statusCell.innerHTML = '<span class="badge bg-info"><i class="fas fa-keyboard"></i> Manuale</span>';
-                
-                // Aggiungi pulsante elimina se non esiste già
-                const existingDeleteBtn = document.querySelector(`.delete-day-btn[data-day="${day}"]`);
-                if (!existingDeleteBtn) {
-                    const actionsCell = saveBtn.parentElement;
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'btn btn-sm btn-danger delete-day-btn ms-1';
-                    deleteBtn.setAttribute('data-day', day);
-                    deleteBtn.setAttribute('onclick', `deleteDayData(${day})`);
-                    deleteBtn.setAttribute('title', 'Cancella dati manuali');
-                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-                    actionsCell.appendChild(deleteBtn);
-                }
-            } else {
-                statusCell.innerHTML = '<span class="badge bg-secondary"><i class="fas fa-minus"></i> Vuoto</span>';
-            }
-            
-            // Flash success
             showFlashMessage('success', data.message);
+            // Ricarica la pagina per aggiornare i dati
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
             showFlashMessage('danger', data.message);
+            saveBtn.innerHTML = originalHTML;
+            saveBtn.disabled = false;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showFlashMessage('danger', 'Errore di connessione');
-    })
-    .finally(() => {
         saveBtn.innerHTML = originalHTML;
         saveBtn.disabled = false;
     });
 }
 
-function deleteDayData(day) {
+// Multi-sessione: elimina una sessione
+function deleteSession(sessionId) {
     if (!CAN_EDIT) {
         showFlashMessage('warning', 'Timesheet consolidato, non modificabile');
         return;
     }
 
-    if (!confirm(`Sei sicuro di voler cancellare tutti i dati del giorno ${day}?`)) {
+    if (!confirm('Sei sicuro di voler cancellare questa sessione?')) {
         return;
     }
     
-    const deleteBtn = document.querySelector(`.delete-day-btn[data-day="${day}"]`);
+    const deleteBtn = document.querySelector(`.delete-session-btn[data-session-id="${sessionId}"]`);
     
     // Mostra loading sul pulsante
     const originalHTML = deleteBtn.innerHTML;
     deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     deleteBtn.disabled = true;
     
-    const data = {
-        year: YEAR,
-        month: MONTH,
-        day: day
-    };
-    
-    fetch('{{ url_for("attendance.delete_my_attendance_day") }}', {
+    fetch('{{ url_for("attendance.delete_attendance_session") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': '{{ csrf_token() }}'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+            session_id: sessionId
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Svuota gli input
-            document.getElementById(`clock_in_${day}`).value = '';
-            document.getElementById(`clock_out_${day}`).value = '';
-            document.getElementById(`break_start_${day}`).value = '';
-            document.getElementById(`break_end_${day}`).value = '';
-            
-            // Reset sede e commessa
-            if (HAS_MULTIPLE_SEDI) {
-                const sedeSelect = document.getElementById(`sede_${day}`);
-                if (sedeSelect) sedeSelect.selectedIndex = 0;
-            }
-            if (HAS_COMMESSE) {
-                const commessaSelect = document.getElementById(`commessa_${day}`);
-                if (commessaSelect) commessaSelect.value = 'none';
-            }
-            
-            // Aggiorna badge stato
-            const statusCell = document.getElementById(`status_${day}`);
-            statusCell.innerHTML = '<span class="badge bg-secondary"><i class="fas fa-minus"></i> Vuoto</span>';
-            
-            // Rimuovi il pulsante cancella
-            deleteBtn.remove();
-            
-            // Flash success
             showFlashMessage('success', data.message);
+            // Ricarica la pagina per aggiornare i dati
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
             showFlashMessage('danger', data.message);
             deleteBtn.innerHTML = originalHTML;
@@ -666,6 +629,47 @@ function deleteDayData(day) {
         showFlashMessage('danger', 'Errore di connessione');
         deleteBtn.innerHTML = originalHTML;
         deleteBtn.disabled = false;
+    });
+}
+
+// Multi-sessione: aggiungi nuova sessione per un giorno
+function addSession(day) {
+    if (!CAN_EDIT) {
+        showFlashMessage('warning', 'Timesheet consolidato, non modificabile');
+        return;
+    }
+    
+    showLoadingOverlay('Creazione nuova sessione...');
+    
+    fetch('{{ url_for("attendance.add_attendance_session") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            year: YEAR,
+            month: MONTH,
+            day: day
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoadingOverlay();
+        if (data.success) {
+            showFlashMessage('success', data.message);
+            // Ricarica la pagina per mostrare la nuova sessione
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showFlashMessage('danger', data.message);
+        }
+    })
+    .catch(error => {
+        hideLoadingOverlay();
+        console.error('Error:', error);
+        showFlashMessage('danger', 'Errore di connessione');
     });
 }
 

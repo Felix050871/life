@@ -2561,6 +2561,20 @@ def my_attendance():
                 leave_info[current_date] = leave_type_name
             current_date += timedelta(days=1)
     
+    # Carica AttendanceSession esistenti per questo timesheet (se non consolidato, mostra sessioni manuali)
+    from models import AttendanceSession
+    sessions_query = AttendanceSession.query.filter_by(
+        timesheet_id=timesheet.id
+    ).order_by(AttendanceSession.date, AttendanceSession.start_time).all()
+    
+    # Organizza sessioni per giorno
+    sessions_by_day = {}
+    for session in sessions_query:
+        day = session.date.day
+        if day not in sessions_by_day:
+            sessions_by_day[day] = []
+        sessions_by_day[day].append(session)
+    
     # Organizza eventi per giorno
     events_by_day = {}
     for event in events_query:
@@ -2598,7 +2612,10 @@ def my_attendance():
         italian_time = timestamp.astimezone(italy_tz)
         return italian_time.strftime('%H:%M')
     
+    # Costruisci struttura days_data con supporto multi-sessione
     days_data = []
+    italian_weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+    
     for day in range(1, last_day_num + 1):
         day_date = date(year, month, day)
         day_events = events_by_day.get(day, {
@@ -2613,54 +2630,77 @@ def my_attendance():
         has_leave = day_date in leave_dates
         leave_type = leave_info.get(day_date, '')
         
-        # Trova primo clock_in e ultimo clock_out
-        clock_in_time = None
-        clock_out_time = None
-        break_start_time = None
-        break_end_time = None
-        attendance_type_id = default_type.id if default_type else None
-        
-        for event in day_events['events']:
-            # Cattura attendance_type_id da qualsiasi evento che lo ha
-            if event.attendance_type_id and attendance_type_id == (default_type.id if default_type else None):
-                attendance_type_id = event.attendance_type_id
-            
-            if event.event_type == 'clock_in' and clock_in_time is None:
-                clock_in_time = to_italian_time_str(event.timestamp)
-            elif event.event_type == 'clock_out':
-                clock_out_time = to_italian_time_str(event.timestamp)
-            elif event.event_type == 'break_start' and break_start_time is None:
-                break_start_time = to_italian_time_str(event.timestamp)
-            elif event.event_type == 'break_end':
-                break_end_time = to_italian_time_str(event.timestamp)
-        
-        # Nomi giorni in italiano
-        italian_weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
         weekday_italian = italian_weekdays[day_date.weekday()]
+        is_weekend = day_date.weekday() >= 5
+        is_future = day_date > date.today()
         
-        # Se l'utente ha solo una commessa, usa quella come default
-        default_commessa_id = day_events.get('commessa_id')
-        if default_commessa_id is None and len(active_commesse) == 1:
-            default_commessa_id = active_commesse[0].id
+        # Se ci sono sessioni salvate per questo giorno, mostrare quelle
+        day_sessions = sessions_by_day.get(day, [])
         
-        days_data.append({
-            'day': day,
-            'date': day_date,
-            'weekday': weekday_italian,
-            'clock_in': clock_in_time,
-            'clock_out': clock_out_time,
-            'break_start': break_start_time,
-            'break_end': break_end_time,
-            'sede_id': day_events.get('sede_id', target_user.sede_id),
-            'commessa_id': default_commessa_id,
-            'attendance_type_id': attendance_type_id,
-            'has_manual': day_events['has_manual'],
-            'has_live': day_events['has_live'],
-            'is_weekend': day_date.weekday() >= 5,
-            'is_future': day_date > date.today(),
-            'has_leave': has_leave,
-            'leave_type': leave_type
-        })
+        if day_sessions:
+            # Mostra tutte le sessioni esistenti
+            for session_index, session in enumerate(day_sessions):
+                days_data.append({
+                    'day': day,
+                    'date': day_date,
+                    'weekday': weekday_italian,
+                    'session_id': session.id,
+                    'session_index': session_index,
+                    'start_time': session.start_time.strftime('%H:%M') if session.start_time else '',
+                    'end_time': session.end_time.strftime('%H:%M') if session.end_time else '',
+                    'sede_id': session.sede_id,
+                    'commessa_id': session.commessa_id,
+                    'attendance_type_id': session.attendance_type_id,
+                    'duration_hours': session.duration_hours,
+                    'has_manual': True,
+                    'has_live': False,
+                    'is_weekend': is_weekend,
+                    'is_future': is_future,
+                    'has_leave': has_leave,
+                    'leave_type': leave_type,
+                    'total_sessions': len(day_sessions)
+                })
+        else:
+            # Nessuna sessione salvata - mostra riga vuota per inserimento
+            # Deriva i dati dagli eventi (per retrocompatibilità)
+            clock_in_time = None
+            clock_out_time = None
+            attendance_type_id = default_type.id if default_type else None
+            
+            for event in day_events['events']:
+                if event.attendance_type_id and attendance_type_id == (default_type.id if default_type else None):
+                    attendance_type_id = event.attendance_type_id
+                
+                if event.event_type == 'clock_in' and clock_in_time is None:
+                    clock_in_time = to_italian_time_str(event.timestamp)
+                elif event.event_type == 'clock_out':
+                    clock_out_time = to_italian_time_str(event.timestamp)
+            
+            # Se l'utente ha solo una commessa, usa quella come default
+            default_commessa_id = day_events.get('commessa_id')
+            if default_commessa_id is None and len(active_commesse) == 1:
+                default_commessa_id = active_commesse[0].id
+            
+            days_data.append({
+                'day': day,
+                'date': day_date,
+                'weekday': weekday_italian,
+                'session_id': None,
+                'session_index': 0,
+                'start_time': clock_in_time or '',
+                'end_time': clock_out_time or '',
+                'sede_id': day_events.get('sede_id', target_user.sede_id),
+                'commessa_id': default_commessa_id,
+                'attendance_type_id': attendance_type_id,
+                'duration_hours': None,
+                'has_manual': day_events['has_manual'],
+                'has_live': day_events['has_live'],
+                'is_weekend': is_weekend,
+                'is_future': is_future,
+                'has_leave': has_leave,
+                'leave_type': leave_type,
+                'total_sessions': 0
+            })
     
     # Nomi mesi in italiano
     month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -2681,10 +2721,276 @@ def my_attendance():
                          can_validate=can_validate,
                          target_user=target_user)
 
+@attendance_bp.route('/my_attendance/save_session', methods=['POST'])
+@login_required
+def save_attendance_session():
+    """Salva una singola sessione di presenza (supporta multi-sessione per giorno)"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        day = int(data.get('day'))
+        session_id = data.get('session_id')  # None per nuova sessione
+        start_time_str = data.get('start_time', '').strip()
+        end_time_str = data.get('end_time', '').strip()
+        sede_id = data.get('sede_id')
+        commessa_id = data.get('commessa_id') if data.get('commessa_id') != 'none' else None
+        attendance_type_id = data.get('attendance_type_id')
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        # Crea data
+        day_date = date(year, month, day)
+        
+        # Blocca inserimenti futuri
+        if day_date > date.today():
+            return jsonify({'success': False, 'message': 'Non è possibile inserire orari per giorni futuri'}), 400
+        
+        # Blocca inserimenti su giorni con ferie/permessi
+        existing_leave = filter_by_company(LeaveRequest.query).filter(
+            LeaveRequest.user_id == current_user.id,
+            LeaveRequest.status.in_(['Approved', 'Pending']),
+            LeaveRequest.start_date <= day_date,
+            LeaveRequest.end_date >= day_date
+        ).first()
+        
+        if existing_leave:
+            return jsonify({'success': False, 'message': 'Giorno con ferie/permesso/malattia'}), 400
+        
+        # Valida attendance_type_id
+        if attendance_type_id:
+            attendance_type = filter_by_company(AttendanceType.query).filter_by(
+                id=int(attendance_type_id),
+                active=True
+            ).first()
+            if not attendance_type:
+                return jsonify({'success': False, 'message': 'Tipologia di presenza non valida'}), 400
+            attendance_type_id = attendance_type.id
+        else:
+            default_type = filter_by_company(AttendanceType.query).filter_by(
+                is_default=True,
+                active=True
+            ).first()
+            attendance_type_id = default_type.id if default_type else None
+        
+        # Verifica sede
+        if sede_id:
+            sede_id = int(sede_id)
+            user_sede_ids = [s.id for s in (current_user.sedi if hasattr(current_user, 'sedi') and current_user.sedi else [current_user.sede_obj] if current_user.sede_obj else [])]
+            if sede_id not in user_sede_ids:
+                return jsonify({'success': False, 'message': 'Sede non valida per questo utente'}), 400
+        
+        # Se non ci sono orari e session_id è None, non fare nulla
+        if not start_time_str and not end_time_str and session_id is None:
+            return jsonify({'success': True, 'message': 'Nessun dato da salvare'})
+        
+        # Valida orari
+        from datetime import datetime as dt, time as time_class
+        start_time = None
+        end_time = None
+        
+        if start_time_str:
+            try:
+                hour, minute = map(int, start_time_str.split(':'))
+                start_time = time_class(hour, minute)
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Ora inizio non valida'}), 400
+        
+        if end_time_str:
+            try:
+                hour, minute = map(int, end_time_str.split(':'))
+                end_time = time_class(hour, minute)
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Ora fine non valida'}), 400
+        
+        # Calcola durata
+        duration_hours = None
+        if start_time and end_time:
+            start_minutes = start_time.hour * 60 + start_time.minute
+            end_minutes = end_time.hour * 60 + end_time.minute
+            if end_minutes < start_minutes:
+                # Assume overnight (rare but possible)
+                end_minutes += 24 * 60
+            duration_hours = (end_minutes - start_minutes) / 60.0
+        
+        # Carica o crea sessione
+        from models import AttendanceSession
+        if session_id:
+            # Aggiorna sessione esistente
+            session = AttendanceSession.query.filter_by(
+                id=session_id,
+                timesheet_id=timesheet.id,
+                company_id=company_id
+            ).first()
+            
+            if not session:
+                return jsonify({'success': False, 'message': 'Sessione non trovata'}), 404
+            
+            session.start_time = start_time
+            session.end_time = end_time
+            session.sede_id = sede_id
+            session.commessa_id = commessa_id
+            session.attendance_type_id = attendance_type_id
+            session.duration_hours = duration_hours
+        else:
+            # Crea nuova sessione
+            session = AttendanceSession(
+                timesheet_id=timesheet.id,
+                user_id=current_user.id,
+                company_id=company_id,
+                date=day_date,
+                start_time=start_time,
+                end_time=end_time,
+                sede_id=sede_id,
+                commessa_id=commessa_id,
+                attendance_type_id=attendance_type_id,
+                duration_hours=duration_hours
+            )
+            db.session.add(session)
+        
+        db.session.commit()
+        return jsonify({
+            'success': True, 
+            'message': 'Sessione salvata',
+            'session_id': session.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore salvataggio sessione: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+@attendance_bp.route('/my_attendance/delete_session', methods=['POST'])
+@login_required
+def delete_attendance_session():
+    """Elimina una sessione di presenza"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id')
+        
+        if not session_id:
+            return jsonify({'success': False, 'message': 'Session ID mancante'}), 400
+        
+        company_id = get_user_company_id()
+        
+        # Trova la sessione
+        from models import AttendanceSession
+        session = AttendanceSession.query.filter_by(
+            id=session_id,
+            user_id=current_user.id,
+            company_id=company_id
+        ).first()
+        
+        if not session:
+            return jsonify({'success': False, 'message': 'Sessione non trovata'}), 404
+        
+        # Verifica che il timesheet sia modificabile
+        timesheet = session.timesheet
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        db.session.delete(session)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Sessione eliminata'})
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore eliminazione sessione: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+@attendance_bp.route('/my_attendance/add_session', methods=['POST'])
+@login_required
+def add_attendance_session():
+    """Crea una nuova sessione vuota per un giorno (per supportare multi-sessione)"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        day = int(data.get('day'))
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        # Crea data
+        day_date = date(year, month, day)
+        
+        # Blocca inserimenti futuri
+        if day_date > date.today():
+            return jsonify({'success': False, 'message': 'Non è possibile inserire sessioni per giorni futuri'}), 400
+        
+        # Blocca inserimenti su giorni con ferie/permessi
+        existing_leave = filter_by_company(LeaveRequest.query).filter(
+            LeaveRequest.user_id == current_user.id,
+            LeaveRequest.status.in_(['Approved', 'Pending']),
+            LeaveRequest.start_date <= day_date,
+            LeaveRequest.end_date >= day_date
+        ).first()
+        
+        if existing_leave:
+            return jsonify({'success': False, 'message': 'Giorno con ferie/permesso/malattia'}), 400
+        
+        # Ottieni default values
+        default_sede_id = current_user.sede_id
+        default_type = filter_by_company(AttendanceType.query).filter_by(
+            is_default=True,
+            active=True
+        ).first()
+        
+        # Crea nuova sessione vuota
+        from models import AttendanceSession
+        session = AttendanceSession(
+            timesheet_id=timesheet.id,
+            user_id=current_user.id,
+            company_id=company_id,
+            date=day_date,
+            start_time=None,
+            end_time=None,
+            sede_id=default_sede_id,
+            commessa_id=None,
+            attendance_type_id=default_type.id if default_type else None,
+            duration_hours=None
+        )
+        db.session.add(session)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Nuova sessione creata - compila i dati',
+            'session_id': session.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore creazione sessione: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
 @attendance_bp.route('/my_attendance/save', methods=['POST'])
 @login_required
 def save_my_attendance():
-    """Salva presenza giornaliera con sede e commessa"""
+    """Salva presenza giornaliera con sede e commessa (DEPRECATED - usa save_attendance_session)"""
     if not current_user.can_access_attendance():
         return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
     
