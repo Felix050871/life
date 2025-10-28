@@ -3711,7 +3711,7 @@ def export_validated_timesheets_excel():
                         if event.event_type == 'clock_in':
                             entrata = event.timestamp.strftime('%H:%M')
                             if event.sede:
-                                sede_name = event.sede.nome
+                                sede_name = event.sede.name
                             if event.attendance_type:
                                 tipologia_code = event.attendance_type.code
                         elif event.event_type == 'break_start':
@@ -3830,7 +3830,7 @@ def export_validated_timesheets_excel():
                         if event.event_type == 'clock_in':
                             entrata = event.timestamp.strftime('%H:%M')
                             if event.sede:
-                                sede_name = event.sede.nome
+                                sede_name = event.sede.name
                             if event.attendance_type:
                                 tipologia_code = event.attendance_type.code
                         elif event.event_type == 'break_start':
