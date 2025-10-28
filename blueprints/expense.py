@@ -42,7 +42,7 @@ def require_expense_permission(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.can_view_expense_reports():
+        if not current_user.can_access_expense_reports_menu():
             flash('Non hai i permessi per visualizzare le note spese', 'danger')
             return redirect(url_for('dashboard.dashboard'))
         return f(*args, **kwargs)
