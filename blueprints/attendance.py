@@ -2136,6 +2136,15 @@ def my_attendance():
     company_id = get_user_company_id()
     timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
     
+    # Verifica se esiste una richiesta di riapertura pendente
+    from models import TimesheetReopenRequest
+    pending_reopen_request = None
+    if timesheet.is_consolidated:
+        pending_reopen_request = TimesheetReopenRequest.query.filter_by(
+            timesheet_id=timesheet.id,
+            status='Pending'
+        ).first()
+    
     # Calcola primo e ultimo giorno del mese
     from calendar import monthrange
     first_day = date(year, month, 1)
@@ -2288,7 +2297,8 @@ def my_attendance():
                          days_data=days_data,
                          user_sedi=user_sedi,
                          active_commesse=active_commesse,
-                         can_edit=timesheet.can_edit())
+                         can_edit=timesheet.can_edit(),
+                         pending_reopen_request=pending_reopen_request)
 
 @attendance_bp.route('/my_attendance/save', methods=['POST'])
 @login_required
