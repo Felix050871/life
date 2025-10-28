@@ -2045,7 +2045,7 @@ def approve_timesheet_reopen(request_id):
     try:
         from models import TimesheetReopenRequest
         
-        reopen_request = filter_by_company(TimesheetReopenRequest.query).get(request_id)
+        reopen_request = filter_by_company(TimesheetReopenRequest.query).filter_by(id=request_id).first()
         if not reopen_request:
             flash('Richiesta non trovata', 'danger')
             return redirect(url_for('attendance.timesheet_reopen_requests'))
@@ -2078,7 +2078,7 @@ def reject_timesheet_reopen(request_id):
     try:
         from models import TimesheetReopenRequest
         
-        reopen_request = filter_by_company(TimesheetReopenRequest.query).get(request_id)
+        reopen_request = filter_by_company(TimesheetReopenRequest.query).filter_by(id=request_id).first()
         if not reopen_request:
             flash('Richiesta non trovata', 'danger')
             return redirect(url_for('attendance.timesheet_reopen_requests'))
