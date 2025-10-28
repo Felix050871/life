@@ -122,6 +122,8 @@ class UserRole(db.Model):
             'can_view_my_attendance': 'Visualizzare Le Mie Presenze',
             'can_access_attendance': 'Accedere alle Presenze',
             'can_view_sede_attendance': 'Visualizzare Presenze Sede',
+            'can_manage_attendance_types': 'Gestire Tipologie Presenze',
+            'can_view_attendance_types': 'Visualizzare Tipologie Presenze',
             
             # Gestione ferie/permessi
             'can_manage_leave': 'Gestisci Tipologie Assenze',
