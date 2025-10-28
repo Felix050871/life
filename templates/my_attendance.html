@@ -225,6 +225,23 @@
                         </table>
                     </div>
 
+                    <!-- Pulsanti azioni -->
+                    {% if can_edit %}
+                    <div class="row mt-4">
+                        <div class="col-md-12 text-center">
+                            <button type="button" class="btn btn-success me-2" onclick="openBulkFillModal()">
+                                <i class="fas fa-magic me-1"></i>Compila Mese
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="consolidateTimesheet()">
+                                <i class="fas fa-lock me-1"></i>Consolida Timesheet
+                            </button>
+                            <p class="text-muted mt-2 mb-0">
+                                <small><i class="fas fa-info-circle me-1"></i>Usa "Compila Mese" per inserire orari standard su tutti i giorni lavorativi. "Consolida Timesheet" rende definitivo il timesheet.</small>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <div class="row mt-3">
                         <div class="col-md-12">
                             <div class="alert alert-info mb-0">
@@ -245,6 +262,75 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Compilazione Massiva -->
+<div class="modal fade" id="bulkFillModal" tabindex="-1" aria-labelledby="bulkFillModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkFillModalLabel">
+                    <i class="fas fa-magic me-2"></i>Compilazione Massiva Mese
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkFillForm">
+                    <div class="mb-3">
+                        <label for="bulk_sede_id" class="form-label">Sede</label>
+                        <select class="form-select" id="bulk_sede_id" required>
+                            {% for sede in user_sedi %}
+                            <option value="{{ sede.id }}">{{ sede.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    {% if active_commesse|length > 0 %}
+                    <div class="mb-3">
+                        <label for="bulk_commessa_id" class="form-label">Commessa</label>
+                        <select class="form-select" id="bulk_commessa_id">
+                            <option value="none">N/A</option>
+                            {% for commessa in active_commesse %}
+                            <option value="{{ commessa.id }}">{{ commessa.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="bulk_clock_in" class="form-label">Orario Entrata</label>
+                        <input type="time" class="form-control" id="bulk_clock_in" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bulk_break_start" class="form-label">Inizio Pausa</label>
+                        <input type="time" class="form-control" id="bulk_break_start">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bulk_break_end" class="form-label">Fine Pausa</label>
+                        <input type="time" class="form-control" id="bulk_break_end">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bulk_clock_out" class="form-label">Orario Uscita</label>
+                        <input type="time" class="form-control" id="bulk_clock_out" required>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Nota:</strong> I dati verranno inseriti solo nei giorni lavorativi (lun-ven) senza registrazioni automatiche o eventi straordinari (ferie, permessi, malattie).
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-success" onclick="performBulkFill()">
+                    <i class="fas fa-magic me-1"></i>Compila
+                </button>
             </div>
         </div>
     </div>
@@ -433,6 +519,113 @@ function showFlashMessage(type, message) {
     setTimeout(() => {
         alertDiv.remove();
     }, 3000);
+}
+
+function openBulkFillModal() {
+    if (!CAN_EDIT) {
+        showFlashMessage('warning', 'Timesheet consolidato, non modificabile');
+        return;
+    }
+    const modal = new bootstrap.Modal(document.getElementById('bulkFillModal'));
+    modal.show();
+}
+
+function performBulkFill() {
+    if (!CAN_EDIT) {
+        showFlashMessage('warning', 'Timesheet consolidato, non modificabile');
+        return;
+    }
+    
+    const form = document.getElementById('bulkFillForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const data = {
+        year: YEAR,
+        month: MONTH,
+        sede_id: parseInt(document.getElementById('bulk_sede_id').value),
+        clock_in: document.getElementById('bulk_clock_in').value,
+        clock_out: document.getElementById('bulk_clock_out').value,
+        break_start: document.getElementById('bulk_break_start').value,
+        break_end: document.getElementById('bulk_break_end').value
+    };
+    
+    const commessaSelect = document.getElementById('bulk_commessa_id');
+    if (commessaSelect) {
+        const commessaValue = commessaSelect.value;
+        data.commessa_id = commessaValue === 'none' ? null : parseInt(commessaValue);
+    }
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('bulkFillModal'));
+    modal.hide();
+    
+    showFlashMessage('info', 'Compilazione in corso...');
+    
+    fetch('{{ url_for("attendance.bulk_fill_month") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showFlashMessage('success', data.message);
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showFlashMessage('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showFlashMessage('danger', 'Errore di connessione');
+    });
+}
+
+function consolidateTimesheet() {
+    if (!CAN_EDIT) {
+        showFlashMessage('warning', 'Timesheet già consolidato');
+        return;
+    }
+    
+    if (!confirm('Sei sicuro di voler consolidare questo timesheet? Una volta consolidato, non potrai più modificare le presenze senza una richiesta di riapertura approvata.')) {
+        return;
+    }
+    
+    showFlashMessage('info', 'Consolidamento in corso...');
+    
+    fetch('{{ url_for("attendance.consolidate_timesheet") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            year: YEAR,
+            month: MONTH
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showFlashMessage('success', data.message);
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showFlashMessage('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showFlashMessage('danger', 'Errore di connessione');
+    });
 }
 </script>
 

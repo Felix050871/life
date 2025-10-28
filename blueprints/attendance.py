@@ -2488,3 +2488,242 @@ def delete_my_attendance_day():
         import logging
         logging.error(f"Errore eliminazione presenza: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+@attendance_bp.route('/my_attendance/bulk_fill', methods=['POST'])
+@login_required
+def bulk_fill_month():
+    """Compilazione massiva del mese con orari standard"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        sede_id = int(data.get('sede_id'))
+        
+        # Normalizza commessa_id: converte "none" o valori vuoti a None, altrimenti cast a int
+        commessa_id_raw = data.get('commessa_id')
+        if commessa_id_raw is None or commessa_id_raw == 'none' or commessa_id_raw == '':
+            commessa_id = None
+        else:
+            commessa_id = int(commessa_id_raw)
+        
+        clock_in_str = data.get('clock_in')
+        clock_out_str = data.get('clock_out')
+        break_start_str = data.get('break_start')
+        break_end_str = data.get('break_end')
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        # Verifica che l'utente abbia accesso alla sede
+        if sede_id not in [s.id for s in current_user.sedi]:
+            return jsonify({'success': False, 'message': 'Non hai accesso a questa sede'}), 403
+        
+        # Helper per creare timestamp
+        def create_timestamp(time_str):
+            if not time_str:
+                return None
+            hour, minute = map(int, time_str.split(':'))
+            return time(hour, minute)
+        
+        # Determina quanti giorni ha il mese
+        import calendar
+        _, days_in_month = calendar.monthrange(year, month)
+        
+        filled_count = 0
+        skipped_count = 0
+        
+        # Itera su tutti i giorni del mese
+        for day in range(1, days_in_month + 1):
+            day_date = date(year, month, day)
+            
+            # Salta sabato (5) e domenica (6)
+            if day_date.weekday() in [5, 6]:
+                continue
+            
+            # Controlla se ci sono eventi live per quel giorno
+            live_events = filter_by_company(AttendanceEvent.query).filter_by(
+                user_id=current_user.id,
+                date=day_date,
+                is_manual=False
+            ).first()
+            
+            if live_events:
+                skipped_count += 1
+                continue
+            
+            # Controlla se ci sono eventi straordinari (ferie, permessi, malattie)
+            leave_request = filter_by_company(LeaveRequest.query).filter(
+                LeaveRequest.user_id == current_user.id,
+                LeaveRequest.start_date <= day_date,
+                LeaveRequest.end_date >= day_date,
+                LeaveRequest.status == 'Approved'
+            ).first()
+            
+            if leave_request:
+                skipped_count += 1
+                continue
+            
+            # Controlla se ci sono già dati manuali per quel giorno
+            existing_manual = filter_by_company(AttendanceEvent.query).filter_by(
+                user_id=current_user.id,
+                date=day_date,
+                is_manual=True
+            ).first()
+            
+            if existing_manual:
+                skipped_count += 1
+                continue
+            
+            # Inserisci i dati per questo giorno
+            if clock_in_str:
+                clock_in_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    event_type='clock_in',
+                    timestamp=create_timestamp(clock_in_str),
+                    date=day_date,
+                    is_manual=True,
+                    sede_id=sede_id,
+                    commessa_id=commessa_id,
+                    company_id=company_id
+                )
+                db.session.add(clock_in_event)
+            
+            if break_start_str:
+                break_start_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    event_type='break_start',
+                    timestamp=create_timestamp(break_start_str),
+                    date=day_date,
+                    is_manual=True,
+                    sede_id=sede_id,
+                    commessa_id=commessa_id,
+                    company_id=company_id
+                )
+                db.session.add(break_start_event)
+            
+            if break_end_str:
+                break_end_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    event_type='break_end',
+                    timestamp=create_timestamp(break_end_str),
+                    date=day_date,
+                    is_manual=True,
+                    sede_id=sede_id,
+                    commessa_id=commessa_id,
+                    company_id=company_id
+                )
+                db.session.add(break_end_event)
+            
+            if clock_out_str:
+                clock_out_event = AttendanceEvent(
+                    user_id=current_user.id,
+                    event_type='clock_out',
+                    timestamp=create_timestamp(clock_out_str),
+                    date=day_date,
+                    is_manual=True,
+                    sede_id=sede_id,
+                    commessa_id=commessa_id,
+                    company_id=company_id
+                )
+                db.session.add(clock_out_event)
+            
+            filled_count += 1
+        
+        db.session.commit()
+        
+        message = f'Compilazione completata: {filled_count} giorni compilati'
+        if skipped_count > 0:
+            message += f', {skipped_count} giorni saltati (già compilati o con eventi straordinari)'
+        
+        return jsonify({'success': True, 'message': message})
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore compilazione massiva: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
+@attendance_bp.route('/my_attendance/consolidate', methods=['POST'])
+@login_required
+def consolidate_timesheet():
+    """Consolida il timesheet mensile dopo aver verificato la completezza"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se è già consolidato
+        if timesheet.is_consolidated:
+            return jsonify({'success': False, 'message': 'Timesheet già consolidato'}), 400
+        
+        # Verifica che tutti i giorni lavorativi siano compilati
+        import calendar
+        _, days_in_month = calendar.monthrange(year, month)
+        
+        missing_days = []
+        
+        for day in range(1, days_in_month + 1):
+            day_date = date(year, month, day)
+            
+            # Salta sabato (5) e domenica (6)
+            if day_date.weekday() in [5, 6]:
+                continue
+            
+            # Controlla se ci sono eventi straordinari (ferie, permessi, malattie)
+            leave_request = filter_by_company(LeaveRequest.query).filter(
+                LeaveRequest.user_id == current_user.id,
+                LeaveRequest.start_date <= day_date,
+                LeaveRequest.end_date >= day_date,
+                LeaveRequest.status == 'Approved'
+            ).first()
+            
+            # Se c'è un leave_request approvato, salta questo giorno
+            if leave_request:
+                continue
+            
+            # Controlla se ci sono eventi di presenza per quel giorno (clock_in o clock_out)
+            attendance_events = filter_by_company(AttendanceEvent.query).filter(
+                AttendanceEvent.user_id == current_user.id,
+                AttendanceEvent.date == day_date,
+                AttendanceEvent.event_type.in_(['clock_in', 'clock_out'])
+            ).count()
+            
+            if attendance_events < 2:  # Deve avere almeno entrata e uscita
+                missing_days.append(day)
+        
+        if missing_days:
+            missing_str = ', '.join(map(str, missing_days))
+            return jsonify({
+                'success': False, 
+                'message': f'Impossibile consolidare: mancano dati per i giorni {missing_str}. Completa tutte le giornate lavorative prima di consolidare.'
+            }), 400
+        
+        # Consolida il timesheet
+        timesheet.is_consolidated = True
+        timesheet.consolidated_at = datetime.now()
+        timesheet.consolidated_by_id = current_user.id
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Timesheet consolidato con successo'})
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore consolidamento timesheet: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
