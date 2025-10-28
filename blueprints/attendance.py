@@ -3142,6 +3142,110 @@ def consolidate_timesheet():
                 'message': f'Impossibile consolidare: mancano dati per i giorni {missing_str}. Completa tutte le giornate lavorative prima di consolidare.'
             }), 400
         
+        # Crea AttendanceSession da AttendanceEvent prima di consolidare
+        from models import AttendanceSession
+        from datetime import time as time_class
+        
+        # Elimina eventuali sessioni esistenti per questo timesheet (con scoping company)
+        AttendanceSession.query.filter_by(
+            timesheet_id=timesheet.id,
+            company_id=timesheet.company_id
+        ).delete()
+        
+        for day in range(1, days_in_month + 1):
+            day_date = date(year, month, day)
+            
+            # Ottieni tutti gli eventi del giorno ordinati per timestamp (usa il tenant del timesheet)
+            day_events = AttendanceEvent.query.filter(
+                AttendanceEvent.user_id == timesheet.user_id,
+                AttendanceEvent.company_id == timesheet.company_id,
+                AttendanceEvent.date == day_date
+            ).order_by(AttendanceEvent.timestamp).all()
+            
+            if not day_events:
+                continue
+            
+            # Accoppia clock_in con clock_out cronologicamente (supporta multiple sessioni per giorno)
+            from datetime import datetime as dt_class, timedelta
+            
+            # Traccia quali clock_out sono stati già usati (a livello giornaliero)
+            clock_out_used = set()
+            
+            # Pre-accoppia break_start con break_end cronologicamente per tutto il giorno
+            break_pairs = []
+            break_end_used_for_pairing = set()
+            for break_start_event in day_events:
+                if break_start_event.event_type != 'break_start':
+                    continue
+                
+                # Trova il prossimo break_end cronologico non ancora accoppiato
+                for end_event in day_events:
+                    if (end_event.event_type == 'break_end' and 
+                        end_event.timestamp > break_start_event.timestamp and
+                        end_event.id not in break_end_used_for_pairing):
+                        break_pairs.append((break_start_event, end_event))
+                        break_end_used_for_pairing.add(end_event.id)
+                        break
+            
+            # Itera sugli eventi in ordine cronologico per accoppiarli correttamente
+            for event in day_events:
+                if event.event_type != 'clock_in':
+                    continue
+                
+                clock_in = event
+                clock_out = None
+                
+                # Trova il prossimo clock_out cronologico non ancora usato
+                for out_event in day_events:
+                    if (out_event.event_type == 'clock_out' and 
+                        out_event.timestamp > clock_in.timestamp and 
+                        out_event.id not in clock_out_used):
+                        clock_out = out_event
+                        clock_out_used.add(out_event.id)
+                        break
+                
+                # Se non c'è clock_out, salta questa sessione
+                if not clock_out:
+                    continue
+                
+                # Calcola durata totale
+                start_time = clock_in.timestamp.time()
+                end_time = clock_out.timestamp.time()
+                
+                start_dt = clock_in.timestamp
+                end_dt = clock_out.timestamp
+                
+                total_duration = (end_dt - start_dt).total_seconds() / 3600  # ore
+                
+                # Sottrai pause che si sovrappongono con questa sessione
+                # Ogni pausa può contribuire a più sessioni (overlap clamppato)
+                for break_start_event, break_end_event in break_pairs:
+                    # Verifica se la pausa si sovrappone con questa sessione
+                    if break_start_event.timestamp < end_dt and break_end_event.timestamp > start_dt:
+                        # Clampa la pausa ai confini della sessione
+                        overlap_start = max(break_start_event.timestamp, start_dt)
+                        overlap_end = min(break_end_event.timestamp, end_dt)
+                        break_duration = (overlap_end - overlap_start).total_seconds() / 3600
+                        total_duration -= max(0, break_duration)
+                
+                # Assicurati che la durata non sia negativa
+                total_duration = max(0, total_duration)
+                
+                # Crea la sessione
+                session = AttendanceSession(
+                    timesheet_id=timesheet.id,
+                    user_id=current_user.id,
+                    date=day_date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    duration_hours=round(total_duration, 2),
+                    attendance_type_id=clock_in.attendance_type_id,
+                    sede_id=clock_in.sede_id,
+                    commessa_id=clock_in.commessa_id,
+                    company_id=get_user_company_id()
+                )
+                db.session.add(session)
+        
         # Consolida il timesheet
         timesheet.is_consolidated = True
         timesheet.consolidated_at = datetime.now()
@@ -3677,87 +3781,30 @@ def export_validated_timesheets_excel():
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.border = border
             
-            # Per ogni timesheet della commessa, estrai i dati giornalieri
+            # Per ogni timesheet della commessa, estrai le sessioni
             row += 1
             for ts in commessa_timesheets:
                 user = ts.user
-                # Ottieni tutti gli eventi di presenza del mese
-                start_date = datetime(ts.year, ts.month, 1).date()
-                if ts.month == 12:
-                    end_date = datetime(ts.year + 1, 1, 1).date() - timedelta(days=1)
-                else:
-                    end_date = datetime(ts.year, ts.month + 1, 1).date() - timedelta(days=1)
                 
-                # Query eventi raggruppati per data
-                events = AttendanceEvent.query.filter(
-                    AttendanceEvent.user_id == user.id,
-                    AttendanceEvent.date >= start_date,
-                    AttendanceEvent.date <= end_date
-                ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+                # Query AttendanceSession per questo timesheet
+                from models import AttendanceSession
+                sessions = AttendanceSession.query.filter_by(
+                    timesheet_id=ts.id
+                ).order_by(AttendanceSession.date).all()
                 
-                # Raggruppa eventi per data
-                events_by_date = {}
-                for event in events:
-                    if event.date not in events_by_date:
-                        events_by_date[event.date] = []
-                    events_by_date[event.date].append(event)
-                
-                # Per ogni giorno lavorato, crea una riga
-                for day_date in sorted(events_by_date.keys()):
-                    day_events = events_by_date[day_date]
-                    
-                    # Estrai timbrature del giorno
-                    entrata = None
-                    inizio_pausa = None
-                    fine_pausa = None
-                    uscita = None
-                    sede_name = ''
-                    commessa_name = commessa.titolo
-                    tipologia_code = ''
-                    
-                    for event in day_events:
-                        if event.event_type == 'clock_in':
-                            entrata = event.timestamp.strftime('%H:%M')
-                            if event.sede:
-                                sede_name = event.sede.name
-                            # Usa solo il codice della tipologia se presente
-                            if event.attendance_type:
-                                tipologia_code = event.attendance_type.code
-                        elif event.event_type == 'break_start':
-                            inizio_pausa = event.timestamp.strftime('%H:%M')
-                        elif event.event_type == 'break_end':
-                            fine_pausa = event.timestamp.strftime('%H:%M')
-                        elif event.event_type == 'clock_out':
-                            uscita = event.timestamp.strftime('%H:%M')
-                    
-                    # Calcola ore totali lavorate (entrata-uscita - pausa)
-                    total_hours = 0.0
-                    if entrata and uscita:
-                        from datetime import datetime as dt_class
-                        entrata_time = dt_class.strptime(entrata, '%H:%M')
-                        uscita_time = dt_class.strptime(uscita, '%H:%M')
-                        total_minutes = (uscita_time - entrata_time).total_seconds() / 60
-                        
-                        # Sottrai pausa se presente
-                        if inizio_pausa and fine_pausa:
-                            inizio_pausa_time = dt_class.strptime(inizio_pausa, '%H:%M')
-                            fine_pausa_time = dt_class.strptime(fine_pausa, '%H:%M')
-                            pausa_minutes = (fine_pausa_time - inizio_pausa_time).total_seconds() / 60
-                            total_minutes -= pausa_minutes
-                        
-                        total_hours = round(total_minutes / 60, 2)
-                    
+                # Per ogni sessione, crea una riga
+                for session in sessions:
                     # Scrivi riga
                     ws.cell(row=row, column=1).value = user.get_full_name()
-                    ws.cell(row=row, column=2).value = day_date.strftime('%d/%m/%Y')
-                    ws.cell(row=row, column=3).value = sede_name
-                    ws.cell(row=row, column=4).value = commessa_name
-                    ws.cell(row=row, column=5).value = tipologia_code
-                    ws.cell(row=row, column=6).value = entrata or ''
-                    ws.cell(row=row, column=7).value = inizio_pausa or ''
-                    ws.cell(row=row, column=8).value = fine_pausa or ''
-                    ws.cell(row=row, column=9).value = uscita or ''
-                    ws.cell(row=row, column=10).value = total_hours
+                    ws.cell(row=row, column=2).value = session.date.strftime('%d/%m/%Y')
+                    ws.cell(row=row, column=3).value = session.sede.name if session.sede else ''
+                    ws.cell(row=row, column=4).value = commessa.titolo
+                    ws.cell(row=row, column=5).value = session.attendance_type.code if session.attendance_type else ''
+                    ws.cell(row=row, column=6).value = session.start_time.strftime('%H:%M') if session.start_time else ''
+                    ws.cell(row=row, column=7).value = ''  # Inizio Pausa (per ora vuoto, gestiremo in futuro)
+                    ws.cell(row=row, column=8).value = ''  # Fine Pausa (per ora vuoto, gestiremo in futuro)
+                    ws.cell(row=row, column=9).value = session.end_time.strftime('%H:%M') if session.end_time else ''
+                    ws.cell(row=row, column=10).value = session.duration_hours
                     
                     # Applica bordi
                     for col in range(1, 11):
@@ -3797,87 +3844,29 @@ def export_validated_timesheets_excel():
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.border = border
             
-            # Per ogni timesheet senza commessa, estrai i dati giornalieri
+            # Per ogni timesheet senza commessa, estrai le sessioni
             row += 1
             for ts in timesheets_no_commessa:
                 user = ts.user
-                # Ottieni tutti gli eventi di presenza del mese
-                start_date = datetime(ts.year, ts.month, 1).date()
-                if ts.month == 12:
-                    end_date = datetime(ts.year + 1, 1, 1).date() - timedelta(days=1)
-                else:
-                    end_date = datetime(ts.year, ts.month + 1, 1).date() - timedelta(days=1)
                 
-                # Query eventi raggruppati per data
-                events = AttendanceEvent.query.filter(
-                    AttendanceEvent.user_id == user.id,
-                    AttendanceEvent.date >= start_date,
-                    AttendanceEvent.date <= end_date
-                ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+                # Query AttendanceSession per questo timesheet
+                sessions = AttendanceSession.query.filter_by(
+                    timesheet_id=ts.id
+                ).order_by(AttendanceSession.date).all()
                 
-                # Raggruppa eventi per data
-                events_by_date = {}
-                for event in events:
-                    if event.date not in events_by_date:
-                        events_by_date[event.date] = []
-                    events_by_date[event.date].append(event)
-                
-                # Per ogni giorno lavorato, crea una riga
-                for day_date in sorted(events_by_date.keys()):
-                    day_events = events_by_date[day_date]
-                    
-                    # Estrai timbrature del giorno
-                    entrata = None
-                    inizio_pausa = None
-                    fine_pausa = None
-                    uscita = None
-                    sede_name = ''
-                    commessa_name = ''  # Nessuna commessa
-                    tipologia_code = ''
-                    
-                    for event in day_events:
-                        if event.event_type == 'clock_in':
-                            entrata = event.timestamp.strftime('%H:%M')
-                            if event.sede:
-                                sede_name = event.sede.name
-                            # Usa solo il codice della tipologia se presente
-                            if event.attendance_type:
-                                tipologia_code = event.attendance_type.code
-                        elif event.event_type == 'break_start':
-                            inizio_pausa = event.timestamp.strftime('%H:%M')
-                        elif event.event_type == 'break_end':
-                            fine_pausa = event.timestamp.strftime('%H:%M')
-                        elif event.event_type == 'clock_out':
-                            uscita = event.timestamp.strftime('%H:%M')
-                    
-                    # Calcola ore totali lavorate (entrata-uscita - pausa)
-                    total_hours = 0.0
-                    if entrata and uscita:
-                        from datetime import datetime as dt_class
-                        entrata_time = dt_class.strptime(entrata, '%H:%M')
-                        uscita_time = dt_class.strptime(uscita, '%H:%M')
-                        total_minutes = (uscita_time - entrata_time).total_seconds() / 60
-                        
-                        # Sottrai pausa se presente
-                        if inizio_pausa and fine_pausa:
-                            inizio_pausa_time = dt_class.strptime(inizio_pausa, '%H:%M')
-                            fine_pausa_time = dt_class.strptime(fine_pausa, '%H:%M')
-                            pausa_minutes = (fine_pausa_time - inizio_pausa_time).total_seconds() / 60
-                            total_minutes -= pausa_minutes
-                        
-                        total_hours = round(total_minutes / 60, 2)
-                    
+                # Per ogni sessione, crea una riga
+                for session in sessions:
                     # Scrivi riga
                     ws.cell(row=row, column=1).value = user.get_full_name()
-                    ws.cell(row=row, column=2).value = day_date.strftime('%d/%m/%Y')
-                    ws.cell(row=row, column=3).value = sede_name
-                    ws.cell(row=row, column=4).value = commessa_name
-                    ws.cell(row=row, column=5).value = tipologia_code
-                    ws.cell(row=row, column=6).value = entrata or ''
-                    ws.cell(row=row, column=7).value = inizio_pausa or ''
-                    ws.cell(row=row, column=8).value = fine_pausa or ''
-                    ws.cell(row=row, column=9).value = uscita or ''
-                    ws.cell(row=row, column=10).value = total_hours
+                    ws.cell(row=row, column=2).value = session.date.strftime('%d/%m/%Y')
+                    ws.cell(row=row, column=3).value = session.sede.name if session.sede else ''
+                    ws.cell(row=row, column=4).value = ''  # Nessuna commessa
+                    ws.cell(row=row, column=5).value = session.attendance_type.code if session.attendance_type else ''
+                    ws.cell(row=row, column=6).value = session.start_time.strftime('%H:%M') if session.start_time else ''
+                    ws.cell(row=row, column=7).value = ''  # Inizio Pausa (per ora vuoto)
+                    ws.cell(row=row, column=8).value = ''  # Fine Pausa (per ora vuoto)
+                    ws.cell(row=row, column=9).value = session.end_time.strftime('%H:%M') if session.end_time else ''
+                    ws.cell(row=row, column=10).value = session.duration_hours
                     
                     # Applica bordi
                     for col in range(1, 11):

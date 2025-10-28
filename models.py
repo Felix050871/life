@@ -2078,6 +2078,69 @@ class TimesheetReopenRequest(db.Model):
             return True
         return False
 
+
+class AttendanceSession(db.Model):
+    """Modello per rappresentare sessioni di lavoro giornaliere
+    
+    Permette di gestire più sessioni nella stessa giornata con diverse tipologie.
+    Es: 4h presenza ORD (8:00-12:00) + 4h assenza ASS (12:00-16:00)
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    timesheet_id = db.Column(db.Integer, db.ForeignKey('monthly_timesheet.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=True)  # Orario inizio (può essere None per assenze senza orario)
+    end_time = db.Column(db.Time, nullable=True)  # Orario fine (può essere None per assenze senza orario)
+    duration_hours = db.Column(db.Float, nullable=False)  # Durata in ore
+    attendance_type_id = db.Column(db.Integer, db.ForeignKey('attendance_type.id'), nullable=False)
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)
+    commessa_id = db.Column(db.Integer, db.ForeignKey('commessa.id'), nullable=True)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    
+    # Relationships
+    timesheet = db.relationship('MonthlyTimesheet', backref='sessions')
+    user = db.relationship('User', backref='attendance_sessions')
+    attendance_type = db.relationship('AttendanceType', backref='sessions')
+    sede = db.relationship('Sede', backref='attendance_sessions')
+    commessa = db.relationship('Commessa', backref='attendance_sessions')
+    
+    def __repr__(self):
+        return f'<AttendanceSession {self.user_id} {self.date} {self.attendance_type.code if self.attendance_type else "N/A"}>'
+    
+    def get_time_range_str(self):
+        """Restituisce la stringa rappresentante il range orario"""
+        if self.start_time and self.end_time:
+            return f"{self.start_time.strftime('%H:%M')}-{self.end_time.strftime('%H:%M')}"
+        return f"{self.duration_hours}h"
+    
+    @staticmethod
+    def validate_no_overlap(user_id, date, start_time, end_time, session_id=None):
+        """Verifica che non ci siano sovrapposizioni con altre sessioni"""
+        if not start_time or not end_time:
+            return True  # Sessioni senza orario non possono sovrapporsi
+        
+        query = AttendanceSession.query.filter(
+            AttendanceSession.user_id == user_id,
+            AttendanceSession.date == date,
+            AttendanceSession.start_time.isnot(None),
+            AttendanceSession.end_time.isnot(None)
+        )
+        
+        if session_id:
+            query = query.filter(AttendanceSession.id != session_id)
+        
+        existing_sessions = query.all()
+        
+        for session in existing_sessions:
+            # Controlla sovrapposizione
+            if not (end_time <= session.start_time or start_time >= session.end_time):
+                return False
+        
+        return True
+
 # =============================================================================
 # LEAVE MANAGEMENT MODELS
 # =============================================================================
