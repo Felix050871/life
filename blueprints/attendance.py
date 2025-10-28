@@ -2846,7 +2846,7 @@ def export_timesheet(timesheet_id):
         )
         
         # Intestazione
-        ws['A1'] = f"Timesheet - {current_user.full_name()}"
+        ws['A1'] = f"Timesheet - {current_user.get_full_name()}"
         ws['A1'].font = Font(bold=True, size=14)
         ws['A2'] = f"Mese: {calendar.month_name[timesheet.month]} {timesheet.year}"
         ws['A3'] = f"Stato: {timesheet.get_status()}"
