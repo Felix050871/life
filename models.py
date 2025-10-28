@@ -2007,40 +2007,8 @@ class TimesheetReopenRequest(db.Model):
     
     def can_approve(self, user):
         """Verifica se l'utente può approvare questa richiesta"""
-        # Admin/Amministratore possono approvare tutto
-        if user.role in ['Admin', 'Amministratore']:
-            return True
-        
-        # Responsabili HR possono approvare tutto
-        if user.can_manage_hr_data():
-            return True
-        
-        # Responsabili di commessa possono approvare solo per risorse delle loro commesse
-        if user.can_manage_commesse():
-            # Ottieni le commesse di cui l'utente è responsabile
-            responsabile_commesse = user.get_commesse_as_responsabile()
-            if not responsabile_commesse:
-                return False
-            
-            # Ottieni l'employee della richiesta
-            employee = self.timesheet.user
-            
-            # Verifica se l'employee è assegnato a una delle commesse del responsabile
-            # nel periodo del timesheet
-            from datetime import date
-            # Usa il primo giorno del mese del timesheet come riferimento
-            reference_date = date(self.timesheet.year, self.timesheet.month, 15)  # Metà mese come riferimento
-            
-            for commessa in responsabile_commesse:
-                # Verifica se l'employee ha un'assegnazione attiva a questa commessa nel periodo del timesheet
-                for assignment in employee.commessa_assignments:
-                    if (assignment.commessa_id == commessa.id and 
-                        assignment.data_inizio <= reference_date <= assignment.data_fine):
-                        return True
-            
-            return False
-        
-        return False
+        # SOLO Admin/Amministratore e chi ha can_manage_hr_data possono approvare richieste di riapertura
+        return (user.role in ['Admin', 'Amministratore'] or user.can_manage_hr_data())
     
     def approve(self, reviewer_id, notes=None):
         """Approva la richiesta e riapre il timesheet"""

@@ -2017,32 +2017,20 @@ def timesheet_reopen_requests():
     """Visualizza le richieste di riapertura timesheet (per responsabili)"""
     from models import TimesheetReopenRequest
     
-    # Verifica permessi
-    if not (current_user.can_manage_hr_data() or 
-            current_user.can_manage_commesse() or 
-            current_user.role in ['Admin', 'Amministratore']):
+    # Verifica permessi - SOLO HR e Admin possono gestire richieste di riapertura
+    if not (current_user.can_manage_hr_data() or current_user.role in ['Admin', 'Amministratore']):
         flash('Non hai i permessi per visualizzare le richieste di riapertura', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
     # Ottieni le richieste pendenti filtrate per company
-    all_pending = filter_by_company(TimesheetReopenRequest.query).filter_by(
+    pending_requests = filter_by_company(TimesheetReopenRequest.query).filter_by(
         status='Pending'
     ).order_by(TimesheetReopenRequest.requested_at.desc()).all()
     
     # Ottieni le richieste completate (approvate/rifiutate)
-    all_completed = filter_by_company(TimesheetReopenRequest.query).filter(
+    completed_requests = filter_by_company(TimesheetReopenRequest.query).filter(
         TimesheetReopenRequest.status.in_(['Approved', 'Rejected'])
     ).order_by(TimesheetReopenRequest.reviewed_at.desc()).limit(50).all()
-    
-    # Filtra le richieste che l'utente può effettivamente approvare
-    # HR e Admin vedono tutto, responsabili di commessa solo le loro risorse
-    if current_user.can_manage_hr_data() or current_user.role in ['Admin', 'Amministratore']:
-        pending_requests = all_pending
-        completed_requests = all_completed
-    else:
-        # Responsabile di commessa: filtra per risorse assegnate
-        pending_requests = [req for req in all_pending if req.can_approve(current_user)]
-        completed_requests = [req for req in all_completed if req.can_approve(current_user)]
     
     return render_template('timesheet_reopen_requests.html',
                          pending_requests=pending_requests,
