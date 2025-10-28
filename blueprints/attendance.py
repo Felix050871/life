@@ -2822,8 +2822,11 @@ def export_timesheet(timesheet_id):
         import calendar
         
         # Ottieni il timesheet
-        timesheet = filter_by_company(MonthlyTimesheet.query).get(timesheet_id)
-        if not timesheet or timesheet.user_id != current_user.id:
+        timesheet = filter_by_company(MonthlyTimesheet.query).filter_by(
+            id=timesheet_id,
+            user_id=current_user.id
+        ).first()
+        if not timesheet:
             flash('Timesheet non trovato', 'danger')
             return redirect(url_for('attendance.timesheets'))
         
