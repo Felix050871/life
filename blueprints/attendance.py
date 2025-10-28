@@ -2523,7 +2523,13 @@ def bulk_fill_month():
             return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
         
         # Verifica che l'utente abbia accesso alla sede
-        if sede_id not in [s.id for s in current_user.sedi]:
+        user_sedi_ids = []
+        if hasattr(current_user, 'sedi') and current_user.sedi:
+            user_sedi_ids = [s.id for s in current_user.sedi]
+        elif current_user.sede_obj:
+            user_sedi_ids = [current_user.sede_obj.id]
+        
+        if sede_id not in user_sedi_ids:
             return jsonify({'success': False, 'message': 'Non hai accesso a questa sede'}), 403
         
         # Helper per creare timestamp
