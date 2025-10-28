@@ -475,7 +475,7 @@
                 {% endif %}
 
                 <!-- PRESENZE - Solo se ha almeno un permesso presenze -->
-                {% set has_attendance_permission = current_user.can_manage_attendance() or current_user.can_view_attendance() or current_user.can_access_attendance() or current_user.can_view_sede_attendance() %}
+                {% set has_attendance_permission = current_user.can_manage_attendance() or current_user.can_view_attendance() or current_user.can_access_attendance() or current_user.can_view_sede_attendance() or current_user.can_access_timesheets() %}
                 {% if has_attendance_permission %}
                 <li class="sidebar-nav-item">
                     <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
@@ -487,6 +487,11 @@
                         {% if current_user.can_access_attendance() %}
                         <li><a href="{{ url_for('attendance.my_attendance') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user-clock"></i>Le Mie Presenze
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_access_timesheets() %}
+                        <li><a href="{{ url_for('attendance.timesheets') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-calendar-alt"></i>Timesheets
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_sede_attendance() %}
