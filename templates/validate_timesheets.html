@@ -63,7 +63,7 @@
                                         {% for ts in timesheets_to_validate %}
                                         <tr>
                                             <td>
-                                                <strong>{{ ts.user.full_name }}</strong>
+                                                <strong>{{ ts.user.get_full_name() }}</strong>
                                             </td>
                                             <td>
                                                 <span class="badge bg-info">
@@ -123,7 +123,7 @@
                                         {% for ts in validated_timesheets %}
                                         <tr>
                                             <td>
-                                                <strong>{{ ts.user.full_name }}</strong>
+                                                <strong>{{ ts.user.get_full_name() }}</strong>
                                             </td>
                                             <td>
                                                 <span class="badge bg-success">
