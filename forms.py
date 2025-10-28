@@ -1448,6 +1448,8 @@ class RoleForm(FlaskForm):
         self.can_view_my_attendance.data = permissions_dict.get('can_view_my_attendance', False)
         self.can_access_attendance.data = permissions_dict.get('can_access_attendance', True)
         self.can_view_sede_attendance.data = permissions_dict.get('can_view_sede_attendance', False)
+        self.can_manage_attendance_types.data = permissions_dict.get('can_manage_attendance_types', False)
+        self.can_view_attendance_types.data = permissions_dict.get('can_view_attendance_types', False)
         
         # Gestione ferie/permessi
         self.can_manage_leave.data = permissions_dict.get('can_manage_leave', False)
