@@ -485,11 +485,8 @@
                     </a>
                     <ul class="sidebar-submenu">
                         {% if current_user.can_access_attendance() %}
-                        <li><a href="{{ url_for('attendance.attendance') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-user-clock"></i>Le Mie Presenze
-                        </a></li>
                         <li><a href="{{ url_for('attendance.my_attendance') }}" class="sidebar-submenu-link">
-                            <i class="fas fa-edit"></i>Inserimento Presenze
+                            <i class="fas fa-user-clock"></i>Le Mie Presenze
                         </a></li>
                         {% endif %}
                         {% if current_user.can_view_sede_attendance() %}

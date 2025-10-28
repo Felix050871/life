@@ -2253,6 +2253,11 @@ def my_attendance():
         italian_weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
         weekday_italian = italian_weekdays[day_date.weekday()]
         
+        # Se l'utente ha solo una commessa, usa quella come default
+        default_commessa_id = day_events.get('commessa_id')
+        if default_commessa_id is None and len(active_commesse) == 1:
+            default_commessa_id = active_commesse[0].id
+        
         days_data.append({
             'day': day,
             'date': day_date,
@@ -2262,7 +2267,7 @@ def my_attendance():
             'break_start': break_start_time,
             'break_end': break_end_time,
             'sede_id': day_events.get('sede_id', current_user.sede_id),
-            'commessa_id': day_events.get('commessa_id'),
+            'commessa_id': default_commessa_id,
             'has_manual': day_events['has_manual'],
             'has_live': day_events['has_live'],
             'is_weekend': day_date.weekday() >= 5,
