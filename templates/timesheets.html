@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}I Miei Timesheets{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        I Miei Timesheets
+                    </h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- Filtro Anno -->
+                        <form method="GET" action="{{ url_for('attendance.timesheets') }}" class="d-flex align-items-center gap-2">
+                            <label for="year_filter" class="mb-0 text-nowrap">Anno:</label>
+                            <select name="year" id="year_filter" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                                {% for year in available_years %}
+                                <option value="{{ year }}" {% if year == year_filter %}selected{% endif %}>{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    {% if timesheets %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Mese</th>
+                                    <th>Stato</th>
+                                    <th>Ultima Modifica</th>
+                                    <th class="text-end">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ts in timesheets %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ month_names[ts.month] }} {{ ts.year }}</strong>
+                                    </td>
+                                    <td>
+                                        {% set status = ts.get_status() %}
+                                        {% if status == 'Validato' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>{{ status }}
+                                        </span>
+                                        {% elif status == 'Consolidato' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-lock me-1"></i>{{ status }}
+                                        </span>
+                                        {% elif status == 'In attesa di riapertura' %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-clock me-1"></i>{{ status }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-edit me-1"></i>{{ status }}
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if ts.validated_at %}
+                                        Validato il {{ ts.validated_at.strftime('%d/%m/%Y alle %H:%M') }}
+                                        {% elif ts.consolidated_at %}
+                                        Consolidato il {{ ts.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }}
+                                        {% else %}
+                                        {{ ts.updated_at.strftime('%d/%m/%Y alle %H:%M') }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <!-- Visualizza -->
+                                            <a href="{{ url_for('attendance.my_attendance', year=ts.year, month=ts.month) }}" 
+                                               class="btn btn-outline-primary" title="Visualizza">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            
+                                            <!-- Export Excel -->
+                                            <a href="{{ url_for('attendance.export_timesheet', timesheet_id=ts.id) }}" 
+                                               class="btn btn-outline-success" title="Esporta Excel">
+                                                <i class="fas fa-file-excel"></i>
+                                            </a>
+                                            
+                                            <!-- Modifica (solo se in compilazione) -->
+                                            {% if ts.can_edit() %}
+                                            <a href="{{ url_for('attendance.my_attendance', year=ts.year, month=ts.month) }}" 
+                                               class="btn btn-outline-warning" title="Modifica">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Legenda Stati -->
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Legenda Stati</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <span class="badge bg-secondary me-2">
+                                    <i class="fas fa-edit me-1"></i>In compilazione
+                                </span>
+                                <small class="text-muted">Puoi ancora modificare le presenze</small>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="badge bg-info me-2">
+                                    <i class="fas fa-lock me-1"></i>Consolidato
+                                </span>
+                                <small class="text-muted">Non modificabile, può essere riaperto su richiesta</small>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="badge bg-warning text-dark me-2">
+                                    <i class="fas fa-clock me-1"></i>In attesa di riapertura
+                                </span>
+                                <small class="text-muted">Richiesta di riapertura in attesa di approvazione</small>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-check-circle me-1"></i>Validato
+                                </span>
+                                <small class="text-muted">Approvato dal responsabile, solo visualizzazione</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Non hai ancora timesheets per l'anno {{ year_filter }}.
+                        <br>
+                        <a href="{{ url_for('attendance.my_attendance') }}" class="alert-link">Vai alle presenze</a> per iniziare a compilare.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
