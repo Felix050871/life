@@ -2199,7 +2199,7 @@ def validate_timesheet(timesheet_id):
         
         # Valida il timesheet
         if timesheet.validate(current_user.id):
-            flash(f'Timesheet di {timesheet.user.full_name} per {timesheet.month}/{timesheet.year} validato con successo', 'success')
+            flash(f'Timesheet di {timesheet.user.get_full_name()} per {timesheet.month}/{timesheet.year} validato con successo', 'success')
         else:
             flash('Impossibile validare questo timesheet', 'danger')
         
@@ -2406,33 +2406,33 @@ def manager_reopen_timesheet(timesheet_id):
         # Verifica permessi
         if not timesheet.can_validate(current_user):
             flash('Non hai i permessi per riaprire questo timesheet', 'danger')
-            return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+            return redirect(url_for('attendance.view_timesheet_for_validation', timesheet_id=timesheet.id))
         
         # Verifica che il timesheet sia consolidato ma non validato
         if not timesheet.is_consolidated:
             flash('Il timesheet non è consolidato', 'warning')
-            return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+            return redirect(url_for('attendance.view_timesheet_for_validation', timesheet_id=timesheet.id))
         
         if timesheet.is_validated:
             flash('Il timesheet è già validato e non può essere riaperto', 'warning')
-            return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+            return redirect(url_for('attendance.view_timesheet_for_validation', timesheet_id=timesheet.id))
         
         # Ottieni il commento
         reason = request.form.get('reason', '').strip()
         if not reason:
             flash('Devi fornire un motivo per la riapertura', 'danger')
-            return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+            return redirect(url_for('attendance.view_timesheet_for_validation', timesheet_id=timesheet.id))
         
         # Riapri il timesheet
         if timesheet.reopen():
             # Crea una nota nel timesheet
-            timesheet.notes = f"Riaperto da {current_user.full_name} il {italian_now().strftime('%d/%m/%Y alle %H:%M')}. Motivo: {reason}"
+            timesheet.notes = f"Riaperto da {current_user.get_full_name()} il {italian_now().strftime('%d/%m/%Y alle %H:%M')}. Motivo: {reason}"
             db.session.commit()
             flash(f'Timesheet riaperto. L\'utente può ora modificarlo.', 'success')
         else:
             flash('Impossibile riaprire questo timesheet', 'danger')
         
-        return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+        return redirect(url_for('attendance.view_timesheet_for_validation', timesheet_id=timesheet.id))
         
     except Exception as e:
         db.session.rollback()

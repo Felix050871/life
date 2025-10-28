@@ -72,7 +72,7 @@
                                             </td>
                                             <td>
                                                 {{ ts.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }}<br>
-                                                <small class="text-muted">da {{ ts.consolidator.full_name if ts.consolidator else 'Sistema' }}</small>
+                                                <small class="text-muted">da {{ ts.consolidator.get_full_name() if ts.consolidator else 'Sistema' }}</small>
                                             </td>
                                             <td class="text-end">
                                                 <div class="btn-group btn-group-sm" role="group">
@@ -85,7 +85,7 @@
                                                     <!-- Valida -->
                                                     <form method="POST" action="{{ url_for('attendance.validate_timesheet', timesheet_id=ts.id) }}" 
                                                           style="display:inline;"
-                                                          onsubmit="return confirm('Confermi la validazione del timesheet di {{ ts.user.full_name }} per {{ month_names[ts.month] }} {{ ts.year }}? Questa operazione è irreversibile.');">
+                                                          onsubmit="return confirm('Confermi la validazione del timesheet di {{ ts.user.get_full_name() }} per {{ month_names[ts.month] }} {{ ts.year }}? Questa operazione è irreversibile.');">
                                                         <button type="submit" class="btn btn-outline-success" title="Valida">
                                                             <i class="fas fa-check"></i>
                                                         </button>
@@ -134,11 +134,11 @@
                                                 {{ ts.validated_at.strftime('%d/%m/%Y alle %H:%M') }}
                                             </td>
                                             <td>
-                                                {{ ts.validator.full_name if ts.validator else 'Sistema' }}
+                                                {{ ts.validator.get_full_name() if ts.validator else 'Sistema' }}
                                             </td>
                                             <td class="text-end">
                                                 <!-- Visualizza -->
-                                                <a href="{{ url_for('attendance.my_attendance', year=ts.year, month=ts.month) }}" 
+                                                <a href="{{ url_for('attendance.view_timesheet_for_validation', timesheet_id=ts.id) }}" 
                                                    class="btn btn-sm btn-outline-primary" title="Visualizza">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
