@@ -2753,3 +2753,205 @@ def consolidate_timesheet():
         import logging
         logging.error(f"Errore consolidamento timesheet: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+# =============================================================================
+# TIMESHEETS MANAGEMENT - LISTA E VISUALIZZAZIONE STORICA
+# =============================================================================
+
+@attendance_bp.route('/timesheets', methods=['GET'])
+@login_required
+def timesheets():
+    """Visualizza la lista di tutti i timesheets dell'utente"""
+    if not current_user.can_access_timesheets():
+        flash('Non hai i permessi per accedere ai timesheets', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    from models import MonthlyTimesheet
+    from datetime import datetime
+    
+    # Ottieni filtro anno (default: anno corrente)
+    try:
+        year_filter = int(request.args.get('year', datetime.now().year))
+    except ValueError:
+        year_filter = datetime.now().year
+    
+    company_id = get_user_company_id()
+    
+    # Ottieni tutti i timesheets dell'utente per l'anno selezionato
+    timesheets_query = MonthlyTimesheet.query.filter_by(
+        user_id=current_user.id,
+        company_id=company_id,
+        year=year_filter
+    ).order_by(MonthlyTimesheet.month.desc()).all()
+    
+    # Ottieni tutti gli anni disponibili per il filtro
+    available_years_query = db.session.query(MonthlyTimesheet.year).filter_by(
+        user_id=current_user.id,
+        company_id=company_id
+    ).distinct().order_by(MonthlyTimesheet.year.desc()).all()
+    available_years = [y[0] for y in available_years_query]
+    
+    # Se non ci sono anni disponibili, usa l'anno corrente
+    if not available_years:
+        available_years = [datetime.now().year]
+    
+    # Nomi mesi in italiano
+    month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+    
+    return render_template('timesheets.html',
+                         timesheets=timesheets_query,
+                         year_filter=year_filter,
+                         available_years=available_years,
+                         month_names=month_names)
+
+@attendance_bp.route('/timesheets/export/<int:timesheet_id>', methods=['GET'])
+@login_required
+def export_timesheet(timesheet_id):
+    """Esporta un timesheet in formato Excel"""
+    if not current_user.can_access_timesheets():
+        flash('Non hai i permessi per accedere ai timesheets', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    try:
+        from models import MonthlyTimesheet, AttendanceEvent
+        from datetime import date
+        from io import BytesIO
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from flask import send_file
+        import calendar
+        
+        # Ottieni il timesheet
+        timesheet = filter_by_company(MonthlyTimesheet.query).get(timesheet_id)
+        if not timesheet or timesheet.user_id != current_user.id:
+            flash('Timesheet non trovato', 'danger')
+            return redirect(url_for('attendance.timesheets'))
+        
+        # Crea workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Timesheet"
+        
+        # Stili
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Intestazione
+        ws['A1'] = f"Timesheet - {current_user.full_name()}"
+        ws['A1'].font = Font(bold=True, size=14)
+        ws['A2'] = f"Mese: {calendar.month_name[timesheet.month]} {timesheet.year}"
+        ws['A3'] = f"Stato: {timesheet.get_status()}"
+        
+        # Riga vuota
+        current_row = 5
+        
+        # Header tabella
+        headers = ['Giorno', 'Data', 'Entrata', 'Uscita', 'Inizio Pausa', 'Fine Pausa', 'Ore Lavorate', 'Sede', 'Commessa']
+        for col, header in enumerate(headers, start=1):
+            cell = ws.cell(row=current_row, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+        
+        current_row += 1
+        
+        # Dati
+        month_days = calendar.monthrange(timesheet.year, timesheet.month)[1]
+        italian_weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+        
+        for day in range(1, month_days + 1):
+            day_date = date(timesheet.year, timesheet.month, day)
+            weekday = italian_weekdays[day_date.weekday()]
+            
+            # Ottieni eventi del giorno
+            events = filter_by_company(AttendanceEvent.query).filter(
+                AttendanceEvent.user_id == current_user.id,
+                AttendanceEvent.date == day_date
+            ).order_by(AttendanceEvent.timestamp).all()
+            
+            if events:
+                clock_in = None
+                clock_out = None
+                break_start = None
+                break_end = None
+                sede_name = ""
+                commessa_name = ""
+                
+                for event in events:
+                    if event.event_type == 'clock_in' and clock_in is None:
+                        clock_in = event.timestamp.strftime('%H:%M') if event.timestamp else ''
+                        if event.sede:
+                            sede_name = event.sede.name
+                        if event.commessa:
+                            commessa_name = f"{event.commessa.titolo} - {event.commessa.cliente}"
+                    elif event.event_type == 'clock_out':
+                        clock_out = event.timestamp.strftime('%H:%M') if event.timestamp else ''
+                    elif event.event_type == 'break_start' and break_start is None:
+                        break_start = event.timestamp.strftime('%H:%M') if event.timestamp else ''
+                    elif event.event_type == 'break_end':
+                        break_end = event.timestamp.strftime('%H:%M') if event.timestamp else ''
+                
+                # Calcola ore lavorate
+                ore_lavorate = ""
+                if clock_in and clock_out:
+                    try:
+                        from datetime import datetime
+                        in_time = datetime.strptime(clock_in, '%H:%M')
+                        out_time = datetime.strptime(clock_out, '%H:%M')
+                        total_minutes = (out_time - in_time).seconds // 60
+                        
+                        # Sottrai pausa
+                        if break_start and break_end:
+                            break_start_time = datetime.strptime(break_start, '%H:%M')
+                            break_end_time = datetime.strptime(break_end, '%H:%M')
+                            break_minutes = (break_end_time - break_start_time).seconds // 60
+                            total_minutes -= break_minutes
+                        
+                        hours = total_minutes // 60
+                        minutes = total_minutes % 60
+                        ore_lavorate = f"{hours}:{minutes:02d}"
+                    except:
+                        ore_lavorate = ""
+                
+                ws.cell(row=current_row, column=1, value=weekday).border = border
+                ws.cell(row=current_row, column=2, value=day_date.strftime('%d/%m/%Y')).border = border
+                ws.cell(row=current_row, column=3, value=clock_in).border = border
+                ws.cell(row=current_row, column=4, value=clock_out).border = border
+                ws.cell(row=current_row, column=5, value=break_start).border = border
+                ws.cell(row=current_row, column=6, value=break_end).border = border
+                ws.cell(row=current_row, column=7, value=ore_lavorate).border = border
+                ws.cell(row=current_row, column=8, value=sede_name).border = border
+                ws.cell(row=current_row, column=9, value=commessa_name).border = border
+                
+                current_row += 1
+        
+        # Adatta larghezza colonne
+        for col in range(1, 10):
+            ws.column_dimensions[chr(64 + col)].width = 15
+        
+        # Salva in BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        filename = f"timesheet_{timesheet.year}_{timesheet.month:02d}_{current_user.username}.xlsx"
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        import logging
+        logging.error(f"Errore export timesheet: {str(e)}")
+        flash(f'Errore durante l\'export: {str(e)}', 'danger')
+        return redirect(url_for('attendance.timesheets'))
