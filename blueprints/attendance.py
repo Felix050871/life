@@ -2228,9 +2228,11 @@ def view_timesheet_for_validation(timesheet_id):
         return redirect(url_for('attendance.validate_timesheets'))
     
     # Verifica permessi di visualizzazione
-    if not timesheet.can_validate(current_user):
+    # Permettiamo accesso a: validatori (can_validate) o utenti con permesso export
+    can_view = timesheet.can_validate(current_user) or current_user.can_export_validated_timesheets()
+    if not can_view:
         flash('Non hai i permessi per visualizzare questo timesheet', 'danger')
-        return redirect(url_for('attendance.validate_timesheets'))
+        return redirect(url_for('dashboard.dashboard'))
     
     target_user = timesheet.user
     year = timesheet.year
