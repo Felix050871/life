@@ -2025,14 +2025,24 @@ def timesheet_reopen_requests():
         return redirect(url_for('dashboard.dashboard'))
     
     # Ottieni le richieste pendenti filtrate per company
-    pending_requests = filter_by_company(TimesheetReopenRequest.query).filter_by(
+    all_pending = filter_by_company(TimesheetReopenRequest.query).filter_by(
         status='Pending'
     ).order_by(TimesheetReopenRequest.requested_at.desc()).all()
     
     # Ottieni le richieste completate (approvate/rifiutate)
-    completed_requests = filter_by_company(TimesheetReopenRequest.query).filter(
+    all_completed = filter_by_company(TimesheetReopenRequest.query).filter(
         TimesheetReopenRequest.status.in_(['Approved', 'Rejected'])
     ).order_by(TimesheetReopenRequest.reviewed_at.desc()).limit(50).all()
+    
+    # Filtra le richieste che l'utente può effettivamente approvare
+    # HR e Admin vedono tutto, responsabili di commessa solo le loro risorse
+    if current_user.can_manage_hr_data() or current_user.role in ['Admin', 'Amministratore']:
+        pending_requests = all_pending
+        completed_requests = all_completed
+    else:
+        # Responsabile di commessa: filtra per risorse assegnate
+        pending_requests = [req for req in all_pending if req.can_approve(current_user)]
+        completed_requests = [req for req in all_completed if req.can_approve(current_user)]
     
     return render_template('timesheet_reopen_requests.html',
                          pending_requests=pending_requests,
