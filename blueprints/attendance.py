@@ -2532,12 +2532,12 @@ def bulk_fill_month():
         if sede_id not in user_sedi_ids:
             return jsonify({'success': False, 'message': 'Non hai accesso a questa sede'}), 403
         
-        # Helper per creare timestamp
-        def create_timestamp(time_str):
+        # Helper per creare timestamp - deve creare datetime completo, non solo time
+        def create_timestamp(day_date, time_str):
             if not time_str:
                 return None
             hour, minute = map(int, time_str.split(':'))
-            return time(hour, minute)
+            return datetime.combine(day_date, time(hour, minute))
         
         # Determina quanti giorni ha il mese
         import calendar
@@ -2593,7 +2593,7 @@ def bulk_fill_month():
                 clock_in_event = AttendanceEvent(
                     user_id=current_user.id,
                     event_type='clock_in',
-                    timestamp=create_timestamp(clock_in_str),
+                    timestamp=create_timestamp(day_date, clock_in_str),
                     date=day_date,
                     is_manual=True,
                     sede_id=sede_id,
@@ -2606,7 +2606,7 @@ def bulk_fill_month():
                 break_start_event = AttendanceEvent(
                     user_id=current_user.id,
                     event_type='break_start',
-                    timestamp=create_timestamp(break_start_str),
+                    timestamp=create_timestamp(day_date, break_start_str),
                     date=day_date,
                     is_manual=True,
                     sede_id=sede_id,
@@ -2619,7 +2619,7 @@ def bulk_fill_month():
                 break_end_event = AttendanceEvent(
                     user_id=current_user.id,
                     event_type='break_end',
-                    timestamp=create_timestamp(break_end_str),
+                    timestamp=create_timestamp(day_date, break_end_str),
                     date=day_date,
                     is_manual=True,
                     sede_id=sede_id,
@@ -2632,7 +2632,7 @@ def bulk_fill_month():
                 clock_out_event = AttendanceEvent(
                     user_id=current_user.id,
                     event_type='clock_out',
-                    timestamp=create_timestamp(clock_out_str),
+                    timestamp=create_timestamp(day_date, clock_out_str),
                     date=day_date,
                     is_manual=True,
                     sede_id=sede_id,
