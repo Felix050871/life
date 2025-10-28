@@ -1294,6 +1294,8 @@ class RoleForm(FlaskForm):
             'can_view_my_attendance': self.can_view_my_attendance.data,
             'can_access_attendance': self.can_access_attendance.data,
             'can_view_sede_attendance': self.can_view_sede_attendance.data,
+            'can_manage_attendance_types': self.can_manage_attendance_types.data,
+            'can_view_attendance_types': self.can_view_attendance_types.data,
             
             # Gestione ferie/permessi
             'can_manage_leave': self.can_manage_leave.data,
