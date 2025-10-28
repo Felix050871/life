@@ -90,10 +90,11 @@
                                 <tr>
                                     <th style="width: 6%;">Giorno</th>
                                     <th style="width: 10%;">Data</th>
-                                    <th style="width: 12%;">Sede</th>
+                                    <th style="width: 10%;">Sede</th>
                                     {% if active_commesse|length > 0 %}
-                                    <th style="width: 12%;">Commessa</th>
+                                    <th style="width: 10%;">Commessa</th>
                                     {% endif %}
+                                    <th style="width: 12%;">Tipologia</th>
                                     <th style="width: 10%;">Entrata</th>
                                     <th style="width: 10%;">Inizio Pausa</th>
                                     <th style="width: 10%;">Fine Pausa</th>
@@ -154,6 +155,17 @@
                                         </select>
                                     </td>
                                     {% endif %}
+                                    
+                                    <td>
+                                        <select class="form-select form-select-sm attendance-type-select" 
+                                                id="attendance_type_{{ day_data.day }}"
+                                                {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
+                                                data-day="{{ day_data.day }}">
+                                            {% for type in attendance_types %}
+                                            <option value="{{ type.id }}" {% if day_data.attendance_type_id == type.id %}selected{% endif %}>{{ type.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
                                     
                                     <td>
                                         <input type="time" 
@@ -444,6 +456,12 @@ function saveDayData(day) {
     if (HAS_COMMESSE) {
         const commessaSelect = document.getElementById(`commessa_${day}`);
         data.commessa_id = commessaSelect.value;
+    }
+    
+    // Aggiungi tipologia presenza
+    const attendanceTypeSelect = document.getElementById(`attendance_type_${day}`);
+    if (attendanceTypeSelect) {
+        data.attendance_type_id = parseInt(attendanceTypeSelect.value);
     }
     
     fetch('{{ url_for("attendance.save_my_attendance") }}', {

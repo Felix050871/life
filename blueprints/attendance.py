@@ -2163,6 +2163,10 @@ def my_attendance():
     # Ottieni commesse attive per il periodo del mese visualizzato
     active_commesse = current_user.get_commesse_for_period(first_day, last_day)
     
+    # Ottieni tipologie di presenza attive
+    attendance_types = filter_by_company(AttendanceType.query).filter_by(active=True).order_by(AttendanceType.is_default.desc(), AttendanceType.name).all()
+    default_type = next((t for t in attendance_types if t.is_default), attendance_types[0] if attendance_types else None)
+    
     # Ottieni tutti gli eventi del mese per l'utente
     events_query = filter_by_company(AttendanceEvent.query).filter(
         AttendanceEvent.user_id == current_user.id,
@@ -2247,8 +2251,13 @@ def my_attendance():
         clock_out_time = None
         break_start_time = None
         break_end_time = None
+        attendance_type_id = default_type.id if default_type else None
         
         for event in day_events['events']:
+            # Cattura attendance_type_id da qualsiasi evento che lo ha
+            if event.attendance_type_id and attendance_type_id == (default_type.id if default_type else None):
+                attendance_type_id = event.attendance_type_id
+            
             if event.event_type == 'clock_in' and clock_in_time is None:
                 clock_in_time = to_italian_time_str(event.timestamp)
             elif event.event_type == 'clock_out':
@@ -2277,6 +2286,7 @@ def my_attendance():
             'break_end': break_end_time,
             'sede_id': day_events.get('sede_id', current_user.sede_id),
             'commessa_id': default_commessa_id,
+            'attendance_type_id': attendance_type_id,
             'has_manual': day_events['has_manual'],
             'has_live': day_events['has_live'],
             'is_weekend': day_date.weekday() >= 5,
@@ -2297,6 +2307,7 @@ def my_attendance():
                          days_data=days_data,
                          user_sedi=user_sedi,
                          active_commesse=active_commesse,
+                         attendance_types=attendance_types,
                          can_edit=timesheet.can_edit(),
                          pending_reopen_request=pending_reopen_request)
 
@@ -2318,6 +2329,24 @@ def save_my_attendance():
         break_end_str = data.get('break_end', '').strip()
         sede_id = data.get('sede_id')
         commessa_id = data.get('commessa_id') if data.get('commessa_id') != 'none' else None
+        attendance_type_id = data.get('attendance_type_id')
+        
+        # Valida attendance_type_id: deve appartenere alla company e essere attivo
+        if attendance_type_id:
+            attendance_type = filter_by_company(AttendanceType.query).filter_by(
+                id=int(attendance_type_id),
+                active=True
+            ).first()
+            if not attendance_type:
+                return jsonify({'success': False, 'message': 'Tipologia di presenza non valida'}), 400
+            attendance_type_id = attendance_type.id
+        else:
+            # Se non specificato, usa il default della company
+            default_type = filter_by_company(AttendanceType.query).filter_by(
+                is_default=True,
+                active=True
+            ).first()
+            attendance_type_id = default_type.id if default_type else None
         
         # Ottieni il timesheet mensile
         company_id = get_user_company_id()
@@ -2404,6 +2433,7 @@ def save_my_attendance():
                 is_manual=True,
                 sede_id=sede_id,
                 commessa_id=commessa_id,
+                attendance_type_id=attendance_type_id,
                 company_id=company_id
             )
             db.session.add(clock_in_event)
@@ -2417,6 +2447,7 @@ def save_my_attendance():
                 is_manual=True,
                 sede_id=sede_id,
                 commessa_id=commessa_id,
+                attendance_type_id=attendance_type_id,
                 company_id=company_id
             )
             db.session.add(break_start_event)
@@ -2430,6 +2461,7 @@ def save_my_attendance():
                 is_manual=True,
                 sede_id=sede_id,
                 commessa_id=commessa_id,
+                attendance_type_id=attendance_type_id,
                 company_id=company_id
             )
             db.session.add(break_end_event)
@@ -2443,6 +2475,7 @@ def save_my_attendance():
                 is_manual=True,
                 sede_id=sede_id,
                 commessa_id=commessa_id,
+                attendance_type_id=attendance_type_id,
                 company_id=company_id
             )
             db.session.add(clock_out_event)
