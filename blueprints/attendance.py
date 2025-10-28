@@ -2212,6 +2212,57 @@ def validate_timesheet(timesheet_id):
         flash(f'Errore validazione: {str(e)}', 'danger')
         return redirect(url_for('attendance.validate_timesheets'))
 
+@attendance_bp.route('/manager_reopen_timesheet/<int:timesheet_id>', methods=['POST'])
+@login_required
+def manager_reopen_timesheet(timesheet_id):
+    """Responsabile riapre un timesheet consolidato con commento"""
+    try:
+        from models import MonthlyTimesheet
+        
+        # Ottieni il timesheet
+        timesheet = filter_by_company(MonthlyTimesheet.query).filter_by(id=timesheet_id).first()
+        if not timesheet:
+            flash('Timesheet non trovato', 'danger')
+            return redirect(url_for('attendance.validate_timesheets'))
+        
+        # Verifica permessi
+        if not timesheet.can_validate(current_user):
+            flash('Non hai i permessi per riaprire questo timesheet', 'danger')
+            return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+        
+        # Verifica che il timesheet sia consolidato ma non validato
+        if not timesheet.is_consolidated:
+            flash('Il timesheet non è consolidato', 'warning')
+            return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+        
+        if timesheet.is_validated:
+            flash('Il timesheet è già validato e non può essere riaperto', 'warning')
+            return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+        
+        # Ottieni il commento
+        reason = request.form.get('reason', '').strip()
+        if not reason:
+            flash('Devi fornire un motivo per la riapertura', 'danger')
+            return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+        
+        # Riapri il timesheet
+        if timesheet.reopen():
+            # Crea una nota nel timesheet
+            timesheet.notes = f"Riaperto da {current_user.full_name} il {italian_now().strftime('%d/%m/%Y alle %H:%M')}. Motivo: {reason}"
+            db.session.commit()
+            flash(f'Timesheet riaperto. L\'utente può ora modificarlo.', 'success')
+        else:
+            flash('Impossibile riaprire questo timesheet', 'danger')
+        
+        return redirect(url_for('attendance.my_attendance', year=timesheet.year, month=timesheet.month, user_id=timesheet.user_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore riapertura timesheet: {str(e)}")
+        flash(f'Errore riapertura: {str(e)}', 'danger')
+        return redirect(url_for('attendance.validate_timesheets'))
+
 # =============================================================================
 # MY ATTENDANCE - PERSONAL ATTENDANCE MANAGEMENT WITH INLINE EDITING
 # =============================================================================
@@ -2228,18 +2279,36 @@ def my_attendance():
     try:
         year = int(request.args.get('year', datetime.now().year))
         month = int(request.args.get('month', datetime.now().month))
+        user_id = request.args.get('user_id', type=int)  # ID utente da visualizzare (per responsabili)
     except ValueError:
         year = datetime.now().year
         month = datetime.now().month
+        user_id = None
     
     # Verifica che mese sia valido
     if month < 1 or month > 12:
         flash('Mese non valido', 'danger')
         return redirect(url_for('attendance.my_attendance'))
     
+    # Determina quale utente visualizzare
+    from models import User
+    if user_id and user_id != current_user.id:
+        # Responsabile che visualizza il timesheet di un altro utente
+        target_user = filter_by_company(User.query).filter_by(id=user_id).first()
+        if not target_user:
+            flash('Utente non trovato', 'danger')
+            return redirect(url_for('attendance.validate_timesheets'))
+        
+        # Verifica permessi di visualizzazione
+        viewing_as_manager = True
+    else:
+        # Utente che visualizza il proprio timesheet
+        target_user = current_user
+        viewing_as_manager = False
+    
     # Ottieni o crea il timesheet mensile
     company_id = get_user_company_id()
-    timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+    timesheet = MonthlyTimesheet.get_or_create(target_user.id, year, month, company_id)
     
     # Verifica se esiste una richiesta di riapertura pendente
     from models import TimesheetReopenRequest
@@ -2256,17 +2325,22 @@ def my_attendance():
     last_day_num = monthrange(year, month)[1]
     last_day = date(year, month, last_day_num)
     
+    # Verifica se il responsabile può validare questo timesheet
+    can_validate = False
+    if viewing_as_manager and timesheet.can_validate(current_user):
+        can_validate = True
+    
     # Ottieni tutte le sedi disponibili per l'utente
     user_sedi = []
-    if hasattr(current_user, 'sedi') and current_user.sedi:
+    if hasattr(target_user, 'sedi') and target_user.sedi:
         # Utente multi-sede
-        user_sedi = current_user.sedi
-    elif current_user.sede_obj:
+        user_sedi = target_user.sedi
+    elif target_user.sede_obj:
         # Utente singola sede
-        user_sedi = [current_user.sede_obj]
+        user_sedi = [target_user.sede_obj]
     
     # Ottieni commesse attive per il periodo del mese visualizzato
-    active_commesse = current_user.get_commesse_for_period(first_day, last_day)
+    active_commesse = target_user.get_commesse_for_period(first_day, last_day)
     
     # Ottieni tipologie di presenza attive
     attendance_types = filter_by_company(AttendanceType.query).filter_by(active=True).order_by(AttendanceType.is_default.desc(), AttendanceType.name).all()
@@ -2274,14 +2348,14 @@ def my_attendance():
     
     # Ottieni tutti gli eventi del mese per l'utente
     events_query = filter_by_company(AttendanceEvent.query).filter(
-        AttendanceEvent.user_id == current_user.id,
+        AttendanceEvent.user_id == target_user.id,
         AttendanceEvent.date >= first_day,
         AttendanceEvent.date <= last_day
     ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
     
     # Ottieni ferie/permessi approvati E in attesa nel mese
     leaves_query = filter_by_company(LeaveRequest.query).filter(
-        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.user_id == target_user.id,
         LeaveRequest.status.in_(['Approved', 'Pending']),
         LeaveRequest.start_date <= last_day,
         LeaveRequest.end_date >= first_day
@@ -2343,7 +2417,7 @@ def my_attendance():
             'events': [],
             'has_manual': False,
             'has_live': False,
-            'sede_id': current_user.sede_id,
+            'sede_id': target_user.sede_id,
             'commessa_id': None
         })
         
@@ -2389,7 +2463,7 @@ def my_attendance():
             'clock_out': clock_out_time,
             'break_start': break_start_time,
             'break_end': break_end_time,
-            'sede_id': day_events.get('sede_id', current_user.sede_id),
+            'sede_id': day_events.get('sede_id', target_user.sede_id),
             'commessa_id': default_commessa_id,
             'attendance_type_id': attendance_type_id,
             'has_manual': day_events['has_manual'],
@@ -2413,8 +2487,11 @@ def my_attendance():
                          user_sedi=user_sedi,
                          active_commesse=active_commesse,
                          attendance_types=attendance_types,
-                         can_edit=timesheet.can_edit(),
-                         pending_reopen_request=pending_reopen_request)
+                         can_edit=timesheet.can_edit() and not viewing_as_manager,
+                         pending_reopen_request=pending_reopen_request,
+                         viewing_as_manager=viewing_as_manager,
+                         can_validate=can_validate,
+                         target_user=target_user)
 
 @attendance_bp.route('/my_attendance/save', methods=['POST'])
 @login_required

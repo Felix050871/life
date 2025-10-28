@@ -20,16 +20,61 @@
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-calendar-check me-2"></i>
+                        {% if viewing_as_manager %}
+                        Timesheet di {{ target_user.full_name }} - {{ month_name }} {{ year }}
+                        {% else %}
                         Le Mie Presenze - {{ month_name }} {{ year }}
+                        {% endif %}
                     </h5>
                 </div>
 
                 <div class="card-body">
+                    {% if viewing_as_manager and can_validate %}
+                    <!-- Pulsanti di azione per responsabile -->
+                    <div class="alert alert-primary mb-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-user-tie me-2"></i>Modalità Responsabile
+                                </h6>
+                                <small>
+                                    {% if timesheet.is_validated %}
+                                    Questo timesheet è stato validato il {{ timesheet.validated_at.strftime('%d/%m/%Y alle %H:%M') }}.
+                                    {% elif timesheet.is_consolidated %}
+                                    Questo timesheet è consolidato. Puoi validarlo o riaprirlo per permettere modifiche.
+                                    {% else %}
+                                    Questo timesheet è ancora in compilazione.
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                {% if timesheet.is_consolidated and not timesheet.is_validated %}
+                                <div class="btn-group" role="group">
+                                    <!-- Valida -->
+                                    <form method="POST" action="{{ url_for('attendance.validate_timesheet', timesheet_id=timesheet.id) }}" style="display:inline;"
+                                          onsubmit="return confirm('Confermi la validazione di questo timesheet? Questa operazione è irreversibile.');">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-check me-1"></i>Valida
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Riapri -->
+                                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#managerReopenModal">
+                                        <i class="fas fa-unlock me-1"></i>Riapri
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     {% if timesheet.is_consolidated %}
                     <div class="alert alert-info">
                         <i class="fas fa-lock me-2"></i>
                         <strong>Timesheet Consolidato</strong><br>
                         Questo timesheet è stato consolidato il {{ timesheet.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }} e non può più essere modificato.
+                        {% if not viewing_as_manager %}
                         {% if pending_reopen_request %}
                         <br><br>
                         <div class="alert alert-warning mt-2 mb-0">
@@ -43,8 +88,9 @@
                             <i class="fas fa-envelope me-1"></i>Richiedi Riapertura
                         </button>
                         {% endif %}
+                        {% endif %}
                     </div>
-                    {% else %}
+                    {% elif not viewing_as_manager %}
                     <div class="alert alert-success">
                         <i class="fas fa-edit me-2"></i>
                         <strong>Modalità Inserimento Personale</strong><br>
@@ -392,6 +438,44 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-paper-plane me-1"></i>Invia Richiesta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Riapertura da Responsabile -->
+<div class="modal fade" id="managerReopenModal" tabindex="-1" aria-labelledby="managerReopenModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="managerReopenModalLabel">
+                    <i class="fas fa-unlock me-2"></i>Riapri Timesheet
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('attendance.manager_reopen_timesheet', timesheet_id=timesheet.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p>Riaprendo questo timesheet, l'utente potrà modificare nuovamente le proprie presenze.</p>
+                    
+                    <div class="mb-3">
+                        <label for="manager_reopen_reason" class="form-label">Motivo della riapertura <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="manager_reopen_reason" name="reason" rows="4" required 
+                                  placeholder="Es: Correzione errori di timbratura, inserimento ore straordinario non registrato, etc."></textarea>
+                        <small class="text-muted">Il dipendente vedrà questo commento quando accede al timesheet.</small>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Attenzione:</strong> Il timesheet tornerà in stato "In compilazione" e il dipendente dovrà consolidarlo nuovamente.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-unlock me-1"></i>Riapri Timesheet
                     </button>
                 </div>
             </form>
