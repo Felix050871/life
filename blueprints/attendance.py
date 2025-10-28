@@ -2249,10 +2249,14 @@ def my_attendance():
             elif event.event_type == 'break_end':
                 break_end_time = to_italian_time_str(event.timestamp)
         
+        # Nomi giorni in italiano
+        italian_weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+        weekday_italian = italian_weekdays[day_date.weekday()]
+        
         days_data.append({
             'day': day,
             'date': day_date,
-            'weekday': day_date.strftime('%a'),
+            'weekday': weekday_italian,
             'clock_in': clock_in_time,
             'clock_out': clock_out_time,
             'break_start': break_start_time,

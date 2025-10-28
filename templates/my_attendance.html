@@ -75,16 +75,14 @@
                                 <tr>
                                     <th style="width: 6%;">Giorno</th>
                                     <th style="width: 10%;">Data</th>
-                                    {% if user_sedi|length > 1 %}
                                     <th style="width: 12%;">Sede</th>
-                                    {% endif %}
                                     {% if active_commesse|length > 0 %}
                                     <th style="width: 12%;">Commessa</th>
                                     {% endif %}
                                     <th style="width: 10%;">Entrata</th>
-                                    <th style="width: 10%;">Uscita</th>
                                     <th style="width: 10%;">Inizio Pausa</th>
                                     <th style="width: 10%;">Fine Pausa</th>
+                                    <th style="width: 10%;">Uscita</th>
                                     <th style="width: 12%;">Stato</th>
                                     <th style="width: 8%;">Azioni</th>
                                 </tr>
@@ -111,8 +109,8 @@
                                         {% endif %}
                                     </td>
                                     
-                                    {% if user_sedi|length > 1 %}
                                     <td>
+                                        {% if user_sedi|length > 1 %}
                                         <select class="form-select form-select-sm sede-select" 
                                                 id="sede_{{ day_data.day }}"
                                                 {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
@@ -121,8 +119,12 @@
                                             <option value="{{ sede.id }}" {% if day_data.sede_id == sede.id %}selected{% endif %}>{{ sede.name }}</option>
                                             {% endfor %}
                                         </select>
+                                        {% elif user_sedi|length == 1 %}
+                                        <span class="text-muted">{{ user_sedi[0].name }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
                                     </td>
-                                    {% endif %}
                                     
                                     {% if active_commesse|length > 0 %}
                                     <td>
@@ -150,15 +152,6 @@
                                     <td>
                                         <input type="time" 
                                                class="form-control form-control-sm time-input" 
-                                               id="clock_out_{{ day_data.day }}" 
-                                               value="{{ day_data.clock_out or '' }}"
-                                               {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
-                                               data-day="{{ day_data.day }}"
-                                               data-type="clock_out">
-                                    </td>
-                                    <td>
-                                        <input type="time" 
-                                               class="form-control form-control-sm time-input" 
                                                id="break_start_{{ day_data.day }}" 
                                                value="{{ day_data.break_start or '' }}"
                                                {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
@@ -173,6 +166,15 @@
                                                {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
                                                data-type="break_end">
+                                    </td>
+                                    <td>
+                                        <input type="time" 
+                                               class="form-control form-control-sm time-input" 
+                                               id="clock_out_{{ day_data.day }}" 
+                                               value="{{ day_data.clock_out or '' }}"
+                                               {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
+                                               data-day="{{ day_data.day }}"
+                                               data-type="clock_out">
                                     </td>
                                     <td class="status-cell" id="status_{{ day_data.day }}">
                                         {% if day_data.has_leave %}
@@ -242,6 +244,7 @@
                                     {% if active_commesse|length > 0 %}
                                     <li>Seleziona la commessa su cui hai lavorato quel giorno, oppure lascia "N/A" se non applicabile</li>
                                     {% endif %}
+                                    <li>Ordine inserimento: Entrata → Inizio Pausa → Fine Pausa → Uscita</li>
                                 </ul>
                             </div>
                         </div>
