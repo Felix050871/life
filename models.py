@@ -459,6 +459,10 @@ class User(UserMixin, db.Model):
         """Visualizzare presenze della sede - permesso specifico"""
         return self.has_permission('can_view_sede_attendance')
     
+    def can_access_timesheets(self):
+        """Accesso alla gestione timesheets personali"""
+        return self.has_permission('can_access_timesheets')
+    
     # === FERIE/PERMESSI ===
     def can_manage_leave(self):
         return self.has_permission('can_manage_leave')
