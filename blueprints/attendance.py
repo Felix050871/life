@@ -2151,8 +2151,8 @@ def my_attendance():
         # Utente singola sede
         user_sedi = [current_user.sede_obj]
     
-    # Ottieni commesse attive per l'utente
-    active_commesse = current_user.get_active_commesse()
+    # Ottieni commesse attive per il periodo del mese visualizzato
+    active_commesse = current_user.get_commesse_for_period(first_day, last_day)
     
     # Ottieni tutti gli eventi del mese per l'utente
     events_query = filter_by_company(AttendanceEvent.query).filter(

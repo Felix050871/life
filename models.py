@@ -764,11 +764,22 @@ class User(UserMixin, db.Model):
         """Restituisce le commesse di cui l'utente è responsabile"""
         return [a.commessa for a in self.commessa_assignments if a.is_responsabile]
     
-    def get_active_commesse(self):
-        """Restituisce le commesse con assegnazione attiva oggi"""
+    def get_active_commesse(self, reference_date=None):
+        """Restituisce le commesse con assegnazione attiva alla data specificata (o oggi se non specificata)"""
         from datetime import date
-        today = date.today()
-        return [a.commessa for a in self.commessa_assignments if a.is_active_now()]
+        if reference_date is None:
+            reference_date = date.today()
+        return [a.commessa for a in self.commessa_assignments 
+                if a.data_inizio <= reference_date <= a.data_fine]
+    
+    def get_commesse_for_period(self, start_date, end_date):
+        """Restituisce le commesse attive in un periodo specifico"""
+        commesse_set = set()
+        for assignment in self.commessa_assignments:
+            # L'assegnazione è attiva nel periodo se c'è sovrapposizione
+            if assignment.data_inizio <= end_date and assignment.data_fine >= start_date:
+                commesse_set.add(assignment.commessa)
+        return list(commesse_set)
     
     def is_responsabile_of_commessa(self, commessa_id):
         """Verifica se l'utente è responsabile di una commessa specifica"""
