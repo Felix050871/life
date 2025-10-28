@@ -1118,6 +1118,7 @@ class RoleForm(FlaskForm):
     can_view_sede_attendance = BooleanField('Visualizzare Presenze Sede')
     can_manage_attendance_types = BooleanField('Gestire Tipologie Presenze')
     can_view_attendance_types = BooleanField('Visualizzare Tipologie Presenze')
+    can_export_validated_timesheets = BooleanField('Esportare Timesheets Validati')
     
     # Gestione ferie/permessi
     can_manage_leave = BooleanField('Gestire Ferie/Permessi')
@@ -1298,6 +1299,7 @@ class RoleForm(FlaskForm):
             'can_view_sede_attendance': self.can_view_sede_attendance.data,
             'can_manage_attendance_types': self.can_manage_attendance_types.data,
             'can_view_attendance_types': self.can_view_attendance_types.data,
+            'can_export_validated_timesheets': self.can_export_validated_timesheets.data,
             
             # Gestione ferie/permessi
             'can_manage_leave': self.can_manage_leave.data,
@@ -1450,6 +1452,7 @@ class RoleForm(FlaskForm):
         self.can_view_sede_attendance.data = permissions_dict.get('can_view_sede_attendance', False)
         self.can_manage_attendance_types.data = permissions_dict.get('can_manage_attendance_types', False)
         self.can_view_attendance_types.data = permissions_dict.get('can_view_attendance_types', False)
+        self.can_export_validated_timesheets.data = permissions_dict.get('can_export_validated_timesheets', False)
         
         # Gestione ferie/permessi
         self.can_manage_leave.data = permissions_dict.get('can_manage_leave', False)
