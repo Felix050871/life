@@ -45,11 +45,7 @@
                                     </td>
                                     <td>
                                         {% set status = ts.get_status() %}
-                                        {% if status == 'Validato' %}
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check-circle me-1"></i>{{ status }}
-                                        </span>
-                                        {% elif status == 'Consolidato' %}
+                                        {% if status == 'Consolidato' %}
                                         <span class="badge bg-info">
                                             <i class="fas fa-lock me-1"></i>{{ status }}
                                         </span>
@@ -64,9 +60,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if ts.validated_at %}
-                                        Validato il {{ ts.validated_at.strftime('%d/%m/%Y alle %H:%M') }}
-                                        {% elif ts.consolidated_at %}
+                                        {% if ts.consolidated_at %}
                                         Consolidato il {{ ts.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }}
                                         {% else %}
                                         {{ ts.updated_at.strftime('%d/%m/%Y alle %H:%M') }}
