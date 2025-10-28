@@ -22,7 +22,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta, time
 from functools import wraps
 from app import db
-from models import User, AttendanceEvent, Shift, Sede, ReperibilitaShift, Intervention, LeaveRequest, WorkSchedule, MonthlyTimesheet, italian_now
+from models import User, AttendanceEvent, Shift, Sede, ReperibilitaShift, Intervention, LeaveRequest, WorkSchedule, MonthlyTimesheet, AttendanceType, italian_now
 from utils_tenant import get_user_company_id, filter_by_company, set_company_on_create
 from io import StringIO
 from defusedcsv import csv
@@ -2958,3 +2958,123 @@ def export_timesheet(timesheet_id):
         logging.error(f"Errore export timesheet: {str(e)}")
         flash(f'Errore durante l\'export: {str(e)}', 'danger')
         return redirect(url_for('attendance.timesheets'))
+
+
+# =============================================================================
+# ATTENDANCE TYPES MANAGEMENT ROUTES
+# =============================================================================
+
+@attendance_bp.route('/types')
+@login_required
+def attendance_types():
+    """Visualizza elenco tipologie di presenza"""
+    if not current_user.can_manage_attendance():
+        flash('Non hai i permessi per gestire le tipologie di presenza', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    types = filter_by_company(AttendanceType.query).order_by(AttendanceType.name).all()
+    return render_template('attendance_types.html', types=types)
+
+
+@attendance_bp.route('/types/create', methods=['GET', 'POST'])
+@login_required
+def create_attendance_type():
+    """Crea nuova tipologia di presenza"""
+    if not current_user.can_manage_attendance():
+        flash('Non hai i permessi per creare tipologie di presenza', 'danger')
+        return redirect(url_for('attendance.attendance_types'))
+    
+    from forms import AttendanceTypeForm
+    
+    form = AttendanceTypeForm()
+    
+    if form.validate_on_submit():
+        # Se questa è impostata come default, rimuovi il flag da tutte le altre
+        if form.is_default.data:
+            existing_defaults = filter_by_company(AttendanceType.query).filter_by(is_default=True).all()
+            for existing in existing_defaults:
+                existing.is_default = False
+        
+        type_obj = AttendanceType(
+            name=form.name.data,
+            description=form.description.data,
+            is_default=form.is_default.data,
+            active=form.active.data,
+            created_by=current_user.id
+        )
+        set_company_on_create(type_obj)
+        
+        db.session.add(type_obj)
+        
+        try:
+            db.session.commit()
+            flash('Tipologia di presenza creata con successo', 'success')
+            return redirect(url_for('attendance.attendance_types'))
+        except:
+            db.session.rollback()
+            flash('Errore nella creazione della tipologia', 'danger')
+    
+    return render_template('create_attendance_type.html', form=form)
+
+
+@attendance_bp.route('/types/<int:type_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_attendance_type(type_id):
+    """Modifica tipologia di presenza"""
+    if not current_user.can_manage_attendance():
+        flash('Non hai i permessi per modificare le tipologie di presenza', 'danger')
+        return redirect(url_for('attendance.attendance_types'))
+    
+    from forms import AttendanceTypeForm
+    
+    type_obj = filter_by_company(AttendanceType.query).filter_by(id=type_id).first_or_404()
+    form = AttendanceTypeForm(obj=type_obj)
+    
+    if form.validate_on_submit():
+        # Se questa è impostata come default, rimuovi il flag da tutte le altre
+        if form.is_default.data and not type_obj.is_default:
+            existing_defaults = filter_by_company(AttendanceType.query).filter_by(is_default=True).all()
+            for existing in existing_defaults:
+                existing.is_default = False
+        
+        type_obj.name = form.name.data
+        type_obj.description = form.description.data
+        type_obj.is_default = form.is_default.data
+        type_obj.active = form.active.data
+        
+        try:
+            db.session.commit()
+            flash('Tipologia modificata con successo', 'success')
+            return redirect(url_for('attendance.attendance_types'))
+        except:
+            db.session.rollback()
+            flash('Errore nella modifica della tipologia', 'danger')
+    
+    return render_template('edit_attendance_type.html', form=form, type_obj=type_obj)
+
+
+@attendance_bp.route('/types/<int:type_id>/delete', methods=['POST'])
+@login_required
+def delete_attendance_type(type_id):
+    """Elimina tipologia di presenza"""
+    if not current_user.can_manage_attendance():
+        flash('Non hai i permessi per eliminare le tipologie di presenza', 'danger')
+        return redirect(url_for('attendance.attendance_types'))
+    
+    type_obj = filter_by_company(AttendanceType.query).filter_by(id=type_id).first_or_404()
+    
+    # Verifica se ci sono eventi di presenza associati
+    if type_obj.attendance_events and len(type_obj.attendance_events) > 0:
+        flash('Non è possibile eliminare una tipologia con eventi di presenza associati', 'warning')
+        return redirect(url_for('attendance.attendance_types'))
+    
+    try:
+        name = type_obj.name
+        db.session.delete(type_obj)
+        db.session.commit()
+        flash(f'Tipologia "{name}" eliminata con successo', 'success')
+    except:
+        db.session.rollback()
+        flash('Errore nell\'eliminazione della tipologia', 'danger')
+    
+    return redirect(url_for('attendance.attendance_types'))

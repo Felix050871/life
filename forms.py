@@ -358,6 +358,16 @@ class AttendanceForm(FlaskForm):
             # Nascondi il campo se non applicabile
             self.sede_id.choices = []
 
+
+class AttendanceTypeForm(FlaskForm):
+    """Form per gestire le tipologie di presenza"""
+    name = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Descrizione', validators=[Length(max=255)])
+    is_default = BooleanField('Predefinita')
+    active = BooleanField('Attiva', default=True)
+    submit = SubmitField('Salva Tipologia')
+
+
 # =============================================================================
 # LEAVE MANAGEMENT FORMS
 # =============================================================================
