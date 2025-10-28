@@ -2825,10 +2825,11 @@ def save_attendance_session():
         # Carica o crea sessione
         from models import AttendanceSession
         if session_id:
-            # Aggiorna sessione esistente
+            # Aggiorna sessione esistente - CRITICAL: verifica user_id per security
             session = AttendanceSession.query.filter_by(
                 id=session_id,
                 timesheet_id=timesheet.id,
+                user_id=current_user.id,
                 company_id=company_id
             ).first()
             
@@ -3537,10 +3538,10 @@ def consolidate_timesheet():
                 # Assicurati che la durata non sia negativa
                 total_duration = max(0, total_duration)
                 
-                # Crea la sessione
+                # Crea la sessione - CRITICAL: usa timesheet.user_id e timesheet.company_id per multi-tenant
                 session = AttendanceSession(
                     timesheet_id=timesheet.id,
-                    user_id=current_user.id,
+                    user_id=timesheet.user_id,
                     date=day_date,
                     start_time=start_time,
                     end_time=end_time,
@@ -3548,7 +3549,7 @@ def consolidate_timesheet():
                     attendance_type_id=clock_in.attendance_type_id,
                     sede_id=clock_in.sede_id,
                     commessa_id=clock_in.commessa_id,
-                    company_id=get_user_company_id()
+                    company_id=timesheet.company_id
                 )
                 db.session.add(session)
         
