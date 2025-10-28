@@ -28,6 +28,7 @@
                         <table class="table table-striped table-hover mb-0">
                             <thead class="table-dark">
                                 <tr>
+                                    <th>Codice</th>
                                     <th>Nome</th>
                                     <th>Descrizione</th>
                                     <th>Predefinita</th>
@@ -40,6 +41,9 @@
                             <tbody>
                                 {% for type in types %}
                                 <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ type.code }}</span>
+                                    </td>
                                     <td>
                                         <strong>{{ type.name }}</strong>
                                     </td>

@@ -1228,6 +1228,7 @@ class UserHRData(db.Model):
 class AttendanceType(db.Model):
     """Tipologie di presenza configurabili"""
     id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), nullable=False)  # Codice identificativo univoco
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(255))
     active = db.Column(db.Boolean, default=True)
@@ -1238,8 +1239,12 @@ class AttendanceType(db.Model):
     
     creator = db.relationship('User', backref='created_attendance_types', foreign_keys=[created_by])
     
+    __table_args__ = (
+        db.UniqueConstraint('code', 'company_id', name='uq_attendance_type_code_company'),
+    )
+    
     def __repr__(self):
-        return f'<AttendanceType {self.name}>'
+        return f'<AttendanceType {self.code} - {self.name}>'
 
 
 class AttendanceEvent(db.Model):

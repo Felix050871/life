@@ -361,6 +361,8 @@ class AttendanceForm(FlaskForm):
 
 class AttendanceTypeForm(FlaskForm):
     """Form per gestire le tipologie di presenza"""
+    code = StringField('Codice', validators=[DataRequired(), Length(min=2, max=20)],
+                      render_kw={'placeholder': 'Es: ORD, TRN, TRI'})
     name = StringField('Nome Tipologia', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Descrizione', validators=[Length(max=255)])
     is_default = BooleanField('Predefinita')

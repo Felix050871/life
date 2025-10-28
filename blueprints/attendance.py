@@ -3029,6 +3029,7 @@ def create_attendance_type():
                 existing.is_default = False
         
         type_obj = AttendanceType(
+            code=form.code.data.strip().upper(),
             name=form.name.data,
             description=form.description.data,
             is_default=form.is_default.data,
@@ -3070,6 +3071,7 @@ def edit_attendance_type(type_id):
             for existing in existing_defaults:
                 existing.is_default = False
         
+        type_obj.code = form.code.data.strip().upper()
         type_obj.name = form.name.data
         type_obj.description = form.description.data
         type_obj.is_default = form.is_default.data

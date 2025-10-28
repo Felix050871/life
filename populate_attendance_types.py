@@ -11,18 +11,21 @@ def populate_attendance_types():
     
     default_types = [
         {
+            'code': 'ORD',
             'name': 'Ordinario',
             'description': 'Lavoro ordinario in sede',
             'is_default': True,
             'active': True
         },
         {
+            'code': 'TRN',
             'name': 'Trasferta nazionale',
             'description': 'Trasferta su territorio nazionale',
             'is_default': False,
             'active': True
         },
         {
+            'code': 'TRI',
             'name': 'Trasferta internazionale',
             'description': 'Trasferta su territorio internazionale',
             'is_default': False,
@@ -41,18 +44,19 @@ def populate_attendance_types():
             print(f"\n📋 Popolo tipologie per company: {company.name} (ID: {company.id})")
             
             for type_data in default_types:
-                # Verifica se la tipologia esiste già per questa company
+                # Verifica se la tipologia esiste già per questa company (per codice)
                 existing = AttendanceType.query.filter_by(
                     company_id=company.id,
-                    name=type_data['name']
+                    code=type_data['code']
                 ).first()
                 
                 if existing:
-                    print(f"   ⏭️  Tipologia '{type_data['name']}' già esistente, skip")
+                    print(f"   ⏭️  Tipologia '{type_data['code']} - {type_data['name']}' già esistente, skip")
                     continue
                 
                 # Crea la nuova tipologia
                 new_type = AttendanceType(
+                    code=type_data['code'],
                     name=type_data['name'],
                     description=type_data['description'],
                     is_default=type_data['is_default'],

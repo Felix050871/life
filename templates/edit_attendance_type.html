@@ -20,6 +20,19 @@
                         {{ form.hidden_tag() }}
                         
                         <div class="mb-3">
+                            {{ form.code.label(class="form-label") }}
+                            {{ form.code(class="form-control") }}
+                            {% if form.code.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.code.errors %}{{ error %}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Codice univoco identificativo (es: ORD, TRN, TRI)
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
                             {{ form.name.label(class="form-label") }}
                             {{ form.name(class="form-control", placeholder="Es: Ordinario, Trasferta nazionale, Trasferta internazionale...") }}
                             {% if form.name.errors %}
