@@ -1211,6 +1211,23 @@ class UserHRData(db.Model):
 # ATTENDANCE & TIME TRACKING MODELS
 # =============================================================================
 
+class AttendanceType(db.Model):
+    """Tipologie di presenza configurabili"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255))
+    active = db.Column(db.Boolean, default=True)
+    is_default = db.Column(db.Boolean, default=False)  # Indica se è la tipologia di default
+    created_at = db.Column(db.DateTime, default=italian_now)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
+    
+    creator = db.relationship('User', backref='created_attendance_types', foreign_keys=[created_by])
+    
+    def __repr__(self):
+        return f'<AttendanceType {self.name}>'
+
+
 class AttendanceEvent(db.Model):
     """Modello per registrare eventi multipli di entrata/uscita nella stessa giornata"""
     id = db.Column(db.Integer, primary_key=True)
@@ -1220,16 +1237,18 @@ class AttendanceEvent(db.Model):
     timestamp = db.Column(db.DateTime, nullable=False)
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede dove è avvenuto l'evento
     commessa_id = db.Column(db.Integer, db.ForeignKey('commessa.id'), nullable=True)  # Commessa su cui ha lavorato
+    attendance_type_id = db.Column(db.Integer, db.ForeignKey('attendance_type.id'), nullable=True)  # Tipologia di presenza
     notes = db.Column(db.Text)
     shift_status = db.Column(db.String(20), nullable=True)  # 'anticipo', 'normale', 'ritardo' per entrate/uscite
     created_at = db.Column(db.DateTime, default=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     is_manual = db.Column(db.Boolean, default=False, nullable=False)  # Indica se inserito manualmente a posteriori
-    entry_type = db.Column(db.String(20), default='standard', nullable=False)  # 'standard', 'business_trip', 'other'
+    entry_type = db.Column(db.String(20), default='standard', nullable=False)  # DEPRECATED: usare attendance_type_id
     
     user = db.relationship('User', backref='attendance_events')
     sede = db.relationship('Sede', backref='sede_attendance_events')
     commessa = db.relationship('Commessa', backref='attendance_events')
+    attendance_type = db.relationship('AttendanceType', backref='attendance_events')
     
     @property
     def timestamp_italian(self):
