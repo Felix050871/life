@@ -80,6 +80,10 @@ with app.app_context():
     # Import models to ensure tables are created
     import models
     db.create_all()
+    
+    # Seed default data (idempotent - safe to run on every startup)
+    from seed_data import seed_all
+    seed_all()
 
 # Register tenant context middleware
 from middleware_tenant import load_tenant_context

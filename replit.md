@@ -26,13 +26,15 @@ The platform features a modern, responsive dark-themed Bootstrap design. It incl
 - **User Management**: Permission-based access control with over 70 granular permissions and 5 configurable standard roles. Supports advanced work schedule assignments and multi-location access.
 - **Work Schedule Management**: Work schedules are company-level globals, decoupled from locations.
 - **Attendance Tracking**: Features clock-in/out, break tracking, historical viewing, static QR code system, manual monthly timesheet entry with progressive saving, two-tier approval workflow (consolidation + validation), and configurable attendance types. MonthlyTimesheet tracks consolidation and validation status with distinct approval flows and role-based permissions. TimesheetReopenRequest manages requests requiring HR/Admin approval.
+- **Leave Management**: Configurable leave types with flexible minimum duration requirements (minimum_duration_hours field), automatic seeding of default values (Ferie: 8h, Malattia: 4h), and approval workflows. Supports both requires_approval and active status flags.
 - **Shift Management**: Supports intelligent shift generation, recurring patterns via templates, and on-call duty management, integrated with the Mansionario system.
 - **Mileage Reimbursement System**: Manages requests and calculates distances using ACI tables with manager approval workflows.
 - **Data Export**: Supports CSV to Excel (.xlsx) conversion.
 - **Multi-Tenant Email System**: Hybrid SMTP architecture supporting global and per-company email configurations, with encrypted SMTP passwords.
 - **Password Security**: Enforces strong password requirements.
 - **Platform News Management**: Dynamic content management system for a global news section, managed by SUPERADMINs.
-- **Database**: Exclusively designed for PostgreSQL.
+- **Database**: Exclusively designed for PostgreSQL. Uses db.create_all() for schema creation with automatic data seeding (seed_data.py) for default values.
+- **Data Seeding**: Automatic, idempotent data seeding on application startup ensures consistent defaults across all tenants (e.g., leave type minimum durations).
 
 ### Feature Specifications
 - **FLOW**: Attendance tracking, intelligent shift scheduling, leave request workflow, overtime and mileage reimbursements, time bank, on-call duty management, HR data management, project/job management (Commesse), and reports.
