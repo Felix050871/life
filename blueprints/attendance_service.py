@@ -106,13 +106,18 @@ def build_timesheet_grid(
         Lista di DayRow ordinati per data (1-31)
     """
     from calendar import monthrange
-    from models import Holiday
+    from models import Holiday, WorkSchedule
     
     italian_weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
     
     # Carica tutti i dati necessari in batch
     company_id = user.company_id
     _, days_in_month = monthrange(year, month)
+    
+    # Carica esplicitamente il work_schedule dell'utente se presente
+    user_work_schedule = None
+    if user.work_schedule_id:
+        user_work_schedule = WorkSchedule.query.get(user.work_schedule_id)
     
     # Carica sessioni esistenti
     sessions_query = AttendanceSession.query.filter_by(
@@ -169,17 +174,17 @@ def build_timesheet_grid(
                 if leave.start_time and current == leave.start_date:
                     # Usa orario esplicito sul primo giorno se specificato
                     start_time_str = leave.start_time.strftime('%H:%M')
-                elif user.work_schedule and hasattr(user.work_schedule, 'start_time_min') and user.work_schedule.start_time_min:
+                elif user_work_schedule and user_work_schedule.start_time_min:
                     # Usa orario di inizio dal work schedule su tutti i giorni
-                    start_time_str = user.work_schedule.start_time_min.strftime('%H:%M')
+                    start_time_str = user_work_schedule.start_time_min.strftime('%H:%M')
                 
                 # Orario di fine
                 if leave.end_time and current == leave.end_date:
                     # Usa orario esplicito sull'ultimo giorno se specificato
                     end_time_str = leave.end_time.strftime('%H:%M')
-                elif user.work_schedule and hasattr(user.work_schedule, 'end_time_max') and user.work_schedule.end_time_max:
+                elif user_work_schedule and user_work_schedule.end_time_max:
                     # Usa orario di fine dal work schedule su tutti i giorni
-                    end_time_str = user.work_schedule.end_time_max.strftime('%H:%M')
+                    end_time_str = user_work_schedule.end_time_max.strftime('%H:%M')
                 
                 # Calcola le ore totali dall'orario di inizio e fine
                 total_hours = calculate_hours(start_time_str, end_time_str)
