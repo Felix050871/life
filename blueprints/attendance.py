@@ -3640,6 +3640,10 @@ def consolidate_timesheet():
         return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
     
     try:
+        # Import necessari
+        from models import AttendanceSession
+        import calendar
+        
         data = request.get_json()
         year = int(data.get('year'))
         month = int(data.get('month'))
@@ -3653,7 +3657,6 @@ def consolidate_timesheet():
             return jsonify({'success': False, 'message': 'Timesheet già consolidato'}), 400
         
         # Verifica che tutti i giorni lavorativi siano compilati
-        import calendar
         _, days_in_month = calendar.monthrange(year, month)
         
         missing_days = []
@@ -3704,7 +3707,6 @@ def consolidate_timesheet():
             }), 400
         
         # Crea AttendanceSession da AttendanceEvent prima di consolidare
-        from models import AttendanceSession
         from datetime import time as time_class
         
         # Elimina eventuali sessioni esistenti per questo timesheet (con scoping company)
