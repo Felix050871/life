@@ -281,8 +281,8 @@ def build_timesheet_grid(
                     attendance_type_id=session.attendance_type_id,
                     attendance_type_name=type_name,
                     clock_in=session.start_time.strftime('%H:%M') if session.start_time else '',
-                    break_start='',  # TODO: gestire pause
-                    break_end='',
+                    break_start=session.break_start_time.strftime('%H:%M') if session.break_start_time else '',
+                    break_end=session.break_end_time.strftime('%H:%M') if session.break_end_time else '',
                     clock_out=session.end_time.strftime('%H:%M') if session.end_time else '',
                     total_hours=session.duration_hours or 0.0,
                     source='manual',

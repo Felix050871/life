@@ -2700,6 +2700,8 @@ def save_month_sessions():
                     session.date = day_date
                     session.start_time = start_time
                     session.end_time = end_time
+                    session.break_start_time = break_start
+                    session.break_end_time = break_end
                     session.sede_id = sede_id
                     session.attendance_type_id = attendance_type_id
                     session.duration_hours = duration_hours
@@ -2713,6 +2715,8 @@ def save_month_sessions():
                     date=day_date,
                     start_time=start_time,
                     end_time=end_time,
+                    break_start_time=break_start,
+                    break_end_time=break_end,
                     sede_id=sede_id,
                     commessa_id=None,  # TODO: gestire commesse se necessario
                     attendance_type_id=attendance_type_id,
@@ -2947,6 +2951,8 @@ def save_attendance_session():
         session_id = data.get('session_id')  # None per nuova sessione
         start_time_str = data.get('start_time', '').strip()
         end_time_str = data.get('end_time', '').strip()
+        break_start_str = data.get('break_start', '').strip()
+        break_end_str = data.get('break_end', '').strip()
         sede_id = data.get('sede_id')
         commessa_id = data.get('commessa_id') if data.get('commessa_id') != 'none' else None
         attendance_type_id = data.get('attendance_type_id')
@@ -3008,6 +3014,8 @@ def save_attendance_session():
         from datetime import datetime as dt, time as time_class
         start_time = None
         end_time = None
+        break_start = None
+        break_end = None
         
         if start_time_str:
             try:
@@ -3023,6 +3031,20 @@ def save_attendance_session():
             except ValueError:
                 return jsonify({'success': False, 'message': 'Ora fine non valida'}), 400
         
+        if break_start_str:
+            try:
+                hour, minute = map(int, break_start_str.split(':'))
+                break_start = time_class(hour, minute)
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Ora inizio pausa non valida'}), 400
+        
+        if break_end_str:
+            try:
+                hour, minute = map(int, break_end_str.split(':'))
+                break_end = time_class(hour, minute)
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Ora fine pausa non valida'}), 400
+        
         # Calcola durata
         duration_hours = None
         if start_time and end_time:
@@ -3031,7 +3053,18 @@ def save_attendance_session():
             if end_minutes < start_minutes:
                 # Assume overnight (rare but possible)
                 end_minutes += 24 * 60
-            duration_hours = (end_minutes - start_minutes) / 60.0
+            work_minutes = end_minutes - start_minutes
+            
+            # Sottrai pausa se presente
+            if break_start and break_end:
+                break_start_minutes = break_start.hour * 60 + break_start.minute
+                break_end_minutes = break_end.hour * 60 + break_end.minute
+                if break_end_minutes < break_start_minutes:
+                    break_end_minutes += 24 * 60
+                break_minutes = break_end_minutes - break_start_minutes
+                work_minutes -= break_minutes
+            
+            duration_hours = max(0, work_minutes / 60.0)
         
         # Carica o crea sessione
         from models import AttendanceSession
@@ -3049,6 +3082,8 @@ def save_attendance_session():
             
             session.start_time = start_time
             session.end_time = end_time
+            session.break_start_time = break_start
+            session.break_end_time = break_end
             session.sede_id = sede_id
             session.commessa_id = commessa_id
             session.attendance_type_id = attendance_type_id
@@ -3062,6 +3097,8 @@ def save_attendance_session():
                 date=day_date,
                 start_time=start_time,
                 end_time=end_time,
+                break_start_time=break_start,
+                break_end_time=break_end,
                 sede_id=sede_id,
                 commessa_id=commessa_id,
                 attendance_type_id=attendance_type_id,
