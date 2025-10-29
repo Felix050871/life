@@ -12,9 +12,15 @@
                         <i class="fas fa-user-clock me-2"></i>
                         Timesheet di {{ target_user.get_full_name() }} - {{ month_name }} {{ year }}
                     </h5>
+                    {% if source == 'export' %}
+                    <a href="{{ url_for('attendance.export_validated_timesheets', year=year_filter, month=month_filter) }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alla Lista
+                    </a>
+                    {% else %}
                     <a href="{{ url_for('attendance.validate_timesheets') }}" class="btn btn-secondary btn-sm">
                         <i class="fas fa-arrow-left me-1"></i>Torna alla Lista
                     </a>
+                    {% endif %}
                 </div>
 
                 <div class="card-body">

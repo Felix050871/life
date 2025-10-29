@@ -89,7 +89,7 @@
                                         {{ ts.validator.get_full_name() if ts.validator else 'Sistema' }}
                                     </td>
                                     <td class="text-end">
-                                        <a href="{{ url_for('attendance.view_timesheet_for_validation', timesheet_id=ts.id) }}" 
+                                        <a href="{{ url_for('attendance.view_timesheet_for_validation', timesheet_id=ts.id, source='export', year=year_filter, month=month_filter) }}" 
                                            class="btn btn-sm btn-outline-primary" title="Visualizza">
                                             <i class="fas fa-eye"></i> Visualizza
                                         </a>

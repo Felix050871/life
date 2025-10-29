@@ -2291,6 +2291,11 @@ def view_timesheet_for_validation(timesheet_id):
     month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
                    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
     
+    # Ottieni parametri dall'URL per gestire il back button con i filtri originali
+    source = request.args.get('source', 'validation')
+    year_filter = request.args.get('year', year)  # Default al year del timesheet
+    month_filter = request.args.get('month', month)  # Default al month del timesheet
+    
     return render_template('view_timesheet_validation.html',
                          timesheet=timesheet,
                          target_user=target_user,
@@ -2301,7 +2306,10 @@ def view_timesheet_for_validation(timesheet_id):
                          user_sedi=user_sedi,
                          active_commesse=active_commesse,
                          attendance_types=attendance_types,
-                         can_validate=True)
+                         can_validate=True,
+                         source=source,
+                         year_filter=year_filter,
+                         month_filter=month_filter)
 
 @attendance_bp.route('/manager_reopen_timesheet/<int:timesheet_id>', methods=['POST'])
 @login_required
@@ -4139,14 +4147,13 @@ def export_validated_timesheets():
 @attendance_bp.route('/export_validated_timesheets_excel', methods=['POST'])
 @login_required
 def export_validated_timesheets_excel():
-    """Esporta i timesheets validati in Excel organizzati per commessa"""
-    from models import MonthlyTimesheet, AttendanceEvent, Commessa, CommessaAssignment
+    """Esporta i timesheets validati in Excel usando build_timesheet_grid"""
+    from models import MonthlyTimesheet, AttendanceType, Sede, Commessa
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.utils import get_column_letter
-    from datetime import datetime, timedelta
-    import calendar
+    from datetime import datetime
     from io import BytesIO
+    from blueprints.attendance_service import build_timesheet_grid
     
     # Verifica permessi
     if not current_user.can_export_validated_timesheets():
@@ -4204,59 +4211,47 @@ def export_validated_timesheets_excel():
             9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
         }
         
-        # Raggruppa timesheets per commessa
-        # Ottieni tutte le commesse attive della company
-        commesse = filter_by_company(Commessa.query).order_by(Commessa.titolo).all()
+        # Carica dati globali necessari per build_timesheet_grid
+        attendance_types = filter_by_company(AttendanceType.query).filter_by(active=True).all()
+        all_sedi = filter_by_company(Sede.query).filter_by(active=True).all()
+        all_commesse = filter_by_company(Commessa.query).all()
         
-        # Crea dizionario: commessa_id -> lista di timesheets
-        timesheets_by_commessa = {}
-        timesheets_no_commessa = []
-        
-        for timesheet in timesheets:
-            user = timesheet.user
-            # Trova commesse assegnate a questo utente nel periodo del timesheet
-            start_date = datetime(timesheet.year, timesheet.month, 1).date()
-            if timesheet.month == 12:
-                end_date = datetime(timesheet.year + 1, 1, 1).date() - timedelta(days=1)
+        # Crea un foglio per ogni timesheet validato
+        for ts in timesheets:
+            user = ts.user
+            
+            # Determina le sedi accessibili dall'utente
+            if user.all_sedi:
+                user_sedi = all_sedi
+            elif user.sede_id:
+                user_sedi = [sede for sede in all_sedi if sede.id == user.sede_id]
             else:
-                end_date = datetime(timesheet.year, timesheet.month + 1, 1).date() - timedelta(days=1)
+                user_sedi = all_sedi
             
-            # Trova assegnazioni attive in questo periodo
-            assignments = CommessaAssignment.query.filter(
-                CommessaAssignment.user_id == user.id,
-                CommessaAssignment.data_inizio <= end_date,
-                CommessaAssignment.data_fine >= start_date
-            ).all()
+            # Usa build_timesheet_grid per ottenere tutti i dati (AttendanceEvent + AttendanceSession)
+            timesheet_grid = build_timesheet_grid(
+                timesheet=ts,
+                user=user,
+                year=ts.year,
+                month=ts.month,
+                user_sedi=user_sedi,
+                active_commesse=all_commesse,
+                attendance_types=attendance_types
+            )
             
-            if assignments:
-                for assignment in assignments:
-                    commessa_id = assignment.commessa_id
-                    if commessa_id not in timesheets_by_commessa:
-                        timesheets_by_commessa[commessa_id] = []
-                    timesheets_by_commessa[commessa_id].append(timesheet)
-            else:
-                timesheets_no_commessa.append(timesheet)
-        
-        # Crea un foglio per ogni commessa
-        for commessa in commesse:
-            if commessa.id not in timesheets_by_commessa:
-                continue  # Salta commesse senza timesheets
-            
-            commessa_timesheets = timesheets_by_commessa[commessa.id]
-            sheet_name = f"{commessa.titolo[:25]}"
+            # Crea foglio per questo timesheet
+            sheet_name = f"{user.get_full_name()[:20]} {month_names[ts.month][:3]}"
             ws = wb.create_sheet(title=sheet_name)
             
-            # Intestazione commessa
-            ws['A1'] = f"Commessa: {commessa.titolo}"
+            # Intestazione
+            ws['A1'] = f"Timesheet: {user.get_full_name()}"
             ws['A1'].font = Font(bold=True, size=14)
-            ws['A2'] = f"Cliente: {commessa.cliente}"
-            ws['A3'] = f"Periodo Export: {year_filter}"
-            if month_filter != 'all':
-                ws['A3'].value += f" - {month_names[int(month_filter)]}"
+            ws['A2'] = f"Periodo: {month_names[ts.month]} {ts.year}"
+            ws['A3'] = f"Validato il: {ts.validated_at.strftime('%d/%m/%Y alle %H:%M') if ts.validated_at else 'N/D'}"
             
-            # Headers tabella dettaglio presenze giornaliere
+            # Headers tabella
             row = 5
-            headers = ['Utente', 'Data', 'Sede', 'Commessa', 'Tipologia', 'Entrata', 'Inizio Pausa', 'Fine Pausa', 'Uscita', 'Ore Totali']
+            headers = ['Data', 'Sede', 'Commessa', 'Tipologia', 'Entrata', 'Inizio Pausa', 'Fine Pausa', 'Uscita', 'Ore Totali']
             for col_num, header in enumerate(headers, 1):
                 cell = ws.cell(row=row, column=col_num)
                 cell.value = header
@@ -4265,110 +4260,56 @@ def export_validated_timesheets_excel():
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.border = border
             
-            # Per ogni timesheet della commessa, estrai le sessioni
+            # Scrivi dati
             row += 1
-            for ts in commessa_timesheets:
-                user = ts.user
-                
-                # Query AttendanceSession per questo timesheet
-                from models import AttendanceSession
-                sessions = AttendanceSession.query.filter_by(
-                    timesheet_id=ts.id
-                ).order_by(AttendanceSession.date).all()
-                
-                # Per ogni sessione, crea una riga
-                for session in sessions:
-                    # Scrivi riga
-                    ws.cell(row=row, column=1).value = user.get_full_name()
-                    ws.cell(row=row, column=2).value = session.date.strftime('%d/%m/%Y')
-                    ws.cell(row=row, column=3).value = session.sede.name if session.sede else ''
-                    ws.cell(row=row, column=4).value = commessa.titolo
-                    ws.cell(row=row, column=5).value = session.attendance_type.code if session.attendance_type else ''
-                    ws.cell(row=row, column=6).value = session.start_time.strftime('%H:%M') if session.start_time else ''
-                    ws.cell(row=row, column=7).value = ''  # Inizio Pausa (per ora vuoto, gestiremo in futuro)
-                    ws.cell(row=row, column=8).value = ''  # Fine Pausa (per ora vuoto, gestiremo in futuro)
-                    ws.cell(row=row, column=9).value = session.end_time.strftime('%H:%M') if session.end_time else ''
-                    ws.cell(row=row, column=10).value = session.duration_hours
+            for day_row in timesheet_grid:
+                # Gestisci leave_block (assenze)
+                if day_row.leave_block:
+                    ws.cell(row=row, column=1).value = day_row.date_display
+                    ws.cell(row=row, column=2).value = ''
+                    ws.cell(row=row, column=3).value = ''
+                    ws.cell(row=row, column=4).value = day_row.leave_block.leave_type
+                    ws.cell(row=row, column=5).value = day_row.leave_block.start_time or ''
+                    ws.cell(row=row, column=6).value = ''
+                    ws.cell(row=row, column=7).value = ''
+                    ws.cell(row=row, column=8).value = day_row.leave_block.end_time or ''
+                    ws.cell(row=row, column=9).value = day_row.leave_block.total_hours
                     
                     # Applica bordi
-                    for col in range(1, 11):
+                    for col in range(1, 10):
                         ws.cell(row=row, column=col).border = border
+                    row += 1
+                
+                # Gestisci sessioni (sia manuali che automatiche da eventi)
+                for session in day_row.sessions:
+                    if session.source == 'empty':
+                        continue  # Salta righe vuote
                     
+                    ws.cell(row=row, column=1).value = day_row.date_display
+                    ws.cell(row=row, column=2).value = session.sede_name
+                    ws.cell(row=row, column=3).value = session.commessa_display
+                    ws.cell(row=row, column=4).value = session.attendance_type_name
+                    ws.cell(row=row, column=5).value = session.clock_in
+                    ws.cell(row=row, column=6).value = session.break_start
+                    ws.cell(row=row, column=7).value = session.break_end
+                    ws.cell(row=row, column=8).value = session.clock_out
+                    ws.cell(row=row, column=9).value = session.total_hours
+                    
+                    # Applica bordi
+                    for col in range(1, 10):
+                        ws.cell(row=row, column=col).border = border
                     row += 1
             
             # Adatta larghezza colonne
-            ws.column_dimensions['A'].width = 25  # Utente
-            ws.column_dimensions['B'].width = 12  # Data
-            ws.column_dimensions['C'].width = 20  # Sede
-            ws.column_dimensions['D'].width = 25  # Commessa
-            ws.column_dimensions['E'].width = 12  # Tipologia
-            ws.column_dimensions['F'].width = 10  # Entrata
-            ws.column_dimensions['G'].width = 12  # Inizio Pausa
-            ws.column_dimensions['H'].width = 12  # Fine Pausa
-            ws.column_dimensions['I'].width = 10  # Uscita
-            ws.column_dimensions['J'].width = 10  # Ore Totali
-        
-        # Aggiungi foglio per dipendenti senza commessa (se ce ne sono)
-        if timesheets_no_commessa:
-            ws = wb.create_sheet(title="Senza Commessa")
-            ws['A1'] = "Dipendenti senza assegnazione a commesse"
-            ws['A1'].font = Font(bold=True, size=14)
-            ws['A2'] = f"Periodo Export: {year_filter}"
-            if month_filter != 'all':
-                ws['A2'].value += f" - {month_names[int(month_filter)]}"
-            
-            # Headers tabella dettaglio presenze giornaliere
-            row = 4
-            headers = ['Utente', 'Data', 'Sede', 'Commessa', 'Tipologia', 'Entrata', 'Inizio Pausa', 'Fine Pausa', 'Uscita', 'Ore Totali']
-            for col_num, header in enumerate(headers, 1):
-                cell = ws.cell(row=row, column=col_num)
-                cell.value = header
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = Alignment(horizontal='center', vertical='center')
-                cell.border = border
-            
-            # Per ogni timesheet senza commessa, estrai le sessioni
-            row += 1
-            for ts in timesheets_no_commessa:
-                user = ts.user
-                
-                # Query AttendanceSession per questo timesheet
-                sessions = AttendanceSession.query.filter_by(
-                    timesheet_id=ts.id
-                ).order_by(AttendanceSession.date).all()
-                
-                # Per ogni sessione, crea una riga
-                for session in sessions:
-                    # Scrivi riga
-                    ws.cell(row=row, column=1).value = user.get_full_name()
-                    ws.cell(row=row, column=2).value = session.date.strftime('%d/%m/%Y')
-                    ws.cell(row=row, column=3).value = session.sede.name if session.sede else ''
-                    ws.cell(row=row, column=4).value = ''  # Nessuna commessa
-                    ws.cell(row=row, column=5).value = session.attendance_type.code if session.attendance_type else ''
-                    ws.cell(row=row, column=6).value = session.start_time.strftime('%H:%M') if session.start_time else ''
-                    ws.cell(row=row, column=7).value = ''  # Inizio Pausa (per ora vuoto)
-                    ws.cell(row=row, column=8).value = ''  # Fine Pausa (per ora vuoto)
-                    ws.cell(row=row, column=9).value = session.end_time.strftime('%H:%M') if session.end_time else ''
-                    ws.cell(row=row, column=10).value = session.duration_hours
-                    
-                    # Applica bordi
-                    for col in range(1, 11):
-                        ws.cell(row=row, column=col).border = border
-                    
-                    row += 1
-            
-            # Adatta larghezza colonne
-            ws.column_dimensions['A'].width = 25  # Utente
-            ws.column_dimensions['B'].width = 12  # Data
-            ws.column_dimensions['C'].width = 20  # Sede
-            ws.column_dimensions['D'].width = 25  # Commessa
-            ws.column_dimensions['E'].width = 12  # Tipologia
-            ws.column_dimensions['F'].width = 10  # Entrata
-            ws.column_dimensions['G'].width = 12  # Inizio Pausa
-            ws.column_dimensions['H'].width = 12  # Fine Pausa
-            ws.column_dimensions['I'].width = 10  # Uscita
-            ws.column_dimensions['J'].width = 10  # Ore Totali
+            ws.column_dimensions['A'].width = 12  # Data
+            ws.column_dimensions['B'].width = 20  # Sede
+            ws.column_dimensions['C'].width = 25  # Commessa
+            ws.column_dimensions['D'].width = 15  # Tipologia
+            ws.column_dimensions['E'].width = 10  # Entrata
+            ws.column_dimensions['F'].width = 12  # Inizio Pausa
+            ws.column_dimensions['G'].width = 12  # Fine Pausa
+            ws.column_dimensions['H'].width = 10  # Uscita
+            ws.column_dimensions['I'].width = 10  # Ore Totali
         
         # Salva in memoria
         output = BytesIO()
