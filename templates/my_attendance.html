@@ -56,17 +56,19 @@
                         </div>
                         <div class="col-md-6 text-end">
                             {% if can_edit %}
-                            <button type="button" class="btn btn-info me-2" onclick="bulkFillTimesheet()">
-                                <i class="fas fa-magic me-1"></i>Compila Automaticamente
-                            </button>
-                            <button type="button" class="btn btn-success" onclick="saveAllSessions()">
-                                <i class="fas fa-save me-1"></i>Salva Tutto
-                            </button>
-                            {% if not timesheet.is_consolidated %}
-                            <button type="button" class="btn btn-warning ms-2" onclick="consolidateTimesheet()">
-                                <i class="fas fa-lock me-1"></i>Consolida Timesheet
-                            </button>
-                            {% endif %}
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-info" onclick="bulkFillTimesheet()">
+                                    <i class="fas fa-magic me-1"></i>Compila Automaticamente
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="saveAllSessions()">
+                                    <i class="fas fa-save me-1"></i>Salva Tutto
+                                </button>
+                                {% if not timesheet.is_consolidated %}
+                                <button type="button" class="btn btn-warning" onclick="consolidateTimesheet()">
+                                    <i class="fas fa-lock me-1"></i>Consolida Timesheet
+                                </button>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -430,10 +432,14 @@ function bulkFillTimesheet() {
     
     showLoadingOverlay('Compilazione automatica in corso...');
     
+    // Ottieni il token CSRF dal form
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    
     fetch("{{ url_for('attendance.bulk_fill_sessions') }}", {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({
             year: {{ year }},
