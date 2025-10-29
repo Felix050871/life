@@ -2464,7 +2464,7 @@ def manager_reopen_timesheet(timesheet_id):
 @attendance_bp.route('/my_attendance', methods=['GET'])
 @login_required
 def my_attendance():
-    """Interfaccia personale per gestione presenze con editing inline"""
+    """Interfaccia personale per gestione presenze - REDESIGN con service layer"""
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per accedere alle presenze.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
@@ -2473,296 +2473,48 @@ def my_attendance():
     try:
         year = int(request.args.get('year', datetime.now().year))
         month = int(request.args.get('month', datetime.now().month))
-        user_id = request.args.get('user_id', type=int)  # ID utente da visualizzare (per responsabili)
     except ValueError:
         year = datetime.now().year
         month = datetime.now().month
-        user_id = None
     
     # Verifica che mese sia valido
     if month < 1 or month > 12:
         flash('Mese non valido', 'danger')
         return redirect(url_for('attendance.my_attendance'))
     
-    # Determina quale utente visualizzare
-    from models import User
-    if user_id and user_id != current_user.id:
-        # Responsabile che visualizza il timesheet di un altro utente
-        target_user = filter_by_company(User.query).filter_by(id=user_id).first()
-        if not target_user:
-            flash('Utente non trovato', 'danger')
-            return redirect(url_for('attendance.validate_timesheets'))
-        
-        # Verifica permessi di visualizzazione
-        viewing_as_manager = True
-    else:
-        # Utente che visualizza il proprio timesheet
-        target_user = current_user
-        viewing_as_manager = False
-    
     # Ottieni o crea il timesheet mensile
     company_id = get_user_company_id()
-    timesheet = MonthlyTimesheet.get_or_create(target_user.id, year, month, company_id)
+    timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
     
-    # Verifica se esiste una richiesta di riapertura pendente
-    from models import TimesheetReopenRequest
-    pending_reopen_request = None
-    if timesheet.is_consolidated:
-        pending_reopen_request = TimesheetReopenRequest.query.filter_by(
-            timesheet_id=timesheet.id,
-            status='Pending'
-        ).first()
+    # Ottieni tutte le sedi disponibili per l'utente
+    user_sedi = []
+    if hasattr(current_user, 'sedi') and current_user.sedi:
+        user_sedi = current_user.sedi
+    elif current_user.sede_obj:
+        user_sedi = [current_user.sede_obj]
     
-    # Calcola primo e ultimo giorno del mese
+    # Ottieni commesse attive
     from calendar import monthrange
     first_day = date(year, month, 1)
     last_day_num = monthrange(year, month)[1]
     last_day = date(year, month, last_day_num)
-    
-    # Verifica se il responsabile può validare questo timesheet
-    can_validate = False
-    if viewing_as_manager and timesheet.can_validate(current_user):
-        can_validate = True
-    
-    # Ottieni tutte le sedi disponibili per l'utente
-    user_sedi = []
-    if hasattr(target_user, 'sedi') and target_user.sedi:
-        # Utente multi-sede
-        user_sedi = target_user.sedi
-    elif target_user.sede_obj:
-        # Utente singola sede
-        user_sedi = [target_user.sede_obj]
-    
-    # Ottieni commesse attive per il periodo del mese visualizzato
-    active_commesse = target_user.get_commesse_for_period(first_day, last_day)
+    active_commesse = current_user.get_commesse_for_period(first_day, last_day)
     
     # Ottieni tipologie di presenza attive
     attendance_types = filter_by_company(AttendanceType.query).filter_by(active=True).order_by(AttendanceType.is_default.desc(), AttendanceType.name).all()
-    default_type = next((t for t in attendance_types if t.is_default), attendance_types[0] if attendance_types else None)
     
-    # Ottieni tutti gli eventi del mese per l'utente
-    events_query = filter_by_company(AttendanceEvent.query).filter(
-        AttendanceEvent.user_id == target_user.id,
-        AttendanceEvent.date >= first_day,
-        AttendanceEvent.date <= last_day
-    ).order_by(AttendanceEvent.date, AttendanceEvent.timestamp).all()
+    # USA IL SERVICE LAYER per costruire la vista normalizzata
+    from blueprints.attendance_service import build_timesheet_grid
     
-    # Ottieni ferie/permessi approvati E in attesa nel mese
-    leaves_query = filter_by_company(LeaveRequest.query).filter(
-        LeaveRequest.user_id == target_user.id,
-        LeaveRequest.status.in_(['Approved', 'Pending']),
-        LeaveRequest.start_date <= last_day,
-        LeaveRequest.end_date >= first_day
-    ).all()
-    
-    # Crea set di date con ferie/permessi (include orari per permessi parziali)
-    leave_dates = set()
-    leave_info = {}
-    leave_times = {}  # Mantieni orari separati per usarli nelle colonne Inizio/Fine
-    for leave in leaves_query:
-        current_date = leave.start_date
-        while current_date <= leave.end_date:
-            if first_day <= current_date <= last_day:
-                leave_dates.add(current_date)
-                leave_type_name = leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or 'Permesso')
-                
-                # Aggiungi orari se presenti (permessi parziali)
-                leave_display = leave_type_name
-                if leave.start_time and leave.end_time:
-                    leave_display += f" ({leave.start_time.strftime('%H:%M')}-{leave.end_time.strftime('%H:%M')})"
-                    # Salva gli orari separatamente per usarli nelle colonne
-                    leave_times[current_date] = {
-                        'start_time': leave.start_time.strftime('%H:%M'),
-                        'end_time': leave.end_time.strftime('%H:%M')
-                    }
-                
-                leave_info[current_date] = leave_display
-            current_date += timedelta(days=1)
-    
-    # Carica AttendanceSession esistenti per questo timesheet (se non consolidato, mostra sessioni manuali)
-    from models import AttendanceSession
-    sessions_query = AttendanceSession.query.filter_by(
-        timesheet_id=timesheet.id
-    ).order_by(AttendanceSession.date, AttendanceSession.start_time).all()
-    
-    import logging
-    logging.info(f"Caricamento sessioni per timesheet {timesheet.id}: trovate {len(sessions_query)} sessioni")
-    for s in sessions_query:
-        logging.info(f"  Sessione ID={s.id}, date={s.date}, day={s.date.day}, start={s.start_time}, duration={s.duration_hours}")
-    
-    # Organizza sessioni per giorno
-    sessions_by_day = {}
-    for session in sessions_query:
-        day = session.date.day
-        if day not in sessions_by_day:
-            sessions_by_day[day] = []
-        sessions_by_day[day].append(session)
-    
-    # Organizza eventi per giorno
-    events_by_day = {}
-    for event in events_query:
-        day = event.date.day
-        if day not in events_by_day:
-            events_by_day[day] = {
-                'events': [],
-                'has_manual': False,
-                'has_live': False,
-                'sede_id': event.sede_id,
-                'commessa_id': event.commessa_id
-            }
-        events_by_day[day]['events'].append(event)
-        if event.is_manual:
-            events_by_day[day]['has_manual'] = True
-            # Mantieni sede e commessa dal record manuale
-            if event.sede_id:
-                events_by_day[day]['sede_id'] = event.sede_id
-            if event.commessa_id:
-                events_by_day[day]['commessa_id'] = event.commessa_id
-        else:
-            events_by_day[day]['has_live'] = True
-    
-    # Crea lista giorni del mese con info
-    from zoneinfo import ZoneInfo
-    italy_tz = ZoneInfo('Europe/Rome')
-    
-    def to_italian_time_str(timestamp):
-        """Converte timestamp a stringa HH:MM in orario italiano"""
-        if not timestamp:
-            return None
-        if timestamp.tzinfo is None:
-            utc_tz = ZoneInfo('UTC')
-            timestamp = timestamp.replace(tzinfo=utc_tz)
-        italian_time = timestamp.astimezone(italy_tz)
-        return italian_time.strftime('%H:%M')
-    
-    # Costruisci struttura days_data con supporto multi-sessione
-    days_data = []
-    italian_weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
-    
-    for day in range(1, last_day_num + 1):
-        day_date = date(year, month, day)
-        day_events = events_by_day.get(day, {
-            'events': [],
-            'has_manual': False,
-            'has_live': False,
-            'sede_id': target_user.sede_id,
-            'commessa_id': None
-        })
-        
-        # Verifica se il giorno ha ferie/permessi
-        has_leave = day_date in leave_dates
-        leave_type = leave_info.get(day_date, '')
-        
-        weekday_italian = italian_weekdays[day_date.weekday()]
-        is_weekend = day_date.weekday() >= 5
-        is_future = day_date > date.today()
-        
-        # Se ci sono sessioni salvate per questo giorno, mostrare quelle
-        day_sessions = sessions_by_day.get(day, [])
-        
-        # Calcola il numero totale di righe EFFETTIVE per questo giorno
-        # IMPORTANTE: conta solo le righe che verranno effettivamente create
-        has_leave_row = day_date in leave_times
-        num_session_rows = len(day_sessions)
-        
-        # Total righe = riga permesso (se esiste) + righe sessioni effettive
-        # Se non ci sono né permessi né sessioni, serve almeno 1 riga vuota
-        total_rows_for_day = (1 if has_leave_row else 0) + num_session_rows
-        if total_rows_for_day == 0:
-            total_rows_for_day = 1  # Almeno una riga vuota
-        
-        # Se il giorno ha un permesso con orari, mostralo SEMPRE come prima riga
-        if has_leave_row:
-            days_data.append({
-                'day': day,
-                'date': day_date,
-                'weekday': weekday_italian,
-                'session_id': None,
-                'session_index': 0,
-                'start_time': leave_times[day_date]['start_time'],
-                'end_time': leave_times[day_date]['end_time'],
-                'sede_id': target_user.sede_id,
-                'commessa_id': None,
-                'attendance_type_id': default_type.id if default_type else None,
-                'duration_hours': None,
-                'has_manual': False,
-                'has_live': False,
-                'is_weekend': is_weekend,
-                'is_future': is_future,
-                'has_leave': True,
-                'leave_type': leave_type,
-                'total_sessions': total_rows_for_day,
-                'is_leave_row': True  # Flag per identificare la riga del permesso
-            })
-        
-        if day_sessions:
-            # Mostra tutte le sessioni esistenti
-            session_offset = 1 if has_leave_row else 0  # Offset per numerazione sessioni
-            for session_index, session in enumerate(day_sessions):
-                days_data.append({
-                    'day': day,
-                    'date': day_date,
-                    'weekday': weekday_italian,
-                    'session_id': session.id,
-                    'session_index': session_index + session_offset,
-                    'start_time': session.start_time.strftime('%H:%M') if session.start_time else '',
-                    'end_time': session.end_time.strftime('%H:%M') if session.end_time else '',
-                    'sede_id': session.sede_id,
-                    'commessa_id': session.commessa_id,
-                    'attendance_type_id': session.attendance_type_id,
-                    'duration_hours': session.duration_hours,
-                    'has_manual': True,
-                    'has_live': False,
-                    'is_weekend': is_weekend,
-                    'is_future': is_future,
-                    'has_leave': False,  # La riga del permesso è separata
-                    'leave_type': '',
-                    'total_sessions': total_rows_for_day,
-                    'is_leave_row': False
-                })
-        # Se non ci sono sessioni MA non c'è nemmeno un permesso con orari, mostra riga vuota
-        elif day_date not in leave_times:
-            # Nessuna sessione salvata - mostra riga vuota per inserimento
-            # Deriva i dati dagli eventi (per retrocompatibilità)
-            clock_in_time = None
-            clock_out_time = None
-            attendance_type_id = default_type.id if default_type else None
-            
-            for event in day_events['events']:
-                if event.attendance_type_id and attendance_type_id == (default_type.id if default_type else None):
-                    attendance_type_id = event.attendance_type_id
-                
-                if event.event_type == 'clock_in' and clock_in_time is None:
-                    clock_in_time = to_italian_time_str(event.timestamp)
-                elif event.event_type == 'clock_out':
-                    clock_out_time = to_italian_time_str(event.timestamp)
-            
-            # Se l'utente ha solo una commessa, usa quella come default
-            default_commessa_id = day_events.get('commessa_id')
-            if default_commessa_id is None and len(active_commesse) == 1:
-                default_commessa_id = active_commesse[0].id
-            
-            days_data.append({
-                'day': day,
-                'date': day_date,
-                'weekday': weekday_italian,
-                'session_id': None,
-                'session_index': 0,
-                'start_time': clock_in_time or '',
-                'end_time': clock_out_time or '',
-                'sede_id': day_events.get('sede_id', target_user.sede_id),
-                'commessa_id': default_commessa_id,
-                'attendance_type_id': attendance_type_id,
-                'duration_hours': None,
-                'has_manual': day_events['has_manual'],
-                'has_live': day_events['has_live'],
-                'is_weekend': is_weekend,
-                'is_future': is_future,
-                'has_leave': has_leave and day_date not in leave_times,  # Solo se permesso senza orari
-                'leave_type': leave_type if day_date not in leave_times else '',
-                'total_sessions': 0,
-                'is_leave_row': False
-            })
+    grid = build_timesheet_grid(
+        timesheet=timesheet,
+        user=current_user,
+        year=year,
+        month=month,
+        user_sedi=user_sedi,
+        active_commesse=active_commesse,
+        attendance_types=attendance_types
+    )
     
     # Nomi mesi in italiano
     month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -2773,15 +2525,189 @@ def my_attendance():
                          year=year,
                          month=month,
                          month_name=month_names[month],
-                         days_data=days_data,
+                         grid=grid,
                          user_sedi=user_sedi,
                          active_commesse=active_commesse,
                          attendance_types=attendance_types,
-                         can_edit=timesheet.can_edit() and not viewing_as_manager,
-                         pending_reopen_request=pending_reopen_request,
-                         viewing_as_manager=viewing_as_manager,
-                         can_validate=can_validate,
-                         target_user=target_user)
+                         can_edit=timesheet.can_edit())
+
+@attendance_bp.route('/my_attendance/save_month_sessions', methods=['POST'])
+@login_required
+def save_month_sessions():
+    """Batch save di tutte le sessioni modificate del mese"""
+    if not current_user.can_access_attendance():
+        flash('Non hai i permessi per accedere alle presenze.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    try:
+        year = int(request.form.get('year'))
+        month = int(request.form.get('month'))
+        timesheet_id = int(request.form.get('timesheet_id'))
+        
+        # Verifica timesheet
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.query.filter_by(
+            id=timesheet_id,
+            user_id=current_user.id,
+            company_id=company_id
+        ).first()
+        
+        if not timesheet:
+            flash('Timesheet non trovato', 'danger')
+            return redirect(url_for('attendance.my_attendance', year=year, month=month))
+        
+        if not timesheet.can_edit():
+            flash('Timesheet consolidato, non modificabile', 'danger')
+            return redirect(url_for('attendance.my_attendance', year=year, month=month))
+        
+        # Parse dei dati del form: rows[KEY][field]
+        from models import AttendanceSession
+        from datetime import time as time_obj
+        
+        rows_data = {}
+        for key, value in request.form.items():
+            if key.startswith('rows[') and '][' in key:
+                # Estrai row_key e field_name
+                # Formato: rows[DAY_INDEX][field_name]
+                parts = key.replace('rows[', '').replace(']', '').split('][')
+                if len(parts) == 2:
+                    row_key, field_name = parts
+                    if row_key not in rows_data:
+                        rows_data[row_key] = {}
+                    rows_data[row_key][field_name] = value
+        
+        # Processa ogni riga
+        sessions_updated = 0
+        sessions_created = 0
+        
+        for row_key, row_data in rows_data.items():
+            day = int(row_data.get('day'))
+            session_id = row_data.get('session_id', '').strip()
+            source = row_data.get('source', 'manual')
+            
+            # Ignora righe vuote (senza orari)
+            clock_in_str = row_data.get('clock_in', '').strip()
+            clock_out_str = row_data.get('clock_out', '').strip()
+            
+            if not clock_in_str and not clock_out_str:
+                continue  # Salta righe completamente vuote
+            
+            # Parse orari
+            day_date = date(year, month, day)
+            
+            # Blocca giorni futuri
+            if day_date > date.today():
+                continue
+            
+            start_time = None
+            end_time = None
+            break_start = None
+            break_end = None
+            
+            if clock_in_str:
+                try:
+                    h, m = map(int, clock_in_str.split(':'))
+                    start_time = time_obj(h, m)
+                except:
+                    pass
+            
+            if clock_out_str:
+                try:
+                    h, m = map(int, clock_out_str.split(':'))
+                    end_time = time_obj(h, m)
+                except:
+                    pass
+            
+            break_start_str = row_data.get('break_start', '').strip()
+            break_end_str = row_data.get('break_end', '').strip()
+            
+            if break_start_str:
+                try:
+                    h, m = map(int, break_start_str.split(':'))
+                    break_start = time_obj(h, m)
+                except:
+                    pass
+            
+            if break_end_str:
+                try:
+                    h, m = map(int, break_end_str.split(':'))
+                    break_end = time_obj(h, m)
+                except:
+                    pass
+            
+            # Calcola durata
+            duration_hours = 0.0
+            if start_time and end_time:
+                from datetime import datetime, timedelta
+                start_dt = datetime.combine(day_date, start_time)
+                end_dt = datetime.combine(day_date, end_time)
+                
+                # Se fine < inizio, assume turno notturno
+                if end_dt < start_dt:
+                    end_dt += timedelta(days=1)
+                
+                work_duration = (end_dt - start_dt).total_seconds() / 3600
+                
+                # Sottrai pausa
+                if break_start and break_end:
+                    break_start_dt = datetime.combine(day_date, break_start)
+                    break_end_dt = datetime.combine(day_date, break_end)
+                    if break_end_dt < break_start_dt:
+                        break_end_dt += timedelta(days=1)
+                    break_duration = (break_end_dt - break_start_dt).total_seconds() / 3600
+                    work_duration -= break_duration
+                
+                duration_hours = max(0, work_duration)
+            
+            # Altri campi
+            sede_id = int(row_data.get('sede_id')) if row_data.get('sede_id') else current_user.sede_id
+            attendance_type_id = int(row_data.get('attendance_type_id')) if row_data.get('attendance_type_id') else None
+            
+            # Update o Create
+            if session_id and session_id.isdigit():
+                # Update sessione esistente
+                session = AttendanceSession.query.filter_by(
+                    id=int(session_id),
+                    user_id=current_user.id,
+                    company_id=company_id
+                ).first()
+                
+                if session:
+                    session.date = day_date
+                    session.start_time = start_time
+                    session.end_time = end_time
+                    session.sede_id = sede_id
+                    session.attendance_type_id = attendance_type_id
+                    session.duration_hours = duration_hours
+                    sessions_updated += 1
+            else:
+                # Crea nuova sessione
+                session = AttendanceSession(
+                    timesheet_id=timesheet.id,
+                    user_id=current_user.id,
+                    company_id=company_id,
+                    date=day_date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    sede_id=sede_id,
+                    commessa_id=None,  # TODO: gestire commesse se necessario
+                    attendance_type_id=attendance_type_id,
+                    duration_hours=duration_hours
+                )
+                db.session.add(session)
+                sessions_created += 1
+        
+        db.session.commit()
+        
+        flash(f'Salvato con successo! {sessions_updated} sessioni aggiornate, {sessions_created} nuove sessioni create.', 'success')
+        return redirect(url_for('attendance.my_attendance', year=year, month=month))
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore batch save: {str(e)}")
+        flash(f'Errore durante il salvataggio: {str(e)}', 'danger')
+        return redirect(url_for('attendance.my_attendance', year=year, month=month))
 
 @attendance_bp.route('/my_attendance/save_session', methods=['POST'])
 @login_required
