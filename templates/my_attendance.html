@@ -94,7 +94,7 @@
                                     <tr>
                                         <th style="width: 6%;">Giorno</th>
                                         <th style="width: 8%;">Data</th>
-                                        <th style="width: 10%;">Sede</th>
+                                        <th style="width: 10%;">Commessa</th>
                                         <th style="width: 10%;">Tipologia</th>
                                         <th style="width: 7%;">Entrata</th>
                                         <th style="width: 7%;">Inizio Pausa</th>
@@ -157,22 +157,28 @@
                                         <td></td>
                                         {% endif %}
                                         
-                                        <!-- Sede -->
+                                        <!-- Commessa -->
                                         <td>
                                             <input type="hidden" name="rows[{{ day_row.day_num }}_{{ loop.index0 }}][session_id]" value="{{ session.session_id or '' }}">
                                             <input type="hidden" name="rows[{{ day_row.day_num }}_{{ loop.index0 }}][day]" value="{{ day_row.day_num }}">
                                             <input type="hidden" name="rows[{{ day_row.day_num }}_{{ loop.index0 }}][source]" value="{{ session.source }}">
                                             
-                                            {% if user_sedi|length > 1 %}
-                                            <select class="form-select form-select-sm" name="rows[{{ day_row.day_num }}_{{ loop.index0 }}][sede_id]" 
+                                            {% if active_commesse|length > 1 %}
+                                            <select class="form-select form-select-sm" name="rows[{{ day_row.day_num }}_{{ loop.index0 }}][commessa_id]" 
                                                     {% if not session.is_editable or not can_edit %}disabled{% endif %}>
-                                                {% for sede in user_sedi %}
-                                                <option value="{{ sede.id }}" {% if session.sede_id == sede.id %}selected{% endif %}>{{ sede.name }}</option>
+                                                <option value="">N/A</option>
+                                                {% for commessa in active_commesse %}
+                                                <option value="{{ commessa.id }}" {% if session.commessa_id == commessa.id %}selected{% endif %}>
+                                                    {{ commessa.codice }} - {{ commessa.cliente }}
+                                                </option>
                                                 {% endfor %}
                                             </select>
+                                            {% elif active_commesse|length == 1 %}
+                                            <span class="text-muted">{{ active_commesse[0].codice }} - {{ active_commesse[0].cliente }}</span>
+                                            <input type="hidden" name="rows[{{ day_row.day_num }}_{{ loop.index0 }}][commessa_id]" value="{{ active_commesse[0].id }}">
                                             {% else %}
-                                            <span class="text-muted">{{ session.sede_name or '-' }}</span>
-                                            <input type="hidden" name="rows[{{ day_row.day_num }}_{{ loop.index0 }}][sede_id]" value="{{ session.sede_id }}">
+                                            <span class="text-muted">N/A</span>
+                                            <input type="hidden" name="rows[{{ day_row.day_num }}_{{ loop.index0 }}][commessa_id]" value="">
                                             {% endif %}
                                         </td>
                                         
@@ -284,15 +290,19 @@
                 <input type="hidden" name="NEW_day" value="">
                 <input type="hidden" name="NEW_source" value="manual">
                 
-                {% if user_sedi|length > 1 %}
-                <select class="form-select form-select-sm" name="NEW_sede_id">
-                    {% for sede in user_sedi %}
-                    <option value="{{ sede.id }}" {% if sede.id == current_user.sede_id %}selected{% endif %}>{{ sede.name }}</option>
+                {% if active_commesse|length > 1 %}
+                <select class="form-select form-select-sm" name="NEW_commessa_id">
+                    <option value="">N/A</option>
+                    {% for commessa in active_commesse %}
+                    <option value="{{ commessa.id }}">{{ commessa.codice }} - {{ commessa.cliente }}</option>
                     {% endfor %}
                 </select>
+                {% elif active_commesse|length == 1 %}
+                <span class="text-muted">{{ active_commesse[0].codice }} - {{ active_commesse[0].cliente }}</span>
+                <input type="hidden" name="NEW_commessa_id" value="{{ active_commesse[0].id }}">
                 {% else %}
-                <span class="text-muted">{{ user_sedi[0].name if user_sedi else '-' }}</span>
-                <input type="hidden" name="NEW_sede_id" value="{{ user_sedi[0].id if user_sedi else '' }}">
+                <span class="text-muted">N/A</span>
+                <input type="hidden" name="NEW_commessa_id" value="">
                 {% endif %}
             </td>
             <td>

@@ -2684,7 +2684,8 @@ def save_month_sessions():
                 duration_hours = max(0, work_duration)
             
             # Altri campi
-            sede_id = int(row_data.get('sede_id')) if row_data.get('sede_id') else current_user.sede_id
+            sede_id = current_user.sede_id  # Usa sempre la sede principale dell'utente
+            commessa_id = int(row_data.get('commessa_id')) if row_data.get('commessa_id') else None
             attendance_type_id = int(row_data.get('attendance_type_id')) if row_data.get('attendance_type_id') else None
             
             # Update o Create
@@ -2703,6 +2704,7 @@ def save_month_sessions():
                     session.break_start_time = break_start
                     session.break_end_time = break_end
                     session.sede_id = sede_id
+                    session.commessa_id = commessa_id
                     session.attendance_type_id = attendance_type_id
                     session.duration_hours = duration_hours
                     sessions_updated += 1
@@ -2718,7 +2720,7 @@ def save_month_sessions():
                     break_start_time=break_start,
                     break_end_time=break_end,
                     sede_id=sede_id,
-                    commessa_id=None,  # TODO: gestire commesse se necessario
+                    commessa_id=commessa_id,
                     attendance_type_id=attendance_type_id,
                     duration_hours=duration_hours
                 )
