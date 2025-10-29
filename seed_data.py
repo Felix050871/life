@@ -59,6 +59,50 @@ def seed_leave_type_defaults():
         logger.error(f"Error seeding leave type defaults: {e}")
 
 
+def seed_attendance_type_reperibilita():
+    """
+    Seeds the "Reperibilità" attendance type for all companies.
+    
+    This function is called automatically at application startup to ensure
+    that companies have the "Reperibilità" attendance type available.
+    Safe to run multiple times - only creates if doesn't exist.
+    """
+    try:
+        from models import AttendanceType, Company
+        
+        # Get all companies
+        companies = Company.query.all()
+        
+        created_count = 0
+        for company in companies:
+            # Check if Reperibilità type already exists for this company
+            existing = AttendanceType.query.filter_by(
+                company_id=company.id,
+                code='REP'
+            ).first()
+            
+            if not existing:
+                # Create Reperibilità type
+                reperibilita_type = AttendanceType(
+                    name='Reperibilità',
+                    code='REP',
+                    active=True,
+                    is_default=False,
+                    company_id=company.id
+                )
+                db.session.add(reperibilita_type)
+                created_count += 1
+                logger.info(f"Created Reperibilità attendance type for company {company.name}")
+        
+        if created_count > 0:
+            db.session.commit()
+            logger.info(f"Seeded Reperibilità attendance type for {created_count} companies")
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error seeding Reperibilità attendance type: {e}")
+
+
 def seed_all():
     """
     Master seeding function that calls all individual seed functions.
@@ -66,4 +110,5 @@ def seed_all():
     """
     logger.info("Starting data seeding...")
     seed_leave_type_defaults()
+    seed_attendance_type_reperibilita()
     logger.info("Data seeding complete")

@@ -2400,6 +2400,10 @@ def my_attendance():
     # Ottieni tipologie di presenza attive
     attendance_types = filter_by_company(AttendanceType.query).filter_by(active=True).order_by(AttendanceType.is_default.desc(), AttendanceType.name).all()
     
+    # Filtra "Reperibilità" se l'utente non è abilitato
+    if not current_user.is_abilitato_reperibilita():
+        attendance_types = [at for at in attendance_types if at.code != 'REP']
+    
     # USA IL SERVICE LAYER per costruire la vista normalizzata
     from blueprints.attendance_service import build_timesheet_grid
     
