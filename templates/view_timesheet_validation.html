@@ -79,104 +79,90 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for day_data in days_data %}
-                                <tr class="{% if day_data.is_weekend %}table-secondary{% elif day_data.is_future %}table-light text-muted{% elif day_data.has_leave %}table-warning bg-opacity-25{% endif %}">
-                                    <td class="fw-bold">{{ day_data.weekday }}</td>
+                                {% for day_row in grid %}
+                                <!-- Mostra assenza se presente -->
+                                {% if day_row.leave_block %}
+                                <tr class="{{ day_row.leave_block.highlight_class }}">
+                                    <td class="fw-bold">{{ day_row.weekday_name }}</td>
                                     <td>
-                                        {{ day_data.date.strftime('%d/%m/%Y') }}
-                                        {% if day_data.is_future %}
-                                        <small class="text-muted d-block"><i class="fas fa-clock"></i> Futuro</small>
-                                        {% elif day_data.has_leave %}
+                                        {{ day_row.date_display }}
                                         <small class="text-warning d-block">
-                                            {% if 'Malattia' in day_data.leave_type %}
-                                            <i class="fas fa-thermometer-half" style="color: #fd7e14;"></i>
-                                            {% elif 'Ferie' in day_data.leave_type %}
-                                            <i class="fas fa-umbrella-beach" style="color: #28a745;"></i>
-                                            {% else %}
-                                            <i class="fas fa-clock" style="color: #6f42c1;"></i>
-                                            {% endif %}
-                                            {{ day_data.leave_type }}
+                                            <i class="fas fa-calendar-alt"></i> {{ day_row.leave_block.leave_type }}
                                         </small>
-                                        {% endif %}
                                     </td>
-                                    
-                                    <td class="text-muted">
-                                        {% if day_data.sede_id %}
-                                            {% for sede in user_sedi if sede.id == day_data.sede_id %}
-                                            {{ sede.name }}
-                                            {% endfor %}
-                                        {% else %}
-                                        -
-                                        {% endif %}
+                                    <td colspan="2" class="text-center">
+                                        <strong>{{ day_row.leave_block.leave_type }}</strong>
                                     </td>
-                                    
                                     {% if active_commesse|length > 0 %}
-                                    <td class="text-muted">
-                                        {% if day_data.commessa_id %}
-                                            {% for commessa in active_commesse if commessa.id == day_data.commessa_id %}
-                                            {{ commessa.codice }} - {{ commessa.cliente }}
-                                            {% endfor %}
+                                    <td></td>
+                                    {% endif %}
+                                    <td class="text-center">{{ day_row.leave_block.start_time or '-' }}</td>
+                                    <td class="text-center">-</td>
+                                    <td class="text-center">-</td>
+                                    <td class="text-center">{{ day_row.leave_block.end_time or '-' }}</td>
+                                    <td>
+                                        {% if day_row.leave_block.is_validated %}
+                                        <span class="badge bg-success">Assenza Validata</span>
                                         {% else %}
-                                        N/A
+                                        <span class="badge bg-warning text-dark">Assenza in Attesa</span>
                                         {% endif %}
                                     </td>
+                                </tr>
+                                {% endif %}
+                                
+                                <!-- Mostra sessioni di lavoro -->
+                                {% for session in day_row.sessions %}
+                                <tr class="{% if day_row.is_weekend %}table-secondary{% elif day_row.is_future %}table-light text-muted{% endif %}">
+                                    {% if loop.first and not day_row.leave_block %}
+                                    <td class="fw-bold">{{ day_row.weekday_name }}</td>
+                                    <td>{{ day_row.date_display }}</td>
+                                    {% else %}
+                                    <td></td>
+                                    <td></td>
                                     {% endif %}
                                     
-                                    <td class="text-muted">
-                                        {% if day_data.attendance_type_id %}
-                                            {% for type in attendance_types if type.id == day_data.attendance_type_id %}
-                                            {{ type.name }}
-                                            {% endfor %}
-                                        {% else %}
-                                        -
-                                        {% endif %}
-                                    </td>
+                                    <td class="text-muted">{{ session.sede_name or '-' }}</td>
+                                    
+                                    {% if active_commesse|length > 0 %}
+                                    <td class="text-muted">{{ session.commessa_display }}</td>
+                                    {% endif %}
+                                    
+                                    <td class="text-muted">{{ session.attendance_type_name or '-' }}</td>
                                     
                                     <td class="text-center">
-                                        {% if day_data.clock_in %}
-                                        <span class="badge bg-info">{{ day_data.clock_in }}</span>
+                                        {% if session.clock_in %}
+                                        <span class="badge bg-info">{{ session.clock_in }}</span>
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
-                                        {% if day_data.break_start %}
-                                        <span class="badge bg-warning text-dark">{{ day_data.break_start }}</span>
+                                        {% if session.break_start %}
+                                        <span class="badge bg-warning text-dark">{{ session.break_start }}</span>
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
-                                        {% if day_data.break_end %}
-                                        <span class="badge bg-warning text-dark">{{ day_data.break_end }}</span>
+                                        {% if session.break_end %}
+                                        <span class="badge bg-warning text-dark">{{ session.break_end }}</span>
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
-                                        {% if day_data.clock_out %}
-                                        <span class="badge bg-danger">{{ day_data.clock_out }}</span>
+                                        {% if session.clock_out %}
+                                        <span class="badge bg-danger">{{ session.clock_out }}</span>
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if day_data.has_leave %}
-                                        <span class="badge bg-warning text-dark" title="{{ day_data.leave_type }}">
-                                            {% if 'Malattia' in day_data.leave_type %}
-                                            <i class="fas fa-thermometer-half"></i>
-                                            {% elif 'Ferie' in day_data.leave_type %}
-                                            <i class="fas fa-umbrella-beach"></i>
-                                            {% else %}
-                                            <i class="fas fa-clock"></i>
-                                            {% endif %}
-                                            {{ day_data.leave_type }}
+                                        {% if session.source == 'auto' %}
+                                        <span class="badge bg-primary" title="Automatico da timbratura">
+                                            <i class="fas fa-robot"></i> Automatico
                                         </span>
-                                        {% elif day_data.has_live %}
-                                        <span class="badge bg-success" title="Registrato in tempo reale">
-                                            <i class="fas fa-mobile-alt"></i> Live
-                                        </span>
-                                        {% elif day_data.has_manual %}
+                                        {% elif session.source == 'manual' %}
                                         <span class="badge bg-info" title="Inserimento manuale">
                                             <i class="fas fa-keyboard"></i> Manuale
                                         </span>
@@ -187,6 +173,7 @@
                                         {% endif %}
                                     </td>
                                 </tr>
+                                {% endfor %}
                                 {% endfor %}
                             </tbody>
                         </table>
