@@ -454,6 +454,54 @@ class LeaveRequestForm(FlaskForm):
             from models import LeaveType
             return LeaveType.query.get(self.leave_type_id.data)
         return None
+    
+    def calculate_request_duration_hours(self):
+        """Calcola la durata della richiesta in ore basandosi sui dati del form"""
+        from datetime import datetime, timedelta
+        
+        # Se sono specificati orari, è un permesso orario
+        if self.start_time.data and self.end_time.data:
+            # Permesso orario
+            start_dt = datetime.combine(datetime.today(), self.start_time.data)
+            end_dt = datetime.combine(datetime.today(), self.end_time.data)
+            if end_dt < start_dt:  # Attraversa mezzanotte
+                end_dt += timedelta(days=1)
+            duration = end_dt - start_dt
+            return round(duration.total_seconds() / 3600, 2)
+        elif self.start_date.data:
+            # Permesso giornaliero - assumiamo 8 ore per giorno
+            end_date = self.end_date.data if self.end_date.data else self.start_date.data
+            days = (end_date - self.start_date.data).days + 1
+            return days * 8.0
+        
+        return 0.0
+    
+    def validate_leave_type_id(self, field):
+        """Valida che la durata della richiesta rispetti il minimo richiesto dalla tipologia"""
+        if not field.data:
+            return
+        
+        leave_type = self.get_selected_leave_type()
+        if not leave_type:
+            return
+        
+        # Se la tipologia ha un minimo di ore richiesto, verificalo
+        if leave_type.minimum_duration_hours:
+            # Calcola la durata della richiesta
+            request_duration = self.calculate_request_duration_hours()
+            
+            # Verifica che rispetti il minimo
+            if request_duration < leave_type.minimum_duration_hours:
+                if leave_type.minimum_duration_hours == int(leave_type.minimum_duration_hours):
+                    # Mostra come numero intero se non ha decimali
+                    min_hours = int(leave_type.minimum_duration_hours)
+                else:
+                    min_hours = leave_type.minimum_duration_hours
+                
+                raise ValidationError(
+                    f'La tipologia "{leave_type.name}" richiede una durata minima di {min_hours} ore. '
+                    f'La tua richiesta è di {request_duration:.1f} ore.'
+                )
 
 # =============================================================================
 # SHIFT MANAGEMENT FORMS
