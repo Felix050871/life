@@ -757,7 +757,8 @@ class User(UserMixin, db.Model):
         mansione_name = self.get_mansione_name()
         if not mansione_name:
             return None
-        # Mansione è definita nello stesso file, non serve import
+        # Importa filter_by_company solo quando serve (evita circular import)
+        from utils import filter_by_company
         return filter_by_company(Mansione.query).filter_by(nome=mansione_name, active=True).first()
     
     def is_abilitato_turnazioni(self):
