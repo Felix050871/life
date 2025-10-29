@@ -190,7 +190,7 @@
                                         {% if user_sedi|length > 1 %}
                                         <select class="form-select form-select-sm sede-select" 
                                                 id="sede_{{ day_data.day }}_{{ day_data.session_index }}"
-                                                {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
+                                                {% if not can_edit or day_data.is_future or day_data.has_live %}disabled{% endif %}
                                                 data-day="{{ day_data.day }}"
                                                 data-session-index="{{ day_data.session_index }}">
                                             {% for sede in user_sedi %}
@@ -208,7 +208,7 @@
                                     <td>
                                         <select class="form-select form-select-sm commessa-select" 
                                                 id="commessa_{{ day_data.day }}_{{ day_data.session_index }}"
-                                                {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
+                                                {% if not can_edit or day_data.is_future or day_data.has_live %}disabled{% endif %}
                                                 data-day="{{ day_data.day }}"
                                                 data-session-index="{{ day_data.session_index }}">
                                             <option value="none">N/A</option>
@@ -222,7 +222,7 @@
                                     <td>
                                         <select class="form-select form-select-sm attendance-type-select" 
                                                 id="attendance_type_{{ day_data.day }}_{{ day_data.session_index }}"
-                                                {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
+                                                {% if not can_edit or day_data.is_future or day_data.has_live %}disabled{% endif %}
                                                 data-day="{{ day_data.day }}"
                                                 data-session-index="{{ day_data.session_index }}">
                                             {% for type in attendance_types %}
@@ -236,7 +236,7 @@
                                                class="form-control form-control-sm time-input" 
                                                id="start_time_{{ day_data.day }}_{{ day_data.session_index }}" 
                                                value="{{ day_data.start_time }}"
-                                               {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
+                                               {% if not can_edit or day_data.is_future or day_data.has_live %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
                                                data-session-index="{{ day_data.session_index }}"
                                                data-type="start_time">
@@ -246,7 +246,7 @@
                                                class="form-control form-control-sm time-input" 
                                                id="end_time_{{ day_data.day }}_{{ day_data.session_index }}" 
                                                value="{{ day_data.end_time }}"
-                                               {% if not can_edit or day_data.is_future or day_data.has_leave or day_data.has_live %}disabled{% endif %}
+                                               {% if not can_edit or day_data.is_future or day_data.has_live %}disabled{% endif %}
                                                data-day="{{ day_data.day }}"
                                                data-session-index="{{ day_data.session_index }}"
                                                data-type="end_time">
@@ -270,7 +270,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if can_edit and not day_data.has_live and not day_data.is_future and not day_data.has_leave %}
+                                        {% if can_edit and not day_data.has_live and not day_data.is_future %}
                                         <button class="btn btn-sm btn-primary save-session-btn" 
                                                 data-day="{{ day_data.day }}"
                                                 data-session-index="{{ day_data.session_index }}"

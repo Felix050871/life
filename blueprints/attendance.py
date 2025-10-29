@@ -2558,6 +2558,7 @@ def my_attendance():
     # Crea set di date con ferie/permessi (include orari per permessi parziali)
     leave_dates = set()
     leave_info = {}
+    leave_times = {}  # Mantieni orari separati per usarli nelle colonne Inizio/Fine
     for leave in leaves_query:
         current_date = leave.start_date
         while current_date <= leave.end_date:
@@ -2569,6 +2570,11 @@ def my_attendance():
                 leave_display = leave_type_name
                 if leave.start_time and leave.end_time:
                     leave_display += f" ({leave.start_time.strftime('%H:%M')}-{leave.end_time.strftime('%H:%M')})"
+                    # Salva gli orari separatamente per usarli nelle colonne
+                    leave_times[current_date] = {
+                        'start_time': leave.start_time.strftime('%H:%M'),
+                        'end_time': leave.end_time.strftime('%H:%M')
+                    }
                 
                 leave_info[current_date] = leave_display
             current_date += timedelta(days=1)
@@ -2687,6 +2693,11 @@ def my_attendance():
                     clock_in_time = to_italian_time_str(event.timestamp)
                 elif event.event_type == 'clock_out':
                     clock_out_time = to_italian_time_str(event.timestamp)
+            
+            # Se il giorno ha un permesso con orari, usa quelli per Inizio/Fine
+            if day_date in leave_times:
+                clock_in_time = leave_times[day_date]['start_time']
+                clock_out_time = leave_times[day_date]['end_time']
             
             # Se l'utente ha solo una commessa, usa quella come default
             default_commessa_id = day_events.get('commessa_id')
