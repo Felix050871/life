@@ -2766,10 +2766,14 @@ def bulk_fill_sessions():
             return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
         
         # Ottieni work_schedule dell'utente
-        from models import WorkSchedule, LeaveRequest, Holiday
+        from models import WorkSchedule, LeaveRequest, Holiday, User
+        
+        # Carica esplicitamente l'utente dal database per ottenere il work_schedule_id
+        user = User.query.get(current_user.id)
+        
         work_schedule = None
-        if current_user.work_schedule_id:
-            work_schedule = WorkSchedule.query.get(current_user.work_schedule_id)
+        if user.work_schedule_id:
+            work_schedule = WorkSchedule.query.get(user.work_schedule_id)
         
         if not work_schedule:
             return jsonify({'success': False, 'message': 'Nessun orario di lavoro configurato per il tuo profilo'}), 400
