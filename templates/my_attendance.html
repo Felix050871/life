@@ -394,11 +394,18 @@ function removeRow(button) {
     
     if (row.classList.contains('new-row')) {
         // Righe nuove non salvate: rimuovi semplicemente dal DOM
+        if (!confirm('Vuoi rimuovere questa riga?\n\nQuesta operazione azzererà solo i valori inseriti (non ancora salvati). Puoi annullare questa azione ricaricando la pagina.')) {
+            return;
+        }
         row.remove();
     } else {
         // Righe salvate (manuali): marca per cancellazione
         const sessionIdInput = row.querySelector('input[name*="[session_id]"]');
         if (sessionIdInput && sessionIdInput.value) {
+            if (!confirm('Vuoi eliminare questa presenza dal database?\n\nATTENZIONE: Questa operazione eliminerà definitivamente questa registrazione quando premerai "Salva Modifiche". Sei sicuro?')) {
+                return;
+            }
+            
             // Aggiungi un campo hidden per segnalare la cancellazione
             const deleteInput = document.createElement('input');
             deleteInput.type = 'hidden';
