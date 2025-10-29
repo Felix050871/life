@@ -3677,6 +3677,14 @@ def consolidate_timesheet():
             if leave_request:
                 continue
             
+            # Controlla se ci sono sessioni manuali per quel giorno
+            manual_sessions = AttendanceSession.query.filter(
+                AttendanceSession.timesheet_id == timesheet.id,
+                AttendanceSession.user_id == current_user.id,
+                AttendanceSession.company_id == company_id,
+                AttendanceSession.date == day_date
+            ).count()
+            
             # Controlla se ci sono eventi di presenza per quel giorno (clock_in o clock_out)
             attendance_events = filter_by_company(AttendanceEvent.query).filter(
                 AttendanceEvent.user_id == current_user.id,
@@ -3684,7 +3692,8 @@ def consolidate_timesheet():
                 AttendanceEvent.event_type.in_(['clock_in', 'clock_out'])
             ).count()
             
-            if attendance_events < 2:  # Deve avere almeno entrata e uscita
+            # Se non ci sono né sessioni manuali né eventi di timbratura, il giorno è mancante
+            if manual_sessions == 0 and attendance_events < 2:
                 missing_days.append(day)
         
         if missing_days:
