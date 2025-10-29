@@ -2564,6 +2564,10 @@ def save_month_sessions():
         from models import AttendanceSession
         from datetime import time as time_obj
         
+        import logging
+        logging.info(f"=== BATCH SAVE DEBUG ===")
+        logging.info(f"Form keys: {list(request.form.keys())}")
+        
         rows_data = {}
         for key, value in request.form.items():
             if key.startswith('rows[') and '][' in key:
@@ -2575,6 +2579,8 @@ def save_month_sessions():
                     if row_key not in rows_data:
                         rows_data[row_key] = {}
                     rows_data[row_key][field_name] = value
+        
+        logging.info(f"Parsed rows_data: {rows_data}")
         
         # Processa ogni riga
         sessions_updated = 0
