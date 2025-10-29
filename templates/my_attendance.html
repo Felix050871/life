@@ -114,7 +114,13 @@
                                         <td>-</td>
                                         <td>-</td>
                                         <td>{{ day_row.leave_block.end_time or '-' }}</td>
-                                        <td>-</td>
+                                        <td class="text-center">
+                                            {% if day_row.leave_block.total_hours > 0 %}
+                                            <strong>{{ "%.1f"|format(day_row.leave_block.total_hours) }}</strong>
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             {% if day_row.leave_block.is_validated %}
                                             <span class="badge bg-success">Assenza Validata</span>

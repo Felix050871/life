@@ -12,6 +12,35 @@ from models import (
 from utils import filter_by_company
 
 
+def calculate_hours(start_time_str: Optional[str], end_time_str: Optional[str]) -> float:
+    """
+    Calcola le ore tra due orari in formato "HH:MM".
+    Returns 0.0 se uno dei due orari è None.
+    """
+    if not start_time_str or not end_time_str:
+        return 0.0
+    
+    try:
+        start_parts = start_time_str.split(':')
+        end_parts = end_time_str.split(':')
+        
+        start_hours = int(start_parts[0])
+        start_minutes = int(start_parts[1])
+        end_hours = int(end_parts[0])
+        end_minutes = int(end_parts[1])
+        
+        start_total_minutes = start_hours * 60 + start_minutes
+        end_total_minutes = end_hours * 60 + end_minutes
+        
+        diff_minutes = end_total_minutes - start_total_minutes
+        if diff_minutes < 0:  # Se attraversa la mezzanotte
+            diff_minutes += 24 * 60
+        
+        return round(diff_minutes / 60.0, 1)
+    except (ValueError, IndexError):
+        return 0.0
+
+
 @dataclass
 class LeaveBlock:
     """Rappresenta un'assenza (permesso/malattia/ferie) per un giorno"""
@@ -20,6 +49,7 @@ class LeaveBlock:
     end_time: Optional[str]    # "13:00" se permesso parziale
     is_validated: bool
     highlight_class: str  # "warning" se non validato, "" altrimenti
+    total_hours: float  # Ore totali calcolate dagli orari
 
 
 @dataclass
@@ -151,12 +181,16 @@ def build_timesheet_grid(
                     # Usa orario di fine dal work schedule su tutti i giorni
                     end_time_str = user.work_schedule.end_time_max.strftime('%H:%M')
                 
+                # Calcola le ore totali dall'orario di inizio e fine
+                total_hours = calculate_hours(start_time_str, end_time_str)
+                
                 leave_by_day[day] = LeaveBlock(
                     leave_type=leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or "Assenza"),
                     start_time=start_time_str,
                     end_time=end_time_str,
                     is_validated=(leave.status == 'Approved'),
-                    highlight_class="table-warning" if leave.status != 'Approved' else ""
+                    highlight_class="table-warning" if leave.status != 'Approved' else "",
+                    total_hours=total_hours
                 )
             current += timedelta(days=1)
     
