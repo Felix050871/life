@@ -2766,7 +2766,7 @@ def bulk_fill_sessions():
             return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
         
         # Ottieni work_schedule dell'utente
-        from models import WorkSchedule, LeaveRequest, Holiday, User
+        from models import WorkSchedule, LeaveRequest, Holiday, User, AttendanceSession
         import logging
         
         # Carica esplicitamente l'utente dal database per ottenere il work_schedule_id
