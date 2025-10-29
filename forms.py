@@ -382,6 +382,8 @@ class LeaveTypeForm(FlaskForm):
     description = TextAreaField('Descrizione', validators=[Length(max=500)])
     requires_approval = BooleanField('Richiede Autorizzazione', default=True)
     active = BooleanField('Attiva', default=True)
+    minimum_duration_hours = DecimalField('Durata Minima (ore)', validators=[Optional()], 
+                                         render_kw={'placeholder': 'Es: 4, 8, 0.5', 'step': '0.5', 'min': '0'})
     submit = SubmitField('Salva Tipologia')
     
     def __init__(self, original_code=None, *args, **kwargs):
