@@ -2767,15 +2767,21 @@ def bulk_fill_sessions():
         
         # Ottieni work_schedule dell'utente
         from models import WorkSchedule, LeaveRequest, Holiday, User
+        import logging
         
         # Carica esplicitamente l'utente dal database per ottenere il work_schedule_id
         user = User.query.get(current_user.id)
         
+        logging.debug(f"User ID: {user.id}, Username: {user.username}, Work Schedule ID: {user.work_schedule_id}")
+        
         work_schedule = None
         if user.work_schedule_id:
             work_schedule = WorkSchedule.query.get(user.work_schedule_id)
+            if work_schedule:
+                logging.debug(f"Work Schedule found: {work_schedule.name}, Start: {work_schedule.start_time_min}, End: {work_schedule.end_time_max}")
         
         if not work_schedule:
+            logging.error(f"No work schedule found for user {user.id} - work_schedule_id: {user.work_schedule_id}")
             return jsonify({'success': False, 'message': 'Nessun orario di lavoro configurato per il tuo profilo'}), 400
         
         # Calcola orari medi dal work_schedule
