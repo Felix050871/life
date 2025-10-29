@@ -2766,7 +2766,7 @@ def bulk_fill_sessions():
             return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
         
         # Ottieni work_schedule dell'utente
-        from models import WorkSchedule, LeaveRequest, Holiday, User, AttendanceSession
+        from models import WorkSchedule, LeaveRequest, Holiday, User, AttendanceSession, AttendanceType
         import logging
         
         # Carica esplicitamente l'utente dal database per ottenere il work_schedule_id
@@ -2783,6 +2783,15 @@ def bulk_fill_sessions():
         if not work_schedule:
             logging.error(f"No work schedule found for user {user.id} - work_schedule_id: {user.work_schedule_id}")
             return jsonify({'success': False, 'message': 'Nessun orario di lavoro configurato per il tuo profilo'}), 400
+        
+        # Ottieni il tipo di presenza "Ordinario" per la company
+        attendance_type_ordinario = AttendanceType.query.filter_by(
+            company_id=company_id,
+            name='Ordinario'
+        ).first()
+        
+        if not attendance_type_ordinario:
+            return jsonify({'success': False, 'message': 'Tipo di presenza "Ordinario" non trovato'}), 400
         
         # Calcola orari medi dal work_schedule
         start_min_minutes = work_schedule.start_time_min.hour * 60 + work_schedule.start_time_min.minute
@@ -2901,7 +2910,7 @@ def bulk_fill_sessions():
                 end_time=standard_end,
                 sede_id=sede_id,
                 commessa_id=None,
-                attendance_type_id=None,
+                attendance_type_id=attendance_type_ordinario.id,
                 duration_hours=standard_hours
             )
             db.session.add(session)
