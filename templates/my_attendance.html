@@ -364,10 +364,31 @@ function removeRow(button) {
     }
     
     const row = button.closest('tr');
+    
     if (row.classList.contains('new-row')) {
+        // Righe nuove non salvate: rimuovi semplicemente dal DOM
         row.remove();
     } else {
-        alert('Puoi eliminare solo le righe nuove non ancora salvate');
+        // Righe salvate (manuali): marca per cancellazione
+        const sessionIdInput = row.querySelector('input[name*="[session_id]"]');
+        if (sessionIdInput && sessionIdInput.value) {
+            // Aggiungi un campo hidden per segnalare la cancellazione
+            const deleteInput = document.createElement('input');
+            deleteInput.type = 'hidden';
+            deleteInput.name = sessionIdInput.name.replace('[session_id]', '[delete]');
+            deleteInput.value = 'true';
+            row.appendChild(deleteInput);
+            
+            // Nascondi visualmente la riga
+            row.style.opacity = '0.3';
+            row.style.textDecoration = 'line-through';
+            
+            // Disabilita il pulsante cancella
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-check"></i> Eliminata';
+            button.classList.remove('btn-danger');
+            button.classList.add('btn-secondary');
+        }
     }
 }
 

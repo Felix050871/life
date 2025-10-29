@@ -2590,10 +2590,24 @@ def save_month_sessions():
         sessions_updated = 0
         sessions_created = 0
         
+        sessions_deleted = 0
+        
         for row_key, row_data in rows_data.items():
             day = int(row_data.get('day'))
             session_id = row_data.get('session_id', '').strip()
             source = row_data.get('source', 'manual')
+            
+            # Gestisci cancellazione
+            if row_data.get('delete') == 'true' and session_id and session_id.isdigit():
+                session = AttendanceSession.query.filter_by(
+                    id=int(session_id),
+                    user_id=current_user.id,
+                    company_id=company_id
+                ).first()
+                if session:
+                    db.session.delete(session)
+                    sessions_deleted += 1
+                continue
             
             # Ignora righe vuote (senza orari)
             clock_in_str = row_data.get('clock_in', '').strip()
@@ -2709,7 +2723,19 @@ def save_month_sessions():
         
         db.session.commit()
         
-        flash(f'Salvato con successo! {sessions_updated} sessioni aggiornate, {sessions_created} nuove sessioni create.', 'success')
+        msg_parts = []
+        if sessions_updated > 0:
+            msg_parts.append(f'{sessions_updated} aggiornate')
+        if sessions_created > 0:
+            msg_parts.append(f'{sessions_created} create')
+        if sessions_deleted > 0:
+            msg_parts.append(f'{sessions_deleted} eliminate')
+        
+        if msg_parts:
+            flash(f'Salvato con successo! Sessioni: {", ".join(msg_parts)}.', 'success')
+        else:
+            flash('Nessuna modifica da salvare.', 'info')
+        
         return redirect(url_for('attendance.my_attendance', year=year, month=month))
         
     except Exception as e:

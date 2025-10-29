@@ -187,7 +187,11 @@ def build_timesheet_grid(
                     end_time_str = user_work_schedule.end_time_max.strftime('%H:%M')
                 
                 # Calcola le ore totali dall'orario di inizio e fine
+                # Se non ci sono orari espliciti, usa 8.0 ore come default per giornata intera
                 total_hours = calculate_hours(start_time_str, end_time_str)
+                if total_hours == 0.0 and not leave.start_time and not leave.end_time:
+                    # Assenza/malattia giornata intera senza orari espliciti = 8 ore
+                    total_hours = 8.0
                 
                 leave_by_day[day] = LeaveBlock(
                     leave_type=leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or "Assenza"),
@@ -282,7 +286,7 @@ def build_timesheet_grid(
                     clock_out=session.end_time.strftime('%H:%M') if session.end_time else '',
                     total_hours=session.duration_hours or 0.0,
                     source='manual',
-                    can_delete=False,  # Sessioni esistenti non eliminabili
+                    can_delete=is_editable,  # Sessioni manuali eliminabili se modificabili
                     is_editable=is_editable
                 ))
         elif events_by_day.get(day_num) and not day_sessions:
