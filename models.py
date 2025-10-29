@@ -2159,6 +2159,7 @@ class LeaveType(db.Model):
     # Gestione durate: permessi parziali vs durata minima
     allows_partial = db.Column(db.Boolean, default=True)  # Se True, permette permessi parziali (es. dalle 10:00 alle 12:00)
     minimum_duration_type = db.Column(db.String(20), default='none')  # 'none', 'half_day' (4h), 'full_day' (8h/1gg)
+    minimum_duration_hours = db.Column(db.Float, nullable=True)  # Durata minima in ore (es: 4, 8, 0.5) - sovrascrive minimum_duration_type se impostato
     
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
@@ -2176,6 +2177,18 @@ class LeaveType(db.Model):
     
     def get_duration_description(self):
         """Restituisce una descrizione leggibile delle restrizioni di durata"""
+        # Priorità al nuovo campo minimum_duration_hours se impostato
+        if self.minimum_duration_hours is not None and self.minimum_duration_hours > 0:
+            if self.minimum_duration_hours >= 8:
+                days = int(self.minimum_duration_hours / 8)
+                if self.minimum_duration_hours % 8 == 0:
+                    return f"Minimo {days} giorno{'i' if days > 1 else ''} ({int(self.minimum_duration_hours)} ore)"
+                else:
+                    return f"Minimo {self.minimum_duration_hours} ore"
+            else:
+                return f"Minimo {self.minimum_duration_hours} ore"
+        
+        # Fallback al vecchio sistema minimum_duration_type
         if self.minimum_duration_type == 'full_day':
             return "Minimo 1 giorno intero (8 ore)"
         elif self.minimum_duration_type == 'half_day':
