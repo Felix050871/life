@@ -2585,6 +2585,11 @@ def my_attendance():
         timesheet_id=timesheet.id
     ).order_by(AttendanceSession.date, AttendanceSession.start_time).all()
     
+    import logging
+    logging.info(f"Caricamento sessioni per timesheet {timesheet.id}: trovate {len(sessions_query)} sessioni")
+    for s in sessions_query:
+        logging.info(f"  Sessione ID={s.id}, date={s.date}, day={s.date.day}, start={s.start_time}, duration={s.duration_hours}")
+    
     # Organizza sessioni per giorno
     sessions_by_day = {}
     for session in sessions_query:
@@ -2655,9 +2660,14 @@ def my_attendance():
         # Se ci sono sessioni salvate per questo giorno, mostrare quelle
         day_sessions = sessions_by_day.get(day, [])
         
-        # Calcola il numero totale di righe per questo giorno
+        # Calcola il numero totale di righe EFFETTIVE per questo giorno
+        # IMPORTANTE: conta solo le righe che verranno effettivamente create
         has_leave_row = day_date in leave_times
-        total_rows_for_day = (1 if has_leave_row else 0) + len(day_sessions)
+        num_session_rows = len(day_sessions)
+        
+        # Total righe = riga permesso (se esiste) + righe sessioni effettive
+        # Se non ci sono né permessi né sessioni, serve almeno 1 riga vuota
+        total_rows_for_day = (1 if has_leave_row else 0) + num_session_rows
         if total_rows_for_day == 0:
             total_rows_for_day = 1  # Almeno una riga vuota
         
@@ -3019,6 +3029,9 @@ def add_attendance_session():
         )
         db.session.add(session)
         db.session.commit()
+        
+        import logging
+        logging.info(f"Nuova sessione creata: ID={session.id}, date={day_date}, day={day}, timesheet_id={timesheet.id}")
         
         return jsonify({
             'success': True,
