@@ -427,7 +427,35 @@ function consolidateTimesheet() {
     }
     
     showLoadingOverlay('Consolidamento in corso...');
-    window.location.href = "{{ url_for('attendance.consolidate_timesheet', year=year, month=month) }}";
+    
+    // Ottieni il token CSRF dal form
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    
+    fetch("{{ url_for('attendance.consolidate_timesheet') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            year: {{ year }},
+            month: {{ month }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoadingOverlay();
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(error => {
+        hideLoadingOverlay();
+        alert('Errore di connessione: ' + error);
+    });
 }
 
 function bulkFillTimesheet() {
