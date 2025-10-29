@@ -2652,8 +2652,17 @@ def my_attendance():
         is_weekend = day_date.weekday() >= 5
         is_future = day_date > date.today()
         
+        # Se ci sono sessioni salvate per questo giorno, mostrare quelle
+        day_sessions = sessions_by_day.get(day, [])
+        
+        # Calcola il numero totale di righe per questo giorno
+        has_leave_row = day_date in leave_times
+        total_rows_for_day = (1 if has_leave_row else 0) + len(day_sessions)
+        if total_rows_for_day == 0:
+            total_rows_for_day = 1  # Almeno una riga vuota
+        
         # Se il giorno ha un permesso con orari, mostralo SEMPRE come prima riga
-        if day_date in leave_times:
+        if has_leave_row:
             days_data.append({
                 'day': day,
                 'date': day_date,
@@ -2672,16 +2681,13 @@ def my_attendance():
                 'is_future': is_future,
                 'has_leave': True,
                 'leave_type': leave_type,
-                'total_sessions': 1,
+                'total_sessions': total_rows_for_day,
                 'is_leave_row': True  # Flag per identificare la riga del permesso
             })
         
-        # Se ci sono sessioni salvate per questo giorno, mostrare quelle
-        day_sessions = sessions_by_day.get(day, [])
-        
         if day_sessions:
             # Mostra tutte le sessioni esistenti
-            session_offset = 1 if day_date in leave_times else 0  # Offset per numerazione sessioni
+            session_offset = 1 if has_leave_row else 0  # Offset per numerazione sessioni
             for session_index, session in enumerate(day_sessions):
                 days_data.append({
                     'day': day,
@@ -2701,7 +2707,7 @@ def my_attendance():
                     'is_future': is_future,
                     'has_leave': False,  # La riga del permesso è separata
                     'leave_type': '',
-                    'total_sessions': len(day_sessions) + session_offset,
+                    'total_sessions': total_rows_for_day,
                     'is_leave_row': False
                 })
         # Se non ci sono sessioni MA non c'è nemmeno un permesso con orari, mostra riga vuota
