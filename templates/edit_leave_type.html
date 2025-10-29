@@ -37,6 +37,15 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="minimum_duration_hours" class="form-label">Durata Minima (ore)</label>
+                        <input type="number" class="form-control" id="minimum_duration_hours" name="minimum_duration_hours" 
+                               value="{{ leave_type.minimum_duration_hours or '' }}" step="0.5" min="0" placeholder="Es: 4, 8, 0.5">
+                        <small class="form-text text-muted">
+                            Durata minima richiesta in ore (lascia vuoto se non previsto). Es: 4 ore per malattia, 8 ore per ferie
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="requires_approval" 
                                    name="requires_approval" {% if leave_type.requires_approval %}checked{% endif %}>

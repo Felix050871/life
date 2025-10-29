@@ -29,6 +29,7 @@
                                     <th>Nome</th>
                                     <th>Codice</th>
                                     <th>Descrizione</th>
+                                    <th>Durata Minima</th>
                                     <th>Autorizzazione</th>
                                     <th>Stato</th>
                                     <th>Creata il</th>
@@ -46,6 +47,15 @@
                                     </td>
                                     <td>
                                         {{ leave_type.description or '-' }}
+                                    </td>
+                                    <td>
+                                        {% if leave_type.minimum_duration_hours %}
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-clock me-1"></i>{{ leave_type.minimum_duration_hours }} ore
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if leave_type.requires_approval %}
