@@ -139,17 +139,17 @@ def build_timesheet_grid(
                 if leave.start_time and current == leave.start_date:
                     # Usa orario esplicito sul primo giorno se specificato
                     start_time_str = leave.start_time.strftime('%H:%M')
-                elif user.work_schedule_obj and hasattr(user.work_schedule_obj, 'start_time_min') and user.work_schedule_obj.start_time_min:
+                elif user.work_schedule and hasattr(user.work_schedule, 'start_time_min') and user.work_schedule.start_time_min:
                     # Usa orario di inizio dal work schedule su tutti i giorni
-                    start_time_str = user.work_schedule_obj.start_time_min.strftime('%H:%M')
+                    start_time_str = user.work_schedule.start_time_min.strftime('%H:%M')
                 
                 # Orario di fine
                 if leave.end_time and current == leave.end_date:
                     # Usa orario esplicito sull'ultimo giorno se specificato
                     end_time_str = leave.end_time.strftime('%H:%M')
-                elif user.work_schedule_obj and hasattr(user.work_schedule_obj, 'end_time_max') and user.work_schedule_obj.end_time_max:
+                elif user.work_schedule and hasattr(user.work_schedule, 'end_time_max') and user.work_schedule.end_time_max:
                     # Usa orario di fine dal work schedule su tutti i giorni
-                    end_time_str = user.work_schedule_obj.end_time_max.strftime('%H:%M')
+                    end_time_str = user.work_schedule.end_time_max.strftime('%H:%M')
                 
                 leave_by_day[day] = LeaveBlock(
                     leave_type=leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or "Assenza"),
