@@ -36,6 +36,13 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="reopen-tab" data-bs-toggle="tab" data-bs-target="#reopen" type="button" role="tab">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Richieste Riapertura
+                                <span class="badge bg-danger ms-2">{{ timesheets_with_reopen_request|length }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" id="validated-tab" data-bs-toggle="tab" data-bs-target="#validated" type="button" role="tab">
                                 <i class="fas fa-check-circle me-1"></i>
                                 Validati
@@ -101,6 +108,72 @@
                             <div class="alert alert-info mb-0">
                                 <i class="fas fa-info-circle me-2"></i>
                                 Nessun timesheet consolidato da validare per l'anno {{ year_filter }}.
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Timesheets con Richieste di Riapertura -->
+                        <div class="tab-pane fade" id="reopen" role="tabpanel">
+                            {% if timesheets_with_reopen_request %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Attenzione:</strong> Questi timesheets hanno richieste di riapertura in sospeso. Non possono essere validati finché la richiesta non viene gestita.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Dipendente</th>
+                                            <th>Mese/Anno</th>
+                                            <th>Consolidato il</th>
+                                            <th>Richiesta</th>
+                                            <th class="text-end">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ts in timesheets_with_reopen_request %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ ts.user.get_full_name() }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ month_names[ts.month] }} {{ ts.year }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {{ ts.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }}<br>
+                                                <small class="text-muted">da {{ ts.consolidator.get_full_name() if ts.consolidator else 'Sistema' }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-clock"></i> In Attesa
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <!-- Visualizza Richiesta -->
+                                                    <a href="{{ url_for('attendance.timesheet_reopen_requests') }}" 
+                                                       class="btn btn-outline-warning" title="Gestisci Richiesta">
+                                                        <i class="fas fa-tasks"></i>
+                                                    </a>
+                                                    
+                                                    <!-- Visualizza Timesheet -->
+                                                    <a href="{{ url_for('attendance.view_timesheet_for_validation', timesheet_id=ts.id) }}" 
+                                                       class="btn btn-outline-primary" title="Visualizza">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Nessun timesheet con richieste di riapertura in sospeso per l'anno {{ year_filter }}.
                             </div>
                             {% endif %}
                         </div>

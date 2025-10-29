@@ -2117,7 +2117,7 @@ def reject_timesheet_reopen(request_id):
 @login_required
 def validate_timesheets():
     """Visualizza i timesheets consolidati da validare (per responsabili)"""
-    from models import MonthlyTimesheet
+    from models import MonthlyTimesheet, TimesheetReopenRequest
     from datetime import datetime
     
     # Verifica permessi
@@ -2140,12 +2140,22 @@ def validate_timesheets():
         is_validated=False
     ).order_by(MonthlyTimesheet.month.desc(), MonthlyTimesheet.user_id).all()
     
+    # Ottieni i timesheet ID con richieste di riapertura in sospeso
+    pending_reopen_requests = filter_by_company(TimesheetReopenRequest.query).filter_by(
+        status='Pending'
+    ).all()
+    timesheet_ids_with_pending_reopen = {req.timesheet_id for req in pending_reopen_requests}
+    
     # Filtra i timesheets che l'utente può validare
     if current_user.can_manage_hr_data() or current_user.role in ['Admin', 'Amministratore']:
-        timesheets_to_validate = all_timesheets
+        timesheets_filtered = all_timesheets
     else:
         # Responsabile di commessa: filtra per risorse assegnate
-        timesheets_to_validate = [ts for ts in all_timesheets if ts.can_validate(current_user)]
+        timesheets_filtered = [ts for ts in all_timesheets if ts.can_validate(current_user)]
+    
+    # Separa i timesheets con richieste di riapertura in sospeso
+    timesheets_to_validate = [ts for ts in timesheets_filtered if ts.id not in timesheet_ids_with_pending_reopen]
+    timesheets_with_reopen_request = [ts for ts in timesheets_filtered if ts.id in timesheet_ids_with_pending_reopen]
     
     # Ottieni i timesheets già validati (ultimi 50)
     all_validated = filter_by_company(MonthlyTimesheet.query).filter_by(
@@ -2173,6 +2183,7 @@ def validate_timesheets():
     
     return render_template('validate_timesheets.html',
                          timesheets_to_validate=timesheets_to_validate,
+                         timesheets_with_reopen_request=timesheets_with_reopen_request,
                          validated_timesheets=validated_timesheets,
                          year_filter=year_filter,
                          available_years=available_years,
