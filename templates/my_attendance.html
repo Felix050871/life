@@ -78,6 +78,18 @@
                         <i class="fas fa-lock me-2"></i>
                         <strong>Timesheet Consolidato</strong><br>
                         Questo timesheet è stato consolidato il {{ timesheet.consolidated_at.strftime('%d/%m/%Y alle %H:%M') }} e non può più essere modificato.
+                        
+                        {% if not has_pending_reopen_request %}
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-warning btn-sm" onclick="requestReopenTimesheet()">
+                                <i class="fas fa-unlock me-1"></i>Richiedi Riapertura
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="mt-3">
+                            <span class="badge bg-warning text-dark">Richiesta di riapertura in attesa</span>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endif %}
 
@@ -508,6 +520,39 @@ function showLoadingOverlay(message) {
 
 function hideLoadingOverlay() {
     document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function requestReopenTimesheet() {
+    const reason = prompt('Inserisci la motivazione per la richiesta di riapertura del timesheet:');
+    
+    if (!reason || reason.trim() === '') {
+        alert('Devi inserire una motivazione per richiedere la riapertura.');
+        return;
+    }
+    
+    showLoadingOverlay('Invio richiesta in corso...');
+    
+    // Ottieni il token CSRF dal form
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    
+    // Invia richiesta al server
+    fetch("{{ url_for('attendance.request_timesheet_reopen', year=year, month=month) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `csrf_token=${encodeURIComponent(csrfToken)}&reason=${encodeURIComponent(reason)}`
+    })
+    .then(response => response.text())
+    .then(html => {
+        hideLoadingOverlay();
+        alert('Richiesta di riapertura inviata con successo! Un amministratore la esaminerà a breve.');
+        window.location.reload();
+    })
+    .catch(error => {
+        hideLoadingOverlay();
+        alert('Errore durante l\'invio della richiesta: ' + error);
+    });
 }
 </script>
 {% endblock %}

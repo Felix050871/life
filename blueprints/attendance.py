@@ -2520,6 +2520,16 @@ def my_attendance():
     month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
                    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
     
+    # Verifica se c'è già una richiesta di riapertura in sospeso
+    from models import TimesheetReopenRequest
+    has_pending_reopen_request = False
+    if timesheet.is_consolidated:
+        pending_request = TimesheetReopenRequest.query.filter_by(
+            timesheet_id=timesheet.id,
+            status='Pending'
+        ).first()
+        has_pending_reopen_request = pending_request is not None
+    
     return render_template('my_attendance.html',
                          timesheet=timesheet,
                          year=year,
@@ -2529,7 +2539,8 @@ def my_attendance():
                          user_sedi=user_sedi,
                          active_commesse=active_commesse,
                          attendance_types=attendance_types,
-                         can_edit=timesheet.can_edit())
+                         can_edit=timesheet.can_edit(),
+                         has_pending_reopen_request=has_pending_reopen_request)
 
 @attendance_bp.route('/my_attendance/save_month_sessions', methods=['POST'])
 @login_required
