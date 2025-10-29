@@ -3709,14 +3709,23 @@ def consolidate_timesheet():
         # Crea AttendanceSession da AttendanceEvent prima di consolidare
         from datetime import time as time_class
         
-        # Elimina eventuali sessioni esistenti per questo timesheet (con scoping company)
-        AttendanceSession.query.filter_by(
-            timesheet_id=timesheet.id,
-            company_id=timesheet.company_id
-        ).delete()
+        # NON eliminare le sessioni manuali esistenti
+        # Elimina solo le sessioni create automaticamente dagli eventi se necessario
+        # In realtà, le sessioni manuali devono essere preservate
         
         for day in range(1, days_in_month + 1):
             day_date = date(year, month, day)
+            
+            # Controlla se ci sono già sessioni manuali per questo giorno
+            existing_manual_sessions = AttendanceSession.query.filter(
+                AttendanceSession.timesheet_id == timesheet.id,
+                AttendanceSession.company_id == timesheet.company_id,
+                AttendanceSession.date == day_date
+            ).count()
+            
+            # Se ci sono già sessioni manuali, saltale (non sovrascriverle con eventi automatici)
+            if existing_manual_sessions > 0:
+                continue
             
             # Ottieni tutti gli eventi del giorno ordinati per timestamp (usa il tenant del timesheet)
             day_events = AttendanceEvent.query.filter(
