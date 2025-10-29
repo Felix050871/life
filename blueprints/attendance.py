@@ -2573,9 +2573,13 @@ def save_month_sessions():
             if key.startswith('rows[') and '][' in key:
                 # Estrai row_key e field_name
                 # Formato: rows[DAY_INDEX][field_name]
-                parts = key.replace('rows[', '').replace(']', '').split('][')
+                # Rimuovi 'rows[' dall'inizio
+                rest = key[5:]  # Salta "rows["
+                # Splitta su ']['
+                parts = rest.split('][')
                 if len(parts) == 2:
-                    row_key, field_name = parts
+                    row_key = parts[0]
+                    field_name = parts[1].rstrip(']')  # Rimuovi ] finale
                     if row_key not in rows_data:
                         rows_data[row_key] = {}
                     rows_data[row_key][field_name] = value

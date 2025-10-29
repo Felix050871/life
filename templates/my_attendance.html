@@ -320,15 +320,21 @@ function addNewRow(day) {
     const template = document.getElementById('rowTemplate').querySelector('tr').cloneNode(true);
     const uniqueId = `new_${day}_${rowCounter++}`;
     
+    // Imposta il giorno PRIMA di modificare i nomi
+    const dayInput = template.querySelector('[name="NEW_day"]');
+    if (dayInput) {
+        dayInput.value = day;
+    }
+    
     // Aggiorna tutti i name attributes con l'ID univoco
     template.querySelectorAll('[name^="NEW_"]').forEach(input => {
         const oldName = input.getAttribute('name');
-        const newName = oldName.replace('NEW', `rows[${uniqueId}]`);
+        // NEW_session_id -> rows[uniqueId][session_id]
+        const fieldName = oldName.substring(4); // Rimuove "NEW_"
+        const newName = `rows[${uniqueId}][${fieldName}]`;
         input.setAttribute('name', newName);
     });
     
-    // Imposta il giorno
-    template.querySelector(`[name="rows[${uniqueId}][day]"]`).value = day;
     template.setAttribute('data-day', day);
     template.classList.add('can-delete');
     
