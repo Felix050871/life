@@ -2908,6 +2908,8 @@ def bulk_fill_sessions():
                 date=day_date,
                 start_time=standard_start,
                 end_time=standard_end,
+                break_start_time=break_start_time,
+                break_end_time=break_end_time,
                 sede_id=sede_id,
                 commessa_id=None,
                 attendance_type_id=attendance_type_ordinario.id,

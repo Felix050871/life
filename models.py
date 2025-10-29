@@ -2091,6 +2091,8 @@ class AttendanceSession(db.Model):
     date = db.Column(db.Date, nullable=False)
     start_time = db.Column(db.Time, nullable=True)  # Orario inizio (può essere None per assenze senza orario)
     end_time = db.Column(db.Time, nullable=True)  # Orario fine (può essere None per assenze senza orario)
+    break_start_time = db.Column(db.Time, nullable=True)  # Orario inizio pausa
+    break_end_time = db.Column(db.Time, nullable=True)  # Orario fine pausa
     duration_hours = db.Column(db.Float, nullable=False)  # Durata in ore
     attendance_type_id = db.Column(db.Integer, db.ForeignKey('attendance_type.id'), nullable=False)
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)
