@@ -2652,18 +2652,43 @@ def my_attendance():
         is_weekend = day_date.weekday() >= 5
         is_future = day_date > date.today()
         
+        # Se il giorno ha un permesso con orari, mostralo SEMPRE come prima riga
+        if day_date in leave_times:
+            days_data.append({
+                'day': day,
+                'date': day_date,
+                'weekday': weekday_italian,
+                'session_id': None,
+                'session_index': 0,
+                'start_time': leave_times[day_date]['start_time'],
+                'end_time': leave_times[day_date]['end_time'],
+                'sede_id': target_user.sede_id,
+                'commessa_id': None,
+                'attendance_type_id': default_type.id if default_type else None,
+                'duration_hours': None,
+                'has_manual': False,
+                'has_live': False,
+                'is_weekend': is_weekend,
+                'is_future': is_future,
+                'has_leave': True,
+                'leave_type': leave_type,
+                'total_sessions': 1,
+                'is_leave_row': True  # Flag per identificare la riga del permesso
+            })
+        
         # Se ci sono sessioni salvate per questo giorno, mostrare quelle
         day_sessions = sessions_by_day.get(day, [])
         
         if day_sessions:
             # Mostra tutte le sessioni esistenti
+            session_offset = 1 if day_date in leave_times else 0  # Offset per numerazione sessioni
             for session_index, session in enumerate(day_sessions):
                 days_data.append({
                     'day': day,
                     'date': day_date,
                     'weekday': weekday_italian,
                     'session_id': session.id,
-                    'session_index': session_index,
+                    'session_index': session_index + session_offset,
                     'start_time': session.start_time.strftime('%H:%M') if session.start_time else '',
                     'end_time': session.end_time.strftime('%H:%M') if session.end_time else '',
                     'sede_id': session.sede_id,
@@ -2674,11 +2699,13 @@ def my_attendance():
                     'has_live': False,
                     'is_weekend': is_weekend,
                     'is_future': is_future,
-                    'has_leave': has_leave,
-                    'leave_type': leave_type,
-                    'total_sessions': len(day_sessions)
+                    'has_leave': False,  # La riga del permesso è separata
+                    'leave_type': '',
+                    'total_sessions': len(day_sessions) + session_offset,
+                    'is_leave_row': False
                 })
-        else:
+        # Se non ci sono sessioni MA non c'è nemmeno un permesso con orari, mostra riga vuota
+        elif day_date not in leave_times:
             # Nessuna sessione salvata - mostra riga vuota per inserimento
             # Deriva i dati dagli eventi (per retrocompatibilità)
             clock_in_time = None
@@ -2693,11 +2720,6 @@ def my_attendance():
                     clock_in_time = to_italian_time_str(event.timestamp)
                 elif event.event_type == 'clock_out':
                     clock_out_time = to_italian_time_str(event.timestamp)
-            
-            # Se il giorno ha un permesso con orari, usa quelli per Inizio/Fine
-            if day_date in leave_times:
-                clock_in_time = leave_times[day_date]['start_time']
-                clock_out_time = leave_times[day_date]['end_time']
             
             # Se l'utente ha solo una commessa, usa quella come default
             default_commessa_id = day_events.get('commessa_id')
@@ -2720,9 +2742,10 @@ def my_attendance():
                 'has_live': day_events['has_live'],
                 'is_weekend': is_weekend,
                 'is_future': is_future,
-                'has_leave': has_leave,
-                'leave_type': leave_type,
-                'total_sessions': 0
+                'has_leave': has_leave and day_date not in leave_times,  # Solo se permesso senza orari
+                'leave_type': leave_type if day_date not in leave_times else '',
+                'total_sessions': 0,
+                'is_leave_row': False
             })
     
     # Nomi mesi in italiano
