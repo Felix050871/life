@@ -2745,6 +2745,163 @@ def save_month_sessions():
         flash(f'Errore durante il salvataggio: {str(e)}', 'danger')
         return redirect(url_for('attendance.my_attendance', year=year, month=month))
 
+@attendance_bp.route('/my_attendance/bulk_fill_sessions', methods=['POST'])
+@login_required
+def bulk_fill_sessions():
+    """Compilazione massiva del timesheet con orari standard dal work_schedule"""
+    if not current_user.can_access_attendance():
+        return jsonify({'success': False, 'message': 'Permessi insufficienti'}), 403
+    
+    try:
+        data = request.get_json()
+        year = int(data.get('year'))
+        month = int(data.get('month'))
+        
+        # Ottieni il timesheet mensile
+        company_id = get_user_company_id()
+        timesheet = MonthlyTimesheet.get_or_create(current_user.id, year, month, company_id)
+        
+        # Verifica se può essere modificato
+        if not timesheet.can_edit():
+            return jsonify({'success': False, 'message': 'Timesheet consolidato, non modificabile'}), 400
+        
+        # Ottieni work_schedule dell'utente
+        from models import WorkSchedule, LeaveRequest, Holiday
+        work_schedule = None
+        if current_user.work_schedule_id:
+            work_schedule = WorkSchedule.query.get(current_user.work_schedule_id)
+        
+        if not work_schedule:
+            return jsonify({'success': False, 'message': 'Nessun orario di lavoro configurato per il tuo profilo'}), 400
+        
+        # Calcola orari medi dal work_schedule
+        start_min_minutes = work_schedule.start_time_min.hour * 60 + work_schedule.start_time_min.minute
+        start_max_minutes = work_schedule.start_time_max.hour * 60 + work_schedule.start_time_max.minute
+        avg_start_minutes = (start_min_minutes + start_max_minutes) // 2
+        standard_start = time(avg_start_minutes // 60, avg_start_minutes % 60)
+        
+        end_min_minutes = work_schedule.end_time_min.hour * 60 + work_schedule.end_time_min.minute
+        end_max_minutes = work_schedule.end_time_max.hour * 60 + work_schedule.end_time_max.minute
+        avg_end_minutes = (end_min_minutes + end_max_minutes) // 2
+        standard_end = time(avg_end_minutes // 60, avg_end_minutes % 60)
+        
+        # Calcola durata ore standard
+        from datetime import datetime, timedelta as tdelta
+        start_dt = datetime.combine(date.today(), standard_start)
+        end_dt = datetime.combine(date.today(), standard_end)
+        if end_dt < start_dt:
+            end_dt += tdelta(days=1)
+        standard_hours = (end_dt - start_dt).total_seconds() / 3600
+        
+        # Ottieni range mese
+        from calendar import monthrange
+        first_day = date(year, month, 1)
+        last_day_num = monthrange(year, month)[1]
+        last_day = date(year, month, last_day_num)
+        
+        # Ottieni ferie/permessi approvati nel mese
+        leaves_query = filter_by_company(LeaveRequest.query).filter(
+            LeaveRequest.user_id == current_user.id,
+            LeaveRequest.status == 'Approved',
+            LeaveRequest.start_date <= last_day,
+            LeaveRequest.end_date >= first_day
+        ).all()
+        
+        # Crea set di date con ferie/permessi
+        leave_dates = set()
+        for leave in leaves_query:
+            current_date = leave.start_date
+            while current_date <= leave.end_date:
+                if first_day <= current_date <= last_day:
+                    leave_dates.add(current_date)
+                current_date += tdelta(days=1)
+        
+        # Ottieni festività
+        user_sedi = []
+        if hasattr(current_user, 'sedi') and current_user.sedi:
+            user_sedi = current_user.sedi
+        elif current_user.sede_obj:
+            user_sedi = [current_user.sede_obj]
+        
+        user_sede_ids = [s.id for s in user_sedi] if user_sedi else []
+        holidays_query = Holiday.query.filter_by(month=month, active=True)
+        if user_sede_ids:
+            from sqlalchemy import or_
+            holidays_query = holidays_query.filter(
+                or_(Holiday.sede_id.in_(user_sede_ids), Holiday.sede_id.is_(None))
+            )
+        else:
+            holidays_query = holidays_query.filter(Holiday.sede_id.is_(None))
+        
+        holidays = holidays_query.all()
+        holiday_days = {h.day for h in holidays}
+        
+        # Ottieni sessioni già esistenti
+        existing_sessions = AttendanceSession.query.filter_by(
+            timesheet_id=timesheet.id
+        ).all()
+        
+        days_with_sessions = {s.date.day for s in existing_sessions}
+        
+        # Compila automaticamente
+        filled_count = 0
+        today = date.today()
+        sede_id = current_user.sede_id or (user_sedi[0].id if user_sedi else None)
+        
+        for day in range(1, last_day_num + 1):
+            day_date = date(year, month, day)
+            
+            # Salta se:
+            # - Giorno futuro
+            # - Weekend
+            # - Ha ferie/permessi
+            # - Ha già sessioni
+            # - È festività
+            if day_date > today:
+                continue
+            if day_date.weekday() >= 5:  # Weekend
+                continue
+            if day_date in leave_dates:
+                continue
+            if day in days_with_sessions:
+                continue
+            if day in holiday_days:
+                continue
+            
+            # Verifica se il giorno è nei days_of_week del work_schedule
+            if work_schedule.days_of_week and day_date.weekday() not in work_schedule.days_of_week:
+                continue
+            
+            # Crea nuova sessione
+            session = AttendanceSession(
+                timesheet_id=timesheet.id,
+                user_id=current_user.id,
+                company_id=company_id,
+                date=day_date,
+                start_time=standard_start,
+                end_time=standard_end,
+                sede_id=sede_id,
+                commessa_id=None,
+                attendance_type_id=None,
+                duration_hours=standard_hours
+            )
+            db.session.add(session)
+            filled_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Compilazione completata: {filled_count} giorni compilati automaticamente',
+            'filled_count': filled_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Errore compilazione massiva: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
+
 @attendance_bp.route('/my_attendance/save_session', methods=['POST'])
 @login_required
 def save_attendance_session():

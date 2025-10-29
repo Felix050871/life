@@ -56,11 +56,14 @@
                         </div>
                         <div class="col-md-6 text-end">
                             {% if can_edit %}
+                            <button type="button" class="btn btn-info me-2" onclick="bulkFillTimesheet()">
+                                <i class="fas fa-magic me-1"></i>Compila Automaticamente
+                            </button>
                             <button type="button" class="btn btn-success" onclick="saveAllSessions()">
                                 <i class="fas fa-save me-1"></i>Salva Tutto
                             </button>
                             {% if not timesheet.is_consolidated %}
-                            <button type="button" class="btn btn-warning" onclick="consolidateTimesheet()">
+                            <button type="button" class="btn btn-warning ms-2" onclick="consolidateTimesheet()">
                                 <i class="fas fa-lock me-1"></i>Consolida Timesheet
                             </button>
                             {% endif %}
@@ -413,6 +416,44 @@ function consolidateTimesheet() {
     
     showLoadingOverlay('Consolidamento in corso...');
     window.location.href = "{{ url_for('attendance.consolidate_timesheet', year=year, month=month) }}";
+}
+
+function bulkFillTimesheet() {
+    if (!CAN_EDIT) {
+        alert('Timesheet consolidato, non modificabile');
+        return;
+    }
+    
+    if (!confirm('Compilare automaticamente tutti i giorni vuoti con gli orari standard del tuo orario di lavoro?\n\nVerranno saltati: weekend, festività, giorni con assenze approvate e giorni già compilati.')) {
+        return;
+    }
+    
+    showLoadingOverlay('Compilazione automatica in corso...');
+    
+    fetch("{{ url_for('attendance.bulk_fill_sessions') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            year: {{ year }},
+            month: {{ month }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoadingOverlay();
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(error => {
+        hideLoadingOverlay();
+        alert('Errore di connessione: ' + error);
+    });
 }
 
 function showLoadingOverlay(message) {
