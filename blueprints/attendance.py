@@ -2785,13 +2785,22 @@ def bulk_fill_sessions():
         avg_end_minutes = (end_min_minutes + end_max_minutes) // 2
         standard_end = time(avg_end_minutes // 60, avg_end_minutes % 60)
         
-        # Calcola durata ore standard
+        # Imposta pausa pranzo standard (13:00-14:00)
+        break_start_time = time(13, 0)
+        break_end_time = time(14, 0)
+        
+        # Calcola durata ore standard (considerando la pausa)
         from datetime import datetime, timedelta as tdelta
         start_dt = datetime.combine(date.today(), standard_start)
         end_dt = datetime.combine(date.today(), standard_end)
         if end_dt < start_dt:
             end_dt += tdelta(days=1)
-        standard_hours = (end_dt - start_dt).total_seconds() / 3600
+        
+        total_work_time = (end_dt - start_dt).total_seconds() / 3600
+        
+        # Sottrai pausa pranzo (1 ora)
+        break_duration = 1.0
+        standard_hours = total_work_time - break_duration
         
         # Ottieni range mese
         from calendar import monthrange
