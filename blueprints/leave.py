@@ -489,6 +489,15 @@ def add_leave_type_page():
             requires_approval = 'requires_approval' in request.form
             active_status = 'active' in request.form
             
+            # Gestione durata minima
+            minimum_duration_hours = request.form.get('minimum_duration_hours', '').strip()
+            min_hours_value = None
+            if minimum_duration_hours:
+                try:
+                    min_hours_value = float(minimum_duration_hours)
+                except ValueError:
+                    min_hours_value = None
+            
             # Verifica duplicati per codice
             if filter_by_company(LeaveType.query).filter_by(code=code).first():
                 flash('Esiste già una tipologia con questo codice', 'warning')
@@ -499,7 +508,8 @@ def add_leave_type_page():
                 name=name,
                 description=description,
                 requires_approval=requires_approval,
-                active=active_status
+                active=active_status,
+                minimum_duration_hours=min_hours_value
             )
             
             set_company_on_create(leave_type)
@@ -536,11 +546,21 @@ def edit_leave_type_page(id):
                 flash('Esiste già una tipologia con questo codice', 'warning')
                 return render_template('edit_leave_type.html', leave_type=leave_type)
             
+            # Gestione durata minima
+            minimum_duration_hours = request.form.get('minimum_duration_hours', '').strip()
+            min_hours_value = None
+            if minimum_duration_hours:
+                try:
+                    min_hours_value = float(minimum_duration_hours)
+                except ValueError:
+                    min_hours_value = None
+            
             leave_type.code = code
             leave_type.name = name
             leave_type.description = request.form.get('description')
             leave_type.requires_approval = 'requires_approval' in request.form
             leave_type.active = 'active' in request.form
+            leave_type.minimum_duration_hours = min_hours_value
             leave_type.updated_at = italian_now()
             
             db.session.commit()
