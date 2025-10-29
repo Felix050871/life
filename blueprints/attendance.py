@@ -2280,7 +2280,7 @@ def view_timesheet_for_validation(timesheet_id):
         LeaveRequest.end_date >= first_day
     ).all()
     
-    # Crea set di date con ferie/permessi
+    # Crea set di date con ferie/permessi (include orari per permessi parziali)
     leave_dates = set()
     leave_info = {}
     for leave in leaves_query:
@@ -2289,7 +2289,13 @@ def view_timesheet_for_validation(timesheet_id):
             if first_day <= current_date <= last_day:
                 leave_dates.add(current_date)
                 leave_type_name = leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or 'Permesso')
-                leave_info[current_date] = leave_type_name
+                
+                # Aggiungi orari se presenti (permessi parziali)
+                leave_display = leave_type_name
+                if leave.start_time and leave.end_time:
+                    leave_display += f" ({leave.start_time.strftime('%H:%M')}-{leave.end_time.strftime('%H:%M')})"
+                
+                leave_info[current_date] = leave_display
             current_date += timedelta(days=1)
     
     # Organizza eventi per giorno
@@ -2549,7 +2555,7 @@ def my_attendance():
         LeaveRequest.end_date >= first_day
     ).all()
     
-    # Crea set di date con ferie/permessi
+    # Crea set di date con ferie/permessi (include orari per permessi parziali)
     leave_dates = set()
     leave_info = {}
     for leave in leaves_query:
@@ -2558,7 +2564,13 @@ def my_attendance():
             if first_day <= current_date <= last_day:
                 leave_dates.add(current_date)
                 leave_type_name = leave.leave_type_obj.name if leave.leave_type_obj else (leave.leave_type or 'Permesso')
-                leave_info[current_date] = leave_type_name
+                
+                # Aggiungi orari se presenti (permessi parziali)
+                leave_display = leave_type_name
+                if leave.start_time and leave.end_time:
+                    leave_display += f" ({leave.start_time.strftime('%H:%M')}-{leave.end_time.strftime('%H:%M')})"
+                
+                leave_info[current_date] = leave_display
             current_date += timedelta(days=1)
     
     # Carica AttendanceSession esistenti per questo timesheet (se non consolidato, mostra sessioni manuali)
@@ -2941,16 +2953,8 @@ def add_attendance_session():
         if day_date > date.today():
             return jsonify({'success': False, 'message': 'Non è possibile inserire sessioni per giorni futuri'}), 400
         
-        # Blocca inserimenti su giorni con ferie/permessi
-        existing_leave = filter_by_company(LeaveRequest.query).filter(
-            LeaveRequest.user_id == current_user.id,
-            LeaveRequest.status.in_(['Approved', 'Pending']),
-            LeaveRequest.start_date <= day_date,
-            LeaveRequest.end_date >= day_date
-        ).first()
-        
-        if existing_leave:
-            return jsonify({'success': False, 'message': 'Giorno con ferie/permesso/malattia'}), 400
+        # NON blocchiamo più l'aggiunta di sessioni su giorni con permessi
+        # Questo permette permessi parziali (es: 4h permesso + 4h presenza)
         
         # Ottieni default values
         default_sede_id = current_user.sede_id
@@ -2959,7 +2963,7 @@ def add_attendance_session():
             active=True
         ).first()
         
-        # Crea nuova sessione vuota
+        # Crea nuova sessione vuota - duration_hours=0 perché il campo è NOT NULL
         from models import AttendanceSession
         session = AttendanceSession(
             timesheet_id=timesheet.id,
@@ -2971,7 +2975,7 @@ def add_attendance_session():
             sede_id=default_sede_id,
             commessa_id=None,
             attendance_type_id=default_type.id if default_type else None,
-            duration_hours=None
+            duration_hours=0.0
         )
         db.session.add(session)
         db.session.commit()
