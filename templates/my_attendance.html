@@ -3,6 +3,20 @@
 {% block title %}Le Mie Presenze - {{ month_name }} {{ year }}{% endblock %}
 
 {% block content %}
+<style>
+.empty-day {
+    border-left: 4px solid #ff9800 !important;
+    background-color: #fff3cd !important;
+}
+.empty-day td:first-child::before {
+    content: '\f071 ';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: #ff9800;
+    margin-right: 5px;
+}
+</style>
+
 <!-- Overlay di caricamento -->
 <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
     <div class="text-center">
@@ -157,7 +171,7 @@
                                     
                                     <!-- Mostra sessioni di lavoro -->
                                     {% for session in day_row.sessions %}
-                                    <tr class="session-row {% if day_row.is_weekend %}table-secondary{% elif day_row.is_holiday %}table-info{% endif %}" 
+                                    <tr class="session-row {% if day_row.is_weekend %}table-secondary{% elif day_row.is_holiday %}table-info{% elif session.source == 'empty' and day_row.is_editable %}table-warning empty-day{% endif %}" 
                                         data-day="{{ day_row.day_num }}" 
                                         data-row-index="{{ loop.index0 }}">
                                         <!-- Giorno e Data solo sulla prima riga se non c'è assenza -->
@@ -264,7 +278,7 @@
                                     
                                     <!-- Se non ci sono sessioni E non c'è assenza, mostra riga vuota per giorni lavorativi -->
                                     {% if not day_row.sessions and not day_row.leave_block and not day_row.is_weekend and not day_row.is_holiday %}
-                                    <tr class="session-row" data-day="{{ day_row.day_num }}">
+                                    <tr class="session-row table-warning empty-day" data-day="{{ day_row.day_num }}">
                                         <td>{{ day_row.weekday_name }}</td>
                                         <td>{{ day_row.date_display }}</td>
                                         <td colspan="7" class="text-center text-muted">
