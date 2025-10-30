@@ -111,17 +111,21 @@
                                 <span class="badge bg-warning">Nessun Admin</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="me-2">{{ stat.active_users }}/{{ stat.company.max_licenses }}</div>
-                                    <div class="progress flex-grow-1" style="height: 20px; width: 100px;">
+                            <td style="min-width: 180px;">
+                                <div>
+                                    <div class="mb-1">
+                                        <strong>{{ stat.active_users }}/{{ stat.company.max_licenses }}</strong>
+                                        <span class="badge {% if stat.usage_percent >= 90 %}bg-danger{% elif stat.usage_percent >= 70 %}bg-warning{% else %}bg-success{% endif %} ms-1">
+                                            {{ stat.usage_percent }}%
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
                                         <div class="progress-bar {% if stat.usage_percent >= 90 %}bg-danger{% elif stat.usage_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" 
                                              role="progressbar" 
                                              style="width: {{ stat.usage_percent }}%"
                                              aria-valuenow="{{ stat.usage_percent }}" 
                                              aria-valuemin="0" 
                                              aria-valuemax="100">
-                                            {{ stat.usage_percent }}%
                                         </div>
                                     </div>
                                 </div>
