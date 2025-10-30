@@ -56,52 +56,52 @@
 
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white">Gestione Sistema</h6>
+                                <div class="card h-100">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0">Gestione Sistema</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_users() }}
-                                            {{ form.can_manage_users.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_users.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_roles() }}
-                                            {{ form.can_manage_roles.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_roles.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_manage_sedi() }}
-                                            {{ form.can_manage_sedi.label(class="form-check-label text-white") }}
+                                            {{ form.can_manage_sedi.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_view_reports() }}
-                                            {{ form.can_view_reports.label(class="form-check-label text-white") }}
+                                            {{ form.can_view_reports.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="card bg-dark text-white h-100" style="background-color: #212529 !important;">
-                                    <div class="card-header py-2" style="background-color: #343a40 !important;">
-                                        <h6 class="mb-0 text-white">Operazioni Quotidiane</h6>
+                                <div class="card h-100">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0">Operazioni Quotidiane</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             {{ form.can_access_dashboard() }}
-                                            {{ form.can_access_dashboard.label(class="form-check-label text-white") }}
+                                            {{ form.can_access_dashboard.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_access_attendance() }}
-                                            {{ form.can_access_attendance.label(class="form-check-label text-white") }}
+                                            {{ form.can_access_attendance.label(class="form-check-label") }}
                                         </div>
 
                                         <div class="form-check mb-2">
                                             {{ form.can_approve_leave() }}
-                                            {{ form.can_approve_leave.label(class="form-check-label text-white") }}
+                                            {{ form.can_approve_leave.label(class="form-check-label") }}
                                         </div>
                                         <div class="form-check mb-2">
                                             {{ form.can_request_leave() }}
-                                            {{ form.can_request_leave.label(class="form-check-label text-white") }}
+                                            {{ form.can_request_leave.label(class="form-check-label") }}
                                         </div>
                                     </div>
                                 </div>
