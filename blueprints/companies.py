@@ -158,7 +158,6 @@ def create_company():
             slug = code.lower().strip()
         
         # Validate slug format (alphanumeric and hyphens only)
-        import re
         if not re.match(r'^[a-z0-9-]+$', slug):
             flash('Lo slug può contenere solo lettere minuscole, numeri e trattini', 'danger')
             return redirect(url_for('companies.create_company'))
