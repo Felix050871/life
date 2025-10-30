@@ -15,7 +15,7 @@ import os
 import re
 
 # Local imports
-from models import Company, User, Sede
+from models import Company, User, Sede, UserRole
 from app import db
 
 # =============================================================================
@@ -76,6 +76,27 @@ def save_company_file(file, company_code, file_type):
         # Return relative path for database
         return f"uploads/companies/{new_filename}"
     return None
+
+def create_default_admin_role(company_id):
+    """Create default Amministratore role with full permissions for a new company"""
+    # Get all available permissions from UserRole model
+    all_permissions = UserRole.get_available_permissions()
+    
+    # Create permissions dict with all permissions set to True
+    admin_permissions = {perm: True for perm in all_permissions.keys()}
+    
+    # Create Amministratore role
+    admin_role = UserRole(
+        name='Amministratore',
+        display_name='Amministratore',
+        description='Amministratore del sistema con accesso completo a tutte le funzionalità',
+        permissions=admin_permissions,
+        active=True,
+        company_id=company_id
+    )
+    
+    db.session.add(admin_role)
+    return admin_role
 
 # =============================================================================
 # COMPANIES CRUD ROUTES
@@ -211,6 +232,10 @@ def create_company():
             
             db.session.add(company)
             db.session.flush()  # Get company.id without committing
+            
+            # Create default Amministratore role with full permissions for this company
+            create_default_admin_role(company.id)
+            db.session.flush()  # Ensure role is created before admin user
             
             # Split full name into first and last name
             name_parts = admin_full_name.strip().split(' ', 1)
