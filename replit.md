@@ -11,6 +11,14 @@ The platform aims to reduce bureaucracy, enhance productivity, and foster corpor
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (October 31, 2025)
+- **Critical Multi-Tenant Security Fixes**: Addressed multiple violations of tenant isolation in `blueprints/user_management.py` and `blueprints/auth.py`:
+  - Added `filter_by_company()` to all database queries in `_delete_user_cascade()` function to prevent cross-tenant data deletion during user removal (GDPR compliance).
+  - Added `filter_by_company()` to all statistics queries in `_collect_user_personal_data()` to ensure personal data exports are properly scoped to the user's company.
+  - Enhanced password reset flow in `forgot_password()` and `reset_password()` to properly handle tenant context while maintaining functionality for email-based reset links.
+  - Fixed group membership deletion to properly scope by company using CircleGroup filtering.
+- **Security Audit Completed**: Comprehensive review of multi-tenant isolation across all core modules confirmed proper `company_id` scoping throughout the system.
+
 ## System Architecture
 
 ### Core Technologies
