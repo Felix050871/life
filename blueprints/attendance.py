@@ -1354,6 +1354,21 @@ def consolidate_manual_timesheet():
         
         # Consolida
         if timesheet.consolidate(current_user.id):
+            # Invia notifica interna all'utente
+            try:
+                from message_utils import notify_timesheet_consolidated
+                notify_timesheet_consolidated(
+                    user=current_user,
+                    year=year,
+                    month=month,
+                    consolidator=current_user,
+                    company_id=company_id
+                )
+                db.session.commit()
+            except Exception as e:
+                import logging
+                logging.error(f"Errore invio notifica consolidamento: {str(e)}")
+            
             return jsonify({'success': True, 'message': 'Timesheet consolidato con successo'})
         else:
             return jsonify({'success': False, 'message': 'Timesheet già consolidato'}), 400
@@ -2218,6 +2233,21 @@ def validate_timesheet(timesheet_id):
         
         # Valida il timesheet
         if timesheet.validate(current_user.id):
+            # Invia notifica interna all'utente
+            try:
+                from message_utils import notify_timesheet_validated
+                notify_timesheet_validated(
+                    user=timesheet.user,
+                    year=timesheet.year,
+                    month=timesheet.month,
+                    validator=current_user,
+                    company_id=timesheet.company_id
+                )
+                db.session.commit()
+            except Exception as e:
+                import logging
+                logging.error(f"Errore invio notifica validazione: {str(e)}")
+            
             flash(f'Timesheet di {timesheet.user.get_full_name()} per {timesheet.month}/{timesheet.year} validato con successo', 'success')
         else:
             flash('Impossibile validare questo timesheet', 'danger')
@@ -3744,6 +3774,21 @@ def consolidate_timesheet():
         timesheet.consolidated_by_id = current_user.id
         
         db.session.commit()
+        
+        # Invia notifica interna all'utente
+        try:
+            from message_utils import notify_timesheet_consolidated
+            notify_timesheet_consolidated(
+                user=current_user,
+                year=year,
+                month=month,
+                consolidator=current_user,
+                company_id=get_user_company_id()
+            )
+            db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Errore invio notifica consolidamento: {str(e)}")
         
         return jsonify({'success': True, 'message': 'Timesheet consolidato con successo'})
         
