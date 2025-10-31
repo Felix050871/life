@@ -167,7 +167,13 @@ def forgot_password():
     form = ForgotPasswordForm()
     
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        # Multi-tenant isolation: cerca solo nella company corrente
+        tenant_company = get_tenant_company()
+        if not tenant_company:
+            flash('Contesto tenant non valido', 'danger')
+            return redirect(url_for('auth.login'))
+        
+        user = User.query.filter_by(email=form.email.data, company_id=tenant_company.id).first()
         if user:
             # Invalida token precedenti
             old_tokens = PasswordResetToken.query.filter_by(user_id=user.id, used=False).all()
@@ -207,8 +213,16 @@ def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.dashboard'))
     
-    # Trova il token
-    reset_token = PasswordResetToken.query.filter_by(token=token).first()
+    # Multi-tenant isolation: verifica tenant e cerca token
+    tenant_company = get_tenant_company()
+    if not tenant_company:
+        flash('Contesto tenant non valido', 'danger')
+        return redirect(url_for('auth.login'))
+    
+    # Trova il token per la company corrente
+    reset_token = PasswordResetToken.query.filter_by(token=token).join(User).filter(
+        User.company_id == tenant_company.id
+    ).first()
     
     # Controlla se il token esiste, non è scaduto e non è già stato usato
     if not reset_token or reset_token.is_expired or reset_token.used:
