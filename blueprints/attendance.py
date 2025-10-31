@@ -2006,6 +2006,36 @@ def request_timesheet_reopen(year, month):
             db.session.add(reopen_request)
             db.session.commit()
             
+            # Invia notifica ai manager/HR che possono approvare la richiesta
+            try:
+                from message_utils import notify_timesheet_reopen_request_created
+                from models import User
+                
+                # Trova tutti gli utenti con permessi per approvare richieste di riapertura
+                managers = filter_by_company(User.query).filter(
+                    User.active.is_(True)
+                ).all()
+                
+                # Filtra solo quelli che hanno i permessi
+                managers_with_permission = [
+                    m for m in managers 
+                    if m.can_manage_hr_data() or m.can_manage_commesse() or m.role in ['Admin', 'Amministratore']
+                ]
+                
+                if managers_with_permission:
+                    notify_timesheet_reopen_request_created(
+                        managers=managers_with_permission,
+                        requester=current_user,
+                        year=year,
+                        month=month,
+                        reason=reason,
+                        company_id=current_user.company_id
+                    )
+                    db.session.commit()
+            except Exception as e:
+                import logging
+                logging.error(f"Errore invio notifica richiesta riapertura: {str(e)}")
+            
             flash('Richiesta di riapertura inviata con successo. Attendi l\'approvazione.', 'success')
             return redirect(url_for('attendance.my_attendance', year=year, month=month))
             
@@ -2079,6 +2109,21 @@ def approve_timesheet_reopen(request_id):
         review_notes = request.form.get('review_notes', '').strip()
         
         if reopen_request.approve(current_user.id, review_notes):
+            # Invia notifica al richiedente
+            try:
+                from message_utils import notify_timesheet_reopen_approved
+                notify_timesheet_reopen_approved(
+                    requester=reopen_request.requester,
+                    year=reopen_request.timesheet.year,
+                    month=reopen_request.timesheet.month,
+                    approver=current_user,
+                    company_id=reopen_request.company_id
+                )
+                db.session.commit()
+            except Exception as e:
+                import logging
+                logging.error(f"Errore invio notifica approvazione riapertura: {str(e)}")
+            
             flash('Richiesta approvata e timesheet riaperto con successo', 'success')
         else:
             flash('Impossibile approvare questa richiesta', 'danger')
@@ -2115,6 +2160,22 @@ def reject_timesheet_reopen(request_id):
             return redirect(url_for('attendance.timesheet_reopen_requests'))
         
         if reopen_request.reject(current_user.id, review_notes):
+            # Invia notifica al richiedente
+            try:
+                from message_utils import notify_timesheet_reopen_rejected
+                notify_timesheet_reopen_rejected(
+                    requester=reopen_request.requester,
+                    year=reopen_request.timesheet.year,
+                    month=reopen_request.timesheet.month,
+                    approver=current_user,
+                    rejection_reason=review_notes,
+                    company_id=reopen_request.company_id
+                )
+                db.session.commit()
+            except Exception as e:
+                import logging
+                logging.error(f"Errore invio notifica rifiuto riapertura: {str(e)}")
+            
             flash('Richiesta rifiutata', 'success')
         else:
             flash('Impossibile rifiutare questa richiesta', 'danger')
