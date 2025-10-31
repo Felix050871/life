@@ -18,6 +18,11 @@ Preferred communication style: Simple, everyday language.
   - Enhanced password reset flow in `forgot_password()` and `reset_password()` to properly handle tenant context while maintaining functionality for email-based reset links.
   - Fixed group membership deletion to properly scope by company using CircleGroup filtering.
 - **Security Audit Completed**: Comprehensive review of multi-tenant isolation across all core modules confirmed proper `company_id` scoping throughout the system.
+- **Code Quality Improvements**: 
+  - Created centralized `constants.py` file for system-wide constants to replace hardcoded values
+  - Defined constant classes for: RoleNames, RequestStatus, TimesheetStatus, AttendanceEventType, OvertimeTypes, CirclePostType, GroupMembershipStatus, PriorityLevel, DefaultConfig, ValidationMessage, SuccessMessage, ErrorMessage
+  - Updated critical role checks in `models.py` to use `RoleNames` constants instead of hardcoded strings
+  - Established foundation for gradual adoption of constants across the codebase
 
 ## System Architecture
 
