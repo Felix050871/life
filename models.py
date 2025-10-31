@@ -25,6 +25,7 @@ from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 from flask_login import UserMixin
 from app import db
+from constants import RoleNames, RequestStatus, TimesheetStatus, AttendanceEventType, OvertimeTypes
 
 
 # =============================================================================
@@ -366,7 +367,7 @@ class User(UserMixin, db.Model):
     def _legacy_permissions(self, permission):
         """Permessi legacy per retrocompatibilità - saranno rimossi quando tutti i ruoli avranno permessi"""
         # Admin ha tutti i permessi per default
-        if self.role == 'Admin':
+        if self.role == RoleNames.ADMIN:
             return True
         return False
     
@@ -1967,8 +1968,8 @@ class MonthlyTimesheet(db.Model):
     
     def can_validate(self, user):
         """Verifica se l'utente può validare questo timesheet"""
-        # Admin/Amministratore possono validare tutto
-        if user.role in ['Admin', 'Amministratore']:
+        # Admin possono validare tutto
+        if user.role == RoleNames.ADMIN:
             return True
         
         # Responsabili HR possono validare tutto
@@ -2050,8 +2051,8 @@ class TimesheetReopenRequest(db.Model):
     
     def can_approve(self, user):
         """Verifica se l'utente può approvare questa richiesta"""
-        # SOLO Admin/Amministratore e chi ha can_manage_hr_data possono approvare richieste di riapertura
-        return (user.role in ['Admin', 'Amministratore'] or user.can_manage_hr_data())
+        # SOLO Admin e chi ha can_manage_hr_data possono approvare richieste di riapertura
+        return (user.role == RoleNames.ADMIN or user.can_manage_hr_data())
     
     def approve(self, reviewer_id, notes=None):
         """Approva la richiesta e riapre il timesheet"""

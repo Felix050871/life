@@ -6,8 +6,8 @@ Defines all system-wide constants to avoid hardcoded values
 # =============================================================================
 # USER ROLES
 # =============================================================================
-class UserRole:
-    """User role constants"""
+class RoleNames:
+    """User role name constants"""
     SUPERADMIN = 'SUPERADMIN'
     ADMIN = 'ADMIN'
     HR = 'HR'
@@ -81,8 +81,8 @@ class AttendanceEventType:
 # =============================================================================
 # OVERTIME TYPES
 # =============================================================================
-class OvertimeType:
-    """Overtime type constants"""
+class OvertimeTypes:
+    """Overtime type name constants"""
     PAID = 'Straordinario Pagato'
     TIME_BANK = 'Banca Ore'
     
