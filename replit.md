@@ -31,6 +31,7 @@ The platform features a modern, responsive dark-themed Bootstrap design. It incl
 - **Mileage Reimbursement System**: Manages requests and calculates distances using ACI tables with manager approval workflows.
 - **Data Export**: Supports CSV to Excel (.xlsx) conversion.
 - **Multi-Tenant Email System**: Hybrid SMTP architecture supporting global and per-company email configurations, with encrypted SMTP passwords.
+- **Internal Notification System**: Centralized messaging system (`message_utils.py`) for workflow notifications. Sends internal messages to users for timesheet consolidation/validation, timesheet reopen requests (new request alerts managers, approval/rejection notifies requester), leave request approvals/rejections, and mileage reimbursement approvals/rejections. All notifications are multi-tenant isolated with proper permission-based recipient targeting.
 - **Password Security**: Enforces strong password requirements.
 - **Platform News Management**: Dynamic content management system for a global news section, managed by SUPERADMINs.
 - **Database**: Exclusively designed for PostgreSQL. Uses db.create_all() for schema creation with automatic data seeding (seed_data.py) for default values.
