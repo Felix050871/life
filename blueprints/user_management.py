@@ -749,72 +749,79 @@ def _delete_user_cascade(user_id):
         raise ValueError("Utente non trovato")
     
     # 1. Delete attendance events
-    AttendanceEvent.query.filter_by(user_id=user_id).delete()
+    filter_by_company(AttendanceEvent.query).filter_by(user_id=user_id).delete()
     
     # 2. Delete leave requests (both as requester and approver)
-    LeaveRequest.query.filter_by(user_id=user_id).delete()
-    LeaveRequest.query.filter_by(approved_by=user_id).update({LeaveRequest.approved_by: None})
+    filter_by_company(LeaveRequest.query).filter_by(user_id=user_id).delete()
+    filter_by_company(LeaveRequest.query).filter_by(approved_by=user_id).update({LeaveRequest.approved_by: None})
     
     # 3. Delete shifts (both assigned and created)
-    Shift.query.filter_by(user_id=user_id).delete()
-    Shift.query.filter_by(created_by=user_id).delete()
+    filter_by_company(Shift.query).filter_by(user_id=user_id).delete()
+    filter_by_company(Shift.query).filter_by(created_by=user_id).delete()
     
     # 4. Delete shift templates created by user
-    ShiftTemplate.query.filter_by(created_by=user_id).delete()
+    filter_by_company(ShiftTemplate.query).filter_by(created_by=user_id).delete()
     
     # 5. Delete reperibilità shifts and templates
     filter_by_company(ReperibilitaShift.query).filter_by(user_id=user_id).delete()
     filter_by_company(ReperibilitaShift.query).filter_by(created_by=user_id).delete()
-    ReperibilitaTemplate.query.filter_by(created_by=user_id).delete()
+    filter_by_company(ReperibilitaTemplate.query).filter_by(created_by=user_id).delete()
     filter_by_company(ReperibilitaIntervention.query).filter_by(user_id=user_id).delete()
     
     # 6. Delete general interventions
-    Intervention.query.filter_by(user_id=user_id).delete()
+    filter_by_company(Intervention.query).filter_by(user_id=user_id).delete()
     
     # 7. Update holidays (set created_by to NULL instead of delete)
-    Holiday.query.filter_by(created_by=user_id).update({Holiday.created_by: None})
+    filter_by_company(Holiday.query).filter_by(created_by=user_id).update({Holiday.created_by: None})
     
     # 8. Delete internal messages (received and sent)
-    InternalMessage.query.filter_by(recipient_id=user_id).delete()
-    InternalMessage.query.filter_by(sender_id=user_id).delete()
+    filter_by_company(InternalMessage.query).filter_by(recipient_id=user_id).delete()
+    filter_by_company(InternalMessage.query).filter_by(sender_id=user_id).delete()
     
     # 9. Delete password reset tokens
-    PasswordResetToken.query.filter_by(user_id=user_id).delete()
+    filter_by_company(PasswordResetToken.query).filter_by(user_id=user_id).delete()
     
     # 10. Delete expense reports and categories
-    ExpenseReport.query.filter_by(employee_id=user_id).delete()
-    ExpenseReport.query.filter_by(approved_by=user_id).update({ExpenseReport.approved_by: None})
-    ExpenseCategory.query.filter_by(created_by=user_id).delete()
+    filter_by_company(ExpenseReport.query).filter_by(employee_id=user_id).delete()
+    filter_by_company(ExpenseReport.query).filter_by(approved_by=user_id).update({ExpenseReport.approved_by: None})
+    filter_by_company(ExpenseCategory.query).filter_by(created_by=user_id).delete()
     
     # 11. Delete overtime and mileage requests
-    OvertimeRequest.query.filter_by(employee_id=user_id).delete()
-    OvertimeRequest.query.filter_by(approved_by=user_id).update({OvertimeRequest.approved_by: None})
-    MileageRequest.query.filter_by(user_id=user_id).delete()
-    MileageRequest.query.filter_by(approved_by=user_id).update({MileageRequest.approved_by: None})
+    filter_by_company(OvertimeRequest.query).filter_by(employee_id=user_id).delete()
+    filter_by_company(OvertimeRequest.query).filter_by(approved_by=user_id).update({OvertimeRequest.approved_by: None})
+    filter_by_company(MileageRequest.query).filter_by(user_id=user_id).delete()
+    filter_by_company(MileageRequest.query).filter_by(approved_by=user_id).update({MileageRequest.approved_by: None})
     
     # 12. Delete CIRCLE social content
-    # Delete likes and comments first (FK constraints) - NO filter needed (isolated by FK)
-    CircleLike.query.filter_by(user_id=user_id).delete()
-    CircleComment.query.filter_by(author_id=user_id).delete()
+    # Delete likes and comments first (FK constraints)
+    filter_by_company(CircleLike.query).filter_by(user_id=user_id).delete()
+    filter_by_company(CircleComment.query).filter_by(author_id=user_id).delete()
     
     # Delete posts
     filter_by_company(CirclePost.query).filter_by(author_id=user_id).delete()
     
     # 13. Delete poll votes
-    CirclePollVote.query.filter_by(user_id=user_id).delete()
+    filter_by_company(CirclePollVote.query).filter_by(user_id=user_id).delete()
     
     # 14. Handle groups (leave groups, delete created groups)
-    # Remove from group memberships
-    db.session.execute(
-        circle_group_members.delete().where(circle_group_members.c.user_id == user_id)
-    )
+    # Remove from group memberships (usando filter_by_company su CircleGroup per isolamento)
+    groups_to_clean = filter_by_company(CircleGroup.query).filter(
+        circle_group_members.c.user_id == user_id
+    ).all()
+    for group in groups_to_clean:
+        db.session.execute(
+            circle_group_members.delete().where(
+                (circle_group_members.c.user_id == user_id) & 
+                (circle_group_members.c.group_id == group.id)
+            )
+        )
     filter_by_company(CircleGroup.query).filter_by(creator_id=user_id).delete()
-    CircleGroupMembershipRequest.query.filter_by(user_id=user_id).delete()
-    CircleGroupMembershipRequest.query.filter_by(reviewed_by=user_id).update({CircleGroupMembershipRequest.reviewed_by: None})
+    filter_by_company(CircleGroupMembershipRequest.query).filter_by(user_id=user_id).delete()
+    filter_by_company(CircleGroupMembershipRequest.query).filter_by(reviewed_by=user_id).update({CircleGroupMembershipRequest.reviewed_by: None})
     
-    # 15. Delete group messages - NO filter needed (isolated by group_id FK)
-    CircleGroupMessage.query.filter_by(sender_id=user_id).delete()
-    CircleGroupMessage.query.filter_by(recipient_id=user_id).delete()
+    # 15. Delete group messages
+    filter_by_company(CircleGroupMessage.query).filter_by(sender_id=user_id).delete()
+    filter_by_company(CircleGroupMessage.query).filter_by(recipient_id=user_id).delete()
     
     # 16. Delete documents uploaded by user
     filter_by_company(CircleDocument.query).filter_by(uploader_id=user_id).delete()
@@ -827,13 +834,13 @@ def _delete_user_cascade(user_id):
     polls = filter_by_company(CirclePoll.query).filter_by(creator_id=user_id).all()
     for poll in polls:
         from models import CirclePollOption
-        CirclePollOption.query.filter_by(poll_id=poll.id).delete()
-        CirclePollVote.query.filter_by(poll_id=poll.id).delete()
+        filter_by_company(CirclePollOption.query).filter_by(poll_id=poll.id).delete()
+        filter_by_company(CirclePollVote.query).filter_by(poll_id=poll.id).delete()
     filter_by_company(CirclePoll.query).filter_by(creator_id=user_id).delete()
     
     # 19. Update presidio coverage (set created_by to NULL)
-    PresidioCoverage.query.filter_by(created_by=user_id).update({PresidioCoverage.created_by: None})
-    PresidioCoverageTemplate.query.filter_by(created_by=user_id).update({PresidioCoverageTemplate.created_by: None})
+    filter_by_company(PresidioCoverage.query).filter_by(created_by=user_id).update({PresidioCoverage.created_by: None})
+    filter_by_company(PresidioCoverageTemplate.query).filter_by(created_by=user_id).update({PresidioCoverageTemplate.created_by: None})
     
     # 20. Finally, delete the user
     db.session.delete(user)
@@ -877,16 +884,16 @@ def _collect_user_personal_data(user_id):
             'banca_ore_saldo': user.banca_ore_saldo,
         },
         'statistics': {
-            'total_attendance_events': AttendanceEvent.query.filter_by(user_id=user_id).count(),
-            'total_leave_requests': LeaveRequest.query.filter_by(user_id=user_id).count(),
-            'total_shifts': Shift.query.filter_by(user_id=user_id).count(),
+            'total_attendance_events': filter_by_company(AttendanceEvent.query).filter_by(user_id=user_id).count(),
+            'total_leave_requests': filter_by_company(LeaveRequest.query).filter_by(user_id=user_id).count(),
+            'total_shifts': filter_by_company(Shift.query).filter_by(user_id=user_id).count(),
             'total_reperibilita_shifts': filter_by_company(ReperibilitaShift.query).filter_by(user_id=user_id).count(),
-            'total_interventions': Intervention.query.filter_by(user_id=user_id).count(),
-            'total_messages_received': InternalMessage.query.filter_by(recipient_id=user_id).count(),
-            'total_messages_sent': InternalMessage.query.filter_by(sender_id=user_id).count(),
-            'total_expense_reports': ExpenseReport.query.filter_by(employee_id=user_id).count(),
-            'total_overtime_requests': OvertimeRequest.query.filter_by(employee_id=user_id).count(),
-            'total_mileage_requests': MileageRequest.query.filter_by(user_id=user_id).count(),
+            'total_interventions': filter_by_company(Intervention.query).filter_by(user_id=user_id).count(),
+            'total_messages_received': filter_by_company(InternalMessage.query).filter_by(recipient_id=user_id).count(),
+            'total_messages_sent': filter_by_company(InternalMessage.query).filter_by(sender_id=user_id).count(),
+            'total_expense_reports': filter_by_company(ExpenseReport.query).filter_by(employee_id=user_id).count(),
+            'total_overtime_requests': filter_by_company(OvertimeRequest.query).filter_by(employee_id=user_id).count(),
+            'total_mileage_requests': filter_by_company(MileageRequest.query).filter_by(user_id=user_id).count(),
             'total_circle_posts': filter_by_company(CirclePost.query).filter_by(author_id=user_id).count(),
             'total_circle_polls': filter_by_company(CirclePoll.query).filter_by(creator_id=user_id).count(),
             'total_circle_documents': filter_by_company(CircleDocument.query).filter_by(uploader_id=user_id).count(),
