@@ -168,12 +168,16 @@ def forgot_password():
     
     if form.validate_on_submit():
         # Multi-tenant isolation: cerca solo nella company corrente
+        # Se non c'è tenant context, cerca comunque l'utente per mandare email con il link corretto
         tenant_company = get_tenant_company()
-        if not tenant_company:
-            flash('Contesto tenant non valido', 'danger')
-            return redirect(url_for('auth.login'))
         
-        user = User.query.filter_by(email=form.email.data, company_id=tenant_company.id).first()
+        if tenant_company:
+            # Se siamo in un contesto tenant, cerca solo in quella company
+            user = User.query.filter_by(email=form.email.data, company_id=tenant_company.id).first()
+        else:
+            # Altrimenti cerca l'utente per trovare la sua company
+            user = User.query.filter_by(email=form.email.data).first()
+        
         if user:
             # Invalida token precedenti
             old_tokens = PasswordResetToken.query.filter_by(user_id=user.id, used=False).all()
@@ -213,16 +217,9 @@ def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.dashboard'))
     
-    # Multi-tenant isolation: verifica tenant e cerca token
-    tenant_company = get_tenant_company()
-    if not tenant_company:
-        flash('Contesto tenant non valido', 'danger')
-        return redirect(url_for('auth.login'))
-    
-    # Trova il token per la company corrente
-    reset_token = PasswordResetToken.query.filter_by(token=token).join(User).filter(
-        User.company_id == tenant_company.id
-    ).first()
+    # Multi-tenant isolation: trova il token e verifica che appartenga a un utente valido
+    # Il token stesso identifica univocamente l'utente e la sua company
+    reset_token = PasswordResetToken.query.filter_by(token=token).first()
     
     # Controlla se il token esiste, non è scaduto e non è già stato usato
     if not reset_token or reset_token.is_expired or reset_token.used:
