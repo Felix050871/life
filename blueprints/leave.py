@@ -294,6 +294,20 @@ def approve_leave_request(request_id):
             # Continua anche se l'email fallisce
             print(f"Errore invio email approvazione: {str(e)}")
         
+        # Invia notifica interna al richiedente
+        try:
+            from message_utils import notify_leave_request_approved
+            from utils_tenant import get_user_company_id
+            notify_leave_request_approved(
+                leave_request=leave_request,
+                approver=current_user,
+                company_id=get_user_company_id()
+            )
+            db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Errore invio notifica interna approvazione assenza: {str(e)}")
+        
         # Determina il tipo per il messaggio
         leave_type_name = 'ferie/permesso'
         if leave_request.leave_type_obj:
@@ -347,6 +361,21 @@ def reject_leave_request(request_id):
         except Exception as e:
             # Continua anche se l'email fallisce
             print(f"Errore invio email rifiuto: {str(e)}")
+        
+        # Invia notifica interna al richiedente
+        try:
+            from message_utils import notify_leave_request_rejected
+            from utils_tenant import get_user_company_id
+            notify_leave_request_rejected(
+                leave_request=leave_request,
+                approver=current_user,
+                rejection_reason=rejection_reason,
+                company_id=get_user_company_id()
+            )
+            db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Errore invio notifica interna rifiuto assenza: {str(e)}")
         
         # Determina il tipo per il messaggio
         leave_type_name = 'ferie/permesso'
