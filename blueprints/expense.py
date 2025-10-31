@@ -959,6 +959,22 @@ def approve_mileage_request(request_id):
         except ImportError:
             mileage_request.approved_at = datetime.now()
         
+        db.session.commit()
+        
+        # Invia notifica interna al richiedente
+        try:
+            from message_utils import notify_mileage_request_approved
+            from utils_tenant import get_user_company_id
+            notify_mileage_request_approved(
+                mileage_request=mileage_request,
+                approver=current_user,
+                company_id=get_user_company_id()
+            )
+            db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Errore invio notifica approvazione rimborso km: {str(e)}")
+        
         flash('Richiesta di rimborso chilometrico approvata con successo!', 'success')
     elif action == 'reject':
         if not comment:
@@ -974,19 +990,27 @@ def approve_mileage_request(request_id):
         except ImportError:
             mileage_request.approved_at = datetime.now()
         
+        db.session.commit()
+        
+        # Invia notifica interna al richiedente
+        try:
+            from message_utils import notify_mileage_request_rejected
+            from utils_tenant import get_user_company_id
+            notify_mileage_request_rejected(
+                mileage_request=mileage_request,
+                approver=current_user,
+                rejection_reason=comment,
+                company_id=get_user_company_id()
+            )
+            db.session.commit()
+        except Exception as e:
+            import logging
+            logging.error(f"Errore invio notifica rifiuto rimborso km: {str(e)}")
+        
         flash('Richiesta di rimborso chilometrico rifiutata.', 'success')
     else:
         flash('Azione non valida.', 'danger')
         return redirect(url_for('expense.mileage_requests'))
-    
-    db.session.commit()
-    
-    # Invia notifica automatica all'utente (se la funzione esiste)
-    try:
-        from utils import send_mileage_request_message
-        send_mileage_request_message(mileage_request, action, current_user)
-    except ImportError:
-        pass  # Funzione di notifica non disponibile
     
     return redirect(url_for('expense.mileage_requests'))
 
