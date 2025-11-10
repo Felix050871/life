@@ -114,13 +114,31 @@
                     <div class="mt-4 p-3 bg-dark border rounded">
                         <h6 class="mb-2 text-light">
                             <i class="fas fa-info-circle me-2"></i>
-                            Informazioni Export Excel
+                            Informazioni Export
                         </h6>
-                        <small class="text-light">
-                            Il file Excel conterrà un foglio separato per ogni timesheet validato, 
-                            con tutti i dettagli giornalieri delle presenze (entrate, uscite, pause, ore lavorate, straordinari, note).
-                            Il file includerà tutti i {{ validated_timesheets|length }} timesheets visualizzati nella tabella sopra.
-                        </small>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-warning mb-2">
+                                    <i class="fas fa-file-excel me-1"></i>
+                                    Export Excel
+                                </h6>
+                                <small class="text-light">
+                                    Il file Excel conterrà un foglio separato per ogni timesheet validato, 
+                                    con tutti i dettagli giornalieri delle presenze (entrate, uscite, pause, ore lavorate, straordinari, note).
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-info mb-2">
+                                    <i class="fas fa-file-code me-1"></i>
+                                    Export XML
+                                </h6>
+                                <small class="text-light">
+                                    Il file XML sarà formattato secondo lo standard di fornitura presenze, 
+                                    con un elemento Dipendente per ogni utente contenente tutti i movimenti giornalieri 
+                                    (ore lavorate per tipologia e giustificativi). Utilizza i codici azienda e dipendente configurati.
+                                </small>
+                            </div>
+                        </div>
                     </div>
 
                     {% else %}
