@@ -928,7 +928,7 @@ def hr_export():
         'COD SI', 'Cognome', 'Nome',  'Data Assunzione', 'Data Fine Rapporto',
         'Tipologia Contratto', 'Fornitore', 'P.IVA', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 
         'Orario (h/sett.)', 'Tipologia Orario', '% Part Time', 'Tipo Part Time',
-        'Sede di Assunzione', 'Cliente', 'Superminimo/SM Assorbibile', 'Rimborsi/Diarie',
+        'Sede di Assunzione', 'Accesso Tutte Sedi', 'Orario Lavoro', 'Superminimo/SM Assorbibile', 'Rimborsi/Diarie',
         'Ticket', 'Rischio INAIL', 'Tipo di Assunzione', 'Altro/Note',
         # ANAGRAFICA RISORSA
         'Titolo di Studio', 'Luogo di Nascita', 'Data di Nascita', 'Età', 'Sesso', 'C.F.',
@@ -978,7 +978,8 @@ def hr_export():
             str(hr_data.part_time_percentage).replace('.', ',') if hr_data and hr_data.part_time_percentage else '',
             hr_data.part_time_type if hr_data else '',
             hr_data.sede.name if hr_data and hr_data.sede else '',
-            hr_data.cliente if hr_data else '',
+            'Sì' if hr_data and hr_data.all_sedi else 'No' if hr_data else '',
+            hr_data.work_schedule.name if hr_data and hr_data.work_schedule else '',
             str(hr_data.superminimo).replace('.', ',') if hr_data and hr_data.superminimo else '',
             str(hr_data.rimborsi_diarie).replace('.', ',') if hr_data and hr_data.rimborsi_diarie else '',
             'Sì' if hr_data and hr_data.ticket_restaurant else 'No' if hr_data else '',
