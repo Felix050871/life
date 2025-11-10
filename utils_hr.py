@@ -237,6 +237,7 @@ def sync_operational_fields(user, hr_data):
     - banca_ore_limite_max
     - banca_ore_periodo_mesi
     - aci_vehicle (aci_vehicle_id)
+    - matricola (formattato da cod_si_number a 7 cifre)
     
     Args:
         user (User): Modello User da aggiornare
@@ -268,5 +269,11 @@ def sync_operational_fields(user, hr_data):
     user.overtime_type = hr_data.overtime_type
     user.banca_ore_limite_max = hr_data.banca_ore_limite_max
     user.banca_ore_periodo_mesi = hr_data.banca_ore_periodo_mesi
+    
+    # Sincronizza matricola (formatta cod_si_number a 7 cifre per export XML)
+    if hr_data.cod_si_number is not None:
+        user.matricola = f"{hr_data.cod_si_number:07d}"
+    else:
+        user.matricola = None
     
     # Non facciamo commit qui - sarà fatto dal chiamante

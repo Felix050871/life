@@ -17,6 +17,7 @@ Preferred communication style: Simple, everyday language.
   - Created `export_validated_timesheets_xml` route in attendance blueprint
   - XML export follows standard fornitura presenze format with Dipendente/Movimenti structure
   - Uses company.code as CodAziendaUfficiale and user.matricola as CodDipendenteUfficiale
+  - Matricola is synced from UserHRData.cod_si_number (7-digit formatted) via sync_operational_fields()
   - Aggregates daily hours by attendance type/leave type with cod_giustificativo mapping
   - Added Export XML button alongside Export Excel in export UI (templates/export_validated_timesheets.html)
   - Database migration executed successfully (add_xml_export_fields.sql)
