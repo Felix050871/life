@@ -462,7 +462,6 @@ def hr_detail(user_id):
             hr_data.ccnl_level = request.form.get('ccnl_level', '').strip() or None
             hr_data.mansione = request.form.get('mansione', '').strip() or None
             hr_data.qualifica = request.form.get('qualifica', '').strip() or None
-            hr_data.cliente = request.form.get('cliente', '').strip() or None
             hr_data.rischio_inail = request.form.get('rischio_inail', '').strip() or None
             hr_data.tipo_assunzione = request.form.get('tipo_assunzione', '').strip() or None
             hr_data.ticket_restaurant = request.form.get('ticket_restaurant') == 'on'
@@ -600,6 +599,24 @@ def hr_detail(user_id):
                     hr_data.sede_id = None
             else:
                 hr_data.sede_id = None
+            
+            # Accesso a tutte le sedi
+            hr_data.all_sedi = request.form.get('all_sedi') == 'on'
+            
+            # Orario di lavoro assegnato
+            work_schedule_id_str = request.form.get('work_schedule_id', '').strip()
+            if work_schedule_id_str:
+                work_schedule_id = int(work_schedule_id_str)
+                # Verifica che l'orario appartenga alla company dell'utente
+                from models import WorkSchedule
+                schedule = filter_by_company(WorkSchedule.query).filter_by(id=work_schedule_id).first()
+                if schedule:
+                    hr_data.work_schedule_id = work_schedule_id
+                else:
+                    flash('Orario di lavoro non valido per questa azienda', 'warning')
+                    hr_data.work_schedule_id = None
+            else:
+                hr_data.work_schedule_id = None
             
             aci_vehicle_id_str = request.form.get('aci_vehicle_id', '').strip()
             if aci_vehicle_id_str:
@@ -785,12 +802,21 @@ def hr_detail(user_id):
     from models import Mansione
     mansioni = filter_by_company(Mansione.query).filter_by(active=True).order_by(Mansione.nome).all()
     
+    # Carica lista sedi per il dropdown
+    sedi = filter_by_company(Sede.query).order_by(Sede.name).all()
+    
+    # Carica lista orari di lavoro per il dropdown
+    from models import WorkSchedule
+    work_schedules = filter_by_company(WorkSchedule.query).filter_by(active=True).order_by(WorkSchedule.name).all()
+    
     return render_template('hr_detail.html', 
                          user=user, 
                          hr_data=hr_data,
                          can_edit=can_edit,
                          aci_vehicles=aci_vehicles,
-                         mansioni=mansioni)
+                         mansioni=mansioni,
+                         sedi=sedi,
+                         work_schedules=work_schedules)
 
 
 @hr_bp.route('/export')
