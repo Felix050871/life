@@ -144,24 +144,7 @@
                             <option value="inactive">Solo inattivi</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <select id="filterSede" class="form-select">
-                            <option value="">Tutte le sedi</option>
-                            <option value="all_sedi">Accesso totale</option>
-                            {% if users %}
-                                {% set sede_names = [] %}
-                                {% for user in users %}
-                                    {% if user.sede_obj and user.sede_obj.name not in sede_names %}
-                                        {% set _ = sede_names.append(user.sede_obj.name) %}
-                                    {% endif %}
-                                {% endfor %}
-                                {% for sede_name in sede_names|sort %}
-                                    <option value="{{ sede_name }}">{{ sede_name }}</option>
-                                {% endfor %}
-                            {% endif %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
+                    <div class="col-md-4">
                         <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100">
                             <i class="fas fa-times me-1"></i>Cancella
                         </button>
@@ -182,15 +165,9 @@
                                     Ruolo <i class="fas fa-sort ms-1"></i>
                                 </th>
                                 <th class="sortable" data-column="3">
-                                    Sedi <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th class="sortable" data-column="4">
-                                    Orario <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th class="sortable" data-column="5">
                                     Stato <i class="fas fa-sort ms-1"></i>
                                 </th>
-                                <th class="sortable" data-column="6">
+                                <th class="sortable" data-column="4">
                                     Registrato <i class="fas fa-sort ms-1"></i>
                                 </th>
                                 <th>Azioni</th>
@@ -230,26 +207,6 @@
                                     <span class="badge bg-secondary">{{ user.role }}</span>
                                     {% else %}
                                     <span class="badge bg-dark">{{ user.role }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if user.all_sedi %}
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-globe me-1"></i>Tutte le sedi
-                                        </span>
-                                    {% elif user.sede_obj %}
-                                        <span class="badge bg-secondary">{{ user.sede_obj.name }}</span>
-                                    {% else %}
-                                        <span class="text-muted">Nessuna sede</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if user.work_schedule %}
-                                        <span class="badge bg-info">
-                                            <i class="fas fa-clock me-1"></i>{{ user.work_schedule.name }}
-                                        </span>
-                                    {% else %}
-                                        <span class="text-muted">Nessun orario</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -385,7 +342,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchUsers');
         const roleFilter = document.getElementById('filterRole');
         const statusFilter = document.getElementById('filterStatus');
-        const sedeFilter = document.getElementById('filterSede');
         const clearButton = document.getElementById('clearFilters');
 
         if (!searchInput) return; // Exit if elements not found
@@ -394,7 +350,6 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('input', filterTable);
         roleFilter.addEventListener('change', filterTable);
         statusFilter.addEventListener('change', filterTable);
-        sedeFilter.addEventListener('change', filterTable);
         clearButton.addEventListener('click', clearAllFilters);
     }
 
@@ -413,7 +368,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchTerm = document.getElementById('searchUsers').value.toLowerCase();
         const roleFilter = document.getElementById('filterRole').value;
         const statusFilter = document.getElementById('filterStatus').value;
-        const sedeFilter = document.getElementById('filterSede').value;
         
         const table = document.getElementById('usersTable');
         const rows = table.querySelectorAll('tbody tr');
@@ -428,8 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const userName = cells[0].textContent.toLowerCase();
             const userEmail = cells[1].textContent.toLowerCase();
             const userRole = cells[2].textContent.trim();
-            const userSede = cells[3].textContent.trim();
-            const userStatus = cells[7].textContent.trim();
+            const userStatus = cells[3].textContent.trim();
             
             // Search filter
             const matchesSearch = searchTerm === '' || 
@@ -447,16 +400,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 matchesStatus = userStatus.includes('Inattivo');
             }
             
-            // Sede filter
-            let matchesSede = true;
-            if (sedeFilter === 'all_sedi') {
-                matchesSede = userSede.includes('Tutte le sedi');
-            } else if (sedeFilter !== '') {
-                matchesSede = userSede.includes(sedeFilter);
-            }
-            
             // Show/hide row
-            if (matchesSearch && matchesRole && matchesStatus && matchesSede) {
+            if (matchesSearch && matchesRole && matchesStatus) {
                 row.style.display = '';
                 visibleCount++;
             } else {
@@ -540,7 +485,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('searchUsers').value = '';
         document.getElementById('filterRole').value = '';
         document.getElementById('filterStatus').value = '';
-        document.getElementById('filterSede').value = '';
         
         // Reset sort direction
         sortDirection = {};
