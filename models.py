@@ -254,6 +254,7 @@ class User(UserMixin, db.Model):
     all_sedi = db.Column(db.Boolean, default=False)  # True se l'utente può accedere a tutte le sedi
     work_schedule_id = db.Column(db.Integer, db.ForeignKey('work_schedule.id'), nullable=True)  # Orario di lavoro specifico
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
+    matricola = db.Column(db.String(7), nullable=True)  # Codice dipendente per export XML (es: 0000001)
     active = db.Column(db.Boolean, default=True)  # Renamed to avoid UserMixin conflict
     part_time_percentage = db.Column(db.Float, default=100.0)  # Percentuale di lavoro: 100% = tempo pieno, 50% = metà tempo, ecc.
     overtime_enabled = db.Column(db.Boolean, default=False)  # True se l'utente è abilitato a fare straordinari
