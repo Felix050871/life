@@ -15,8 +15,9 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 from functools import wraps
 from app import db
-from models import User, UserHRData, ACITable, Sede
+from models import User, UserHRData, ACITable, Sede, WorkSchedule
 from utils_tenant import filter_by_company, set_company_on_create
+from utils_hr import assign_cod_si
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -394,6 +395,15 @@ def hr_detail(user_id):
         hr_data = UserHRData(user_id=user.id, company_id=user.company_id)
         set_company_on_create(hr_data)
         db.session.add(hr_data)
+        
+        # Assegna COD SI auto-incrementato
+        try:
+            assign_cod_si(hr_data)
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Errore durante l\'assegnazione del COD SI: {str(e)}', 'error')
+            return redirect(url_for('hr.hr_list'))
+        
         db.session.commit()
     elif not hr_data:
         # Per utenti read-only, crea oggetto vuoto non persistito
@@ -961,7 +971,7 @@ def hr_export():
         
         row_data = [
             # DATI CONTRATTUALI
-            hr_data.matricola if hr_data else '',
+            hr_data.cod_si or hr_data.matricola if hr_data else '',
             user.last_name,
             user.first_name,
             hr_data.hire_date.strftime('%d/%m/%Y') if hr_data and hr_data.hire_date else '',

@@ -28,10 +28,19 @@
             <!-- Riga 1: Matricola, Tipo Contratto, Data Assunzione, Data Fine -->
             <div class="row">
                 <div class="col-md-3 mb-3">
-                    <label class="form-label fw-bold">Matricola (COD SI)</label>
-                    <input type="text" name="matricola" class="form-control" 
-                           value="{{ hr_data.matricola or '' }}" 
-                           {% if not can_edit %}disabled{% endif %}>
+                    <label class="form-label fw-bold">COD SI (Matricola)</label>
+                    <input type="text" class="form-control font-monospace" 
+                           value="{{ hr_data.cod_si or hr_data.matricola or 'Non assegnato' }}" 
+                           disabled style="background-color: #e9ecef;">
+                    <small class="text-muted d-block mt-1">
+                        {% if hr_data.cod_si %}
+                        <i class="fas fa-check-circle text-success"></i> Assegnato automaticamente
+                        {% elif hr_data.matricola %}
+                        <i class="fas fa-exclamation-triangle text-warning"></i> Legacy: {{ hr_data.matricola }}
+                        {% else %}
+                        <i class="fas fa-info-circle text-info"></i> Verrà assegnato alla creazione
+                        {% endif %}
+                    </small>
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Tipologia Contratto</label>
