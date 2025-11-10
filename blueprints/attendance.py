@@ -4465,9 +4465,9 @@ def export_validated_timesheets_xml():
         year_filter = int(request.form.get('year', datetime.now().year))
         month_filter = request.form.get('month', 'all')
         
-        # Ottieni company con codice azienda ufficiale
+        # Ottieni company
         company = Company.query.get(current_user.company_id)
-        cod_azienda = company.cod_azienda_ufficiale or '000000'
+        cod_azienda = company.code  # Usa il codice azienda (es: NS12, ATMH)
         
         # Query base: tutti i timesheets validati
         query = filter_by_company(MonthlyTimesheet.query).filter_by(

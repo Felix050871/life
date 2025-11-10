@@ -3554,7 +3554,6 @@ class Company(db.Model):
     max_licenses = db.Column(db.Integer, default=10, nullable=False)  # Numero massimo di licenze/utenti attivi
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
-    cod_azienda_ufficiale = db.Column(db.String(10), nullable=True)  # Codice azienda per export XML (es: 000004)
     
     # Relazioni
     users = db.relationship('User', back_populates='company', lazy='dynamic')

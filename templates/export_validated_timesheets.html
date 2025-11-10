@@ -47,15 +47,25 @@
                             {% endif %}
                         </div>
                         
-                        <!-- Pulsante Export Excel -->
-                        <form method="POST" action="{{ url_for('attendance.export_validated_timesheets_excel') }}" style="display:inline;">
-                            <input type="hidden" name="year" value="{{ year_filter }}">
-                            <input type="hidden" name="month" value="{{ month_filter }}">
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-file-excel me-2"></i>
-                                Esporta in Excel
-                            </button>
-                        </form>
+                        <!-- Pulsanti Export -->
+                        <div class="btn-group">
+                            <form method="POST" action="{{ url_for('attendance.export_validated_timesheets_excel') }}" style="display:inline;">
+                                <input type="hidden" name="year" value="{{ year_filter }}">
+                                <input type="hidden" name="month" value="{{ month_filter }}">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-file-excel me-2"></i>
+                                    Esporta Excel
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('attendance.export_validated_timesheets_xml') }}" style="display:inline;">
+                                <input type="hidden" name="year" value="{{ year_filter }}">
+                                <input type="hidden" name="month" value="{{ month_filter }}">
+                                <button type="submit" class="btn btn-primary ms-2">
+                                    <i class="fas fa-file-code me-2"></i>
+                                    Esporta XML
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Tabella Timesheets Validati -->
