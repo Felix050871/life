@@ -475,15 +475,7 @@ def new_user():
             role=form.role.data,
             first_name=form.first_name.data,
             last_name=form.last_name.data,
-            all_sedi=form.all_sedi.data,
-            sede_id=form.sede.data if not form.all_sedi.data else None,
-            work_schedule_id=form.work_schedule.data,
-            aci_vehicle_id=form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None,
             part_time_percentage=form.get_part_time_percentage_as_float(),
-            overtime_enabled=form.overtime_enabled.data,
-            overtime_type=form.overtime_type.data if form.overtime_enabled.data else None,
-            banca_ore_limite_max=form.get_banca_ore_limite_max_as_float(),
-            banca_ore_periodo_mesi=form.get_banca_ore_periodo_mesi_as_int(),
             active=form.active.data
         )
         set_company_on_create(user)
@@ -513,45 +505,6 @@ def edit_user(user_id):
     form = UserForm(original_username=user.username, is_edit=True, obj=user)
     
     if request.method == 'GET':
-        # Popola i campi sede e all_sedi con i valori attuali
-        form.all_sedi.data = user.all_sedi
-        if user.sede_id:
-            form.sede.data = user.sede_id
-        
-        if user.work_schedule_id:
-            # Aggiungi l'orario corrente alle scelte se non già presente
-            if user.work_schedule:
-                schedule_choice = (user.work_schedule.id, f"{user.work_schedule.name} ({user.work_schedule.start_time.strftime('%H:%M') if user.work_schedule.start_time else ''}-{user.work_schedule.end_time.strftime('%H:%M') if user.work_schedule.end_time else ''})")
-                if schedule_choice not in form.work_schedule.choices:
-                    form.work_schedule.choices.append(schedule_choice)
-            form.work_schedule.data = user.work_schedule_id
-        else:
-            # Se non ha un orario, imposta il valore di default
-            form.work_schedule.data = ''
-        
-        # Gestione del veicolo ACI con campi progressivi
-        if user.aci_vehicle_id and user.aci_vehicle:
-            # Popola i campi progressivi basati sul veicolo esistente
-            form.aci_vehicle_tipo.data = user.aci_vehicle.tipologia
-            form.aci_vehicle_marca.data = user.aci_vehicle.marca
-            form.aci_vehicle.data = user.aci_vehicle_id
-            
-            # Aggiorna le scelte per rendere i dropdown funzionali
-            from models import ACITable
-            aci_vehicles = filter_by_company(ACITable.query).order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
-            
-            # Aggiorna le scelte delle marche per il tipo selezionato
-            marche = list(set([v.marca for v in aci_vehicles if v.tipologia == user.aci_vehicle.tipologia and v.marca]))
-            form.aci_vehicle_marca.choices = [('', 'Seleziona marca')] + [(marca, marca) for marca in sorted(marche)]
-            
-            # Aggiorna le scelte dei modelli per tipo e marca selezionati
-            modelli = filter_by_company(ACITable.query).filter(
-                ACITable.tipologia == user.aci_vehicle.tipologia,
-                ACITable.marca == user.aci_vehicle.marca
-            ).order_by(ACITable.modello).all()
-            
-            form.aci_vehicle.choices = [('', 'Seleziona modello')] + [(m.id, f"{m.modello} (€{m.costo_km:.4f}/km)") for m in modelli]
-        
         return render_template('edit_user.html', form=form, user=user)
     
     if form.validate_on_submit():
@@ -565,15 +518,7 @@ def edit_user(user_id):
             user.role = form.role.data
             user.first_name = form.first_name.data
             user.last_name = form.last_name.data
-            user.all_sedi = form.all_sedi.data
-            user.sede_id = form.sede.data if not form.all_sedi.data else None
-            user.work_schedule_id = form.work_schedule.data
-            user.aci_vehicle_id = form.aci_vehicle.data if form.aci_vehicle.data and form.aci_vehicle.data != -1 else None
             user.part_time_percentage = form.get_part_time_percentage_as_float()
-            user.overtime_enabled = form.overtime_enabled.data
-            user.overtime_type = form.overtime_type.data if form.overtime_enabled.data else None
-            user.banca_ore_limite_max = form.get_banca_ore_limite_max_as_float()
-            user.banca_ore_periodo_mesi = form.get_banca_ore_periodo_mesi_as_int()
             user.active = form.active.data
             
             db.session.commit()
