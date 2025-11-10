@@ -3623,6 +3623,7 @@ class Sede(db.Model):
 class WorkSchedule(db.Model):
     """Modello per gli orari di lavoro aziendali globali (a livello company)"""
     id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), nullable=False)  # Codice identificativo orario
     name = db.Column(db.String(100), nullable=False)
     
     # Range orario di inizio (entrata)
@@ -3644,7 +3645,10 @@ class WorkSchedule(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
     
     # Constraint per evitare duplicati nella stessa azienda
-    __table_args__ = (db.UniqueConstraint('company_id', 'name', name='_company_schedule_name_uc'),)
+    __table_args__ = (
+        db.UniqueConstraint('company_id', 'name', name='_company_schedule_name_uc'),
+        db.UniqueConstraint('company_id', 'code', name='_company_schedule_code_uc'),
+    )
     
     def __repr__(self):
         return f'<WorkSchedule {self.name}>'

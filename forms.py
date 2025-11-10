@@ -1038,6 +1038,7 @@ class SedeForm(FlaskForm):
 
 class WorkScheduleForm(FlaskForm):
     """Form per gestire gli orari di lavoro globali a livello aziendale"""
+    code = StringField('Codice', validators=[DataRequired(), Length(max=20)])
     name = StringField('Nome Orario', validators=[DataRequired(), Length(max=100)])
     
     # Range orari di entrata
@@ -1070,9 +1071,10 @@ class WorkScheduleForm(FlaskForm):
     active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Orario')
     
-    def __init__(self, original_name=None, *args, **kwargs):
+    def __init__(self, original_name=None, original_code=None, *args, **kwargs):
         super(WorkScheduleForm, self).__init__(*args, **kwargs)
         self.original_name = original_name
+        self.original_code = original_code
     
     def validate_days_of_week(self, days_of_week):
         """Valida che almeno un giorno sia selezionato"""
@@ -1121,6 +1123,19 @@ class WorkScheduleForm(FlaskForm):
             ).first()
             if existing:
                 raise ValidationError('Nome orario già esistente per questa azienda. Scegli un altro nome.')
+    
+    def validate_code(self, code):
+        """Valida che il codice dell'orario sia unico per l'azienda"""
+        if code.data and code.data != self.original_code:
+            from models import WorkSchedule as WorkScheduleModel
+            from utils_tenant import filter_by_company
+            
+            # Verifica unicità del codice a livello aziendale
+            existing = filter_by_company(WorkScheduleModel.query).filter_by(
+                code=code.data
+            ).first()
+            if existing:
+                raise ValidationError('Codice orario già esistente per questa azienda. Scegli un altro codice.')
 
 
 class RoleForm(FlaskForm):

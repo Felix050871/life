@@ -278,6 +278,7 @@ def create_work_schedule():
             days_of_week = form.days_of_week.data
         
         schedule = WorkSchedule(
+            code=form.code.data,
             name=form.name.data,
             start_time_min=form.start_time_min.data,
             start_time_max=form.start_time_max.data,
@@ -310,7 +311,7 @@ def edit_work_schedule(schedule_id):
         return redirect(url_for('dashboard.dashboard'))
     
     schedule = filter_by_company(WorkSchedule.query).filter_by(id=schedule_id).first_or_404()
-    form = WorkScheduleForm(original_name=schedule.name, obj=schedule)
+    form = WorkScheduleForm(original_name=schedule.name, original_code=schedule.code, obj=schedule)
     
     # Precompila i campi basandosi sui dati esistenti
     if request.method == 'GET':
@@ -339,6 +340,7 @@ def edit_work_schedule(schedule_id):
         else:
             days_of_week = form.days_of_week.data
         
+        schedule.code = form.code.data
         schedule.name = form.name.data
         schedule.start_time_min = form.start_time_min.data
         schedule.start_time_max = form.start_time_max.data

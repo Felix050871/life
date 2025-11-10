@@ -19,11 +19,16 @@
                     <form method="POST" action="{{ url_for('admin.create_work_schedule') }}">
                         {{ form.hidden_tag() }}
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-3">
+                                {{ form.code.label(class="form-label") }}
+                                {{ form.code(class="form-control", placeholder="es. STD", maxlength="20") }}
+                                <small class="text-muted">Codice univoco (max 20 caratteri)</small>
+                            </div>
+                            <div class="col-md-5">
                                 {{ form.name.label(class="form-label") }}
                                 {{ form.name(class="form-control", placeholder="es. Orario Standard") }}
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 {{ form.description.label(class="form-label") }}
                                 {{ form.description(class="form-control", placeholder="Descrizione opzionale") }}
                             </div>
@@ -83,6 +88,7 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
+                                    <th>Codice</th>
                                     <th>Nome Orario</th>
                                     <th>Giorni</th>
                                     <th>Entrata</th>
@@ -97,6 +103,9 @@
                             <tbody>
                                 {% for schedule in schedules %}
                                 <tr class="{% if not schedule.active %}table-secondary{% endif %}">
+                                    <td>
+                                        <span class="badge bg-info">{{ schedule.code }}</span>
+                                    </td>
                                     <td>
                                         <strong>{{ schedule.name }}</strong>
                                         {% if not schedule.active %}

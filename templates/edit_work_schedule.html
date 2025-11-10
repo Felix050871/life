@@ -15,18 +15,19 @@
                         {{ form.hidden_tag() }}
                         
                         <div class="row">
-                            <div class="col-md-6">
-                                {{ form.sede.label(class="form-label") }}
-                                {{ form.sede(class="form-select") }}
-                                {% if form.sede.errors %}
+                            <div class="col-md-4">
+                                {{ form.code.label(class="form-label") }}
+                                {{ form.code(class="form-control", maxlength="20") }}
+                                {% if form.code.errors %}
                                     <div class="invalid-feedback d-block">
-                                        {% for error in form.sede.errors %}
+                                        {% for error in form.code.errors %}
                                             {{ error }}
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="text-muted">Codice univoco</small>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 {{ form.name.label(class="form-label") }}
                                 {{ form.name(class="form-control") }}
                                 {% if form.name.errors %}
