@@ -53,6 +53,7 @@
                         <option value="Collaborazione" {% if hr_data.contract_type == 'Collaborazione' %}selected{% endif %}>Collaborazione</option>
                         <option value="In Distacco" {% if hr_data.contract_type == 'In Distacco' %}selected{% endif %}>In Distacco</option>
                         <option value="Consulente/P.IVA" {% if hr_data.contract_type == 'Consulente/P.IVA' %}selected{% endif %}>Consulente/P.IVA</option>
+                        <option value="Fornitore" {% if hr_data.contract_type == 'Fornitore' %}selected{% endif %}>Fornitore</option>
                         <option value="Altro" {% if hr_data.contract_type == 'Altro' %}selected{% endif %}>Altro</option>
                     </select>
                 </div>
@@ -71,6 +72,22 @@
                            placeholder="IT12345678901"
                            {% if not can_edit %}disabled{% endif %}>
                     <small class="text-muted">Partita IVA del consulente</small>
+                </div>
+                <div class="col-md-3 mb-3" id="fornitore_nome_field" style="display: {% if hr_data.contract_type == 'Fornitore' %}block{% else %}none{% endif %};">
+                    <label class="form-label">Nome Fornitore</label>
+                    <input type="text" name="nome_fornitore" class="form-control" 
+                           value="{{ hr_data.nome_fornitore or '' }}"
+                           placeholder="Nome del fornitore"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <small class="text-muted">Denominazione fornitore</small>
+                </div>
+                <div class="col-md-3 mb-3" id="fornitore_piva_field" style="display: {% if hr_data.contract_type == 'Fornitore' %}block{% else %}none{% endif %};">
+                    <label class="form-label">Partita IVA Fornitore</label>
+                    <input type="text" name="partita_iva_fornitore" class="form-control" 
+                           value="{{ hr_data.partita_iva_fornitore or '' }}"
+                           placeholder="IT12345678901"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <small class="text-muted">P.IVA del fornitore</small>
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Data Assunzione</label>
@@ -754,23 +771,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const contractTypeSelect = document.getElementById('contract_type');
     const distaccoSupplierField = document.getElementById('distacco_supplier_field');
     const consulenteVatField = document.getElementById('consulente_vat_field');
+    const fornitoreNomeField = document.getElementById('fornitore_nome_field');
+    const fornitorePivaField = document.getElementById('fornitore_piva_field');
     
-    if (contractTypeSelect && distaccoSupplierField && consulenteVatField) {
+    if (contractTypeSelect && distaccoSupplierField && consulenteVatField && fornitoreNomeField && fornitorePivaField) {
         contractTypeSelect.addEventListener('change', function() {
             // Nascondi tutti i campi condizionali e azzera i loro valori
             const distaccoInput = distaccoSupplierField.querySelector('input');
             const consulenteInput = consulenteVatField.querySelector('input');
+            const fornitoreNomeInput = fornitoreNomeField.querySelector('input');
+            const fornitorePivaInput = fornitorePivaField.querySelector('input');
             
             distaccoSupplierField.style.display = 'none';
             consulenteVatField.style.display = 'none';
+            fornitoreNomeField.style.display = 'none';
+            fornitorePivaField.style.display = 'none';
             if (distaccoInput) distaccoInput.value = '';
             if (consulenteInput) consulenteInput.value = '';
+            if (fornitoreNomeInput) fornitoreNomeInput.value = '';
+            if (fornitorePivaInput) fornitorePivaInput.value = '';
             
             // Mostra solo il campo appropriato
             if (this.value === 'In Distacco') {
                 distaccoSupplierField.style.display = 'block';
             } else if (this.value === 'Consulente/P.IVA') {
                 consulenteVatField.style.display = 'block';
+            } else if (this.value === 'Fornitore') {
+                fornitoreNomeField.style.display = 'block';
+                fornitorePivaField.style.display = 'block';
             }
         });
     }
