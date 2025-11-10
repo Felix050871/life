@@ -287,6 +287,7 @@ def create_work_schedule():
             # Imposta campi legacy per compatibilità usando il valore minimo
             start_time=form.start_time_min.data,
             end_time=form.end_time_min.data,
+            pause_hours=float(form.pause_hours.data) if form.pause_hours.data else 0.0,
             days_of_week=days_of_week,
             description=form.description.data,
             active=form.active.data
@@ -349,6 +350,7 @@ def edit_work_schedule(schedule_id):
         # Aggiorna campi legacy per compatibilità
         schedule.start_time = form.start_time_min.data
         schedule.end_time = form.end_time_min.data
+        schedule.pause_hours = float(form.pause_hours.data) if form.pause_hours.data else 0.0
         schedule.days_of_week = days_of_week
         schedule.description = form.description.data
         schedule.active = form.active.data
