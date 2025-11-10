@@ -1252,6 +1252,7 @@ class AttendanceType(db.Model):
     description = db.Column(db.String(255))
     active = db.Column(db.Boolean, default=True)
     is_default = db.Column(db.Boolean, default=False)  # Indica se è la tipologia di default
+    cod_giustificativo = db.Column(db.String(10), nullable=True)  # Codice giustificativo per export XML (es: 01, RL)
     created_at = db.Column(db.DateTime, default=italian_now)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)  # Multi-tenant
@@ -2169,6 +2170,7 @@ class LeaveType(db.Model):
     description = db.Column(db.Text)
     requires_approval = db.Column(db.Boolean, default=True)  # Se richiede autorizzazione
     active = db.Column(db.Boolean, default=True)
+    cod_giustificativo = db.Column(db.String(10), nullable=True)  # Codice giustificativo per export XML (es: FE, MAL, PER)
     
     # Gestione durate: permessi parziali vs durata minima
     allows_partial = db.Column(db.Boolean, default=True)  # Se True, permette permessi parziali (es. dalle 10:00 alle 12:00)
@@ -3552,6 +3554,7 @@ class Company(db.Model):
     max_licenses = db.Column(db.Integer, default=10, nullable=False)  # Numero massimo di licenze/utenti attivi
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=italian_now)
+    cod_azienda_ufficiale = db.Column(db.String(10), nullable=True)  # Codice azienda per export XML (es: 000004)
     
     # Relazioni
     users = db.relationship('User', back_populates='company', lazy='dynamic')

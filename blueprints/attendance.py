@@ -4442,3 +4442,214 @@ def export_validated_timesheets_excel():
         logging.error(f"Errore export timesheets: {str(e)}")
         flash(f'Errore durante l\'export: {str(e)}', 'danger')
         return redirect(url_for('attendance.export_validated_timesheets'))
+
+
+@attendance_bp.route('/export_validated_timesheets_xml', methods=['POST'])
+@login_required
+def export_validated_timesheets_xml():
+    """Esporta i timesheets validati in formato XML"""
+    from models import MonthlyTimesheet, AttendanceType, Sede, Commessa, LeaveType, LeaveRequest, Company
+    from datetime import datetime, timedelta
+    from io import BytesIO
+    from blueprints.attendance_service import build_timesheet_grid
+    import xml.etree.ElementTree as ET
+    from xml.dom import minidom
+    
+    # Verifica permessi
+    if not current_user.can_export_validated_timesheets():
+        flash('Non hai i permessi per esportare i timesheets validati', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    try:
+        # Ottieni filtri dal form
+        year_filter = int(request.form.get('year', datetime.now().year))
+        month_filter = request.form.get('month', 'all')
+        
+        # Ottieni company con codice azienda ufficiale
+        company = Company.query.get(current_user.company_id)
+        cod_azienda = company.cod_azienda_ufficiale or '000000'
+        
+        # Query base: tutti i timesheets validati
+        query = filter_by_company(MonthlyTimesheet.query).filter_by(
+            year=year_filter,
+            is_validated=True
+        )
+        
+        # Applica filtro mese se specificato
+        if month_filter != 'all':
+            try:
+                month_num = int(month_filter)
+                if 1 <= month_num <= 12:
+                    query = query.filter_by(month=month_num)
+            except ValueError:
+                pass
+        
+        # Ottieni timesheets ordinati per utente
+        timesheets = query.order_by(
+            MonthlyTimesheet.user_id,
+            MonthlyTimesheet.month
+        ).all()
+        
+        if not timesheets:
+            flash('Nessun timesheet validato trovato per i filtri selezionati', 'warning')
+            return redirect(url_for('attendance.export_validated_timesheets', 
+                                  year=year_filter, month=month_filter))
+        
+        # Carica dati globali necessari per build_timesheet_grid
+        attendance_types = filter_by_company(AttendanceType.query).filter_by(active=True).all()
+        leave_types = filter_by_company(LeaveType.query).filter_by(active=True).all()
+        all_sedi = filter_by_company(Sede.query).filter_by(active=True).all()
+        all_commesse = filter_by_company(Commessa.query).all()
+        
+        # Crea mappa tipologie attendance -> codice giustificativo
+        attendance_type_map = {at.id: (at.cod_giustificativo or '01') for at in attendance_types}
+        leave_type_map = {lt.id: (lt.cod_giustificativo or 'FE') for lt in leave_types}
+        
+        # Crea root XML
+        root = ET.Element('Fornitura')
+        
+        # Processa ogni timesheet
+        for ts in timesheets:
+            user = ts.user
+            
+            # Usa matricola dipendente (7 cifre)
+            cod_dipendente = user.matricola or '0000000'
+            
+            # Crea elemento Dipendente
+            dipendente_elem = ET.SubElement(root, 'Dipendente')
+            dipendente_elem.set('CodAziendaUfficiale', cod_azienda)
+            dipendente_elem.set('CodDipendenteUfficiale', cod_dipendente)
+            
+            # Crea elemento Movimenti
+            movimenti_elem = ET.SubElement(dipendente_elem, 'Movimenti')
+            movimenti_elem.set('GenerazioneAutomaticaDaTeorico', 'N')
+            
+            # Determina le sedi accessibili dall'utente
+            if user.all_sedi:
+                user_sedi = all_sedi
+            elif user.sede_id:
+                user_sedi = [sede for sede in all_sedi if sede.id == user.sede_id]
+            else:
+                user_sedi = all_sedi
+            
+            # Usa build_timesheet_grid per ottenere tutti i dati
+            timesheet_grid = build_timesheet_grid(
+                timesheet=ts,
+                user=user,
+                year=ts.year,
+                month=ts.month,
+                user_sedi=user_sedi,
+                active_commesse=all_commesse,
+                attendance_types=attendance_types
+            )
+            
+            # Processa ogni giorno del timesheet
+            for day_row in timesheet_grid:
+                date_str = day_row.date_obj.strftime('%Y-%m-%d')
+                
+                # Gestisci assenze (leave_block)
+                if day_row.leave_block:
+                    # Ottieni codice giustificativo dall'assenza
+                    leave_request = LeaveRequest.query.filter_by(
+                        user_id=user.id,
+                        status='approved'
+                    ).filter(
+                        LeaveRequest.start_date <= day_row.date_obj,
+                        LeaveRequest.end_date >= day_row.date_obj
+                    ).first()
+                    
+                    if leave_request and leave_request.leave_type_id:
+                        cod_giust = leave_type_map.get(leave_request.leave_type_id, 'FE')
+                    else:
+                        cod_giust = 'FE'
+                    
+                    total_hours = day_row.leave_block.total_hours or 0
+                    ore = int(total_hours)
+                    minuti = int((total_hours - ore) * 60)
+                    
+                    movimento = ET.SubElement(movimenti_elem, 'Movimento')
+                    ET.SubElement(movimento, 'CodGiustificativoUfficiale').text = cod_giust
+                    ET.SubElement(movimento, 'Data').text = date_str
+                    ET.SubElement(movimento, 'NumOre').text = str(ore)
+                    ET.SubElement(movimento, 'NumMinuti').text = str(minuti)
+                
+                # Gestisci sessioni di lavoro (da eventi e manuali)
+                else:
+                    # Raggruppa sessioni per tipologia
+                    tipo_ore = {}
+                    
+                    for session in day_row.sessions:
+                        if session.source == 'empty':
+                            continue
+                        
+                        # Determina codice giustificativo
+                        if session.attendance_type_id:
+                            cod_giust = attendance_type_map.get(session.attendance_type_id, '01')
+                        else:
+                            cod_giust = '01'
+                        
+                        # Accumula ore per tipologia
+                        if cod_giust not in tipo_ore:
+                            tipo_ore[cod_giust] = 0
+                        tipo_ore[cod_giust] += session.total_hours or 0
+                    
+                    # Se non ci sono sessioni, crea movimento con 0 ore (tipo ordinario)
+                    if not tipo_ore:
+                        movimento = ET.SubElement(movimenti_elem, 'Movimento')
+                        ET.SubElement(movimento, 'CodGiustificativoUfficiale').text = '01'
+                        ET.SubElement(movimento, 'Data').text = date_str
+                        ET.SubElement(movimento, 'NumOre').text = '0'
+                        ET.SubElement(movimento, 'NumMinuti').text = '0'
+                    else:
+                        # Crea un movimento per ogni tipologia
+                        for cod_giust, total_hours in tipo_ore.items():
+                            ore = int(total_hours)
+                            minuti = int((total_hours - ore) * 60)
+                            
+                            movimento = ET.SubElement(movimenti_elem, 'Movimento')
+                            ET.SubElement(movimento, 'CodGiustificativoUfficiale').text = cod_giust
+                            ET.SubElement(movimento, 'Data').text = date_str
+                            ET.SubElement(movimento, 'NumOre').text = str(ore)
+                            ET.SubElement(movimento, 'NumMinuti').text = str(minuti)
+        
+        # Converti in stringa XML formattata
+        xml_str = ET.tostring(root, encoding='utf-8')
+        dom = minidom.parseString(xml_str)
+        pretty_xml = dom.toprettyxml(indent='', encoding='utf-8')
+        
+        # Rimuovi righe vuote extra e formatta su singola riga per elemento
+        lines = [line for line in pretty_xml.decode('utf-8').split('\n') if line.strip()]
+        formatted_xml = '\n'.join(lines)
+        
+        # Crea BytesIO con XML
+        output = BytesIO()
+        output.write(formatted_xml.encode('utf-8'))
+        output.seek(0)
+        
+        # Genera nome file
+        month_names = {
+            1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile',
+            5: 'Maggio', 6: 'Giugno', 7: 'Luglio', 8: 'Agosto',
+            9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
+        }
+        
+        if month_filter != 'all':
+            month_abbr = month_names[int(month_filter)][:3].upper()
+            filename = f"Timesheets_{company.code}_{month_filter:02d}-{year_filter}.xml"
+        else:
+            filename = f"Timesheets_{company.code}_{year_filter}.xml"
+        
+        # Ritorna file XML
+        from flask import send_file
+        return send_file(
+            output,
+            mimetype='application/xml',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        import logging
+        logging.error(f"Errore export timesheets XML: {str(e)}")
+        flash(f'Errore durante l\'export XML: {str(e)}', 'danger')
+        return redirect(url_for('attendance.export_validated_timesheets'))
