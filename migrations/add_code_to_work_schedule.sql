@@ -1,7 +1,8 @@
 -- ============================================================================
--- MIGRATION: Aggiunta campo "code" alla tabella work_schedule
+-- MIGRATION: Aggiunta campi "code" e "pause_hours" alla tabella work_schedule
 -- Data: 10 Novembre 2025
 -- Descrizione: Aggiunge un campo codice identificativo univoco per azienda
+--              e un campo pause_hours per gestire le pause lavorative
 -- ============================================================================
 
 -- IMPORTANTE: Eseguire questi comandi in sequenza sul database di produzione
@@ -29,6 +30,16 @@ ALTER TABLE work_schedule ALTER COLUMN code SET NOT NULL;
 -- Step 4: Aggiungere constraint UNIQUE per company_id + code
 ALTER TABLE work_schedule 
 ADD CONSTRAINT _company_schedule_code_uc UNIQUE (company_id, code);
+
+-- ============================================================================
+-- PARTE 2: Aggiunta campo pause_hours
+-- ============================================================================
+
+-- Step 5: Aggiungere la colonna pause_hours con default 0.0
+ALTER TABLE work_schedule ADD COLUMN IF NOT EXISTS pause_hours FLOAT DEFAULT 0.0 NOT NULL;
+
+-- Step 6: Aggiornare eventuali valori NULL a 0.0 (per sicurezza)
+UPDATE work_schedule SET pause_hours = 0.0 WHERE pause_hours IS NULL;
 
 -- ============================================================================
 -- VERIFICA POST-MIGRAZIONE

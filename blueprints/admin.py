@@ -248,12 +248,27 @@ def toggle_sede(sede_id):
 # WORK SCHEDULE MANAGEMENT ROUTES
 # =============================================================================
 
+@admin_bp.route('/orari/visualizza')
+@login_required
+def view_work_schedules():
+    """Visualizzazione sola lettura degli orari di lavoro"""
+    if not current_user.can_view_schedules():
+        flash('Non hai i permessi per visualizzare gli orari', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    # Ottieni tutti gli orari globali dell'azienda
+    schedules = filter_by_company(WorkSchedule.query).order_by(WorkSchedule.name).all()
+    return render_template('view_work_schedules.html', schedules=schedules)
+
 @admin_bp.route('/orari')
 @login_required
 def manage_work_schedules():
-    """Gestione degli orari di lavoro"""
-    if not (current_user.can_manage_schedules() or current_user.can_view_schedules()):
-        flash('Non hai i permessi per accedere agli orari', 'danger')
+    """Gestione degli orari di lavoro (con form di creazione)"""
+    if not current_user.can_manage_schedules():
+        # Se ha solo permesso di visualizzazione, reindirizza alla pagina di sola visualizzazione
+        if current_user.can_view_schedules():
+            return redirect(url_for('admin.view_work_schedules'))
+        flash('Non hai i permessi per gestire gli orari', 'danger')
         return redirect(url_for('dashboard.dashboard'))
     
     # Ottieni tutti gli orari globali dell'azienda

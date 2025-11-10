@@ -52,11 +52,16 @@
                                 </div>
                                 <small class="text-muted">Orario minimo e massimo di uscita</small>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                {{ form.pause_hours.label(class="form-label") }}
+                                {{ form.pause_hours(class="form-control", placeholder="0.0", step="0.25") }}
+                                <small class="text-muted">Pausa in ore (0-12)</small>
+                            </div>
+                            <div class="col-md-2">
                                 {{ form.days_preset.label(class="form-label") }}
                                 {{ form.days_preset(class="form-select", id="days_preset") }}
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 {{ form.days_of_week.label(class="form-label") }}
                                 {{ form.days_of_week(class="form-select", multiple=true, id="days_of_week", style="height: 100px;") }}
                             </div>
@@ -83,92 +88,8 @@
                     <h5><i class="fas fa-list me-2"></i>Orari Esistenti</h5>
                 </div>
                 <div class="card-body">
-                    {% if schedules %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Codice</th>
-                                    <th>Nome Orario</th>
-                                    <th>Giorni</th>
-                                    <th>Entrata</th>
-                                    <th>Uscita</th>
-                                    <th>Durata</th>
-                                    <th>Descrizione</th>
-                                    <th>Stato</th>
-                                    <th>Creato</th>
-                                    <th>Azioni</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for schedule in schedules %}
-                                <tr class="{% if not schedule.active %}table-secondary{% endif %}">
-                                    <td>
-                                        <span class="badge bg-info">{{ schedule.code }}</span>
-                                    </td>
-                                    <td>
-                                        <strong>{{ schedule.name }}</strong>
-                                        {% if not schedule.active %}
-                                        <span class="badge bg-secondary ms-2">Disattivo</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <small class="text-info">{{ schedule.get_days_display() }}</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-success">{{ schedule.get_start_range_display() }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-danger">{{ schedule.get_end_range_display() }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-primary">{{ "%.1f"|format(schedule.get_duration_hours()) }}h</span>
-                                    </td>
-                                    <td>{{ schedule.description or "-" }}</td>
-                                    <td>
-                                        {% if schedule.active %}
-                                        <span class="badge bg-success">Attivo</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">Disattivo</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ schedule.created_at.strftime('%d/%m/%Y') }}</td>
-                                    <td>
-                                        {% if current_user.can_manage_schedules() %}
-                                        <div class="btn-group" role="group">
-                                            <a href="{{ url_for('admin.edit_work_schedule', schedule_id=schedule.id) }}" 
-                                               class="btn btn-sm btn-outline-primary" title="Modifica">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="{{ url_for('admin.toggle_work_schedule', schedule_id=schedule.id) }}" 
-                                               class="btn btn-sm btn-outline-{% if schedule.active %}warning{% else %}success{% endif %}" 
-                                               title="{% if schedule.active %}Disattiva{% else %}Attiva{% endif %}">
-                                                <i class="fas fa-{% if schedule.active %}pause{% else %}play{% endif %}"></i>
-                                            </a>
-                                            <a href="{{ url_for('admin.delete_work_schedule', schedule_id=schedule.id) }}" 
-                                               class="btn btn-sm btn-outline-danger" 
-                                               title="Elimina definitivamente"
-                                               onclick="return confirm('Vuoi eliminare definitivamente questo orario di lavoro?\n\nATTENZIONE:\n• Gli utenti assegnati a questo orario perderanno la configurazione\n• Non sarà più possibile utilizzarlo per nuovi utenti\n\nL\'operazione NON può essere annullata.')">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </div>
-                                        {% elif current_user.can_view_schedules() %}
-                                        <span class="badge bg-info">Solo visualizzazione</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">Accesso negato</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-clock fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Nessun orario di lavoro configurato. Aggiungi il primo orario per iniziare.</p>
-                    </div>
-                    {% endif %}
+                    {% set show_actions = True %}
+                    {% include 'partials/work_schedule_table.html' with context %}
                 </div>
             </div>
         </div>

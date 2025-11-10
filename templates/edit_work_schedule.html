@@ -74,7 +74,19 @@
                         </div>
                         
                         <div class="row mt-3">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                {{ form.pause_hours.label(class="form-label") }}
+                                {{ form.pause_hours(class="form-control", placeholder="0.0", step="0.25") }}
+                                {% if form.pause_hours.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.pause_hours.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Pausa in ore (0-12)</small>
+                            </div>
+                            <div class="col-md-4">
                                 {{ form.days_preset.label(class="form-label") }}
                                 {{ form.days_preset(class="form-select", id="days_preset") }}
                                 {% if form.days_preset.errors %}
@@ -85,7 +97,7 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 {{ form.days_of_week.label(class="form-label") }}
                                 {{ form.days_of_week(class="form-select", multiple=true, id="days_of_week", style="height: 120px;") }}
                                 {% if form.days_of_week.errors %}
