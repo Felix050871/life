@@ -107,7 +107,6 @@
                                     <th>Periodo</th>
                                     <th>Stato</th>
                                     <th>Scadenza</th>
-                                    <th>Tariffa Oraria</th>
                                     <th>Risorse</th>
                                     <th>Azioni</th>
                                 </tr>
@@ -142,13 +141,6 @@
                                         <span class="badge bg-primary">
                                             {{ commessa.get_giorni_rimanenti() }} giorni
                                         </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if commessa.tariffa_oraria %}
-                                        € {{ "%.2f"|format(commessa.tariffa_oraria) }}
-                                        {% else %}
-                                        <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
