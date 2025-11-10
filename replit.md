@@ -12,6 +12,14 @@ The platform aims to reduce bureaucracy, enhance productivity, and foster corpor
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 10, 2025)
+- **XML Export for Validated Timesheets**: Implemented comprehensive XML export functionality for payroll integration:
+  - Added `cod_giustificativo` field to AttendanceType and LeaveType models for mapping to external payroll codes
+  - Created `export_validated_timesheets_xml` route in attendance blueprint
+  - XML export follows standard fornitura presenze format with Dipendente/Movimenti structure
+  - Uses company.code as CodAziendaUfficiale and user.matricola as CodDipendenteUfficiale
+  - Aggregates daily hours by attendance type/leave type with cod_giustificativo mapping
+  - Added Export XML button alongside Export Excel in export UI (templates/export_validated_timesheets.html)
+  - Database migration executed successfully (add_xml_export_fields.sql)
 - **HR as Single Source of Truth for Operational Data**: Implemented comprehensive data synchronization strategy:
   - Created `sync_operational_fields()` in `utils_hr.py` for write-through synchronization from UserHRData to User model
   - HR module (`blueprints/hr.py`) now automatically syncs operational fields (sede, work_schedule, overtime settings, aci_vehicle) to User model on save
@@ -43,7 +51,7 @@ The platform features a modern, responsive dark-themed Bootstrap design. It incl
 - **Leave Management**: Configurable leave types with flexible minimum duration requirements (minimum_duration_hours field), automatic seeding of default values (Ferie: 8h, Malattia: 4h), and approval workflows. Supports both requires_approval and active status flags.
 - **Shift Management**: Supports intelligent shift generation, recurring patterns via templates, and on-call duty management, integrated with the Mansionario system.
 - **Mileage Reimbursement System**: Manages requests and calculates distances using ACI tables with manager approval workflows.
-- **Data Export**: Supports CSV to Excel (.xlsx) conversion.
+- **Data Export**: Supports multiple export formats including Excel (.xlsx) for detailed timesheet data and XML for payroll system integration. XML export follows standard fornitura presenze format with configurable cod_giustificativo mapping for attendance and leave types.
 - **Multi-Tenant Email System**: Hybrid SMTP architecture supporting global and per-company email configurations, with encrypted SMTP passwords.
 - **Internal Notification System**: Centralized messaging system (`message_utils.py`) for workflow notifications. Sends internal messages to users for timesheet consolidation/validation, timesheet reopen requests (new request alerts managers, approval/rejection notifies requester), leave request approvals/rejections, and mileage reimbursement approvals/rejections. All notifications are multi-tenant isolated with proper permission-based recipient targeting.
 - **Password Security**: Enforces strong password requirements.
