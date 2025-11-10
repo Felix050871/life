@@ -17,7 +17,7 @@ from functools import wraps
 from app import db
 from models import User, UserHRData, ACITable, Sede, WorkSchedule
 from utils_tenant import filter_by_company, set_company_on_create
-from utils_hr import assign_cod_si
+from utils_hr import assign_cod_si, sync_operational_fields
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -798,6 +798,10 @@ def hr_detail(user_id):
                 hr_data.training_supervisor_expiry = None
             
             hr_data.updated_at = datetime.now()
+            
+            # Sincronizza i campi operativi da HR a User per backward compatibility
+            sync_operational_fields(user, hr_data)
+            
             db.session.commit()
             
             flash('Dati HR aggiornati con successo', 'success')

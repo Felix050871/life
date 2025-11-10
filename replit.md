@@ -11,18 +11,19 @@ The platform aims to reduce bureaucracy, enhance productivity, and foster corpor
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (October 31, 2025)
-- **Critical Multi-Tenant Security Fixes**: Addressed multiple violations of tenant isolation in `blueprints/user_management.py` and `blueprints/auth.py`:
-  - Added `filter_by_company()` to all database queries in `_delete_user_cascade()` function to prevent cross-tenant data deletion during user removal (GDPR compliance).
-  - Added `filter_by_company()` to all statistics queries in `_collect_user_personal_data()` to ensure personal data exports are properly scoped to the user's company.
-  - Enhanced password reset flow in `forgot_password()` and `reset_password()` to properly handle tenant context while maintaining functionality for email-based reset links.
-  - Fixed group membership deletion to properly scope by company using CircleGroup filtering.
-- **Security Audit Completed**: Comprehensive review of multi-tenant isolation across all core modules confirmed proper `company_id` scoping throughout the system.
-- **Code Quality Improvements**: 
-  - Created centralized `constants.py` file for system-wide constants to replace hardcoded values
-  - Defined constant classes for: RoleNames, RequestStatus, TimesheetStatus, AttendanceEventType, OvertimeTypes, CirclePostType, GroupMembershipStatus, PriorityLevel, DefaultConfig, ValidationMessage, SuccessMessage, ErrorMessage
-  - Updated critical role checks in `models.py` to use `RoleNames` constants instead of hardcoded strings
-  - Established foundation for gradual adoption of constants across the codebase
+## Recent Changes (November 10, 2025)
+- **HR as Single Source of Truth for Operational Data**: Implemented comprehensive data synchronization strategy:
+  - Created `sync_operational_fields()` in `utils_hr.py` for write-through synchronization from UserHRData to User model
+  - HR module (`blueprints/hr.py`) now automatically syncs operational fields (sede, work_schedule, overtime settings, aci_vehicle) to User model on save
+  - UserHRData is the authoritative source; User model fields maintained for backward compatibility with existing blueprints
+  - Removed operational fields from User Management UI (templates/user_management.html, templates/edit_user.html)
+  - UserForm retains operational fields for compatibility with other blueprints (presidio, reperibilita, expense, attendance, holidays, shifts)
+  - Added "Fornitore" contract type with nome_fornitore and partita_iva_fornitore fields to UserHRData
+  - Executed database migration (add_fornitore_fields.sql) successfully
+- **Previous Changes (October 31, 2025)**:
+  - Critical Multi-Tenant Security Fixes in user_management.py and auth.py
+  - Security Audit Completed confirming proper company_id scoping
+  - Code Quality Improvements with centralized constants.py
 
 ## System Architecture
 

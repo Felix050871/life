@@ -163,3 +163,56 @@ def backfill_cod_si_from_matricola(company_id=None):
     
     db.session.commit()
     return stats
+
+
+def sync_operational_fields(user, hr_data):
+    """
+    Sincronizza i campi operativi da UserHRData al modello User.
+    
+    Questa funzione implementa la strategia di write-through synchronization:
+    quando i dati HR vengono salvati, i campi operativi vengono copiati
+    anche nel modello User per mantenere backward compatibility con i blueprint
+    che ancora leggono da User invece che da UserHRData.
+    
+    Campi sincronizzati:
+    - sede (sede_id)
+    - all_sedi
+    - work_schedule (work_schedule_id)
+    - overtime_enabled
+    - overtime_type
+    - banca_ore_limite_max
+    - banca_ore_periodo_mesi
+    - aci_vehicle (aci_vehicle_id)
+    
+    Args:
+        user (User): Modello User da aggiornare
+        hr_data (UserHRData): Record HR sorgente dei dati
+        
+    Note:
+        - UserHRData è la single source of truth per i dati operativi
+        - User model mantiene i campi per backward compatibility
+        - Questa funzione deve essere chiamata all'interno della stessa transazione del salvataggio HR
+        - Non fa commit, lascia la gestione della transazione al chiamante
+    """
+    if not user or not hr_data:
+        return
+    
+    # Sincronizza sede
+    user.sede = hr_data.sede_id
+    
+    # Sincronizza accesso a tutte le sedi
+    user.all_sedi = hr_data.all_sedi
+    
+    # Sincronizza orario di lavoro
+    user.work_schedule = hr_data.work_schedule_id
+    
+    # Sincronizza veicolo ACI
+    user.aci_vehicle = hr_data.aci_vehicle_id
+    
+    # Sincronizza impostazioni straordinari
+    user.overtime_enabled = hr_data.overtime_enabled
+    user.overtime_type = hr_data.overtime_type
+    user.banca_ore_limite_max = hr_data.banca_ore_limite_max
+    user.banca_ore_periodo_mesi = hr_data.banca_ore_periodo_mesi
+    
+    # Non facciamo commit qui - sarà fatto dal chiamante
