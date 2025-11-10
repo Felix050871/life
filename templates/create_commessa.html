@@ -27,7 +27,18 @@
                         <!-- Informazioni base -->
                         <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Informazioni Base</h6>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.codice.label(class="form-label") }}
+                                    {{ form.codice(class="form-control" + (" is-invalid" if form.codice.errors else "")) }}
+                                    {% if form.codice.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.codice.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.cliente.label(class="form-label") }}
                                     {{ form.cliente(class="form-control" + (" is-invalid" if form.cliente.errors else "")) }}
@@ -38,7 +49,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.titolo.label(class="form-label") }}
                                     {{ form.titolo(class="form-control" + (" is-invalid" if form.titolo.errors else "")) }}
@@ -133,11 +144,11 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.tariffa_oraria.label(class="form-label") }}
-                                    {{ form.tariffa_oraria(class="form-control" + (" is-invalid" if form.tariffa_oraria.errors else "")) }}
-                                    {% if form.tariffa_oraria.errors %}
+                                    {{ form.valore_commessa.label(class="form-label") }}
+                                    {{ form.valore_commessa(class="form-control" + (" is-invalid" if form.valore_commessa.errors else "")) }}
+                                    {% if form.valore_commessa.errors %}
                                     <div class="invalid-feedback">
-                                        {% for error in form.tariffa_oraria.errors %}{{ error }}{% endfor %}
+                                        {% for error in form.valore_commessa.errors %}{{ error }}{% endfor %}
                                     </div>
                                     {% endif %}
                                     <small class="form-text text-muted">Lascia vuoto se non definito</small>
