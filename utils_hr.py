@@ -197,17 +197,17 @@ def sync_operational_fields(user, hr_data):
     if not user or not hr_data:
         return
     
-    # Sincronizza sede
-    user.sede = hr_data.sede_id
+    # Sincronizza sede (assegna all'ID field, non alla relationship)
+    user.sede_id = hr_data.sede_id
     
     # Sincronizza accesso a tutte le sedi
     user.all_sedi = hr_data.all_sedi
     
-    # Sincronizza orario di lavoro
-    user.work_schedule = hr_data.work_schedule_id
+    # Sincronizza orario di lavoro (assegna all'ID field, non alla relationship)
+    user.work_schedule_id = hr_data.work_schedule_id
     
-    # Sincronizza veicolo ACI
-    user.aci_vehicle = hr_data.aci_vehicle_id
+    # Sincronizza veicolo ACI (assegna all'ID field, non alla relationship)
+    user.aci_vehicle_id = hr_data.aci_vehicle_id
     
     # Sincronizza impostazioni straordinari
     user.overtime_enabled = hr_data.overtime_enabled
