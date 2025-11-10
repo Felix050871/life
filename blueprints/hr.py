@@ -1089,8 +1089,8 @@ def assign_matricole():
     """
     Endpoint amministrativo temporaneo per assegnare matricole sequenziali.
     
-    Assegna matricole in formato 000000, 000001, 000002, ... a tutti gli utenti della company,
-    in ordine di user_id.
+    Assegna matricole in formato 0000000, 0000001, 0000002, ... (7 caratteri) a tutti gli utenti 
+    della company, in ordine di user_id.
     
     Accesso: solo utenti con permessi HR
     """

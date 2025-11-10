@@ -104,8 +104,8 @@ def assign_sequential_matricole(company_id):
     Assegna matricole sequenziali a tutti gli utenti di una company.
     
     Regola di assegnazione:
-    - Admin (user_id = 1): 000000
-    - Altri utenti: 000001, 000002, 000003, ... in ordine di user_id
+    - Admin (primo utente): 0000000
+    - Altri utenti: 0000001, 0000002, 0000003, ... in ordine di user_id
     
     Aggiorna sia il campo matricola (String) che cod_si_number (Integer).
     
@@ -140,11 +140,11 @@ def assign_sequential_matricole(company_id):
             db.session.add(hr_data)
         
         # Assegna il numero progressivo
-        # Admin (primo utente) prende 000000, gli altri partono da 000001
+        # Admin (primo utente) prende 0000000, gli altri partono da 0000001
         matricola_number = idx
         
-        # Aggiorna entrambi i campi
-        hr_data.matricola = f"{matricola_number:06d}"
+        # Aggiorna entrambi i campi con formato a 7 caratteri
+        hr_data.matricola = f"{matricola_number:07d}"
         hr_data.cod_si_number = matricola_number
         
         stats['updated'] += 1
