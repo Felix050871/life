@@ -107,6 +107,7 @@ def create_commessa():
     
     if form.validate_on_submit():
         commessa = Commessa(
+            codice=form.codice.data,
             cliente=form.cliente.data,
             titolo=form.titolo.data,
             descrizione=form.descrizione.data,
@@ -115,7 +116,7 @@ def create_commessa():
             data_fine=form.data_fine.data,
             durata_prevista_ore=form.durata_prevista_ore.data,
             stato=form.stato.data,
-            tariffa_oraria=form.tariffa_oraria.data,
+            valore_commessa=form.valore_commessa.data,
             note=form.note.data,
             created_by_id=current_user.id
         )
@@ -140,9 +141,10 @@ def edit_commessa(commessa_id):
         return redirect(url_for('commesse.manage_commesse'))
     
     commessa = filter_by_company(Commessa.query).filter_by(id=commessa_id).first_or_404()
-    form = CommessaForm(original_titolo=commessa.titolo, obj=commessa)
+    form = CommessaForm(original_titolo=commessa.titolo, original_codice=commessa.codice, obj=commessa)
     
     if form.validate_on_submit():
+        commessa.codice = form.codice.data
         commessa.cliente = form.cliente.data
         commessa.titolo = form.titolo.data
         commessa.descrizione = form.descrizione.data
@@ -151,7 +153,7 @@ def edit_commessa(commessa_id):
         commessa.data_fine = form.data_fine.data
         commessa.durata_prevista_ore = form.durata_prevista_ore.data
         commessa.stato = form.stato.data
-        commessa.tariffa_oraria = form.tariffa_oraria.data
+        commessa.valore_commessa = form.valore_commessa.data
         commessa.note = form.note.data
         
         db.session.commit()
@@ -242,6 +244,7 @@ def assign_user():
     data_inizio_str = request.form.get('data_inizio')
     data_fine_str = request.form.get('data_fine')
     is_responsabile = request.form.get('is_responsabile') == 'on'
+    tariffa_vendita_str = request.form.get('tariffa_vendita')
     
     # Parse date o usa default
     if data_inizio_str:
@@ -260,6 +263,17 @@ def assign_user():
     else:
         data_fine = commessa.data_fine
     
+    # Parse tariffa vendita (opzionale)
+    tariffa_vendita = None
+    if tariffa_vendita_str:
+        try:
+            tariffa_vendita = float(tariffa_vendita_str)
+            if tariffa_vendita < 0:
+                flash('La tariffa di vendita non può essere negativa', 'danger')
+                return redirect(url_for('commesse.commessa_detail', commessa_id=commessa_id))
+        except ValueError:
+            pass
+    
     # Crea nuova assegnazione
     assignment = CommessaAssignment(
         user_id=user.id,
@@ -267,6 +281,7 @@ def assign_user():
         data_inizio=data_inizio,
         data_fine=data_fine,
         is_responsabile=is_responsabile,
+        tariffa_vendita=tariffa_vendita,
         assigned_by_id=current_user.id
     )
     
@@ -309,6 +324,7 @@ def edit_assignment():
     data_inizio_str = request.form.get('data_inizio')
     data_fine_str = request.form.get('data_fine')
     is_responsabile = request.form.get('is_responsabile') == 'on'
+    tariffa_vendita_str = request.form.get('tariffa_vendita')
     
     # Parse date
     try:
@@ -318,10 +334,22 @@ def edit_assignment():
         flash('Formato date non valido', 'danger')
         return redirect(url_for('commesse.commessa_detail', commessa_id=commessa.id))
     
+    # Parse tariffa vendita (opzionale)
+    tariffa_vendita = None
+    if tariffa_vendita_str:
+        try:
+            tariffa_vendita = float(tariffa_vendita_str)
+            if tariffa_vendita < 0:
+                flash('La tariffa di vendita non può essere negativa', 'danger')
+                return redirect(url_for('commesse.commessa_detail', commessa_id=commessa.id))
+        except ValueError:
+            pass
+    
     # Aggiorna i campi
     assignment.data_inizio = data_inizio
     assignment.data_fine = data_fine
     assignment.is_responsabile = is_responsabile
+    assignment.tariffa_vendita = tariffa_vendita
     
     # Valida le nuove date
     validation_errors = assignment.validate_dates(commessa=commessa)
