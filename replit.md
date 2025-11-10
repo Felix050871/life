@@ -21,6 +21,7 @@ Preferred communication style: Simple, everyday language.
   - Aggregates daily hours by attendance type/leave type with cod_giustificativo mapping
   - Added Export XML button alongside Export Excel in export UI (templates/export_validated_timesheets.html)
   - Database migration executed successfully (add_xml_export_fields.sql)
+  - Optimized export overlay UX: cookie-based detection closes overlay in ~2 seconds (down from 30 seconds)
 - **HR as Single Source of Truth for Operational Data**: Implemented comprehensive data synchronization strategy:
   - Created `sync_operational_fields()` in `utils_hr.py` for write-through synchronization from UserHRData to User model
   - HR module (`blueprints/hr.py`) now automatically syncs operational fields (sede, work_schedule, overtime settings, aci_vehicle) to User model on save

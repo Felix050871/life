@@ -4428,14 +4428,16 @@ def export_validated_timesheets_excel():
         else:
             filename = f"Timesheets_Validati_{year_filter}.xlsx"
         
-        # Ritorna file Excel
-        from flask import send_file
-        return send_file(
+        # Ritorna file Excel con cookie per chiudere overlay
+        from flask import send_file, make_response
+        response = make_response(send_file(
             output,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
             download_name=filename
-        )
+        ))
+        response.set_cookie('file_download_complete', 'true', max_age=5)
+        return response
         
     except Exception as e:
         import logging
@@ -4639,14 +4641,16 @@ def export_validated_timesheets_xml():
         else:
             filename = f"Timesheets_{company.code}_{year_filter}.xml"
         
-        # Ritorna file XML
-        from flask import send_file
-        return send_file(
+        # Ritorna file XML con cookie per chiudere overlay
+        from flask import send_file, make_response
+        response = make_response(send_file(
             output,
             mimetype='application/xml',
             as_attachment=True,
             download_name=filename
-        )
+        ))
+        response.set_cookie('file_download_complete', 'true', max_age=5)
+        return response
         
     except Exception as e:
         import logging
