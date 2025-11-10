@@ -150,27 +150,9 @@
                 </div>
             </div>
 
-            <!-- Riga 4: Sede di Assunzione, Cliente, Tipo Assunzione -->
+            <!-- Riga 4: Tipo Assunzione -->
             <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Sede di Assunzione</label>
-                    <select name="sede_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Nessuna</option>
-                        {% for sede in user.company.sedi %}
-                        <option value="{{ sede.id }}" {% if hr_data.sede_id == sede.id %}selected{% endif %}>
-                            {{ sede.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <small class="text-muted">Sede indicata nel contratto di assunzione</small>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Cliente</label>
-                    <input type="text" name="cliente" class="form-control" 
-                           value="{{ hr_data.cliente or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-md-6 mb-3">
                     <label class="form-label">Tipo di Assunzione</label>
                     <input type="text" name="tipo_assunzione" class="form-control" 
                            value="{{ hr_data.tipo_assunzione or '' }}"
@@ -414,6 +396,46 @@
                            value="{{ hr_data.emergency_contact_relation or '' }}"
                            placeholder="es. Coniuge, Genitore"
                            {% if not can_edit %}disabled{% endif %}>
+                </div>
+            </div>
+
+            <!-- Dati Operativi -->
+            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-building me-2"></i>Dati Operativi</h6>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Sede di Assunzione</label>
+                    <select name="sede_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Nessuna</option>
+                        {% for sede in sedi %}
+                        <option value="{{ sede.id }}" {% if hr_data.sede_id == sede.id %}selected{% endif %}>
+                            {{ sede.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Sede indicata nel contratto di assunzione</small>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Orario di Lavoro</label>
+                    <select name="work_schedule_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Nessuno</option>
+                        {% for schedule in work_schedules %}
+                        <option value="{{ schedule.id }}" {% if hr_data.work_schedule_id == schedule.id %}selected{% endif %}>
+                            {{ schedule.name }} ({{ schedule.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Orario di lavoro assegnato al dipendente</small>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="form-check form-switch mt-4">
+                        <input type="checkbox" name="all_sedi" class="form-check-input" id="all_sedi"
+                               {% if hr_data.all_sedi %}checked{% endif %}
+                               {% if not can_edit %}disabled{% endif %}>
+                        <label class="form-check-label fw-bold" for="all_sedi">
+                            Accesso a Tutte le Sedi
+                        </label>
+                    </div>
+                    <small class="text-muted d-block mt-1">Può operare in tutte le sedi aziendali</small>
                 </div>
             </div>
 
