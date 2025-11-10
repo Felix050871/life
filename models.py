@@ -4303,6 +4303,9 @@ class CommessaAssignment(db.Model):
     # Flag responsabile commessa
     is_responsabile = db.Column(db.Boolean, default=False, nullable=False)
     
+    # Tariffa di vendita oraria specifica per questa risorsa su questa commessa (opzionale)
+    tariffa_vendita = db.Column(db.Numeric(10, 2), nullable=True)
+    
     # Metadati assegnazione
     assigned_at = db.Column(db.DateTime, default=italian_now)
     assigned_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -4355,9 +4358,11 @@ class Commessa(db.Model):
     __tablename__ = 'commessa'
     __table_args__ = (
         db.UniqueConstraint('titolo', 'company_id', name='_titolo_company_uc'),
+        db.UniqueConstraint('codice', 'company_id', name='_codice_company_uc'),
     )
     
     id = db.Column(db.Integer, primary_key=True)
+    codice = db.Column(db.String(50), nullable=False, index=True)  # Codice univoco commessa per company
     cliente = db.Column(db.String(200), nullable=False)
     titolo = db.Column(db.String(200), nullable=False)
     descrizione = db.Column(db.Text, nullable=True)
@@ -4366,7 +4371,7 @@ class Commessa(db.Model):
     data_fine = db.Column(db.Date, nullable=False)
     durata_prevista_ore = db.Column(db.Integer, nullable=True)
     stato = db.Column(db.String(20), nullable=False, default='attiva')  # 'attiva', 'in corso', 'chiusa'
-    tariffa_oraria = db.Column(db.Numeric(10, 2), nullable=True)
+    valore_commessa = db.Column(db.Numeric(10, 2), nullable=True)  # Valore economico della commessa (ex tariffa_oraria)
     note = db.Column(db.Text, nullable=True)
     
     # Multi-tenant
