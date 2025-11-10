@@ -24,7 +24,9 @@
                             {{ form.code(class="form-control") }}
                             {% if form.code.errors %}
                             <div class="text-danger small">
-                                {% for error in form.code.errors %}{{ error %}{% endfor %}
+                                {% for error in form.code.errors %}
+                                {{ error }}
+                                {% endfor %}
                             </div>
                             {% endif %}
                             <small class="form-text text-muted">
@@ -37,7 +39,9 @@
                             {{ form.name(class="form-control", placeholder="Es: Ordinario, Trasferta nazionale, Trasferta internazionale...") }}
                             {% if form.name.errors %}
                             <div class="text-danger small">
-                                {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                {% for error in form.name.errors %}
+                                {{ error }}
+                                {% endfor %}
                             </div>
                             {% endif %}
                         </div>
@@ -47,7 +51,9 @@
                             {{ form.description(class="form-control", rows="3", placeholder="Descrizione opzionale della tipologia...") }}
                             {% if form.description.errors %}
                             <div class="text-danger small">
-                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                {% for error in form.description.errors %}
+                                {{ error }}
+                                {% endfor %}
                             </div>
                             {% endif %}
                         </div>
