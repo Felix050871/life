@@ -40,6 +40,14 @@
                         <div class="card-body">
                             <div class="row mb-3">
                                 <div class="col-md-4">
+                                    <strong>Codice Commessa:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    <span class="badge bg-primary">{{ commessa.codice }}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
                                     <strong>Cliente:</strong>
                                 </div>
                                 <div class="col-md-8">
@@ -86,13 +94,13 @@
                                 </div>
                             </div>
                             {% endif %}
-                            {% if commessa.tariffa_oraria %}
+                            {% if commessa.valore_commessa %}
                             <div class="row mb-3">
                                 <div class="col-md-4">
-                                    <strong>Tariffa Oraria:</strong>
+                                    <strong>Valore Commessa:</strong>
                                 </div>
                                 <div class="col-md-8">
-                                    € {{ "%.2f"|format(commessa.tariffa_oraria) }}
+                                    € {{ "%.2f"|format(commessa.valore_commessa) }}
                                 </div>
                             </div>
                             {% endif %}
@@ -170,16 +178,11 @@
                                 </div>
                             </div>
                             {% endif %}
-                            {% if commessa.tariffa_oraria %}
+                            {% if commessa.valore_commessa %}
                             <hr>
                             <div class="mb-0">
-                                <strong>Tariffa oraria:</strong> € {{ "%.2f"|format(commessa.tariffa_oraria) }}
+                                <strong>Valore commessa:</strong> € {{ "%.2f"|format(commessa.valore_commessa) }}
                             </div>
-                            {% if commessa.durata_prevista_ore %}
-                            <div class="text-muted mt-2">
-                                <small>Valore stimato: € {{ "%.2f"|format(commessa.durata_prevista_ore * commessa.tariffa_oraria) }}</small>
-                            </div>
-                            {% endif %}
                             {% endif %}
                         </div>
                     </div>
@@ -225,6 +228,12 @@
                                            max="{{ commessa.data_fine.strftime('%Y-%m-%d') }}">
                                     <small class="text-muted">Default: fine commessa</small>
                                 </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tariffa Vendita (€/h) - Opzionale</label>
+                                    <input type="number" name="tariffa_vendita" class="form-control" 
+                                           step="0.01" min="0" placeholder="Es: 50.00">
+                                    <small class="text-muted">Tariffa oraria di vendita per questa risorsa</small>
+                                </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="is_responsabile" id="is_responsabile">
@@ -257,6 +266,7 @@
                                     <th>Nome</th>
                                     <th>Periodo Assegnazione</th>
                                     <th>Durata</th>
+                                    <th>Tariffa Vendita</th>
                                     <th>Stato</th>
                                     <th>Azioni</th>
                                 </tr>
@@ -283,6 +293,13 @@
                                         <span class="badge bg-info">{{ assignment.get_duration_days() }} giorni</span>
                                     </td>
                                     <td>
+                                        {% if assignment.tariffa_vendita %}
+                                        <span class="badge bg-success">€ {{ "%.2f"|format(assignment.tariffa_vendita) }}/h</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
                                         {% if assignment.is_active_now() %}
                                         <span class="badge bg-success">
                                             <i class="fas fa-check-circle me-1"></i>ATTIVO
@@ -297,7 +314,7 @@
                                         {% if current_user.can_manage_commesse() %}
                                         <div class="btn-group" role="group">
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="openEditAssignmentModal({{ assignment.id }}, '{{ assignment.user.get_full_name() }}', '{{ assignment.data_inizio.strftime('%Y-%m-%d') }}', '{{ assignment.data_fine.strftime('%Y-%m-%d') }}', {{ 'true' if assignment.is_responsabile else 'false' }})"
+                                                    onclick="openEditAssignmentModal({{ assignment.id }}, '{{ assignment.user.get_full_name() }}', '{{ assignment.data_inizio.strftime('%Y-%m-%d') }}', '{{ assignment.data_fine.strftime('%Y-%m-%d') }}', {{ 'true' if assignment.is_responsabile else 'false' }}, {{ assignment.tariffa_vendita if assignment.tariffa_vendita else 'null' }})"
                                                     title="Modifica assegnazione">
                                                 <i class="fas fa-edit"></i>
                                             </button>
@@ -364,6 +381,13 @@
                                max="{{ commessa.data_fine.strftime('%Y-%m-%d') }}" required>
                     </div>
                     
+                    <div class="mb-3">
+                        <label for="edit_tariffa_vendita" class="form-label">Tariffa Vendita (€/h) - Opzionale</label>
+                        <input type="number" class="form-control" name="tariffa_vendita" id="edit_tariffa_vendita"
+                               step="0.01" min="0" placeholder="Es: 50.00">
+                        <small class="text-muted">Tariffa oraria di vendita per questa risorsa</small>
+                    </div>
+                    
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="is_responsabile" id="edit_is_responsabile">
                         <label class="form-check-label" for="edit_is_responsabile">
@@ -385,12 +409,13 @@
 </div>
 
 <script>
-function openEditAssignmentModal(assignmentId, userName, dataInizio, dataFine, isResponsabile) {
+function openEditAssignmentModal(assignmentId, userName, dataInizio, dataFine, isResponsabile, tariffaVendita) {
     document.getElementById('edit_assignment_id').value = assignmentId;
     document.getElementById('edit_user_name').textContent = userName;
     document.getElementById('edit_data_inizio').value = dataInizio;
     document.getElementById('edit_data_fine').value = dataFine;
     document.getElementById('edit_is_responsabile').checked = isResponsabile;
+    document.getElementById('edit_tariffa_vendita').value = tariffaVendita || '';
     
     var modal = new bootstrap.Modal(document.getElementById('editAssignmentModal'));
     modal.show();
