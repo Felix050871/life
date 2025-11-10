@@ -768,7 +768,7 @@
                             <strong>Life Platform</strong> - Gestione del personale e benessere aziendale<br>
                             <a href="{{ url_for('legal.privacy') }}" class="text-muted me-2"><i class="fas fa-shield-alt me-1"></i>Privacy Policy</a>
                             <a href="{{ url_for('legal.terms') }}" class="text-muted me-2"><i class="fas fa-file-contract me-1"></i>Termini di Servizio</a>
-                            <a href="javascript:void(0)" onclick="manageCookies()" class="text-muted"><i class="fas fa-cookie-bite me-1"></i>Cookie</a>
+                            <a href="#" onclick="manageCookies(); return false;" class="text-muted"><i class="fas fa-cookie-bite me-1"></i>Cookie</a>
                         </small>
                     </div>
                 </div>
@@ -802,7 +802,7 @@
                     <strong>Life Platform</strong> - Gestione del personale e benessere aziendale<br>
                     <a href="{{ url_for('legal.privacy') }}" class="text-muted me-2"><i class="fas fa-shield-alt me-1"></i>Privacy Policy</a>
                     <a href="{{ url_for('legal.terms') }}" class="text-muted me-2"><i class="fas fa-file-contract me-1"></i>Termini di Servizio</a>
-                    <a href="javascript:void(0)" onclick="manageCookies()" class="text-muted"><i class="fas fa-cookie-bite me-1"></i>Cookie</a>
+                    <a href="#" onclick="manageCookies(); return false;" class="text-muted"><i class="fas fa-cookie-bite me-1"></i>Cookie</a>
                 </small>
             </div>
         </div>
@@ -1443,15 +1443,23 @@
             }
         }
 
+        // Global modal instance - initialized once
+        let cookieModal = null;
+        
         function manageCookies() {
-            const modal = new bootstrap.Modal(document.getElementById('cookieSettingsModal'));
-            modal.show();
+            // Initialize modal only once
+            if (!cookieModal) {
+                cookieModal = new bootstrap.Modal(document.getElementById('cookieSettingsModal'));
+            }
             
             // Load current preferences
             const consent = getConsentFromStorage();
             if (consent) {
                 document.getElementById('preferenceCookies').checked = consent.preference || false;
             }
+            
+            // Show modal
+            cookieModal.show();
         }
 
         function saveCookiePreferences() {
@@ -1464,8 +1472,10 @@
             if (saveConsentToStorage(preferences)) {
                 document.getElementById('cookieConsentBanner').style.display = 'none';
                 
-                const modal = bootstrap.Modal.getInstance(document.getElementById('cookieSettingsModal'));
-                modal.hide();
+                // Hide modal using the global instance
+                if (cookieModal) {
+                    cookieModal.hide();
+                }
                 
                 applyCookiePreferences(preferences);
                 
