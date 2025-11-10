@@ -443,6 +443,8 @@ def hr_detail(user_id):
             hr_data.contract_type = request.form.get('contract_type', '').strip() or None
             hr_data.distacco_supplier = request.form.get('distacco_supplier', '').strip() or None
             hr_data.consulente_vat = request.form.get('consulente_vat', '').strip() or None
+            hr_data.nome_fornitore = request.form.get('nome_fornitore', '').strip() or None
+            hr_data.partita_iva_fornitore = request.form.get('partita_iva_fornitore', '').strip() or None
             
             hire_date_str = request.form.get('hire_date', '').strip()
             if hire_date_str:
@@ -936,7 +938,7 @@ def hr_export():
     headers = [
         # DATI CONTRATTUALI
         'COD SI', 'Cognome', 'Nome',  'Data Assunzione', 'Data Fine Rapporto',
-        'Tipologia Contratto', 'Fornitore', 'P.IVA', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 
+        'Tipologia Contratto', 'Fornitore', 'P.IVA', 'Fornitore Nome', 'Fornitore P.IVA', 'CCNL', 'Mansione', 'Qualifica', 'Livello', 
         'Orario (h/sett.)', 'Tipologia Orario', '% Part Time', 'Tipo Part Time',
         'Sede di Assunzione', 'Accesso Tutte Sedi', 'Orario Lavoro', 'Superminimo/SM Assorbibile', 'Rimborsi/Diarie',
         'Ticket', 'Rischio INAIL', 'Tipo di Assunzione', 'Altro/Note',
@@ -979,6 +981,8 @@ def hr_export():
             hr_data.contract_type if hr_data else '',
             hr_data.distacco_supplier if hr_data else '',
             hr_data.consulente_vat if hr_data else '',
+            hr_data.nome_fornitore if hr_data else '',
+            hr_data.partita_iva_fornitore if hr_data else '',
             hr_data.ccnl if hr_data else '',
             hr_data.mansione if hr_data else '',
             hr_data.qualifica if hr_data else '',
