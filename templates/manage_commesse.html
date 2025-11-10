@@ -100,6 +100,7 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
+                                    <th>Codice</th>
                                     <th>Cliente</th>
                                     <th>Titolo</th>
                                     <th>Attività</th>
@@ -114,6 +115,7 @@
                             <tbody>
                                 {% for commessa in commesse %}
                                 <tr class="{% if commessa.is_scaduta() %}table-danger{% endif %}">
+                                    <td><code>{{ commessa.codice }}</code></td>
                                     <td><strong>{{ commessa.cliente }}</strong></td>
                                     <td>{{ commessa.titolo }}</td>
                                     <td><span class="badge bg-secondary">{{ commessa.attivita }}</span></td>
