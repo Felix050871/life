@@ -1070,7 +1070,6 @@ class UserHRData(db.Model):
     part_time_type = db.Column(db.String(20), nullable=True)  # 'Verticale' o 'Orizzontale' se PT
     mansione = db.Column(db.String(100), nullable=True)  # Mansione/ruolo
     qualifica = db.Column(db.String(100), nullable=True)  # Qualifica
-    cliente = db.Column(db.String(200), nullable=True)  # Cliente assegnato
     superminimo = db.Column(db.Float, nullable=True)  # Superminimo/SM assorbibile (€)
     rimborsi_diarie = db.Column(db.Float, nullable=True)  # Rimborsi/Diarie (€)
     rischio_inail = db.Column(db.String(100), nullable=True)  # Rischio INAIL
@@ -1115,6 +1114,8 @@ class UserHRData(db.Model):
     
     # Dati operativi
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede di assunzione (amministrativo/contrattuale)
+    all_sedi = db.Column(db.Boolean, default=False)  # Accesso a tutte le sedi dell'azienda
+    work_schedule_id = db.Column(db.Integer, db.ForeignKey('work_schedule.id'), nullable=True)  # Orario di lavoro assegnato
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
     vehicle_registration_document = db.Column(db.String(255), nullable=True)  # Path del libretto di circolazione caricato
     overtime_enabled = db.Column(db.Boolean, default=False)  # Abilitazione straordinari
@@ -1153,6 +1154,7 @@ class UserHRData(db.Model):
     user = db.relationship('User', backref=db.backref('hr_data', uselist=False, lazy=True))
     company = db.relationship('Company', backref='hr_data_records')
     sede = db.relationship('Sede', foreign_keys=[sede_id], backref='hr_employees')
+    work_schedule = db.relationship('WorkSchedule', foreign_keys=[work_schedule_id], backref='hr_assigned_users')
     aci_vehicle = db.relationship('ACITable', foreign_keys=[aci_vehicle_id], backref='hr_assigned_users')
     
     def __repr__(self):
