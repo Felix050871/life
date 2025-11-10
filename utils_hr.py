@@ -99,6 +99,60 @@ def initialize_company_hr_counter(company_id):
     return counter
 
 
+def assign_sequential_matricole(company_id):
+    """
+    Assegna matricole sequenziali a tutti gli utenti di una company.
+    
+    Regola di assegnazione:
+    - Admin (user_id = 1): 000000
+    - Altri utenti: 000001, 000002, 000003, ... in ordine di user_id
+    
+    Aggiorna sia il campo matricola (String) che cod_si_number (Integer).
+    
+    Args:
+        company_id (int): ID della company da processare
+        
+    Returns:
+        dict: Statistiche dell'operazione (processed, updated)
+    """
+    from models import User
+    
+    # Trova tutti gli utenti della company ordinati per ID
+    users = User.query.filter_by(company_id=company_id).order_by(User.id).all()
+    
+    stats = {
+        'processed': 0,
+        'updated': 0
+    }
+    
+    for idx, user in enumerate(users):
+        stats['processed'] += 1
+        
+        # Trova o crea il record HR per questo utente
+        hr_data = UserHRData.query.filter_by(user_id=user.id, company_id=company_id).first()
+        
+        if not hr_data:
+            # Crea un nuovo record HR se non esiste
+            hr_data = UserHRData(
+                user_id=user.id,
+                company_id=company_id
+            )
+            db.session.add(hr_data)
+        
+        # Assegna il numero progressivo
+        # Admin (primo utente) prende 000000, gli altri partono da 000001
+        matricola_number = idx
+        
+        # Aggiorna entrambi i campi
+        hr_data.matricola = f"{matricola_number:06d}"
+        hr_data.cod_si_number = matricola_number
+        
+        stats['updated'] += 1
+    
+    db.session.commit()
+    return stats
+
+
 def backfill_cod_si_from_matricola(company_id=None):
     """
     Migrazione dati: popola cod_si_number estraendo numeri dal campo matricola (String).

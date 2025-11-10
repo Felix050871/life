@@ -1077,3 +1077,29 @@ def hr_export():
     response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     
     return response
+
+
+# =============================================================================
+# TEMPORARY ADMIN ENDPOINT - Assegnazione matricole sequenziali
+# =============================================================================
+@hr_bp.route('/assign_matricole', methods=['GET'])
+@login_required
+@require_hr_permission
+def assign_matricole():
+    """
+    Endpoint amministrativo temporaneo per assegnare matricole sequenziali.
+    
+    Assegna matricole in formato 000000, 000001, 000002, ... a tutti gli utenti della company,
+    in ordine di user_id.
+    
+    Accesso: solo utenti con permessi HR
+    """
+    from utils_hr import assign_sequential_matricole
+    
+    try:
+        stats = assign_sequential_matricole(current_user.company_id)
+        flash(f'Matricole assegnate con successo! Processati: {stats["processed"]}, Aggiornati: {stats["updated"]}', 'success')
+    except Exception as e:
+        flash(f'Errore durante l\'assegnazione delle matricole: {str(e)}', 'error')
+    
+    return redirect(url_for('hr.hr_list'))
