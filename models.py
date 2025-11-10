@@ -3638,6 +3638,7 @@ class WorkSchedule(db.Model):
     start_time = db.Column(db.Time, nullable=True)  # Mantenuto per compatibilità
     end_time = db.Column(db.Time, nullable=True)    # Mantenuto per compatibilità
     
+    pause_hours = db.Column(db.Float, default=0.0, nullable=False)  # Pausa in ore da sottrarre alla durata
     days_of_week = db.Column(db.JSON, nullable=False, default=list)  # Lista dei giorni della settimana [0,1,2,3,4] per Lun-Ven
     description = db.Column(db.Text, nullable=True)
     active = db.Column(db.Boolean, default=True, nullable=False)
@@ -3667,7 +3668,7 @@ class WorkSchedule(db.Model):
         return self.days_of_week if isinstance(self.days_of_week, list) else []
     
     def get_duration_hours(self):
-        """Calcola la durata media in ore dell'orario di lavoro basandosi sui range"""
+        """Calcola la durata media in ore dell'orario di lavoro basandosi sui range, sottraendo la pausa"""
         # Usa il punto medio dei range per calcolare la durata media
         avg_start_minutes = ((self.start_time_min.hour * 60 + self.start_time_min.minute) + 
                             (self.start_time_max.hour * 60 + self.start_time_max.minute)) / 2
@@ -3679,7 +3680,11 @@ class WorkSchedule(db.Model):
             avg_end_minutes += 24 * 60
         
         duration_minutes = avg_end_minutes - avg_start_minutes
-        return duration_minutes / 60.0
+        duration_hours = duration_minutes / 60.0
+        
+        # Sottrai la pausa dalla durata e previeni durate negative
+        net_duration = duration_hours - (self.pause_hours or 0.0)
+        return max(0.0, net_duration)
     
     def get_start_range_display(self):
         """Restituisce il range di orario di inizio formattato"""

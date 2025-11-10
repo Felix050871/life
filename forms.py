@@ -1049,6 +1049,9 @@ class WorkScheduleForm(FlaskForm):
     end_time_min = TimeField('Uscita Min', validators=[DataRequired()])
     end_time_max = TimeField('Uscita Max', validators=[DataRequired()])
     
+    # Pausa in ore
+    pause_hours = DecimalField('Pausa (ore)', validators=[Optional(), NumberRange(min=0, max=12, message='La pausa deve essere tra 0 e 12 ore.')], default=0.0, places=2)
+    
     # Preset e selezione giorni della settimana
     days_preset = SelectField('Preset Giorni', choices=[
         ('workdays', 'Lunedì-Venerdì'),
