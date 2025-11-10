@@ -2218,6 +2218,8 @@ class PlatformNewsForm(FlaskForm):
 
 class CommessaForm(FlaskForm):
     """Form per gestire le commesse aziendali"""
+    codice = StringField('Codice Commessa', validators=[DataRequired(), Length(max=50)],
+                        render_kw={'placeholder': 'Es: COMM-001, PROJ-2024-001'})
     cliente = StringField('Cliente', validators=[DataRequired(), Length(max=200)],
                          render_kw={'placeholder': 'Nome del cliente'})
     titolo = StringField('Titolo Commessa', validators=[DataRequired(), Length(max=200)],
@@ -2238,21 +2240,35 @@ class CommessaForm(FlaskForm):
                        ],
                        default='attiva',
                        validators=[DataRequired()])
-    tariffa_oraria = DecimalField('Tariffa Oraria (€)', validators=[Optional(), NumberRange(min=0)],
-                                 render_kw={'placeholder': 'Tariffa oraria in euro (opzionale)', 'step': '0.01'})
+    valore_commessa = DecimalField('Valore Commessa (€)', validators=[Optional(), NumberRange(min=0)],
+                                   render_kw={'placeholder': 'Valore economico della commessa (opzionale)', 'step': '0.01'})
     note = TextAreaField('Note', validators=[Optional()],
                         render_kw={'placeholder': 'Note aggiuntive (opzionale)', 'rows': 3})
     submit = SubmitField('Salva Commessa')
     
-    def __init__(self, original_titolo=None, *args, **kwargs):
+    def __init__(self, original_titolo=None, original_codice=None, *args, **kwargs):
         super(CommessaForm, self).__init__(*args, **kwargs)
         self.original_titolo = original_titolo
+        self.original_codice = original_codice
     
     def validate_data_fine(self, data_fine):
         """Valida che la data fine sia successiva alla data inizio"""
         if self.data_inizio.data and data_fine.data:
             if data_fine.data < self.data_inizio.data:
                 raise ValidationError('La data di fine deve essere successiva o uguale alla data di inizio.')
+    
+    def validate_codice(self, codice):
+        """Valida che il codice della commessa sia unico per l'azienda"""
+        if codice.data and codice.data != self.original_codice:
+            from models import Commessa
+            from utils_tenant import filter_by_company
+            
+            # Verifica unicità del codice a livello aziendale
+            existing = filter_by_company(Commessa.query).filter_by(
+                codice=codice.data
+            ).first()
+            if existing:
+                raise ValidationError('Esiste già una commessa con questo codice. Scegli un codice diverso.')
     
     def validate_titolo(self, titolo):
         """Valida che il titolo della commessa sia unico per l'azienda"""
