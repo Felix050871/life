@@ -1035,7 +1035,8 @@ class UserHRData(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
     
     # Dati anagrafici
-    matricola = db.Column(db.String(50), nullable=True)  # Employee number
+    matricola = db.Column(db.String(50), nullable=True)  # Employee number (legacy - deprecato, usare cod_si_number)
+    cod_si_number = db.Column(db.Integer, nullable=True, index=True)  # Matricola numerica auto-incrementata
     codice_fiscale = db.Column(db.String(16), nullable=True)  # Tax code
     birth_date = db.Column(db.Date, nullable=True)  # Data di nascita
     birth_city = db.Column(db.String(100), nullable=True)  # Città di nascita
@@ -1228,6 +1229,13 @@ class UserHRData(db.Model):
             expiring.append(f'Formazione preposto (scade il {self.training_supervisor_expiry.strftime("%d/%m/%Y")})')
         
         return expiring
+    
+    @property
+    def cod_si(self):
+        """Restituisce il COD SI formattato (6 cifre con zero-padding)"""
+        if self.cod_si_number is None:
+            return None
+        return f'{self.cod_si_number:06d}'
 
 
 # =============================================================================
@@ -3592,6 +3600,26 @@ class CompanyEmailSettings(db.Model):
         """Cripta e salva la password SMTP"""
         from utils_encryption import encrypt_value
         self.mail_password_encrypted = encrypt_value(plain_password)
+
+
+class CompanyHrCounters(db.Model):
+    """Contatori HR per auto-incremento valori per company (es. matricola dipendenti)"""
+    __tablename__ = 'company_hr_counters'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False, unique=True)
+    
+    # Contatore matricola (COD SI)
+    next_cod_si = db.Column(db.Integer, default=1, nullable=False)
+    
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relazione
+    company = db.relationship('Company', backref=db.backref('hr_counters', uselist=False, lazy=True))
+    
+    def __repr__(self):
+        return f'<CompanyHrCounters company_id={self.company_id} next_cod_si={self.next_cod_si}>'
 
 
 class Sede(db.Model):
