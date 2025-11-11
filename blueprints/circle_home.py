@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from models import (
     CirclePost, CircleGroup, CirclePoll, CircleCalendarEvent, 
-    CircleDocument, CircleToolLink, User, ConnectionRequest
+    CircleDocument, CircleToolLink, User, ConnectionRequest, Channel
 )
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
 from datetime import datetime, timedelta
@@ -37,11 +37,23 @@ def home():
         current_user
     ).order_by(desc(CirclePost.created_at)).limit(3).all()
     
-    # Widget: Ultime news/comunicazioni
-    recent_posts = filter_by_company(
-        CirclePost.query.filter_by(published=True, pinned=False),
+    # Widget: Ultime comunicazioni (channel-based)
+    recent_communications = filter_by_company(
+        CirclePost.query.filter(CirclePost.channel_id.isnot(None)).filter_by(published=True),
         current_user
     ).order_by(desc(CirclePost.created_at)).limit(5).all()
+    
+    # Widget: Ultime news (global posts without channel)
+    recent_posts = filter_by_company(
+        CirclePost.query.filter(CirclePost.channel_id.is_(None)).filter_by(published=True, pinned=False),
+        current_user
+    ).order_by(desc(CirclePost.created_at)).limit(5).all()
+    
+    # Widget: Canali attivi
+    active_channels = filter_by_company(
+        Channel.query.filter_by(active=True),
+        current_user
+    ).order_by(Channel.name).limit(6).all()
     
     # Widget: Gruppi attivi
     active_groups = filter_by_company(
@@ -78,7 +90,9 @@ def home():
     
     return render_template('circle/home.html',
                          pinned_posts=pinned_posts,
+                         recent_communications=recent_communications,
                          recent_posts=recent_posts,
+                         active_channels=active_channels,
                          active_groups=active_groups,
                          active_polls=active_polls,
                          upcoming_events=upcoming_events,

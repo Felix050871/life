@@ -44,7 +44,7 @@
     {% endif %}
 
     <div class="row">
-        <!-- Left Column: News & Posts -->
+        <!-- Left Column: Communications, News & Posts -->
         <div class="col-lg-8">
             <!-- Pinned Posts -->
             {% if pinned_posts %}
@@ -55,7 +55,7 @@
                 <div class="card-body">
                     {% for post in pinned_posts %}
                     <div class="alert alert-info mb-3">
-                        <h6><a href="{{ url_for('circle_news.view_post', post_id=post.id) }}" class="text-decoration-none">{{ post.title }}</a></h6>
+                        <h6><a href="{% if post.channel_id %}{{ url_for('circle_communications.view_post', post_id=post.id) }}{% else %}{{ url_for('circle_news.view_post', post_id=post.id) }}{% endif %}" class="text-decoration-none">{{ post.title }}</a></h6>
                         <p class="mb-1">{{ post.content[:150]|safe }}...</p>
                         <small class="text-muted">
                             <i class="fas fa-user"></i> {{ post.author.get_full_name() }} • 
@@ -66,6 +66,37 @@
                 </div>
             </div>
             {% endif %}
+
+            <!-- Recent Communications -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-bullhorn"></i> Ultime Comunicazioni</h5>
+                    <a href="{{ url_for('circle_communications.index') }}" class="btn btn-sm btn-light">Vedi Tutte</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_communications %}
+                    <div class="list-group list-group-flush">
+                        {% for post in recent_communications %}
+                        <a href="{{ url_for('circle_communications.view_post', post_id=post.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    {% if post.channel %}
+                                    <span class="badge bg-info me-2">{{ post.channel.name }}</span>
+                                    {% endif %}
+                                    {{ post.title }}
+                                </h6>
+                                <small>{{ post.created_at.strftime('%d/%m/%Y') }}</small>
+                            </div>
+                            <p class="mb-1">{{ post.content[:100]|safe }}...</p>
+                            <small class="text-muted"><i class="fas fa-user"></i> {{ post.author.get_full_name() }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nessuna comunicazione disponibile</p>
+                    {% endif %}
+                </div>
+            </div>
 
             <!-- Recent News -->
             <div class="card mb-4">
@@ -115,8 +146,37 @@
             {% endif %}
         </div>
 
-        <!-- Right Column: Groups & Events -->
+        <!-- Right Column: Channels, Groups & Events -->
         <div class="col-lg-4">
+            <!-- Channels -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-layer-group"></i> Canali</h5>
+                    <a href="{{ url_for('circle_channels.index') }}" class="btn btn-sm btn-dark">Vedi Tutti</a>
+                </div>
+                <div class="card-body">
+                    {% if active_channels %}
+                    <div class="list-group list-group-flush">
+                        {% for channel in active_channels %}
+                        <a href="{{ url_for('circle_communications.index', channel_id=channel.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex align-items-center">
+                                <i class="{{ channel.icon_class }} fa-2x me-3 {{ channel.icon_color }}"></i>
+                                <div>
+                                    <h6 class="mb-0">{{ channel.name }}</h6>
+                                    {% if channel.description %}
+                                    <small class="text-muted">{{ channel.description[:50] }}...</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nessun canale disponibile</p>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Groups -->
             <div class="card mb-4">
                 <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
