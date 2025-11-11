@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     ${props.reason ? `<div class="mb-3"><strong>Motivazione:</strong> ${props.reason}</div>` : ''}
                     <div class="mt-3">
-                        <a href="{{ url_for('leave.leave_list') }}" class="btn btn-sm btn-primary">Vai alle Richieste</a>
+                        <a href="{{ url_for('leave.leave_requests') }}" class="btn btn-sm btn-primary">Vai alle Richieste</a>
                     </div>
                 `;
             } else if (props.type === 'shift') {
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <strong>Orario:</strong> ${info.event.start.toLocaleString('it-IT')} - ${info.event.end.toLocaleString('it-IT')}
                     </div>
                     <div class="mt-3">
-                        <a href="{{ url_for('shifts.shifts_list') }}" class="btn btn-sm btn-primary">Vai ai Turni</a>
+                        <a href="{{ url_for('shifts.visualizza_turni') }}" class="btn btn-sm btn-primary">Vai ai Turni</a>
                     </div>
                 `;
             }
