@@ -702,6 +702,41 @@ def hr_detail(user_id):
             else:
                 hr_data.banca_ore_periodo_mesi = None
             
+            # Maturazione ferie e permessi
+            from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+            
+            gg_ferie_str = request.form.get('gg_ferie_maturate_mese', '').strip()
+            if gg_ferie_str:
+                try:
+                    # Converti a Decimal con precisione 2 decimali
+                    gg_ferie_decimal = Decimal(gg_ferie_str.replace(',', '.')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    # Validazione: massimo 5 giorni al mese (circa 60 giorni all'anno)
+                    if gg_ferie_decimal < 0 or gg_ferie_decimal > 5:
+                        flash('Giorni ferie maturate al mese deve essere tra 0 e 5', 'warning')
+                        gg_ferie_decimal = Decimal('0')
+                    hr_data.gg_ferie_maturate_mese = gg_ferie_decimal
+                except (InvalidOperation, ValueError):
+                    flash('Formato non valido per giorni ferie maturate', 'warning')
+                    hr_data.gg_ferie_maturate_mese = Decimal('0')
+            else:
+                hr_data.gg_ferie_maturate_mese = Decimal('0')
+            
+            hh_permesso_str = request.form.get('hh_permesso_maturate_mese', '').strip()
+            if hh_permesso_str:
+                try:
+                    # Converti a Decimal con precisione 2 decimali
+                    hh_permesso_decimal = Decimal(hh_permesso_str.replace(',', '.')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    # Validazione: massimo 16 ore al mese (circa 192 ore all'anno, ragionevole per ROL+PAR)
+                    if hh_permesso_decimal < 0 or hh_permesso_decimal > 16:
+                        flash('Ore permesso maturate al mese deve essere tra 0 e 16', 'warning')
+                        hh_permesso_decimal = Decimal('0')
+                    hr_data.hh_permesso_maturate_mese = hh_permesso_decimal
+                except (InvalidOperation, ValueError):
+                    flash('Formato non valido per ore permesso maturate', 'warning')
+                    hr_data.hh_permesso_maturate_mese = Decimal('0')
+            else:
+                hr_data.hh_permesso_maturate_mese = Decimal('0')
+            
             # Requisiti e sicurezza
             hr_data.minimum_requirements = request.form.get('minimum_requirements', '').strip() or None
             

@@ -274,6 +274,33 @@
                 </div>
             </div>
 
+            <!-- Maturazione Ferie e Permessi -->
+            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-umbrella-beach me-2"></i>Maturazione Ferie e Permessi</h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Giorni Ferie Maturati al Mese</label>
+                    <div class="input-group">
+                        <input type="text" name="gg_ferie_maturate_mese" class="form-control" 
+                               value="{{ (hr_data.gg_ferie_maturate_mese|string).replace('.', ',') if hr_data.gg_ferie_maturate_mese else '0' }}"
+                               placeholder="2.33"
+                               {% if not can_edit %}disabled{% endif %}>
+                        <span class="input-group-text">gg/mese</span>
+                    </div>
+                    <small class="text-muted">Es: 2.33 giorni/mese = 28 giorni/anno. Usato per calcolare il monte ferie disponibile.</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Ore Permesso (ROL) Maturate al Mese</label>
+                    <div class="input-group">
+                        <input type="text" name="hh_permesso_maturate_mese" class="form-control" 
+                               value="{{ (hr_data.hh_permesso_maturate_mese|string).replace('.', ',') if hr_data.hh_permesso_maturate_mese else '0' }}"
+                               placeholder="7"
+                               {% if not can_edit %}disabled{% endif %}>
+                        <span class="input-group-text">h/mese</span>
+                    </div>
+                    <small class="text-muted">Es: 7 ore/mese = 84 ore/anno (ROL). Usato per calcolare il monte permessi disponibile.</small>
+                </div>
+            </div>
+
             <!-- Note Contratto -->
             <div class="row">
                 <div class="col-12 mb-3">
