@@ -339,12 +339,12 @@ def dashboard():
             (SocialSafetyNetProgram.end_date.is_(None)) | (SocialSafetyNetProgram.end_date >= today_date)
         ).count()
         
-        # Active assignments (approved and currently valid)
+        # Active assignments (approved/active and currently valid)
         active_assignments_count = filter_by_company(SocialSafetyNetAssignment.query).filter(
-            SocialSafetyNetAssignment.is_approved.is_(True),
-            SocialSafetyNetAssignment.effective_from <= today_date
+            SocialSafetyNetAssignment.status.in_(['approved', 'active']),
+            SocialSafetyNetAssignment.start_date <= today_date
         ).filter(
-            (SocialSafetyNetAssignment.effective_to.is_(None)) | (SocialSafetyNetAssignment.effective_to >= today_date)
+            SocialSafetyNetAssignment.end_date >= today_date
         ).count()
         
         # Expiring soon (programs or assignments expiring in next 30 days)
@@ -357,15 +357,14 @@ def dashboard():
         ).count()
         
         expiring_assignments = filter_by_company(SocialSafetyNetAssignment.query).filter(
-            SocialSafetyNetAssignment.is_approved.is_(True),
-            SocialSafetyNetAssignment.effective_to.isnot(None),
-            SocialSafetyNetAssignment.effective_to >= today_date,
-            SocialSafetyNetAssignment.effective_to <= thirty_days_from_now
+            SocialSafetyNetAssignment.status.in_(['approved', 'active']),
+            SocialSafetyNetAssignment.end_date >= today_date,
+            SocialSafetyNetAssignment.end_date <= thirty_days_from_now
         ).count()
         
         # Pending assignments (waiting approval)
         pending_assignments = filter_by_company(SocialSafetyNetAssignment.query).filter(
-            SocialSafetyNetAssignment.is_approved.is_(False)
+            SocialSafetyNetAssignment.status == 'pending'
         ).count()
         
         social_safety_stats = {
