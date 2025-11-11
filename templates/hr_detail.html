@@ -356,23 +356,192 @@
             </div>
             <div class="row">
                 <div class="col-md-5 mb-3">
-                    <label class="form-label">Luogo di Nascita</label>
-                    <input type="text" name="birth_city" class="form-control" 
-                           value="{{ hr_data.birth_city or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label class="form-label">Provincia</label>
-                    <input type="text" name="birth_province" class="form-control text-uppercase" 
-                           value="{{ hr_data.birth_province or '' }}" 
-                           maxlength="2"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-5 mb-3">
                     <label class="form-label">Paese di Nascita</label>
-                    <input type="text" name="birth_country" class="form-control" 
-                           value="{{ hr_data.birth_country or 'Italia' }}"
-                           {% if not can_edit %}disabled{% endif %}>
+                    <select name="birth_country" id="birth_country" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="Italia" {% if not hr_data.birth_country or hr_data.birth_country == 'Italia' %}selected{% endif %}>Italia</option>
+                        <optgroup label="Principali Paesi Europei">
+                            <option value="Francia" {% if hr_data.birth_country == 'Francia' %}selected{% endif %}>Francia</option>
+                            <option value="Germania" {% if hr_data.birth_country == 'Germania' %}selected{% endif %}>Germania</option>
+                            <option value="Spagna" {% if hr_data.birth_country == 'Spagna' %}selected{% endif %}>Spagna</option>
+                            <option value="Regno Unito" {% if hr_data.birth_country == 'Regno Unito' %}selected{% endif %}>Regno Unito</option>
+                            <option value="Svizzera" {% if hr_data.birth_country == 'Svizzera' %}selected{% endif %}>Svizzera</option>
+                            <option value="Austria" {% if hr_data.birth_country == 'Austria' %}selected{% endif %}>Austria</option>
+                            <option value="Belgio" {% if hr_data.birth_country == 'Belgio' %}selected{% endif %}>Belgio</option>
+                            <option value="Paesi Bassi" {% if hr_data.birth_country == 'Paesi Bassi' %}selected{% endif %}>Paesi Bassi</option>
+                            <option value="Portogallo" {% if hr_data.birth_country == 'Portogallo' %}selected{% endif %}>Portogallo</option>
+                            <option value="Grecia" {% if hr_data.birth_country == 'Grecia' %}selected{% endif %}>Grecia</option>
+                            <option value="Polonia" {% if hr_data.birth_country == 'Polonia' %}selected{% endif %}>Polonia</option>
+                            <option value="Romania" {% if hr_data.birth_country == 'Romania' %}selected{% endif %}>Romania</option>
+                            <option value="Albania" {% if hr_data.birth_country == 'Albania' %}selected{% endif %}>Albania</option>
+                        </optgroup>
+                        <optgroup label="Altri Paesi">
+                            <option value="Stati Uniti" {% if hr_data.birth_country == 'Stati Uniti' %}selected{% endif %}>Stati Uniti</option>
+                            <option value="Canada" {% if hr_data.birth_country == 'Canada' %}selected{% endif %}>Canada</option>
+                            <option value="Brasile" {% if hr_data.birth_country == 'Brasile' %}selected{% endif %}>Brasile</option>
+                            <option value="Argentina" {% if hr_data.birth_country == 'Argentina' %}selected{% endif %}>Argentina</option>
+                            <option value="Cina" {% if hr_data.birth_country == 'Cina' %}selected{% endif %}>Cina</option>
+                            <option value="India" {% if hr_data.birth_country == 'India' %}selected{% endif %}>India</option>
+                            <option value="Marocco" {% if hr_data.birth_country == 'Marocco' %}selected{% endif %}>Marocco</option>
+                            <option value="Tunisia" {% if hr_data.birth_country == 'Tunisia' %}selected{% endif %}>Tunisia</option>
+                            <option value="Egitto" {% if hr_data.birth_country == 'Egitto' %}selected{% endif %}>Egitto</option>
+                            <option value="Nigeria" {% if hr_data.birth_country == 'Nigeria' %}selected{% endif %}>Nigeria</option>
+                            <option value="Senegal" {% if hr_data.birth_country == 'Senegal' %}selected{% endif %}>Senegal</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="col-md-5 mb-3" id="birth_city_container">
+                    <label class="form-label">Comune di Nascita</label>
+                    <select name="birth_city" id="birth_city" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">Seleziona...</option>
+                        <option value="Roma" {% if hr_data.birth_city == 'Roma' %}selected{% endif %}>Roma</option>
+                        <option value="Milano" {% if hr_data.birth_city == 'Milano' %}selected{% endif %}>Milano</option>
+                        <option value="Napoli" {% if hr_data.birth_city == 'Napoli' %}selected{% endif %}>Napoli</option>
+                        <option value="Torino" {% if hr_data.birth_city == 'Torino' %}selected{% endif %}>Torino</option>
+                        <option value="Palermo" {% if hr_data.birth_city == 'Palermo' %}selected{% endif %}>Palermo</option>
+                        <option value="Genova" {% if hr_data.birth_city == 'Genova' %}selected{% endif %}>Genova</option>
+                        <option value="Bologna" {% if hr_data.birth_city == 'Bologna' %}selected{% endif %}>Bologna</option>
+                        <option value="Firenze" {% if hr_data.birth_city == 'Firenze' %}selected{% endif %}>Firenze</option>
+                        <option value="Bari" {% if hr_data.birth_city == 'Bari' %}selected{% endif %}>Bari</option>
+                        <option value="Catania" {% if hr_data.birth_city == 'Catania' %}selected{% endif %}>Catania</option>
+                        <option value="Venezia" {% if hr_data.birth_city == 'Venezia' %}selected{% endif %}>Venezia</option>
+                        <option value="Verona" {% if hr_data.birth_city == 'Verona' %}selected{% endif %}>Verona</option>
+                        <option value="Messina" {% if hr_data.birth_city == 'Messina' %}selected{% endif %}>Messina</option>
+                        <option value="Padova" {% if hr_data.birth_city == 'Padova' %}selected{% endif %}>Padova</option>
+                        <option value="Trieste" {% if hr_data.birth_city == 'Trieste' %}selected{% endif %}>Trieste</option>
+                        <option value="Brescia" {% if hr_data.birth_city == 'Brescia' %}selected{% endif %}>Brescia</option>
+                        <option value="Parma" {% if hr_data.birth_city == 'Parma' %}selected{% endif %}>Parma</option>
+                        <option value="Taranto" {% if hr_data.birth_city == 'Taranto' %}selected{% endif %}>Taranto</option>
+                        <option value="Prato" {% if hr_data.birth_city == 'Prato' %}selected{% endif %}>Prato</option>
+                        <option value="Modena" {% if hr_data.birth_city == 'Modena' %}selected{% endif %}>Modena</option>
+                        <option value="Reggio Calabria" {% if hr_data.birth_city == 'Reggio Calabria' %}selected{% endif %}>Reggio Calabria</option>
+                        <option value="Reggio Emilia" {% if hr_data.birth_city == 'Reggio Emilia' %}selected{% endif %}>Reggio Emilia</option>
+                        <option value="Perugia" {% if hr_data.birth_city == 'Perugia' %}selected{% endif %}>Perugia</option>
+                        <option value="Ravenna" {% if hr_data.birth_city == 'Ravenna' %}selected{% endif %}>Ravenna</option>
+                        <option value="Livorno" {% if hr_data.birth_city == 'Livorno' %}selected{% endif %}>Livorno</option>
+                        <option value="Cagliari" {% if hr_data.birth_city == 'Cagliari' %}selected{% endif %}>Cagliari</option>
+                        <option value="Foggia" {% if hr_data.birth_city == 'Foggia' %}selected{% endif %}>Foggia</option>
+                        <option value="Rimini" {% if hr_data.birth_city == 'Rimini' %}selected{% endif %}>Rimini</option>
+                        <option value="Salerno" {% if hr_data.birth_city == 'Salerno' %}selected{% endif %}>Salerno</option>
+                        <option value="Ferrara" {% if hr_data.birth_city == 'Ferrara' %}selected{% endif %}>Ferrara</option>
+                    </select>
+                    <small class="text-muted">Se il comune non è in lista, verrà usato codice generico</small>
+                </div>
+                <div class="col-md-2 mb-3" id="birth_province_container">
+                    <label class="form-label">Prov.</label>
+                    <select name="birth_province" id="birth_province" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                        <option value="">-</option>
+                        <option value="AG" {% if hr_data.birth_province == 'AG' %}selected{% endif %}>AG</option>
+                        <option value="AL" {% if hr_data.birth_province == 'AL' %}selected{% endif %}>AL</option>
+                        <option value="AN" {% if hr_data.birth_province == 'AN' %}selected{% endif %}>AN</option>
+                        <option value="AO" {% if hr_data.birth_province == 'AO' %}selected{% endif %}>AO</option>
+                        <option value="AR" {% if hr_data.birth_province == 'AR' %}selected{% endif %}>AR</option>
+                        <option value="AP" {% if hr_data.birth_province == 'AP' %}selected{% endif %}>AP</option>
+                        <option value="AT" {% if hr_data.birth_province == 'AT' %}selected{% endif %}>AT</option>
+                        <option value="AV" {% if hr_data.birth_province == 'AV' %}selected{% endif %}>AV</option>
+                        <option value="BA" {% if hr_data.birth_province == 'BA' %}selected{% endif %}>BA</option>
+                        <option value="BT" {% if hr_data.birth_province == 'BT' %}selected{% endif %}>BT</option>
+                        <option value="BL" {% if hr_data.birth_province == 'BL' %}selected{% endif %}>BL</option>
+                        <option value="BN" {% if hr_data.birth_province == 'BN' %}selected{% endif %}>BN</option>
+                        <option value="BG" {% if hr_data.birth_province == 'BG' %}selected{% endif %}>BG</option>
+                        <option value="BI" {% if hr_data.birth_province == 'BI' %}selected{% endif %}>BI</option>
+                        <option value="BO" {% if hr_data.birth_province == 'BO' %}selected{% endif %}>BO</option>
+                        <option value="BZ" {% if hr_data.birth_province == 'BZ' %}selected{% endif %}>BZ</option>
+                        <option value="BS" {% if hr_data.birth_province == 'BS' %}selected{% endif %}>BS</option>
+                        <option value="BR" {% if hr_data.birth_province == 'BR' %}selected{% endif %}>BR</option>
+                        <option value="CA" {% if hr_data.birth_province == 'CA' %}selected{% endif %}>CA</option>
+                        <option value="CL" {% if hr_data.birth_province == 'CL' %}selected{% endif %}>CL</option>
+                        <option value="CB" {% if hr_data.birth_province == 'CB' %}selected{% endif %}>CB</option>
+                        <option value="CI" {% if hr_data.birth_province == 'CI' %}selected{% endif %}>CI</option>
+                        <option value="CE" {% if hr_data.birth_province == 'CE' %}selected{% endif %}>CE</option>
+                        <option value="CT" {% if hr_data.birth_province == 'CT' %}selected{% endif %}>CT</option>
+                        <option value="CZ" {% if hr_data.birth_province == 'CZ' %}selected{% endif %}>CZ</option>
+                        <option value="CH" {% if hr_data.birth_province == 'CH' %}selected{% endif %}>CH</option>
+                        <option value="CO" {% if hr_data.birth_province == 'CO' %}selected{% endif %}>CO</option>
+                        <option value="CS" {% if hr_data.birth_province == 'CS' %}selected{% endif %}>CS</option>
+                        <option value="CR" {% if hr_data.birth_province == 'CR' %}selected{% endif %}>CR</option>
+                        <option value="KR" {% if hr_data.birth_province == 'KR' %}selected{% endif %}>KR</option>
+                        <option value="CN" {% if hr_data.birth_province == 'CN' %}selected{% endif %}>CN</option>
+                        <option value="EN" {% if hr_data.birth_province == 'EN' %}selected{% endif %}>EN</option>
+                        <option value="FM" {% if hr_data.birth_province == 'FM' %}selected{% endif %}>FM</option>
+                        <option value="FE" {% if hr_data.birth_province == 'FE' %}selected{% endif %}>FE</option>
+                        <option value="FI" {% if hr_data.birth_province == 'FI' %}selected{% endif %}>FI</option>
+                        <option value="FG" {% if hr_data.birth_province == 'FG' %}selected{% endif %}>FG</option>
+                        <option value="FC" {% if hr_data.birth_province == 'FC' %}selected{% endif %}>FC</option>
+                        <option value="FR" {% if hr_data.birth_province == 'FR' %}selected{% endif %}>FR</option>
+                        <option value="GE" {% if hr_data.birth_province == 'GE' %}selected{% endif %}>GE</option>
+                        <option value="GO" {% if hr_data.birth_province == 'GO' %}selected{% endif %}>GO</option>
+                        <option value="GR" {% if hr_data.birth_province == 'GR' %}selected{% endif %}>GR</option>
+                        <option value="IM" {% if hr_data.birth_province == 'IM' %}selected{% endif %}>IM</option>
+                        <option value="IS" {% if hr_data.birth_province == 'IS' %}selected{% endif %}>IS</option>
+                        <option value="SP" {% if hr_data.birth_province == 'SP' %}selected{% endif %}>SP</option>
+                        <option value="AQ" {% if hr_data.birth_province == 'AQ' %}selected{% endif %}>AQ</option>
+                        <option value="LT" {% if hr_data.birth_province == 'LT' %}selected{% endif %}>LT</option>
+                        <option value="LE" {% if hr_data.birth_province == 'LE' %}selected{% endif %}>LE</option>
+                        <option value="LC" {% if hr_data.birth_province == 'LC' %}selected{% endif %}>LC</option>
+                        <option value="LI" {% if hr_data.birth_province == 'LI' %}selected{% endif %}>LI</option>
+                        <option value="LO" {% if hr_data.birth_province == 'LO' %}selected{% endif %}>LO</option>
+                        <option value="LU" {% if hr_data.birth_province == 'LU' %}selected{% endif %}>LU</option>
+                        <option value="MC" {% if hr_data.birth_province == 'MC' %}selected{% endif %}>MC</option>
+                        <option value="MN" {% if hr_data.birth_province == 'MN' %}selected{% endif %}>MN</option>
+                        <option value="MS" {% if hr_data.birth_province == 'MS' %}selected{% endif %}>MS</option>
+                        <option value="MT" {% if hr_data.birth_province == 'MT' %}selected{% endif %}>MT</option>
+                        <option value="ME" {% if hr_data.birth_province == 'ME' %}selected{% endif %}>ME</option>
+                        <option value="MI" {% if hr_data.birth_province == 'MI' %}selected{% endif %}>MI</option>
+                        <option value="MO" {% if hr_data.birth_province == 'MO' %}selected{% endif %}>MO</option>
+                        <option value="MB" {% if hr_data.birth_province == 'MB' %}selected{% endif %}>MB</option>
+                        <option value="NA" {% if hr_data.birth_province == 'NA' %}selected{% endif %}>NA</option>
+                        <option value="NO" {% if hr_data.birth_province == 'NO' %}selected{% endif %}>NO</option>
+                        <option value="NU" {% if hr_data.birth_province == 'NU' %}selected{% endif %}>NU</option>
+                        <option value="OG" {% if hr_data.birth_province == 'OG' %}selected{% endif %}>OG</option>
+                        <option value="OT" {% if hr_data.birth_province == 'OT' %}selected{% endif %}>OT</option>
+                        <option value="OR" {% if hr_data.birth_province == 'OR' %}selected{% endif %}>OR</option>
+                        <option value="PD" {% if hr_data.birth_province == 'PD' %}selected{% endif %}>PD</option>
+                        <option value="PA" {% if hr_data.birth_province == 'PA' %}selected{% endif %}>PA</option>
+                        <option value="PR" {% if hr_data.birth_province == 'PR' %}selected{% endif %}>PR</option>
+                        <option value="PV" {% if hr_data.birth_province == 'PV' %}selected{% endif %}>PV</option>
+                        <option value="PG" {% if hr_data.birth_province == 'PG' %}selected{% endif %}>PG</option>
+                        <option value="PU" {% if hr_data.birth_province == 'PU' %}selected{% endif %}>PU</option>
+                        <option value="PE" {% if hr_data.birth_province == 'PE' %}selected{% endif %}>PE</option>
+                        <option value="PC" {% if hr_data.birth_province == 'PC' %}selected{% endif %}>PC</option>
+                        <option value="PI" {% if hr_data.birth_province == 'PI' %}selected{% endif %}>PI</option>
+                        <option value="PT" {% if hr_data.birth_province == 'PT' %}selected{% endif %}>PT</option>
+                        <option value="PN" {% if hr_data.birth_province == 'PN' %}selected{% endif %}>PN</option>
+                        <option value="PZ" {% if hr_data.birth_province == 'PZ' %}selected{% endif %}>PZ</option>
+                        <option value="PO" {% if hr_data.birth_province == 'PO' %}selected{% endif %}>PO</option>
+                        <option value="RG" {% if hr_data.birth_province == 'RG' %}selected{% endif %}>RG</option>
+                        <option value="RA" {% if hr_data.birth_province == 'RA' %}selected{% endif %}>RA</option>
+                        <option value="RC" {% if hr_data.birth_province == 'RC' %}selected{% endif %}>RC</option>
+                        <option value="RE" {% if hr_data.birth_province == 'RE' %}selected{% endif %}>RE</option>
+                        <option value="RI" {% if hr_data.birth_province == 'RI' %}selected{% endif %}>RI</option>
+                        <option value="RN" {% if hr_data.birth_province == 'RN' %}selected{% endif %}>RN</option>
+                        <option value="RM" {% if hr_data.birth_province == 'RM' %}selected{% endif %}>RM</option>
+                        <option value="RO" {% if hr_data.birth_province == 'RO' %}selected{% endif %}>RO</option>
+                        <option value="SA" {% if hr_data.birth_province == 'SA' %}selected{% endif %}>SA</option>
+                        <option value="VS" {% if hr_data.birth_province == 'VS' %}selected{% endif %}>VS</option>
+                        <option value="SS" {% if hr_data.birth_province == 'SS' %}selected{% endif %}>SS</option>
+                        <option value="SV" {% if hr_data.birth_province == 'SV' %}selected{% endif %}>SV</option>
+                        <option value="SI" {% if hr_data.birth_province == 'SI' %}selected{% endif %}>SI</option>
+                        <option value="SR" {% if hr_data.birth_province == 'SR' %}selected{% endif %}>SR</option>
+                        <option value="SO" {% if hr_data.birth_province == 'SO' %}selected{% endif %}>SO</option>
+                        <option value="SU" {% if hr_data.birth_province == 'SU' %}selected{% endif %}>SU</option>
+                        <option value="TA" {% if hr_data.birth_province == 'TA' %}selected{% endif %}>TA</option>
+                        <option value="TE" {% if hr_data.birth_province == 'TE' %}selected{% endif %}>TE</option>
+                        <option value="TR" {% if hr_data.birth_province == 'TR' %}selected{% endif %}>TR</option>
+                        <option value="TO" {% if hr_data.birth_province == 'TO' %}selected{% endif %}>TO</option>
+                        <option value="TP" {% if hr_data.birth_province == 'TP' %}selected{% endif %}>TP</option>
+                        <option value="TN" {% if hr_data.birth_province == 'TN' %}selected{% endif %}>TN</option>
+                        <option value="TV" {% if hr_data.birth_province == 'TV' %}selected{% endif %}>TV</option>
+                        <option value="TS" {% if hr_data.birth_province == 'TS' %}selected{% endif %}>TS</option>
+                        <option value="UD" {% if hr_data.birth_province == 'UD' %}selected{% endif %}>UD</option>
+                        <option value="VA" {% if hr_data.birth_province == 'VA' %}selected{% endif %}>VA</option>
+                        <option value="VE" {% if hr_data.birth_province == 'VE' %}selected{% endif %}>VE</option>
+                        <option value="VB" {% if hr_data.birth_province == 'VB' %}selected{% endif %}>VB</option>
+                        <option value="VC" {% if hr_data.birth_province == 'VC' %}selected{% endif %}>VC</option>
+                        <option value="VR" {% if hr_data.birth_province == 'VR' %}selected{% endif %}>VR</option>
+                        <option value="VV" {% if hr_data.birth_province == 'VV' %}selected{% endif %}>VV</option>
+                        <option value="VI" {% if hr_data.birth_province == 'VI' %}selected{% endif %}>VI</option>
+                        <option value="VT" {% if hr_data.birth_province == 'VT' %}selected{% endif %}>VT</option>
+                    </select>
                 </div>
             </div>
 
@@ -768,6 +937,25 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Gestione visibilità campi nascita in base al paese selezionato
+    const birthCountrySelect = document.getElementById('birth_country');
+    const birthCityContainer = document.getElementById('birth_city_container');
+    const birthProvinceContainer = document.getElementById('birth_province_container');
+    
+    if (birthCountrySelect && birthCityContainer && birthProvinceContainer) {
+        function toggleBirthFields() {
+            const isItaly = birthCountrySelect.value === 'Italia';
+            birthCityContainer.style.display = isItaly ? 'block' : 'none';
+            birthProvinceContainer.style.display = isItaly ? 'block' : 'none';
+        }
+        
+        // Applica al caricamento
+        toggleBirthFields();
+        
+        // Applica al cambio
+        birthCountrySelect.addEventListener('change', toggleBirthFields);
+    }
+    
     // Gestione visibilità campi condizionali per tipo contratto
     const contractTypeSelect = document.getElementById('contract_type');
     const distaccoSupplierField = document.getElementById('distacco_supplier_field');
