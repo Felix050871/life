@@ -11,8 +11,8 @@
                 <div>
                     <h2><i class="fas fa-shield-alt me-2"></i>Ammortizzatori Sociali</h2>
                     <p class="text-muted mb-0">Dipendente: <strong>{{ user.get_full_name() }}</strong>
-                    {% if user.hr_data and user.hr_data.matricola %}
-                        <span class="badge bg-secondary ms-2">{{ user.hr_data.matricola }}</span>
+                    {% if user.matricola %}
+                        <span class="badge bg-secondary ms-2">{{ user.matricola }}</span>
                     {% endif %}
                     </p>
                 </div>

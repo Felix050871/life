@@ -231,7 +231,7 @@ def hr_list():
             'user': user,
             'hr_data': hr_data,  # Pass the actual object so template can access sede relationship
             'has_data': hr_data is not None,
-            'matricola': hr_data.matricola if hr_data else '-',
+            'matricola': user.matricola if user.matricola else '-',
             'contract_type': hr_data.contract_type if hr_data else '-',
             'hire_date': hr_data.hire_date.strftime('%d/%m/%Y') if hr_data and hr_data.hire_date else '-',
             'contract_status': 'Attivo' if is_contract_active else 'Non attivo' if hr_data else '-',
@@ -261,7 +261,7 @@ def hr_list():
             
             # Filtro matricola
             if 'matricola' in active_filters:
-                if not hr_data.matricola or active_filters['matricola'].lower() not in hr_data.matricola.lower():
+                if not user.matricola or active_filters['matricola'].lower() not in user.matricola.lower():
                     matches = False
             
             # Filtro data assunzione (filtra per anno)
@@ -420,7 +420,7 @@ def hr_detail(user_id):
             previous_contract_snapshot = get_current_snapshot(hr_data)
             
             # Aggiorna dati anagrafici
-            hr_data.matricola = request.form.get('matricola', '').strip() or None
+            # Nota: matricola NON viene salvata manualmente - è gestita automaticamente da cod_si_number
             hr_data.codice_fiscale = request.form.get('codice_fiscale', '').strip().upper() or None
             hr_data.gender = request.form.get('gender', '') or None
             
@@ -1240,7 +1240,7 @@ def hr_export():
             
             # Applica gli stessi filtri usati nella lista
             if 'matricola' in active_filters:
-                if not hr_data.matricola or active_filters['matricola'].lower() not in hr_data.matricola.lower():
+                if not user.matricola or active_filters['matricola'].lower() not in user.matricola.lower():
                     matches = False
             
             # Filtro data assunzione (filtra per anno)
@@ -1339,7 +1339,7 @@ def hr_export():
         
         row_data = [
             # DATI CONTRATTUALI
-            hr_data.cod_si or hr_data.matricola if hr_data else '',
+            user.matricola if user.matricola else '',
             user.last_name,
             user.first_name,
             hr_data.hire_date.strftime('%d/%m/%Y') if hr_data and hr_data.hire_date else '',
