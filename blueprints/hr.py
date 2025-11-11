@@ -5,9 +5,10 @@
 # ROUTES INCLUSE:
 # 1. hr_list (GET) - Lista dipendenti con dati HR
 # 2. hr_detail (GET/POST) - Visualizza/modifica scheda HR completa
-# 3. hr_export (GET) - Export Excel dati HR
+# 3. contract_history (GET) - Visualizza storico contrattuale dipendente
+# 4. hr_export (GET) - Export Excel dati HR
 #
-# Total routes: 3
+# Total routes: 4
 # =============================================================================
 
 from flask import Blueprint, request, render_template, redirect, url_for, flash, make_response, session
@@ -15,10 +16,11 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 from functools import wraps
 from app import db
-from models import User, UserHRData, ACITable, Sede, WorkSchedule
+from models import User, UserHRData, ACITable, Sede, WorkSchedule, ContractHistory
 from utils_tenant import filter_by_company, set_company_on_create
 from utils_hr import assign_cod_si, sync_operational_fields
 from utils_codice_fiscale import calculate_codice_fiscale
+from utils_contract_history import get_current_snapshot, save_contract_history_if_changed
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -413,6 +415,9 @@ def hr_detail(user_id):
     
     if request.method == 'POST' and can_edit:
         try:
+            # Salva snapshot precedente dei dati contrattuali per confronto
+            previous_contract_snapshot = get_current_snapshot(hr_data)
+            
             # Aggiorna dati anagrafici
             hr_data.matricola = request.form.get('matricola', '').strip() or None
             hr_data.codice_fiscale = request.form.get('codice_fiscale', '').strip().upper() or None
@@ -850,9 +855,20 @@ def hr_detail(user_id):
             # Sincronizza i campi operativi da HR a User per backward compatibility
             sync_operational_fields(user, hr_data)
             
+            # Salva nello storico se ci sono stati cambiamenti contrattuali
+            history_created = save_contract_history_if_changed(
+                hr_data, 
+                previous_contract_snapshot,
+                changed_by_user_id=current_user.id,
+                notes=None  # Potremmo aggiungere un campo note nel form
+            )
+            
             db.session.commit()
             
-            flash('Dati HR aggiornati con successo', 'success')
+            if history_created:
+                flash('Dati HR aggiornati con successo - Modifiche salvate nello storico contrattuale', 'success')
+            else:
+                flash('Dati HR aggiornati con successo', 'success')
             return redirect(url_for('hr.hr_detail', user_id=user.id))
             
         except Exception as e:
@@ -881,6 +897,84 @@ def hr_detail(user_id):
                          mansioni=mansioni,
                          sedi=sedi,
                          work_schedules=work_schedules)
+
+
+@hr_bp.route('/<int:user_id>/contract_history')
+@login_required
+@require_hr_permission
+def contract_history(user_id):
+    """Visualizza lo storico contrattuale di un dipendente"""
+    
+    # Ottieni l'utente
+    user = filter_by_company(User.query).filter_by(id=user_id).first_or_404()
+    
+    # Controllo permessi
+    can_view_all = current_user.can_view_hr_data() or current_user.can_manage_hr_data()
+    
+    # Se non può vedere tutti i dati, può vedere solo i propri
+    if not can_view_all and user.id != current_user.id:
+        flash('Non hai i permessi per visualizzare questi dati', 'error')
+        return redirect(url_for('hr.hr_list'))
+    
+    # Ottieni record HR
+    hr_data = user.hr_data
+    if not hr_data:
+        flash('Nessun dato HR disponibile per questo utente', 'warning')
+        return redirect(url_for('hr.hr_detail', user_id=user.id))
+    
+    # Ottieni parametri di filtro e paginazione dalla query string
+    from_date_str = request.args.get('from_date')
+    to_date_str = request.args.get('to_date')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)  # Default 20 record per pagina
+    
+    # Converti date se presenti
+    from_date = None
+    to_date = None
+    
+    if from_date_str:
+        try:
+            from_date = datetime.strptime(from_date_str, '%Y-%m-%d')
+        except ValueError:
+            flash('Formato data inizio non valido', 'warning')
+    
+    if to_date_str:
+        try:
+            to_date = datetime.strptime(to_date_str, '%Y-%m-%d')
+        except ValueError:
+            flash('Formato data fine non valido', 'warning')
+    
+    # Query storico contrattuale con paginazione
+    query = ContractHistory.query.filter_by(user_hr_data_id=hr_data.id)
+    
+    if from_date:
+        query = query.filter(ContractHistory.effective_from_date >= from_date)
+    
+    if to_date:
+        query = query.filter(ContractHistory.effective_from_date <= to_date)
+    
+    query = query.order_by(ContractHistory.effective_from_date.desc())
+    
+    # Paginazione
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    history_records = pagination.items
+    total_records = pagination.total
+    
+    # Ottieni anche il record attivo corrente
+    from utils_contract_history import get_active_contract_snapshot
+    active_snapshot = get_active_contract_snapshot(hr_data.id)
+    
+    return render_template('contract_history.html',
+                         user=user,
+                         hr_data=hr_data,
+                         history_records=history_records,
+                         active_snapshot=active_snapshot,
+                         total_records=total_records,
+                         pagination=pagination,
+                         from_date=from_date,
+                         to_date=to_date,
+                         page=page,
+                         per_page=per_page)
 
 
 @hr_bp.route('/export')

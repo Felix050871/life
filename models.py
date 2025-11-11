@@ -1248,6 +1248,94 @@ class UserHRData(db.Model):
         return f'{self.cod_si_number:06d}'
 
 
+class ContractHistory(db.Model):
+    """Storico modifiche contrattuali ed economiche dei dipendenti
+    
+    Ogni record rappresenta uno snapshot completo dei dati contrattuali
+    valido in un determinato periodo (effective_from_date -> effective_to_date).
+    effective_to_date = NULL indica il record attualmente valido.
+    """
+    __tablename__ = 'contract_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_hr_data_id = db.Column(db.Integer, db.ForeignKey('user_hr_data.id'), nullable=False, index=True)
+    
+    # Date di validità del contratto
+    effective_from_date = db.Column(db.DateTime, nullable=False, default=italian_now, index=True)
+    effective_to_date = db.Column(db.DateTime, nullable=True)  # NULL = record attivo
+    
+    # Metadata della modifica
+    changed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    changed_at = db.Column(db.DateTime, nullable=False, default=italian_now)
+    change_notes = db.Column(db.Text, nullable=True)  # Note sulla modifica (opzionale)
+    
+    # ========== SNAPSHOT DATI CONTRATTUALI ==========
+    contract_type = db.Column(db.String(100), nullable=True)
+    distacco_supplier = db.Column(db.String(200), nullable=True)
+    consulente_vat = db.Column(db.String(20), nullable=True)
+    nome_fornitore = db.Column(db.String(200), nullable=True)
+    partita_iva_fornitore = db.Column(db.String(20), nullable=True)
+    hire_date = db.Column(db.Date, nullable=True)
+    contract_start_date = db.Column(db.Date, nullable=True)
+    contract_end_date = db.Column(db.Date, nullable=True)
+    probation_end_date = db.Column(db.Date, nullable=True)
+    ccnl = db.Column(db.String(100), nullable=True)
+    ccnl_level = db.Column(db.String(50), nullable=True)
+    work_hours_week = db.Column(db.Float, nullable=True)
+    working_time_type = db.Column(db.String(2), nullable=True)
+    part_time_percentage = db.Column(db.Float, nullable=True)
+    part_time_type = db.Column(db.String(20), nullable=True)
+    mansione = db.Column(db.String(100), nullable=True)
+    qualifica = db.Column(db.String(100), nullable=True)
+    superminimo = db.Column(db.Float, nullable=True)
+    rimborsi_diarie = db.Column(db.Float, nullable=True)
+    rischio_inail = db.Column(db.String(100), nullable=True)
+    tipo_assunzione = db.Column(db.String(100), nullable=True)
+    ticket_restaurant = db.Column(db.Boolean, default=False)
+    other_notes = db.Column(db.Text, nullable=True)
+    
+    # ========== SNAPSHOT DATI ECONOMICI ==========
+    gross_salary = db.Column(db.Float, nullable=True)
+    net_salary = db.Column(db.Float, nullable=True)
+    iban = db.Column(db.String(34), nullable=True)
+    payment_method = db.Column(db.String(50), nullable=True)
+    meal_vouchers_value = db.Column(db.Float, nullable=True)
+    fuel_card = db.Column(db.Boolean, default=False)
+    
+    # ========== SNAPSHOT DATI OPERATIVI ==========
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)
+    work_schedule_id = db.Column(db.Integer, db.ForeignKey('work_schedule.id'), nullable=True)
+    overtime_enabled = db.Column(db.Boolean, default=False)
+    overtime_type = db.Column(db.String(50), nullable=True)
+    banca_ore_limite_max = db.Column(db.Float, default=40.0)
+    banca_ore_periodo_mesi = db.Column(db.Integer, default=12)
+    gg_ferie_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    hh_permesso_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    
+    # Multi-tenant
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    
+    # Relationships
+    user_hr_data = db.relationship('UserHRData', backref='contract_history')
+    changed_by = db.relationship('User', foreign_keys=[changed_by_id], backref='contract_changes_made')
+    company = db.relationship('Company', backref='contract_history_records')
+    
+    def __repr__(self):
+        return f'<ContractHistory {self.id} - User HR Data {self.user_hr_data_id} - From {self.effective_from_date}>'
+    
+    def is_active(self):
+        """Verifica se questo è il record attualmente valido"""
+        return self.effective_to_date is None
+    
+    def get_duration_days(self):
+        """Calcola la durata in giorni del periodo di validità"""
+        if self.effective_to_date:
+            return (self.effective_to_date - self.effective_from_date).days
+        else:
+            # Record ancora attivo
+            return (italian_now() - self.effective_from_date).days
+
+
 # =============================================================================
 # ATTENDANCE & TIME TRACKING MODELS
 # =============================================================================
