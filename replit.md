@@ -12,6 +12,14 @@ The platform aims to reduce bureaucracy, enhance productivity, and foster corpor
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 11, 2025)
+- **CIRCLE Dashboard Enhancement**: Added Communications and Channels cards to dashboard home page:
+  - Created "Ultime Comunicazioni" card displaying recent channel-based posts (CirclePost with channel_id)
+  - Created "Canali" card showing active channels with icons and descriptions
+  - Separated recent_communications query (channel_id != None) from recent_posts query (channel_id == None) for proper categorization
+  - Implemented proper card ordering: Comunicazioni → News → Canali → Gruppi (as per architectural design)
+  - Enhanced pinned posts routing: automatically routes to circle_communications or circle_news based on channel_id presence
+  - All queries maintain multi-tenant isolation via filter_by_company() pattern
+  - Templates display channel badges for communications and link to filtered communication views
 - **Groups and Channels Architectural Decoupling**: Separated Groups and Channels into completely independent communication paradigms:
   - **Channels** = Broadcast communications (company-wide announcements organized by theme)
   - **Groups** = Community interactions (member-based discussions and collaboration)
