@@ -30,21 +30,6 @@
                                       placeholder="Descrivi lo scopo e gli obiettivi del gruppo..."></textarea>
                         </div>
 
-                        <!-- Canale -->
-                        <div class="mb-3">
-                            <label for="channel_id" class="form-label">Canale <span class="text-danger">*</span></label>
-                            <select class="form-select" id="channel_id" name="channel_id" required>
-                                {% for channel in channels %}
-                                <option value="{{ channel.id }}">
-                                    <i class="{{ channel.icon_class }}"></i> {{ channel.name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle"></i> Scegli il canale tematico a cui associare questo gruppo
-                            </div>
-                        </div>
-
                         <!-- Tipo gruppo -->
                         <div class="mb-3">
                             <label for="group_type" class="form-label">Tipo Gruppo <span class="text-danger">*</span></label>

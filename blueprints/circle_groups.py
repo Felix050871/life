@@ -2,8 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from app import db
 from models import (CircleGroup, User, circle_group_members, CircleGroupMembershipRequest,
-                   CircleGroupPost, CircleGroupMessage, CircleGroupPostLike, CircleGroupPostComment,
-                   Channel)
+                   CircleGroupPost, CircleGroupMessage, CircleGroupPostLike, CircleGroupPostComment)
 from utils_tenant import filter_by_company, get_user_company_id, set_company_on_create
 from utils_security import sanitize_html, validate_image_upload
 from sqlalchemy import desc, or_, and_
@@ -78,22 +77,8 @@ def create():
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
-        channel_id = request.form.get('channel_id')
         group_type = request.form.get('group_type', 'interest')
         is_private = request.form.get('is_private') == 'on'
-        
-        # SECURITY: Valida che il channel_id appartenga alla company dell'utente e sia attivo
-        channel = None
-        if channel_id:
-            channel = filter_by_company(Channel.query, current_user).filter_by(
-                id=int(channel_id),
-                active=True
-            ).first()
-            
-            if not channel:
-                flash('Canale non valido o non accessibile', 'danger')
-                channels = filter_by_company(Channel.query, current_user).filter_by(active=True).order_by(Channel.name).all()
-                return render_template('circle/groups/create.html', channels=channels)
         
         # Sanitizza HTML per prevenire XSS
         description = sanitize_html(description)
@@ -101,7 +86,6 @@ def create():
         new_group = CircleGroup(
             name=name,
             description=description,
-            channel_id=channel.id if channel else None,
             group_type=group_type,
             is_private=is_private,
             creator_id=current_user.id
@@ -123,9 +107,7 @@ def create():
         flash('Gruppo creato con successo!', 'success')
         return redirect(url_for('circle_groups.view_group', group_id=new_group.id))
     
-    # GET: carica canali attivi per il dropdown
-    channels = filter_by_company(Channel.query, current_user).filter_by(active=True).order_by(Channel.name).all()
-    return render_template('circle/groups/create.html', channels=channels)
+    return render_template('circle/groups/create.html')
 
 @bp.route('/<int:group_id>/join', methods=['POST'])
 @login_required

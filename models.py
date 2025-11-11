@@ -3837,7 +3837,6 @@ class Channel(db.Model):
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     
     # Relationships
-    groups = db.relationship('CircleGroup', backref='channel', lazy='dynamic')
     posts = db.relationship('CirclePost', backref='channel', lazy='dynamic')
     
     def __repr__(self):
@@ -3892,7 +3891,6 @@ class CircleGroup(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=True)  # Associazione al canale
     group_type = db.Column(db.String(50), nullable=True)  # DEPRECATED: 'department', 'project', 'interest', 'official' - mantenuto per backward compatibility
     is_private = db.Column(db.Boolean, default=False)  # Gruppo privato (solo su invito)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
