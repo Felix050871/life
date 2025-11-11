@@ -537,6 +537,29 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Ammortizzatori Sociali -->
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card border h-100">
+                                    <div class="card-header py-2 bg-secondary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-user-shield me-1"></i>Ammortizzatori Sociali</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_social_safety_programs() }}
+                                            {{ form.can_manage_social_safety_programs.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_assign_social_safety_programs() }}
+                                            {{ form.can_assign_social_safety_programs.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_social_safety_reports() }}
+                                            {{ form.can_view_social_safety_reports.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="row">

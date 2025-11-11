@@ -1212,6 +1212,11 @@ class RoleForm(FlaskForm):
     can_manage_mansioni = BooleanField('Gestire Mansionario')
     can_view_mansioni = BooleanField('Visualizzare Mansionario')
     
+    # Ammortizzatori Sociali - Social Safety Net
+    can_manage_social_safety_programs = BooleanField('Gestire Programmi Ammortizzatori')
+    can_assign_social_safety_programs = BooleanField('Assegnare Ammortizzatori ai Dipendenti')
+    can_view_social_safety_reports = BooleanField('Visualizzare Report Ammortizzatori')
+    
     # Commesse - Project Management
     can_manage_commesse = BooleanField('Gestire Commesse')
     can_view_commesse = BooleanField('Visualizzare Commesse')
@@ -1397,6 +1402,11 @@ class RoleForm(FlaskForm):
             'can_manage_mansioni': self.can_manage_mansioni.data,
             'can_view_mansioni': self.can_view_mansioni.data,
             
+            # Ammortizzatori Sociali - Social Safety Net
+            'can_manage_social_safety_programs': self.can_manage_social_safety_programs.data,
+            'can_assign_social_safety_programs': self.can_assign_social_safety_programs.data,
+            'can_view_social_safety_reports': self.can_view_social_safety_reports.data,
+            
             # Commesse - Project Management
             'can_manage_commesse': self.can_manage_commesse.data,
             'can_view_commesse': self.can_view_commesse.data,
@@ -1553,6 +1563,11 @@ class RoleForm(FlaskForm):
         self.can_view_my_hr_data.data = permissions_dict.get('can_view_my_hr_data', False)
         self.can_manage_mansioni.data = permissions_dict.get('can_manage_mansioni', False)
         self.can_view_mansioni.data = permissions_dict.get('can_view_mansioni', False)
+        
+        # Ammortizzatori Sociali - Social Safety Net
+        self.can_manage_social_safety_programs.data = permissions_dict.get('can_manage_social_safety_programs', False)
+        self.can_assign_social_safety_programs.data = permissions_dict.get('can_assign_social_safety_programs', False)
+        self.can_view_social_safety_reports.data = permissions_dict.get('can_view_social_safety_reports', False)
         
         # Commesse - Project Management
         self.can_manage_commesse.data = permissions_dict.get('can_manage_commesse', False)
