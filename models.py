@@ -847,6 +847,19 @@ class User(UserMixin, db.Model):
         """Verifica se ha un ammortizzatore sociale attivo"""
         return self.get_active_safety_net_assignment(reference_date) is not None
     
+    # Alias brevi per compatibilità template sidebar
+    def can_manage_safety_net(self):
+        """Alias di can_manage_social_safety_programs()"""
+        return self.can_manage_social_safety_programs()
+    
+    def can_assign_safety_net(self):
+        """Alias di can_assign_social_safety_programs()"""
+        return self.can_assign_social_safety_programs()
+    
+    def can_view_safety_net(self):
+        """Alias di can_access_social_safety_menu()"""
+        return self.can_access_social_safety_menu()
+    
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):
         """Widget statistiche team nella dashboard"""

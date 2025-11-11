@@ -1141,6 +1141,10 @@ def save_manual_timesheet():
         # Crea data
         day_date = date(year, month, day)
         
+        # Ottieni contesto ammortizzatori sociali (se presente)
+        from utils_contract_hours import get_safety_net_context
+        safety_net_context = get_safety_net_context(current_user, day_date)
+        
         # Blocca inserimenti futuri
         if day_date > date.today():
             return jsonify({'success': False, 'message': 'Non è possibile inserire orari per giorni futuri'}), 400
@@ -1171,11 +1175,12 @@ def save_manual_timesheet():
             db.session.commit()
             return jsonify({'success': True, 'message': 'Orari rimossi'})
         
-        # Valida e crea nuovi eventi
+        # Valida e prepara nuovi eventi (in memoria, NON aggiunti a session ancora)
         from zoneinfo import ZoneInfo
         italy_tz = ZoneInfo('Europe/Rome')
         clock_in_datetime = None
         clock_out_datetime = None
+        proposed_events = []  # Lista eventi da validare prima del commit
         
         if clock_in_str:
             try:
@@ -1190,10 +1195,12 @@ def save_manual_timesheet():
                     timestamp=clock_in_datetime,
                     sede_id=current_user.sede_id,
                     is_manual=True,
-                    entry_type=entry_type
+                    entry_type=entry_type,
+                    safety_net_assignment_id=safety_net_context.get('assignment_id') if safety_net_context else None,
+                    payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
                 )
                 set_company_on_create(clock_in_event)
-                db.session.add(clock_in_event)
+                proposed_events.append(clock_in_event)
             except ValueError:
                 return jsonify({'success': False, 'message': 'Formato orario entrata non valido'}), 400
         
@@ -1210,35 +1217,16 @@ def save_manual_timesheet():
                     timestamp=clock_out_datetime,
                     sede_id=current_user.sede_id,
                     is_manual=True,
-                    entry_type=entry_type
+                    entry_type=entry_type,
+                    safety_net_assignment_id=safety_net_context.get('assignment_id') if safety_net_context else None,
+                    payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
                 )
                 set_company_on_create(clock_out_event)
-                db.session.add(clock_out_event)
+                proposed_events.append(clock_out_event)
             except ValueError:
                 return jsonify({'success': False, 'message': 'Formato orario uscita non valido'}), 400
         
-        # Validazione limite settimanale contrattuale
-        if clock_in_datetime and clock_out_datetime:
-            from utils_contract_hours import validate_weekly_limit
-            
-            # Stima pausa automatica per validazione: 1h se turno > 5h
-            work_duration_estimate = (clock_out_datetime - clock_in_datetime).total_seconds() / 3600
-            proposed_break_minutes = 60.0 if work_duration_estimate > 5 else 0.0
-            
-            is_valid, error_msg, context = validate_weekly_limit(
-                current_user.id,
-                current_user,
-                day_date,
-                clock_in_datetime,
-                clock_out_datetime,
-                company_id,
-                proposed_break_minutes
-            )
-            
-            if not is_valid:
-                return jsonify({'success': False, 'message': error_msg, 'context': context}), 400
-        
-        # Pausa automatica: se il turno è > 5 ore, inserisci 1h di pausa
+        # Calcola e prepara eventi pausa (in memoria)
         if clock_in_datetime and clock_out_datetime:
             work_duration = (clock_out_datetime - clock_in_datetime).total_seconds() / 3600  # ore
             
@@ -1271,7 +1259,7 @@ def save_manual_timesheet():
                         break_end_datetime = max_break_end
                         break_start_datetime = break_end_datetime - timedelta(hours=1)
                 
-                # Crea evento inizio pausa
+                # Crea evento inizio pausa (in memoria)
                 break_start_event = AttendanceEvent(
                     user_id=current_user.id,
                     date=day_date,
@@ -1279,12 +1267,14 @@ def save_manual_timesheet():
                     timestamp=break_start_datetime,
                     sede_id=current_user.sede_id,
                     is_manual=True,
-                    entry_type=entry_type
+                    entry_type=entry_type,
+                    safety_net_assignment_id=safety_net_context.get('assignment_id') if safety_net_context else None,
+                    payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
                 )
                 set_company_on_create(break_start_event)
-                db.session.add(break_start_event)
+                proposed_events.append(break_start_event)
                 
-                # Crea evento fine pausa
+                # Crea evento fine pausa (in memoria)
                 break_end_event = AttendanceEvent(
                     user_id=current_user.id,
                     date=day_date,
@@ -1292,10 +1282,45 @@ def save_manual_timesheet():
                     timestamp=break_end_datetime,
                     sede_id=current_user.sede_id,
                     is_manual=True,
-                    entry_type=entry_type
+                    entry_type=entry_type,
+                    safety_net_assignment_id=safety_net_context.get('assignment_id') if safety_net_context else None,
+                    payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
                 )
                 set_company_on_create(break_end_event)
-                db.session.add(break_end_event)
+                proposed_events.append(break_end_event)
+        
+        # VALIDAZIONE 1: Safety Net Constraints (overtime forbidden, etc.)
+        if proposed_events:
+            from utils_contract_hours import enforce_safety_net_constraints
+            is_valid, error_msg = enforce_safety_net_constraints(current_user, day_date, proposed_events)
+            if not is_valid:
+                return jsonify({'success': False, 'message': error_msg}), 400
+        
+        # VALIDAZIONE 2: Limite settimanale contrattuale (ore ridotte già applicate)
+        if clock_in_datetime and clock_out_datetime:
+            from utils_contract_hours import validate_weekly_limit
+            
+            # Stima pausa per validazione: conta minuti pausa dagli eventi
+            proposed_break_minutes = sum((e.timestamp - proposed_events[i-1].timestamp).total_seconds() / 60 
+                                        for i, e in enumerate(proposed_events) 
+                                        if e.event_type == 'break_end' and i > 0 and proposed_events[i-1].event_type == 'break_start')
+            
+            is_valid, error_msg, context = validate_weekly_limit(
+                current_user.id,
+                current_user,
+                day_date,
+                clock_in_datetime,
+                clock_out_datetime,
+                company_id,
+                proposed_break_minutes
+            )
+            
+            if not is_valid:
+                return jsonify({'success': False, 'message': error_msg, 'context': context}), 400
+        
+        # Validazione OK: aggiungi eventi al session
+        for event in proposed_events:
+            db.session.add(event)
         
         # Aggiorna timestamp timesheet
         timesheet.updated_at = italian_now()
@@ -1596,14 +1621,15 @@ def bulk_fill_timesheet():
                 end_minute = standard_start.minute
                 standard_end = time(end_hour, end_minute)
             
-            # Crea eventi di entrata e uscita
+            # Prepara eventi per questo giorno (in memoria)
             from zoneinfo import ZoneInfo
             italy_tz = ZoneInfo('Europe/Rome')
+            day_proposed_events = []
             
             clock_in_datetime = datetime.combine(day_date, standard_start).replace(tzinfo=italy_tz)
             clock_out_datetime = datetime.combine(day_date, standard_end).replace(tzinfo=italy_tz)
             
-            # Crea evento entrata
+            # Crea evento entrata (in memoria)
             clock_in_event = AttendanceEvent(
                 user_id=current_user.id,
                 date=day_date,
@@ -1616,9 +1642,9 @@ def bulk_fill_timesheet():
                 payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
             )
             set_company_on_create(clock_in_event)
-            db.session.add(clock_in_event)
+            day_proposed_events.append(clock_in_event)
             
-            # Crea evento uscita
+            # Crea evento uscita (in memoria)
             clock_out_event = AttendanceEvent(
                 user_id=current_user.id,
                 date=day_date,
@@ -1631,7 +1657,7 @@ def bulk_fill_timesheet():
                 payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
             )
             set_company_on_create(clock_out_event)
-            db.session.add(clock_out_event)
+            day_proposed_events.append(clock_out_event)
             
             # Pausa automatica: se il turno è > 5 ore, inserisci 1h di pausa
             work_duration = (clock_out_datetime - clock_in_datetime).total_seconds() / 3600  # ore
@@ -1665,7 +1691,7 @@ def bulk_fill_timesheet():
                         break_end_datetime = max_break_end
                         break_start_datetime = break_end_datetime - timedelta(hours=1)
                 
-                # Crea evento inizio pausa
+                # Crea evento inizio pausa (in memoria)
                 break_start_event = AttendanceEvent(
                     user_id=current_user.id,
                     date=day_date,
@@ -1678,9 +1704,9 @@ def bulk_fill_timesheet():
                     payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
                 )
                 set_company_on_create(break_start_event)
-                db.session.add(break_start_event)
+                day_proposed_events.append(break_start_event)
                 
-                # Crea evento fine pausa
+                # Crea evento fine pausa (in memoria)
                 break_end_event = AttendanceEvent(
                     user_id=current_user.id,
                     date=day_date,
@@ -1693,9 +1719,23 @@ def bulk_fill_timesheet():
                     payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
                 )
                 set_company_on_create(break_end_event)
-                db.session.add(break_end_event)
+                day_proposed_events.append(break_end_event)
             
-            days_filled += 1
+            # Valida eventi safety net prima di aggiungere al session
+            if day_proposed_events:
+                from utils_contract_hours import enforce_safety_net_constraints
+                is_valid, error_msg = enforce_safety_net_constraints(current_user, day_date, day_proposed_events)
+                if not is_valid:
+                    # Salta questo giorno se viola constraint safety net, ma continua con gli altri
+                    import logging
+                    logging.warning(f"Bulk fill: skipping {day_date} for user {current_user.id}: {error_msg}")
+                    continue
+                
+                # Validazione OK: aggiungi eventi al session
+                for event in day_proposed_events:
+                    db.session.add(event)
+                
+                days_filled += 1
         
         # Aggiorna timestamp timesheet
         timesheet.updated_at = italian_now()
