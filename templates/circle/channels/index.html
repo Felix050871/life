@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Canali - CIRCLE{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-comments"></i> Canali</h2>
+        {% if current_user.has_permission('can_manage_channels') %}
+        <a href="{{ url_for('circle_channels.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nuovo Canale
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Canali Attivi -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-check-circle text-success"></i> Canali Attivi</h5>
+        </div>
+        <div class="card-body">
+            {% if channels %}
+            <div class="row">
+                {% for channel in channels %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="{{ channel.icon_class }} {{ channel.icon_color }}"></i> 
+                                {{ channel.name }}
+                            </h5>
+                            {% if channel.description %}
+                            <p class="card-text text-muted small">{{ channel.description|safe }}</p>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-users"></i> {{ channel.groups.count() }} gruppi
+                                </small><br>
+                                <small class="text-muted">
+                                    <i class="fas fa-comments"></i> {{ channel.posts.count() }} comunicazioni
+                                </small>
+                            </div>
+                            
+                            {% if current_user.has_permission('can_manage_channels') %}
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('circle_channels.edit', channel_id=channel.id) }}" class="btn btn-sm btn-outline-primary flex-fill">
+                                    <i class="fas fa-edit"></i> Modifica
+                                </a>
+                                {% if channel.name != 'Generale' %}
+                                <form method="POST" action="{{ url_for('circle_channels.delete', channel_id=channel.id) }}" class="flex-fill" onsubmit="return confirm('Sei sicuro di voler disattivare questo canale?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                        <i class="fas fa-trash"></i> Disattiva
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-comments fa-3x mb-3"></i>
+                <p>Nessun canale attivo</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Canali Inattivi (solo per admin) -->
+    {% if inactive_channels and current_user.has_permission('can_manage_channels') %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-times-circle text-danger"></i> Canali Disattivati</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrizione</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for channel in inactive_channels %}
+                        <tr>
+                            <td><i class="{{ channel.icon_class }} {{ channel.icon_color }}"></i> {{ channel.name }}</td>
+                            <td>{{ channel.description|safe|truncate(100) if channel.description else '-' }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('circle_channels.activate', channel_id=channel.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="fas fa-check"></i> Riattiva
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

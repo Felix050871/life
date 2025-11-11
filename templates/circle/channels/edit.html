@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Canale - CIRCLE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> Modifica Canale: {{ channel.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('circle_channels.edit', channel_id=channel.id) }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nome Canale <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ channel.name }}" required maxlength="100" {% if channel.name == 'Generale' %}readonly{% endif %}>
+                            {% if channel.name == 'Generale' %}
+                            <small class="form-text text-muted">Il canale "Generale" non può essere rinominato</small>
+                            {% else %}
+                            <small class="form-text text-muted">Nome univoco del canale</small>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Descrizione del canale...">{{ channel.description }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="icon_class" class="form-label">Icona</label>
+                                <input type="text" class="form-control" id="icon_class" name="icon_class" value="{{ channel.icon_class }}" placeholder="fas fa-comments">
+                                <small class="form-text text-muted">Classe Font Awesome (es: fas fa-users, fas fa-chart-line)</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="icon_color" class="form-label">Colore Icona</label>
+                                <select class="form-select" id="icon_color" name="icon_color">
+                                    <option value="text-primary" {% if channel.icon_color == 'text-primary' %}selected{% endif %}>Blu (Primary)</option>
+                                    <option value="text-success" {% if channel.icon_color == 'text-success' %}selected{% endif %}>Verde (Success)</option>
+                                    <option value="text-danger" {% if channel.icon_color == 'text-danger' %}selected{% endif %}>Rosso (Danger)</option>
+                                    <option value="text-warning" {% if channel.icon_color == 'text-warning' %}selected{% endif %}>Giallo (Warning)</option>
+                                    <option value="text-info" {% if channel.icon_color == 'text-info' %}selected{% endif %}>Azzurro (Info)</option>
+                                    <option value="text-secondary" {% if channel.icon_color == 'text-secondary' %}selected{% endif %}>Grigio (Secondary)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="active" name="active" {% if channel.active %}checked{% endif %}>
+                                <label class="form-check-label" for="active">
+                                    Canale Attivo
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salva Modifiche
+                            </button>
+                            <a href="{{ url_for('circle_channels.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

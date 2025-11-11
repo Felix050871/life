@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Nuovo Canale - CIRCLE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-comments"></i> Crea Nuovo Canale</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('circle_channels.create') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nome Canale <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required maxlength="100" placeholder="es. HR, Direzione, Marketing">
+                            <small class="form-text text-muted">Nome univoco del canale</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Descrizione del canale..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="icon_class" class="form-label">Icona</label>
+                                <input type="text" class="form-control" id="icon_class" name="icon_class" value="fas fa-comments" placeholder="fas fa-comments">
+                                <small class="form-text text-muted">Classe Font Awesome (es: fas fa-users, fas fa-chart-line)</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="icon_color" class="form-label">Colore Icona</label>
+                                <select class="form-select" id="icon_color" name="icon_color">
+                                    <option value="text-primary">Blu (Primary)</option>
+                                    <option value="text-success">Verde (Success)</option>
+                                    <option value="text-danger">Rosso (Danger)</option>
+                                    <option value="text-warning">Giallo (Warning)</option>
+                                    <option value="text-info">Azzurro (Info)</option>
+                                    <option value="text-secondary">Grigio (Secondary)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Crea Canale
+                            </button>
+                            <a href="{{ url_for('circle_channels.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
