@@ -208,3 +208,34 @@ def get_active_contract_snapshot(user_hr_data_id: int):
         user_hr_data_id=user_hr_data_id,
         effective_to_date=None
     ).first()
+
+
+def get_changed_fields(current_snapshot: ContractHistory, previous_snapshot: ContractHistory) -> list:
+    """
+    Confronta due snapshot e restituisce la lista dei campi modificati
+    
+    Args:
+        current_snapshot: Snapshot corrente
+        previous_snapshot: Snapshot precedente
+        
+    Returns:
+        Lista di nomi dei campi che sono stati modificati
+    """
+    if not previous_snapshot:
+        return []  # Primo snapshot, nessun confronto possibile
+    
+    changed_fields = []
+    
+    for field in TRACKED_CONTRACT_FIELDS:
+        current_value = getattr(current_snapshot, field, None)
+        previous_value = getattr(previous_snapshot, field, None)
+        
+        # Gestione speciale per Decimal/float
+        if isinstance(current_value, (int, float)) and isinstance(previous_value, (int, float)):
+            if abs(float(current_value or 0) - float(previous_value or 0)) > 0.01:
+                changed_fields.append(field)
+        # Confronto standard
+        elif current_value != previous_value:
+            changed_fields.append(field)
+    
+    return changed_fields

@@ -961,8 +961,25 @@ def contract_history(user_id):
     total_records = pagination.total
     
     # Ottieni anche il record attivo corrente
-    from utils_contract_history import get_active_contract_snapshot
+    from utils_contract_history import get_active_contract_snapshot, get_changed_fields
     active_snapshot = get_active_contract_snapshot(hr_data.id)
+    
+    # Calcola i campi modificati per ogni record (confronto con il precedente)
+    # Ottieni tutti i record ordinati per data (serve per comparazione)
+    all_records = ContractHistory.query.filter_by(user_hr_data_id=hr_data.id).order_by(
+        ContractHistory.effective_from_date.desc()
+    ).all()
+    
+    # Crea un dizionario record_id -> lista campi modificati
+    changed_fields_map = {}
+    for i, record in enumerate(all_records):
+        if i < len(all_records) - 1:
+            # Confronta con il record successivo (più vecchio)
+            previous_record = all_records[i + 1]
+            changed_fields_map[record.id] = get_changed_fields(record, previous_record)
+        else:
+            # Primo record storico, nessun confronto
+            changed_fields_map[record.id] = []
     
     return render_template('contract_history.html',
                          user=user,
@@ -971,6 +988,7 @@ def contract_history(user_id):
                          active_snapshot=active_snapshot,
                          total_records=total_records,
                          pagination=pagination,
+                         changed_fields_map=changed_fields_map,
                          from_date=from_date,
                          to_date=to_date,
                          page=page,

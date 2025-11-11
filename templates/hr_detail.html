@@ -8,9 +8,14 @@
         <i class="fas fa-id-card me-2"></i>
         Scheda HR - {{ user.get_full_name() }}
     </h1>
-    <a href="{{ url_for('hr.hr_list') }}" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Torna alla Lista
-    </a>
+    <div>
+        <a href="{{ url_for('hr.contract_history', user_id=user.id) }}" class="btn btn-outline-info me-2">
+            <i class="fas fa-history me-2"></i>Storico Contrattuale
+        </a>
+        <a href="{{ url_for('hr.hr_list') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Torna alla Lista
+        </a>
+    </div>
 </div>
 
 <form method="POST" action="{{ url_for('hr.hr_detail', user_id=user.id) }}" enctype="multipart/form-data">

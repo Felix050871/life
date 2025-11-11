@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}Storico Contrattuale - {{ user.get_full_name() }} - Life Platform{% endblock %}
+
+{# Macro per evidenziare campi modificati #}
+{% macro changed_badge(field_name, record_id) %}
+    {% if field_name in changed_fields_map.get(record_id, []) %}
+    <span class="badge bg-warning text-dark ms-2" title="Campo modificato rispetto allo snapshot precedente">
+        <i class="fas fa-edit"></i>
+    </span>
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">
+        <i class="fas fa-history me-2"></i>
+        Storico Contrattuale - {{ user.get_full_name() }}
+    </h1>
+    <div>
+        <a href="{{ url_for('hr.hr_detail', user_id=user.id) }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left me-2"></i>Scheda HR
+        </a>
+        <a href="{{ url_for('hr.hr_list') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-list me-2"></i>Lista Dipendenti
+        </a>
+    </div>
+</div>
+
+<!-- Filtri data -->
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-filter me-2"></i>Filtri
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('hr.contract_history', user_id=user.id) }}" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Data Inizio</label>
+                <input type="date" name="from_date" class="form-control" 
+                       value="{{ from_date.strftime('%Y-%m-%d') if from_date else '' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Data Fine</label>
+                <input type="date" name="to_date" class="form-control" 
+                       value="{{ to_date.strftime('%Y-%m-%d') if to_date else '' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Record per Pagina</label>
+                <select name="per_page" class="form-select">
+                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Filtra
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Contatore e info -->
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Totale Modifiche:</strong> {{ total_records }}
+    {% if active_snapshot %}
+    | <strong>Record Attivo:</strong> dal {{ active_snapshot.effective_from_date.strftime('%d/%m/%Y %H:%M') }}
+    {% endif %}
+</div>
+
+<!-- Legenda -->
+<div class="alert alert-secondary mb-3">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Legenda:</strong>
+    <span class="badge bg-warning text-dark ms-2">
+        <i class="fas fa-edit me-1"></i>Campo Modificato
+    </span>
+    - I campi evidenziati sono stati modificati rispetto allo snapshot precedente
+</div>
+
+<!-- Timeline storico contrattuale -->
+{% if history_records %}
+<div class="timeline-container">
+    {% for record in history_records %}
+    <div class="card mb-3 {% if record.is_active() %}border-success{% endif %}">
+        <div class="card-header {% if record.is_active() %}bg-success text-white{% else %}bg-primary text-white{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    {% if record.is_active() %}
+                    <span class="badge bg-light text-success">ATTIVO</span>
+                    {% endif %}
+                    Valido dal {{ record.effective_from_date.strftime('%d/%m/%Y %H:%M') }}
+                    {% if record.effective_to_date %}
+                    al {{ record.effective_to_date.strftime('%d/%m/%Y %H:%M') }}
+                    {% else %}
+                    - In corso
+                    {% endif %}
+                </h5>
+                <small>
+                    {% if record.changed_by %}
+                    <i class="fas fa-user me-1"></i>{{ record.changed_by.get_full_name() }}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Note sulla modifica -->
+            {% if record.change_notes %}
+            <div class="alert alert-secondary mb-3">
+                <i class="fas fa-sticky-note me-2"></i>
+                <strong>Note:</strong> {{ record.change_notes }}
+            </div>
+            {% endif %}
+            
+            <!-- Dettagli espandibili -->
+            <button class="btn btn-sm btn-outline-primary mb-3" type="button" 
+                    data-bs-toggle="collapse" data-bs-target="#details-{{ record.id }}">
+                <i class="fas fa-eye me-2"></i>Mostra Dettagli
+            </button>
+            
+            <div class="collapse" id="details-{{ record.id }}">
+                <div class="row">
+                    <!-- DATI CONTRATTUALI -->
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary border-bottom pb-2">
+                            <i class="fas fa-file-contract me-2"></i>Dati Contrattuali
+                        </h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <th style="width: 50%;">Tipologia Contratto:{{ changed_badge('contract_type', record.id) }}</th>
+                                <td>{{ record.contract_type or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Data Assunzione:{{ changed_badge('hire_date', record.id) }}</th>
+                                <td>{{ record.hire_date.strftime('%d/%m/%Y') if record.hire_date else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Data Inizio Contratto:{{ changed_badge('contract_start_date', record.id) }}</th>
+                                <td>{{ record.contract_start_date.strftime('%d/%m/%Y') if record.contract_start_date else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Data Fine Contratto:{{ changed_badge('contract_end_date', record.id) }}</th>
+                                <td>{{ record.contract_end_date.strftime('%d/%m/%Y') if record.contract_end_date else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Fine Periodo di Prova:{{ changed_badge('probation_end_date', record.id) }}</th>
+                                <td>{{ record.probation_end_date.strftime('%d/%m/%Y') if record.probation_end_date else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>CCNL:{{ changed_badge('ccnl', record.id) }}</th>
+                                <td>{{ record.ccnl or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Livello CCNL:{{ changed_badge('ccnl_level', record.id) }}</th>
+                                <td>{{ record.ccnl_level or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Ore Lavoro/Settimana:{{ changed_badge('work_hours_week', record.id) }}</th>
+                                <td>{{ record.work_hours_week or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Tipo Orario:{{ changed_badge('working_time_type', record.id) }}</th>
+                                <td>{{ record.working_time_type or '-' }}</td>
+                            </tr>
+                            {% if record.part_time_percentage or 'part_time_percentage' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>Part-Time (%):{{ changed_badge('part_time_percentage', record.id) }}</th>
+                                <td>{{ record.part_time_percentage }}%</td>
+                            </tr>
+                            {% endif %}
+                            {% if record.part_time_type or 'part_time_type' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>Tipo Part-Time:{{ changed_badge('part_time_type', record.id) }}</th>
+                                <td>{{ record.part_time_type or '-' }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th>Mansione:{{ changed_badge('mansione', record.id) }}</th>
+                                <td>{{ record.mansione or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Qualifica:{{ changed_badge('qualifica', record.id) }}</th>
+                                <td>{{ record.qualifica or '-' }}</td>
+                            </tr>
+                            {% if record.distacco_supplier or 'distacco_supplier' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>Fornitore/Distacco:{{ changed_badge('distacco_supplier', record.id) }}</th>
+                                <td>{{ record.distacco_supplier or '-' }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if record.consulente_vat or 'consulente_vat' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>Partita IVA Consulente:{{ changed_badge('consulente_vat', record.id) }}</th>
+                                <td>{{ record.consulente_vat or '-' }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if record.nome_fornitore or 'nome_fornitore' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>Nome Fornitore:{{ changed_badge('nome_fornitore', record.id) }}</th>
+                                <td>{{ record.nome_fornitore or '-' }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if record.partita_iva_fornitore or 'partita_iva_fornitore' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>P.IVA Fornitore:{{ changed_badge('partita_iva_fornitore', record.id) }}</th>
+                                <td>{{ record.partita_iva_fornitore or '-' }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if record.rischio_inail or 'rischio_inail' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>Rischio INAIL:{{ changed_badge('rischio_inail', record.id) }}</th>
+                                <td>{{ record.rischio_inail or '-' }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if record.tipo_assunzione or 'tipo_assunzione' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>Tipo Assunzione:{{ changed_badge('tipo_assunzione', record.id) }}</th>
+                                <td>{{ record.tipo_assunzione or '-' }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if record.other_notes or 'other_notes' in changed_fields_map.get(record.id, []) %}
+                            <tr>
+                                <th>Altre Note:{{ changed_badge('other_notes', record.id) }}</th>
+                                <td>{{ record.other_notes or '-' }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    
+                    <!-- DATI ECONOMICI -->
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-success border-bottom pb-2">
+                            <i class="fas fa-euro-sign me-2"></i>Dati Economici
+                        </h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <th style="width: 50%;">Stipendio Lordo:{{ changed_badge('gross_salary', record.id) }}</th>
+                                <td>{% if record.gross_salary %}€ {{ "%.2f"|format(record.gross_salary) }}{% else %}-{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th>Stipendio Netto:{{ changed_badge('net_salary', record.id) }}</th>
+                                <td>{% if record.net_salary %}€ {{ "%.2f"|format(record.net_salary) }}{% else %}-{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th>IBAN:{{ changed_badge('iban', record.id) }}</th>
+                                <td>{{ record.iban or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Metodo Pagamento:{{ changed_badge('payment_method', record.id) }}</th>
+                                <td>{{ record.payment_method or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Superminimo:{{ changed_badge('superminimo', record.id) }}</th>
+                                <td>{% if record.superminimo %}€ {{ "%.2f"|format(record.superminimo) }}{% else %}-{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th>Rimborsi/Diarie:{{ changed_badge('rimborsi_diarie', record.id) }}</th>
+                                <td>{% if record.rimborsi_diarie %}€ {{ "%.2f"|format(record.rimborsi_diarie) }}{% else %}-{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th>Valore Buoni Pasto:{{ changed_badge('meal_vouchers_value', record.id) }}</th>
+                                <td>{% if record.meal_vouchers_value %}€ {{ "%.2f"|format(record.meal_vouchers_value) }}{% else %}-{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th>Ticket Restaurant:{{ changed_badge('ticket_restaurant', record.id) }}</th>
+                                <td>
+                                    {% if record.ticket_restaurant %}
+                                    <i class="fas fa-check-circle text-success"></i> Sì
+                                    {% else %}
+                                    <i class="fas fa-times-circle text-danger"></i> No
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Fuel Card:{{ changed_badge('fuel_card', record.id) }}</th>
+                                <td>
+                                    {% if record.fuel_card %}
+                                    <i class="fas fa-check-circle text-success"></i> Sì
+                                    {% else %}
+                                    <i class="fas fa-times-circle text-danger"></i> No
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <!-- DATI OPERATIVI -->
+                    <div class="col-md-12">
+                        <h6 class="text-warning border-bottom pb-2">
+                            <i class="fas fa-cogs me-2"></i>Dati Operativi
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <th style="width: 50%;">Straordinario Abilitato:{{ changed_badge('overtime_enabled', record.id) }}</th>
+                                        <td>
+                                            {% if record.overtime_enabled %}
+                                            <i class="fas fa-check-circle text-success"></i> Sì
+                                            {% else %}
+                                            <i class="fas fa-times-circle text-danger"></i> No
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% if record.overtime_enabled %}
+                                    <tr>
+                                        <th>Tipo Straordinario:{{ changed_badge('overtime_type', record.id) }}</th>
+                                        <td>{{ record.overtime_type or '-' }}</td>
+                                    </tr>
+                                    {% if record.overtime_type == 'Banca Ore' %}
+                                    <tr>
+                                        <th>Limite Max Banca Ore:{{ changed_badge('banca_ore_limite_max', record.id) }}</th>
+                                        <td>{{ record.banca_ore_limite_max or '-' }} ore</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Periodo Banca Ore:{{ changed_badge('banca_ore_periodo_mesi', record.id) }}</th>
+                                        <td>{{ record.banca_ore_periodo_mesi or '-' }} mesi</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endif %}
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    {% if record.sede_id or 'sede_id' in changed_fields_map.get(record.id, []) %}
+                                    <tr>
+                                        <th style="width: 50%;">Sede:{{ changed_badge('sede_id', record.id) }}</th>
+                                        <td>
+                                            {% if record.sede_id %}
+                                            Sede ID: {{ record.sede_id }}
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if record.work_schedule_id or 'work_schedule_id' in changed_fields_map.get(record.id, []) %}
+                                    <tr>
+                                        <th style="width: 50%;">Orario Lavoro:{{ changed_badge('work_schedule_id', record.id) }}</th>
+                                        <td>
+                                            {% if record.work_schedule_id %}
+                                            Work Schedule ID: {{ record.work_schedule_id }}
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    <tr>
+                                        <th style="width: 50%;">Ferie Maturate/Mese:{{ changed_badge('gg_ferie_maturate_mese', record.id) }}</th>
+                                        <td>{{ record.gg_ferie_maturate_mese or '0' }} giorni</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Permessi Maturati/Mese:{{ changed_badge('hh_permesso_maturate_mese', record.id) }}</th>
+                                        <td>{{ record.hh_permesso_maturate_mese or '0' }} ore</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-muted">
+            <small>
+                <i class="fas fa-clock me-1"></i>
+                Modificato il {{ record.changed_at.strftime('%d/%m/%Y alle %H:%M') }}
+                {% if record.changed_by %}
+                da {{ record.changed_by.get_full_name() }}
+                {% endif %}
+            </small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginazione -->
+{% if pagination.pages > 1 %}
+<nav aria-label="Navigazione storico">
+    <ul class="pagination justify-content-center">
+        <!-- Prima pagina -->
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('hr.contract_history', user_id=user.id, page=1, per_page=per_page, from_date=from_date.strftime('%Y-%m-%d') if from_date else '', to_date=to_date.strftime('%Y-%m-%d') if to_date else '') }}">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+        </li>
+        
+        <!-- Pagina precedente -->
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('hr.contract_history', user_id=user.id, page=pagination.prev_num if pagination.has_prev else 1, per_page=per_page, from_date=from_date.strftime('%Y-%m-%d') if from_date else '', to_date=to_date.strftime('%Y-%m-%d') if to_date else '') }}">
+                <i class="fas fa-angle-left"></i>
+            </a>
+        </li>
+        
+        <!-- Numeri di pagina -->
+        {% for p in pagination.iter_pages() %}
+            {% if p %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('hr.contract_history', user_id=user.id, page=p, per_page=per_page, from_date=from_date.strftime('%Y-%m-%d') if from_date else '', to_date=to_date.strftime('%Y-%m-%d') if to_date else '') }}">
+                        {{ p }}
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        
+        <!-- Pagina successiva -->
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('hr.contract_history', user_id=user.id, page=pagination.next_num if pagination.has_next else pagination.pages, per_page=per_page, from_date=from_date.strftime('%Y-%m-%d') if from_date else '', to_date=to_date.strftime('%Y-%m-%d') if to_date else '') }}">
+                <i class="fas fa-angle-right"></i>
+            </a>
+        </li>
+        
+        <!-- Ultima pagina -->
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('hr.contract_history', user_id=user.id, page=pagination.pages, per_page=per_page, from_date=from_date.strftime('%Y-%m-%d') if from_date else '', to_date=to_date.strftime('%Y-%m-%d') if to_date else '') }}">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+<div class="text-center text-muted mb-4">
+    Pagina {{ page }} di {{ pagination.pages }} - Totale: {{ total_records }} record
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    Nessuno storico contrattuale trovato per questo dipendente.
+</div>
+{% endif %}
+
+{% endblock %}
