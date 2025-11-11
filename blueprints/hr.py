@@ -902,7 +902,7 @@ def hr_detail(user_id):
         # Carica le ultime 5 assegnazioni per questo utente
         all_assignments = filter_by_company(SocialSafetyNetAssignment.query).filter_by(
             user_id=user.id
-        ).order_by(SocialSafetyNetAssignment.effective_from.desc()).all()
+        ).order_by(SocialSafetyNetAssignment.start_date.desc()).all()
         
         total_safety_net_assignments = len(all_assignments)
         safety_net_assignments = all_assignments[:5]  # Prime 5
@@ -910,8 +910,8 @@ def hr_detail(user_id):
         # Trova assegnazione attualmente attiva
         today = date.today()
         for assignment in all_assignments:
-            if assignment.is_approved and assignment.effective_from <= today and (
-                not assignment.effective_to or assignment.effective_to >= today
+            if assignment.status in ['approved', 'active'] and assignment.start_date <= today and (
+                assignment.end_date >= today
             ):
                 active_safety_net_assignment = assignment
                 break
