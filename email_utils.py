@@ -92,7 +92,7 @@ class EmailContext:
             return cls.from_global_config()
 
 
-def send_email_smtp(context: EmailContext, subject: str, recipients: list, body_text: str, body_html: str = None):
+def send_email_smtp(context: EmailContext, subject: str, recipients: list, body_text: str, body_html: Optional[str] = None):
     """
     Invia email usando SMTP diretto (non Flask-Mail) con EmailContext specifico
     
