@@ -565,6 +565,9 @@
                         <li><a href="{{ url_for('leave.leave_requests', view='my') }}" class="sidebar-submenu-link">
                             <i class="fas fa-user"></i>Le Mie Richieste
                         </a></li>
+                        <li><a href="{{ url_for('leave.my_leave_balance') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-balance-scale"></i>Il Mio Saldo
+                        </a></li>
                         {% endif %}
                         {% if current_user.can_manage_leave() %}
                         <li><a href="{{ url_for('leave.leave_types') }}" class="sidebar-submenu-link">
@@ -579,6 +582,9 @@
                         {% if current_user.can_view_leave() %}
                         <li><a href="{{ url_for('leave.leave_requests', view='view') }}" class="sidebar-submenu-link">
                             <i class="fas fa-eye"></i>Visualizza Richieste
+                        </a></li>
+                        <li><a href="{{ url_for('leave.all_leave_balances') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-users"></i>Saldi Dipendenti
                         </a></li>
                         {% endif %}
                     </ul>
