@@ -364,8 +364,8 @@ def create_assignment():
     # Popola choices per select
     form.program_id.choices = [(p.id, f"{p.program_type} - {p.name}") 
                                 for p in filter_by_company(SocialSafetyNetProgram.query).filter_by(status='active').all()]
-    form.user_id.choices = [(u.id, f"{u.nome} {u.cognome}") 
-                            for u in filter_by_company(User.query).filter_by(active=True).order_by(User.cognome, User.nome).all()]
+    form.user_id.choices = [(u.id, f"{u.first_name} {u.last_name}") 
+                            for u in filter_by_company(User.query).filter_by(active=True).order_by(User.last_name, User.first_name).all()]
     
     if form.validate_on_submit():
         # Crea snapshot contratto se richiesto
@@ -427,8 +427,8 @@ def edit_assignment(assignment_id):
     # Popola choices per select
     form.program_id.choices = [(p.id, f"{p.program_type} - {p.name}") 
                                 for p in filter_by_company(SocialSafetyNetProgram.query).filter_by(status='active').all()]
-    form.user_id.choices = [(u.id, f"{u.nome} {u.cognome}") 
-                            for u in filter_by_company(User.query).filter_by(active=True).order_by(User.cognome, User.nome).all()]
+    form.user_id.choices = [(u.id, f"{u.first_name} {u.last_name}") 
+                            for u in filter_by_company(User.query).filter_by(active=True).order_by(User.last_name, User.first_name).all()]
     
     if form.validate_on_submit():
         assignment.program_id = form.program_id.data
@@ -463,7 +463,7 @@ def delete_assignment(assignment_id):
         flash('Impossibile eliminare un\'assegnazione attiva. Annullarla prima.', 'danger')
         return redirect(url_for('social_safety.manage_assignments'))
     
-    user_name = f"{assignment.user.nome} {assignment.user.cognome}"
+    user_name = f"{assignment.user.first_name} {assignment.user.last_name}"
     db.session.delete(assignment)
     db.session.commit()
     

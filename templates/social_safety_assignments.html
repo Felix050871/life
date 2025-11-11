@@ -81,7 +81,7 @@
                                 {% for assignment in assignments %}
                                 <tr{% if assignment.status == 'cancelled' %} class="table-secondary"{% endif %}>
                                     <td>
-                                        <strong>{{ assignment.user.nome }} {{ assignment.user.cognome }}</strong>
+                                        <strong>{{ assignment.user.first_name }} {{ assignment.user.last_name }}</strong>
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary">{{ assignment.user.matricola or '-' }}</span>
@@ -180,7 +180,7 @@
                             <option value="">Seleziona dipendente...</option>
                             {% for user in available_users %}
                             <option value="{{ user.id }}">
-                                {{ user.cognome }} {{ user.nome }} ({{ user.matricola or 'N/A' }})
+                                {{ user.last_name }} {{ user.first_name }} ({{ user.matricola or 'N/A' }})
                             </option>
                             {% endfor %}
                         </select>
