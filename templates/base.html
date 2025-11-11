@@ -370,6 +370,37 @@
                 </li>
                 {% endif %}
 
+                <!-- AMMORTIZZATORI SOCIALI -->
+                {% if current_user.can_view_safety_net() %}
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Ammortizzatori Sociali</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        {% if current_user.can_manage_safety_net() %}
+                        <li><a href="{{ url_for('social_safety.manage_programs') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-list"></i>Gestione Programmi
+                        </a></li>
+                        <li><a href="{{ url_for('social_safety.create_program') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-plus"></i>Nuovo Programma
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_assign_safety_net() %}
+                        <li><a href="{{ url_for('social_safety.manage_assignments') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-user-shield"></i>Assegnazioni Dipendenti
+                        </a></li>
+                        {% endif %}
+                        {% if current_user.can_view_safety_net() %}
+                        <li><a href="{{ url_for('social_safety.my_assignments') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-eye"></i>Le Mie Assegnazioni
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
                 <!-- SEDI - Solo se ha almeno un permesso sedi -->
                 {% set has_sedi_permission = current_user.can_manage_sedi() or current_user.can_view_sedi() %}
                 {% if has_sedi_permission %}

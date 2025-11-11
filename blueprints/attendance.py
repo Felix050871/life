@@ -1470,9 +1470,12 @@ def bulk_fill_timesheet():
         today = date.today()
         
         # Ottieni ore settimanali contrattuali per distribuire le ore intelligentemente
-        from utils_contract_hours import get_active_work_hours_week, calculate_weekly_hours_allocation, get_iso_week_range
+        from utils_contract_hours import get_active_work_hours_week, calculate_weekly_hours_allocation, get_iso_week_range, get_safety_net_context
         
         work_hours_week = get_active_work_hours_week(current_user, first_day)
+        
+        # Ottieni contesto ammortizzatori sociali (se presente) - la riduzione ore è già applicata in work_hours_week
+        safety_net_context = get_safety_net_context(current_user, first_day)
         
         # Calcola orario di inizio standard (media tra min/max)
         start_min_minutes = work_schedule.start_time_min.hour * 60 + work_schedule.start_time_min.minute
@@ -1608,7 +1611,9 @@ def bulk_fill_timesheet():
                 timestamp=clock_in_datetime,
                 sede_id=current_user.sede_id,
                 is_manual=True,
-                entry_type='standard'
+                entry_type='standard',
+                safety_net_assignment_id=safety_net_context.get('assignment_id') if safety_net_context else None,
+                payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
             )
             set_company_on_create(clock_in_event)
             db.session.add(clock_in_event)
@@ -1621,7 +1626,9 @@ def bulk_fill_timesheet():
                 timestamp=clock_out_datetime,
                 sede_id=current_user.sede_id,
                 is_manual=True,
-                entry_type='standard'
+                entry_type='standard',
+                safety_net_assignment_id=safety_net_context.get('assignment_id') if safety_net_context else None,
+                payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
             )
             set_company_on_create(clock_out_event)
             db.session.add(clock_out_event)
@@ -1666,7 +1673,9 @@ def bulk_fill_timesheet():
                     timestamp=break_start_datetime,
                     sede_id=current_user.sede_id,
                     is_manual=True,
-                    entry_type='standard'
+                    entry_type='standard',
+                    safety_net_assignment_id=safety_net_context.get('assignment_id') if safety_net_context else None,
+                    payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
                 )
                 set_company_on_create(break_start_event)
                 db.session.add(break_start_event)
@@ -1679,7 +1688,9 @@ def bulk_fill_timesheet():
                     timestamp=break_end_datetime,
                     sede_id=current_user.sede_id,
                     is_manual=True,
-                    entry_type='standard'
+                    entry_type='standard',
+                    safety_net_assignment_id=safety_net_context.get('assignment_id') if safety_net_context else None,
+                    payroll_code=safety_net_context.get('payroll_code') if safety_net_context else None
                 )
                 set_company_on_create(break_end_event)
                 db.session.add(break_end_event)
