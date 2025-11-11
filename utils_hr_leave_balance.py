@@ -241,11 +241,11 @@ def get_all_leave_balances(company_id: int, reference_date: Optional[date] = Non
     Returns:
         List of dictionaries with user info and balances
     """
-    # Get all active users in the company with HR data (excluding SUPERADMIN)
+    # Get all active users in the company with HR data (excluding system admins)
     users = User.query.join(UserHRData).filter(
         User.company_id == company_id,
         User.active == True,
-        User.role != 'SUPERADMIN'
+        User.is_system_admin == False
     ).order_by(User.last_name, User.first_name).all()
     
     balances = []
