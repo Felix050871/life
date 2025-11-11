@@ -74,13 +74,12 @@
                                     <th>Periodo</th>
                                     <th>Durata</th>
                                     <th>Stato</th>
-                                    <th>Approvazione</th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for assignment in assignments %}
-                                <tr{% if not assignment.is_active %} class="table-secondary"{% endif %}>
+                                <tr{% if assignment.status == 'cancelled' %} class="table-secondary"{% endif %}>
                                     <td>
                                         <strong>{{ assignment.user.nome }} {{ assignment.user.cognome }}</strong>
                                     </td>
@@ -90,61 +89,51 @@
                                     <td>
                                         <small>
                                             <i class="fas fa-calendar-alt me-1"></i>
-                                            {{ assignment.effective_from.strftime('%d/%m/%Y') }}
+                                            {{ assignment.start_date.strftime('%d/%m/%Y') }}
                                             <br>
                                             <i class="fas fa-calendar-check me-1"></i>
-                                            {{ assignment.effective_to.strftime('%d/%m/%Y') if assignment.effective_to else 'Indefinito' }}
+                                            {{ assignment.end_date.strftime('%d/%m/%Y') if assignment.end_date else 'Indefinito' }}
                                         </small>
                                     </td>
                                     <td>
-                                        {% if assignment.effective_to %}
-                                        {% set days = (assignment.effective_to - assignment.effective_from).days + 1 %}
+                                        {% if assignment.end_date %}
+                                        {% set days = (assignment.end_date - assignment.start_date).days + 1 %}
                                         {{ days }} giorn{{ 'o' if days == 1 else 'i' }}
                                         {% else %}
                                         <span class="text-muted">Indefinito</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if assignment.is_active %}
+                                        {% if assignment.status == 'pending' %}
+                                            <span class="badge bg-warning">In Attesa</span>
+                                        {% elif assignment.status == 'approved' %}
+                                            <span class="badge bg-info">Approvato</span>
+                                        {% elif assignment.status == 'active' %}
                                             <span class="badge bg-success">Attivo</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Inattivo</span>
+                                        {% elif assignment.status == 'completed' %}
+                                            <span class="badge bg-secondary">Completato</span>
+                                        {% elif assignment.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Annullato</span>
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if assignment.approved %}
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check me-1"></i>Approvato
-                                            </span>
-                                            {% if assignment.approved_by_user %}
-                                            <br>
-                                            <small class="text-muted">
-                                                da {{ assignment.approved_by_user.nome }} {{ assignment.approved_by_user.cognome }}
-                                            </small>
-                                            {% endif %}
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="fas fa-clock me-1"></i>In attesa
-                                            </span>
+                                        {% if assignment.approved_at %}
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ assignment.approved_at.strftime('%d/%m/%Y') }}
+                                        </small>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if current_user.can_assign_social_safety_programs() %}
                                         <div class="btn-group btn-group-sm" role="group">
-                                            {% if not assignment.approved %}
-                                            <form method="POST" action="{{ url_for('social_safety.approve_assignment', id=assignment.id) }}" class="d-inline">
+                                            {% if assignment.status == 'pending' %}
+                                            <form method="POST" action="{{ url_for('social_safety.approve_assignment', assignment_id=assignment.id) }}" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <button type="submit" class="btn btn-outline-success" title="Approva">
                                                     <i class="fas fa-check"></i>
                                                 </button>
                                             </form>
                                             {% endif %}
-                                            <button type="button" class="btn btn-outline-primary" 
-                                                    onclick="editAssignment({{ assignment.id }}, '{{ assignment.effective_from.strftime('%Y-%m-%d') }}', '{{ assignment.effective_to.strftime('%Y-%m-%d') if assignment.effective_to else '' }}', {{ assignment.is_active|tojson }})"
-                                                    title="Modifica date">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <form method="POST" action="{{ url_for('social_safety.remove_assignment', id=assignment.id) }}" 
+                                            <form method="POST" action="{{ url_for('social_safety.cancel_assignment', assignment_id=assignment.id) }}" 
                                                   class="d-inline" onsubmit="return confirm('Rimuovere questa assegnazione? Il dipendente tornerà al normale orario di lavoro.')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <button type="submit" class="btn btn-outline-danger" title="Rimuovi">
@@ -303,7 +292,7 @@
 <script>
 function editAssignment(id, from, to, active) {
     const form = document.getElementById('editAssignmentForm');
-    form.action = "{{ url_for('social_safety.edit_assignment', id=0) }}".replace('0', id);
+    form.action = "{{ url_for('social_safety.edit_assignment', assignment_id=0) }}".replace('0', id);
     document.getElementById('edit_effective_from').value = from;
     document.getElementById('edit_effective_to').value = to;
     document.getElementById('edit_is_active').checked = active;
