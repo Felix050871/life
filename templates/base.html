@@ -174,12 +174,32 @@
             <ul class="sidebar-nav">
             {% if is_circle %}
                 <!-- MENU CIRCLE -->
+                {% if current_user.has_permission('can_access_hubly') %}
                 <li class="sidebar-nav-item">
                     <a href="{{ url_for('circle_news.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-newspaper"></i>
-                        <span>News & Comunicazioni</span>
+                        <span>News</span>
                     </a>
                 </li>
+                {% endif %}
+                
+                {% if current_user.has_permission('can_view_channels') %}
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('circle_communications.index') }}" class="sidebar-nav-link">
+                        <i class="fas fa-comments"></i>
+                        <span>Comunicazioni</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if current_user.has_permission('can_manage_channels') %}
+                <li class="sidebar-nav-item">
+                    <a href="{{ url_for('circle_channels.index') }}" class="sidebar-nav-link">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Canali</span>
+                    </a>
+                </li>
+                {% endif %}
                 
                 <li class="sidebar-nav-item">
                     <a href="{{ url_for('circle.delorean') }}" class="sidebar-nav-link">

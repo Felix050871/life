@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova Comunicazione - CIRCLE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('circle_communications.index') }}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h2><i class="fas fa-comments text-primary"></i> Nuova Comunicazione</h2>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('circle_communications.create') }}" enctype="multipart/form-data">
+                        <!-- Canale -->
+                        <div class="mb-3">
+                            <label for="channel_id" class="form-label">Canale <span class="text-danger">*</span></label>
+                            <select class="form-select" id="channel_id" name="channel_id" required>
+                                <option value="">Seleziona un canale...</option>
+                                {% for channel in channels %}
+                                <option value="{{ channel.id }}">
+                                    <i class="{{ channel.icon_class }}"></i> {{ channel.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Titolo -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Titolo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required placeholder="Es: Nuova procedura di sicurezza">
+                        </div>
+
+                        <!-- Contenuto -->
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Contenuto <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="content" name="content" rows="8" required placeholder="Scrivi il contenuto della comunicazione..."></textarea>
+                        </div>
+
+                        <!-- Immagine -->
+                        <div class="mb-3">
+                            <label for="image_file" class="form-label">Immagine (opzionale)</label>
+                            <input type="file" class="form-control" id="image_file" name="image_file" accept="image/*">
+                        </div>
+
+                        <!-- Video URL -->
+                        <div class="mb-3">
+                            <label for="video_url" class="form-label">URL Video (opzionale)</label>
+                            <input type="url" class="form-control" id="video_url" name="video_url" placeholder="https://youtube.com/...">
+                        </div>
+
+                        <!-- Opzioni -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="pinned" name="pinned">
+                                <label class="form-check-label" for="pinned">
+                                    <i class="fas fa-thumbtack"></i> In evidenza
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="comments_enabled" name="comments_enabled" checked>
+                                <label class="form-check-label" for="comments_enabled">
+                                    <i class="fas fa-comments"></i> Abilita commenti
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="send_email_notification" name="send_email_notification">
+                                <label class="form-check-label" for="send_email_notification">
+                                    <i class="fas fa-envelope"></i> Invia email di notifica a tutti gli utenti
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Pulsanti -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Pubblica Comunicazione
+                            </button>
+                            <a href="{{ url_for('circle_communications.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Annulla
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -36,6 +36,7 @@ from blueprints.commesse import commesse_bp
 # CIRCLE Blueprints
 from blueprints.circle_home import bp as circle_bp
 from blueprints.circle_news import bp as circle_news_bp
+from blueprints.circle_communications import bp as circle_communications_bp
 from blueprints.circle_groups import bp as circle_groups_bp
 from blueprints.circle_polls import bp as circle_polls_bp
 from blueprints.circle_calendar import bp as circle_calendar_bp
@@ -73,6 +74,7 @@ app.register_blueprint(commesse_bp)
 # CIRCLE Blueprints
 app.register_blueprint(circle_bp)
 app.register_blueprint(circle_news_bp)
+app.register_blueprint(circle_communications_bp)
 app.register_blueprint(circle_groups_bp)
 app.register_blueprint(circle_polls_bp)
 app.register_blueprint(circle_calendar_bp)
