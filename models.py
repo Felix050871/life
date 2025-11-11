@@ -814,6 +814,39 @@ class User(UserMixin, db.Model):
         """Verifica se l'utente è responsabile di una commessa specifica"""
         return any(a.commessa_id == commessa_id and a.is_responsabile for a in self.commessa_assignments)
     
+    # === AMMORTIZZATORI SOCIALI - SOCIAL SAFETY NET ===
+    def can_manage_social_safety_programs(self):
+        """Gestire programmi di ammortizzatori sociali (CIGS, Solidarietà, ecc.)"""
+        return self.has_permission('can_manage_social_safety_programs')
+    
+    def can_assign_social_safety_programs(self):
+        """Assegnare ammortizzatori sociali ai dipendenti"""
+        return self.has_permission('can_assign_social_safety_programs')
+    
+    def can_view_social_safety_reports(self):
+        """Visualizzare report compliance ammortizzatori sociali"""
+        return self.has_permission('can_view_social_safety_reports')
+    
+    def can_access_social_safety_menu(self):
+        """Accesso al menu Ammortizzatori Sociali"""
+        return (self.can_manage_social_safety_programs() or 
+                self.can_assign_social_safety_programs() or 
+                self.can_view_social_safety_reports())
+    
+    def get_active_safety_net_assignment(self, reference_date=None):
+        """Restituisce l'assegnazione ammortizzatore sociale attiva alla data specificata"""
+        from datetime import date
+        if reference_date is None:
+            reference_date = date.today()
+        for assignment in self.safety_net_assignments:
+            if assignment.is_active_on_date(reference_date):
+                return assignment
+        return None
+    
+    def has_active_safety_net(self, reference_date=None):
+        """Verifica se ha un ammortizzatore sociale attivo"""
+        return self.get_active_safety_net_assignment(reference_date) is not None
+    
     # Dashboard widget permissions - Completamente configurabili dall'admin
     def can_view_team_stats_widget(self):
         """Widget statistiche team nella dashboard"""
@@ -4743,3 +4776,166 @@ class Commessa(db.Model):
         """Verifica se l'utente ha un'assegnazione attiva oggi"""
         assignment = self.get_assignment_for_user(user)
         return assignment and assignment.is_active_now() if assignment else False
+
+
+# =============================================================================
+# SOCIAL SAFETY NET MODELS (Ammortizzatori Sociali)
+# =============================================================================
+
+class SocialSafetyNetProgram(db.Model):
+    """
+    Definisce un programma aziendale di ammortizzatore sociale
+    (CIGS, Solidarietà, FIS, ecc.)
+    """
+    __tablename__ = 'social_safety_net_program'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Tipo di ammortizzatore
+    program_type = db.Column(db.String(50), nullable=False)  # 'CIGS', 'Solidarietà', 'FIS', 'CIG Ordinaria', etc.
+    name = db.Column(db.String(200), nullable=False)  # Nome descrittivo del programma
+    description = db.Column(db.Text, nullable=True)  # Descrizione dettagliata
+    
+    # Base legale e compliance
+    legal_basis = db.Column(db.String(500), nullable=True)  # Riferimento normativo
+    decree_number = db.Column(db.String(100), nullable=True)  # Numero decreto
+    protocol_number = db.Column(db.String(100), nullable=True)  # Numero protocollo
+    decree_file_path = db.Column(db.String(500), nullable=True)  # Path file decreto caricato
+    
+    # Riduzione oraria
+    reduction_type = db.Column(db.String(20), nullable=False, default='percentage')  # 'percentage' o 'fixed_hours'
+    reduction_percentage = db.Column(db.Numeric(5, 2), nullable=True)  # Es. 20.00 per 20%
+    target_weekly_hours = db.Column(db.Numeric(5, 2), nullable=True)  # Es. 32.00 per 32h/settimana
+    
+    # Configurazioni paghe
+    payroll_code = db.Column(db.String(20), nullable=True)  # Codice per export XML/Excel paghe
+    inps_coverage = db.Column(db.Boolean, default=True)  # Se INPS copre parte della retribuzione
+    overtime_forbidden = db.Column(db.Boolean, default=True)  # Se straordinari sono vietati
+    
+    # Date validità programma
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    
+    # Status
+    status = db.Column(db.String(20), nullable=False, default='active')  # 'active', 'expired', 'cancelled'
+    
+    # Multi-tenant
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    
+    # Timestamps e audit
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    # Relationships
+    company = db.relationship('Company', backref='social_safety_programs')
+    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='created_safety_programs')
+    
+    def __repr__(self):
+        return f'<SocialSafetyNetProgram {self.program_type} - {self.name}>'
+    
+    def is_active_on_date(self, check_date):
+        """Verifica se il programma è attivo in una data specifica"""
+        return self.start_date <= check_date <= self.end_date and self.status == 'active'
+    
+    def get_reduced_hours(self, baseline_hours):
+        """Calcola le ore ridotte basandosi sulle ore baseline"""
+        if self.reduction_type == 'percentage' and self.reduction_percentage:
+            return baseline_hours * (1 - (self.reduction_percentage / 100))
+        elif self.reduction_type == 'fixed_hours' and self.target_weekly_hours:
+            return float(self.target_weekly_hours)
+        return baseline_hours
+    
+    def days_until_expiry(self):
+        """Calcola i giorni rimanenti alla scadenza"""
+        if self.status != 'active':
+            return 0
+        delta = self.end_date - date.today()
+        return max(0, delta.days)
+    
+    def is_expiring_soon(self, days_threshold=30):
+        """Verifica se il programma è in scadenza entro N giorni"""
+        return 0 < self.days_until_expiry() <= days_threshold
+
+
+class SocialSafetyNetAssignment(db.Model):
+    """
+    Assegnazione di un programma di ammortizzatore sociale a un dipendente
+    """
+    __tablename__ = 'social_safety_net_assignment'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Collegamenti
+    program_id = db.Column(db.Integer, db.ForeignKey('social_safety_net_program.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Date effettive applicazione (possono essere diverse dal programma)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    
+    # Override specifici per questo dipendente (opzionali)
+    custom_weekly_hours = db.Column(db.Numeric(5, 2), nullable=True)  # Override ore settimanali
+    custom_payroll_code = db.Column(db.String(20), nullable=True)  # Override codice paghe
+    notes = db.Column(db.Text, nullable=True)  # Note specifiche per questa assegnazione
+    
+    # Workflow stati
+    status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'approved', 'active', 'completed', 'cancelled'
+    
+    # Collegamento a snapshot contratto (per storicità)
+    contract_snapshot_id = db.Column(db.Integer, db.ForeignKey('contract_history.id'), nullable=True)
+    
+    # Multi-tenant
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    
+    # Timestamps e audit
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    requested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    
+    # Relationships
+    program = db.relationship('SocialSafetyNetProgram', backref='assignments')
+    user = db.relationship('User', foreign_keys=[user_id], backref='safety_net_assignments')
+    company = db.relationship('Company', backref='safety_net_assignments')
+    requested_by = db.relationship('User', foreign_keys=[requested_by_id], backref='requested_safety_assignments')
+    approved_by = db.relationship('User', foreign_keys=[approved_by_id], backref='approved_safety_assignments')
+    contract_snapshot = db.relationship('ContractHistory', foreign_keys=[contract_snapshot_id], backref='safety_net_assignments')
+    
+    def __repr__(self):
+        return f'<SocialSafetyNetAssignment User={self.user_id} Program={self.program_id}>'
+    
+    def is_active_on_date(self, check_date):
+        """Verifica se l'assegnazione è attiva in una data specifica"""
+        return self.start_date <= check_date <= self.end_date and self.status in ['approved', 'active']
+    
+    def get_effective_weekly_hours(self, baseline_hours):
+        """Calcola le ore settimanali effettive considerando override"""
+        if self.custom_weekly_hours:
+            return float(self.custom_weekly_hours)
+        return self.program.get_reduced_hours(baseline_hours)
+    
+    def get_payroll_code(self):
+        """Restituisce il codice paghe da usare (custom o da programma)"""
+        return self.custom_payroll_code or self.program.payroll_code
+    
+    def approve(self, approved_by_user):
+        """Approva l'assegnazione"""
+        self.status = 'approved'
+        self.approved_by_id = approved_by_user.id
+        self.approved_at = italian_now()
+    
+    def activate(self):
+        """Attiva l'assegnazione (quando inizia il periodo)"""
+        if self.status == 'approved' and self.start_date <= date.today():
+            self.status = 'active'
+    
+    def complete(self):
+        """Completa l'assegnazione (quando termina il periodo)"""
+        if self.end_date < date.today():
+            self.status = 'completed'
+    
+    def cancel(self):
+        """Annulla l'assegnazione"""
+        self.status = 'cancelled'
