@@ -10,7 +10,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-shield-alt me-2"></i>Gestione Ammortizzatori Sociali</h2>
                 {% if current_user.can_manage_social_safety_programs() %}
-                <a href="{{ url_for('social_safety.add_program') }}" class="btn btn-primary">
+                <a href="{{ url_for('social_safety.create_program') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>Nuovo Programma
                 </a>
                 {% endif %}
@@ -47,11 +47,11 @@
                                         <span class="badge bg-info">{{ program.program_type }}</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-secondary">{{ program.inps_code or '-' }}</span>
+                                        <span class="badge bg-secondary">{{ program.payroll_code or '-' }}</span>
                                     </td>
                                     <td>
                                         <span class="badge bg-warning text-dark">
-                                            <i class="fas fa-percent me-1"></i>{{ program.hours_reduction_percentage }}%
+                                            <i class="fas fa-percent me-1"></i>{{ program.reduction_percentage }}%
                                         </span>
                                     </td>
                                     <td>
@@ -80,14 +80,14 @@
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
                                             {% if current_user.can_manage_social_safety_programs() %}
-                                            <a href="{{ url_for('social_safety.edit_program', id=program.id) }}" 
+                                            <a href="{{ url_for('social_safety.edit_program', program_id=program.id) }}" 
                                                class="btn btn-outline-primary" 
                                                title="Modifica programma">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             {% endif %}
                                             {% if current_user.can_assign_social_safety_programs() %}
-                                            <a href="{{ url_for('social_safety.view_assignments', program_id=program.id) }}" 
+                                            <a href="{{ url_for('social_safety.program_detail', program_id=program.id) }}" 
                                                class="btn btn-outline-info" 
                                                title="Gestisci assegnazioni">
                                                 <i class="fas fa-users"></i>
@@ -95,7 +95,7 @@
                                             {% endif %}
                                             {% if current_user.can_manage_social_safety_programs() %}
                                             {% if program.assignments|length == 0 %}
-                                            <form method="POST" action="{{ url_for('social_safety.delete_program', id=program.id) }}" 
+                                            <form method="POST" action="{{ url_for('social_safety.delete_program', program_id=program.id) }}" 
                                                   class="d-inline" onsubmit="return confirm('Vuoi eliminare definitivamente questo programma? L\'operazione non è reversibile.')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <button type="submit" class="btn btn-outline-danger" title="Elimina programma">

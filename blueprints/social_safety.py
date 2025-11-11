@@ -203,7 +203,7 @@ def create_program():
 @require_manage_programs_permission
 def edit_program(program_id):
     """Modifica programma esistente"""
-    program = filter_by_company(SocialSafetyNetProgram.query).get_or_404(program_id)
+    program = filter_by_company(SocialSafetyNetProgram.query).filter_by(id=program_id).first_or_404()
     form = SocialSafetyProgramForm(obj=program)
     
     if form.validate_on_submit():
@@ -261,7 +261,7 @@ def edit_program(program_id):
 @require_manage_programs_permission
 def delete_program(program_id):
     """Eliminazione programma"""
-    program = filter_by_company(SocialSafetyNetProgram.query).get_or_404(program_id)
+    program = filter_by_company(SocialSafetyNetProgram.query).filter_by(id=program_id).first_or_404()
     
     # Verifica se ci sono assegnazioni attive
     active_assignments = [a for a in program.assignments if a.status in ['approved', 'active']]
@@ -289,7 +289,7 @@ def delete_program(program_id):
 @require_social_safety_permission
 def program_detail(program_id):
     """Dettaglio programma con assegnazioni"""
-    program = filter_by_company(SocialSafetyNetProgram.query).get_or_404(program_id)
+    program = filter_by_company(SocialSafetyNetProgram.query).filter_by(id=program_id).first_or_404()
     
     # Ottieni tutte le assegnazioni
     assignments = program.assignments
@@ -417,7 +417,7 @@ def create_assignment():
 @require_assign_permission
 def edit_assignment(assignment_id):
     """Modifica assegnazione esistente"""
-    assignment = filter_by_company(SocialSafetyNetAssignment.query).get_or_404(assignment_id)
+    assignment = filter_by_company(SocialSafetyNetAssignment.query).filter_by(id=assignment_id).first_or_404()
     
     # Non permettere modifica se già attiva o completata
     if assignment.status in ['completed', 'cancelled']:
@@ -458,7 +458,7 @@ def edit_assignment(assignment_id):
 @require_assign_permission
 def delete_assignment(assignment_id):
     """Eliminazione assegnazione"""
-    assignment = filter_by_company(SocialSafetyNetAssignment.query).get_or_404(assignment_id)
+    assignment = filter_by_company(SocialSafetyNetAssignment.query).filter_by(id=assignment_id).first_or_404()
     
     # Non permettere eliminazione se attiva
     if assignment.status == 'active':
@@ -479,7 +479,7 @@ def delete_assignment(assignment_id):
 @require_assign_permission
 def approve_assignment(assignment_id):
     """Approvazione assegnazione"""
-    assignment = filter_by_company(SocialSafetyNetAssignment.query).get_or_404(assignment_id)
+    assignment = filter_by_company(SocialSafetyNetAssignment.query).filter_by(id=assignment_id).first_or_404()
     
     if assignment.status != 'pending':
         flash('Solo le assegnazioni in stato pending possono essere approvate.', 'warning')
@@ -503,7 +503,7 @@ def approve_assignment(assignment_id):
 @require_assign_permission
 def cancel_assignment(assignment_id):
     """Annullamento assegnazione"""
-    assignment = filter_by_company(SocialSafetyNetAssignment.query).get_or_404(assignment_id)
+    assignment = filter_by_company(SocialSafetyNetAssignment.query).filter_by(id=assignment_id).first_or_404()
     
     assignment.cancel()
     db.session.commit()
@@ -572,7 +572,7 @@ def compliance_report():
 @require_social_safety_permission
 def download_decree(program_id):
     """Download file decreto"""
-    program = filter_by_company(SocialSafetyNetProgram.query).get_or_404(program_id)
+    program = filter_by_company(SocialSafetyNetProgram.query).filter_by(id=program_id).first_or_404()
     
     if not program.decree_file_path or not os.path.exists(program.decree_file_path):
         flash('File decreto non trovato.', 'danger')
