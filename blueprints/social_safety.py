@@ -132,7 +132,7 @@ def manage_programs():
     # Tipi di programma disponibili
     program_types = ['CIGS', 'Solidarietà', 'FIS', 'CIG Ordinaria', 'Altro']
     
-    return render_template('social_safety/manage_programs.html',
+    return render_template('social_safety_programs.html',
                          programs=programs,
                          total_programs=total_programs,
                          active_programs=active_programs,
@@ -194,7 +194,7 @@ def create_program():
         flash(f'Programma "{program.name}" creato con successo.', 'success')
         return redirect(url_for('social_safety.program_detail', program_id=program.id))
     
-    return render_template('social_safety/create_program.html', form=form)
+    return render_template('add_social_safety_program.html', form=form)
 
 
 @social_safety_bp.route('/programmi/<int:program_id>/edit', methods=['GET', 'POST'])
@@ -252,7 +252,7 @@ def edit_program(program_id):
         flash(f'Programma "{program.name}" aggiornato con successo.', 'success')
         return redirect(url_for('social_safety.program_detail', program_id=program.id))
     
-    return render_template('social_safety/edit_program.html', form=form, program=program)
+    return render_template('edit_social_safety_program.html', form=form, program=program)
 
 
 @social_safety_bp.route('/programmi/<int:program_id>/delete', methods=['POST'])
@@ -301,7 +301,7 @@ def program_detail(program_id):
     active_assignments = len([a for a in assignments if a.status == 'active'])
     completed_assignments = len([a for a in assignments if a.status == 'completed'])
     
-    return render_template('social_safety/program_detail.html',
+    return render_template('social_safety_program_detail.html',
                          program=program,
                          assignments=assignments,
                          total_assignments=total_assignments,
@@ -345,7 +345,7 @@ def manage_assignments():
     # Programmi disponibili per filtro
     programs = filter_by_company(SocialSafetyNetProgram.query).filter_by(status='active').all()
     
-    return render_template('social_safety/manage_assignments.html',
+    return render_template('social_safety_assignments.html',
                          assignments=assignments,
                          total_assignments=total_assignments,
                          pending_assignments=pending_assignments,
@@ -406,7 +406,9 @@ def create_assignment():
         flash('Assegnazione creata con successo. In attesa di approvazione.', 'success')
         return redirect(url_for('social_safety.manage_assignments'))
     
-    return render_template('social_safety/create_assignment.html', form=form)
+    # TODO: Creare template dedicato
+    flash('Funzionalità in fase di sviluppo', 'warning')
+    return redirect(url_for('social_safety.manage_assignments'))
 
 
 @social_safety_bp.route('/assegnazioni/<int:assignment_id>/edit', methods=['GET', 'POST'])
@@ -445,7 +447,9 @@ def edit_assignment(assignment_id):
         flash('Assegnazione aggiornata con successo.', 'success')
         return redirect(url_for('social_safety.manage_assignments'))
     
-    return render_template('social_safety/edit_assignment.html', form=form, assignment=assignment)
+    # TODO: Creare template dedicato
+    flash('Funzionalità in fase di sviluppo', 'warning')
+    return redirect(url_for('social_safety.manage_assignments'))
 
 
 @social_safety_bp.route('/assegnazioni/<int:assignment_id>/delete', methods=['POST'])
@@ -546,7 +550,11 @@ def compliance_report():
     total_employees_affected = len(set([a.user_id for a in active_assignments]))
     total_active_programs = filter_by_company(SocialSafetyNetProgram.query).filter_by(status='active').count()
     
-    return render_template('social_safety/compliance_report.html',
+    # TODO: Creare template report compliance
+    flash('Report compliance in fase di sviluppo', 'warning')
+    return redirect(url_for('social_safety.manage_programs'))
+    
+    return render_template('social_safety_programs.html',
                          expiring_programs=expiring_programs,
                          active_assignments=active_assignments,
                          pending_assignments=pending_assignments,
@@ -592,14 +600,14 @@ def user_assignments(user_id):
     # Ottieni tutte le assegnazioni per questo utente
     assignments = filter_by_company(SocialSafetyNetAssignment.query).filter_by(
         user_id=user_id
-    ).order_by(SocialSafetyNetAssignment.effective_from.desc()).all()
+    ).order_by(SocialSafetyNetAssignment.start_date.desc()).all()
     
     # Trova assegnazione attualmente attiva
     active_assignment = None
     today = date.today()
     for assignment in assignments:
-        if assignment.is_approved and assignment.effective_from <= today and (
-            not assignment.effective_to or assignment.effective_to >= today
+        if assignment.status in ['approved', 'active'] and assignment.start_date <= today and (
+            assignment.end_date >= today
         ):
             active_assignment = assignment
             break
