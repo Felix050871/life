@@ -435,7 +435,7 @@ def hr_detail(user_id):
                 last_name=user.last_name,
                 birth_date=hr_data.birth_date,
                 gender=hr_data.gender,
-                birth_city_code=None
+                birth_city=hr_data.birth_city
             )
             if calculated_cf:
                 hr_data.codice_fiscale = calculated_cf
