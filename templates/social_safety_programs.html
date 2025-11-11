@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Ammortizzatori Sociali{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if current_user.can_access_social_safety_menu() %}
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-shield-alt me-2"></i>Gestione Ammortizzatori Sociali</h2>
+                {% if current_user.can_manage_social_safety_programs() %}
+                <a href="{{ url_for('social_safety.add_program') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Nuovo Programma
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Tabella programmi -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Programmi di Ammortizzatori Sociali</h5>
+                </div>
+                <div class="card-body">
+                    {% if programs %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Tipo</th>
+                                    <th>Codice INPS</th>
+                                    <th>Riduzione</th>
+                                    <th>Periodo Validità</th>
+                                    <th>Straordinari</th>
+                                    <th>Dipendenti</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for program in programs %}
+                                <tr{% if not program.is_active %} class="table-secondary"{% endif %}>
+                                    <td>
+                                        <strong>{{ program.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ program.program_type }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ program.inps_code or '-' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-percent me-1"></i>{{ program.hours_reduction_percentage }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {{ program.start_date.strftime('%d/%m/%Y') if program.start_date else '-' }}
+                                            <br>
+                                            {{ program.end_date.strftime('%d/%m/%Y') if program.end_date else 'Indefinito' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if program.overtime_forbidden %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-ban me-1"></i>Vietato
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Consentito
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            {{ program.assignments|length }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            {% if current_user.can_manage_social_safety_programs() %}
+                                            <a href="{{ url_for('social_safety.edit_program', id=program.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Modifica programma">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% if current_user.can_assign_social_safety_programs() %}
+                                            <a href="{{ url_for('social_safety.view_assignments', program_id=program.id) }}" 
+                                               class="btn btn-outline-info" 
+                                               title="Gestisci assegnazioni">
+                                                <i class="fas fa-users"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% if current_user.can_manage_social_safety_programs() %}
+                                            {% if program.assignments|length == 0 %}
+                                            <form method="POST" action="{{ url_for('social_safety.delete_program', id=program.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('Vuoi eliminare definitivamente questo programma? L\'operazione non è reversibile.')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <button type="submit" class="btn btn-outline-danger" title="Elimina programma">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                            {% else %}
+                                            <button type="button" class="btn btn-outline-secondary" disabled
+                                                    title="Non è possibile eliminare programmi con dipendenti assegnati">
+                                                <i class="fas fa-lock"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Nessun programma di ammortizzatori sociali configurato. Clicca su "Nuovo Programma" per iniziare.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Informazioni</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Cosa sono gli Ammortizzatori Sociali?</strong></p>
+                    <p>Gli ammortizzatori sociali sono strumenti di sostegno al reddito che permettono di ridurre l'orario di lavoro dei dipendenti mantenendo parte della retribuzione attraverso integrazioni INPS.</p>
+                    
+                    <p class="mb-2 mt-3"><strong>Tipologie principali:</strong></p>
+                    <ul>
+                        <li><strong>CIGS</strong> - Cassa Integrazione Guadagni Straordinaria</li>
+                        <li><strong>Fondo di Solidarietà</strong> - Fondi bilaterali settoriali</li>
+                        <li><strong>FIS</strong> - Fondo di Integrazione Salariale</li>
+                        <li><strong>Contratto di Solidarietà</strong> - Riduzione orario concordata</li>
+                    </ul>
+                    
+                    <p class="mb-0 mt-3"><small class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        Il sistema applica automaticamente la riduzione oraria configurata e traccia tutti i dati necessari per l'export paghe.
+                    </small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Messaggio accesso negato -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <h4><i class="fas fa-lock me-2"></i>Accesso Negato</h4>
+                <p class="mb-0">Non hai i permessi necessari per accedere a questa sezione. Contatta l'amministratore se ritieni di dover avere accesso agli ammortizzatori sociali.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

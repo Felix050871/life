@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Programma - Life{% endblock %}
+
+{% block content %}
+{% if current_user.can_manage_social_safety_programs() %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>Modifica Programma: {{ program.name }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <!-- Sezione Dati Generali -->
+                    <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Dati Generali</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="name" class="form-label">Nome Programma *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   required maxlength="200" value="{{ program.name }}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="program_type" class="form-label">Tipo Programma *</label>
+                            <select class="form-select" id="program_type" name="program_type" required>
+                                <option value="CIGS" {% if program.program_type == 'CIGS' %}selected{% endif %}>CIGS - Cassa Integrazione Straordinaria</option>
+                                <option value="Fondo di Solidarietà" {% if program.program_type == 'Fondo di Solidarietà' %}selected{% endif %}>Fondo di Solidarietà</option>
+                                <option value="FIS" {% if program.program_type == 'FIS' %}selected{% endif %}>FIS - Fondo Integrazione Salariale</option>
+                                <option value="Contratto di Solidarietà" {% if program.program_type == 'Contratto di Solidarietà' %}selected{% endif %}>Contratto di Solidarietà</option>
+                                <option value="Altro" {% if program.program_type == 'Altro' %}selected{% endif %}>Altro</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="3" maxlength="1000">{{ program.description or '' }}</textarea>
+                    </div>
+                    
+                    <!-- Sezione Dati INPS -->
+                    <h5 class="mb-3 mt-4"><i class="fas fa-file-invoice me-2"></i>Dati INPS e Normativi</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="inps_code" class="form-label">Codice INPS</label>
+                            <input type="text" class="form-control" id="inps_code" name="inps_code" 
+                                   maxlength="20" value="{{ program.inps_code or '' }}">
+                            <small class="form-text text-muted">
+                                Codice giustificativo INPS per export paghe
+                            </small>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="decree_number" class="form-label">Numero Decreto</label>
+                            <input type="text" class="form-control" id="decree_number" name="decree_number" 
+                                   maxlength="100" value="{{ program.decree_number or '' }}">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="decree_date" class="form-label">Data Decreto</label>
+                            <input type="date" class="form-control" id="decree_date" name="decree_date"
+                                   value="{{ program.decree_date.strftime('%Y-%m-%d') if program.decree_date else '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {% if program.decree_file_path %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Decreto corrente: <strong>{{ program.decree_file_path.split('/')[-1] }}</strong>
+                            <a href="{{ url_for('social_safety.download_decree', id=program.id) }}" 
+                               class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="fas fa-download"></i> Scarica
+                            </a>
+                        </div>
+                        {% endif %}
+                        <label for="decree_file" class="form-label">
+                            {% if program.decree_file_path %}Sostituisci{% else %}Upload{% endif %} Decreto Ministeriale
+                        </label>
+                        <input type="file" class="form-control" id="decree_file" name="decree_file" 
+                               accept=".pdf,.doc,.docx">
+                        <small class="form-text text-muted">
+                            Formati supportati: PDF, DOC, DOCX (max 10MB)
+                            {% if program.decree_file_path %}- Lascia vuoto per mantenere il file corrente{% endif %}
+                        </small>
+                    </div>
+                    
+                    <!-- Sezione Riduzione Oraria -->
+                    <h5 class="mb-3 mt-4"><i class="fas fa-clock me-2"></i>Configurazione Riduzione Oraria</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="hours_reduction_percentage" class="form-label">Percentuale Riduzione Ore *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="hours_reduction_percentage" 
+                                       name="hours_reduction_percentage" required step="0.01" min="0" max="100" 
+                                       value="{{ program.hours_reduction_percentage }}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">
+                                Percentuale di riduzione dell'orario settimanale
+                            </small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4 pt-2">
+                                <input class="form-check-input" type="checkbox" id="overtime_forbidden" 
+                                       name="overtime_forbidden" {% if program.overtime_forbidden %}checked{% endif %}>
+                                <label class="form-check-label" for="overtime_forbidden">
+                                    <strong>Vieta Straordinari</strong>
+                                </label>
+                                <small class="form-text text-muted d-block">
+                                    Se abilitato, il sistema impedirà l'inserimento di ore straordinarie
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sezione Periodo Validità -->
+                    <h5 class="mb-3 mt-4"><i class="fas fa-calendar-alt me-2"></i>Periodo di Validità</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">Data Inizio</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date"
+                                   value="{{ program.start_date.strftime('%Y-%m-%d') if program.start_date else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">Data Fine</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date"
+                                   value="{{ program.end_date.strftime('%Y-%m-%d') if program.end_date else '' }}">
+                            <small class="form-text text-muted">
+                                Lascia vuoto per programma a tempo indeterminato
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Stato -->
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" 
+                                   name="is_active" {% if program.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                <strong>Programma Attivo</strong>
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                Solo i programmi attivi possono essere assegnati ai dipendenti
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Note -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Note Interne</label>
+                        <textarea class="form-control" id="notes" name="notes" 
+                                  rows="3" maxlength="1000">{{ program.notes or '' }}</textarea>
+                    </div>
+                    
+                    <!-- Info assegnazioni -->
+                    {% if program.assignments|length > 0 %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Attenzione:</strong> Questo programma ha {{ program.assignments|length }} 
+                        dipendent{{ 'e' if program.assignments|length == 1 else 'i' }} assegnat{{ 'o' if program.assignments|length == 1 else 'i' }}.
+                        Le modifiche potrebbero influenzare i calcoli già effettuati.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Salva Modifiche
+                        </button>
+                        <a href="{{ url_for('social_safety.list_programs') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Annulla
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-danger">
+            <h4><i class="fas fa-lock me-2"></i>Accesso Negato</h4>
+            <p class="mb-0">Non hai i permessi necessari per modificare programmi di ammortizzatori sociali. Contatta l'amministratore per ottenere le autorizzazioni necessarie.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

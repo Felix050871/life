@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Assegnazioni {{ program.name }} - Life{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if current_user.can_assign_social_safety_programs() or current_user.can_view_social_safety_reports() %}
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-users me-2"></i>Gestione Assegnazioni</h2>
+                    <p class="text-muted mb-0">Programma: <strong>{{ program.name }}</strong></p>
+                </div>
+                <div>
+                    <a href="{{ url_for('social_safety.list_programs') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Torna ai Programmi
+                    </a>
+                    {% if current_user.can_assign_social_safety_programs() %}
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssignmentModal">
+                        <i class="fas fa-user-plus me-2"></i>Assegna Dipendente
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Info Programma -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Tipo:</strong> {{ program.program_type }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Riduzione:</strong> {{ program.hours_reduction_percentage }}%
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Straordinari:</strong> 
+                            {% if program.overtime_forbidden %}
+                                <span class="badge bg-danger">Vietati</span>
+                            {% else %}
+                                <span class="badge bg-success">Consentiti</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Codice INPS:</strong> {{ program.inps_code or '-' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabella Assegnazioni -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Dipendenti Assegnati ({{ assignments|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Dipendente</th>
+                                    <th>Matricola</th>
+                                    <th>Periodo</th>
+                                    <th>Durata</th>
+                                    <th>Stato</th>
+                                    <th>Approvazione</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                <tr{% if not assignment.is_active %} class="table-secondary"{% endif %}>
+                                    <td>
+                                        <strong>{{ assignment.user.nome }} {{ assignment.user.cognome }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ assignment.user.matricola or '-' }}</span>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            {{ assignment.effective_from.strftime('%d/%m/%Y') }}
+                                            <br>
+                                            <i class="fas fa-calendar-check me-1"></i>
+                                            {{ assignment.effective_to.strftime('%d/%m/%Y') if assignment.effective_to else 'Indefinito' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if assignment.effective_to %}
+                                        {% set days = (assignment.effective_to - assignment.effective_from).days + 1 %}
+                                        {{ days }} giorn{{ 'o' if days == 1 else 'i' }}
+                                        {% else %}
+                                        <span class="text-muted">Indefinito</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if assignment.is_active %}
+                                            <span class="badge bg-success">Attivo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inattivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if assignment.approved %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Approvato
+                                            </span>
+                                            {% if assignment.approved_by_user %}
+                                            <br>
+                                            <small class="text-muted">
+                                                da {{ assignment.approved_by_user.nome }} {{ assignment.approved_by_user.cognome }}
+                                            </small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock me-1"></i>In attesa
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if current_user.can_assign_social_safety_programs() %}
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            {% if not assignment.approved %}
+                                            <form method="POST" action="{{ url_for('social_safety.approve_assignment', id=assignment.id) }}" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <button type="submit" class="btn btn-outline-success" title="Approva">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    onclick="editAssignment({{ assignment.id }}, '{{ assignment.effective_from.strftime('%Y-%m-%d') }}', '{{ assignment.effective_to.strftime('%Y-%m-%d') if assignment.effective_to else '' }}', {{ assignment.is_active|tojson }})"
+                                                    title="Modifica date">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form method="POST" action="{{ url_for('social_safety.remove_assignment', id=assignment.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('Rimuovere questa assegnazione? Il dipendente tornerà al normale orario di lavoro.')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <button type="submit" class="btn btn-outline-danger" title="Rimuovi">
+                                                    <i class="fas fa-user-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Nessun dipendente assegnato a questo programma. Clicca su "Assegna Dipendente" per iniziare.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Aggiungi Assegnazione -->
+<div class="modal fade" id="addAssignmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('social_safety.add_assignment', program_id=program.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header">
+                    <h5 class="modal-title">Assegna Dipendente al Programma</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">Dipendente *</label>
+                        <select class="form-select" id="user_id" name="user_id" required>
+                            <option value="">Seleziona dipendente...</option>
+                            {% for user in available_users %}
+                            <option value="{{ user.id }}">
+                                {{ user.cognome }} {{ user.nome }} ({{ user.matricola or 'N/A' }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if not available_users %}
+                        <small class="form-text text-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Tutti i dipendenti sono già assegnati a questo programma o non ci sono dipendenti disponibili.
+                        </small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="effective_from" class="form-label">Data Inizio *</label>
+                            <input type="date" class="form-control" id="effective_from" name="effective_from" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="effective_to" class="form-label">Data Fine</label>
+                            <input type="date" class="form-control" id="effective_to" name="effective_to">
+                            <small class="form-text text-muted">
+                                Lascia vuoto per durata indefinita
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="approved" name="approved">
+                            <label class="form-check-label" for="approved">
+                                Approva immediatamente
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                Se non approvata, l'assegnazione rimarrà in stato "In attesa"
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Nota:</strong> L'assegnazione creerà automaticamente uno snapshot nel Contract History del dipendente.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary" {% if not available_users %}disabled{% endif %}>
+                        <i class="fas fa-save me-1"></i>Assegna
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifica Date -->
+<div class="modal fade" id="editAssignmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="editAssignmentForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifica Date Assegnazione</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_effective_from" class="form-label">Data Inizio *</label>
+                        <input type="date" class="form-control" id="edit_effective_from" name="effective_from" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_effective_to" class="form-label">Data Fine</label>
+                        <input type="date" class="form-control" id="edit_effective_to" name="effective_to">
+                        <small class="form-text text-muted">
+                            Lascia vuoto per durata indefinita
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                            <label class="form-check-label" for="edit_is_active">
+                                Assegnazione Attiva
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Salva Modifiche
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <!-- Messaggio accesso negato -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <h4><i class="fas fa-lock me-2"></i>Accesso Negato</h4>
+                <p class="mb-0">Non hai i permessi necessari per accedere a questa sezione. Contatta l'amministratore se ritieni di dover avere accesso alla gestione assegnazioni.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if current_user.can_assign_social_safety_programs() %}
+<script>
+function editAssignment(id, from, to, active) {
+    const form = document.getElementById('editAssignmentForm');
+    form.action = "{{ url_for('social_safety.edit_assignment', id=0) }}".replace('0', id);
+    document.getElementById('edit_effective_from').value = from;
+    document.getElementById('edit_effective_to').value = to;
+    document.getElementById('edit_is_active').checked = active;
+    new bootstrap.Modal(document.getElementById('editAssignmentModal')).show();
+}
+</script>
+{% endif %}
+{% endblock %}
