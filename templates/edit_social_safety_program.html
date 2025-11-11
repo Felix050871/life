@@ -49,12 +49,18 @@
                     
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label for="inps_code" class="form-label">Codice INPS</label>
-                            <input type="text" class="form-control" id="inps_code" name="inps_code" 
-                                   maxlength="20" value="{{ program.inps_code or '' }}">
+                            <label for="payroll_code" class="form-label">Codice Paghe</label>
+                            <input type="text" class="form-control" id="payroll_code" name="payroll_code" 
+                                   maxlength="20" value="{{ program.payroll_code or '' }}">
                             <small class="form-text text-muted">
-                                Codice giustificativo INPS per export paghe
+                                Codice per export paghe e sistema INPS
                             </small>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="legal_basis" class="form-label">Base Legale</label>
+                            <input type="text" class="form-control" id="legal_basis" name="legal_basis" 
+                                   maxlength="500" value="{{ program.legal_basis or '' }}">
                         </div>
                         
                         <div class="col-md-4 mb-3">
@@ -64,9 +70,9 @@
                         </div>
                         
                         <div class="col-md-4 mb-3">
-                            <label for="decree_date" class="form-label">Data Decreto</label>
-                            <input type="date" class="form-control" id="decree_date" name="decree_date"
-                                   value="{{ program.decree_date.strftime('%Y-%m-%d') if program.decree_date else '' }}">
+                            <label for="protocol_number" class="form-label">Numero Protocollo</label>
+                            <input type="text" class="form-control" id="protocol_number" name="protocol_number" 
+                                   maxlength="100" value="{{ program.protocol_number or '' }}">
                         </div>
                     </div>
                     
@@ -75,7 +81,7 @@
                         <div class="alert alert-info">
                             <i class="fas fa-file-pdf me-2"></i>
                             Decreto corrente: <strong>{{ program.decree_file_path.split('/')[-1] }}</strong>
-                            <a href="{{ url_for('social_safety.download_decree', id=program.id) }}" 
+                            <a href="{{ url_for('social_safety.download_decree', program_id=program.id) }}" 
                                class="btn btn-sm btn-outline-primary ms-2">
                                 <i class="fas fa-download"></i> Scarica
                             </a>
@@ -95,17 +101,38 @@
                     <!-- Sezione Riduzione Oraria -->
                     <h5 class="mb-3 mt-4"><i class="fas fa-clock me-2"></i>Configurazione Riduzione Oraria</h5>
                     
+                    <div class="mb-3">
+                        <label for="reduction_type" class="form-label">Tipo Riduzione *</label>
+                        <select class="form-select" id="reduction_type" name="reduction_type" required>
+                            <option value="percentage" {% if program.reduction_type == 'percentage' %}selected{% endif %}>Percentuale</option>
+                            <option value="fixed_hours" {% if program.reduction_type == 'fixed_hours' %}selected{% endif %}>Ore Settimanali Fisse</option>
+                        </select>
+                    </div>
+                    
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="hours_reduction_percentage" class="form-label">Percentuale Riduzione Ore *</label>
+                        <div class="col-md-6 mb-3" id="percentage_field">
+                            <label for="reduction_percentage" class="form-label">Percentuale Riduzione Ore *</label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="hours_reduction_percentage" 
-                                       name="hours_reduction_percentage" required step="0.01" min="0" max="100" 
-                                       value="{{ program.hours_reduction_percentage }}">
+                                <input type="number" class="form-control" id="reduction_percentage" 
+                                       name="reduction_percentage" step="0.01" min="0" max="100" 
+                                       value="{{ program.reduction_percentage or '' }}">
                                 <span class="input-group-text">%</span>
                             </div>
                             <small class="form-text text-muted">
-                                Percentuale di riduzione dell'orario settimanale
+                                Percentuale di riduzione dell'orario settimanale (es: 30% = da 40h a 28h)
+                            </small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3" id="fixed_hours_field" style="display: none;">
+                            <label for="target_weekly_hours" class="form-label">Ore Settimanali Target *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="target_weekly_hours" 
+                                       name="target_weekly_hours" step="0.01" min="0" max="48" 
+                                       value="{{ program.target_weekly_hours or '' }}">
+                                <span class="input-group-text">h</span>
+                            </div>
+                            <small class="form-text text-muted">
+                                Ore settimanali di lavoro dopo la riduzione
                             </small>
                         </div>
                         
@@ -143,25 +170,17 @@
                         </div>
                     </div>
                     
-                    <!-- Stato -->
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="is_active" 
-                                   name="is_active" {% if program.is_active %}checked{% endif %}>
-                            <label class="form-check-label" for="is_active">
-                                <strong>Programma Attivo</strong>
+                            <input class="form-check-input" type="checkbox" id="inps_coverage" 
+                                   name="inps_coverage" {% if program.inps_coverage %}checked{% endif %}>
+                            <label class="form-check-label" for="inps_coverage">
+                                <strong>Copertura INPS</strong>
                             </label>
                             <small class="form-text text-muted d-block">
-                                Solo i programmi attivi possono essere assegnati ai dipendenti
+                                Se abilitato, le ore in CIGS/ammortizzatori sono coperte da contribuzione INPS
                             </small>
                         </div>
-                    </div>
-                    
-                    <!-- Note -->
-                    <div class="mb-3">
-                        <label for="notes" class="form-label">Note Interne</label>
-                        <textarea class="form-control" id="notes" name="notes" 
-                                  rows="3" maxlength="1000">{{ program.notes or '' }}</textarea>
                     </div>
                     
                     <!-- Info assegnazioni -->
@@ -197,4 +216,31 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reductionType = document.getElementById('reduction_type');
+    const percentageField = document.getElementById('percentage_field');
+    const fixedHoursField = document.getElementById('fixed_hours_field');
+    
+    function toggleReductionFields() {
+        if (reductionType.value === 'percentage') {
+            percentageField.style.display = '';
+            fixedHoursField.style.display = 'none';
+            document.getElementById('reduction_percentage').required = true;
+            document.getElementById('target_weekly_hours').required = false;
+        } else {
+            percentageField.style.display = 'none';
+            fixedHoursField.style.display = '';
+            document.getElementById('reduction_percentage').required = false;
+            document.getElementById('target_weekly_hours').required = true;
+        }
+    }
+    
+    reductionType.addEventListener('change', toggleReductionFields);
+    toggleReductionFields();
+});
+</script>
 {% endblock %}
