@@ -890,6 +890,32 @@ def hr_detail(user_id):
     from models import WorkSchedule
     work_schedules = filter_by_company(WorkSchedule.query).filter_by(active=True).order_by(WorkSchedule.name).all()
     
+    # Carica assegnazioni ammortizzatori sociali (se ha permesso)
+    safety_net_assignments = []
+    active_safety_net_assignment = None
+    total_safety_net_assignments = 0
+    
+    if current_user.can_view_social_safety_reports():
+        from models import SocialSafetyNetAssignment
+        from datetime import date
+        
+        # Carica le ultime 5 assegnazioni per questo utente
+        all_assignments = filter_by_company(SocialSafetyNetAssignment.query).filter_by(
+            user_id=user.id
+        ).order_by(SocialSafetyNetAssignment.effective_from.desc()).all()
+        
+        total_safety_net_assignments = len(all_assignments)
+        safety_net_assignments = all_assignments[:5]  # Prime 5
+        
+        # Trova assegnazione attualmente attiva
+        today = date.today()
+        for assignment in all_assignments:
+            if assignment.is_approved and assignment.effective_from <= today and (
+                not assignment.effective_to or assignment.effective_to >= today
+            ):
+                active_safety_net_assignment = assignment
+                break
+    
     return render_template('hr_detail.html', 
                          user=user, 
                          hr_data=hr_data,
@@ -897,7 +923,10 @@ def hr_detail(user_id):
                          aci_vehicles=aci_vehicles,
                          mansioni=mansioni,
                          sedi=sedi,
-                         work_schedules=work_schedules)
+                         work_schedules=work_schedules,
+                         safety_net_assignments=safety_net_assignments,
+                         active_safety_net_assignment=active_safety_net_assignment,
+                         total_safety_net_assignments=total_safety_net_assignments)
 
 
 @hr_bp.route('/<int:user_id>/contract_history')

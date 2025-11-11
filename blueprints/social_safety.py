@@ -82,6 +82,17 @@ def require_assign_permission(f):
     return decorated_function
 
 
+def require_reports_permission(f):
+    """Decorator per richiedere permesso visualizzazione report (read-only)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.can_view_social_safety_reports():
+            flash('Non hai i permessi necessari per visualizzare i report.', 'danger')
+            return redirect(url_for('dashboard.dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 # =============================================================================
 # PROGRAMMI CRUD ROUTES
 # =============================================================================
@@ -563,3 +574,45 @@ def download_decree(program_id):
     filename = os.path.basename(program.decree_file_path)
     
     return send_from_directory(directory, filename, as_attachment=True)
+
+
+# =============================================================================
+# USER-SPECIFIC ASSIGNMENT VIEW (READ-ONLY)
+# =============================================================================
+
+@social_safety_bp.route('/dipendente/<int:user_id>/assegnazioni')
+@login_required
+@require_social_safety_permission
+@require_reports_permission
+def user_assignments(user_id):
+    """Visualizza assegnazioni ammortizzatori sociali per dipendente specifico (read-only)"""
+    # Ottieni utente con tenant filtering
+    user = filter_by_company(User.query).filter_by(id=user_id).first_or_404()
+    
+    # Ottieni tutte le assegnazioni per questo utente
+    assignments = filter_by_company(SocialSafetyNetAssignment.query).filter_by(
+        user_id=user_id
+    ).order_by(SocialSafetyNetAssignment.effective_from.desc()).all()
+    
+    # Trova assegnazione attualmente attiva
+    active_assignment = None
+    today = date.today()
+    for assignment in assignments:
+        if assignment.is_approved and assignment.effective_from <= today and (
+            not assignment.effective_to or assignment.effective_to >= today
+        ):
+            active_assignment = assignment
+            break
+    
+    # Statistiche
+    total_assignments = len(assignments)
+    approved_count = len([a for a in assignments if a.is_approved])
+    pending_count = len([a for a in assignments if not a.is_approved])
+    
+    return render_template('user_assignments_social_safety.html',
+                         user=user,
+                         assignments=assignments,
+                         active_assignment=active_assignment,
+                         total_assignments=total_assignments,
+                         approved_count=approved_count,
+                         pending_count=pending_count)

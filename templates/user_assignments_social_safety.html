@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Ammortizzatori Sociali - {{ user.get_full_name() }} - Life{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-shield-alt me-2"></i>Ammortizzatori Sociali</h2>
+                    <p class="text-muted mb-0">Dipendente: <strong>{{ user.get_full_name() }}</strong>
+                    {% if user.hr_data and user.hr_data.matricola %}
+                        <span class="badge bg-secondary ms-2">{{ user.hr_data.matricola }}</span>
+                    {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('hr.hr_detail', user_id=user.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Torna alla Scheda HR
+                    </a>
+                </div>
+            </div>
+
+            <!-- Statistiche Rapide -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Totale Assegnazioni</h6>
+                            <h3 class="mb-0">{{ total_assignments }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Approvate</h6>
+                            <h3 class="mb-0">{{ approved_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <h6 class="card-title">In Attesa</h6>
+                            <h3 class="mb-0">{{ pending_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card {% if active_assignment %}bg-info text-white{% else %}bg-secondary text-white{% endif %}">
+                        <div class="card-body">
+                            <h6 class="card-title">Stato Attuale</h6>
+                            <h5 class="mb-0">
+                                {% if active_assignment %}
+                                    <i class="fas fa-check-circle me-2"></i>Attivo
+                                {% else %}
+                                    <i class="fas fa-times-circle me-2"></i>Nessuna
+                                {% endif %}
+                            </h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assegnazione Attiva -->
+            {% if active_assignment %}
+            <div class="alert alert-warning mb-4">
+                <h5 class="alert-heading">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Assegnazione Attualmente Attiva
+                </h5>
+                <hr>
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Programma:</strong> {{ active_assignment.program.name }}
+                    </div>
+                    <div class="col-md-2">
+                        <strong>Tipo:</strong> {{ active_assignment.program.program_type }}
+                    </div>
+                    <div class="col-md-2">
+                        <strong>Riduzione:</strong> <span class="badge bg-danger">-{{ active_assignment.program.reduction_percentage }}%</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Periodo:</strong> dal {{ active_assignment.effective_from.strftime('%d/%m/%Y') }}
+                        {% if active_assignment.effective_to %}
+                        al {{ active_assignment.effective_to.strftime('%d/%m/%Y') }}
+                        {% else %}
+                        (in corso)
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2">
+                        <strong>Codice Paghe:</strong> {{ active_assignment.program.payroll_code or '-' }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Timeline Assegnazioni -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Storico Assegnazioni
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Programma</th>
+                                    <th>Tipo</th>
+                                    <th>Periodo</th>
+                                    <th>Durata</th>
+                                    <th>Riduzione Ore</th>
+                                    <th>Stato</th>
+                                    <th>Approvazione</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                <tr {% if assignment == active_assignment %}class="table-warning"{% endif %}>
+                                    <td>
+                                        <strong>{{ assignment.program.name }}</strong>
+                                        {% if assignment.program.decree_number %}
+                                        <br><small class="text-muted">Decreto {{ assignment.program.decree_number }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ assignment.program.program_type }}</span>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            {{ assignment.effective_from.strftime('%d/%m/%Y') }}
+                                            <br>
+                                            <i class="fas fa-calendar-check me-1"></i>
+                                            {{ assignment.effective_to.strftime('%d/%m/%Y') if assignment.effective_to else 'In corso' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if assignment.effective_to %}
+                                        {% set days = (assignment.effective_to - assignment.effective_from).days + 1 %}
+                                        {{ days }} giorn{{ 'o' if days == 1 else 'i' }}
+                                        {% else %}
+                                        <span class="text-muted">Indefinito</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">
+                                            -{{ assignment.program.reduction_percentage }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% set today = None %}
+                                        {% if assignment.is_approved and assignment.effective_from <= today|default(current_date) and (not assignment.effective_to or assignment.effective_to >= today|default(current_date)) %}
+                                            <span class="badge bg-success">Attivo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inattivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if assignment.is_approved %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Approvato
+                                            </span>
+                                            {% if assignment.approved_by_user %}
+                                            <br>
+                                            <small class="text-muted">
+                                                da {{ assignment.approved_by_user.get_full_name() }}
+                                            </small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock me-1"></i>In attesa
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Nessuna assegnazione di ammortizzatori sociali per questo dipendente.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
