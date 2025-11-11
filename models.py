@@ -229,6 +229,9 @@ class UserRole(db.Model):
             'can_view_tools': 'Visualizzare Strumenti',
             'can_comment_posts': 'Commentare Post',
             'can_like_posts': 'Mettere Like ai Post',
+            'can_manage_channels': 'Gestire Canali',
+            'can_view_channels': 'Visualizzare Canali',
+            'can_create_channel_communications': 'Creare Comunicazioni Canale',
             
             # HR - Human Resources
             'can_manage_hr_data': 'Gestire Dati HR',
@@ -3816,14 +3819,43 @@ class ACITable(db.Model):
 # CIRCLE MODELS - Social Intranet Aziendale
 # =============================================================================
 
+class Channel(db.Model):
+    """Modello per canali CIRCLE (HR, Direzione, Marketing, ecc.)"""
+    __tablename__ = 'channel'
+    __table_args__ = (
+        db.UniqueConstraint('name', 'company_id', name='uq_channel_name_company'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    icon_class = db.Column(db.String(100), default='fas fa-comments')
+    icon_color = db.Column(db.String(50), default='text-primary')
+    active = db.Column(db.Boolean, default=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    groups = db.relationship('CircleGroup', backref='channel', lazy='dynamic')
+    posts = db.relationship('CirclePost', backref='channel', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<Channel {self.name}>'
+
+
 class CirclePost(db.Model):
     """Modello per post/news CIRCLE (Delorean, News, Feed)"""
     __tablename__ = 'circle_post'
+    __table_args__ = (
+        db.Index('idx_circlepost_company_channel_type', 'company_id', 'channel_id', 'post_type'),
+    )
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    post_type = db.Column(db.String(50), nullable=False)  # 'news', 'delorean', 'announcement', 'tech_feed'
+    post_type = db.Column(db.String(50), nullable=False)  # 'news', 'communication', 'delorean', 'announcement', 'tech_feed'
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=True)  # Null per news globali, valorizzato per comunicazioni
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     published = db.Column(db.Boolean, default=True)
     pinned = db.Column(db.Boolean, default=False)  # Post in evidenza
@@ -3860,7 +3892,8 @@ class CircleGroup(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    group_type = db.Column(db.String(50), nullable=False)  # 'department', 'project', 'interest', 'official'
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=True)  # Associazione al canale
+    group_type = db.Column(db.String(50), nullable=True)  # DEPRECATED: 'department', 'project', 'interest', 'official' - mantenuto per backward compatibility
     is_private = db.Column(db.Boolean, default=False)  # Gruppo privato (solo su invito)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     image_url = db.Column(db.String(255), nullable=True)  # Immagine del gruppo

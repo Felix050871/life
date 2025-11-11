@@ -41,6 +41,7 @@ from blueprints.circle_polls import bp as circle_polls_bp
 from blueprints.circle_calendar import bp as circle_calendar_bp
 from blueprints.circle_documents import bp as circle_documents_bp
 from blueprints.circle_tools import bp as circle_tools_bp
+from blueprints.circle_channels import bp as circle_channels_bp
 
 # Legal/GDPR Blueprints
 from blueprints.legal import bp as legal_bp
@@ -77,6 +78,7 @@ app.register_blueprint(circle_polls_bp)
 app.register_blueprint(circle_calendar_bp)
 app.register_blueprint(circle_documents_bp)
 app.register_blueprint(circle_tools_bp)
+app.register_blueprint(circle_channels_bp)
 
 # Legal/GDPR Blueprints
 app.register_blueprint(legal_bp)
