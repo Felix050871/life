@@ -364,11 +364,14 @@ def create_assignment():
         if form.create_contract_snapshot.data:
             user = User.query.get(form.user_id.data)
             if user and user.hr_data:
+                from datetime import datetime
+                # Converti date a datetime per effective_date
+                effective_datetime = datetime.combine(form.start_date.data, datetime.min.time())
                 snapshot = create_contract_snapshot(
                     user.hr_data,
-                    effective_from=form.start_date.data,
                     changed_by_user_id=current_user.id,
-                    change_note=f"Inizio ammortizzatore sociale: {form.notes.data or 'N/A'}"
+                    notes=f"Inizio ammortizzatore sociale: {form.notes.data or 'N/A'}",
+                    effective_date=effective_datetime
                 )
                 if snapshot:
                     contract_snapshot_id = snapshot.id

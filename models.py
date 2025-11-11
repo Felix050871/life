@@ -1413,10 +1413,15 @@ class AttendanceEvent(db.Model):
     is_manual = db.Column(db.Boolean, default=False, nullable=False)  # Indica se inserito manualmente a posteriori
     entry_type = db.Column(db.String(20), default='standard', nullable=False)  # DEPRECATED: usare attendance_type_id
     
+    # Social Safety Net (Ammortizzatori Sociali) - Cached fields for historical accuracy
+    safety_net_assignment_id = db.Column(db.Integer, db.ForeignKey('social_safety_net_assignment.id'), nullable=True)  # Assegnazione ammortizzatore attiva
+    payroll_code = db.Column(db.String(20), nullable=True)  # Codice paghe cached dal programma (CIGS, SOL, FIS, etc.)
+    
     user = db.relationship('User', backref='attendance_events')
     sede = db.relationship('Sede', backref='sede_attendance_events')
     commessa = db.relationship('Commessa', backref='attendance_events')
     attendance_type = db.relationship('AttendanceType', backref='attendance_events')
+    safety_net_assignment = db.relationship('SocialSafetyNetAssignment', backref='attendance_events')
     
     @property
     def timestamp_italian(self):
@@ -4839,11 +4844,31 @@ class SocialSafetyNetProgram(db.Model):
         return self.start_date <= check_date <= self.end_date and self.status == 'active'
     
     def get_reduced_hours(self, baseline_hours):
-        """Calcola le ore ridotte basandosi sulle ore baseline"""
-        if self.reduction_type == 'percentage' and self.reduction_percentage:
-            return baseline_hours * (1 - (self.reduction_percentage / 100))
-        elif self.reduction_type == 'fixed_hours' and self.target_weekly_hours:
-            return float(self.target_weekly_hours)
+        """
+        Calcola le ore ridotte basandosi sulle ore baseline.
+        
+        Fallback robusto: se i dati del programma sono incompleti,
+        restituisce le ore baseline senza riduzione.
+        """
+        if not baseline_hours:
+            return baseline_hours
+        
+        if self.reduction_type == 'percentage':
+            if self.reduction_percentage is not None and self.reduction_percentage >= 0:
+                reduction_factor = 1 - (float(self.reduction_percentage) / 100)
+                # Sanity check: riduzione non può portare a ore negative
+                return max(0, baseline_hours * reduction_factor)
+            else:
+                # Dati incompleti: fallback a baseline
+                return baseline_hours
+        elif self.reduction_type == 'fixed_hours':
+            if self.target_weekly_hours is not None and self.target_weekly_hours >= 0:
+                return float(self.target_weekly_hours)
+            else:
+                # Dati incompleti: fallback a baseline
+                return baseline_hours
+        
+        # Tipo riduzione sconosciuto: fallback a baseline
         return baseline_hours
     
     def days_until_expiry(self):
