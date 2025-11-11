@@ -326,6 +326,56 @@ def dashboard():
     all_sedi_list = []
     if current_user.all_sedi:
         all_sedi_list = filter_by_company(Sede.query).filter_by(active=True).all()
+    
+    # Widget ammortizzatori sociali (social safety net programs)
+    social_safety_stats = None
+    if current_user.can_view_social_safety_reports():
+        from models import SocialSafetyNetProgram, SocialSafetyNetAssignment
+        
+        # Active programs (currently valid)
+        active_programs = filter_by_company(SocialSafetyNetProgram.query).filter(
+            SocialSafetyNetProgram.start_date <= today_date
+        ).filter(
+            (SocialSafetyNetProgram.end_date.is_(None)) | (SocialSafetyNetProgram.end_date >= today_date)
+        ).count()
+        
+        # Active assignments (approved and currently valid)
+        active_assignments_count = filter_by_company(SocialSafetyNetAssignment.query).filter(
+            SocialSafetyNetAssignment.is_approved.is_(True),
+            SocialSafetyNetAssignment.effective_from <= today_date
+        ).filter(
+            (SocialSafetyNetAssignment.effective_to.is_(None)) | (SocialSafetyNetAssignment.effective_to >= today_date)
+        ).count()
+        
+        # Expiring soon (programs or assignments expiring in next 30 days)
+        thirty_days_from_now = today_date + timedelta(days=30)
+        
+        expiring_programs = filter_by_company(SocialSafetyNetProgram.query).filter(
+            SocialSafetyNetProgram.end_date.isnot(None),
+            SocialSafetyNetProgram.end_date >= today_date,
+            SocialSafetyNetProgram.end_date <= thirty_days_from_now
+        ).count()
+        
+        expiring_assignments = filter_by_company(SocialSafetyNetAssignment.query).filter(
+            SocialSafetyNetAssignment.is_approved.is_(True),
+            SocialSafetyNetAssignment.effective_to.isnot(None),
+            SocialSafetyNetAssignment.effective_to >= today_date,
+            SocialSafetyNetAssignment.effective_to <= thirty_days_from_now
+        ).count()
+        
+        # Pending assignments (waiting approval)
+        pending_assignments = filter_by_company(SocialSafetyNetAssignment.query).filter(
+            SocialSafetyNetAssignment.is_approved.is_(False)
+        ).count()
+        
+        social_safety_stats = {
+            'active_programs': active_programs,
+            'active_assignments': active_assignments_count,
+            'expiring_programs': expiring_programs,
+            'expiring_assignments': expiring_assignments,
+            'pending_assignments': pending_assignments,
+            'total_expiring': expiring_programs + expiring_assignments
+        }
 
     return render_template('dashboard.html', 
                          stats=stats, 
@@ -357,6 +407,7 @@ def dashboard():
                          recent_mileage_requests=recent_mileage_requests,
                          my_mileage_requests=my_mileage_requests,
                          banca_ore_wallet=banca_ore_wallet,
+                         social_safety_stats=social_safety_stats,
                          format_hours=format_hours)
 
 @dashboard_bp.route('/dashboard_team')
