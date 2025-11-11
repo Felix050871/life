@@ -177,30 +177,21 @@
                 </div>
             </div>
 
-            <!-- Riga 5: Superminimo, Rimborsi, Ticket Restaurant, Rischio INAIL -->
+            <!-- Riga 5: Superminimo, Rimborsi, Rischio INAIL -->
             <div class="row">
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Superminimo / SM Assorbibile (€)</label>
                     <input type="number" step="0.01" name="superminimo" class="form-control" 
                            value="{{ hr_data.superminimo or '' }}"
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Rimborsi / Diarie (€)</label>
                     <input type="number" step="0.01" name="rimborsi_diarie" class="form-control" 
                            value="{{ hr_data.rimborsi_diarie or '' }}"
                            {% if not can_edit %}disabled{% endif %}>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Ticket Restaurant</label>
-                    <div class="form-check form-switch mt-2">
-                        <input type="checkbox" name="ticket_restaurant" class="form-check-input" 
-                               {% if hr_data.ticket_restaurant %}checked{% endif %}
-                               {% if not can_edit %}disabled{% endif %}>
-                        <label class="form-check-label">Ha ticket restaurant</label>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Rischio INAIL</label>
                     <input type="text" name="rischio_inail" class="form-control" 
                            value="{{ hr_data.rischio_inail or '' }}"
@@ -208,13 +199,22 @@
                 </div>
             </div>
 
-            <!-- Riga 6: Valore Buoni Pasto e Carta Carburante -->
+            <!-- Riga 6: Ticket Restaurant e Valore -->
             <div class="row">
                 <div class="col-md-3 mb-3">
+                    <label class="form-label">Ticket Restaurant</label>
+                    <div class="form-check form-switch mt-2">
+                        <input type="checkbox" name="ticket_restaurant" id="ticket_restaurant" class="form-check-input" 
+                               {% if hr_data.ticket_restaurant %}checked{% endif %}
+                               {% if not can_edit %}disabled{% endif %}>
+                        <label class="form-check-label">Ha ticket restaurant</label>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
                     <label class="form-label">Valore Buoni Pasto (€/giorno)</label>
-                    <input type="number" step="0.01" name="meal_vouchers_value" class="form-control" 
+                    <input type="number" step="0.01" name="meal_vouchers_value" id="meal_vouchers_value" class="form-control" 
                            value="{{ hr_data.meal_vouchers_value or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
+                           {% if not can_edit or not hr_data.ticket_restaurant %}disabled{% endif %}>
                     <small class="text-muted">Valore giornaliero buoni pasto</small>
                 </div>
                 <div class="col-md-3 mb-3">
@@ -962,6 +962,21 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Gestione abilitazione campo valore buoni pasto in base al toggle ticket restaurant
+    const ticketRestaurantToggle = document.getElementById('ticket_restaurant');
+    const mealVouchersValueInput = document.getElementById('meal_vouchers_value');
+    
+    if (ticketRestaurantToggle && mealVouchersValueInput) {
+        ticketRestaurantToggle.addEventListener('change', function() {
+            if (this.checked) {
+                mealVouchersValueInput.disabled = false;
+            } else {
+                mealVouchersValueInput.disabled = true;
+                mealVouchersValueInput.value = '';
+            }
+        });
+    }
+    
     // Gestione visibilità campi nascita in base al paese selezionato
     const birthCountrySelect = document.getElementById('birth_country');
     const birthCityContainer = document.getElementById('birth_city_container');

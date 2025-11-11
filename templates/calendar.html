@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Calendario - {{ current_user.company.name if current_user.company else 'Life Platform' }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-calendar-alt me-2"></i>Calendario Interattivo</h2>
+    </div>
+
+    <!-- Filtri -->
+    <div class="card bg-dark mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Modalità Visualizzazione -->
+                <div class="col-md-3">
+                    <label class="form-label">Visualizzazione</label>
+                    <select id="viewModeSelect" class="form-select">
+                        <option value="my">I Miei Eventi</option>
+                        {% if can_view_all %}
+                        <option value="all">Tutti gli Eventi</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <!-- Filtro Sede -->
+                {% if can_view_all and sedi %}
+                <div class="col-md-3" id="sedeFilterContainer" style="display: none;">
+                    <label class="form-label">Filtra per Sede</label>
+                    <select id="sedeFilterSelect" class="form-select">
+                        <option value="">Tutte le Sedi</option>
+                        {% for sede in sedi %}
+                        <option value="{{ sede.id }}">{{ sede.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Tipo Eventi -->
+                <div class="col-md-4">
+                    <label class="form-label">Mostra</label>
+                    <div class="d-flex gap-3 mt-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showLeaves" checked>
+                            <label class="form-check-label" for="showLeaves">
+                                <i class="fas fa-umbrella-beach me-1"></i>Ferie/Permessi
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showShifts" checked>
+                            <label class="form-check-label" for="showShifts">
+                                <i class="fas fa-clock me-1"></i>Turni
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legenda -->
+                <div class="col-md-12">
+                    <small class="text-muted">
+                        <strong>Legenda:</strong>
+                        <span class="badge bg-success ms-2">Ferie Approvate</span>
+                        <span class="badge bg-warning text-dark ms-2">Ferie In Attesa</span>
+                        <span class="badge bg-danger ms-2">Ferie Rifiutate</span>
+                        <span class="badge bg-primary ms-2">Turni</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendario -->
+    <div class="card bg-dark">
+        <div class="card-body">
+            <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dettagli Evento -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalTitle">Dettagli Evento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="eventModalBody">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- FullCalendar CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/it.global.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var viewModeSelect = document.getElementById('viewModeSelect');
+    var sedeFilterContainer = document.getElementById('sedeFilterContainer');
+    var sedeFilterSelect = document.getElementById('sedeFilterSelect');
+    var showLeaves = document.getElementById('showLeaves');
+    var showShifts = document.getElementById('showShifts');
+    var eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        locale: 'it',
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+        },
+        buttonText: {
+            today: 'Oggi',
+            month: 'Mese',
+            week: 'Settimana',
+            day: 'Giorno',
+            list: 'Lista'
+        },
+        height: 'auto',
+        navLinks: true,
+        editable: false,
+        dayMaxEvents: true,
+        events: function(info, successCallback, failureCallback) {
+            var eventTypes = [];
+            if (showLeaves.checked) eventTypes.push('leaves');
+            if (showShifts.checked) eventTypes.push('shifts');
+
+            var params = new URLSearchParams({
+                start: info.startStr,
+                end: info.endStr,
+                view_mode: viewModeSelect.value
+            });
+
+            if (sedeFilterSelect && sedeFilterSelect.value) {
+                params.append('sede_id', sedeFilterSelect.value);
+            }
+
+            eventTypes.forEach(function(type) {
+                params.append('event_types[]', type);
+            });
+
+            fetch('{{ url_for("calendar.get_calendar_events") }}?' + params.toString())
+                .then(response => response.json())
+                .then(data => successCallback(data))
+                .catch(error => {
+                    console.error('Error fetching calendar events:', error);
+                    failureCallback(error);
+                });
+        },
+        eventClick: function(info) {
+            var props = info.event.extendedProps;
+            var modalTitle = document.getElementById('eventModalTitle');
+            var modalBody = document.getElementById('eventModalBody');
+
+            if (props.type === 'leave') {
+                modalTitle.textContent = 'Dettagli Richiesta Ferie/Permessi';
+                var statusBadge = '';
+                if (props.status === 'approved') {
+                    statusBadge = '<span class="badge bg-success">Approvata</span>';
+                } else if (props.status === 'pending') {
+                    statusBadge = '<span class="badge bg-warning text-dark">In Attesa</span>';
+                } else if (props.status === 'rejected') {
+                    statusBadge = '<span class="badge bg-danger">Rifiutata</span>';
+                } else if (props.status === 'cancelled') {
+                    statusBadge = '<span class="badge bg-secondary">Annullata</span>';
+                }
+
+                modalBody.innerHTML = `
+                    <div class="mb-3">
+                        <strong>Dipendente:</strong> ${props.user}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Tipo:</strong> ${props.leave_type}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Stato:</strong> ${statusBadge}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Periodo:</strong> ${info.event.start.toLocaleDateString('it-IT')} - ${new Date(info.event.end.getTime() - 86400000).toLocaleDateString('it-IT')}
+                    </div>
+                    ${props.reason ? `<div class="mb-3"><strong>Motivazione:</strong> ${props.reason}</div>` : ''}
+                    <div class="mt-3">
+                        <a href="{{ url_for('leave.leave_list') }}" class="btn btn-sm btn-primary">Vai alle Richieste</a>
+                    </div>
+                `;
+            } else if (props.type === 'shift') {
+                modalTitle.textContent = 'Dettagli Turno';
+                modalBody.innerHTML = `
+                    <div class="mb-3">
+                        <strong>Dipendente:</strong> ${props.user}
+                    </div>
+                    ${props.shift_type ? `<div class="mb-3"><strong>Tipo Turno:</strong> ${props.shift_type}</div>` : ''}
+                    <div class="mb-3">
+                        <strong>Orario:</strong> ${info.event.start.toLocaleString('it-IT')} - ${info.event.end.toLocaleString('it-IT')}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('shifts.shifts_list') }}" class="btn btn-sm btn-primary">Vai ai Turni</a>
+                    </div>
+                `;
+            }
+
+            eventModal.show();
+        },
+        eventDidMount: function(info) {
+            info.el.style.cursor = 'pointer';
+        }
+    });
+
+    calendar.render();
+
+    // Event listeners per filtri
+    viewModeSelect.addEventListener('change', function() {
+        if (this.value === 'all' && sedeFilterContainer) {
+            sedeFilterContainer.style.display = 'block';
+        } else if (sedeFilterContainer) {
+            sedeFilterContainer.style.display = 'none';
+        }
+        calendar.refetchEvents();
+    });
+
+    if (sedeFilterSelect) {
+        sedeFilterSelect.addEventListener('change', function() {
+            calendar.refetchEvents();
+        });
+    }
+
+    showLeaves.addEventListener('change', function() {
+        calendar.refetchEvents();
+    });
+
+    showShifts.addEventListener('change', function() {
+        calendar.refetchEvents();
+    });
+});
+</script>
+
+<style>
+/* Stile personalizzato per il tema dark */
+.fc {
+    color: #e9ecef;
+}
+
+.fc .fc-button {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+.fc .fc-button:hover {
+    background-color: #5a6268;
+    border-color: #6c757d;
+}
+
+.fc .fc-button-active {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.fc-theme-standard .fc-scrollgrid {
+    border-color: #495057;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border-color: #495057;
+}
+
+.fc .fc-daygrid-day-number {
+    color: #e9ecef;
+}
+
+.fc .fc-col-header-cell-cushion {
+    color: #e9ecef;
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: rgba(0, 123, 255, 0.15) !important;
+}
+
+.fc-h-event {
+    border: none !important;
+}
+
+.fc-event-title {
+    font-weight: 500;
+}
+</style>
+{% endblock %}
