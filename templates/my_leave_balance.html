@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Il Mio Saldo Ferie e Permessi - Gestione Presenze{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-umbrella-beach me-2"></i>Il Mio Saldo Ferie e Permessi</h2>
+                <p class="text-muted">Visualizza il tuo saldo disponibile per ferie e permessi</p>
+            </div>
+            <div>
+                <a href="{{ url_for('leave.leave_requests', view='my') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list me-2"></i>Le Mie Richieste
+                </a>
+                {% if current_user.can_request_leave() %}
+                <a href="{{ url_for('leave.create_leave_request') }}" class="btn btn-primary ms-2">
+                    <i class="fas fa-plus me-2"></i>Nuova Richiesta
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Balance Summary Cards -->
+<div class="row mb-4">
+    <!-- Ferie Card -->
+    <div class="col-md-6">
+        <div class="card h-100 border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-umbrella-beach me-2"></i>Saldo Ferie
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="mb-2">
+                            <small class="text-muted d-block">Maturate</small>
+                            <h3 class="mb-0 text-success">{{ balance.leave.accrued_days|round(2)|replace('.', ',') }}</h3>
+                            <small class="text-muted">giorni</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-2">
+                            <small class="text-muted d-block">Usufruite</small>
+                            <h3 class="mb-0 text-warning">{{ balance.leave.used_days|round(2)|replace('.', ',') }}</h3>
+                            <small class="text-muted">giorni</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-2">
+                            <small class="text-muted d-block">Disponibili</small>
+                            <h3 class="mb-0 {% if balance.leave.balance_days < 0 %}text-danger{% else %}text-primary{% endif %}">
+                                {{ balance.leave.balance_days|round(2)|replace('.', ',') }}
+                            </h3>
+                            <small class="text-muted">giorni</small>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">Maturazione mensile:</small>
+                        <div><strong>{{ balance.leave.monthly_accrual|round(2)|replace('.', ',') }}</strong> giorni/mese</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Mesi lavorati:</small>
+                        <div><strong>{{ balance.leave.months_worked|round(0) }}</strong> mesi</div>
+                    </div>
+                </div>
+                {% if current_user.hr_data and current_user.hr_data.hire_date %}
+                <div class="mt-2">
+                    <small class="text-muted">Data assunzione: {{ current_user.hr_data.hire_date.strftime('%d/%m/%Y') }}</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Permessi Card -->
+    <div class="col-md-6">
+        <div class="card h-100 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Saldo Permessi (ROL)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="mb-2">
+                            <small class="text-muted d-block">Maturate</small>
+                            <h3 class="mb-0 text-success">{{ balance.permit.accrued_hours|round(2)|replace('.', ',') }}</h3>
+                            <small class="text-muted">ore</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-2">
+                            <small class="text-muted d-block">Usufruite</small>
+                            <h3 class="mb-0 text-warning">{{ balance.permit.used_hours|round(2)|replace('.', ',') }}</h3>
+                            <small class="text-muted">ore</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-2">
+                            <small class="text-muted d-block">Disponibili</small>
+                            <h3 class="mb-0 {% if balance.permit.balance_hours < 0 %}text-danger{% else %}text-primary{% endif %}">
+                                {{ balance.permit.balance_hours|round(2)|replace('.', ',') }}
+                            </h3>
+                            <small class="text-muted">ore</small>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">Maturazione mensile:</small>
+                        <div><strong>{{ balance.permit.monthly_accrual|round(2)|replace('.', ',') }}</strong> ore/mese</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Mesi lavorati:</small>
+                        <div><strong>{{ balance.permit.months_worked|round(0) }}</strong> mesi</div>
+                    </div>
+                </div>
+                {% if current_user.hr_data and current_user.hr_data.part_time_percentage %}
+                <div class="mt-2">
+                    <small class="text-muted">Part-time: {{ current_user.hr_data.part_time_percentage|round(0) }}%</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Alert -->
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Come vengono calcolati i saldi?</strong>
+    <ul class="mb-0 mt-2">
+        <li><strong>Giorni Maturati:</strong> Calcolati moltiplicando i mesi lavorati dalla data di assunzione per il tasso di maturazione mensile configurato nei dati HR</li>
+        <li><strong>Giorni Usufruiti:</strong> Somma di tutte le richieste di ferie/permessi approvate</li>
+        <li><strong>Giorni Disponibili:</strong> Differenza tra giorni maturati e giorni usufruiti</li>
+        <li>I calcoli tengono conto automaticamente della percentuale part-time se presente</li>
+    </ul>
+</div>
+
+<!-- Recent Requests -->
+{% if recent_requests %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-history me-2"></i>Richieste Recenti (ultimi 12 mesi)
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Periodo</th>
+                        <th>Tipo</th>
+                        <th>Durata</th>
+                        <th>Stato</th>
+                        <th>Data Richiesta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in recent_requests %}
+                    <tr>
+                        <td>
+                            <strong>{{ request.start_date.strftime('%d/%m/%Y') }}</strong>
+                            {% if request.start_time and request.end_time %}
+                                <br><small class="text-muted"><i class="fas fa-clock me-1"></i>{{ request.start_time.strftime('%H:%M') }} - {{ request.end_time.strftime('%H:%M') }}</small>
+                            {% elif request.start_date != request.end_date %}
+                                <br><strong>{{ request.end_date.strftime('%d/%m/%Y') }}</strong>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if request.leave_type_obj %}
+                                {% if request.leave_type_obj.name == 'Ferie' %}
+                                <span class="badge bg-success">{{ request.leave_type_obj.name }}</span>
+                                {% elif 'Permesso' in request.leave_type_obj.name %}
+                                <span class="badge bg-info">{{ request.leave_type_obj.name }}</span>
+                                {% else %}
+                                <span class="badge bg-warning">{{ request.leave_type_obj.name }}</span>
+                                {% endif %}
+                            {% elif request.leave_type %}
+                                <span class="badge bg-secondary">{{ request.leave_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if request.duration_hours %}
+                                <span class="badge bg-info">{{ request.duration_hours|round(1) }}h</span>
+                            {% elif request.duration_days %}
+                                <span class="badge bg-info">{{ request.duration_days }} gg</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if request.status == 'Approved' %}
+                            <span class="badge bg-success">Approvata</span>
+                            {% elif request.status == 'Pending' %}
+                            <span class="badge bg-warning">In Attesa</span>
+                            {% elif request.status == 'Rejected' %}
+                            <span class="badge bg-danger">Rifiutata</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ request.created_at.strftime('%d/%m/%Y %H:%M') if request.created_at else '--' }}</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-secondary">
+    <i class="fas fa-info-circle me-2"></i>Nessuna richiesta negli ultimi 12 mesi
+</div>
+{% endif %}
+
+{% endblock %}

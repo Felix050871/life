@@ -628,3 +628,61 @@ def delete_leave_type(id):
         flash('Errore nell\'eliminazione della tipologia', 'danger')
     
     return redirect(url_for('leave.leave_types'))
+
+
+# =============================================================================
+# LEAVE BALANCE ROUTES
+# =============================================================================
+
+@leave_bp.route('/my_leave_balance')
+@login_required
+def my_leave_balance():
+    """Visualizza il proprio saldo ferie e permessi"""
+    if not (current_user.can_view_my_leave() or current_user.can_request_leave()):
+        flash('Non hai i permessi per visualizzare il saldo ferie/permessi', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    from utils_hr_leave_balance import calculate_combined_balance
+    
+    # Calcola il saldo dell'utente corrente
+    balance_data = calculate_combined_balance(current_user.id)
+    
+    # Ottieni le richieste recenti (ultimi 12 mesi)
+    recent_requests = filter_by_company(LeaveRequest.query).filter(
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.start_date >= (date.today() - timedelta(days=365))
+    ).order_by(LeaveRequest.start_date.desc()).all()
+    
+    return render_template('my_leave_balance.html',
+                         balance=balance_data,
+                         recent_requests=recent_requests,
+                         today=date.today())
+
+
+@leave_bp.route('/all_leave_balances')
+@login_required
+def all_leave_balances():
+    """Visualizza i saldi ferie e permessi di tutti i dipendenti (solo manager/admin)"""
+    if not current_user.can_view_leave():
+        flash('Non hai i permessi per visualizzare i saldi di tutti i dipendenti', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    from utils_hr_leave_balance import get_all_leave_balances
+    
+    # Ottieni i saldi di tutti i dipendenti della company
+    company_id = get_user_company_id()
+    if not company_id:
+        flash('Errore nel recupero della company', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    all_balances = get_all_leave_balances(company_id)
+    
+    # Filtro per sede se l'utente non è multi-sede
+    if not current_user.all_sedi and current_user.sede_obj:
+        # Filtra solo gli utenti della stessa sede
+        sede_user_ids = [u.id for u in User.query.filter_by(sede_id=current_user.sede_obj.id).all()]
+        all_balances = [b for b in all_balances if b['user_id'] in sede_user_ids]
+    
+    return render_template('all_leave_balances.html',
+                         balances=all_balances,
+                         today=date.today())
