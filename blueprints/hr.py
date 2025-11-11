@@ -1008,7 +1008,7 @@ def contract_history_export(user_id):
         return redirect(url_for('hr.hr_list'))
     
     # Ottieni utente e dati HR
-    user = filter_by_company(User.query).get_or_404(user_id)
+    user = filter_by_company(User.query).filter_by(id=user_id).first_or_404()
     hr_data = user.hr_data
     
     if not hr_data:
