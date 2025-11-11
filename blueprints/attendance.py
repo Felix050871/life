@@ -1448,20 +1448,46 @@ def bulk_fill_timesheet():
         days_replaced = 0
         today = date.today()
         
-        # Calcola orari medi quando c'è flessibilità
-        # Usa sempre i campi min/max per calcolare la media (i legacy sono deprecati)
+        # Ottieni ore settimanali contrattuali per distribuire le ore intelligentemente
+        from utils_contract_hours import get_active_work_hours_week, calculate_weekly_hours_allocation, get_iso_week_range
+        
+        work_hours_week = get_active_work_hours_week(current_user, first_day)
+        
+        # Calcola orario di inizio standard (media tra min/max)
         start_min_minutes = work_schedule.start_time_min.hour * 60 + work_schedule.start_time_min.minute
         start_max_minutes = work_schedule.start_time_max.hour * 60 + work_schedule.start_time_max.minute
         avg_start_minutes = (start_min_minutes + start_max_minutes) // 2
         standard_start = time(avg_start_minutes // 60, avg_start_minutes % 60)
         
-        end_min_minutes = work_schedule.end_time_min.hour * 60 + work_schedule.end_time_min.minute
-        end_max_minutes = work_schedule.end_time_max.hour * 60 + work_schedule.end_time_max.minute
-        avg_end_minutes = (end_min_minutes + end_max_minutes) // 2
-        standard_end = time(avg_end_minutes // 60, avg_end_minutes % 60)
-        
-        if not standard_start or not standard_end:
+        if not standard_start:
             return jsonify({'success': False, 'message': 'Orari standard non definiti correttamente'}), 400
+        
+        # Se non ci sono ore settimanali contrattuali, usa l'orario standard (backward compatibility)
+        if not work_hours_week:
+            end_min_minutes = work_schedule.end_time_min.hour * 60 + work_schedule.end_time_min.minute
+            end_max_minutes = work_schedule.end_time_max.hour * 60 + work_schedule.end_time_max.minute
+            avg_end_minutes = (end_min_minutes + end_max_minutes) // 2
+            standard_end = time(avg_end_minutes // 60, avg_end_minutes % 60)
+            
+            if not standard_end:
+                return jsonify({'success': False, 'message': 'Orari standard non definiti correttamente'}), 400
+            
+            # Usa orari fissi per tutti i giorni (comportamento precedente)
+            hours_per_day = {}
+        else:
+            # Distribuisci le ore settimanali sui giorni lavorativi
+            # Calcola il numero di giorni lavorativi per settimana (esclusi weekend e leave)
+            working_days_per_week = len([d for d in range(5) if d in (work_schedule.days_of_week or [0,1,2,3,4])])
+            
+            if working_days_per_week == 0:
+                return jsonify({'success': False, 'message': 'Nessun giorno lavorativo definito nell\'orario di lavoro'}), 400
+            
+            # Calcola allocazione ore per settimana
+            weekly_allocation = calculate_weekly_hours_allocation(work_hours_week, working_days_per_week)
+            
+            # Crea mappa: settimana ISO -> giorno della settimana -> ore
+            hours_per_day = {}
+            standard_end = None  # Sarà calcolato dinamicamente per ogni giorno
         
         for day in range(1, last_day_num + 1):
             day_date = date(year, month, day)

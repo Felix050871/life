@@ -54,17 +54,18 @@ def get_active_work_hours_week(user: User, target_date: Optional[date] = None) -
     return None
 
 
-def calculate_weekly_hours_allocation(work_hours_week: float, working_days: int) -> List[float]:
+def calculate_weekly_hours_allocation(work_hours_week: float, working_days: int, remainder_on_last_day: bool = True) -> List[float]:
     """
     Distribute weekly hours across working days intelligently.
     
-    Example: 39h over 5 days → [8, 8, 8, 8, 7]
+    Example: 39h over 5 days → [8, 8, 8, 8, 7] (remainder on last day)
     Example: 40h over 5 days → [8, 8, 8, 8, 8]
-    Example: 30h over 4 days → [8, 8, 7, 7]
+    Example: 30h over 4 days → [8, 8, 8, 6] (remainder on last day)
     
     Args:
         work_hours_week: Total weekly hours from contract
         working_days: Number of working days in the week
+        remainder_on_last_day: If True, put deficit on last day (e.g., Fri=7h). If False, distribute evenly from first days.
     
     Returns:
         List of hours per day (length = working_days)
@@ -79,9 +80,23 @@ def calculate_weekly_hours_allocation(work_hours_week: float, working_days: int)
     # Build allocation: base hours for all days
     allocation = [float(base_hours)] * working_days
     
-    # Distribute remainder across first days (most common pattern)
-    for i in range(int(remainder)):
-        allocation[i] += 1.0
+    if remainder_on_last_day:
+        # Distribute remainder deficit on last day (e.g., 39h → [8,8,8,8,7])
+        # First, allocate +1 to all days except last
+        full_days = working_days - 1
+        if remainder > 0 and full_days > 0:
+            # Add 1h to first (working_days - 1) days, last day gets remainder
+            for i in range(full_days):
+                allocation[i] += 1.0
+            # Last day gets what's left
+            allocation[-1] = work_hours_week - sum(allocation[:-1])
+        else:
+            # Edge case: only 1 day or no remainder
+            allocation[-1] = work_hours_week - sum(allocation[:-1]) if working_days > 1 else work_hours_week
+    else:
+        # Distribute remainder from first days (old behavior)
+        for i in range(int(remainder)):
+            allocation[i] += 1.0
     
     return allocation
 
