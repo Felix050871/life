@@ -11,7 +11,20 @@ The platform aims to reduce bureaucracy, enhance productivity, and foster corpor
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (November 10, 2025)
+## Recent Changes (November 11, 2025)
+- **Channel-Based Communication System for CIRCLE**: Implemented comprehensive channel architecture for organizing communications:
+  - Created Channel model with CRUD fields (name, description, icon_class, color, active, company_id) for thematic organization
+  - Implemented circle_channels blueprint (/circle/channels) with full CRUD operations and multi-tenant isolation
+  - Added channel_id FK to CircleGroup and CirclePost models for channel association
+  - CirclePost.channel_id is nullable: null = global News, valued = channel-specific Communication
+  - Created circle_communications blueprint (/circle/communications) for channel-based posts with image uploads, likes, comments, and email notifications
+  - Database migration executed: created channel table, added FKs, seeded default "Generale" channel for all companies
+  - Added three new permissions: can_manage_channels, can_view_channels, can_create_channel_communications
+  - Separated CIRCLE menu into distinct sections: News (global posts), Comunicazioni (channel posts), Canali (management)
+  - **Multi-Tenant Security**: All channel references validated with `filter_by_company(Channel.query, current_user).filter_by(id=..., active=True).first()` pattern in circle_groups.create(), circle_communications.create(), and circle_communications.edit() to prevent cross-tenant data linkage
+  - Preserved group_type field in CircleGroup form for backward compatibility with filters/analytics/permissions
+  - Templates follow existing CIRCLE UI patterns with consistent dark theme and responsive design
+- **Previous Changes (November 10, 2025)**:
 - **XML Export for Validated Timesheets**: Implemented comprehensive XML export functionality for payroll integration:
   - Added `cod_giustificativo` field to AttendanceType and LeaveType models for mapping to external payroll codes
   - Created `export_validated_timesheets_xml` route in attendance blueprint
