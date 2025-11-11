@@ -19,6 +19,12 @@ Preferred communication style: Simple, everyday language.
   - Removed Channel.groups relationship from models to reflect architectural independence
   - Updated circle_groups blueprint: removed channel selection from create/edit forms
   - Multi-tenant security preserved: all operations use filter_by_company() and set_company_on_create()
+- **HTML Editor for Group Posts**: Added Quill rich text editor to group post creation (bacheca del gruppo):
+  - Implemented Quill editor in templates/circle/groups/view.html for inline post creation
+  - Compact toolbar with essential formatting (headers, bold, italic, underline, lists, links)
+  - Client-side validation prevents empty submissions
+  - Fixed {{ super() }} in scripts block to preserve parent template scripts (resolved crash issue)
+  - Server-side sanitization via sanitize_html() maintains XSS protection
 - **HTML Editor for Communications**: Added Quill rich text editor to communication forms:
   - Implemented Quill editor in templates/circle/communications/create.html and edit.html
   - Matches existing News editor pattern with toolbar configuration (headers, formatting, lists, links, colors)
