@@ -7,7 +7,7 @@ import os
 from cryptography.fernet import Fernet
 import base64
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 def get_encryption_key():
     """
@@ -24,7 +24,7 @@ def get_encryption_key():
         secret = os.environ.get('SESSION_SECRET', 'dev-secret-key-please-change-in-production')
         
         # Deriva una chiave Fernet valida dal secret usando PBKDF2
-        kdf = PBKDF2(
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=b'life-platform-salt',  # Salt fisso per consistency
