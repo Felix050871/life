@@ -190,9 +190,7 @@
                         <span>Comunicazioni</span>
                     </a>
                 </li>
-                {% endif %}
                 
-                {% if current_user.has_permission('can_manage_channels') %}
                 <li class="sidebar-nav-item">
                     <a href="{{ url_for('circle_channels.index') }}" class="sidebar-nav-link">
                         <i class="fas fa-layer-group"></i>
