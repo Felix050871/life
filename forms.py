@@ -1299,6 +1299,9 @@ class RoleForm(FlaskForm):
     can_view_tools = BooleanField('Visualizzare Strumenti')
     can_comment_posts = BooleanField('Commentare Post')
     can_like_posts = BooleanField('Mettere Like ai Post')
+    can_view_channels = BooleanField('Visualizzare Canali')
+    can_create_channel_communications = BooleanField('Creare Comunicazioni Canale')
+    can_manage_channels = BooleanField('Gestire Canali')
     
     active = BooleanField('Attivo', default=True)
     submit = SubmitField('Salva Ruolo')
@@ -1477,7 +1480,10 @@ class RoleForm(FlaskForm):
             'can_manage_tools': self.can_manage_tools.data,
             'can_view_tools': self.can_view_tools.data,
             'can_comment_posts': self.can_comment_posts.data,
-            'can_like_posts': self.can_like_posts.data
+            'can_like_posts': self.can_like_posts.data,
+            'can_view_channels': self.can_view_channels.data,
+            'can_create_channel_communications': self.can_create_channel_communications.data,
+            'can_manage_channels': self.can_manage_channels.data
         }
     
     def populate_permissions(self, permissions_dict):
@@ -1631,6 +1637,9 @@ class RoleForm(FlaskForm):
         self.can_view_tools.data = permissions_dict.get('can_view_tools', False)
         self.can_comment_posts.data = permissions_dict.get('can_comment_posts', False)
         self.can_like_posts.data = permissions_dict.get('can_like_posts', False)
+        self.can_view_channels.data = permissions_dict.get('can_view_channels', False)
+        self.can_create_channel_communications.data = permissions_dict.get('can_create_channel_communications', False)
+        self.can_manage_channels.data = permissions_dict.get('can_manage_channels', False)
 
 
 # Form del pacchetto presidio integrati
