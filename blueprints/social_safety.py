@@ -209,7 +209,27 @@ def create_program():
 def edit_program(program_id):
     """Modifica programma esistente"""
     program = filter_by_company(SocialSafetyNetProgram.query).filter_by(id=program_id).first_or_404()
-    form = SocialSafetyProgramForm(obj=program)
+    
+    if request.method == 'POST':
+        form = SocialSafetyProgramForm()
+    else:
+        # Popola il form con i valori del programma per il GET
+        form = SocialSafetyProgramForm(data={
+            'program_type': program.program_type,
+            'name': program.name,
+            'description': program.description,
+            'legal_basis': program.legal_basis,
+            'decree_number': program.decree_number,
+            'protocol_number': program.protocol_number,
+            'reduction_type': program.reduction_type,
+            'reduction_percentage': program.reduction_percentage,
+            'target_weekly_hours': program.target_weekly_hours,
+            'payroll_code': program.payroll_code,
+            'inps_coverage': program.inps_coverage,
+            'overtime_forbidden': program.overtime_forbidden,
+            'start_date': program.start_date,
+            'end_date': program.end_date
+        })
     
     if form.validate_on_submit():
         # Gestione upload nuovo decreto
@@ -255,7 +275,7 @@ def edit_program(program_id):
         db.session.commit()
         
         flash(f'Programma "{program.name}" aggiornato con successo.', 'success')
-        return redirect(url_for('social_safety.program_detail', program_id=program.id))
+        return redirect(url_for('social_safety.manage_programs'))
     
     return render_template('edit_social_safety_program.html', form=form, program=program)
 
@@ -272,7 +292,7 @@ def delete_program(program_id):
     active_assignments = [a for a in program.assignments if a.status in ['approved', 'active']]
     if active_assignments:
         flash('Impossibile eliminare il programma: ci sono assegnazioni attive.', 'danger')
-        return redirect(url_for('social_safety.program_detail', program_id=program_id))
+        return redirect(url_for('social_safety.manage_programs'))
     
     # Elimina file decreto se esiste
     if program.decree_file_path and os.path.exists(program.decree_file_path):
@@ -287,33 +307,6 @@ def delete_program(program_id):
     
     flash(f'Programma "{program_name}" eliminato con successo.', 'success')
     return redirect(url_for('social_safety.manage_programs'))
-
-
-@social_safety_bp.route('/programmi/<int:program_id>')
-@login_required
-@require_social_safety_permission
-def program_detail(program_id):
-    """Dettaglio programma con assegnazioni"""
-    program = filter_by_company(SocialSafetyNetProgram.query).filter_by(id=program_id).first_or_404()
-    
-    # Ottieni tutte le assegnazioni
-    assignments = program.assignments
-    
-    # Statistiche assegnazioni
-    total_assignments = len(assignments)
-    pending_assignments = len([a for a in assignments if a.status == 'pending'])
-    approved_assignments = len([a for a in assignments if a.status == 'approved'])
-    active_assignments = len([a for a in assignments if a.status == 'active'])
-    completed_assignments = len([a for a in assignments if a.status == 'completed'])
-    
-    return render_template('social_safety_program_detail.html',
-                         program=program,
-                         assignments=assignments,
-                         total_assignments=total_assignments,
-                         pending_assignments=pending_assignments,
-                         approved_assignments=approved_assignments,
-                         active_assignments=active_assignments,
-                         completed_assignments=completed_assignments)
 
 
 # =============================================================================

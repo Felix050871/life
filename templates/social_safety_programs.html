@@ -87,7 +87,7 @@
                                             </a>
                                             {% endif %}
                                             {% if current_user.can_assign_social_safety_programs() %}
-                                            <a href="{{ url_for('social_safety.program_detail', program_id=program.id) }}" 
+                                            <a href="{{ url_for('social_safety.manage_assignments') }}?program_id={{ program.id }}" 
                                                class="btn btn-outline-info" 
                                                title="Gestisci assegnazioni">
                                                 <i class="fas fa-users"></i>
