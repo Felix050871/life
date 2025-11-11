@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Nuova Assegnazione - Life{% endblock %}
+
+{% block content %}
+{% if current_user.can_assign_social_safety_programs() %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Nuova Assegnazione Dipendente
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Nota:</strong> L'assegnazione verrà creata in stato "In Attesa" e richiederà approvazione prima dell'attivazione.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="program_id" class="form-label">Programma *</label>
+                        {{ form.program_id(class="form-select") }}
+                        {% if form.program_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.program_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">Dipendente *</label>
+                        {{ form.user_id(class="form-select") }}
+                        {% if form.user_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.user_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Seleziona il dipendente da assegnare al programma
+                        </small>
+                    </div>
+                    
+                    <h5 class="mb-3 mt-4"><i class="fas fa-calendar me-2"></i>Periodo di Validità</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">Data Inizio *</label>
+                            {{ form.start_date(class="form-control", type="date") }}
+                            {% if form.start_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.start_date.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">Data Fine *</label>
+                            {{ form.end_date(class="form-control", type="date") }}
+                            {% if form.end_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.end_date.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Data di termine prevista per il programma
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3 mt-4"><i class="fas fa-cog me-2"></i>Configurazioni Personalizzate (Opzionali)</h5>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Attenzione:</strong> Se lasciati vuoti, verranno utilizzate le impostazioni del programma selezionato.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="custom_weekly_hours" class="form-label">Ore Settimanali Custom</label>
+                            {{ form.custom_weekly_hours(class="form-control") }}
+                            {% if form.custom_weekly_hours.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.custom_weekly_hours.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Override ore settimanali specifiche per questo dipendente
+                            </small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="custom_payroll_code" class="form-label">Codice Paghe Custom</label>
+                            {{ form.custom_payroll_code(class="form-control") }}
+                            {% if form.custom_payroll_code.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.custom_payroll_code.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Override codice paghe per questo dipendente
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Note</label>
+                        {{ form.notes(class="form-control") }}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.notes.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Note specifiche per questa assegnazione (motivazione, accordi particolari, ecc.)
+                        </small>
+                    </div>
+                    
+                    <h5 class="mb-3 mt-4"><i class="fas fa-file-contract me-2"></i>Snapshot Contratto</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.create_contract_snapshot(class="form-check-input") }}
+                            <label class="form-check-label" for="create_contract_snapshot">
+                                Crea Snapshot Contratto
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            Se selezionato, verrà creato uno snapshot dello stato contrattuale del dipendente al momento dell'attivazione del programma.
+                            Questo permette di mantenere traccia storica delle condizioni contrattuali prima della riduzione oraria.
+                        </small>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('social_safety.manage_assignments') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Annulla
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-danger">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    Non hai i permessi necessari per accedere a questa pagina.
+</div>
+{% endif %}
+{% endblock %}

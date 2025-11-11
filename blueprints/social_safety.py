@@ -404,9 +404,7 @@ def create_assignment():
         flash('Assegnazione creata con successo. In attesa di approvazione.', 'success')
         return redirect(url_for('social_safety.manage_assignments'))
     
-    # TODO: Creare template dedicato
-    flash('Funzionalità in fase di sviluppo', 'warning')
-    return redirect(url_for('social_safety.manage_assignments'))
+    return render_template('add_social_safety_assignment.html', form=form)
 
 
 @social_safety_bp.route('/assegnazioni/<int:assignment_id>/edit', methods=['GET', 'POST'])
