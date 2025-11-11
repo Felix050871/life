@@ -13,36 +13,6 @@
         </div>
     </div>
 
-    <!-- Quick Tools -->
-    {% if quick_tools %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-tools"></i> Strumenti Rapidi</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        {% for tool in quick_tools %}
-                        <div class="col-md-3 col-sm-6">
-                            <a href="{{ tool.url }}" target="_blank" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center" style="padding: 1rem;">
-                                <i class="fas {{ tool.icon }} fa-2x me-2"></i>
-                                <div class="text-start">
-                                    <strong>{{ tool.name }}</strong>
-                                    {% if tool.description %}
-                                    <br><small>{{ tool.description[:30] }}...</small>
-                                    {% endif %}
-                                </div>
-                            </a>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
     <div class="row">
         <!-- Left Column: Communications, News & Posts -->
         <div class="col-lg-8">
@@ -266,5 +236,35 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Quick Tools -->
+    {% if quick_tools %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tools"></i> Strumenti Rapidi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for tool in quick_tools %}
+                        <div class="col-md-3 col-sm-6">
+                            <a href="{{ tool.url }}" target="_blank" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center" style="padding: 1rem;">
+                                <i class="fas {{ tool.icon }} fa-2x me-2"></i>
+                                <div class="text-start">
+                                    <strong>{{ tool.name }}</strong>
+                                    {% if tool.description %}
+                                    <br><small>{{ tool.description[:30] }}...</small>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
