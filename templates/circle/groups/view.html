@@ -157,11 +157,11 @@
                 <div class="card-body">
                     {% if group.is_member(current_user) %}
                     <!-- Form nuovo post -->
-                    <form method="POST" action="{{ url_for('circle_groups.create_post', group_id=group.id) }}" enctype="multipart/form-data" class="mb-4">
+                    <form method="POST" action="{{ url_for('circle_groups.create_post', group_id=group.id) }}" enctype="multipart/form-data" class="mb-4" id="groupPostForm">
                         <div class="card bg-dark">
                             <div class="card-body">
-                                <textarea class="form-control mb-3" name="content" rows="3" 
-                                          placeholder="Condividi qualcosa con il gruppo..." required></textarea>
+                                <div id="group-post-editor" style="height: 150px; background: white; color: black;" class="mb-3"></div>
+                                <textarea class="form-control mb-3" name="content" rows="3" style="display:none;"></textarea>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <input type="file" class="form-control w-auto" name="image_file" accept="image/*">
                                     <button type="submit" class="btn btn-primary">
@@ -316,4 +316,43 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Quill Editor per Post del Gruppo -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+// Crea editor Quill per i post del gruppo
+var groupPostQuill = new Quill('#group-post-editor', {
+    theme: 'snow',
+    placeholder: 'Condividi qualcosa con il gruppo...',
+    modules: {
+        toolbar: [
+            [{ 'header': [3, false] }],
+            ['bold', 'italic', 'underline'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link'],
+            ['clean']
+        ]
+    }
+});
+
+// Sincronizza contenuto con textarea al submit
+document.getElementById('groupPostForm').onsubmit = function(e) {
+    var content = groupPostQuill.root.innerHTML;
+    var textContent = groupPostQuill.getText().trim();
+    
+    // Valida che ci sia contenuto
+    if (textContent.length === 0) {
+        e.preventDefault();
+        alert('Per favore inserisci qualcosa da condividere con il gruppo');
+        return false;
+    }
+    
+    document.querySelector('#groupPostForm textarea[name="content"]').value = content;
+    return true;
+};
+</script>
 {% endblock %}
