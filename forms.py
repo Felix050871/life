@@ -2294,3 +2294,94 @@ class CommessaForm(FlaskForm):
             ).first()
             if existing:
                 raise ValidationError('Esiste già una commessa con questo titolo. Scegli un titolo diverso.')
+
+
+# =============================================================================
+# SOCIAL SAFETY NET (AMMORTIZZATORI SOCIALI) FORMS
+# =============================================================================
+
+class SocialSafetyProgramForm(FlaskForm):
+    """Form per creare/modificare programmi di ammortizzatori sociali"""
+    program_type = SelectField('Tipo Programma', 
+                               choices=[
+                                   ('CIGS', 'CIGS - Cassa Integrazione Guadagni Straordinaria'),
+                                   ('Solidarietà', 'Contratto di Solidarietà'),
+                                   ('FIS', 'FIS - Fondo Integrazione Salariale'),
+                                   ('CIG Ordinaria', 'CIG Ordinaria'),
+                                   ('Altro', 'Altro')
+                               ],
+                               validators=[DataRequired()])
+    name = StringField('Nome Programma', validators=[DataRequired(), Length(max=200)],
+                      render_kw={'placeholder': 'Es: CIGS 2024 - Riduzione Produzione'})
+    description = TextAreaField('Descrizione', validators=[Optional()],
+                               render_kw={'placeholder': 'Descrizione dettagliata del programma', 'rows': 3})
+    legal_basis = StringField('Base Legale', validators=[Optional(), Length(max=500)],
+                             render_kw={'placeholder': 'Es: Art. 21, D.Lgs. 148/2015'})
+    decree_number = StringField('Numero Decreto', validators=[Optional(), Length(max=100)],
+                               render_kw={'placeholder': 'Es: D.M. 12345/2024'})
+    protocol_number = StringField('Numero Protocollo', validators=[Optional(), Length(max=100)],
+                                 render_kw={'placeholder': 'Es: PROT-2024-001'})
+    decree_file = FileField('File Decreto', validators=[Optional()])
+    
+    reduction_type = SelectField('Tipo Riduzione', 
+                                choices=[
+                                    ('percentage', 'Percentuale'),
+                                    ('fixed_hours', 'Ore Settimanali Fisse')
+                                ],
+                                default='percentage',
+                                validators=[DataRequired()])
+    reduction_percentage = DecimalField('Percentuale Riduzione (%)', validators=[Optional(), NumberRange(min=0, max=100)],
+                                       render_kw={'placeholder': 'Es: 20 per 20%', 'step': '0.01'})
+    target_weekly_hours = DecimalField('Ore Settimanali Target', validators=[Optional(), NumberRange(min=0, max=48)],
+                                      render_kw={'placeholder': 'Es: 32', 'step': '0.01'})
+    
+    payroll_code = StringField('Codice Paghe', validators=[Optional(), Length(max=20)],
+                              render_kw={'placeholder': 'Es: CIGS, SOL, FIS'})
+    inps_coverage = BooleanField('Copertura INPS', default=True)
+    overtime_forbidden = BooleanField('Straordinari Vietati', default=True)
+    
+    start_date = DateField('Data Inizio', validators=[DataRequired()], format='%Y-%m-%d')
+    end_date = DateField('Data Fine', validators=[DataRequired()], format='%Y-%m-%d')
+    
+    submit = SubmitField('Salva Programma')
+    
+    def validate_end_date(self, end_date):
+        """Valida che la data fine sia successiva alla data inizio"""
+        if self.start_date.data and end_date.data:
+            if end_date.data < self.start_date.data:
+                raise ValidationError('La data di fine deve essere successiva o uguale alla data di inizio.')
+    
+    def validate_reduction_percentage(self, reduction_percentage):
+        """Valida che la percentuale sia inserita se tipo riduzione è percentuale"""
+        if self.reduction_type.data == 'percentage' and not reduction_percentage.data:
+            raise ValidationError('Specificare la percentuale di riduzione.')
+    
+    def validate_target_weekly_hours(self, target_weekly_hours):
+        """Valida che le ore target siano inserite se tipo riduzione è ore fisse"""
+        if self.reduction_type.data == 'fixed_hours' and not target_weekly_hours.data:
+            raise ValidationError('Specificare le ore settimanali target.')
+
+
+class SocialSafetyAssignmentForm(FlaskForm):
+    """Form per assegnare un programma di ammortizzatore sociale a un dipendente"""
+    program_id = SelectField('Programma', coerce=int, validators=[DataRequired()])
+    user_id = SelectField('Dipendente', coerce=int, validators=[DataRequired()])
+    start_date = DateField('Data Inizio', validators=[DataRequired()], format='%Y-%m-%d')
+    end_date = DateField('Data Fine', validators=[DataRequired()], format='%Y-%m-%d')
+    custom_weekly_hours = DecimalField('Ore Settimanali Custom (opzionale)', 
+                                      validators=[Optional(), NumberRange(min=0, max=48)],
+                                      render_kw={'placeholder': 'Lasciare vuoto per usare impostazioni programma', 'step': '0.01'})
+    custom_payroll_code = StringField('Codice Paghe Custom (opzionale)', 
+                                     validators=[Optional(), Length(max=20)],
+                                     render_kw={'placeholder': 'Lasciare vuoto per usare impostazioni programma'})
+    notes = TextAreaField('Note', validators=[Optional()],
+                         render_kw={'placeholder': 'Note specifiche per questa assegnazione', 'rows': 3})
+    create_contract_snapshot = BooleanField('Crea Snapshot Contratto', default=True,
+                                           description='Salva uno snapshot del contratto al momento dell\'attivazione')
+    submit = SubmitField('Salva Assegnazione')
+    
+    def validate_end_date(self, end_date):
+        """Valida che la data fine sia successiva alla data inizio"""
+        if self.start_date.data and end_date.data:
+            if end_date.data < self.start_date.data:
+                raise ValidationError('La data di fine deve essere successiva o uguale alla data di inizio.')

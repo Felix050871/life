@@ -32,6 +32,7 @@ from blueprints.api import api_bp
 from blueprints.banca_ore import banca_ore_bp
 from blueprints.companies import companies_bp
 from blueprints.commesse import commesse_bp
+from blueprints.social_safety import social_safety_bp
 from blueprints.calendar import calendar_bp
 
 # CIRCLE Blueprints
@@ -71,6 +72,7 @@ app.register_blueprint(api_bp)
 app.register_blueprint(banca_ore_bp)
 app.register_blueprint(companies_bp)
 app.register_blueprint(commesse_bp)
+app.register_blueprint(social_safety_bp)
 app.register_blueprint(calendar_bp)
 
 # CIRCLE Blueprints
