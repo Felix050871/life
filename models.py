@@ -1130,6 +1130,10 @@ class UserHRData(db.Model):
     banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo ore accumulabili (solo per Banca Ore)
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo mesi per usufruire ore (solo per Banca Ore)
     
+    # Maturazione ferie e permessi
+    gg_ferie_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # Giorni di ferie maturati al mese (es. 2.33 per 28gg/anno)
+    hh_permesso_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # Ore di permesso maturate al mese (es. 7 per ROL)
+    
     # Sicurezza e requisiti
     minimum_requirements = db.Column(db.String(50), nullable=True)  # Possesso requisiti minimi (SI/NO/DA FORMARE)
     
