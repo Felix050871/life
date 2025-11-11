@@ -124,11 +124,11 @@ def send_email_smtp(context: EmailContext, subject: str, recipients: list, body_
             part_html = MIMEText(body_html, 'html')
             msg.attach(part_html)
         
-        # Connetti al server SMTP
+        # Connetti al server SMTP con timeout di 15 secondi
         if context.use_ssl:
-            server = smtplib.SMTP_SSL(context.server, context.port)
+            server = smtplib.SMTP_SSL(context.server, context.port, timeout=15)
         else:
-            server = smtplib.SMTP(context.server, context.port)
+            server = smtplib.SMTP(context.server, context.port, timeout=15)
             if context.use_tls:
                 server.starttls()
         
