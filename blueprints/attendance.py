@@ -4652,14 +4652,15 @@ def export_validated_timesheets_xml():
                 
                 # Gestisci sessioni di lavoro (da eventi e manuali)
                 else:
-                    # Raggruppa sessioni per tipologia
+                    # Raggruppa ore per codice giustificativo
                     tipo_ore = {}
                     
+                    # STEP 1: Costruisci totali base dalle sessions (autoritative source)
                     for session in day_row.sessions:
                         if session.source == 'empty':
                             continue
                         
-                        # Determina codice giustificativo
+                        # Determina codice giustificativo standard
                         if session.attendance_type_id:
                             cod_giust = attendance_type_map.get(session.attendance_type_id, '01')
                         else:
@@ -4670,7 +4671,35 @@ def export_validated_timesheets_xml():
                             tipo_ore[cod_giust] = 0
                         tipo_ore[cod_giust] += session.total_hours or 0
                     
-                    # Se non ci sono sessioni, crea movimento con 0 ore (tipo ordinario)
+                    # STEP 2: Reroute manual_entry hours to payroll_code (prevent double-count)
+                    from models import AttendanceEvent
+                    manual_events = AttendanceEvent.query.filter_by(
+                        user_id=user.id,
+                        date=day_row.date_obj,
+                        event_type='manual_entry'
+                    ).all()
+                    
+                    for event in manual_events:
+                        if event.work_hours and event.payroll_code:
+                            hours = float(event.work_hours)
+                            
+                            # Trova il cod_giust originale delle sessions per queste ore
+                            original_cod = attendance_type_map.get(event.attendance_type_id, '01')
+                            
+                            # Sottrai dal bucket originale (rerouting)
+                            if original_cod in tipo_ore:
+                                tipo_ore[original_cod] = max(0, tipo_ore[original_cod] - hours)
+                                # Rimuovi bucket se vuoto
+                                if tipo_ore[original_cod] == 0:
+                                    del tipo_ore[original_cod]
+                            
+                            # Aggiungi al bucket payroll_code ammortizzatori sociali
+                            cod_giust = event.payroll_code  # es. CIGS, FIS
+                            if cod_giust not in tipo_ore:
+                                tipo_ore[cod_giust] = 0
+                            tipo_ore[cod_giust] += hours
+                    
+                    # Se non ci sono ore registrate, crea movimento con 0 ore (tipo ordinario)
                     if not tipo_ore:
                         movimento = ET.SubElement(movimenti_elem, 'Movimento')
                         ET.SubElement(movimento, 'CodGiustificativoUfficiale').text = '01'
@@ -4678,7 +4707,7 @@ def export_validated_timesheets_xml():
                         ET.SubElement(movimento, 'NumOre').text = '0'
                         ET.SubElement(movimento, 'NumMinuti').text = '0'
                     else:
-                        # Crea un movimento per ogni tipologia
+                        # Crea un movimento per ogni codice giustificativo
                         for cod_giust, total_hours in tipo_ore.items():
                             ore = int(total_hours)
                             minuti = int((total_hours - ore) * 60)
