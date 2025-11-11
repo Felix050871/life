@@ -109,8 +109,10 @@ def calculate_leave_balance(user_id: int, reference_date: Optional[date] = None)
     
     used_days = Decimal('0')
     for leave in used_leave:
-        if leave.duration_days:
-            used_days += Decimal(str(leave.duration_days))
+        # Calcola i giorni dalla differenza tra start_date e end_date
+        if leave.start_date and leave.end_date and not leave.is_time_based():
+            days = (leave.end_date - leave.start_date).days + 1
+            used_days += Decimal(str(days))
     
     # Calculate balance
     balance_days = accrued_days - used_days
@@ -190,8 +192,10 @@ def calculate_permit_balance(user_id: int, reference_date: Optional[date] = None
     
     used_hours = Decimal('0')
     for permit in used_permits:
-        if permit.duration_hours:
-            used_hours += Decimal(str(permit.duration_hours))
+        # Calcola le ore usando il metodo get_duration_hours()
+        if permit.is_time_based():
+            hours = permit.get_duration_hours()
+            used_hours += Decimal(str(hours))
     
     # Calculate balance
     balance_hours = accrued_hours - used_hours
