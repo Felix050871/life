@@ -151,6 +151,11 @@ def create_program():
     form = SocialSafetyProgramForm()
     
     if form.validate_on_submit():
+        # Debug logging
+        import logging
+        logging.debug(f"Form data - reduction_type: {form.reduction_type.data}")
+        logging.debug(f"Form data - reduction_percentage: {form.reduction_percentage.data}")
+        logging.debug(f"Form data - target_weekly_hours: {form.target_weekly_hours.data}")
         # Gestione upload decreto
         decree_path = None
         if form.decree_file.data:
@@ -192,7 +197,7 @@ def create_program():
         db.session.commit()
         
         flash(f'Programma "{program.name}" creato con successo.', 'success')
-        return redirect(url_for('social_safety.program_detail', program_id=program.id))
+        return redirect(url_for('social_safety.manage_programs'))
     
     return render_template('add_social_safety_program.html', form=form)
 
