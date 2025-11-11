@@ -118,17 +118,215 @@ COMUNI_CATASTALI = {
     'AOSTA': 'A326',
 }
 
+# Codici catastali per nazioni estere (per cittadini nati all'estero)
+PAESI_ESTERI_CATASTALI = {
+    'AFGHANISTAN': 'Z200',
+    'ALBANIA': 'Z100',
+    'ALGERIA': 'Z301',
+    'ANDORRA': 'Z101',
+    'ANGOLA': 'Z302',
+    'ANTIGUA E BARBUDA': 'Z532',
+    'ARABIA SAUDITA': 'Z203',
+    'ARGENTINA': 'Z600',
+    'ARMENIA': 'Z252',
+    'AUSTRALIA': 'Z700',
+    'AUSTRIA': 'Z102',
+    'AZERBAIGIAN': 'Z253',
+    'BAHAMAS': 'Z533',
+    'BAHREIN': 'Z204',
+    'BANGLADESH': 'Z249',
+    'BARBADOS': 'Z534',
+    'BELGIO': 'Z103',
+    'BELIZE': 'Z524',
+    'BENIN': 'Z314',
+    'BIELORUSSIA': 'Z139',
+    'BIRMANIA': 'Z241',
+    'BOLIVIA': 'Z601',
+    'BOSNIA ED ERZEGOVINA': 'Z153',
+    'BOTSWANA': 'Z358',
+    'BRASILE': 'Z602',
+    'BRUNEI': 'Z272',
+    'BULGARIA': 'Z104',
+    'BURKINA FASO': 'Z354',
+    'BURUNDI': 'Z305',
+    'CAMBOGIA': 'Z247',
+    'CAMERUN': 'Z306',
+    'CANADA': 'Z401',
+    'CAPO VERDE': 'Z347',
+    'CIAD': 'Z309',
+    'CILE': 'Z603',
+    'CINA': 'Z210',
+    'CIPRO': 'Z211',
+    'CITTA DEL VATICANO': 'Z106',
+    'COLOMBIA': 'Z604',
+    'COMORE': 'Z318',
+    'CONGO': 'Z312',
+    'COREA DEL NORD': 'Z214',
+    'COREA DEL SUD': 'Z213',
+    'COSTA D\'AVORIO': 'Z313',
+    'COSTA RICA': 'Z503',
+    'CROAZIA': 'Z149',
+    'CUBA': 'Z504',
+    'DANIMARCA': 'Z107',
+    'DOMINICA': 'Z540',
+    'ECUADOR': 'Z605',
+    'EGITTO': 'Z336',
+    'EL SALVADOR': 'Z506',
+    'EMIRATI ARABI UNITI': 'Z215',
+    'ERITREA': 'Z368',
+    'ESTONIA': 'Z144',
+    'ETIOPIA': 'Z315',
+    'FIJI': 'Z705',
+    'FILIPPINE': 'Z216',
+    'FINLANDIA': 'Z108',
+    'FRANCIA': 'Z110',
+    'GABON': 'Z316',
+    'GAMBIA': 'Z320',
+    'GEORGIA': 'Z254',
+    'GERMANIA': 'Z112',
+    'GHANA': 'Z319',
+    'GIAMAICA': 'Z507',
+    'GIAPPONE': 'Z219',
+    'GIBUTI': 'Z361',
+    'GIORDANIA': 'Z220',
+    'GRECIA': 'Z115',
+    'GRENADA': 'Z545',
+    'GUATEMALA': 'Z508',
+    'GUINEA': 'Z323',
+    'GUINEA EQUATORIALE': 'Z325',
+    'GUINEA-BISSAU': 'Z359',
+    'GUYANA': 'Z607',
+    'HAITI': 'Z509',
+    'HONDURAS': 'Z510',
+    'INDIA': 'Z222',
+    'INDONESIA': 'Z223',
+    'IRAN': 'Z224',
+    'IRAQ': 'Z225',
+    'IRLANDA': 'Z116',
+    'ISLANDA': 'Z117',
+    'ISRAELE': 'Z226',
+    'KAZAKISTAN': 'Z255',
+    'KENYA': 'Z326',
+    'KIRGHIZISTAN': 'Z256',
+    'KIRIBATI': 'Z712',
+    'KUWAIT': 'Z227',
+    'LAOS': 'Z234',
+    'LESOTHO': 'Z360',
+    'LETTONIA': 'Z145',
+    'LIBANO': 'Z229',
+    'LIBERIA': 'Z328',
+    'LIBIA': 'Z330',
+    'LIECHTENSTEIN': 'Z118',
+    'LITUANIA': 'Z146',
+    'LUSSEMBURGO': 'Z119',
+    'MACEDONIA DEL NORD': 'Z154',
+    'MADAGASCAR': 'Z317',
+    'MALAWI': 'Z338',
+    'MALAYSIA': 'Z247',
+    'MALDIVE': 'Z235',
+    'MALI': 'Z329',
+    'MALTA': 'Z121',
+    'MAROCCO': 'Z330',
+    'MAURITANIA': 'Z332',
+    'MAURITIUS': 'Z370',
+    'MESSICO': 'Z514',
+    'MICRONESIA': 'Z713',
+    'MOLDAVIA': 'Z140',
+    'MONACO': 'Z123',
+    'MONGOLIA': 'Z239',
+    'MONTENEGRO': 'Z157',
+    'MOZAMBICO': 'Z343',
+    'NAMIBIA': 'Z369',
+    'NEPAL': 'Z240',
+    'NICARAGUA': 'Z515',
+    'NIGER': 'Z335',
+    'NIGERIA': 'Z334',
+    'NORVEGIA': 'Z125',
+    'NUOVA ZELANDA': 'Z719',
+    'OMAN': 'Z242',
+    'PAESI BASSI': 'Z126',
+    'PAKISTAN': 'Z243',
+    'PANAMA': 'Z516',
+    'PAPUA NUOVA GUINEA': 'Z720',
+    'PARAGUAY': 'Z608',
+    'PERU': 'Z611',
+    'POLONIA': 'Z127',
+    'PORTOGALLO': 'Z128',
+    'QATAR': 'Z245',
+    'REGNO UNITO': 'Z114',
+    'REPUBBLICA CECA': 'Z156',
+    'REPUBBLICA CENTRAFRICANA': 'Z308',
+    'REPUBBLICA DEMOCRATICA DEL CONGO': 'Z311',
+    'REPUBBLICA DOMINICANA': 'Z505',
+    'ROMANIA': 'Z129',
+    'RUANDA': 'Z338',
+    'RUSSIA': 'Z130',
+    'SAINT KITTS E NEVIS': 'Z549',
+    'SAINT LUCIA': 'Z550',
+    'SAINT VINCENT E GRENADINE': 'Z551',
+    'SAMOA': 'Z721',
+    'SAN MARINO': 'Z133',
+    'SENEGAL': 'Z341',
+    'SERBIA': 'Z158',
+    'SEYCHELLES': 'Z371',
+    'SIERRA LEONE': 'Z342',
+    'SINGAPORE': 'Z248',
+    'SIRIA': 'Z249',
+    'SLOVACCHIA': 'Z155',
+    'SLOVENIA': 'Z150',
+    'SOMALIA': 'Z345',
+    'SPAGNA': 'Z131',
+    'SRI LANKA': 'Z209',
+    'STATI UNITI': 'Z404',
+    'SUD AFRICA': 'Z357',
+    'SUDAN': 'Z346',
+    'SUDAN DEL SUD': 'Z372',
+    'SURINAME': 'Z617',
+    'SVEZIA': 'Z132',
+    'SVIZZERA': 'Z133',
+    'TAGIKISTAN': 'Z259',
+    'TANZANIA': 'Z357',
+    'THAILANDIA': 'Z250',
+    'TIMOR EST': 'Z280',
+    'TOGO': 'Z351',
+    'TONGA': 'Z725',
+    'TRINIDAD E TOBAGO': 'Z552',
+    'TUNISIA': 'Z352',
+    'TURCHIA': 'Z134',
+    'TURKMENISTAN': 'Z260',
+    'UCRAINA': 'Z138',
+    'UGANDA': 'Z353',
+    'UNGHERIA': 'Z135',
+    'URUGUAY': 'Z613',
+    'UZBEKISTAN': 'Z261',
+    'VANUATU': 'Z726',
+    'VENEZUELA': 'Z614',
+    'VIETNAM': 'Z251',
+    'YEMEN': 'Z258',
+    'ZAMBIA': 'Z355',
+    'ZIMBABWE': 'Z356',
+}
 
-def get_codice_catastale(city_name: Optional[str]) -> str:
+
+def get_codice_catastale(city_name: Optional[str], country: Optional[str] = None) -> str:
     """
-    Ottiene il codice catastale di un comune italiano
+    Ottiene il codice catastale di un comune italiano o di una nazione estera
     
     Args:
-        city_name: Nome del comune
+        city_name: Nome del comune (se Italia)
+        country: Nome della nazione (per verificare se estero)
         
     Returns:
         Codice catastale (4 caratteri) o Z000 se non trovato
     """
+    # Se la nazione è specificata e NON è Italia, usa il codice paese
+    if country:
+        country_normalized = ' '.join(country.upper().strip().split())
+        if country_normalized != 'ITALIA' and country_normalized != 'ITALY':
+            # Per nazioni estere, usa il codice paese
+            return PAESI_ESTERI_CATASTALI.get(country_normalized, 'Z000')
+    
+    # Se è Italia o nazione non specificata, cerca il comune
     if not city_name:
         return 'Z000'
     
@@ -226,7 +424,8 @@ def calculate_codice_fiscale(
     last_name: Optional[str],
     birth_date: Optional[date],
     gender: Optional[str],
-    birth_city: Optional[str] = None
+    birth_city: Optional[str] = None,
+    birth_country: Optional[str] = None
 ) -> Optional[str]:
     """
     Calcola il codice fiscale italiano
@@ -237,6 +436,7 @@ def calculate_codice_fiscale(
         birth_date: Data di nascita
         gender: Sesso ('M' o 'F')
         birth_city: Nome del comune di nascita (es. 'Roma', 'Milano')
+        birth_country: Nome della nazione di nascita (es. 'Italia', 'Francia')
         
     Returns:
         Codice fiscale o None se i dati sono insufficienti
@@ -249,8 +449,8 @@ def calculate_codice_fiscale(
         name_code = encode_name(first_name)
         birth_code = encode_birth_date(birth_date, gender)
         
-        # Ottieni il codice catastale del comune
-        city_code = get_codice_catastale(birth_city)
+        # Ottieni il codice catastale (comune italiano o paese estero)
+        city_code = get_codice_catastale(birth_city, birth_country)
         
         partial_code = surname_code + name_code + birth_code + city_code
         check_char = calculate_check_char(partial_code)
