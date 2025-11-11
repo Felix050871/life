@@ -616,3 +616,11 @@ def user_assignments(user_id):
                          total_assignments=total_assignments,
                          approved_count=approved_count,
                          pending_count=pending_count)
+
+
+@social_safety_bp.route('/le-mie-assegnazioni')
+@login_required
+@require_social_safety_permission
+def my_assignments():
+    """Reindirizza alla visualizzazione assegnazioni del utente corrente"""
+    return redirect(url_for('social_safety.user_assignments', user_id=current_user.id))
