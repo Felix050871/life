@@ -1930,6 +1930,16 @@ class MonthlyTimesheet(db.Model):
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
     
+    # Campi per sistema di reminder
+    reminder_day1_sent_at = db.Column(db.DateTime, nullable=True)
+    reminder_day3_sent_at = db.Column(db.DateTime, nullable=True)
+    reminder_day6_sent_at = db.Column(db.DateTime, nullable=True)
+    
+    # Campi per sblocco temporaneo post-deadline (7gg dal mese successivo)
+    is_unlocked = db.Column(db.Boolean, default=False, nullable=False)
+    unlocked_until = db.Column(db.DateTime, nullable=True)
+    unlocked_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
     user = db.relationship('User', foreign_keys=[user_id], backref='monthly_timesheets')
     consolidator = db.relationship('User', foreign_keys=[consolidated_by])
     validator = db.relationship('User', foreign_keys=[validated_by])
@@ -1960,8 +1970,12 @@ class MonthlyTimesheet(db.Model):
         return timesheet
     
     def can_edit(self):
-        """Verifica se il timesheet può essere modificato"""
-        return not self.is_consolidated and not self.is_validated
+        """
+        Verifica se il timesheet può essere modificato
+        DEPRECATO: Usa is_editable() per controlli completi (include deadline lock)
+        Questo metodo ora delega a is_editable() per retrocompatibilità
+        """
+        return self.is_editable()
     
     def consolidate(self, consolidator_id):
         """Consolida il timesheet rendendolo immutabile"""
@@ -2030,6 +2044,84 @@ class MonthlyTimesheet(db.Model):
             return True
         return False
     
+    def get_compilation_deadline(self):
+        """Calcola la deadline di compilazione (7° giorno del mese successivo)"""
+        from datetime import date
+        from calendar import monthrange
+        
+        # Calcola il mese successivo
+        if self.month == 12:
+            next_month = 1
+            next_year = self.year + 1
+        else:
+            next_month = self.month + 1
+            next_year = self.year
+        
+        # Deadline: 7° giorno del mese successivo
+        return date(next_year, next_month, 7)
+    
+    def is_past_deadline(self):
+        """Verifica se la deadline di compilazione è passata"""
+        from datetime import date
+        today = date.today()
+        deadline = self.get_compilation_deadline()
+        return today > deadline
+    
+    def is_locked_for_compilation(self):
+        """Verifica se il timesheet è bloccato per compilazione
+        
+        Ritorna True se:
+        - Siamo oltre il 7° giorno del mese successivo E
+        - NON c'è uno sblocco temporaneo valido
+        """
+        from datetime import datetime
+        
+        # Se non è passata la deadline, non è bloccato
+        if not self.is_past_deadline():
+            return False
+        
+        # Se c'è uno sblocco temporaneo valido, non è bloccato
+        if self.is_unlocked and self.unlocked_until:
+            now = datetime.now()
+            if now <= self.unlocked_until:
+                return False
+        
+        # Altrimenti è bloccato
+        return True
+    
+    def is_editable(self):
+        """Verifica se il timesheet può essere modificato
+        
+        Considera:
+        - Consolidazione/Validazione
+        - Blocco per deadline
+        """
+        # Se consolidato o validato, non è modificabile
+        if self.is_consolidated or self.is_validated:
+            return False
+        
+        # Se bloccato per deadline, non è modificabile
+        if self.is_locked_for_compilation():
+            return False
+        
+        return True
+    
+    def unlock_temporarily(self, unlocked_by_id, days=7):
+        """Sblocca temporaneamente il timesheet per compilazione
+        
+        Args:
+            unlocked_by_id: ID dell'utente che ha approvato lo sblocco
+            days: Numero di giorni di validità dello sblocco (default 7)
+        
+        Note:
+            Non fa commit - il caller deve gestire la transazione
+        """
+        from datetime import datetime, timedelta
+        
+        self.is_unlocked = True
+        self.unlocked_until = datetime.now() + timedelta(days=days)
+        self.unlocked_by = unlocked_by_id
+    
     def get_status(self):
         """Restituisce lo stato corrente del timesheet"""
         if self.is_validated:
@@ -2081,6 +2173,82 @@ class TimesheetReopenRequest(db.Model):
             
             # Riapri il timesheet
             self.timesheet.reopen()
+            
+            db.session.commit()
+            return True
+        return False
+    
+    def reject(self, reviewer_id, notes=None):
+        """Rifiuta la richiesta"""
+        if self.status == 'Pending':
+            self.status = 'Rejected'
+            self.reviewed_by = reviewer_id
+            self.reviewed_at = italian_now()
+            self.review_notes = notes
+            db.session.commit()
+            return True
+        return False
+
+
+class TimesheetUnlockRequest(db.Model):
+    """Modello per gestire le richieste di sblocco compilazione timesheet oltre deadline (7gg dal mese successivo)"""
+    id = db.Column(db.Integer, primary_key=True)
+    timesheet_id = db.Column(db.Integer, db.ForeignKey('monthly_timesheet.id'), nullable=False)
+    requested_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    requested_at = db.Column(db.DateTime, default=italian_now, nullable=False)
+    reason = db.Column(db.Text, nullable=False)  # Motivazione della richiesta
+    status = db.Column(db.String(20), default='Pending', nullable=False)  # 'Pending', 'Approved', 'Rejected'
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_notes = db.Column(db.Text, nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
+    
+    timesheet = db.relationship('MonthlyTimesheet', backref='unlock_requests')
+    requester = db.relationship('User', foreign_keys=[requested_by], backref='timesheet_unlock_requests')
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by])
+    
+    def __repr__(self):
+        return f'<TimesheetUnlockRequest {self.id} - {self.status}>'
+    
+    def can_approve(self, user):
+        """Verifica se l'utente può approvare questa richiesta
+        
+        Possono approvare:
+        - Admin
+        - HR manager (can_manage_hr_data)
+        - Responsabile diretto dell'utente
+        """
+        # Admin possono approvare tutto
+        if user.role == RoleNames.ADMIN:
+            return True
+        
+        # HR manager possono approvare tutto
+        if user.can_manage_hr_data():
+            return True
+        
+        # Responsabile diretto può approvare
+        requester = self.requester
+        if requester.manager_id == user.id:
+            return True
+        
+        return False
+    
+    def approve(self, reviewer_id, notes=None, unlock_days=7):
+        """Approva la richiesta e sblocca temporaneamente il timesheet
+        
+        Args:
+            reviewer_id: ID dell'utente che approva
+            notes: Note opzionali
+            unlock_days: Numero di giorni di validità dello sblocco (default 7)
+        """
+        if self.status == 'Pending':
+            self.status = 'Approved'
+            self.reviewed_by = reviewer_id
+            self.reviewed_at = italian_now()
+            self.review_notes = notes
+            
+            # Sblocca temporaneamente il timesheet
+            self.timesheet.unlock_temporarily(reviewer_id, days=unlock_days)
             
             db.session.commit()
             return True

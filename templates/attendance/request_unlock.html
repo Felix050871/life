@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Richiesta Sblocco Timesheet{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-unlock me-2"></i>
+                        Richiesta Sblocco Compilazione Timesheet
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Informazione</strong><br>
+                        Il termine per la compilazione del timesheet di <strong>{{ ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'][month] }} {{ year }}</strong> 
+                        è scaduto il <strong>{{ deadline.strftime('%d/%m/%Y') }}</strong>.
+                        <br><br>
+                        Per poter compilare il timesheet oltre la deadline, devi richiedere lo sblocco temporaneo al tuo responsabile.
+                    </div>
+
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-4">
+                            <label for="reason" class="form-label">
+                                <i class="fas fa-comment me-1"></i>Motivazione della richiesta <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="reason" name="reason" rows="5" required
+                                      placeholder="Spiega il motivo per cui hai bisogno di compilare il timesheet oltre la deadline (es. dimenticanza, errori da correggere, assenze non registrate, ecc.)..."></textarea>
+                            <div class="form-text">
+                                La motivazione verrà inviata al tuo responsabile per valutare la richiesta.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Nota:</strong> La richiesta verrà inviata al tuo responsabile diretto. 
+                            Se approvata, potrai compilare il timesheet per un periodo limitato di tempo.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('attendance.my_attendance', year=year, month=month) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Annulla
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-paper-plane me-1"></i>Invia Richiesta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Richieste Sblocco Timesheet{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-unlock me-2"></i>
+                        Richieste di Sblocco Compilazione Timesheet
+                    </h5>
+                    <a href="{{ url_for('attendance.attendance') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alle Presenze
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <!-- Pending Requests Section -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <i class="fas fa-clock me-2"></i>Richieste Pendenti
+                        <span class="badge bg-primary ms-2">{{ pending_requests|length }}</span>
+                    </h6>
+
+                    {% if pending_requests %}
+                    <div class="table-responsive mb-5">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Dipendente</th>
+                                    <th>Periodo</th>
+                                    <th>Deadline Scaduta</th>
+                                    <th>Data Richiesta</th>
+                                    <th>Motivazione</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in pending_requests %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ req.requester.get_full_name() }}</strong>
+                                        <small class="text-muted d-block">{{ req.requester.role }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'][req.timesheet.month] }} {{ req.timesheet.year }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ req.timesheet.get_compilation_deadline().strftime('%d/%m/%Y') }}
+                                    </td>
+                                    <td>
+                                        {{ req.requested_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;" 
+                                             data-bs-toggle="tooltip" 
+                                             title="{{ req.reason }}">
+                                            {{ req.reason }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" 
+                                                    class="btn btn-success btn-sm" 
+                                                    onclick="approveRequest({{ req.id }}, '{{ req.requester.get_full_name() }}', '{{ ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'][req.timesheet.month] }} {{ req.timesheet.year }}')">
+                                                <i class="fas fa-check me-1"></i>Approva
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-danger btn-sm" 
+                                                    onclick="rejectRequest({{ req.id }}, '{{ req.requester.get_full_name() }}', '{{ ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'][req.timesheet.month] }} {{ req.timesheet.year }}')">
+                                                <i class="fas fa-times me-1"></i>Rifiuta
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Non ci sono richieste di sblocco pendenti.
+                    </div>
+                    {% endif %}
+
+                    <!-- Processed Requests Section -->
+                    <h6 class="text-secondary border-bottom pb-2 mb-3 mt-4">
+                        <i class="fas fa-history me-2"></i>Storico Richieste (ultime 50)
+                        <span class="badge bg-secondary ms-2">{{ processed_requests|length }}</span>
+                    </h6>
+
+                    {% if processed_requests %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Dipendente</th>
+                                    <th>Periodo</th>
+                                    <th>Data Richiesta</th>
+                                    <th>Stato</th>
+                                    <th>Revisore</th>
+                                    <th>Data Revisione</th>
+                                    <th>Giorni Sblocco</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in processed_requests %}
+                                <tr>
+                                    <td>
+                                        {{ req.requester.get_full_name() }}
+                                    </td>
+                                    <td>
+                                        {{ ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'][req.timesheet.month] }} {{ req.timesheet.year }}
+                                    </td>
+                                    <td>
+                                        {{ req.requested_at.strftime('%d/%m/%Y') }}
+                                    </td>
+                                    <td>
+                                        {% if req.status == 'Approved' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Approvata
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>Rifiutata
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.reviewer %}
+                                        {{ req.reviewer.get_full_name() }}
+                                        {% else %}
+                                        --
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.reviewed_at %}
+                                        {{ req.reviewed_at.strftime('%d/%m/%Y %H:%M') }}
+                                        {% else %}
+                                        --
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.unlock_days %}
+                                        {{ req.unlock_days }} giorni
+                                        {% else %}
+                                        --
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.notes %}
+                                        <div class="text-truncate" style="max-width: 200px;" 
+                                             data-bs-toggle="tooltip" 
+                                             title="{{ req.notes }}">
+                                            {{ req.notes }}
+                                        </div>
+                                        {% else %}
+                                        --
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-secondary">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Nessuna richiesta nello storico.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Approval -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Approva Richiesta di Sblocco
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="approveForm">
+                <div class="modal-body">
+                    <p>Stai per approvare la richiesta di sblocco di <strong id="approveUserName"></strong> per il periodo <strong id="approvePeriod"></strong>.</p>
+                    
+                    <div class="mb-3">
+                        <label for="unlock_days" class="form-label">
+                            <i class="fas fa-calendar-day me-1"></i>Giorni di sblocco <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="unlock_days" name="unlock_days" required>
+                            <option value="3">3 giorni</option>
+                            <option value="5">5 giorni</option>
+                            <option value="7" selected>7 giorni</option>
+                            <option value="10">10 giorni</option>
+                            <option value="14">14 giorni</option>
+                        </select>
+                        <div class="form-text">
+                            Seleziona per quanti giorni il dipendente potrà compilare il timesheet.
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Il timesheet verrà temporaneamente sbloccato per la compilazione.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="approve_notes" class="form-label">Note (opzionale)</label>
+                        <textarea class="form-control" id="approve_notes" name="notes" rows="3" 
+                                  placeholder="Eventuali note per il dipendente..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>Conferma Approvazione
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Rejection -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-times-circle me-2"></i>Rifiuta Richiesta di Sblocco
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="rejectForm">
+                <div class="modal-body">
+                    <p>Stai per rifiutare la richiesta di sblocco di <strong id="rejectUserName"></strong> per il periodo <strong id="rejectPeriod"></strong>.</p>
+                    <div class="mb-3">
+                        <label for="reject_notes" class="form-label">
+                            Motivazione del rifiuto <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="reject_notes" name="notes" rows="3" required
+                                  placeholder="Spiega perché stai rifiutando questa richiesta..."></textarea>
+                        <div class="form-text">
+                            La motivazione verrà comunicata al dipendente.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-arrow-left me-1"></i>Annulla
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>Conferma Rifiuto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function approveRequest(requestId, userName, period) {
+    const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+    const form = document.getElementById('approveForm');
+    
+    form.action = `/attendance/unlock-request/${requestId}/approve`;
+    document.getElementById('approveUserName').textContent = userName;
+    document.getElementById('approvePeriod').textContent = period;
+    document.getElementById('approve_notes').value = '';
+    
+    modal.show();
+}
+
+function rejectRequest(requestId, userName, period) {
+    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    const form = document.getElementById('rejectForm');
+    
+    form.action = `/attendance/unlock-request/${requestId}/reject`;
+    document.getElementById('rejectUserName').textContent = userName;
+    document.getElementById('rejectPeriod').textContent = period;
+    document.getElementById('reject_notes').value = '';
+    
+    modal.show();
+}
+</script>
+{% endblock %}

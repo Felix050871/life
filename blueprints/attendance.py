@@ -16,8 +16,7 @@
 #
 # Total routes: 10
 # =============================================================================
-
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, make_response
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, make_response, abort
 from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta, time
 from functools import wraps
@@ -28,10 +27,8 @@ from io import StringIO
 from defusedcsv import csv
 from forms import AttendanceForm
 import io
-
 # Create blueprint
 attendance_bp = Blueprint('attendance', __name__, url_prefix='/attendance')
-
 # Helper functions
 def get_current_user_sede(user):
     """Get current user's sede - copy from routes.py"""
@@ -44,7 +41,6 @@ def get_current_user_sede(user):
         from models import Sede
         return Sede.query.get(user.sede_id)
     return None
-
 def require_login(f):
     """Decorator to require login for routes - copy from routes.py"""
     @wraps(f)
@@ -53,11 +49,9 @@ def require_login(f):
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
-
 # =============================================================================
 # MAIN ATTENDANCE PAGE ROUTE
 # =============================================================================
-
 @attendance_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def attendance():
@@ -617,11 +611,9 @@ def attendance():
                          timesheet_is_consolidated=timesheet_is_consolidated,
                          pending_reopen_request=pending_reopen_request,
                          current_month_timesheet=current_month_timesheet)
-
 # =============================================================================
 # CLOCK IN/OUT PRE-CHECK ROUTES
 # =============================================================================
-
 @attendance_bp.route('/check_shift_before_clock_in', methods=['POST'])
 @login_required  
 def check_shift_before_clock_in():
@@ -647,7 +639,6 @@ def check_shift_before_clock_in():
         'success': True,
         'needs_confirmation': False
     })
-
 @attendance_bp.route('/check_shift_before_clock_out', methods=['POST'])
 @login_required  
 def check_shift_before_clock_out():
@@ -664,11 +655,9 @@ def check_shift_before_clock_out():
         'success': True,
         'needs_confirmation': False
     })
-
 # =============================================================================
 # CLOCK IN/OUT MAIN ROUTES
 # =============================================================================
-
 @attendance_bp.route('/clock_in', methods=['POST'])
 @login_required  
 def clock_in():
@@ -677,7 +666,6 @@ def clock_in():
             'success': False,
             'message': 'Non hai i permessi per accedere alle presenze'
         }), 403
-
     try:
         # Verifica se l'utente può effettuare il clock-in
         if not AttendanceEvent.can_perform_action(current_user.id, 'clock_in'):
@@ -692,7 +680,6 @@ def clock_in():
                     'success': False,
                     'message': 'Sei in pausa. Devi prima terminare la pausa.'
                 })
-
         # Ottieni la tipologia di presenza di default
         from models import AttendanceType
         default_attendance_type = filter_by_company(AttendanceType.query).filter_by(
@@ -727,14 +714,12 @@ def clock_in():
                 'priority': active_intervention.priority,
                 'start_datetime': active_intervention.start_datetime.strftime('%d/%m/%Y %H:%M') if active_intervention.start_datetime else None
             }
-
         return jsonify({
             'success': True,
             'message': f'Entrata registrata alle {attendance_event.timestamp_italian.strftime("%H:%M")}',
             'timestamp': attendance_event.timestamp_italian.strftime('%H:%M'),
             'active_intervention': intervention_info
         })
-
     except Exception as e:
         db.session.rollback()
         import logging
@@ -743,7 +728,6 @@ def clock_in():
             'success': False,
             'message': f'Errore nel salvare l\'entrata: {str(e)}'
         }), 500
-
 @attendance_bp.route('/clock_out', methods=['POST'])
 @login_required
 def clock_out():
@@ -752,7 +736,6 @@ def clock_out():
             'success': False,
             'message': 'Non hai i permessi per accedere alle presenze'
         }), 403
-
     try:
         # Verifica se l'utente può effettuare il clock-out
         if not AttendanceEvent.can_perform_action(current_user.id, 'clock_out'):
@@ -760,7 +743,6 @@ def clock_out():
                 'success': False,
                 'message': 'Non puoi registrare l\'uscita in questo momento.'
             })
-
         # Crea nuovo evento di uscita
         attendance_event = AttendanceEvent(
             user_id=current_user.id,
@@ -772,24 +754,20 @@ def clock_out():
         set_company_on_create(attendance_event)
         db.session.add(attendance_event)
         db.session.commit()
-
         return jsonify({
             'success': True,
             'message': f'Uscita registrata alle {attendance_event.timestamp_italian.strftime("%H:%M")}',
             'timestamp': attendance_event.timestamp_italian.strftime('%H:%M')
         })
-
     except Exception as e:
         db.session.rollback()
         return jsonify({
             'success': False,
             'message': 'Errore nel salvare l\'uscita'
         }), 500
-
 # =============================================================================
 # BREAK START/END ROUTES
 # =============================================================================
-
 @attendance_bp.route('/break_start', methods=['POST'])
 @login_required
 def break_start():
@@ -798,7 +776,6 @@ def break_start():
             'success': False,
             'message': 'Non hai i permessi per accedere alle presenze'
         }), 403
-
     try:
         # Verifica se l'utente può iniziare la pausa
         if not AttendanceEvent.can_perform_action(current_user.id, 'break_start'):
@@ -806,7 +783,6 @@ def break_start():
                 'success': False,
                 'message': 'Non puoi iniziare la pausa in questo momento.'
             })
-
         # Crea nuovo evento di inizio pausa
         attendance_event = AttendanceEvent(
             user_id=current_user.id,
@@ -818,20 +794,17 @@ def break_start():
         set_company_on_create(attendance_event)
         db.session.add(attendance_event)
         db.session.commit()
-
         return jsonify({
             'success': True,
             'message': f'Inizio pausa registrato alle {attendance_event.timestamp_italian.strftime("%H:%M")}',
             'timestamp': attendance_event.timestamp_italian.strftime('%H:%M')
         })
-
     except Exception as e:
         db.session.rollback()
         return jsonify({
             'success': False,
             'message': 'Errore nel salvare l\'inizio pausa'
         }), 500
-
 @attendance_bp.route('/break_end', methods=['POST'])
 @login_required
 def break_end():
@@ -840,7 +813,6 @@ def break_end():
             'success': False,
             'message': 'Non hai i permessi per accedere alle presenze'
         }), 403
-
     try:
         # Verifica se l'utente può terminare la pausa
         if not AttendanceEvent.can_perform_action(current_user.id, 'break_end'):
@@ -848,7 +820,6 @@ def break_end():
                 'success': False,
                 'message': 'Non puoi terminare la pausa in questo momento.'
             })
-
         # Crea nuovo evento di fine pausa
         attendance_event = AttendanceEvent(
             user_id=current_user.id,
@@ -860,26 +831,21 @@ def break_end():
         set_company_on_create(attendance_event)
         db.session.add(attendance_event)
         db.session.commit()
-
         return jsonify({
             'success': True,
             'message': f'Fine pausa registrata alle {attendance_event.timestamp_italian.strftime("%H:%M")}',
             'timestamp': attendance_event.timestamp_italian.strftime('%H:%M')
         })
-
     except Exception as e:
         db.session.rollback()
         return jsonify({
             'success': False,
             'message': 'Errore nel salvare la fine pausa'
         }), 500
-
 # Funzione duplicata rimossa - ora esiste solo attendance() alla linea ~62
-
 # =============================================================================
 # ATTENDANCE EXPORT ROUTES
 # =============================================================================
-
 @attendance_bp.route('/export_excel')
 @login_required  
 def export_attendance_excel():
@@ -898,13 +864,11 @@ def export_attendance_excel():
     except:
         flash('Date non valide.', 'error')
         return redirect(url_for('attendance.attendance'))
-
     # Query per ottenere tutti gli eventi nel periodo
     events = filter_by_company(AttendanceEvent.query).filter(
         AttendanceEvent.timestamp >= start_date,
         AttendanceEvent.timestamp <= end_date + timedelta(days=1)
     ).order_by(AttendanceEvent.timestamp).all()
-
     # Creazione file CSV
     output = io.StringIO()
     writer = csv.writer(output)
@@ -921,7 +885,6 @@ def export_attendance_excel():
             event.timestamp_italian.strftime('%H:%M:%S'),
             event.sede.name if event.sede else 'N/A'
         ])
-
     # Preparazione response
     output.seek(0)
     response = make_response(output.getvalue())
@@ -929,11 +892,9 @@ def export_attendance_excel():
     response.headers["Content-type"] = "text/csv; charset=utf-8"
     
     return response
-
 # =============================================================================
 # API ROUTES
 # =============================================================================
-
 @attendance_bp.route('/api/work_hours/<int:user_id>/<date_str>')
 @login_required
 def get_work_hours(user_id, date_str):
@@ -944,11 +905,9 @@ def get_work_hours(user_id, date_str):
         return jsonify({'work_hours': round(work_hours, 1)})
     except Exception as e:
         return jsonify({'work_hours': 0})
-
 # =============================================================================
 # QUICK ATTENDANCE (QR) ROUTE
 # =============================================================================
-
 @attendance_bp.route('/quick/<action>', methods=['GET', 'POST'])
 @require_login
 def quick_attendance(action):
@@ -960,7 +919,6 @@ def quick_attendance(action):
     if not current_user.can_access_attendance():
         flash('Non hai i permessi per accedere alle presenze.', 'error')
         return redirect(url_for('dashboard.dashboard'))
-
     if request.method == 'POST':
         try:
             # Verifica se l'utente può effettuare l'azione
@@ -977,7 +935,6 @@ def quick_attendance(action):
                 else:
                     flash('Non puoi effettuare questa azione al momento.', 'error')
                 return redirect(url_for('attendance.attendance'))
-
             # Crea nuovo evento
             attendance_event = AttendanceEvent(
                 user_id=current_user.id,
@@ -998,12 +955,10 @@ def quick_attendance(action):
             
             flash(f'{action_messages[action]} alle {attendance_event.timestamp_italian.strftime("%H:%M")}', 'success')
             return redirect(url_for('attendance.attendance'))
-
         except Exception as e:
             db.session.rollback()
             flash('Errore nel registrare l\'evento.', 'error')
             return redirect(url_for('attendance.attendance'))
-
     # GET request - mostra form di conferma
     action_titles = {
         'clock_in': 'Registra Entrata',
@@ -1016,11 +971,9 @@ def quick_attendance(action):
                          action=action,
                          action_title=action_titles.get(action, 'Azione'),
                          current_time=italian_now())
-
 # =============================================================================
 # MANUAL TIMESHEET ROUTES
 # =============================================================================
-
 @attendance_bp.route('/manual_timesheet', methods=['GET'])
 @login_required
 def manual_timesheet():
@@ -1161,7 +1114,6 @@ def manual_timesheet():
                          month_name=month_names[month],
                          days_data=days_data,
                          can_edit=timesheet.can_edit())
-
 @attendance_bp.route('/manual_timesheet/save', methods=['POST'])
 @login_required
 def save_manual_timesheet():
@@ -1335,7 +1287,6 @@ def save_manual_timesheet():
         import logging
         logging.error(f"Errore salvataggio timesheet manuale: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/manual_timesheet/consolidate', methods=['POST'])
 @login_required
 def consolidate_manual_timesheet():
@@ -1378,7 +1329,6 @@ def consolidate_manual_timesheet():
         import logging
         logging.error(f"Errore consolidamento timesheet: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/manual_timesheet/delete_day', methods=['POST'])
 @login_required
 def delete_manual_timesheet_day():
@@ -1426,7 +1376,6 @@ def delete_manual_timesheet_day():
         import logging
         logging.error(f"Errore cancellazione giorno timesheet: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/manual_timesheet/bulk_fill', methods=['POST'])
 @login_required
 def bulk_fill_timesheet():
@@ -1656,11 +1605,9 @@ def bulk_fill_timesheet():
         import logging
         logging.error(f"Errore compilazione massiva timesheet: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 # =============================================================================
 # MANUAL ATTENDANCE ENTRY/EDIT ROUTES
 # =============================================================================
-
 @attendance_bp.route('/manual_entry', methods=['POST'])
 @login_required
 def manual_entry():
@@ -1828,7 +1775,6 @@ def manual_entry():
         logging.error(f"Errore inserimento manuale presenza: {str(e)}")
         flash(f'Errore inserimento presenza: {str(e)}', 'danger')
         return redirect(url_for('attendance.attendance'))
-
 @attendance_bp.route('/edit_manual_entry/<date_str>', methods=['GET'])
 @login_required
 def edit_manual_entry(date_str):
@@ -1900,7 +1846,6 @@ def edit_manual_entry(date_str):
         import logging
         logging.error(f"Errore caricamento presenza per modifica: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
-
 @attendance_bp.route('/delete_manual_entry/<date_str>', methods=['POST'])
 @login_required
 def delete_manual_entry(date_str):
@@ -1955,11 +1900,9 @@ def delete_manual_entry(date_str):
         logging.error(f"Errore eliminazione presenza manuale: {str(e)}")
         flash(f'Errore eliminazione presenza: {str(e)}', 'danger')
         return redirect(url_for('attendance.attendance'))
-
 # =============================================================================
 # TIMESHEET REOPEN REQUEST ROUTES
 # =============================================================================
-
 @attendance_bp.route('/request_timesheet_reopen/<int:year>/<int:month>', methods=['GET', 'POST'])
 @login_required
 def request_timesheet_reopen(year, month):
@@ -2063,7 +2006,6 @@ def request_timesheet_reopen(year, month):
                          timesheet=timesheet,
                          year=year,
                          month=month)
-
 @attendance_bp.route('/timesheet_reopen_requests', methods=['GET'])
 @login_required
 def timesheet_reopen_requests():
@@ -2088,7 +2030,6 @@ def timesheet_reopen_requests():
     return render_template('timesheet_reopen_requests.html',
                          pending_requests=pending_requests,
                          completed_requests=completed_requests)
-
 @attendance_bp.route('/approve_timesheet_reopen/<int:request_id>', methods=['POST'])
 @login_required
 def approve_timesheet_reopen(request_id):
@@ -2136,7 +2077,6 @@ def approve_timesheet_reopen(request_id):
         logging.error(f"Errore approvazione richiesta riapertura: {str(e)}")
         flash(f'Errore approvazione: {str(e)}', 'danger')
         return redirect(url_for('attendance.timesheet_reopen_requests'))
-
 @attendance_bp.route('/reject_timesheet_reopen/<int:request_id>', methods=['POST'])
 @login_required
 def reject_timesheet_reopen(request_id):
@@ -2188,7 +2128,6 @@ def reject_timesheet_reopen(request_id):
         logging.error(f"Errore rifiuto richiesta riapertura: {str(e)}")
         flash(f'Errore rifiuto: {str(e)}', 'danger')
         return redirect(url_for('attendance.timesheet_reopen_requests'))
-
 @attendance_bp.route('/validate_timesheets', methods=['GET'])
 @login_required
 def validate_timesheets():
@@ -2264,7 +2203,6 @@ def validate_timesheets():
                          year_filter=year_filter,
                          available_years=available_years,
                          month_names=month_names)
-
 @attendance_bp.route('/validate_timesheet/<int:timesheet_id>', methods=['POST'])
 @login_required
 def validate_timesheet(timesheet_id):
@@ -2321,7 +2259,6 @@ def validate_timesheet(timesheet_id):
         logging.error(f"Errore validazione timesheet: {str(e)}")
         flash(f'Errore validazione: {str(e)}', 'danger')
         return redirect(url_for('attendance.validate_timesheets'))
-
 @attendance_bp.route('/view_timesheet_for_validation/<int:timesheet_id>', methods=['GET'])
 @login_required
 def view_timesheet_for_validation(timesheet_id):
@@ -2401,7 +2338,6 @@ def view_timesheet_for_validation(timesheet_id):
                          source=source,
                          year_filter=year_filter,
                          month_filter=month_filter)
-
 @attendance_bp.route('/manager_reopen_timesheet/<int:timesheet_id>', methods=['POST'])
 @login_required
 def manager_reopen_timesheet(timesheet_id):
@@ -2452,11 +2388,9 @@ def manager_reopen_timesheet(timesheet_id):
         logging.error(f"Errore riapertura timesheet: {str(e)}")
         flash(f'Errore riapertura: {str(e)}', 'danger')
         return redirect(url_for('attendance.validate_timesheets'))
-
 # =============================================================================
 # MY ATTENDANCE - PERSONAL ATTENDANCE MANAGEMENT WITH INLINE EDITING
 # =============================================================================
-
 @attendance_bp.route('/my_attendance', methods=['GET'])
 @login_required
 def my_attendance():
@@ -2521,7 +2455,7 @@ def my_attendance():
                    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
     
     # Verifica se c'è già una richiesta di riapertura in sospeso
-    from models import TimesheetReopenRequest
+    from models import TimesheetReopenRequest, TimesheetUnlockRequest
     has_pending_reopen_request = False
     if timesheet.is_consolidated:
         pending_request = TimesheetReopenRequest.query.filter_by(
@@ -2529,6 +2463,18 @@ def my_attendance():
             status='Pending'
         ).first()
         has_pending_reopen_request = pending_request is not None
+    
+    # Verifica blocco per deadline e richiesta sblocco pendente
+    is_locked = timesheet.is_locked_for_compilation()
+    has_pending_unlock_request = False
+    if is_locked:
+        unlock_request = filter_by_company(TimesheetUnlockRequest.query).filter_by(
+            timesheet_id=timesheet.id,
+            status='Pending'
+        ).first()
+        has_pending_unlock_request = unlock_request is not None
+    
+    deadline = timesheet.get_compilation_deadline()
     
     return render_template('my_attendance.html',
                          timesheet=timesheet,
@@ -2539,9 +2485,11 @@ def my_attendance():
                          user_sedi=user_sedi,
                          active_commesse=active_commesse,
                          attendance_types=attendance_types,
-                         can_edit=timesheet.can_edit(),
-                         has_pending_reopen_request=has_pending_reopen_request)
-
+                         can_edit=timesheet.is_editable(),
+                         has_pending_reopen_request=has_pending_reopen_request,
+                         is_locked=is_locked,
+                         has_pending_unlock_request=has_pending_unlock_request,
+                         deadline=deadline)
 @attendance_bp.route('/my_attendance/save_month_sessions', methods=['POST'])
 @login_required
 def save_month_sessions():
@@ -2761,7 +2709,6 @@ def save_month_sessions():
         logging.error(f"Errore batch save: {str(e)}")
         flash(f'Errore durante il salvataggio: {str(e)}', 'danger')
         return redirect(url_for('attendance.my_attendance', year=year, month=month))
-
 @attendance_bp.route('/my_attendance/bulk_fill_sessions', methods=['POST'])
 @login_required
 def bulk_fill_sessions():
@@ -2948,7 +2895,6 @@ def bulk_fill_sessions():
         import logging
         logging.error(f"Errore compilazione massiva: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/my_attendance/save_session', methods=['POST'])
 @login_required
 def save_attendance_session():
@@ -3131,7 +3077,6 @@ def save_attendance_session():
         import logging
         logging.error(f"Errore salvataggio sessione: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/my_attendance/delete_session', methods=['POST'])
 @login_required
 def delete_attendance_session():
@@ -3173,7 +3118,6 @@ def delete_attendance_session():
         import logging
         logging.error(f"Errore eliminazione sessione: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/my_attendance/add_session', methods=['POST'])
 @login_required
 def add_attendance_session():
@@ -3243,7 +3187,6 @@ def add_attendance_session():
         import logging
         logging.error(f"Errore creazione sessione: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/my_attendance/save', methods=['POST'])
 @login_required
 def save_my_attendance():
@@ -3421,7 +3364,6 @@ def save_my_attendance():
         import logging
         logging.error(f"Errore salvataggio presenza: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/my_attendance/delete_day', methods=['POST'])
 @login_required
 def delete_my_attendance_day():
@@ -3464,7 +3406,6 @@ def delete_my_attendance_day():
         import logging
         logging.error(f"Errore eliminazione presenza: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/my_attendance/bulk_fill', methods=['POST'])
 @login_required
 def bulk_fill_month():
@@ -3642,7 +3583,6 @@ def bulk_fill_month():
         import logging
         logging.error(f"Errore compilazione massiva: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore: {str(e)}'}), 500
-
 @attendance_bp.route('/my_attendance/consolidate', methods=['POST'])
 @login_required
 def consolidate_timesheet():
@@ -3861,7 +3801,6 @@ def consolidate_timesheet():
 # =============================================================================
 # TIMESHEETS MANAGEMENT - LISTA E VISUALIZZAZIONE STORICA
 # =============================================================================
-
 @attendance_bp.route('/timesheets', methods=['GET'])
 @login_required
 def timesheets():
@@ -3908,7 +3847,6 @@ def timesheets():
                          year_filter=year_filter,
                          available_years=available_years,
                          month_names=month_names)
-
 @attendance_bp.route('/timesheets/export/<int:timesheet_id>', methods=['GET'])
 @login_required
 def export_timesheet(timesheet_id):
@@ -4063,12 +4001,9 @@ def export_timesheet(timesheet_id):
         logging.error(f"Errore export timesheet: {str(e)}")
         flash(f'Errore durante l\'export: {str(e)}', 'danger')
         return redirect(url_for('attendance.timesheets'))
-
-
 # =============================================================================
 # ATTENDANCE TYPES MANAGEMENT ROUTES
 # =============================================================================
-
 @attendance_bp.route('/types')
 @login_required
 def attendance_types():
@@ -4079,8 +4014,6 @@ def attendance_types():
     
     types = filter_by_company(AttendanceType.query).order_by(AttendanceType.name).all()
     return render_template('attendance_types.html', types=types)
-
-
 @attendance_bp.route('/types/create', methods=['GET', 'POST'])
 @login_required
 def create_attendance_type():
@@ -4121,8 +4054,6 @@ def create_attendance_type():
             flash('Errore nella creazione della tipologia', 'danger')
     
     return render_template('create_attendance_type.html', form=form)
-
-
 @attendance_bp.route('/types/<int:type_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_attendance_type(type_id):
@@ -4158,8 +4089,6 @@ def edit_attendance_type(type_id):
             flash('Errore nella modifica della tipologia', 'danger')
     
     return render_template('edit_attendance_type.html', form=form, type_obj=type_obj)
-
-
 @attendance_bp.route('/types/<int:type_id>/delete', methods=['POST'])
 @login_required
 def delete_attendance_type(type_id):
@@ -4185,8 +4114,6 @@ def delete_attendance_type(type_id):
         flash('Errore nell\'eliminazione della tipologia', 'danger')
     
     return redirect(url_for('attendance.attendance_types'))
-
-
 @attendance_bp.route('/export_validated_timesheets', methods=['GET'])
 @login_required
 def export_validated_timesheets():
@@ -4248,8 +4175,6 @@ def export_validated_timesheets():
                          month_filter=month_filter,
                          available_years=available_years,
                          month_names=month_names)
-
-
 @attendance_bp.route('/export_validated_timesheets_excel', methods=['POST'])
 @login_required
 def export_validated_timesheets_excel():
@@ -4444,8 +4369,6 @@ def export_validated_timesheets_excel():
         logging.error(f"Errore export timesheets: {str(e)}")
         flash(f'Errore durante l\'export: {str(e)}', 'danger')
         return redirect(url_for('attendance.export_validated_timesheets'))
-
-
 @attendance_bp.route('/export_validated_timesheets_xml', methods=['POST'])
 @login_required
 def export_validated_timesheets_xml():
@@ -4657,3 +4580,232 @@ def export_validated_timesheets_xml():
         logging.error(f"Errore export timesheets XML: {str(e)}")
         flash(f'Errore durante l\'export XML: {str(e)}', 'danger')
         return redirect(url_for('attendance.export_validated_timesheets'))
+# =============================================================================
+
+# =============================================================================
+# TIMESHEET UNLOCK REQUEST ROUTES (richieste sblocco compilazione oltre deadline)
+# =============================================================================
+
+@attendance_bp.route('/my-attendance/request-unlock/<int:year>/<int:month>', methods=['GET', 'POST'])
+@login_required
+def request_timesheet_unlock(year, month):
+    """
+    Richiesta di sblocco compilazione timesheet oltre deadline (7gg dal mese successivo)
+    """
+    if not current_user.can_access_attendance():
+        abort(403)
+    
+    from models import MonthlyTimesheet, TimesheetUnlockRequest, User
+    
+    # Ottieni il timesheet
+    timesheet = MonthlyTimesheet.get_or_create(
+        user_id=current_user.id,
+        year=year,
+        month=month,
+        company_id=current_user.company_id
+    )
+    
+    # Verifica che sia effettivamente bloccato
+    if not timesheet.is_locked_for_compilation():
+        flash('Il timesheet non è bloccato, puoi compilarlo normalmente', 'info')
+        return redirect(url_for('attendance.my_attendance', year=year, month=month))
+    
+    # FIX MULTI-TENANT: Verifica se esiste già una richiesta pendente (con filter_by_company)
+    existing_request = filter_by_company(TimesheetUnlockRequest.query).filter_by(
+        timesheet_id=timesheet.id,
+        status='Pending'
+    ).first()
+    
+    if existing_request:
+        flash('Esiste già una richiesta di sblocco pendente per questo mese', 'warning')
+        return redirect(url_for('attendance.my_attendance', year=year, month=month))
+    
+    if request.method == 'POST':
+        reason = request.form.get('reason', '').strip()
+        if not reason:
+            flash('Devi fornire una motivazione per la richiesta', 'danger')
+            return render_template('attendance/request_unlock.html', 
+                                 timesheet=timesheet, year=year, month=month)
+        
+        # Crea la richiesta
+        unlock_request = TimesheetUnlockRequest(
+            timesheet_id=timesheet.id,
+            requested_by=current_user.id,
+            reason=reason,
+            company_id=current_user.company_id
+        )
+        db.session.add(unlock_request)
+        db.session.commit()
+        
+        # FIX MULTI-TENANT: Invia notifica al responsabile solo se appartiene stesso company
+        if current_user.manager_id:
+            manager = filter_by_company(User.query).filter_by(id=current_user.manager_id).first()
+            if manager:
+                from message_utils import send_internal_message
+                month_names = {
+                    1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile',
+                    5: 'Maggio', 6: 'Giugno', 7: 'Luglio', 8: 'Agosto',
+                    9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
+                }
+                send_internal_message(
+                    recipient_id=manager.id,
+                    title=f"📋 Nuova richiesta sblocco timesheet da {current_user.get_full_name()}",
+                    message=f"{current_user.get_full_name()} ha richiesto lo sblocco della compilazione del timesheet "
+                           f"per <strong>{month_names[month]} {year}</strong>.<br><br>"
+                           f"<strong>Motivazione:</strong><br>{reason}<br><br>"
+                           f"<a href='/attendance/unlock-requests' class='btn btn-primary btn-sm'>Gestisci Richieste</a>",
+                    message_type='info',
+                    company_id=current_user.company_id
+                )
+        
+        flash('Richiesta di sblocco inviata con successo al tuo responsabile', 'success')
+        return redirect(url_for('attendance.my_attendance', year=year, month=month))
+    
+    return render_template('attendance/request_unlock.html', 
+                         timesheet=timesheet, year=year, month=month)
+
+
+@attendance_bp.route('/attendance/unlock-requests')
+@login_required
+def timesheet_unlock_requests():
+    """
+    Lista richieste di sblocco compilazione timesheet
+    Accessibile a: Admin, HR, Responsabili
+    """
+    from models import TimesheetUnlockRequest, User
+    
+    # Solo admin, HR e responsabili possono vedere richieste
+    # Verifica se ha subordinati tramite query (non proprietà User.subordinates)
+    subordinates = filter_by_company(User.query).filter_by(manager_id=current_user.id).all()
+    
+    if not (current_user.role in ['Admin', 'Amministratore'] or 
+            current_user.can_manage_hr_data() or 
+            subordinates):
+        abort(403)
+    
+    # Filtra richieste in base al ruolo
+    company_id = get_user_company_id()
+    
+    if current_user.role in ['Admin', 'Amministratore'] or current_user.can_manage_hr_data():
+        # Admin e HR vedono tutte le richieste dell'azienda
+        pending_requests = TimesheetUnlockRequest.query.filter_by(
+            company_id=company_id,
+            status='Pending'
+        ).order_by(TimesheetUnlockRequest.requested_at.desc()).all()
+        
+        processed_requests = TimesheetUnlockRequest.query.filter_by(
+            company_id=company_id
+        ).filter(
+            TimesheetUnlockRequest.status.in_(['Approved', 'Rejected'])
+        ).order_by(TimesheetUnlockRequest.reviewed_at.desc()).limit(50).all()
+    else:
+        # FIX MULTI-TENANT: Responsabili vedono solo richieste dei loro subordinati (già filtrati per company)
+        subordinate_ids = [sub.id for sub in subordinates]
+        
+        pending_requests = TimesheetUnlockRequest.query.filter_by(
+            company_id=company_id,
+            status='Pending'
+        ).filter(
+            TimesheetUnlockRequest.requested_by.in_(subordinate_ids)
+        ).order_by(TimesheetUnlockRequest.requested_at.desc()).all()
+        
+        processed_requests = TimesheetUnlockRequest.query.filter_by(
+            company_id=company_id
+        ).filter(
+            TimesheetUnlockRequest.status.in_(['Approved', 'Rejected']),
+            TimesheetUnlockRequest.requested_by.in_(subordinate_ids)
+        ).order_by(TimesheetUnlockRequest.reviewed_at.desc()).limit(50).all()
+    
+    return render_template('attendance/unlock_requests.html',
+                         pending_requests=pending_requests,
+                         processed_requests=processed_requests)
+
+
+@attendance_bp.route('/attendance/unlock-request/<int:request_id>/approve', methods=['POST'])
+@login_required
+def approve_unlock_request(request_id):
+    """Approva richiesta di sblocco compilazione"""
+    from models import TimesheetUnlockRequest
+    
+    unlock_request = filter_by_company(TimesheetUnlockRequest.query).filter_by(
+        id=request_id
+    ).first_or_404()
+    
+    # Verifica permessi
+    if not unlock_request.can_approve(current_user):
+        abort(403)
+    
+    notes = request.form.get('notes', '').strip()
+    unlock_days = int(request.form.get('unlock_days', 7))
+    
+    if unlock_request.approve(current_user.id, notes, unlock_days):
+        # Invia notifica al richiedente
+        from message_utils import send_internal_message
+        month_names = {
+            1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile',
+            5: 'Maggio', 6: 'Giugno', 7: 'Luglio', 8: 'Agosto',
+            9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
+        }
+        
+        timesheet = unlock_request.timesheet
+        send_internal_message(
+            recipient_id=unlock_request.requested_by,
+            title="✅ Richiesta sblocco timesheet approvata",
+            message=f"La tua richiesta di sblocco per il timesheet di <strong>{month_names[timesheet.month]} {timesheet.year}</strong> "
+                   f"è stata approvata da {current_user.get_full_name()}.<br><br>"
+                   f"Hai <strong>{unlock_days} giorni</strong> per completare la compilazione.<br><br>"
+                   f"{f'<strong>Note:</strong><br>{notes}<br><br>' if notes else ''}"
+                   f"<a href='/my-attendance?year={timesheet.year}&month={timesheet.month}' class='btn btn-success btn-sm'>Vai al Timesheet</a>",
+            message_type='success',
+            company_id=current_user.company_id
+        )
+        
+        flash('Richiesta approvata con successo', 'success')
+    else:
+        flash('Errore nell\'approvazione della richiesta', 'danger')
+    
+    return redirect(url_for('attendance.timesheet_unlock_requests'))
+
+
+@attendance_bp.route('/attendance/unlock-request/<int:request_id>/reject', methods=['POST'])
+@login_required
+def reject_unlock_request(request_id):
+    """Rifiuta richiesta di sblocco compilazione"""
+    from models import TimesheetUnlockRequest
+    
+    unlock_request = filter_by_company(TimesheetUnlockRequest.query).filter_by(
+        id=request_id
+    ).first_or_404()
+    
+    # Verifica permessi
+    if not unlock_request.can_approve(current_user):
+        abort(403)
+    
+    notes = request.form.get('notes', '').strip()
+    
+    if unlock_request.reject(current_user.id, notes):
+        # Invia notifica al richiedente
+        from message_utils import send_internal_message
+        month_names = {
+            1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile',
+            5: 'Maggio', 6: 'Giugno', 7: 'Luglio', 8: 'Agosto',
+            9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'
+        }
+        
+        timesheet = unlock_request.timesheet
+        send_internal_message(
+            recipient_id=unlock_request.requested_by,
+            title="❌ Richiesta sblocco timesheet rifiutata",
+            message=f"La tua richiesta di sblocco per il timesheet di <strong>{month_names[timesheet.month]} {timesheet.year}</strong> "
+                   f"è stata rifiutata da {current_user.get_full_name()}.<br><br>"
+                   f"{f'<strong>Motivazione:</strong><br>{notes}<br><br>' if notes else ''}"
+                   f"Per ulteriori chiarimenti contatta il tuo responsabile.",
+            message_type='warning',
+            company_id=current_user.company_id
+        )
+        
+        flash('Richiesta rifiutata', 'info')
+    else:
+        flash('Errore nel rifiuto della richiesta', 'danger')
+    
+    return redirect(url_for('attendance.timesheet_unlock_requests'))

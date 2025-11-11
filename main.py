@@ -85,5 +85,8 @@ app.register_blueprint(circle_channels_bp)
 # Legal/GDPR Blueprints
 app.register_blueprint(legal_bp)
 
+# Import CLI commands
+import cli_commands  # noqa: F401
+
 if __name__ == '__main__':
     app.run(debug=Config.FLASK_DEBUG, host=Config.SERVER_HOST, port=Config.SERVER_PORT)
