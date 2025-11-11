@@ -260,12 +260,9 @@ class UserForm(FlaskForm):
             raise ValidationError('Email già esistente. Scegli un\'altra email.')
     
     def validate_sede(self, sede):
-        # Se all_sedi è True, la sede specifica non è richiesta
-        if self.all_sedi.data:
-            return
-        # Se all_sedi è False, deve essere selezionata una sede specifica
-        if not sede.data or sede.data == -1:
-            raise ValidationError('Seleziona una sede o abilita "Accesso a tutte le sedi".')
+        # Sede non è più obbligatoria - gestita tramite HR Data
+        # Manteniamo il campo per compatibilità legacy ma senza validazione obbligatoria
+        pass
     
     def validate_work_schedule(self, work_schedule):
         # Il work_schedule è opzionale, ma se selezionato deve essere valido
