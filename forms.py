@@ -1194,6 +1194,7 @@ class RoleForm(FlaskForm):
     can_request_leave = BooleanField('Richiedere Ferie/Permessi')
     can_view_leave = BooleanField('Visualizzare Tutte le Ferie/Permessi')
     can_view_my_leave = BooleanField('Visualizzare Le Mie Ferie/Permessi')
+    can_manage_leave_types = BooleanField('Gestire Tipologie Assenze')
     
     # Gestione interventi
     can_manage_interventions = BooleanField('Gestire Interventi')
@@ -1378,6 +1379,7 @@ class RoleForm(FlaskForm):
             'can_request_leave': self.can_request_leave.data,
             'can_view_leave': self.can_view_leave.data,
             'can_view_my_leave': self.can_view_my_leave.data,
+            'can_manage_leave_types': self.can_manage_leave_types.data,
             
             # Gestione interventi
             'can_manage_interventions': self.can_manage_interventions.data,
@@ -1534,6 +1536,7 @@ class RoleForm(FlaskForm):
         self.can_request_leave.data = permissions_dict.get('can_request_leave', False)
         self.can_view_leave.data = permissions_dict.get('can_view_leave', False)
         self.can_view_my_leave.data = permissions_dict.get('can_view_my_leave', False)
+        self.can_manage_leave_types.data = permissions_dict.get('can_manage_leave_types', False)
         
         # Gestione interventi
         self.can_manage_interventions.data = permissions_dict.get('can_manage_interventions', False)
