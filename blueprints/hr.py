@@ -6,9 +6,10 @@
 # 1. hr_list (GET) - Lista dipendenti con dati HR
 # 2. hr_detail (GET/POST) - Visualizza/modifica scheda HR completa
 # 3. contract_history (GET) - Visualizza storico contrattuale dipendente
-# 4. hr_export (GET) - Export Excel dati HR
+# 4. contract_history_export (GET) - Export Excel storico contrattuale
+# 5. hr_export (GET) - Export Excel dati HR
 #
-# Total routes: 4
+# Total routes: 5
 # =============================================================================
 
 from flask import Blueprint, request, render_template, redirect, url_for, flash, make_response, session
@@ -860,7 +861,7 @@ def hr_detail(user_id):
                 hr_data, 
                 previous_contract_snapshot,
                 changed_by_user_id=current_user.id,
-                notes=None  # Potremmo aggiungere un campo note nel form
+                notes=""  # Potremmo aggiungere un campo note nel form
             )
             
             db.session.commit()
@@ -993,6 +994,178 @@ def contract_history(user_id):
                          to_date=to_date,
                          page=page,
                          per_page=per_page)
+
+
+@hr_bp.route('/<int:user_id>/contract_history/export')
+@login_required
+@require_hr_permission
+def contract_history_export(user_id):
+    """Export Excel dello storico contrattuale"""
+    
+    # Verifica permessi
+    if not (current_user.can_view_hr_data() or current_user.can_manage_hr_data()):
+        flash('Non hai i permessi per esportare lo storico contrattuale', 'error')
+        return redirect(url_for('hr.hr_list'))
+    
+    # Ottieni utente e dati HR
+    user = filter_by_company(User.query).get_or_404(user_id)
+    hr_data = user.hr_data
+    
+    if not hr_data:
+        flash('Nessun dato HR trovato per questo dipendente', 'error')
+        return redirect(url_for('hr.hr_detail', user_id=user_id))
+    
+    # Filtri opzionali da query string
+    from_date_str = request.args.get('from_date', '').strip()
+    to_date_str = request.args.get('to_date', '').strip()
+    
+    from_date = None
+    to_date = None
+    
+    if from_date_str:
+        try:
+            from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    
+    if to_date_str:
+        try:
+            to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    
+    # Ottieni tutti i record dello storico con filtri
+    query = ContractHistory.query.filter_by(user_hr_data_id=hr_data.id)
+    
+    if from_date:
+        query = query.filter(ContractHistory.effective_from_date >= from_date)
+    if to_date:
+        # Aggiungi un giorno per includere tutti i record della data finale (fino alle 23:59:59)
+        from datetime import timedelta
+        next_day = to_date + timedelta(days=1)
+        query = query.filter(ContractHistory.effective_from_date < next_day)
+    
+    history_records = query.order_by(ContractHistory.effective_from_date.desc()).all()
+    
+    if not history_records:
+        flash('Nessun record trovato per i filtri selezionati', 'warning')
+        return redirect(url_for('hr.contract_history', user_id=user_id))
+    
+    # Crea workbook Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Storico Contrattuale"
+    
+    # Styling
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    
+    # Headers
+    headers = [
+        'Data Inizio Validità', 'Data Fine Validità', 'Attivo',
+        'Tipo Contratto', 'Fornitore/Distacco', 'P.IVA Consulente', 'Nome Fornitore', 'P.IVA Fornitore',
+        'Data Assunzione', 'Inizio Contratto', 'Fine Contratto', 'Fine Prova',
+        'CCNL', 'Livello CCNL', 'Ore/Settimana', 'Tipo Orario', '% Part-Time', 'Tipo Part-Time',
+        'Mansione', 'Qualifica', 'Superminimo', 'Rimborsi/Diarie', 'Rischio INAIL', 'Tipo Assunzione',
+        'Ticket Restaurant', 'Altre Note',
+        'Stipendio Lordo', 'Stipendio Netto', 'IBAN', 'Metodo Pagamento', 'Valore Buoni Pasto', 'Carta Carburante',
+        'Straordinari Abilitati', 'Tipo Straordinario', 'Limite Banca Ore', 'Periodo Banca Ore (Mesi)',
+        'Ferie Maturate/Mese (gg)', 'Permessi Maturati/Mese (h)', 'Sede ID', 'Orario Lavoro ID',
+        'Modificato Da', 'Data Modifica', 'Note Modifica'
+    ]
+    
+    # Scrivi headers
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    
+    # Scrivi dati
+    for row_num, record in enumerate(history_records, 2):
+        row_data = [
+            record.effective_from_date.strftime('%d/%m/%Y %H:%M') if record.effective_from_date else '',
+            record.effective_to_date.strftime('%d/%m/%Y %H:%M') if record.effective_to_date else '',
+            'Sì' if record.is_active() else 'No',
+            record.contract_type or '',
+            record.distacco_supplier or '',
+            record.consulente_vat or '',
+            record.nome_fornitore or '',
+            record.partita_iva_fornitore or '',
+            record.hire_date.strftime('%d/%m/%Y') if record.hire_date else '',
+            record.contract_start_date.strftime('%d/%m/%Y') if record.contract_start_date else '',
+            record.contract_end_date.strftime('%d/%m/%Y') if record.contract_end_date else '',
+            record.probation_end_date.strftime('%d/%m/%Y') if record.probation_end_date else '',
+            record.ccnl or '',
+            record.ccnl_level or '',
+            str(record.work_hours_week) if record.work_hours_week else '',
+            record.working_time_type or '',
+            str(record.part_time_percentage) if record.part_time_percentage else '',
+            record.part_time_type or '',
+            record.mansione or '',
+            record.qualifica or '',
+            str(record.superminimo) if record.superminimo else '',
+            record.rimborsi_diarie or '',
+            record.rischio_inail or '',
+            record.tipo_assunzione or '',
+            'Sì' if record.ticket_restaurant else 'No',
+            record.other_notes or '',
+            str(record.gross_salary) if record.gross_salary else '',
+            str(record.net_salary) if record.net_salary else '',
+            record.iban or '',
+            record.payment_method or '',
+            str(record.meal_vouchers_value) if record.meal_vouchers_value else '',
+            'Sì' if record.fuel_card else 'No',
+            'Sì' if record.overtime_enabled else 'No',
+            record.overtime_type or '',
+            str(record.banca_ore_limite_max) if record.banca_ore_limite_max else '',
+            str(record.banca_ore_periodo_mesi) if record.banca_ore_periodo_mesi else '',
+            str(record.gg_ferie_maturate_mese) if record.gg_ferie_maturate_mese else '',
+            str(record.hh_permesso_maturate_mese) if record.hh_permesso_maturate_mese else '',
+            str(record.sede_id) if record.sede_id else '',
+            str(record.work_schedule_id) if record.work_schedule_id else '',
+            record.changed_by.get_full_name() if record.changed_by else '',
+            record.changed_at.strftime('%d/%m/%Y %H:%M') if record.changed_at else '',
+            record.change_notes or ''
+        ]
+        
+        for col_num, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_num, column=col_num)
+            cell.value = value
+            cell.border = thin_border
+    
+    # Auto-width colonne
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Genera file Excel
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Crea response
+    response = make_response(output.getvalue())
+    response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    
+    filename = f"storico_contrattuale_{user.last_name}_{user.first_name}_{date.today().strftime('%Y%m%d')}.xlsx"
+    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    
+    return response
 
 
 @hr_bp.route('/export')
