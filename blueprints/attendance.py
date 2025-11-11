@@ -1217,6 +1217,27 @@ def save_manual_timesheet():
             except ValueError:
                 return jsonify({'success': False, 'message': 'Formato orario uscita non valido'}), 400
         
+        # Validazione limite settimanale contrattuale
+        if clock_in_datetime and clock_out_datetime:
+            from utils_contract_hours import validate_weekly_limit
+            
+            # Stima pausa automatica per validazione: 1h se turno > 5h
+            work_duration_estimate = (clock_out_datetime - clock_in_datetime).total_seconds() / 3600
+            proposed_break_minutes = 60.0 if work_duration_estimate > 5 else 0.0
+            
+            is_valid, error_msg, context = validate_weekly_limit(
+                current_user.id,
+                current_user,
+                day_date,
+                clock_in_datetime,
+                clock_out_datetime,
+                company_id,
+                proposed_break_minutes
+            )
+            
+            if not is_valid:
+                return jsonify({'success': False, 'message': error_msg, 'context': context}), 400
+        
         # Pausa automatica: se il turno è > 5 ore, inserisci 1h di pausa
         if clock_in_datetime and clock_out_datetime:
             work_duration = (clock_out_datetime - clock_in_datetime).total_seconds() / 3600  # ore
@@ -1473,21 +1494,22 @@ def bulk_fill_timesheet():
                 return jsonify({'success': False, 'message': 'Orari standard non definiti correttamente'}), 400
             
             # Usa orari fissi per tutti i giorni (comportamento precedente)
-            hours_per_day = {}
+            use_contractual_hours = False
         else:
             # Distribuisci le ore settimanali sui giorni lavorativi
-            # Calcola il numero di giorni lavorativi per settimana (esclusi weekend e leave)
-            working_days_per_week = len([d for d in range(5) if d in (work_schedule.days_of_week or [0,1,2,3,4])])
+            # Ottieni lista giorni lavorativi dal WorkSchedule
+            allowed_weekdays = work_schedule.days_of_week or [0, 1, 2, 3, 4]  # Default: Mon-Fri
             
-            if working_days_per_week == 0:
+            if len(allowed_weekdays) == 0:
                 return jsonify({'success': False, 'message': 'Nessun giorno lavorativo definito nell\'orario di lavoro'}), 400
             
-            # Calcola allocazione ore per settimana
-            weekly_allocation = calculate_weekly_hours_allocation(work_hours_week, working_days_per_week)
+            # Calcola allocazione ore per settimana standard (5 giorni lavorativi)
+            weekly_allocation_template = calculate_weekly_hours_allocation(work_hours_week, len(allowed_weekdays), remainder_on_last_day=True)
             
-            # Crea mappa: settimana ISO -> giorno della settimana -> ore
-            hours_per_day = {}
+            # Crea mappa: (iso_year, iso_week) -> {allocations, current_index}
+            week_state = {}
             standard_end = None  # Sarà calcolato dinamicamente per ogni giorno
+            use_contractual_hours = True
         
         for day in range(1, last_day_num + 1):
             day_date = date(year, month, day)
@@ -1517,6 +1539,59 @@ def bulk_fill_timesheet():
                 for event in events_by_date[day_date]:
                     db.session.delete(event)
                 days_replaced += 1
+            
+            # Calcola ore per questo giorno
+            if use_contractual_hours:
+                # Ottieni ISO week per questo giorno
+                iso_year, iso_week, iso_weekday = day_date.isocalendar()
+                week_key = (iso_year, iso_week)
+                
+                # Inizializza stato settimana se non esiste
+                if week_key not in week_state:
+                    # Determina quali giorni lavorativi sono presenti in questa settimana ISO nel mese
+                    week_start, week_end = get_iso_week_range(day_date)
+                    week_working_days = []
+                    
+                    for d in range(7):
+                        check_date = week_start + timedelta(days=d)
+                        # Include solo giorni nel mese corrente, non weekend, non in ferie, non futuri
+                        if (first_day <= check_date <= last_day and
+                            check_date.weekday() in allowed_weekdays and
+                            check_date not in leave_dates and
+                            check_date <= today and
+                            check_date not in dates_with_live):
+                            week_working_days.append(check_date.weekday())
+                    
+                    # Calcola allocazione per questa settimana (può essere parziale)
+                    if len(week_working_days) > 0:
+                        # Ricalcola work_hours_week per questa settimana (potrebbe essere cambiato mid-month)
+                        week_hours = get_active_work_hours_week(current_user, week_start) or work_hours_week
+                        week_allocation = calculate_weekly_hours_allocation(week_hours, len(week_working_days), remainder_on_last_day=True)
+                    else:
+                        week_allocation = []
+                    
+                    week_state[week_key] = {
+                        'allocation': week_allocation,
+                        'working_days': week_working_days,
+                        'current_index': 0
+                    }
+                
+                # Ottieni ore per questo giorno dall'allocazione
+                state = week_state[week_key]
+                if state['current_index'] < len(state['allocation']):
+                    daily_hours = state['allocation'][state['current_index']]
+                    state['current_index'] += 1
+                else:
+                    # Fallback se supera l'allocazione (non dovrebbe succedere)
+                    daily_hours = 8.0
+                
+                # Calcola orario fine: start + ore_lavoro + pausa (1h se > 5h)
+                break_hours = 1.0 if daily_hours > 5 else 0.0
+                total_span_hours = daily_hours + break_hours
+                
+                end_hour = int(standard_start.hour + total_span_hours)
+                end_minute = standard_start.minute
+                standard_end = time(end_hour, end_minute)
             
             # Crea eventi di entrata e uscita
             from zoneinfo import ZoneInfo
