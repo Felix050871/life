@@ -18,6 +18,7 @@ from app import db
 from models import User, UserHRData, ACITable, Sede, WorkSchedule
 from utils_tenant import filter_by_company, set_company_on_create
 from utils_hr import assign_cod_si, sync_operational_fields
+from utils_codice_fiscale import calculate_codice_fiscale
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -427,6 +428,17 @@ def hr_detail(user_id):
             hr_data.birth_city = request.form.get('birth_city', '').strip() or None
             hr_data.birth_province = request.form.get('birth_province', '').strip().upper() or None
             hr_data.birth_country = request.form.get('birth_country', '').strip() or 'Italia'
+            
+            # Calcolo automatico codice fiscale
+            calculated_cf = calculate_codice_fiscale(
+                first_name=user.first_name,
+                last_name=user.last_name,
+                birth_date=hr_data.birth_date,
+                gender=hr_data.gender,
+                birth_city_code=None
+            )
+            if calculated_cf:
+                hr_data.codice_fiscale = calculated_cf
             
             # Residenza e contatti
             hr_data.address = request.form.get('address', '').strip() or None
