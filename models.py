@@ -1401,6 +1401,7 @@ class SecondmentPeriod(db.Model):
     
     # Dati del distacco
     client_name = db.Column(db.String(200), nullable=False)  # Nome cliente presso cui è distaccato
+    agreement_date = db.Column(db.Date, nullable=True)  # Data accordo/contratto di distacco
     start_date = db.Column(db.Date, nullable=False, index=True)  # Data inizio distacco
     end_date = db.Column(db.Date, nullable=True)  # Data fine distacco (NULL = ancora in corso)
     notes = db.Column(db.Text, nullable=True)  # Note sul distacco

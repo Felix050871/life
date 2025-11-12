@@ -1467,6 +1467,7 @@ def add_secondment(user_id):
     try:
         # Estrai dati dal form
         client_name = request.form.get('client_name', '').strip()
+        agreement_date_str = request.form.get('agreement_date', '').strip()
         start_date_str = request.form.get('start_date', '').strip()
         end_date_str = request.form.get('end_date', '').strip()
         notes = request.form.get('notes', '').strip() or None
@@ -1481,6 +1482,7 @@ def add_secondment(user_id):
             return redirect(url_for('hr.hr_detail', user_id=user_id))
         
         # Converti date
+        agreement_date = datetime.strptime(agreement_date_str, '%Y-%m-%d').date() if agreement_date_str else None
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
         
@@ -1489,6 +1491,7 @@ def add_secondment(user_id):
             user_id=user.id,
             company_id=user.company_id,
             client_name=client_name,
+            agreement_date=agreement_date,
             start_date=start_date,
             end_date=end_date,
             notes=notes,

@@ -820,6 +820,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>Cliente</th>
+                        <th>Data Accordo</th>
                         <th>Data Inizio</th>
                         <th>Data Fine</th>
                         <th>Durata</th>
@@ -832,6 +833,13 @@
                     {% for secondment in secondment_periods %}
                     <tr {% if secondment.is_active() %}class="table-info"{% endif %}>
                         <td><strong>{{ secondment.client_name }}</strong></td>
+                        <td>
+                            {% if secondment.agreement_date %}
+                            {{ secondment.agreement_date.strftime('%d/%m/%Y') }}
+                            {% else %}
+                            <em class="text-muted">-</em>
+                            {% endif %}
+                        </td>
                         <td>{{ secondment.start_date.strftime('%d/%m/%Y') }}</td>
                         <td>
                             {% if secondment.end_date %}
@@ -893,15 +901,19 @@
                             <input type="text" name="client_name" class="form-control" required
                                    placeholder="es. Acme Corporation">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Data Accordo</label>
+                            <input type="date" name="agreement_date" class="form-control">
+                            <small class="text-muted">Opzionale</small>
+                        </div>
+                        <div class="col-md-2 mb-3">
                             <label class="form-label">Data Inizio <span class="text-danger">*</span></label>
                             <input type="date" name="start_date" class="form-control" required>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <label class="form-label">Data Fine</label>
-                            <input type="date" name="end_date" class="form-control"
-                                   placeholder="Lascia vuoto se in corso">
-                            <small class="text-muted">Opzionale - lascia vuoto se ancora in corso</small>
+                            <input type="date" name="end_date" class="form-control">
+                            <small class="text-muted">Opzionale</small>
                         </div>
                         <div class="col-md-2 mb-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary w-100">
