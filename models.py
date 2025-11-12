@@ -24,6 +24,8 @@
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 from flask_login import UserMixin
+from sqlalchemy import event
+from sqlalchemy.orm import validates
 from app import db
 from constants import RoleNames, RequestStatus, TimesheetStatus, AttendanceEventType, OvertimeTypes
 
@@ -1380,6 +1382,70 @@ class ContractHistory(db.Model):
         else:
             # Record ancora attivo
             return (italian_now() - self.effective_from_date).days
+
+
+class SecondmentPeriod(db.Model):
+    """Periodi di distacco del dipendente presso clienti esterni
+    
+    Un dipendente può avere più periodi di distacco nel corso della sua carriera.
+    Ogni record rappresenta un periodo temporale (start_date -> end_date)
+    durante il quale il dipendente è distaccato presso un cliente.
+    """
+    __tablename__ = 'secondment_period'
+    __table_args__ = (
+        db.Index('idx_secondment_company_user_start', 'company_id', 'user_id', 'start_date'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    
+    # Dati del distacco
+    client_name = db.Column(db.String(200), nullable=False)  # Nome cliente presso cui è distaccato
+    start_date = db.Column(db.Date, nullable=False, index=True)  # Data inizio distacco
+    end_date = db.Column(db.Date, nullable=True)  # Data fine distacco (NULL = ancora in corso)
+    notes = db.Column(db.Text, nullable=True)  # Note sul distacco
+    
+    # Multi-tenant
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], backref='secondment_periods')
+    company = db.relationship('Company', backref='secondment_periods')
+    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='secondments_created')
+    
+    def __repr__(self):
+        return f'<SecondmentPeriod User={self.user_id} Client={self.client_name} {self.start_date}-{self.end_date or "in corso"}>'
+    
+    @validates('end_date')
+    def validate_end_date(self, key, value):
+        """Valida che end_date >= start_date"""
+        if value and self.start_date and value < self.start_date:
+            raise ValueError("La data di fine distacco non può essere precedente alla data di inizio")
+        return value
+    
+    def is_active(self):
+        """Verifica se il distacco è attualmente attivo"""
+        today = date.today()
+        if self.start_date > today:
+            return False
+        if self.end_date and self.end_date < today:
+            return False
+        return True
+    
+    def get_duration_days(self):
+        """Calcola la durata in giorni del distacco"""
+        if self.end_date:
+            delta = (self.end_date - self.start_date).days + 1
+            return max(0, delta)  # Protegge da date invertite
+        else:
+            # Distacco ancora in corso
+            delta = (date.today() - self.start_date).days + 1
+            return max(0, delta)
 
 
 # =============================================================================
