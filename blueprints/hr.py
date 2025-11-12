@@ -17,7 +17,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 from functools import wraps
 from app import db
-from models import User, UserHRData, ACITable, Sede, WorkSchedule, ContractHistory
+from models import User, UserHRData, ACITable, Sede, WorkSchedule, ContractHistory, SecondmentPeriod
 from utils_tenant import filter_by_company, set_company_on_create
 from utils_hr import assign_cod_si, sync_operational_fields
 from utils_codice_fiscale import calculate_codice_fiscale
@@ -890,6 +890,11 @@ def hr_detail(user_id):
     from models import WorkSchedule
     work_schedules = filter_by_company(WorkSchedule.query).filter_by(active=True).order_by(WorkSchedule.name).all()
     
+    # Carica periodi di distacco
+    secondment_periods = filter_by_company(SecondmentPeriod.query).filter_by(
+        user_id=user.id
+    ).order_by(SecondmentPeriod.start_date.desc()).all()
+    
     # Carica assegnazioni ammortizzatori sociali (se ha permesso)
     safety_net_assignments = []
     active_safety_net_assignment = None
@@ -924,6 +929,7 @@ def hr_detail(user_id):
                          mansioni=mansioni,
                          sedi=sedi,
                          work_schedules=work_schedules,
+                         secondment_periods=secondment_periods,
                          safety_net_assignments=safety_net_assignments,
                          active_safety_net_assignment=active_safety_net_assignment,
                          total_safety_net_assignments=total_safety_net_assignments)
@@ -1439,3 +1445,105 @@ def hr_export():
     response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     
     return response
+
+
+# =============================================================================
+# SECONDMENT (DISTACCO) MANAGEMENT ROUTES
+# =============================================================================
+
+@hr_bp.route('/detail/<int:user_id>/add-secondment', methods=['POST'])
+@login_required
+@require_hr_permission
+def add_secondment(user_id):
+    """Aggiunge un nuovo periodo di distacco per un dipendente"""
+    
+    if not current_user.can_manage_hr_data():
+        flash('Non hai i permessi per gestire i distacchi', 'error')
+        return redirect(url_for('hr.hr_detail', user_id=user_id))
+    
+    # Ottieni l'utente
+    user = filter_by_company(User.query).filter_by(id=user_id).first_or_404()
+    
+    try:
+        # Estrai dati dal form
+        client_name = request.form.get('client_name', '').strip()
+        start_date_str = request.form.get('start_date', '').strip()
+        end_date_str = request.form.get('end_date', '').strip()
+        notes = request.form.get('notes', '').strip() or None
+        
+        # Validazione
+        if not client_name:
+            flash('Il nome del cliente è obbligatorio', 'error')
+            return redirect(url_for('hr.hr_detail', user_id=user_id))
+        
+        if not start_date_str:
+            flash('La data di inizio distacco è obbligatoria', 'error')
+            return redirect(url_for('hr.hr_detail', user_id=user_id))
+        
+        # Converti date
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
+        
+        # Crea nuovo periodo di distacco
+        secondment = SecondmentPeriod(
+            user_id=user.id,
+            company_id=user.company_id,
+            client_name=client_name,
+            start_date=start_date,
+            end_date=end_date,
+            notes=notes,
+            created_by_id=current_user.id
+        )
+        
+        # Applica tenant isolation
+        set_company_on_create(secondment)
+        
+        # Validazione date (il validates decorator farà il check)
+        db.session.add(secondment)
+        db.session.commit()
+        
+        flash(f'Periodo di distacco presso {client_name} aggiunto con successo', 'success')
+        
+    except ValueError as e:
+        db.session.rollback()
+        if 'non può essere precedente' in str(e):
+            flash(str(e), 'error')
+        else:
+            flash('Formato data non valido', 'error')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante l\'aggiunta del distacco: {str(e)}', 'error')
+    
+    return redirect(url_for('hr.hr_detail', user_id=user_id))
+
+
+@hr_bp.route('/detail/<int:user_id>/delete-secondment/<int:secondment_id>', methods=['POST'])
+@login_required
+@require_hr_permission
+def delete_secondment(user_id, secondment_id):
+    """Elimina un periodo di distacco"""
+    
+    if not current_user.can_manage_hr_data():
+        flash('Non hai i permessi per gestire i distacchi', 'error')
+        return redirect(url_for('hr.hr_detail', user_id=user_id))
+    
+    try:
+        # Ottieni il periodo di distacco con tenant isolation
+        secondment = filter_by_company(SecondmentPeriod.query).filter_by(
+            id=secondment_id,
+            user_id=user_id
+        ).first_or_404()
+        
+        client_name = secondment.client_name
+        
+        # Elimina il record
+        db.session.delete(secondment)
+        db.session.commit()
+        
+        flash(f'Periodo di distacco presso {client_name} eliminato con successo', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Errore durante l\'eliminazione del distacco: {str(e)}', 'error')
+    
+    return redirect(url_for('hr.hr_detail', user_id=user_id))
