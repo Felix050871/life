@@ -18,943 +18,948 @@
     </div>
 </div>
 
-<form method="POST" action="{{ url_for('hr.hr_detail', user_id=user.id) }}" enctype="multipart/form-data">
-    
-    <!-- ========================================= -->
-    <!-- SEZIONE 1: DATI CONTRATTUALI -->
-    <!-- ========================================= -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-file-contract me-2"></i>DATI CONTRATTUALI
-            </h5>
-        </div>
-        <div class="card-body">
-            <!-- Riga 1: Matricola, Tipo Contratto, Data Assunzione, Data Fine -->
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <label class="form-label fw-bold">COD SI (Matricola)</label>
-                    <input type="text" class="form-control font-monospace" 
-                           value="{{ user.matricola or 'Non assegnato' }}" 
-                           disabled style="background-color: #e9ecef;">
-                    <small class="text-muted d-block mt-1">
-                        {% if user.matricola %}
-                        <i class="fas fa-check-circle text-success"></i> Assegnato automaticamente
-                        {% else %}
-                        <i class="fas fa-info-circle text-info"></i> Verrà assegnato alla creazione
-                        {% endif %}
-                    </small>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Tipologia Contratto</label>
-                    <select name="contract_type" id="contract_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona...</option>
-                        <option value="Tempo Indeterminato" {% if hr_data.contract_type == 'Tempo Indeterminato' %}selected{% endif %}>Tempo Indeterminato</option>
-                        <option value="Tempo Determinato" {% if hr_data.contract_type == 'Tempo Determinato' %}selected{% endif %}>Tempo Determinato</option>
-                        <option value="Apprendistato" {% if hr_data.contract_type == 'Apprendistato' %}selected{% endif %}>Apprendistato</option>
-                        <option value="Stage/Tirocinio" {% if hr_data.contract_type == 'Stage/Tirocinio' %}selected{% endif %}>Stage/Tirocinio</option>
-                        <option value="Collaborazione" {% if hr_data.contract_type == 'Collaborazione' %}selected{% endif %}>Collaborazione</option>
-                        <option value="In Distacco" {% if hr_data.contract_type == 'In Distacco' %}selected{% endif %}>In Distacco</option>
-                        <option value="Consulente/P.IVA" {% if hr_data.contract_type == 'Consulente/P.IVA' %}selected{% endif %}>Consulente/P.IVA</option>
-                        <option value="Fornitore" {% if hr_data.contract_type == 'Fornitore' %}selected{% endif %}>Fornitore</option>
-                        <option value="Altro" {% if hr_data.contract_type == 'Altro' %}selected{% endif %}>Altro</option>
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3" id="distacco_supplier_field" style="display: {% if hr_data.contract_type == 'In Distacco' %}block{% else %}none{% endif %};">
-                    <label class="form-label">Fornitore / Azienda Distaccante</label>
-                    <input type="text" name="distacco_supplier" class="form-control" 
-                           value="{{ hr_data.distacco_supplier or '' }}"
-                           placeholder="Nome azienda"
-                           {% if not can_edit %}disabled{% endif %}>
-                    <small class="text-muted">Azienda che fornisce il personale</small>
-                </div>
-                <div class="col-md-3 mb-3" id="consulente_vat_field" style="display: {% if hr_data.contract_type == 'Consulente/P.IVA' %}block{% else %}none{% endif %};">
-                    <label class="form-label">Partita IVA</label>
-                    <input type="text" name="consulente_vat" class="form-control" 
-                           value="{{ hr_data.consulente_vat or '' }}"
-                           placeholder="IT12345678901"
-                           {% if not can_edit %}disabled{% endif %}>
-                    <small class="text-muted">Partita IVA del consulente</small>
-                </div>
-                <div class="col-md-3 mb-3" id="fornitore_nome_field" style="display: {% if hr_data.contract_type == 'Fornitore' %}block{% else %}none{% endif %};">
-                    <label class="form-label">Nome Fornitore</label>
-                    <input type="text" name="nome_fornitore" class="form-control" 
-                           value="{{ hr_data.nome_fornitore or '' }}"
-                           placeholder="Nome del fornitore"
-                           {% if not can_edit %}disabled{% endif %}>
-                    <small class="text-muted">Denominazione fornitore</small>
-                </div>
-                <div class="col-md-3 mb-3" id="fornitore_piva_field" style="display: {% if hr_data.contract_type == 'Fornitore' %}block{% else %}none{% endif %};">
-                    <label class="form-label">Partita IVA Fornitore</label>
-                    <input type="text" name="partita_iva_fornitore" class="form-control" 
-                           value="{{ hr_data.partita_iva_fornitore or '' }}"
-                           placeholder="IT12345678901"
-                           {% if not can_edit %}disabled{% endif %}>
-                    <small class="text-muted">P.IVA del fornitore</small>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Data Assunzione</label>
-                    <input type="date" name="hire_date" class="form-control" 
-                           value="{{ hr_data.hire_date.strftime('%Y-%m-%d') if hr_data.hire_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Data Fine Rapporto</label>
-                    <input type="date" name="contract_end_date" class="form-control" 
-                           value="{{ hr_data.contract_end_date.strftime('%Y-%m-%d') if hr_data.contract_end_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Riga 2: CCNL, Mansione, Qualifica, Livello -->
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">CCNL</label>
-                    <input type="text" name="ccnl" class="form-control" 
-                           value="{{ hr_data.ccnl or '' }}"
-                           placeholder="es. Commercio, Metalmeccanico"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Mansione</label>
-                    <select name="mansione" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona...</option>
-                        {% for mansione in mansioni %}
-                        <option value="{{ mansione.nome }}" {% if hr_data.mansione == mansione.nome %}selected{% endif %}>
-                            {{ mansione.nome }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <small class="text-muted">Gestisci il mansionario dal menu HR</small>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Qualifica</label>
-                    <input type="text" name="qualifica" class="form-control" 
-                           value="{{ hr_data.qualifica or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Livello</label>
-                    <input type="text" name="ccnl_level" class="form-control" 
-                           value="{{ hr_data.ccnl_level or '' }}"
-                           placeholder="es. D2, 3° livello"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Riga 3: Orario settimanale e Orario di Lavoro -->
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Orario (h/sett.)</label>
-                    <input type="number" step="0.1" name="work_hours_week" class="form-control" 
-                           value="{{ hr_data.work_hours_week or '' }}"
-                           placeholder="40"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Orario di Lavoro</label>
-                    <select name="work_schedule_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Nessuno</option>
-                        {% for schedule in work_schedules %}
-                        <option value="{{ schedule.id }}" {% if hr_data.work_schedule_id == schedule.id %}selected{% endif %}>
-                            {{ schedule.name }} ({{ schedule.code }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <small class="text-muted">Orario di lavoro assegnato al dipendente</small>
-                </div>
-            </div>
-
-            <!-- Riga 4: Tipo Assunzione -->
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Tipo di Assunzione</label>
-                    <input type="text" name="tipo_assunzione" class="form-control" 
-                           value="{{ hr_data.tipo_assunzione or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Riga 5: Superminimo, Rimborsi, Rischio INAIL -->
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Superminimo / SM Assorbibile (€)</label>
-                    <input type="number" step="0.01" name="superminimo" class="form-control" 
-                           value="{{ hr_data.superminimo or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Rimborsi / Diarie (€)</label>
-                    <input type="number" step="0.01" name="rimborsi_diarie" class="form-control" 
-                           value="{{ hr_data.rimborsi_diarie or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Rischio INAIL</label>
-                    <input type="text" name="rischio_inail" class="form-control" 
-                           value="{{ hr_data.rischio_inail or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Riga 6: Ticket Restaurant e Valore -->
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Ticket Restaurant</label>
-                    <div class="form-check form-switch mt-2">
-                        <input type="checkbox" name="ticket_restaurant" id="ticket_restaurant" class="form-check-input" 
-                               {% if hr_data.ticket_restaurant %}checked{% endif %}
-                               {% if not can_edit %}disabled{% endif %}>
-                        <label class="form-check-label">Ha ticket restaurant</label>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Valore Buoni Pasto (€/giorno)</label>
-                    <input type="number" step="0.01" name="meal_vouchers_value" id="meal_vouchers_value" class="form-control" 
-                           value="{{ hr_data.meal_vouchers_value or '' }}"
-                           {% if not can_edit or not hr_data.ticket_restaurant %}disabled{% endif %}>
-                    <small class="text-muted">Valore giornaliero buoni pasto</small>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Carta Carburante</label>
-                    <div class="form-check form-switch mt-2">
-                        <input type="checkbox" name="fuel_card" class="form-check-input" 
-                               {% if hr_data.fuel_card %}checked{% endif %}
-                               {% if not can_edit %}disabled{% endif %}>
-                        <label class="form-check-label">Ha carta carburante aziendale</label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dati Operativi -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-building me-2"></i>Dati Operativi</h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Sede di Assunzione</label>
-                    <select name="sede_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Nessuna</option>
-                        {% for sede in sedi %}
-                        <option value="{{ sede.id }}" {% if hr_data.sede_id == sede.id %}selected{% endif %}>
-                            {{ sede.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <small class="text-muted">Sede indicata nel contratto di assunzione</small>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <div class="form-check form-switch mt-4">
-                        <input type="checkbox" name="all_sedi" class="form-check-input" id="all_sedi"
-                               {% if hr_data.all_sedi %}checked{% endif %}
-                               {% if not can_edit %}disabled{% endif %}>
-                        <label class="form-check-label fw-bold" for="all_sedi">
-                            Accesso a Tutte le Sedi
-                        </label>
-                    </div>
-                    <small class="text-muted d-block mt-1">Può operare in tutte le sedi aziendali</small>
-                </div>
-            </div>
-            
-            <!-- Gestione Straordinari / Banca Ore -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-clock me-2"></i>Gestione Straordinari</h6>
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <div class="form-check mt-4">
-                        <input type="checkbox" id="overtime_enabled" name="overtime_enabled" class="form-check-input" 
-                               {% if hr_data.overtime_enabled %}checked{% endif %}
-                               {% if not can_edit %}disabled{% endif %}>
-                        <label class="form-check-label fw-bold" for="overtime_enabled">
-                            Abilitato a Straordinari
-                        </label>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3" id="overtimeTypeField" style="display: none;">
-                    <label class="form-label">Tipologia Straordinario</label>
-                    <select name="overtime_type" id="overtime_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona...</option>
-                        <option value="Straordinario Pagato" {% if hr_data.overtime_type == 'Straordinario Pagato' %}selected{% endif %}>Straordinario Pagato</option>
-                        <option value="Banca Ore" {% if hr_data.overtime_type == 'Banca Ore' %}selected{% endif %}>Banca Ore</option>
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3" id="bancaOreLimiteField" style="display: none;">
-                    <label class="form-label">Limite Massimo Ore</label>
-                    <div class="input-group">
-                        <input type="text" name="banca_ore_limite_max" class="form-control" 
-                               value="{{ (hr_data.banca_ore_limite_max|string).replace('.', ',') if hr_data.banca_ore_limite_max else '' }}"
-                               {% if not can_edit %}disabled{% endif %}>
-                        <span class="input-group-text">ore</span>
-                    </div>
-                    <small class="text-muted">Limite massimo ore accumulabili</small>
-                </div>
-                <div class="col-md-3 mb-3" id="bancaOrePeriodoField" style="display: none;">
-                    <label class="form-label">Periodo Validità</label>
-                    <div class="input-group">
-                        <input type="text" name="banca_ore_periodo_mesi" class="form-control" 
-                               value="{{ hr_data.banca_ore_periodo_mesi if hr_data.banca_ore_periodo_mesi else '' }}"
-                               {% if not can_edit %}disabled{% endif %}>
-                        <span class="input-group-text">mesi</span>
-                    </div>
-                    <small class="text-muted">Periodo entro cui usufruire ore</small>
-                </div>
-            </div>
-
-            <!-- Maturazione Ferie e Permessi -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-umbrella-beach me-2"></i>Maturazione Ferie e Permessi</h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Giorni Ferie Maturati al Mese</label>
-                    <div class="input-group">
-                        <input type="text" name="gg_ferie_maturate_mese" class="form-control" 
-                               value="{{ (hr_data.gg_ferie_maturate_mese|string).replace('.', ',') if hr_data.gg_ferie_maturate_mese else '0' }}"
-                               placeholder="2.33"
-                               {% if not can_edit %}disabled{% endif %}>
-                        <span class="input-group-text">gg/mese</span>
-                    </div>
-                    <small class="text-muted">Es: 2.33 giorni/mese = 28 giorni/anno. Usato per calcolare il monte ferie disponibile.</small>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Ore Permesso (ROL) Maturate al Mese</label>
-                    <div class="input-group">
-                        <input type="text" name="hh_permesso_maturate_mese" class="form-control" 
-                               value="{{ (hr_data.hh_permesso_maturate_mese|string).replace('.', ',') if hr_data.hh_permesso_maturate_mese else '0' }}"
-                               placeholder="7"
-                               {% if not can_edit %}disabled{% endif %}>
-                        <span class="input-group-text">h/mese</span>
-                    </div>
-                    <small class="text-muted">Es: 7 ore/mese = 84 ore/anno (ROL). Usato per calcolare il monte permessi disponibile.</small>
-                </div>
-            </div>
-
-            <!-- Note Contratto -->
-            <div class="row">
-                <div class="col-12 mb-3">
-                    <label class="form-label">Altro / Note Contrattuali</label>
-                    <textarea name="other_notes" class="form-control" rows="2"
-                              {% if not can_edit %}disabled{% endif %}>{{ hr_data.other_notes or '' }}</textarea>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================= -->
-    <!-- SEZIONE 2: ANAGRAFICA RISORSA -->
-    <!-- ========================================= -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-user me-2"></i>ANAGRAFICA RISORSA
-            </h5>
-        </div>
-        <div class="card-body">
-            <!-- Dati Personali -->
-            <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-id-badge me-2"></i>Dati Personali</h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Codice Fiscale</label>
-                    <input type="text" name="codice_fiscale" class="form-control text-uppercase" 
-                           value="{{ hr_data.codice_fiscale or '' }}" 
-                           maxlength="16"
-                           disabled
-                           title="Il codice fiscale viene calcolato automaticamente dai dati anagrafici">
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Data di Nascita</label>
-                    <input type="date" name="birth_date" class="form-control" 
-                           value="{{ hr_data.birth_date.strftime('%Y-%m-%d') if hr_data.birth_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label class="form-label">Età</label>
-                    <input type="text" class="form-control" 
-                           value="{% if hr_data.get_age() %}{{ hr_data.get_age() }} anni{% endif %}" disabled>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Sesso</label>
-                    <select name="gender" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona...</option>
-                        <option value="M" {% if hr_data.gender == 'M' %}selected{% endif %}>Maschile</option>
-                        <option value="F" {% if hr_data.gender == 'F' %}selected{% endif %}>Femminile</option>
-                        <option value="A" {% if hr_data.gender == 'A' %}selected{% endif %}>Altro</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-5 mb-3">
-                    <label class="form-label">Paese di Nascita</label>
-                    <select name="birth_country" id="birth_country" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="Italia" {% if not hr_data.birth_country or hr_data.birth_country == 'Italia' %}selected{% endif %}>Italia</option>
-                        <optgroup label="Principali Paesi Europei">
-                            <option value="Francia" {% if hr_data.birth_country == 'Francia' %}selected{% endif %}>Francia</option>
-                            <option value="Germania" {% if hr_data.birth_country == 'Germania' %}selected{% endif %}>Germania</option>
-                            <option value="Spagna" {% if hr_data.birth_country == 'Spagna' %}selected{% endif %}>Spagna</option>
-                            <option value="Regno Unito" {% if hr_data.birth_country == 'Regno Unito' %}selected{% endif %}>Regno Unito</option>
-                            <option value="Svizzera" {% if hr_data.birth_country == 'Svizzera' %}selected{% endif %}>Svizzera</option>
-                            <option value="Austria" {% if hr_data.birth_country == 'Austria' %}selected{% endif %}>Austria</option>
-                            <option value="Belgio" {% if hr_data.birth_country == 'Belgio' %}selected{% endif %}>Belgio</option>
-                            <option value="Paesi Bassi" {% if hr_data.birth_country == 'Paesi Bassi' %}selected{% endif %}>Paesi Bassi</option>
-                            <option value="Portogallo" {% if hr_data.birth_country == 'Portogallo' %}selected{% endif %}>Portogallo</option>
-                            <option value="Grecia" {% if hr_data.birth_country == 'Grecia' %}selected{% endif %}>Grecia</option>
-                            <option value="Polonia" {% if hr_data.birth_country == 'Polonia' %}selected{% endif %}>Polonia</option>
-                            <option value="Romania" {% if hr_data.birth_country == 'Romania' %}selected{% endif %}>Romania</option>
-                            <option value="Albania" {% if hr_data.birth_country == 'Albania' %}selected{% endif %}>Albania</option>
-                        </optgroup>
-                        <optgroup label="Altri Paesi">
-                            <option value="Stati Uniti" {% if hr_data.birth_country == 'Stati Uniti' %}selected{% endif %}>Stati Uniti</option>
-                            <option value="Canada" {% if hr_data.birth_country == 'Canada' %}selected{% endif %}>Canada</option>
-                            <option value="Brasile" {% if hr_data.birth_country == 'Brasile' %}selected{% endif %}>Brasile</option>
-                            <option value="Argentina" {% if hr_data.birth_country == 'Argentina' %}selected{% endif %}>Argentina</option>
-                            <option value="Cina" {% if hr_data.birth_country == 'Cina' %}selected{% endif %}>Cina</option>
-                            <option value="India" {% if hr_data.birth_country == 'India' %}selected{% endif %}>India</option>
-                            <option value="Marocco" {% if hr_data.birth_country == 'Marocco' %}selected{% endif %}>Marocco</option>
-                            <option value="Tunisia" {% if hr_data.birth_country == 'Tunisia' %}selected{% endif %}>Tunisia</option>
-                            <option value="Egitto" {% if hr_data.birth_country == 'Egitto' %}selected{% endif %}>Egitto</option>
-                            <option value="Nigeria" {% if hr_data.birth_country == 'Nigeria' %}selected{% endif %}>Nigeria</option>
-                            <option value="Senegal" {% if hr_data.birth_country == 'Senegal' %}selected{% endif %}>Senegal</option>
-                        </optgroup>
-                    </select>
-                </div>
-                <div class="col-md-5 mb-3" id="birth_city_container">
-                    <label class="form-label">Comune di Nascita</label>
-                    <select name="birth_city" id="birth_city" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona...</option>
-                        <option value="Roma" {% if hr_data.birth_city == 'Roma' %}selected{% endif %}>Roma</option>
-                        <option value="Milano" {% if hr_data.birth_city == 'Milano' %}selected{% endif %}>Milano</option>
-                        <option value="Napoli" {% if hr_data.birth_city == 'Napoli' %}selected{% endif %}>Napoli</option>
-                        <option value="Torino" {% if hr_data.birth_city == 'Torino' %}selected{% endif %}>Torino</option>
-                        <option value="Palermo" {% if hr_data.birth_city == 'Palermo' %}selected{% endif %}>Palermo</option>
-                        <option value="Genova" {% if hr_data.birth_city == 'Genova' %}selected{% endif %}>Genova</option>
-                        <option value="Bologna" {% if hr_data.birth_city == 'Bologna' %}selected{% endif %}>Bologna</option>
-                        <option value="Firenze" {% if hr_data.birth_city == 'Firenze' %}selected{% endif %}>Firenze</option>
-                        <option value="Bari" {% if hr_data.birth_city == 'Bari' %}selected{% endif %}>Bari</option>
-                        <option value="Catania" {% if hr_data.birth_city == 'Catania' %}selected{% endif %}>Catania</option>
-                        <option value="Venezia" {% if hr_data.birth_city == 'Venezia' %}selected{% endif %}>Venezia</option>
-                        <option value="Verona" {% if hr_data.birth_city == 'Verona' %}selected{% endif %}>Verona</option>
-                        <option value="Messina" {% if hr_data.birth_city == 'Messina' %}selected{% endif %}>Messina</option>
-                        <option value="Padova" {% if hr_data.birth_city == 'Padova' %}selected{% endif %}>Padova</option>
-                        <option value="Trieste" {% if hr_data.birth_city == 'Trieste' %}selected{% endif %}>Trieste</option>
-                        <option value="Brescia" {% if hr_data.birth_city == 'Brescia' %}selected{% endif %}>Brescia</option>
-                        <option value="Parma" {% if hr_data.birth_city == 'Parma' %}selected{% endif %}>Parma</option>
-                        <option value="Taranto" {% if hr_data.birth_city == 'Taranto' %}selected{% endif %}>Taranto</option>
-                        <option value="Prato" {% if hr_data.birth_city == 'Prato' %}selected{% endif %}>Prato</option>
-                        <option value="Modena" {% if hr_data.birth_city == 'Modena' %}selected{% endif %}>Modena</option>
-                        <option value="Reggio Calabria" {% if hr_data.birth_city == 'Reggio Calabria' %}selected{% endif %}>Reggio Calabria</option>
-                        <option value="Reggio Emilia" {% if hr_data.birth_city == 'Reggio Emilia' %}selected{% endif %}>Reggio Emilia</option>
-                        <option value="Perugia" {% if hr_data.birth_city == 'Perugia' %}selected{% endif %}>Perugia</option>
-                        <option value="Ravenna" {% if hr_data.birth_city == 'Ravenna' %}selected{% endif %}>Ravenna</option>
-                        <option value="Livorno" {% if hr_data.birth_city == 'Livorno' %}selected{% endif %}>Livorno</option>
-                        <option value="Cagliari" {% if hr_data.birth_city == 'Cagliari' %}selected{% endif %}>Cagliari</option>
-                        <option value="Foggia" {% if hr_data.birth_city == 'Foggia' %}selected{% endif %}>Foggia</option>
-                        <option value="Rimini" {% if hr_data.birth_city == 'Rimini' %}selected{% endif %}>Rimini</option>
-                        <option value="Salerno" {% if hr_data.birth_city == 'Salerno' %}selected{% endif %}>Salerno</option>
-                        <option value="Ferrara" {% if hr_data.birth_city == 'Ferrara' %}selected{% endif %}>Ferrara</option>
-                    </select>
-                    <small class="text-muted">Se il comune non è in lista, verrà usato codice generico</small>
-                </div>
-                <div class="col-md-2 mb-3" id="birth_province_container">
-                    <label class="form-label">Prov.</label>
-                    <select name="birth_province" id="birth_province" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">-</option>
-                        <option value="AG" {% if hr_data.birth_province == 'AG' %}selected{% endif %}>AG</option>
-                        <option value="AL" {% if hr_data.birth_province == 'AL' %}selected{% endif %}>AL</option>
-                        <option value="AN" {% if hr_data.birth_province == 'AN' %}selected{% endif %}>AN</option>
-                        <option value="AO" {% if hr_data.birth_province == 'AO' %}selected{% endif %}>AO</option>
-                        <option value="AR" {% if hr_data.birth_province == 'AR' %}selected{% endif %}>AR</option>
-                        <option value="AP" {% if hr_data.birth_province == 'AP' %}selected{% endif %}>AP</option>
-                        <option value="AT" {% if hr_data.birth_province == 'AT' %}selected{% endif %}>AT</option>
-                        <option value="AV" {% if hr_data.birth_province == 'AV' %}selected{% endif %}>AV</option>
-                        <option value="BA" {% if hr_data.birth_province == 'BA' %}selected{% endif %}>BA</option>
-                        <option value="BT" {% if hr_data.birth_province == 'BT' %}selected{% endif %}>BT</option>
-                        <option value="BL" {% if hr_data.birth_province == 'BL' %}selected{% endif %}>BL</option>
-                        <option value="BN" {% if hr_data.birth_province == 'BN' %}selected{% endif %}>BN</option>
-                        <option value="BG" {% if hr_data.birth_province == 'BG' %}selected{% endif %}>BG</option>
-                        <option value="BI" {% if hr_data.birth_province == 'BI' %}selected{% endif %}>BI</option>
-                        <option value="BO" {% if hr_data.birth_province == 'BO' %}selected{% endif %}>BO</option>
-                        <option value="BZ" {% if hr_data.birth_province == 'BZ' %}selected{% endif %}>BZ</option>
-                        <option value="BS" {% if hr_data.birth_province == 'BS' %}selected{% endif %}>BS</option>
-                        <option value="BR" {% if hr_data.birth_province == 'BR' %}selected{% endif %}>BR</option>
-                        <option value="CA" {% if hr_data.birth_province == 'CA' %}selected{% endif %}>CA</option>
-                        <option value="CL" {% if hr_data.birth_province == 'CL' %}selected{% endif %}>CL</option>
-                        <option value="CB" {% if hr_data.birth_province == 'CB' %}selected{% endif %}>CB</option>
-                        <option value="CI" {% if hr_data.birth_province == 'CI' %}selected{% endif %}>CI</option>
-                        <option value="CE" {% if hr_data.birth_province == 'CE' %}selected{% endif %}>CE</option>
-                        <option value="CT" {% if hr_data.birth_province == 'CT' %}selected{% endif %}>CT</option>
-                        <option value="CZ" {% if hr_data.birth_province == 'CZ' %}selected{% endif %}>CZ</option>
-                        <option value="CH" {% if hr_data.birth_province == 'CH' %}selected{% endif %}>CH</option>
-                        <option value="CO" {% if hr_data.birth_province == 'CO' %}selected{% endif %}>CO</option>
-                        <option value="CS" {% if hr_data.birth_province == 'CS' %}selected{% endif %}>CS</option>
-                        <option value="CR" {% if hr_data.birth_province == 'CR' %}selected{% endif %}>CR</option>
-                        <option value="KR" {% if hr_data.birth_province == 'KR' %}selected{% endif %}>KR</option>
-                        <option value="CN" {% if hr_data.birth_province == 'CN' %}selected{% endif %}>CN</option>
-                        <option value="EN" {% if hr_data.birth_province == 'EN' %}selected{% endif %}>EN</option>
-                        <option value="FM" {% if hr_data.birth_province == 'FM' %}selected{% endif %}>FM</option>
-                        <option value="FE" {% if hr_data.birth_province == 'FE' %}selected{% endif %}>FE</option>
-                        <option value="FI" {% if hr_data.birth_province == 'FI' %}selected{% endif %}>FI</option>
-                        <option value="FG" {% if hr_data.birth_province == 'FG' %}selected{% endif %}>FG</option>
-                        <option value="FC" {% if hr_data.birth_province == 'FC' %}selected{% endif %}>FC</option>
-                        <option value="FR" {% if hr_data.birth_province == 'FR' %}selected{% endif %}>FR</option>
-                        <option value="GE" {% if hr_data.birth_province == 'GE' %}selected{% endif %}>GE</option>
-                        <option value="GO" {% if hr_data.birth_province == 'GO' %}selected{% endif %}>GO</option>
-                        <option value="GR" {% if hr_data.birth_province == 'GR' %}selected{% endif %}>GR</option>
-                        <option value="IM" {% if hr_data.birth_province == 'IM' %}selected{% endif %}>IM</option>
-                        <option value="IS" {% if hr_data.birth_province == 'IS' %}selected{% endif %}>IS</option>
-                        <option value="SP" {% if hr_data.birth_province == 'SP' %}selected{% endif %}>SP</option>
-                        <option value="AQ" {% if hr_data.birth_province == 'AQ' %}selected{% endif %}>AQ</option>
-                        <option value="LT" {% if hr_data.birth_province == 'LT' %}selected{% endif %}>LT</option>
-                        <option value="LE" {% if hr_data.birth_province == 'LE' %}selected{% endif %}>LE</option>
-                        <option value="LC" {% if hr_data.birth_province == 'LC' %}selected{% endif %}>LC</option>
-                        <option value="LI" {% if hr_data.birth_province == 'LI' %}selected{% endif %}>LI</option>
-                        <option value="LO" {% if hr_data.birth_province == 'LO' %}selected{% endif %}>LO</option>
-                        <option value="LU" {% if hr_data.birth_province == 'LU' %}selected{% endif %}>LU</option>
-                        <option value="MC" {% if hr_data.birth_province == 'MC' %}selected{% endif %}>MC</option>
-                        <option value="MN" {% if hr_data.birth_province == 'MN' %}selected{% endif %}>MN</option>
-                        <option value="MS" {% if hr_data.birth_province == 'MS' %}selected{% endif %}>MS</option>
-                        <option value="MT" {% if hr_data.birth_province == 'MT' %}selected{% endif %}>MT</option>
-                        <option value="ME" {% if hr_data.birth_province == 'ME' %}selected{% endif %}>ME</option>
-                        <option value="MI" {% if hr_data.birth_province == 'MI' %}selected{% endif %}>MI</option>
-                        <option value="MO" {% if hr_data.birth_province == 'MO' %}selected{% endif %}>MO</option>
-                        <option value="MB" {% if hr_data.birth_province == 'MB' %}selected{% endif %}>MB</option>
-                        <option value="NA" {% if hr_data.birth_province == 'NA' %}selected{% endif %}>NA</option>
-                        <option value="NO" {% if hr_data.birth_province == 'NO' %}selected{% endif %}>NO</option>
-                        <option value="NU" {% if hr_data.birth_province == 'NU' %}selected{% endif %}>NU</option>
-                        <option value="OG" {% if hr_data.birth_province == 'OG' %}selected{% endif %}>OG</option>
-                        <option value="OT" {% if hr_data.birth_province == 'OT' %}selected{% endif %}>OT</option>
-                        <option value="OR" {% if hr_data.birth_province == 'OR' %}selected{% endif %}>OR</option>
-                        <option value="PD" {% if hr_data.birth_province == 'PD' %}selected{% endif %}>PD</option>
-                        <option value="PA" {% if hr_data.birth_province == 'PA' %}selected{% endif %}>PA</option>
-                        <option value="PR" {% if hr_data.birth_province == 'PR' %}selected{% endif %}>PR</option>
-                        <option value="PV" {% if hr_data.birth_province == 'PV' %}selected{% endif %}>PV</option>
-                        <option value="PG" {% if hr_data.birth_province == 'PG' %}selected{% endif %}>PG</option>
-                        <option value="PU" {% if hr_data.birth_province == 'PU' %}selected{% endif %}>PU</option>
-                        <option value="PE" {% if hr_data.birth_province == 'PE' %}selected{% endif %}>PE</option>
-                        <option value="PC" {% if hr_data.birth_province == 'PC' %}selected{% endif %}>PC</option>
-                        <option value="PI" {% if hr_data.birth_province == 'PI' %}selected{% endif %}>PI</option>
-                        <option value="PT" {% if hr_data.birth_province == 'PT' %}selected{% endif %}>PT</option>
-                        <option value="PN" {% if hr_data.birth_province == 'PN' %}selected{% endif %}>PN</option>
-                        <option value="PZ" {% if hr_data.birth_province == 'PZ' %}selected{% endif %}>PZ</option>
-                        <option value="PO" {% if hr_data.birth_province == 'PO' %}selected{% endif %}>PO</option>
-                        <option value="RG" {% if hr_data.birth_province == 'RG' %}selected{% endif %}>RG</option>
-                        <option value="RA" {% if hr_data.birth_province == 'RA' %}selected{% endif %}>RA</option>
-                        <option value="RC" {% if hr_data.birth_province == 'RC' %}selected{% endif %}>RC</option>
-                        <option value="RE" {% if hr_data.birth_province == 'RE' %}selected{% endif %}>RE</option>
-                        <option value="RI" {% if hr_data.birth_province == 'RI' %}selected{% endif %}>RI</option>
-                        <option value="RN" {% if hr_data.birth_province == 'RN' %}selected{% endif %}>RN</option>
-                        <option value="RM" {% if hr_data.birth_province == 'RM' %}selected{% endif %}>RM</option>
-                        <option value="RO" {% if hr_data.birth_province == 'RO' %}selected{% endif %}>RO</option>
-                        <option value="SA" {% if hr_data.birth_province == 'SA' %}selected{% endif %}>SA</option>
-                        <option value="VS" {% if hr_data.birth_province == 'VS' %}selected{% endif %}>VS</option>
-                        <option value="SS" {% if hr_data.birth_province == 'SS' %}selected{% endif %}>SS</option>
-                        <option value="SV" {% if hr_data.birth_province == 'SV' %}selected{% endif %}>SV</option>
-                        <option value="SI" {% if hr_data.birth_province == 'SI' %}selected{% endif %}>SI</option>
-                        <option value="SR" {% if hr_data.birth_province == 'SR' %}selected{% endif %}>SR</option>
-                        <option value="SO" {% if hr_data.birth_province == 'SO' %}selected{% endif %}>SO</option>
-                        <option value="SU" {% if hr_data.birth_province == 'SU' %}selected{% endif %}>SU</option>
-                        <option value="TA" {% if hr_data.birth_province == 'TA' %}selected{% endif %}>TA</option>
-                        <option value="TE" {% if hr_data.birth_province == 'TE' %}selected{% endif %}>TE</option>
-                        <option value="TR" {% if hr_data.birth_province == 'TR' %}selected{% endif %}>TR</option>
-                        <option value="TO" {% if hr_data.birth_province == 'TO' %}selected{% endif %}>TO</option>
-                        <option value="TP" {% if hr_data.birth_province == 'TP' %}selected{% endif %}>TP</option>
-                        <option value="TN" {% if hr_data.birth_province == 'TN' %}selected{% endif %}>TN</option>
-                        <option value="TV" {% if hr_data.birth_province == 'TV' %}selected{% endif %}>TV</option>
-                        <option value="TS" {% if hr_data.birth_province == 'TS' %}selected{% endif %}>TS</option>
-                        <option value="UD" {% if hr_data.birth_province == 'UD' %}selected{% endif %}>UD</option>
-                        <option value="VA" {% if hr_data.birth_province == 'VA' %}selected{% endif %}>VA</option>
-                        <option value="VE" {% if hr_data.birth_province == 'VE' %}selected{% endif %}>VE</option>
-                        <option value="VB" {% if hr_data.birth_province == 'VB' %}selected{% endif %}>VB</option>
-                        <option value="VC" {% if hr_data.birth_province == 'VC' %}selected{% endif %}>VC</option>
-                        <option value="VR" {% if hr_data.birth_province == 'VR' %}selected{% endif %}>VR</option>
-                        <option value="VV" {% if hr_data.birth_province == 'VV' %}selected{% endif %}>VV</option>
-                        <option value="VI" {% if hr_data.birth_province == 'VI' %}selected{% endif %}>VI</option>
-                        <option value="VT" {% if hr_data.birth_province == 'VT' %}selected{% endif %}>VT</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Residenza -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-home me-2"></i>Residenza</h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Indirizzo (Comune di Residenza)</label>
-                    <input type="text" name="address" class="form-control" 
-                           value="{{ hr_data.address or '' }}"
-                           placeholder="Via/Piazza, Numero"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Città</label>
-                    <input type="text" name="city" class="form-control" 
-                           value="{{ hr_data.city or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label class="form-label">CAP</label>
-                    <input type="text" name="postal_code" class="form-control" 
-                           value="{{ hr_data.postal_code or '' }}"
-                           maxlength="5"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12 mb-3">
-                    <label class="form-label">Domicilio (se diverso dalla residenza)</label>
-                    <input type="text" name="alternative_domicile" class="form-control" 
-                           value="{{ hr_data.alternative_domicile or '' }}"
-                           placeholder="Indirizzo completo"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Contatti -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-phone me-2"></i>Contatti</h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Recapito Telefonico</label>
-                    <input type="tel" name="phone" class="form-control" 
-                           value="{{ hr_data.phone or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">E-mail Personale</label>
-                    <input type="email" name="personal_email" class="form-control" 
-                           value="{{ hr_data.personal_email or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">E-mail Aziendale</label>
-                    <input type="email" class="form-control" value="{{ user.email }}" disabled>
-                </div>
-            </div>
-
-            <!-- Titolo di Studio -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-graduation-cap me-2"></i>Formazione</h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Titolo di Studio</label>
-                    <select name="education_level" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona...</option>
-                        <option value="Licenza Media" {% if hr_data.education_level == 'Licenza Media' %}selected{% endif %}>Licenza Media</option>
-                        <option value="Diploma" {% if hr_data.education_level == 'Diploma' %}selected{% endif %}>Diploma</option>
-                        <option value="Laurea Triennale" {% if hr_data.education_level == 'Laurea Triennale' %}selected{% endif %}>Laurea Triennale</option>
-                        <option value="Laurea Magistrale" {% if hr_data.education_level == 'Laurea Magistrale' %}selected{% endif %}>Laurea Magistrale</option>
-                        <option value="Master" {% if hr_data.education_level == 'Master' %}selected{% endif %}>Master</option>
-                        <option value="Dottorato" {% if hr_data.education_level == 'Dottorato' %}selected{% endif %}>Dottorato</option>
-                    </select>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Campo di Studio</label>
-                    <input type="text" name="education_field" class="form-control" 
-                           value="{{ hr_data.education_field or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Altri Dati Personali -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-info-circle me-2"></i>Altri Dati</h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Stato Civile</label>
-                    <select name="marital_status" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona...</option>
-                        <option value="Celibe/Nubile" {% if hr_data.marital_status == 'Celibe/Nubile' %}selected{% endif %}>Celibe/Nubile</option>
-                        <option value="Coniugato/a" {% if hr_data.marital_status == 'Coniugato/a' %}selected{% endif %}>Coniugato/a</option>
-                        <option value="Divorziato/a" {% if hr_data.marital_status == 'Divorziato/a' %}selected{% endif %}>Divorziato/a</option>
-                        <option value="Vedovo/a" {% if hr_data.marital_status == 'Vedovo/a' %}selected{% endif %}>Vedovo/a</option>
-                    </select>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Familiari a Carico</label>
-                    <input type="number" name="dependents_number" class="form-control" 
-                           value="{{ hr_data.dependents_number or '' }}"
-                           min="0"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Fruizione Permessi L. 104/92</label>
-                    <div class="form-check form-switch mt-2">
-                        <input type="checkbox" name="law_104_benefits" class="form-check-input" 
-                               {% if hr_data.law_104_benefits %}checked{% endif %}
-                               {% if not can_edit %}disabled{% endif %}>
-                        <label class="form-check-label">Usufruisce L. 104/92</label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contatto di Emergenza -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-phone-volume me-2"></i>Contatto di Emergenza</h6>
-            <div class="row">
-                <div class="col-md-5 mb-3">
-                    <label class="form-label">Nome Contatto</label>
-                    <input type="text" name="emergency_contact_name" class="form-control" 
-                           value="{{ hr_data.emergency_contact_name or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Telefono Emergenza</label>
-                    <input type="tel" name="emergency_contact_phone" class="form-control" 
-                           value="{{ hr_data.emergency_contact_phone or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Relazione</label>
-                    <input type="text" name="emergency_contact_relation" class="form-control" 
-                           value="{{ hr_data.emergency_contact_relation or '' }}"
-                           placeholder="es. Coniuge, Genitore"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Patente di Guida -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-id-card me-2"></i>Patente di Guida</h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Numero Patente</label>
-                    <input type="text" name="driver_license_number" class="form-control" 
-                           value="{{ hr_data.driver_license_number or '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Tipo Patente</label>
-                    <input type="text" name="driver_license_type" class="form-control" 
-                           value="{{ hr_data.driver_license_type or '' }}"
-                           placeholder="es. B, C, D, BE"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Scadenza Patente</label>
-                    <input type="date" name="driver_license_expiry" class="form-control" 
-                           value="{{ hr_data.driver_license_expiry.strftime('%Y-%m-%d') if hr_data.driver_license_expiry else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Veicolo ACI - Selezione a cascata -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-car me-2"></i>Veicolo ACI (Rimborsi Chilometrici)</h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Tipo Veicolo</label>
-                    <select id="tipoVeicoloSelectHR" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona tipo</option>
-                        {% set tipi = [] %}
-                        {% for vehicle in aci_vehicles %}
-                            {% if vehicle.tipologia not in tipi %}
-                                {% set _ = tipi.append(vehicle.tipologia) %}
-                            {% endif %}
-                        {% endfor %}
-                        {% for tipo in tipi|sort %}
-                        <option value="{{ tipo }}">{{ tipo }}</option>
-                        {% endfor %}
-                    </select>
-                    <small class="text-muted">Tipo di veicolo (es. Autovettura, Motociclo)</small>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Marca</label>
-                    <select id="marcaVeicoloSelectHR" class="form-select" disabled>
-                        <option value="">Seleziona prima il tipo</option>
-                    </select>
-                    <small class="text-muted">Marca del veicolo</small>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Modello e Costo/km</label>
-                    <select name="aci_vehicle_id" id="modelloVeicoloSelectHR" class="form-select" disabled>
-                        <option value="">Seleziona prima la marca</option>
-                    </select>
-                    <small class="text-muted">Modello specifico con costo chilometrico</small>
-                </div>
-            </div>
-            
-            <!-- Upload Libretto di Circolazione -->
-            <div class="row mt-3">
-                <div class="col-md-8 mb-3">
-                    <label class="form-label">Libretto di Circolazione</label>
-                    {% if hr_data.vehicle_registration_document %}
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" value="{{ hr_data.vehicle_registration_document.split('/')[-1] }}" disabled>
-                        <a href="/static/uploads/vehicle_docs/{{ hr_data.vehicle_registration_document.split('/')[-1] }}" 
-                           target="_blank" class="btn btn-outline-primary" title="Visualizza libretto">
-                            <i class="fas fa-eye me-1"></i>Visualizza
-                        </a>
-                        <a href="/static/uploads/vehicle_docs/{{ hr_data.vehicle_registration_document.split('/')[-1] }}" 
-                           download class="btn btn-outline-success" title="Scarica libretto">
-                            <i class="fas fa-download me-1"></i>Scarica
-                        </a>
-                    </div>
-                    {% endif %}
-                    <input type="file" name="vehicle_registration_document" class="form-control" 
-                           accept=".pdf,.jpg,.jpeg,.png"
-                           {% if not can_edit %}disabled{% endif %}>
-                    <small class="text-muted">Carica una copia del libretto di circolazione (PDF, JPG, PNG - max 5MB)</small>
-                </div>
-                <div class="col-md-4 mb-3">
-                    {% if hr_data.vehicle_registration_document %}
-                    <label class="form-label">Azioni</label>
-                    <div class="d-grid">
-                        <button type="button" class="btn btn-outline-danger" 
-                                onclick="if(confirm('Confermi l\'eliminazione del libretto caricato?')) { document.getElementById('deleteVehicleDoc').value='1'; this.form.submit(); }"
-                                {% if not can_edit %}disabled{% endif %}>
-                            <i class="fas fa-trash me-1"></i>Elimina Documento
-                        </button>
-                        <input type="hidden" id="deleteVehicleDoc" name="delete_vehicle_doc" value="0">
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================= -->
-    <!-- SEZIONE 3: VISITE E FORMAZIONE -->
-    <!-- ========================================= -->
-    <div class="card mb-4">
-        <div class="card-header bg-warning text-dark">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-clipboard-check me-2"></i>VISITE MEDICHE E FORMAZIONE OBBLIGATORIA
-            </h5>
-        </div>
-        <div class="card-body">
-            <!-- Requisiti Minimi -->
-            <div class="row mb-4">
-                <div class="col-md-12 mb-3">
-                    <label class="form-label fw-bold">Possesso Requisiti Minimi</label>
-                    <select name="minimum_requirements" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                        <option value="">Seleziona...</option>
-                        <option value="SI" {% if hr_data.minimum_requirements == 'SI' %}selected{% endif %}>SI</option>
-                        <option value="NO" {% if hr_data.minimum_requirements == 'NO' %}selected{% endif %}>NO</option>
-                        <option value="DA FORMARE" {% if hr_data.minimum_requirements == 'DA FORMARE' %}selected{% endif %}>DA FORMARE</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Visita Medica -->
-            <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-stethoscope me-2"></i>Visita Medica</h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Data Ultima Visita</label>
-                    <input type="date" name="medical_visit_date" class="form-control" 
-                           value="{{ hr_data.medical_visit_date.strftime('%Y-%m-%d') if hr_data.medical_visit_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Scadenza Visita</label>
-                    <input type="date" name="medical_visit_expiry" class="form-control" 
-                           value="{{ hr_data.medical_visit_expiry.strftime('%Y-%m-%d') if hr_data.medical_visit_expiry else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Formazione Generale (Art. 36-37) - Periodicità: 5 anni -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-book-open me-2"></i>Formazione e Informazione (Artt. 36 e 37) <small class="text-muted">- Periodicità: 5 anni</small></h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Data Formazione</label>
-                    <input type="date" name="training_general_date" class="form-control" 
-                           value="{{ hr_data.training_general_date.strftime('%Y-%m-%d') if hr_data.training_general_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Scadenza</label>
-                    <input type="date" name="training_general_expiry" class="form-control" 
-                           value="{{ hr_data.training_general_expiry.strftime('%Y-%m-%d') if hr_data.training_general_expiry else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Formazione RSPP - Periodicità: 5 anni -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-hard-hat me-2"></i>Formazione RSPP <small class="text-muted">- Periodicità: 5 anni</small></h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Data Formazione</label>
-                    <input type="date" name="training_rspp_date" class="form-control" 
-                           value="{{ hr_data.training_rspp_date.strftime('%Y-%m-%d') if hr_data.training_rspp_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Scadenza</label>
-                    <input type="date" name="training_rspp_expiry" class="form-control" 
-                           value="{{ hr_data.training_rspp_expiry.strftime('%Y-%m-%d') if hr_data.training_rspp_expiry else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Formazione RLS - Periodicità: ANNUALE -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-users-cog me-2"></i>Formazione RLS <small class="text-muted">- Periodicità: ANNUALE</small></h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Data Formazione</label>
-                    <input type="date" name="training_rls_date" class="form-control" 
-                           value="{{ hr_data.training_rls_date.strftime('%Y-%m-%d') if hr_data.training_rls_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Scadenza</label>
-                    <input type="date" name="training_rls_expiry" class="form-control" 
-                           value="{{ hr_data.training_rls_expiry.strftime('%Y-%m-%d') if hr_data.training_rls_expiry else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Formazione Primo Soccorso - Periodicità: consigliata almeno 3 anni -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-first-aid me-2"></i>Formazione Primo Soccorso <small class="text-muted">- Periodicità: consigliata almeno 3 anni</small></h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Data Formazione</label>
-                    <input type="date" name="training_first_aid_date" class="form-control" 
-                           value="{{ hr_data.training_first_aid_date.strftime('%Y-%m-%d') if hr_data.training_first_aid_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Scadenza</label>
-                    <input type="date" name="training_first_aid_expiry" class="form-control" 
-                           value="{{ hr_data.training_first_aid_expiry.strftime('%Y-%m-%d') if hr_data.training_first_aid_expiry else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Formazione Emergenza - Periodicità: consigliata almeno 3 anni -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-fire-extinguisher me-2"></i>Formazione Emergenza <small class="text-muted">- Periodicità: consigliata almeno 3 anni</small></h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Data Formazione</label>
-                    <input type="date" name="training_emergency_date" class="form-control" 
-                           value="{{ hr_data.training_emergency_date.strftime('%Y-%m-%d') if hr_data.training_emergency_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Scadenza</label>
-                    <input type="date" name="training_emergency_expiry" class="form-control" 
-                           value="{{ hr_data.training_emergency_expiry.strftime('%Y-%m-%d') if hr_data.training_emergency_expiry else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-
-            <!-- Formazione Preposto - Periodicità: 2 anni -->
-            <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-user-tie me-2"></i>Formazione Preposto <small class="text-muted">- Periodicità: 2 anni</small></h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Data Formazione</label>
-                    <input type="date" name="training_supervisor_date" class="form-control" 
-                           value="{{ hr_data.training_supervisor_date.strftime('%Y-%m-%d') if hr_data.training_supervisor_date else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Scadenza</label>
-                    <input type="date" name="training_supervisor_expiry" class="form-control" 
-                           value="{{ hr_data.training_supervisor_expiry.strftime('%Y-%m-%d') if hr_data.training_supervisor_expiry else '' }}"
-                           {% if not can_edit %}disabled{% endif %}>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pulsanti Azione -->
-    {% if can_edit %}
-    <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
-        <a href="{{ url_for('hr.hr_list') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-times me-2"></i>Annulla
-        </a>
-        <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save me-2"></i>Salva Modifiche
+<!-- TAB NAVIGATION -->
+<ul class="nav nav-tabs mb-4" id="hrTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="anagrafica-tab" data-bs-toggle="tab" data-bs-target="#anagrafica" type="button" role="tab" aria-controls="anagrafica" aria-selected="false">
+            <i class="fas fa-user me-2"></i>Dati Anagrafici
         </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="contrattuali-tab" data-bs-toggle="tab" data-bs-target="#contrattuali" type="button" role="tab" aria-controls="contrattuali" aria-selected="true">
+            <i class="fas fa-file-contract me-2"></i>Dati Contrattuali
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="visite-tab" data-bs-toggle="tab" data-bs-target="#visite" type="button" role="tab" aria-controls="visite" aria-selected="false">
+            <i class="fas fa-heartbeat me-2"></i>Visite Mediche e Formazione
+        </button>
+    </li>
+</ul>
+
+<form method="POST" action="{{ url_for('hr.hr_detail', user_id=user.id) }}" enctype="multipart/form-data">
+
+<!-- TAB CONTENT -->
+<div class="tab-content" id="hrTabsContent">
+
+    <!-- ========================================= -->
+    <!-- TAB 1: DATI ANAGRAFICI -->
+    <!-- ========================================= -->
+    <div class="tab-pane fade" id="anagrafica" role="tabpanel" aria-labelledby="anagrafica-tab">
+        <!-- Dati Personali -->
+        <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-id-badge me-2"></i>Dati Personali</h6>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Codice Fiscale</label>
+                <input type="text" name="codice_fiscale" class="form-control text-uppercase" 
+                       value="{{ hr_data.codice_fiscale or '' }}" 
+                       maxlength="16"
+                       disabled
+                       title="Il codice fiscale viene calcolato automaticamente dai dati anagrafici">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Data di Nascita</label>
+                <input type="date" name="birth_date" class="form-control" 
+                       value="{{ hr_data.birth_date.strftime('%Y-%m-%d') if hr_data.birth_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Età</label>
+                <input type="text" class="form-control" 
+                       value="{% if hr_data.get_age() %}{{ hr_data.get_age() }} anni{% endif %}" disabled>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Sesso</label>
+                <select name="gender" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="M" {% if hr_data.gender == 'M' %}selected{% endif %}>Maschile</option>
+                    <option value="F" {% if hr_data.gender == 'F' %}selected{% endif %}>Femminile</option>
+                    <option value="A" {% if hr_data.gender == 'A' %}selected{% endif %}>Altro</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-5 mb-3">
+                <label class="form-label">Paese di Nascita</label>
+                <select name="birth_country" id="birth_country" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="Italia" {% if not hr_data.birth_country or hr_data.birth_country == 'Italia' %}selected{% endif %}>Italia</option>
+                    <optgroup label="Principali Paesi Europei">
+                        <option value="Francia" {% if hr_data.birth_country == 'Francia' %}selected{% endif %}>Francia</option>
+                        <option value="Germania" {% if hr_data.birth_country == 'Germania' %}selected{% endif %}>Germania</option>
+                        <option value="Spagna" {% if hr_data.birth_country == 'Spagna' %}selected{% endif %}>Spagna</option>
+                        <option value="Regno Unito" {% if hr_data.birth_country == 'Regno Unito' %}selected{% endif %}>Regno Unito</option>
+                        <option value="Svizzera" {% if hr_data.birth_country == 'Svizzera' %}selected{% endif %}>Svizzera</option>
+                        <option value="Austria" {% if hr_data.birth_country == 'Austria' %}selected{% endif %}>Austria</option>
+                        <option value="Belgio" {% if hr_data.birth_country == 'Belgio' %}selected{% endif %}>Belgio</option>
+                        <option value="Paesi Bassi" {% if hr_data.birth_country == 'Paesi Bassi' %}selected{% endif %}>Paesi Bassi</option>
+                        <option value="Portogallo" {% if hr_data.birth_country == 'Portogallo' %}selected{% endif %}>Portogallo</option>
+                        <option value="Grecia" {% if hr_data.birth_country == 'Grecia' %}selected{% endif %}>Grecia</option>
+                        <option value="Polonia" {% if hr_data.birth_country == 'Polonia' %}selected{% endif %}>Polonia</option>
+                        <option value="Romania" {% if hr_data.birth_country == 'Romania' %}selected{% endif %}>Romania</option>
+                        <option value="Albania" {% if hr_data.birth_country == 'Albania' %}selected{% endif %}>Albania</option>
+                    </optgroup>
+                    <optgroup label="Altri Paesi">
+                        <option value="Stati Uniti" {% if hr_data.birth_country == 'Stati Uniti' %}selected{% endif %}>Stati Uniti</option>
+                        <option value="Canada" {% if hr_data.birth_country == 'Canada' %}selected{% endif %}>Canada</option>
+                        <option value="Brasile" {% if hr_data.birth_country == 'Brasile' %}selected{% endif %}>Brasile</option>
+                        <option value="Argentina" {% if hr_data.birth_country == 'Argentina' %}selected{% endif %}>Argentina</option>
+                        <option value="Cina" {% if hr_data.birth_country == 'Cina' %}selected{% endif %}>Cina</option>
+                        <option value="India" {% if hr_data.birth_country == 'India' %}selected{% endif %}>India</option>
+                        <option value="Marocco" {% if hr_data.birth_country == 'Marocco' %}selected{% endif %}>Marocco</option>
+                        <option value="Tunisia" {% if hr_data.birth_country == 'Tunisia' %}selected{% endif %}>Tunisia</option>
+                        <option value="Egitto" {% if hr_data.birth_country == 'Egitto' %}selected{% endif %}>Egitto</option>
+                        <option value="Nigeria" {% if hr_data.birth_country == 'Nigeria' %}selected{% endif %}>Nigeria</option>
+                        <option value="Senegal" {% if hr_data.birth_country == 'Senegal' %}selected{% endif %}>Senegal</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="col-md-5 mb-3" id="birth_city_container">
+                <label class="form-label">Comune di Nascita</label>
+                <select name="birth_city" id="birth_city" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="Roma" {% if hr_data.birth_city == 'Roma' %}selected{% endif %}>Roma</option>
+                    <option value="Milano" {% if hr_data.birth_city == 'Milano' %}selected{% endif %}>Milano</option>
+                    <option value="Napoli" {% if hr_data.birth_city == 'Napoli' %}selected{% endif %}>Napoli</option>
+                    <option value="Torino" {% if hr_data.birth_city == 'Torino' %}selected{% endif %}>Torino</option>
+                    <option value="Palermo" {% if hr_data.birth_city == 'Palermo' %}selected{% endif %}>Palermo</option>
+                    <option value="Genova" {% if hr_data.birth_city == 'Genova' %}selected{% endif %}>Genova</option>
+                    <option value="Bologna" {% if hr_data.birth_city == 'Bologna' %}selected{% endif %}>Bologna</option>
+                    <option value="Firenze" {% if hr_data.birth_city == 'Firenze' %}selected{% endif %}>Firenze</option>
+                    <option value="Bari" {% if hr_data.birth_city == 'Bari' %}selected{% endif %}>Bari</option>
+                    <option value="Catania" {% if hr_data.birth_city == 'Catania' %}selected{% endif %}>Catania</option>
+                    <option value="Venezia" {% if hr_data.birth_city == 'Venezia' %}selected{% endif %}>Venezia</option>
+                    <option value="Verona" {% if hr_data.birth_city == 'Verona' %}selected{% endif %}>Verona</option>
+                    <option value="Messina" {% if hr_data.birth_city == 'Messina' %}selected{% endif %}>Messina</option>
+                    <option value="Padova" {% if hr_data.birth_city == 'Padova' %}selected{% endif %}>Padova</option>
+                    <option value="Trieste" {% if hr_data.birth_city == 'Trieste' %}selected{% endif %}>Trieste</option>
+                    <option value="Brescia" {% if hr_data.birth_city == 'Brescia' %}selected{% endif %}>Brescia</option>
+                    <option value="Parma" {% if hr_data.birth_city == 'Parma' %}selected{% endif %}>Parma</option>
+                    <option value="Taranto" {% if hr_data.birth_city == 'Taranto' %}selected{% endif %}>Taranto</option>
+                    <option value="Prato" {% if hr_data.birth_city == 'Prato' %}selected{% endif %}>Prato</option>
+                    <option value="Modena" {% if hr_data.birth_city == 'Modena' %}selected{% endif %}>Modena</option>
+                    <option value="Reggio Calabria" {% if hr_data.birth_city == 'Reggio Calabria' %}selected{% endif %}>Reggio Calabria</option>
+                    <option value="Reggio Emilia" {% if hr_data.birth_city == 'Reggio Emilia' %}selected{% endif %}>Reggio Emilia</option>
+                    <option value="Perugia" {% if hr_data.birth_city == 'Perugia' %}selected{% endif %}>Perugia</option>
+                    <option value="Ravenna" {% if hr_data.birth_city == 'Ravenna' %}selected{% endif %}>Ravenna</option>
+                    <option value="Livorno" {% if hr_data.birth_city == 'Livorno' %}selected{% endif %}>Livorno</option>
+                    <option value="Cagliari" {% if hr_data.birth_city == 'Cagliari' %}selected{% endif %}>Cagliari</option>
+                    <option value="Foggia" {% if hr_data.birth_city == 'Foggia' %}selected{% endif %}>Foggia</option>
+                    <option value="Rimini" {% if hr_data.birth_city == 'Rimini' %}selected{% endif %}>Rimini</option>
+                    <option value="Salerno" {% if hr_data.birth_city == 'Salerno' %}selected{% endif %}>Salerno</option>
+                    <option value="Ferrara" {% if hr_data.birth_city == 'Ferrara' %}selected{% endif %}>Ferrara</option>
+                </select>
+                <small class="text-muted">Se il comune non è in lista, verrà usato codice generico</small>
+            </div>
+            <div class="col-md-2 mb-3" id="birth_province_container">
+                <label class="form-label">Prov.</label>
+                <select name="birth_province" id="birth_province" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">-</option>
+                    <option value="AG" {% if hr_data.birth_province == 'AG' %}selected{% endif %}>AG</option>
+                    <option value="AL" {% if hr_data.birth_province == 'AL' %}selected{% endif %}>AL</option>
+                    <option value="AN" {% if hr_data.birth_province == 'AN' %}selected{% endif %}>AN</option>
+                    <option value="AO" {% if hr_data.birth_province == 'AO' %}selected{% endif %}>AO</option>
+                    <option value="AR" {% if hr_data.birth_province == 'AR' %}selected{% endif %}>AR</option>
+                    <option value="AP" {% if hr_data.birth_province == 'AP' %}selected{% endif %}>AP</option>
+                    <option value="AT" {% if hr_data.birth_province == 'AT' %}selected{% endif %}>AT</option>
+                    <option value="AV" {% if hr_data.birth_province == 'AV' %}selected{% endif %}>AV</option>
+                    <option value="BA" {% if hr_data.birth_province == 'BA' %}selected{% endif %}>BA</option>
+                    <option value="BT" {% if hr_data.birth_province == 'BT' %}selected{% endif %}>BT</option>
+                    <option value="BL" {% if hr_data.birth_province == 'BL' %}selected{% endif %}>BL</option>
+                    <option value="BN" {% if hr_data.birth_province == 'BN' %}selected{% endif %}>BN</option>
+                    <option value="BG" {% if hr_data.birth_province == 'BG' %}selected{% endif %}>BG</option>
+                    <option value="BI" {% if hr_data.birth_province == 'BI' %}selected{% endif %}>BI</option>
+                    <option value="BO" {% if hr_data.birth_province == 'BO' %}selected{% endif %}>BO</option>
+                    <option value="BZ" {% if hr_data.birth_province == 'BZ' %}selected{% endif %}>BZ</option>
+                    <option value="BS" {% if hr_data.birth_province == 'BS' %}selected{% endif %}>BS</option>
+                    <option value="BR" {% if hr_data.birth_province == 'BR' %}selected{% endif %}>BR</option>
+                    <option value="CA" {% if hr_data.birth_province == 'CA' %}selected{% endif %}>CA</option>
+                    <option value="CL" {% if hr_data.birth_province == 'CL' %}selected{% endif %}>CL</option>
+                    <option value="CB" {% if hr_data.birth_province == 'CB' %}selected{% endif %}>CB</option>
+                    <option value="CI" {% if hr_data.birth_province == 'CI' %}selected{% endif %}>CI</option>
+                    <option value="CE" {% if hr_data.birth_province == 'CE' %}selected{% endif %}>CE</option>
+                    <option value="CT" {% if hr_data.birth_province == 'CT' %}selected{% endif %}>CT</option>
+                    <option value="CZ" {% if hr_data.birth_province == 'CZ' %}selected{% endif %}>CZ</option>
+                    <option value="CH" {% if hr_data.birth_province == 'CH' %}selected{% endif %}>CH</option>
+                    <option value="CO" {% if hr_data.birth_province == 'CO' %}selected{% endif %}>CO</option>
+                    <option value="CS" {% if hr_data.birth_province == 'CS' %}selected{% endif %}>CS</option>
+                    <option value="CR" {% if hr_data.birth_province == 'CR' %}selected{% endif %}>CR</option>
+                    <option value="KR" {% if hr_data.birth_province == 'KR' %}selected{% endif %}>KR</option>
+                    <option value="CN" {% if hr_data.birth_province == 'CN' %}selected{% endif %}>CN</option>
+                    <option value="EN" {% if hr_data.birth_province == 'EN' %}selected{% endif %}>EN</option>
+                    <option value="FM" {% if hr_data.birth_province == 'FM' %}selected{% endif %}>FM</option>
+                    <option value="FE" {% if hr_data.birth_province == 'FE' %}selected{% endif %}>FE</option>
+                    <option value="FI" {% if hr_data.birth_province == 'FI' %}selected{% endif %}>FI</option>
+                    <option value="FG" {% if hr_data.birth_province == 'FG' %}selected{% endif %}>FG</option>
+                    <option value="FC" {% if hr_data.birth_province == 'FC' %}selected{% endif %}>FC</option>
+                    <option value="FR" {% if hr_data.birth_province == 'FR' %}selected{% endif %}>FR</option>
+                    <option value="GE" {% if hr_data.birth_province == 'GE' %}selected{% endif %}>GE</option>
+                    <option value="GO" {% if hr_data.birth_province == 'GO' %}selected{% endif %}>GO</option>
+                    <option value="GR" {% if hr_data.birth_province == 'GR' %}selected{% endif %}>GR</option>
+                    <option value="IM" {% if hr_data.birth_province == 'IM' %}selected{% endif %}>IM</option>
+                    <option value="IS" {% if hr_data.birth_province == 'IS' %}selected{% endif %}>IS</option>
+                    <option value="SP" {% if hr_data.birth_province == 'SP' %}selected{% endif %}>SP</option>
+                    <option value="AQ" {% if hr_data.birth_province == 'AQ' %}selected{% endif %}>AQ</option>
+                    <option value="LT" {% if hr_data.birth_province == 'LT' %}selected{% endif %}>LT</option>
+                    <option value="LE" {% if hr_data.birth_province == 'LE' %}selected{% endif %}>LE</option>
+                    <option value="LC" {% if hr_data.birth_province == 'LC' %}selected{% endif %}>LC</option>
+                    <option value="LI" {% if hr_data.birth_province == 'LI' %}selected{% endif %}>LI</option>
+                    <option value="LO" {% if hr_data.birth_province == 'LO' %}selected{% endif %}>LO</option>
+                    <option value="LU" {% if hr_data.birth_province == 'LU' %}selected{% endif %}>LU</option>
+                    <option value="MC" {% if hr_data.birth_province == 'MC' %}selected{% endif %}>MC</option>
+                    <option value="MN" {% if hr_data.birth_province == 'MN' %}selected{% endif %}>MN</option>
+                    <option value="MS" {% if hr_data.birth_province == 'MS' %}selected{% endif %}>MS</option>
+                    <option value="MT" {% if hr_data.birth_province == 'MT' %}selected{% endif %}>MT</option>
+                    <option value="ME" {% if hr_data.birth_province == 'ME' %}selected{% endif %}>ME</option>
+                    <option value="MI" {% if hr_data.birth_province == 'MI' %}selected{% endif %}>MI</option>
+                    <option value="MO" {% if hr_data.birth_province == 'MO' %}selected{% endif %}>MO</option>
+                    <option value="MB" {% if hr_data.birth_province == 'MB' %}selected{% endif %}>MB</option>
+                    <option value="NA" {% if hr_data.birth_province == 'NA' %}selected{% endif %}>NA</option>
+                    <option value="NO" {% if hr_data.birth_province == 'NO' %}selected{% endif %}>NO</option>
+                    <option value="NU" {% if hr_data.birth_province == 'NU' %}selected{% endif %}>NU</option>
+                    <option value="OG" {% if hr_data.birth_province == 'OG' %}selected{% endif %}>OG</option>
+                    <option value="OT" {% if hr_data.birth_province == 'OT' %}selected{% endif %}>OT</option>
+                    <option value="OR" {% if hr_data.birth_province == 'OR' %}selected{% endif %}>OR</option>
+                    <option value="PD" {% if hr_data.birth_province == 'PD' %}selected{% endif %}>PD</option>
+                    <option value="PA" {% if hr_data.birth_province == 'PA' %}selected{% endif %}>PA</option>
+                    <option value="PR" {% if hr_data.birth_province == 'PR' %}selected{% endif %}>PR</option>
+                    <option value="PV" {% if hr_data.birth_province == 'PV' %}selected{% endif %}>PV</option>
+                    <option value="PG" {% if hr_data.birth_province == 'PG' %}selected{% endif %}>PG</option>
+                    <option value="PU" {% if hr_data.birth_province == 'PU' %}selected{% endif %}>PU</option>
+                    <option value="PE" {% if hr_data.birth_province == 'PE' %}selected{% endif %}>PE</option>
+                    <option value="PC" {% if hr_data.birth_province == 'PC' %}selected{% endif %}>PC</option>
+                    <option value="PI" {% if hr_data.birth_province == 'PI' %}selected{% endif %}>PI</option>
+                    <option value="PT" {% if hr_data.birth_province == 'PT' %}selected{% endif %}>PT</option>
+                    <option value="PN" {% if hr_data.birth_province == 'PN' %}selected{% endif %}>PN</option>
+                    <option value="PZ" {% if hr_data.birth_province == 'PZ' %}selected{% endif %}>PZ</option>
+                    <option value="PO" {% if hr_data.birth_province == 'PO' %}selected{% endif %}>PO</option>
+                    <option value="RG" {% if hr_data.birth_province == 'RG' %}selected{% endif %}>RG</option>
+                    <option value="RA" {% if hr_data.birth_province == 'RA' %}selected{% endif %}>RA</option>
+                    <option value="RC" {% if hr_data.birth_province == 'RC' %}selected{% endif %}>RC</option>
+                    <option value="RE" {% if hr_data.birth_province == 'RE' %}selected{% endif %}>RE</option>
+                    <option value="RI" {% if hr_data.birth_province == 'RI' %}selected{% endif %}>RI</option>
+                    <option value="RN" {% if hr_data.birth_province == 'RN' %}selected{% endif %}>RN</option>
+                    <option value="RM" {% if hr_data.birth_province == 'RM' %}selected{% endif %}>RM</option>
+                    <option value="RO" {% if hr_data.birth_province == 'RO' %}selected{% endif %}>RO</option>
+                    <option value="SA" {% if hr_data.birth_province == 'SA' %}selected{% endif %}>SA</option>
+                    <option value="VS" {% if hr_data.birth_province == 'VS' %}selected{% endif %}>VS</option>
+                    <option value="SS" {% if hr_data.birth_province == 'SS' %}selected{% endif %}>SS</option>
+                    <option value="SV" {% if hr_data.birth_province == 'SV' %}selected{% endif %}>SV</option>
+                    <option value="SI" {% if hr_data.birth_province == 'SI' %}selected{% endif %}>SI</option>
+                    <option value="SR" {% if hr_data.birth_province == 'SR' %}selected{% endif %}>SR</option>
+                    <option value="SO" {% if hr_data.birth_province == 'SO' %}selected{% endif %}>SO</option>
+                    <option value="SU" {% if hr_data.birth_province == 'SU' %}selected{% endif %}>SU</option>
+                    <option value="TA" {% if hr_data.birth_province == 'TA' %}selected{% endif %}>TA</option>
+                    <option value="TE" {% if hr_data.birth_province == 'TE' %}selected{% endif %}>TE</option>
+                    <option value="TR" {% if hr_data.birth_province == 'TR' %}selected{% endif %}>TR</option>
+                    <option value="TO" {% if hr_data.birth_province == 'TO' %}selected{% endif %}>TO</option>
+                    <option value="TP" {% if hr_data.birth_province == 'TP' %}selected{% endif %}>TP</option>
+                    <option value="TN" {% if hr_data.birth_province == 'TN' %}selected{% endif %}>TN</option>
+                    <option value="TV" {% if hr_data.birth_province == 'TV' %}selected{% endif %}>TV</option>
+                    <option value="TS" {% if hr_data.birth_province == 'TS' %}selected{% endif %}>TS</option>
+                    <option value="UD" {% if hr_data.birth_province == 'UD' %}selected{% endif %}>UD</option>
+                    <option value="VA" {% if hr_data.birth_province == 'VA' %}selected{% endif %}>VA</option>
+                    <option value="VE" {% if hr_data.birth_province == 'VE' %}selected{% endif %}>VE</option>
+                    <option value="VB" {% if hr_data.birth_province == 'VB' %}selected{% endif %}>VB</option>
+                    <option value="VC" {% if hr_data.birth_province == 'VC' %}selected{% endif %}>VC</option>
+                    <option value="VR" {% if hr_data.birth_province == 'VR' %}selected{% endif %}>VR</option>
+                    <option value="VV" {% if hr_data.birth_province == 'VV' %}selected{% endif %}>VV</option>
+                    <option value="VI" {% if hr_data.birth_province == 'VI' %}selected{% endif %}>VI</option>
+                    <option value="VT" {% if hr_data.birth_province == 'VT' %}selected{% endif %}>VT</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Residenza -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-home me-2"></i>Residenza</h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Indirizzo (Comune di Residenza)</label>
+                <input type="text" name="address" class="form-control" 
+                       value="{{ hr_data.address or '' }}"
+                       placeholder="Via/Piazza, Numero"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Città</label>
+                <input type="text" name="city" class="form-control" 
+                       value="{{ hr_data.city or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">CAP</label>
+                <input type="text" name="postal_code" class="form-control" 
+                       value="{{ hr_data.postal_code or '' }}"
+                       maxlength="5"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Domicilio (se diverso dalla residenza)</label>
+                <input type="text" name="alternative_domicile" class="form-control" 
+                       value="{{ hr_data.alternative_domicile or '' }}"
+                       placeholder="Indirizzo completo"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Contatti -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-phone me-2"></i>Contatti</h6>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Recapito Telefonico</label>
+                <input type="tel" name="phone" class="form-control" 
+                       value="{{ hr_data.phone or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">E-mail Personale</label>
+                <input type="email" name="personal_email" class="form-control" 
+                       value="{{ hr_data.personal_email or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">E-mail Aziendale</label>
+                <input type="email" class="form-control" value="{{ user.email }}" disabled>
+            </div>
+        </div>
+
+        <!-- Titolo di Studio -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-graduation-cap me-2"></i>Formazione</h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Titolo di Studio</label>
+                <select name="education_level" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="Licenza Media" {% if hr_data.education_level == 'Licenza Media' %}selected{% endif %}>Licenza Media</option>
+                    <option value="Diploma" {% if hr_data.education_level == 'Diploma' %}selected{% endif %}>Diploma</option>
+                    <option value="Laurea Triennale" {% if hr_data.education_level == 'Laurea Triennale' %}selected{% endif %}>Laurea Triennale</option>
+                    <option value="Laurea Magistrale" {% if hr_data.education_level == 'Laurea Magistrale' %}selected{% endif %}>Laurea Magistrale</option>
+                    <option value="Master" {% if hr_data.education_level == 'Master' %}selected{% endif %}>Master</option>
+                    <option value="Dottorato" {% if hr_data.education_level == 'Dottorato' %}selected{% endif %}>Dottorato</option>
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Campo di Studio</label>
+                <input type="text" name="education_field" class="form-control" 
+                       value="{{ hr_data.education_field or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Altri Dati Personali -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-info-circle me-2"></i>Altri Dati</h6>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Stato Civile</label>
+                <select name="marital_status" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="Celibe/Nubile" {% if hr_data.marital_status == 'Celibe/Nubile' %}selected{% endif %}>Celibe/Nubile</option>
+                    <option value="Coniugato/a" {% if hr_data.marital_status == 'Coniugato/a' %}selected{% endif %}>Coniugato/a</option>
+                    <option value="Divorziato/a" {% if hr_data.marital_status == 'Divorziato/a' %}selected{% endif %}>Divorziato/a</option>
+                    <option value="Vedovo/a" {% if hr_data.marital_status == 'Vedovo/a' %}selected{% endif %}>Vedovo/a</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Familiari a Carico</label>
+                <input type="number" name="dependents_number" class="form-control" 
+                       value="{{ hr_data.dependents_number or '' }}"
+                       min="0"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Fruizione Permessi L. 104/92</label>
+                <div class="form-check form-switch mt-2">
+                    <input type="checkbox" name="law_104_benefits" class="form-check-input" 
+                           {% if hr_data.law_104_benefits %}checked{% endif %}
+                           {% if not can_edit %}disabled{% endif %}>
+                    <label class="form-check-label">Usufruisce L. 104/92</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contatto di Emergenza -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-phone-volume me-2"></i>Contatto di Emergenza</h6>
+        <div class="row">
+            <div class="col-md-5 mb-3">
+                <label class="form-label">Nome Contatto</label>
+                <input type="text" name="emergency_contact_name" class="form-control" 
+                       value="{{ hr_data.emergency_contact_name or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Telefono Emergenza</label>
+                <input type="tel" name="emergency_contact_phone" class="form-control" 
+                       value="{{ hr_data.emergency_contact_phone or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Relazione</label>
+                <input type="text" name="emergency_contact_relation" class="form-control" 
+                       value="{{ hr_data.emergency_contact_relation or '' }}"
+                       placeholder="es. Coniuge, Genitore"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Patente di Guida -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-id-card me-2"></i>Patente di Guida</h6>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Numero Patente</label>
+                <input type="text" name="driver_license_number" class="form-control" 
+                       value="{{ hr_data.driver_license_number or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Tipo Patente</label>
+                <input type="text" name="driver_license_type" class="form-control" 
+                       value="{{ hr_data.driver_license_type or '' }}"
+                       placeholder="es. B, C, D, BE"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Scadenza Patente</label>
+                <input type="date" name="driver_license_expiry" class="form-control" 
+                       value="{{ hr_data.driver_license_expiry.strftime('%Y-%m-%d') if hr_data.driver_license_expiry else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Veicolo ACI - Selezione a cascata -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-car me-2"></i>Veicolo ACI (Rimborsi Chilometrici)</h6>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Tipo Veicolo</label>
+                <select id="tipoVeicoloSelectHR" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona tipo</option>
+                    {% set tipi = [] %}
+                    {% for vehicle in aci_vehicles %}
+                        {% if vehicle.tipologia not in tipi %}
+                            {% set _ = tipi.append(vehicle.tipologia) %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for tipo in tipi|sort %}
+                    <option value="{{ tipo }}">{{ tipo }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Tipo di veicolo (es. Autovettura, Motociclo)</small>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Marca</label>
+                <select id="marcaVeicoloSelectHR" class="form-select" disabled>
+                    <option value="">Seleziona prima il tipo</option>
+                </select>
+                <small class="text-muted">Marca del veicolo</small>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Modello e Costo/km</label>
+                <select name="aci_vehicle_id" id="modelloVeicoloSelectHR" class="form-select" disabled>
+                    <option value="">Seleziona prima la marca</option>
+                </select>
+                <small class="text-muted">Modello specifico con costo chilometrico</small>
+            </div>
+        </div>
+        
+        <!-- Upload Libretto di Circolazione -->
+        <div class="row mt-3">
+            <div class="col-md-8 mb-3">
+                <label class="form-label">Libretto di Circolazione</label>
+                {% if hr_data.vehicle_registration_document %}
+                <div class="input-group mb-2">
+                    <input type="text" class="form-control" value="{{ hr_data.vehicle_registration_document.split('/')[-1] }}" disabled>
+                    <a href="/static/uploads/vehicle_docs/{{ hr_data.vehicle_registration_document.split('/')[-1] }}" 
+                       target="_blank" class="btn btn-outline-primary" title="Visualizza libretto">
+                        <i class="fas fa-eye me-1"></i>Visualizza
+                    </a>
+                    <a href="/static/uploads/vehicle_docs/{{ hr_data.vehicle_registration_document.split('/')[-1] }}" 
+                       download class="btn btn-outline-success" title="Scarica libretto">
+                        <i class="fas fa-download me-1"></i>Scarica
+                    </a>
+                </div>
+                {% endif %}
+                <input type="file" name="vehicle_registration_document" class="form-control" 
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">Carica una copia del libretto di circolazione (PDF, JPG, PNG - max 5MB)</small>
+            </div>
+            <div class="col-md-4 mb-3">
+                {% if hr_data.vehicle_registration_document %}
+                <label class="form-label">Azioni</label>
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-danger" 
+                            onclick="if(confirm('Confermi l\'eliminazione del libretto caricato?')) { document.getElementById('deleteVehicleDoc').value='1'; this.form.submit(); }"
+                            {% if not can_edit %}disabled{% endif %}>
+                        <i class="fas fa-trash me-1"></i>Elimina Documento
+                    </button>
+                    <input type="hidden" id="deleteVehicleDoc" name="delete_vehicle_doc" value="0">
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    {% endif %}
+
+    <!-- ========================================= -->
+    <!-- TAB 2: DATI CONTRATTUALI -->
+    <!-- ========================================= -->
+    <div class="tab-pane fade show active" id="contrattuali" role="tabpanel" aria-labelledby="contrattuali-tab">
+        <!-- Riga 1: Matricola, Tipo Contratto, Data Assunzione, Data Fine -->
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">COD SI (Matricola)</label>
+                <input type="text" class="form-control font-monospace" 
+                       value="{{ user.matricola or 'Non assegnato' }}" 
+                       disabled style="background-color: #e9ecef;">
+                <small class="text-muted d-block mt-1">
+                    {% if user.matricola %}
+                    <i class="fas fa-check-circle text-success"></i> Assegnato automaticamente
+                    {% else %}
+                    <i class="fas fa-info-circle text-info"></i> Verrà assegnato alla creazione
+                    {% endif %}
+                </small>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Tipologia Contratto</label>
+                <select name="contract_type" id="contract_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="Tempo Indeterminato" {% if hr_data.contract_type == 'Tempo Indeterminato' %}selected{% endif %}>Tempo Indeterminato</option>
+                    <option value="Tempo Determinato" {% if hr_data.contract_type == 'Tempo Determinato' %}selected{% endif %}>Tempo Determinato</option>
+                    <option value="Apprendistato" {% if hr_data.contract_type == 'Apprendistato' %}selected{% endif %}>Apprendistato</option>
+                    <option value="Stage/Tirocinio" {% if hr_data.contract_type == 'Stage/Tirocinio' %}selected{% endif %}>Stage/Tirocinio</option>
+                    <option value="Collaborazione" {% if hr_data.contract_type == 'Collaborazione' %}selected{% endif %}>Collaborazione</option>
+                    <option value="In Distacco" {% if hr_data.contract_type == 'In Distacco' %}selected{% endif %}>In Distacco</option>
+                    <option value="Consulente/P.IVA" {% if hr_data.contract_type == 'Consulente/P.IVA' %}selected{% endif %}>Consulente/P.IVA</option>
+                    <option value="Fornitore" {% if hr_data.contract_type == 'Fornitore' %}selected{% endif %}>Fornitore</option>
+                    <option value="Altro" {% if hr_data.contract_type == 'Altro' %}selected{% endif %}>Altro</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3" id="distacco_supplier_field" style="display: {% if hr_data.contract_type == 'In Distacco' %}block{% else %}none{% endif %};">
+                <label class="form-label">Fornitore / Azienda Distaccante</label>
+                <input type="text" name="distacco_supplier" class="form-control" 
+                       value="{{ hr_data.distacco_supplier or '' }}"
+                       placeholder="Nome azienda"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">Azienda che fornisce il personale</small>
+            </div>
+            <div class="col-md-3 mb-3" id="consulente_vat_field" style="display: {% if hr_data.contract_type == 'Consulente/P.IVA' %}block{% else %}none{% endif %};">
+                <label class="form-label">Partita IVA</label>
+                <input type="text" name="consulente_vat" class="form-control" 
+                       value="{{ hr_data.consulente_vat or '' }}"
+                       placeholder="IT12345678901"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">Partita IVA del consulente</small>
+            </div>
+            <div class="col-md-3 mb-3" id="fornitore_nome_field" style="display: {% if hr_data.contract_type == 'Fornitore' %}block{% else %}none{% endif %};">
+                <label class="form-label">Nome Fornitore</label>
+                <input type="text" name="nome_fornitore" class="form-control" 
+                       value="{{ hr_data.nome_fornitore or '' }}"
+                       placeholder="Nome del fornitore"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">Denominazione fornitore</small>
+            </div>
+            <div class="col-md-3 mb-3" id="fornitore_piva_field" style="display: {% if hr_data.contract_type == 'Fornitore' %}block{% else %}none{% endif %};">
+                <label class="form-label">Partita IVA Fornitore</label>
+                <input type="text" name="partita_iva_fornitore" class="form-control" 
+                       value="{{ hr_data.partita_iva_fornitore or '' }}"
+                       placeholder="IT12345678901"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">P.IVA del fornitore</small>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Data Assunzione</label>
+                <input type="date" name="hire_date" class="form-control" 
+                       value="{{ hr_data.hire_date.strftime('%Y-%m-%d') if hr_data.hire_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Data Fine Rapporto</label>
+                <input type="date" name="contract_end_date" class="form-control" 
+                       value="{{ hr_data.contract_end_date.strftime('%Y-%m-%d') if hr_data.contract_end_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Riga 2: CCNL, Mansione, Qualifica, Livello -->
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">CCNL</label>
+                <input type="text" name="ccnl" class="form-control" 
+                       value="{{ hr_data.ccnl or '' }}"
+                       placeholder="es. Commercio, Metalmeccanico"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Mansione</label>
+                <select name="mansione" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    {% for mansione in mansioni %}
+                    <option value="{{ mansione.nome }}" {% if hr_data.mansione == mansione.nome %}selected{% endif %}>
+                        {{ mansione.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Gestisci il mansionario dal menu HR</small>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Qualifica</label>
+                <input type="text" name="qualifica" class="form-control" 
+                       value="{{ hr_data.qualifica or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Livello</label>
+                <input type="text" name="ccnl_level" class="form-control" 
+                       value="{{ hr_data.ccnl_level or '' }}"
+                       placeholder="es. D2, 3° livello"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Riga 3: Orario settimanale e Orario di Lavoro -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Orario (h/sett.)</label>
+                <input type="number" step="0.1" name="work_hours_week" class="form-control" 
+                       value="{{ hr_data.work_hours_week or '' }}"
+                       placeholder="40"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Orario di Lavoro</label>
+                <select name="work_schedule_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Nessuno</option>
+                    {% for schedule in work_schedules %}
+                    <option value="{{ schedule.id }}" {% if hr_data.work_schedule_id == schedule.id %}selected{% endif %}>
+                        {{ schedule.name }} ({{ schedule.code }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Orario di lavoro assegnato al dipendente</small>
+            </div>
+        </div>
+
+        <!-- Riga 4: Tipo Assunzione -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Tipo di Assunzione</label>
+                <input type="text" name="tipo_assunzione" class="form-control" 
+                       value="{{ hr_data.tipo_assunzione or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Riga 5: Superminimo, Rimborsi, Rischio INAIL -->
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Superminimo / SM Assorbibile (€)</label>
+                <input type="number" step="0.01" name="superminimo" class="form-control" 
+                       value="{{ hr_data.superminimo or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Rimborsi / Diarie (€)</label>
+                <input type="number" step="0.01" name="rimborsi_diarie" class="form-control" 
+                       value="{{ hr_data.rimborsi_diarie or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Rischio INAIL</label>
+                <input type="text" name="rischio_inail" class="form-control" 
+                       value="{{ hr_data.rischio_inail or '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Riga 6: Ticket Restaurant e Valore -->
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Ticket Restaurant</label>
+                <div class="form-check form-switch mt-2">
+                    <input type="checkbox" name="ticket_restaurant" id="ticket_restaurant" class="form-check-input" 
+                           {% if hr_data.ticket_restaurant %}checked{% endif %}
+                           {% if not can_edit %}disabled{% endif %}>
+                    <label class="form-check-label">Ha ticket restaurant</label>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Valore Buoni Pasto (€/giorno)</label>
+                <input type="number" step="0.01" name="meal_vouchers_value" id="meal_vouchers_value" class="form-control" 
+                       value="{{ hr_data.meal_vouchers_value or '' }}"
+                       {% if not can_edit or not hr_data.ticket_restaurant %}disabled{% endif %}>
+                <small class="text-muted">Valore giornaliero buoni pasto</small>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Carta Carburante</label>
+                <div class="form-check form-switch mt-2">
+                    <input type="checkbox" name="fuel_card" class="form-check-input" 
+                           {% if hr_data.fuel_card %}checked{% endif %}
+                           {% if not can_edit %}disabled{% endif %}>
+                    <label class="form-check-label">Ha carta carburante aziendale</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dati Operativi -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-building me-2"></i>Dati Operativi</h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Sede di Assunzione</label>
+                <select name="sede_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Nessuna</option>
+                    {% for sede in sedi %}
+                    <option value="{{ sede.id }}" {% if hr_data.sede_id == sede.id %}selected{% endif %}>
+                        {{ sede.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Sede indicata nel contratto di assunzione</small>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="form-check form-switch mt-4">
+                    <input type="checkbox" name="all_sedi" class="form-check-input" id="all_sedi"
+                           {% if hr_data.all_sedi %}checked{% endif %}
+                           {% if not can_edit %}disabled{% endif %}>
+                    <label class="form-check-label fw-bold" for="all_sedi">
+                        Accesso a Tutte le Sedi
+                    </label>
+                </div>
+                <small class="text-muted d-block mt-1">Può operare in tutte le sedi aziendali</small>
+            </div>
+        </div>
+        
+        <!-- Gestione Straordinari / Banca Ore -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-clock me-2"></i>Gestione Straordinari</h6>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="form-check mt-4">
+                    <input type="checkbox" id="overtime_enabled" name="overtime_enabled" class="form-check-input" 
+                           {% if hr_data.overtime_enabled %}checked{% endif %}
+                           {% if not can_edit %}disabled{% endif %}>
+                    <label class="form-check-label fw-bold" for="overtime_enabled">
+                        Abilitato a Straordinari
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3" id="overtimeTypeField" style="display: none;">
+                <label class="form-label">Tipologia Straordinario</label>
+                <select name="overtime_type" id="overtime_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="Straordinario Pagato" {% if hr_data.overtime_type == 'Straordinario Pagato' %}selected{% endif %}>Straordinario Pagato</option>
+                    <option value="Banca Ore" {% if hr_data.overtime_type == 'Banca Ore' %}selected{% endif %}>Banca Ore</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3" id="bancaOreLimiteField" style="display: none;">
+                <label class="form-label">Limite Massimo Ore</label>
+                <div class="input-group">
+                    <input type="text" name="banca_ore_limite_max" class="form-control" 
+                           value="{{ (hr_data.banca_ore_limite_max|string).replace('.', ',') if hr_data.banca_ore_limite_max else '' }}"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <span class="input-group-text">ore</span>
+                </div>
+                <small class="text-muted">Limite massimo ore accumulabili</small>
+            </div>
+            <div class="col-md-3 mb-3" id="bancaOrePeriodoField" style="display: none;">
+                <label class="form-label">Periodo Validità</label>
+                <div class="input-group">
+                    <input type="text" name="banca_ore_periodo_mesi" class="form-control" 
+                           value="{{ hr_data.banca_ore_periodo_mesi if hr_data.banca_ore_periodo_mesi else '' }}"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <span class="input-group-text">mesi</span>
+                </div>
+                <small class="text-muted">Periodo entro cui usufruire ore</small>
+            </div>
+        </div>
+
+        <!-- Maturazione Ferie e Permessi -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-umbrella-beach me-2"></i>Maturazione Ferie e Permessi</h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Giorni Ferie Maturati al Mese</label>
+                <div class="input-group">
+                    <input type="text" name="gg_ferie_maturate_mese" class="form-control" 
+                           value="{{ (hr_data.gg_ferie_maturate_mese|string).replace('.', ',') if hr_data.gg_ferie_maturate_mese else '0' }}"
+                           placeholder="2.33"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <span class="input-group-text">gg/mese</span>
+                </div>
+                <small class="text-muted">Es: 2.33 giorni/mese = 28 giorni/anno. Usato per calcolare il monte ferie disponibile.</small>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Ore Permesso (ROL) Maturate al Mese</label>
+                <div class="input-group">
+                    <input type="text" name="hh_permesso_maturate_mese" class="form-control" 
+                           value="{{ (hr_data.hh_permesso_maturate_mese|string).replace('.', ',') if hr_data.hh_permesso_maturate_mese else '0' }}"
+                           placeholder="7"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <span class="input-group-text">h/mese</span>
+                </div>
+                <small class="text-muted">Es: 7 ore/mese = 84 ore/anno (ROL). Usato per calcolare il monte permessi disponibile.</small>
+            </div>
+        </div>
+
+        <!-- Note Contratto -->
+        <div class="row">
+            <div class="col-12 mb-3">
+                <label class="form-label">Altro / Note Contrattuali</label>
+                <textarea name="other_notes" class="form-control" rows="2"
+                          {% if not can_edit %}disabled{% endif %}>{{ hr_data.other_notes or '' }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================= -->
+    <!-- TAB 3: VISITE MEDICHE E FORMAZIONE -->
+    <!-- ========================================= -->
+    <div class="tab-pane fade" id="visite" role="tabpanel" aria-labelledby="visite-tab">
+        <!-- Requisiti Minimi -->
+        <div class="row mb-4">
+            <div class="col-md-12 mb-3">
+                <label class="form-label fw-bold">Possesso Requisiti Minimi</label>
+                <select name="minimum_requirements" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="SI" {% if hr_data.minimum_requirements == 'SI' %}selected{% endif %}>SI</option>
+                    <option value="NO" {% if hr_data.minimum_requirements == 'NO' %}selected{% endif %}>NO</option>
+                    <option value="DA FORMARE" {% if hr_data.minimum_requirements == 'DA FORMARE' %}selected{% endif %}>DA FORMARE</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Visita Medica -->
+        <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-stethoscope me-2"></i>Visita Medica</h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Ultima Visita</label>
+                <input type="date" name="medical_visit_date" class="form-control" 
+                       value="{{ hr_data.medical_visit_date.strftime('%Y-%m-%d') if hr_data.medical_visit_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Scadenza Visita</label>
+                <input type="date" name="medical_visit_expiry" class="form-control" 
+                       value="{{ hr_data.medical_visit_expiry.strftime('%Y-%m-%d') if hr_data.medical_visit_expiry else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Formazione Generale (Art. 36-37) - Periodicità: 5 anni -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-book-open me-2"></i>Formazione e Informazione (Artt. 36 e 37) <small class="text-muted">- Periodicità: 5 anni</small></h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Formazione</label>
+                <input type="date" name="training_general_date" class="form-control" 
+                       value="{{ hr_data.training_general_date.strftime('%Y-%m-%d') if hr_data.training_general_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Scadenza</label>
+                <input type="date" name="training_general_expiry" class="form-control" 
+                       value="{{ hr_data.training_general_expiry.strftime('%Y-%m-%d') if hr_data.training_general_expiry else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Formazione RSPP - Periodicità: 5 anni -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-hard-hat me-2"></i>Formazione RSPP <small class="text-muted">- Periodicità: 5 anni</small></h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Formazione</label>
+                <input type="date" name="training_rspp_date" class="form-control" 
+                       value="{{ hr_data.training_rspp_date.strftime('%Y-%m-%d') if hr_data.training_rspp_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Scadenza</label>
+                <input type="date" name="training_rspp_expiry" class="form-control" 
+                       value="{{ hr_data.training_rspp_expiry.strftime('%Y-%m-%d') if hr_data.training_rspp_expiry else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Formazione RLS - Periodicità: ANNUALE -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-users-cog me-2"></i>Formazione RLS <small class="text-muted">- Periodicità: ANNUALE</small></h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Formazione</label>
+                <input type="date" name="training_rls_date" class="form-control" 
+                       value="{{ hr_data.training_rls_date.strftime('%Y-%m-%d') if hr_data.training_rls_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Scadenza</label>
+                <input type="date" name="training_rls_expiry" class="form-control" 
+                       value="{{ hr_data.training_rls_expiry.strftime('%Y-%m-%d') if hr_data.training_rls_expiry else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Formazione Primo Soccorso - Periodicità: consigliata almeno 3 anni -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-first-aid me-2"></i>Formazione Primo Soccorso <small class="text-muted">- Periodicità: consigliata almeno 3 anni</small></h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Formazione</label>
+                <input type="date" name="training_first_aid_date" class="form-control" 
+                       value="{{ hr_data.training_first_aid_date.strftime('%Y-%m-%d') if hr_data.training_first_aid_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Scadenza</label>
+                <input type="date" name="training_first_aid_expiry" class="form-control" 
+                       value="{{ hr_data.training_first_aid_expiry.strftime('%Y-%m-%d') if hr_data.training_first_aid_expiry else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Formazione Emergenza - Periodicità: consigliata almeno 3 anni -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-fire-extinguisher me-2"></i>Formazione Emergenza <small class="text-muted">- Periodicità: consigliata almeno 3 anni</small></h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Formazione</label>
+                <input type="date" name="training_emergency_date" class="form-control" 
+                       value="{{ hr_data.training_emergency_date.strftime('%Y-%m-%d') if hr_data.training_emergency_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Scadenza</label>
+                <input type="date" name="training_emergency_expiry" class="form-control" 
+                       value="{{ hr_data.training_emergency_expiry.strftime('%Y-%m-%d') if hr_data.training_emergency_expiry else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+
+        <!-- Formazione Preposto - Periodicità: 2 anni -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-user-tie me-2"></i>Formazione Preposto <small class="text-muted">- Periodicità: 2 anni</small></h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Formazione</label>
+                <input type="date" name="training_supervisor_date" class="form-control" 
+                       value="{{ hr_data.training_supervisor_date.strftime('%Y-%m-%d') if hr_data.training_supervisor_date else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Scadenza</label>
+                <input type="date" name="training_supervisor_expiry" class="form-control" 
+                       value="{{ hr_data.training_supervisor_expiry.strftime('%Y-%m-%d') if hr_data.training_supervisor_expiry else '' }}"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Pulsanti Azione -->
+{% if can_edit %}
+<div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
+    <a href="{{ url_for('hr.hr_list') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-times me-2"></i>Annulla
+    </a>
+    <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save me-2"></i>Salva Modifiche
+    </button>
+</div>
+{% endif %}
+
 </form>
+
 
 <!-- ========================================= -->
 <!-- SEZIONE AMMORTIZZATORI SOCIALI (READ-ONLY) -->
