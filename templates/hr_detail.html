@@ -805,6 +805,121 @@
                           {% if not can_edit %}disabled{% endif %}>{{ hr_data.other_notes or '' }}</textarea>
             </div>
         </div>
+
+        <!-- ========================================= -->
+        <!-- SEZIONE DISTACCHI -->
+        <!-- ========================================= -->
+        <h5 class="border-bottom pb-2 mb-3 mt-5">
+            <i class="fas fa-building me-2"></i>Distacchi presso Clienti
+        </h5>
+        
+        <!-- Lista Distacchi Esistenti -->
+        {% if secondment_periods %}
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Data Inizio</th>
+                        <th>Data Fine</th>
+                        <th>Durata</th>
+                        <th>Stato</th>
+                        <th>Note</th>
+                        {% if can_edit %}<th>Azioni</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for secondment in secondment_periods %}
+                    <tr {% if secondment.is_active() %}class="table-info"{% endif %}>
+                        <td><strong>{{ secondment.client_name }}</strong></td>
+                        <td>{{ secondment.start_date.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if secondment.end_date %}
+                            {{ secondment.end_date.strftime('%d/%m/%Y') }}
+                            {% else %}
+                            <em class="text-muted">In corso</em>
+                            {% endif %}
+                        </td>
+                        <td>{{ secondment.get_duration_days() }} giorni</td>
+                        <td>
+                            {% if secondment.is_active() %}
+                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Attivo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Concluso</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if secondment.notes %}
+                            <small>{{ secondment.notes[:50] }}{% if secondment.notes|length > 50 %}...{% endif %}</small>
+                            {% else %}
+                            <em class="text-muted">-</em>
+                            {% endif %}
+                        </td>
+                        {% if can_edit %}
+                        <td>
+                            <form method="POST" action="{{ url_for('hr.delete_secondment', user_id=user.id, secondment_id=secondment.id) }}" 
+                                  style="display: inline;"
+                                  onsubmit="return confirm('Confermi l\'eliminazione del distacco presso {{ secondment.client_name }}?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary mb-4">
+            <i class="fas fa-info-circle me-2"></i>Nessun periodo di distacco registrato per questo dipendente.
+        </div>
+        {% endif %}
+
+        <!-- Form Aggiungi Distacco -->
+        {% if can_edit %}
+        <div class="card border-primary mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Aggiungi Nuovo Distacco</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('hr.add_secondment', user_id=user.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Nome Cliente <span class="text-danger">*</span></label>
+                            <input type="text" name="client_name" class="form-control" required
+                                   placeholder="es. Acme Corporation">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data Inizio <span class="text-danger">*</span></label>
+                            <input type="date" name="start_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data Fine</label>
+                            <input type="date" name="end_date" class="form-control"
+                                   placeholder="Lascia vuoto se in corso">
+                            <small class="text-muted">Opzionale - lascia vuoto se ancora in corso</small>
+                        </div>
+                        <div class="col-md-2 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-1"></i>Aggiungi
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label">Note</label>
+                            <textarea name="notes" class="form-control" rows="2" 
+                                      placeholder="Note aggiuntive sul distacco (opzionale)"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- ========================================= -->
