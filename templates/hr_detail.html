@@ -38,6 +38,7 @@
 </ul>
 
 <form method="POST" action="{{ url_for('hr.hr_detail', user_id=user.id) }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
 <!-- TAB CONTENT -->
 <div class="tab-content" id="hrTabsContent">
@@ -442,30 +443,6 @@
                        accept=".pdf,.jpg,.jpeg,.png"
                        {% if not can_edit %}disabled{% endif %}>
                 <small class="text-muted">Carica copia del documento (PDF, JPG, PNG - max 5MB)</small>
-            </div>
-        </div>
-
-        <!-- Patente di Guida -->
-        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-id-card me-2"></i>Patente di Guida</h6>
-        <div class="row">
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Numero Patente</label>
-                <input type="text" name="driver_license_number" class="form-control" 
-                       value="{{ hr_data.driver_license_number or '' }}"
-                       {% if not can_edit %}disabled{% endif %}>
-            </div>
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Tipo Patente</label>
-                <input type="text" name="driver_license_type" class="form-control" 
-                       value="{{ hr_data.driver_license_type or '' }}"
-                       placeholder="es. B, C, D, BE"
-                       {% if not can_edit %}disabled{% endif %}>
-            </div>
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Scadenza Patente</label>
-                <input type="date" name="driver_license_expiry" class="form-control" 
-                       value="{{ hr_data.driver_license_expiry.strftime('%Y-%m-%d') if hr_data.driver_license_expiry else '' }}"
-                       {% if not can_edit %}disabled{% endif %}>
             </div>
         </div>
 
