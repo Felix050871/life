@@ -588,6 +588,7 @@ def api_levels(qual_id):
         {
             'id': l.id,
             'codice': l.codice,
+            'nome': l.nome,
             'descrizione': l.descrizione
         }
         for l in levels
