@@ -421,7 +421,7 @@ def hr_detail(user_id):
             
             # Aggiorna dati anagrafici
             # Nota: matricola NON viene salvata manualmente - è gestita automaticamente da cod_si_number
-            hr_data.codice_fiscale = request.form.get('codice_fiscale', '').strip().upper() or None
+            cf_from_form = request.form.get('codice_fiscale', '').strip().upper() or None
             hr_data.cod_zucchetti = request.form.get('cod_zucchetti', '').strip() or None
             hr_data.gender = request.form.get('gender', '') or None
             
@@ -436,17 +436,22 @@ def hr_detail(user_id):
             hr_data.birth_province = request.form.get('birth_province', '').strip().upper() or None
             hr_data.birth_country = request.form.get('birth_country', '').strip() or 'Italia'
             
-            # Calcolo automatico codice fiscale
-            calculated_cf = calculate_codice_fiscale(
-                first_name=user.first_name,
-                last_name=user.last_name,
-                birth_date=hr_data.birth_date,
-                gender=hr_data.gender,
-                birth_city=hr_data.birth_city,
-                birth_country=hr_data.birth_country
-            )
-            if calculated_cf:
-                hr_data.codice_fiscale = calculated_cf
+            # Calcolo automatico codice fiscale SOLO se il campo è vuoto
+            if cf_from_form:
+                # Se l'utente ha inserito/modificato manualmente il CF, usa quello
+                hr_data.codice_fiscale = cf_from_form
+            else:
+                # Altrimenti calcola automaticamente
+                calculated_cf = calculate_codice_fiscale(
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    birth_date=hr_data.birth_date,
+                    gender=hr_data.gender,
+                    birth_city=hr_data.birth_city,
+                    birth_country=hr_data.birth_country
+                )
+                if calculated_cf:
+                    hr_data.codice_fiscale = calculated_cf
             
             # Residenza e contatti
             hr_data.address = request.form.get('address', '').strip() or None
