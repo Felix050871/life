@@ -81,34 +81,6 @@
                                 </form>
                             </td>
                         </tr>
-
-                        <div class="modal fade" id="editModal{{ qualification.id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Modifica Qualifica</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <form method="POST" action="{{ url_for('ccnl.edit_qualification', ccnl_id=ccnl.id, id=qualification.id) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <div class="modal-body">
-                                            <div class="mb-3">
-                                                <label class="form-label">Nome <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" name="nome" value="{{ qualification.nome }}" required maxlength="200">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Descrizione</label>
-                                                <input type="text" class="form-control" name="descrizione" value="{{ qualification.descrizione or '' }}">
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                                            <button type="submit" class="btn btn-primary">Salva</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -123,4 +95,35 @@
         </div>
     </div>
 </div>
+
+{% for qualification in qualifications %}
+<div class="modal fade" id="editModal{{ qualification.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifica Qualifica</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('ccnl.edit_qualification', ccnl_id=ccnl.id, id=qualification.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nome <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="nome" value="{{ qualification.nome }}" required maxlength="200">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrizione</label>
+                        <input type="text" class="form-control" name="descrizione" value="{{ qualification.descrizione or '' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 {% endblock %}

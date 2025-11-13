@@ -218,9 +218,22 @@ window.WorkforceApp = {
     // Initialize tooltips
     initializeTooltips: function() {
         if (typeof bootstrap !== 'undefined') {
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            // Escludi elementi dentro le modal per evitare conflitti
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]:not(.modal [data-bs-toggle="tooltip"])'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Gestisci l'apertura/chiusura delle modal
+            document.addEventListener('shown.bs.modal', function (event) {
+                // Distruggi tutti i tooltip quando una modal viene aperta
+                const modalTooltips = event.target.querySelectorAll('[data-bs-toggle="tooltip"]');
+                modalTooltips.forEach(function(el) {
+                    const tooltip = bootstrap.Tooltip.getInstance(el);
+                    if (tooltip) {
+                        tooltip.dispose();
+                    }
+                });
             });
         }
     },
