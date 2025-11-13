@@ -63,7 +63,7 @@
                             <td><strong>{{ ccnl.nome }}</strong></td>
                             <td>{{ ccnl.descrizione or '-' }}</td>
                             <td>
-                                <span class="badge bg-info">{{ ccnl.qualifications|length }} qualifiche</span>
+                                <span class="badge bg-info">{{ ccnl.qualifications.count() }} qualifiche</span>
                             </td>
                             <td>{{ ccnl.created_at.strftime('%d/%m/%Y %H:%M') if ccnl.created_at else '-' }}</td>
                             {% if can_manage %}
