@@ -832,18 +832,41 @@ def hr_detail(user_id):
             # Maturazione ferie e permessi
             from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
             
+            # Leggi ferie_unit e ferie_daily_hours
+            ferie_unit = request.form.get('ferie_unit', 'hours').strip()
+            hr_data.ferie_unit = ferie_unit if ferie_unit in ['hours', 'days'] else 'hours'
+            
+            ferie_daily_hours_str = request.form.get('ferie_daily_hours', '8').strip()
+            try:
+                ferie_daily_hours_decimal = Decimal(ferie_daily_hours_str.replace(',', '.')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                if ferie_daily_hours_decimal < 1 or ferie_daily_hours_decimal > 24:
+                    flash('Ore giornaliere devono essere tra 1 e 24', 'warning')
+                    ferie_daily_hours_decimal = Decimal('8')
+                hr_data.ferie_daily_hours = ferie_daily_hours_decimal
+            except (InvalidOperation, ValueError):
+                hr_data.ferie_daily_hours = Decimal('8')
+            
             gg_ferie_str = request.form.get('gg_ferie_maturate_mese', '').strip()
             if gg_ferie_str:
                 try:
                     # Converti a Decimal con precisione 2 decimali
                     gg_ferie_decimal = Decimal(gg_ferie_str.replace(',', '.')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    # Validazione: massimo 5 giorni al mese (circa 60 giorni all'anno)
-                    if gg_ferie_decimal < 0 or gg_ferie_decimal > 5:
-                        flash('Giorni ferie maturate al mese deve essere tra 0 e 5', 'warning')
-                        gg_ferie_decimal = Decimal('0')
+                    
+                    # Validazione basata sull'unità di misura
+                    if hr_data.ferie_unit == 'days':
+                        # Modalità giorni: massimo 5 giorni al mese
+                        if gg_ferie_decimal < 0 or gg_ferie_decimal > 5:
+                            flash('Giorni ferie maturati al mese deve essere tra 0 e 5', 'warning')
+                            gg_ferie_decimal = Decimal('0')
+                    else:
+                        # Modalità ore: nessun limite superiore fisso, solo controllo >= 0
+                        if gg_ferie_decimal < 0:
+                            flash('Ore ferie maturate al mese deve essere >= 0', 'warning')
+                            gg_ferie_decimal = Decimal('0')
+                    
                     hr_data.gg_ferie_maturate_mese = gg_ferie_decimal
                 except (InvalidOperation, ValueError):
-                    flash('Formato non valido per giorni ferie maturate', 'warning')
+                    flash('Formato non valido per ferie maturate', 'warning')
                     hr_data.gg_ferie_maturate_mese = Decimal('0')
             else:
                 hr_data.gg_ferie_maturate_mese = Decimal('0')
