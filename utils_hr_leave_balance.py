@@ -215,7 +215,16 @@ def calculate_leave_balance(user_id: int, reference_date: Optional[date] = None)
     hr_data = user.hr_data
     
     # Get monthly accrual rate (default to 0 if not set)
-    monthly_accrual = hr_data.gg_ferie_maturate_mese or Decimal('0')
+    # Convert days to hours if ferie_unit is 'days'
+    base_accrual = hr_data.gg_ferie_maturate_mese or Decimal('0')
+    
+    if hasattr(hr_data, 'ferie_unit') and hr_data.ferie_unit == 'days':
+        # Convert days to hours: multiply by daily hours (default 8)
+        daily_hours = hr_data.ferie_daily_hours or Decimal('8')
+        monthly_accrual = base_accrual * daily_hours
+    else:
+        # Already in hours (default mode)
+        monthly_accrual = base_accrual
     
     if reference_date is None:
         reference_date = date.today()
