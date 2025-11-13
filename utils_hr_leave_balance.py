@@ -269,7 +269,12 @@ def calculate_leave_balance(user_id: int, reference_date: Optional[date] = None)
             days = (leave.end_date - leave.start_date).days + 1
             used_days += Decimal(str(days))
     
-    # Calculate balance
+    # Convert used_days to hours if ferie_unit='days' to match accrued units
+    if hasattr(hr_data, 'ferie_unit') and hr_data.ferie_unit == 'days':
+        daily_hours = hr_data.ferie_daily_hours or Decimal('8')
+        used_days = used_days * daily_hours
+    
+    # Calculate balance (now both values are in the same unit: hours)
     balance_days = accrued_days - used_days
     
     return {
