@@ -16,8 +16,9 @@
 # 10. Overtime Management Models (OvertimeType, OvertimeRequest)
 # 11. Mileage Management Models (MileageRequest)
 # 12. System Configuration Models (Sede, WorkSchedule, ACITable)
+# 13. Session Management Models (UserSession)
 #
-# Total Models: 25
+# Total Models: 26
 # =============================================================================
 
 # Core imports
@@ -1092,6 +1093,74 @@ class User(UserMixin, db.Model):
             status='Pending'
         ).all()
 
+
+# =============================================================================
+# SESSION MANAGEMENT MODELS
+# =============================================================================
+
+class UserSession(db.Model):
+    """
+    Modello per tracciare sessioni utente attive - Security & Session Management
+    Supporta timeout inattività (30 min), multi-tenant isolation, session warnings
+    """
+    __tablename__ = 'user_session'
+    
+    # Primary Key - UUID string format (future-proof with 96 chars)
+    session_id = db.Column(db.String(96), primary_key=True)
+    
+    # Foreign Keys with CASCADE delete
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False, index=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id', ondelete='CASCADE'), nullable=True, index=True)
+    
+    # Tenant context (cached for performance)
+    tenant_slug = db.Column(db.String(50), nullable=True)
+    
+    # Timestamps (UTC timezone-aware)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(ZoneInfo('UTC')))
+    last_activity = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(ZoneInfo('UTC')), index=True)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    terminated_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    
+    # Session state
+    is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    
+    # Audit fields
+    user_agent = db.Column(db.Text, nullable=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    
+    # Composite indexes for performance
+    __table_args__ = (
+        db.Index('ix_user_session_active', 'user_id', 'company_id', 'is_active', 'last_activity'),
+        db.Index('ix_user_session_expires', 'expires_at'),
+    )
+    
+    # Relationships with cascade
+    user = db.relationship('User', backref=db.backref('sessions', lazy='dynamic', cascade='all, delete-orphan', passive_deletes=True))
+    company = db.relationship('Company', backref=db.backref('sessions', lazy='dynamic'))
+    
+    def __repr__(self):
+        return f'<UserSession {self.session_id[:8]}... user={self.user_id}>'
+    
+    def is_expired(self, timeout_minutes=30):
+        """Check if session has exceeded inactivity timeout"""
+        from datetime import timedelta
+        timeout = timedelta(minutes=timeout_minutes)
+        now = datetime.now(ZoneInfo('UTC'))
+        return (now - self.last_activity.replace(tzinfo=ZoneInfo('UTC'))) > timeout
+    
+    def time_until_expiry(self, timeout_minutes=30):
+        """Return seconds until session expires"""
+        from datetime import timedelta
+        timeout = timedelta(minutes=timeout_minutes)
+        now = datetime.now(ZoneInfo('UTC'))
+        elapsed = now - self.last_activity.replace(tzinfo=ZoneInfo('UTC'))
+        remaining = timeout - elapsed
+        return max(0, int(remaining.total_seconds()))
+
+
+# =============================================================================
+# HR DATA MODELS
+# =============================================================================
 
 class UserHRData(db.Model):
     """Modello per gestire dati HR (Human Resources) degli utenti

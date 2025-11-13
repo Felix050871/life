@@ -40,7 +40,9 @@ class Config:
     TOAST_DURATION_ERROR = int(os.environ.get('TOAST_DURATION_ERROR', '5000'))     # 5 seconds
     
     # Security Settings
-    SESSION_TIMEOUT = timedelta(hours=int(os.environ.get('SESSION_TIMEOUT_HOURS', '8')))
+    SESSION_TIMEOUT = timedelta(hours=int(os.environ.get('SESSION_TIMEOUT_HOURS', '8')))  # Absolute session timeout
+    INACTIVITY_TIMEOUT = timedelta(minutes=int(os.environ.get('INACTIVITY_TIMEOUT_MINUTES', '30')))  # Inactivity timeout
+    SESSION_WARNING_TIME = timedelta(minutes=int(os.environ.get('SESSION_WARNING_MINUTES', '2')))  # Warning before expiry
     PASSWORD_RESET_TIMEOUT = timedelta(hours=int(os.environ.get('PASSWORD_RESET_TIMEOUT_HOURS', '1')))
     
     # Application Limits and Constraints
