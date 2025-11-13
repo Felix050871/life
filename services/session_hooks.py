@@ -49,6 +49,12 @@ def check_session_validity():
         logger.warning(f"No session_uuid for authenticated user {current_user.id}, logging out")
         logout_user()
         flask_session.clear()
+        
+        # Redirect to tenant-specific login if in tenant context
+        from middleware_tenant import get_tenant_slug
+        tenant_slug = get_tenant_slug()
+        if tenant_slug:
+            return redirect(url_for('auth.tenant_login', slug=tenant_slug))
         return redirect(url_for('auth.admin_login'))
     
     # Get session from database
@@ -59,6 +65,12 @@ def check_session_validity():
         logger.warning(f"Session {session_id[:8]}... not found or inactive, logging out user {current_user.id}")
         logout_user()
         flask_session.clear()
+        
+        # Redirect to tenant-specific login if in tenant context
+        from middleware_tenant import get_tenant_slug
+        tenant_slug = get_tenant_slug()
+        if tenant_slug:
+            return redirect(url_for('auth.tenant_login', slug=tenant_slug))
         return redirect(url_for('auth.admin_login'))
     
     # Check if session is expired

@@ -30,6 +30,7 @@ from blueprints.qr import qr_bp
 from blueprints.interventions import interventions_bp
 from blueprints.aci import aci_bp
 from blueprints.api import api_bp
+from blueprints.session_api import session_api_bp
 from blueprints.banca_ore import banca_ore_bp
 from blueprints.companies import companies_bp
 from blueprints.commesse import commesse_bp
@@ -71,6 +72,7 @@ app.register_blueprint(qr_bp)
 app.register_blueprint(interventions_bp)
 app.register_blueprint(aci_bp)
 app.register_blueprint(api_bp)
+app.register_blueprint(session_api_bp)
 app.register_blueprint(banca_ore_bp)
 app.register_blueprint(companies_bp)
 app.register_blueprint(commesse_bp)
