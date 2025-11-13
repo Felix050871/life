@@ -343,6 +343,11 @@
                             <i class="fas fa-briefcase"></i>Mansionario
                         </a></li>
                         {% endif %}
+                        {% if current_user.can_access_ccnl_menu() %}
+                        <li><a href="{{ url_for('ccnl.index') }}" class="sidebar-submenu-link">
+                            <i class="fas fa-file-contract"></i>CCNL
+                        </a></li>
+                        {% endif %}
                     </ul>
                 </li>
                 {% endif %}
