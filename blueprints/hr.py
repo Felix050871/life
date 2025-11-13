@@ -422,6 +422,7 @@ def hr_detail(user_id):
             # Aggiorna dati anagrafici
             # Nota: matricola NON viene salvata manualmente - è gestita automaticamente da cod_si_number
             hr_data.codice_fiscale = request.form.get('codice_fiscale', '').strip().upper() or None
+            hr_data.cod_zucchetti = request.form.get('cod_zucchetti', '').strip() or None
             hr_data.gender = request.form.get('gender', '') or None
             
             # Data nascita
@@ -521,6 +522,8 @@ def hr_detail(user_id):
             else:
                 hr_data.superminimo = None
             
+            hr_data.superminimo_type = request.form.get('superminimo_type', '').strip() or None
+            
             rimborsi_str = request.form.get('rimborsi_diarie', '').strip()
             if rimborsi_str:
                 hr_data.rimborsi_diarie = float(rimborsi_str.replace(',', '.'))
@@ -542,6 +545,12 @@ def hr_detail(user_id):
             
             hr_data.iban = request.form.get('iban', '').strip().upper() or None
             hr_data.payment_method = request.form.get('payment_method', '').strip() or None
+            
+            daily_cost_str = request.form.get('daily_company_cost', '').strip()
+            if daily_cost_str:
+                hr_data.daily_company_cost = float(daily_cost_str.replace(',', '.'))
+            else:
+                hr_data.daily_company_cost = None
             
             # Documenti
             hr_data.id_card_type = request.form.get('id_card_type', '').strip() or None
@@ -567,6 +576,53 @@ def hr_detail(user_id):
                 hr_data.passport_expiry = datetime.strptime(passport_expiry_str, '%Y-%m-%d').date()
             else:
                 hr_data.passport_expiry = None
+            
+            # Gestione upload documento identità
+            delete_id_card = request.form.get('delete_id_card') == '1'
+            if delete_id_card and hr_data.id_card_file:
+                # Elimina il file esistente
+                old_file_path = os.path.join('static', hr_data.id_card_file.lstrip('/'))
+                if os.path.exists(old_file_path):
+                    os.remove(old_file_path)
+                hr_data.id_card_file = None
+                flash('Documento identità eliminato con successo', 'success')
+            
+            if 'id_card_file' in request.files:
+                file = request.files['id_card_file']
+                if file and file.filename:
+                    # Verifica dimensione file (max 5MB)
+                    file.seek(0, os.SEEK_END)
+                    file_size = file.tell()
+                    file.seek(0)
+                    
+                    if file_size > 5 * 1024 * 1024:  # 5MB
+                        flash('Il file è troppo grande. Dimensione massima: 5MB', 'error')
+                    else:
+                        # Verifica estensione
+                        allowed_extensions = {'.pdf', '.jpg', '.jpeg', '.png'}
+                        file_ext = os.path.splitext(file.filename)[1].lower()
+                        
+                        if file_ext in allowed_extensions:
+                            # Crea directory se non esiste
+                            upload_dir = os.path.join('static', 'uploads', 'id_cards')
+                            os.makedirs(upload_dir, exist_ok=True)
+                            
+                            # Genera nome file univoco
+                            unique_filename = f"{user.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}{file_ext}"
+                            file_path = os.path.join(upload_dir, unique_filename)
+                            
+                            # Elimina il file precedente se esiste
+                            if hr_data.id_card_file:
+                                old_file_path = os.path.join('static', hr_data.id_card_file.lstrip('/'))
+                                if os.path.exists(old_file_path):
+                                    os.remove(old_file_path)
+                            
+                            # Salva il nuovo file
+                            file.save(file_path)
+                            hr_data.id_card_file = f"/uploads/id_cards/{unique_filename}"
+                            flash('Documento identità caricato con successo', 'success')
+                        else:
+                            flash('Formato file non supportato. Usa PDF, JPG o PNG', 'error')
             
             # Contatto emergenza
             hr_data.emergency_contact_name = request.form.get('emergency_contact_name', '').strip() or None

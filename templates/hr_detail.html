@@ -54,8 +54,9 @@
                 <input type="text" name="codice_fiscale" class="form-control text-uppercase" 
                        value="{{ hr_data.codice_fiscale or '' }}" 
                        maxlength="16"
-                       disabled
-                       title="Il codice fiscale viene calcolato automaticamente dai dati anagrafici">
+                       {% if not can_edit %}disabled{% endif %}
+                       placeholder="RSSMRA80A01H501Z"
+                       title="Modifica manualmente se necessario correggere eventuali anomalie">
             </div>
             <div class="col-md-3 mb-3">
                 <label class="form-label">Data di Nascita</label>
@@ -503,9 +504,9 @@
     <!-- TAB 2: DATI CONTRATTUALI -->
     <!-- ========================================= -->
     <div class="tab-pane fade" id="contrattuali" role="tabpanel" aria-labelledby="contrattuali-tab">
-        <!-- Riga 1: Matricola, Tipo Contratto, Data Assunzione, Data Fine -->
+        <!-- Riga 1: COD SI, Codice Zucchetti, Tipologia Contratto -->
         <div class="row">
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <label class="form-label fw-bold">COD SI (Matricola)</label>
                 <input type="text" class="form-control font-monospace" 
                        value="{{ user.matricola or 'Non assegnato' }}" 
@@ -518,7 +519,15 @@
                     {% endif %}
                 </small>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
+                <label class="form-label fw-bold">Codice Zucchetti</label>
+                <input type="text" name="cod_zucchetti" class="form-control" 
+                       value="{{ hr_data.cod_zucchetti or '' }}"
+                       placeholder="Codice Zucchetti"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">Codice per integrazione Zucchetti</small>
+            </div>
+            <div class="col-md-4 mb-3">
                 <label class="form-label">Tipologia Contratto</label>
                 <select name="contract_type" id="contract_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
                     <option value="">Seleziona...</option>
@@ -565,13 +574,13 @@
                        {% if not can_edit %}disabled{% endif %}>
                 <small class="text-muted">P.IVA del fornitore</small>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <label class="form-label">Data Assunzione</label>
                 <input type="date" name="hire_date" class="form-control" 
                        value="{{ hr_data.hire_date.strftime('%Y-%m-%d') if hr_data.hire_date else '' }}"
                        {% if not can_edit %}disabled{% endif %}>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <label class="form-label">Data Fine Rapporto</label>
                 <input type="date" name="contract_end_date" class="form-control" 
                        value="{{ hr_data.contract_end_date.strftime('%Y-%m-%d') if hr_data.contract_end_date else '' }}"
@@ -648,21 +657,29 @@
             </div>
         </div>
 
-        <!-- Riga 5: Superminimo, Rimborsi, Rischio INAIL -->
+        <!-- Riga 5: Superminimo, Tipologia, Rimborsi, Rischio INAIL -->
         <div class="row">
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Superminimo / SM Assorbibile (€)</label>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Superminimo / SM (€)</label>
                 <input type="number" step="0.01" name="superminimo" class="form-control" 
                        value="{{ hr_data.superminimo or '' }}"
                        {% if not can_edit %}disabled{% endif %}>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Tipologia Superminimo</label>
+                <select name="superminimo_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="Assorbibile" {% if hr_data.superminimo_type == 'Assorbibile' %}selected{% endif %}>Assorbibile</option>
+                    <option value="Non assorbibile" {% if hr_data.superminimo_type == 'Non assorbibile' %}selected{% endif %}>Non assorbibile</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
                 <label class="form-label">Rimborsi / Diarie (€)</label>
                 <input type="number" step="0.01" name="rimborsi_diarie" class="form-control" 
                        value="{{ hr_data.rimborsi_diarie or '' }}"
                        {% if not can_edit %}disabled{% endif %}>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
                 <label class="form-label">Rischio INAIL</label>
                 <input type="text" name="rischio_inail" class="form-control" 
                        value="{{ hr_data.rischio_inail or '' }}"
@@ -696,6 +713,70 @@
                            {% if not can_edit %}disabled{% endif %}>
                     <label class="form-check-label">Ha carta carburante aziendale</label>
                 </div>
+            </div>
+        </div>
+
+        <!-- Dati Economici e Amministrativi -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-euro-sign me-2"></i>Dati Economici e Amministrativi</h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">IBAN</label>
+                <input type="text" name="iban" class="form-control text-uppercase" 
+                       value="{{ hr_data.iban or '' }}"
+                       maxlength="34"
+                       placeholder="IT60X0542811101000000123456"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">IBAN per bonifico stipendio</small>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Costo Azienda Giornaliero (€)</label>
+                <input type="number" step="0.01" name="daily_company_cost" class="form-control" 
+                       value="{{ hr_data.daily_company_cost or '' }}"
+                       placeholder="250.00"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">Costo totale aziendale al giorno</small>
+            </div>
+        </div>
+
+        <!-- Documento Identità -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-id-card me-2"></i>Documento Identità</h6>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Tipo Documento</label>
+                <select name="id_card_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="Carta d'Identità" {% if hr_data.id_card_type == "Carta d'Identità" %}selected{% endif %}>Carta d'Identità</option>
+                    <option value="Passaporto" {% if hr_data.id_card_type == "Passaporto" %}selected{% endif %}>Passaporto</option>
+                    <option value="Patente" {% if hr_data.id_card_type == "Patente" %}selected{% endif %}>Patente</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Numero Documento</label>
+                <input type="text" name="id_card_number" class="form-control text-uppercase" 
+                       value="{{ hr_data.id_card_number or '' }}"
+                       placeholder="AX1234567"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Upload Documento</label>
+                {% if hr_data.id_card_file %}
+                <div class="mb-2">
+                    <a href="{{ url_for('static', filename=hr_data.id_card_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-file-pdf me-1"></i>Visualizza Documento
+                    </a>
+                    {% if can_edit %}
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            onclick="if(confirm('Confermi l\'eliminazione del documento?')) { document.getElementById('deleteIdCard').value='1'; this.form.submit(); }">
+                        <i class="fas fa-trash me-1"></i>Elimina
+                    </button>
+                    <input type="hidden" id="deleteIdCard" name="delete_id_card" value="0">
+                    {% endif %}
+                </div>
+                {% endif %}
+                <input type="file" name="id_card_file" class="form-control" 
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">Carica copia del documento (PDF, JPG, PNG - max 5MB)</small>
             </div>
         </div>
 
@@ -774,15 +855,15 @@
         <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-umbrella-beach me-2"></i>Maturazione Ferie e Permessi</h6>
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label class="form-label">Giorni Ferie Maturati al Mese</label>
+                <label class="form-label">Ore Ferie Maturate al Mese</label>
                 <div class="input-group">
                     <input type="text" name="gg_ferie_maturate_mese" class="form-control" 
                            value="{{ (hr_data.gg_ferie_maturate_mese|string).replace('.', ',') if hr_data.gg_ferie_maturate_mese else '0' }}"
-                           placeholder="2.33"
+                           placeholder="18.66"
                            {% if not can_edit %}disabled{% endif %}>
-                    <span class="input-group-text">gg/mese</span>
+                    <span class="input-group-text">h/mese</span>
                 </div>
-                <small class="text-muted">Es: 2.33 giorni/mese = 28 giorni/anno. Usato per calcolare il monte ferie disponibile.</small>
+                <small class="text-muted">Es: 18.66 ore/mese = 224 ore/anno (28 giorni x 8 ore). Gestito ad ore (HH) non a giorni (GG).</small>
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label">Ore Permesso (ROL) Maturate al Mese</label>
