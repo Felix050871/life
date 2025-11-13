@@ -40,6 +40,7 @@ def create_session(
 ) -> UserSession:
     """
     Create a new user session in the database and Flask session.
+    Enforces MAX_CONCURRENT_SESSIONS limit with atomic transaction + row locking.
     
     Args:
         user: User object
@@ -66,7 +67,26 @@ def create_session(
     if ip_address is None:
         ip_address = request.remote_addr
     
-    # Create session record
+    # ATOMIC TRANSACTION: Create session + enforce concurrent limit
+    # Lock active sessions to prevent race conditions on concurrent logins
+    active_sessions = UserSession.query.filter_by(
+        user_id=user.id,
+        is_active=True
+    ).order_by(UserSession.created_at.asc()).with_for_update().all()
+    
+    # Enforce concurrent session limit (FIFO invalidation)
+    max_sessions = config.MAX_CONCURRENT_SESSIONS
+    if len(active_sessions) >= max_sessions:
+        # Invalidate oldest sessions to make room for new one
+        excess_count = len(active_sessions) - max_sessions + 1
+        sessions_to_invalidate = active_sessions[:excess_count]
+        
+        for old_session in sessions_to_invalidate:
+            old_session.is_active = False
+            old_session.terminated_at = now
+            old_session.invalidation_reason = 'concurrent_limit'
+    
+    # Create new session record
     user_session = UserSession(
         session_id=session_id,
         user_id=user.id,

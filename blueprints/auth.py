@@ -58,6 +58,7 @@ def admin_login():
             login_user(user, remember=form.remember_me.data)
             
             # Create session record for tracking and inactivity timeout
+            # (enforces MAX_CONCURRENT_SESSIONS limit atomically)
             session_manager.create_session(
                 user=user,
                 company_id=None,  # Super-admin has no company
@@ -65,9 +66,6 @@ def admin_login():
                 user_agent=request.headers.get('User-Agent'),
                 ip_address=request.remote_addr
             )
-            
-            # Cleanup old sessions if user exceeds concurrent session limit
-            session_manager.cleanup_old_sessions(user_id=user.id)
             
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
@@ -107,6 +105,7 @@ def tenant_login(slug):
             login_user(user, remember=form.remember_me.data)
             
             # Create session record for tracking and inactivity timeout
+            # (enforces MAX_CONCURRENT_SESSIONS limit atomically)
             session_manager.create_session(
                 user=user,
                 company_id=company.id,
@@ -114,9 +113,6 @@ def tenant_login(slug):
                 user_agent=request.headers.get('User-Agent'),
                 ip_address=request.remote_addr
             )
-            
-            # Cleanup old sessions if user exceeds concurrent session limit
-            session_manager.cleanup_old_sessions(user_id=user.id)
             
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
