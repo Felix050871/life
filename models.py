@@ -1089,6 +1089,7 @@ class UserHRData(db.Model):
     # Dati anagrafici
     matricola = db.Column(db.String(50), nullable=True)  # Employee number (legacy - deprecato, usare cod_si_number)
     cod_si_number = db.Column(db.Integer, nullable=True, index=True)  # Matricola numerica auto-incrementata
+    cod_zucchetti = db.Column(db.String(50), nullable=True)  # Codice Zucchetti
     codice_fiscale = db.Column(db.String(16), nullable=True)  # Tax code
     birth_date = db.Column(db.Date, nullable=True)  # Data di nascita
     birth_city = db.Column(db.String(100), nullable=True)  # Città di nascita
@@ -1126,6 +1127,7 @@ class UserHRData(db.Model):
     mansione = db.Column(db.String(100), nullable=True)  # Mansione/ruolo
     qualifica = db.Column(db.String(100), nullable=True)  # Qualifica
     superminimo = db.Column(db.Float, nullable=True)  # Superminimo/SM assorbibile (€)
+    superminimo_type = db.Column(db.String(20), nullable=True)  # Tipologia superminimo: "Assorbibile" o "Non assorbibile"
     rimborsi_diarie = db.Column(db.Float, nullable=True)  # Rimborsi/Diarie (€)
     rischio_inail = db.Column(db.String(100), nullable=True)  # Rischio INAIL
     tipo_assunzione = db.Column(db.String(100), nullable=True)  # Tipo di assunzione
@@ -1139,10 +1141,12 @@ class UserHRData(db.Model):
     payment_method = db.Column(db.String(50), nullable=True)  # Metodo pagamento (bonifico, assegno, ecc.)
     meal_vouchers_value = db.Column(db.Float, nullable=True)  # Valore buoni pasto giornalieri (€)
     fuel_card = db.Column(db.Boolean, default=False)  # Ha carta carburante aziendale
+    daily_company_cost = db.Column(db.Float, nullable=True)  # Costo azienda giornaliero (€)
     
     # Documenti identità
-    id_card_type = db.Column(db.String(50), nullable=True)  # Tipo documento (CI, Patente, ecc.)
+    id_card_type = db.Column(db.String(50), nullable=True)  # Tipo documento (CI/Passaporto/Patente)
     id_card_number = db.Column(db.String(50), nullable=True)  # Numero documento
+    id_card_file = db.Column(db.String(255), nullable=True)  # Path file documento identità uploadato
     id_card_issue_date = db.Column(db.Date, nullable=True)  # Data rilascio
     id_card_expiry = db.Column(db.Date, nullable=True)  # Data scadenza
     id_card_issued_by = db.Column(db.String(100), nullable=True)  # Ente rilascio
@@ -1179,7 +1183,7 @@ class UserHRData(db.Model):
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo mesi per usufruire ore (solo per Banca Ore)
     
     # Maturazione ferie e permessi
-    gg_ferie_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # Giorni di ferie maturati al mese (es. 2.33 per 28gg/anno)
+    gg_ferie_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # ORE di ferie maturate al mese (es. 18.66 per 224h/anno) - gestito ad HH non GG
     hh_permesso_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # Ore di permesso maturate al mese (es. 7 per ROL)
     
     # Sicurezza e requisiti
