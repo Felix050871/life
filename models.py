@@ -244,7 +244,11 @@ class UserRole(db.Model):
             
             # Commesse - Project Management
             'can_manage_commesse': 'Gestire Commesse',
-            'can_view_commesse': 'Visualizzare Commesse'
+            'can_view_commesse': 'Visualizzare Commesse',
+            
+            # CCNL - Structured Contract Data
+            'can_manage_ccnl': 'Gestire CCNL e Livelli',
+            'can_view_ccnl': 'Visualizzare CCNL e Livelli'
         }
 
 class User(UserMixin, db.Model):
@@ -777,6 +781,19 @@ class User(UserMixin, db.Model):
         """Verifica se l'utente ha una mansione abilitata alla reperibilità"""
         mansione = self.get_mansione_object()
         return mansione.abilita_reperibilita if mansione else False
+    
+    # === CCNL - STRUCTURED CONTRACT DATA MANAGEMENT ===
+    def can_manage_ccnl(self):
+        """Gestire CCNL, Qualifiche e Livelli (creare, modificare, eliminare)"""
+        return self.has_permission('can_manage_ccnl')
+    
+    def can_view_ccnl(self):
+        """Visualizzare CCNL, Qualifiche e Livelli"""
+        return self.has_permission('can_view_ccnl')
+    
+    def can_access_ccnl_menu(self):
+        """Accesso al menu CCNL"""
+        return self.can_manage_ccnl() or self.can_view_ccnl()
     
     # === COMMESSE - PROJECT MANAGEMENT ===
     def can_manage_commesse(self):
