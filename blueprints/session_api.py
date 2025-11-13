@@ -86,12 +86,18 @@ def status():
     time_remaining = session_manager.get_session_time_remaining(session_id)
     warning_threshold = session_manager.get_session_warning_threshold()
     
-    # Determine if warning should be shown
+    # Check if session has expired
+    is_active = time_remaining > 0
+    
+    # Clamp seconds_remaining to 0 (never negative)
+    seconds_remaining = max(0, time_remaining)
+    
+    # Determine if warning should be shown (only when still active)
     warning = time_remaining <= warning_threshold and time_remaining > 0
     
     return jsonify({
-        'active': True,
-        'seconds_remaining': time_remaining,
+        'active': is_active,
+        'seconds_remaining': seconds_remaining,
         'warning': warning,
         'warning_threshold': warning_threshold
     }), 200

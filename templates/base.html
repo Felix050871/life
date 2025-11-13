@@ -1638,17 +1638,18 @@
 
                 const data = await response.json();
                 
+                // Auto-logout if session expired (check both active flag and seconds_remaining)
+                if (!data.active || data.seconds_remaining <= 0) {
+                    console.log('Session expired, redirecting to login...');
+                    clearInterval(sessionCheckInterval);
+                    window.location.reload(); // Trigger before_request hook logout
+                    return;
+                }
+                
                 // Show warning modal if session is expiring (2 minutes before)
                 if (data.warning && !hasShownWarning) {
                     showSessionWarning();
                     hasShownWarning = true;
-                }
-                
-                // Auto-logout if session expired
-                if (data.seconds_remaining <= 0) {
-                    console.log('Session expired, redirecting to login...');
-                    clearInterval(sessionCheckInterval);
-                    window.location.reload(); // Trigger before_request hook logout
                 }
             } catch (error) {
                 console.error('Error checking session status:', error);
