@@ -12,7 +12,7 @@
 # Total routes: 5
 # =============================================================================
 
-from flask import Blueprint, request, render_template, redirect, url_for, flash, make_response, session
+from flask import Blueprint, request, render_template, redirect, url_for, flash, make_response, session, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from functools import wraps
