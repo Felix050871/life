@@ -844,17 +844,44 @@
         <!-- Maturazione Ferie e Permessi -->
         <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-umbrella-beach me-2"></i>Maturazione Ferie e Permessi</h6>
         <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Ore Ferie Maturate al Mese</label>
+            <!-- Toggle Ore/Giorni per Ferie -->
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Unità di Misura Ferie</label>
+                <select name="ferie_unit" id="ferieUnitSelect" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="hours" {% if hr_data.ferie_unit == 'hours' or not hr_data.ferie_unit %}selected{% endif %}>Ore</option>
+                    <option value="days" {% if hr_data.ferie_unit == 'days' %}selected{% endif %}>Giorni</option>
+                </select>
+                <small class="text-muted">Scegli come gestire le ferie</small>
+            </div>
+            
+            <!-- Ore Giornaliere (visibile solo se Giorni selezionato) -->
+            <div class="col-md-3 mb-3" id="ferieDailyHoursField" style="display: none;">
+                <label class="form-label">Ore per Giorno</label>
                 <div class="input-group">
-                    <input type="text" name="gg_ferie_maturate_mese" class="form-control" 
+                    <input type="text" name="ferie_daily_hours" id="ferieDailyHoursInput" class="form-control" 
+                           value="{{ (hr_data.ferie_daily_hours|string).replace('.', ',') if hr_data.ferie_daily_hours else '8' }}"
+                           placeholder="8"
+                           {% if not can_edit %}disabled{% endif %}>
+                    <span class="input-group-text">h</span>
+                </div>
+                <small class="text-muted">Ore in un giorno lavorativo</small>
+            </div>
+            
+            <!-- Ferie Maturate al Mese -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label" id="ferieMaturateLabel">Ferie Maturate al Mese</label>
+                <div class="input-group">
+                    <input type="text" name="gg_ferie_maturate_mese" id="ferieMaturateInput" class="form-control" 
                            value="{{ (hr_data.gg_ferie_maturate_mese|string).replace('.', ',') if hr_data.gg_ferie_maturate_mese else '0' }}"
                            placeholder="18.66"
+                           data-unit="{{ hr_data.ferie_unit or 'hours' }}"
                            {% if not can_edit %}disabled{% endif %}>
-                    <span class="input-group-text">h/mese</span>
+                    <span class="input-group-text" id="ferieMaturateUnit">h/mese</span>
                 </div>
-                <small class="text-muted">Es: 18.66 ore/mese = 224 ore/anno (28 giorni x 8 ore). Gestito ad ore (HH) non a giorni (GG).</small>
+                <small class="text-muted" id="ferieMaturateHelp">Es: 18.66 ore/mese = 224 ore/anno (28 giorni x 8 ore)</small>
             </div>
+        </div>
+        <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label">Ore Permesso (ROL) Maturate al Mese</label>
                 <div class="input-group">
@@ -1856,6 +1883,53 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Run initialization
         initializeCcnlDropdowns();
+    }
+    
+    // ========================================
+    // GESTIONE TOGGLE ORE/GIORNI FERIE
+    // ========================================
+    const ferieUnitSelect = document.getElementById('ferieUnitSelect');
+    const ferieDailyHoursField = document.getElementById('ferieDailyHoursField');
+    const ferieMaturateInput = document.getElementById('ferieMaturateInput');
+    const ferieMaturateLabel = document.getElementById('ferieMaturateLabel');
+    const ferieMaturateUnit = document.getElementById('ferieMaturateUnit');
+    const ferieMaturateHelp = document.getElementById('ferieMaturateHelp');
+    
+    function updateFerieFields() {
+        const selectedUnit = ferieUnitSelect ? ferieUnitSelect.value : 'hours';
+        
+        if (selectedUnit === 'days') {
+            // Mostra campo ore giornaliere
+            if (ferieDailyHoursField) ferieDailyHoursField.style.display = 'block';
+            
+            // Aggiorna label e unità
+            if (ferieMaturateLabel) ferieMaturateLabel.textContent = 'Giorni Ferie Maturati al Mese';
+            if (ferieMaturateUnit) ferieMaturateUnit.textContent = 'gg/mese';
+            if (ferieMaturateHelp) ferieMaturateHelp.textContent = 'Es: 2.33 giorni/mese = 28 giorni/anno. Max 5 giorni/mese.';
+            if (ferieMaturateInput) {
+                ferieMaturateInput.placeholder = '2.33';
+                ferieMaturateInput.setAttribute('data-max', '5');
+            }
+        } else {
+            // Nascondi campo ore giornaliere
+            if (ferieDailyHoursField) ferieDailyHoursField.style.display = 'none';
+            
+            // Aggiorna label e unità
+            if (ferieMaturateLabel) ferieMaturateLabel.textContent = 'Ore Ferie Maturate al Mese';
+            if (ferieMaturateUnit) ferieMaturateUnit.textContent = 'h/mese';
+            if (ferieMaturateHelp) ferieMaturateHelp.textContent = 'Es: 18.66 ore/mese = 224 ore/anno (28 giorni x 8 ore)';
+            if (ferieMaturateInput) {
+                ferieMaturateInput.placeholder = '18.66';
+                ferieMaturateInput.removeAttribute('data-max');
+            }
+        }
+    }
+    
+    // Event listener per il cambio di unità
+    if (ferieUnitSelect) {
+        ferieUnitSelect.addEventListener('change', updateFerieFields);
+        // Inizializza al caricamento
+        updateFerieFields();
     }
 });
 </script>
