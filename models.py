@@ -1438,6 +1438,20 @@ class SecondmentPeriod(db.Model):
             return False
         return True
     
+    def get_status(self):
+        """Restituisce lo stato del distacco: 'future', 'active', 'concluded'"""
+        today = date.today()
+        if self.start_date > today:
+            return 'future'
+        if self.end_date and self.end_date < today:
+            return 'concluded'
+        return 'active'
+    
+    def is_editable(self):
+        """Verifica se il distacco può essere modificato (in corso o futuro)"""
+        status = self.get_status()
+        return status in ['active', 'future']
+    
     def get_duration_days(self):
         """Calcola la durata in giorni del distacco"""
         if self.end_date:

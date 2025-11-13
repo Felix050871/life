@@ -1523,6 +1523,68 @@ def add_secondment(user_id):
     return redirect(url_for('hr.hr_detail', user_id=user_id))
 
 
+@hr_bp.route('/detail/<int:user_id>/update-secondment/<int:secondment_id>', methods=['POST'])
+@login_required
+@require_hr_permission
+def update_secondment(user_id, secondment_id):
+    """Aggiorna un periodo di distacco esistente"""
+    
+    if not current_user.can_manage_hr_data():
+        return jsonify({'error': 'Permessi insufficienti'}), 403
+    
+    try:
+        # Ottieni il periodo di distacco con tenant isolation
+        secondment = filter_by_company(SecondmentPeriod.query).filter_by(
+            id=secondment_id,
+            user_id=user_id
+        ).first_or_404()
+        
+        # Verifica se il distacco è modificabile (non concluso)
+        if not secondment.is_editable():
+            return jsonify({'error': 'Il distacco concluso non può essere modificato'}), 400
+        
+        # Estrai dati dal form
+        client_name = request.form.get('client_name', '').strip()
+        agreement_date_str = request.form.get('agreement_date', '').strip()
+        start_date_str = request.form.get('start_date', '').strip()
+        end_date_str = request.form.get('end_date', '').strip()
+        notes = request.form.get('notes', '').strip() or None
+        
+        # Validazione
+        if not client_name:
+            return jsonify({'error': 'Il nome del cliente è obbligatorio'}), 400
+        
+        if not start_date_str:
+            return jsonify({'error': 'La data di inizio è obbligatoria'}), 400
+        
+        # Converti date
+        agreement_date = datetime.strptime(agreement_date_str, '%Y-%m-%d').date() if agreement_date_str else None
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
+        
+        # Validazione date
+        if end_date and end_date < start_date:
+            return jsonify({'error': 'La data di fine non può essere precedente alla data di inizio'}), 400
+        
+        # Aggiorna i campi
+        secondment.client_name = client_name
+        secondment.agreement_date = agreement_date
+        secondment.start_date = start_date
+        secondment.end_date = end_date
+        secondment.notes = notes
+        
+        db.session.commit()
+        
+        return jsonify({'success': True}), 200
+        
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Formato data non valido'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @hr_bp.route('/detail/<int:user_id>/delete-secondment/<int:secondment_id>', methods=['POST'])
 @login_required
 @require_hr_permission
