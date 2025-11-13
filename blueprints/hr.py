@@ -1456,6 +1456,9 @@ def hr_export():
 @require_hr_permission
 def add_secondment(user_id):
     """Aggiunge un nuovo periodo di distacco per un dipendente"""
+    import logging
+    logging.info(f"=== ADD SECONDMENT CALLED - user_id={user_id} ===")
+    logging.info(f"Form data: {request.form}")
     
     if not current_user.can_manage_hr_data():
         flash('Non hai i permessi per gestire i distacchi', 'error')
