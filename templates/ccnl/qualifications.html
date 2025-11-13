@@ -63,17 +63,17 @@
                             <td><strong>{{ qualification.nome }}</strong></td>
                             <td>{{ qualification.descrizione or '-' }}</td>
                             <td>
-                                <span class="badge bg-info">{{ qualification.levels|length }} livelli</span>
+                                <span class="badge bg-info">{{ qualification.levels.count() }} livelli</span>
                             </td>
                             <td>{{ qualification.created_at.strftime('%d/%m/%Y %H:%M') if qualification.created_at else '-' }}</td>
                             <td>
-                                <a href="{{ url_for('ccnl.manage_levels', qualification_id=qualification.id) }}" class="btn btn-sm btn-info" title="Gestisci Livelli">
+                                <a href="{{ url_for('ccnl.levels', ccnl_id=ccnl.id, qual_id=qualification.id) }}" class="btn btn-sm btn-info" title="Gestisci Livelli">
                                     <i class="fas fa-layer-group"></i>
                                 </a>
                                 <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ qualification.id }}" title="Modifica">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <form method="POST" action="{{ url_for('ccnl.delete_qualification', id=qualification.id) }}" class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa qualifica e tutti i suoi livelli?');">
+                                <form method="POST" action="{{ url_for('ccnl.delete_qualification', ccnl_id=ccnl.id, id=qualification.id) }}" class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa qualifica e tutti i suoi livelli?');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-sm btn-danger" title="Elimina">
                                         <i class="fas fa-trash"></i>
@@ -89,7 +89,7 @@
                                         <h5 class="modal-title">Modifica Qualifica</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <form method="POST" action="{{ url_for('ccnl.edit_qualification', id=qualification.id) }}">
+                                    <form method="POST" action="{{ url_for('ccnl.edit_qualification', ccnl_id=ccnl.id, id=qualification.id) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <div class="modal-body">
                                             <div class="mb-3">

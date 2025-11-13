@@ -22,7 +22,7 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('ccnl.edit_ccnl', id=ccnl.id) }}">
+                    <form method="POST" action="{{ url_for('ccnl.edit', id=ccnl.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <div class="mb-3">
@@ -38,8 +38,8 @@
                         
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Qualifiche:</strong> Questo CCNL ha {{ ccnl.qualifications|length }} qualifiche associate.
-                            <a href="{{ url_for('ccnl.manage_qualifications', ccnl_id=ccnl.id) }}" class="alert-link">Gestisci qualifiche</a>
+                            <strong>Qualifiche:</strong> Questo CCNL ha {{ ccnl.qualifications.count() }} qualifiche associate.
+                            <a href="{{ url_for('ccnl.qualifications', ccnl_id=ccnl.id) }}" class="alert-link">Gestisci qualifiche</a>
                         </div>
                         
                         <div class="d-flex justify-content-between">

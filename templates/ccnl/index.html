@@ -68,7 +68,7 @@
                             <td>{{ ccnl.created_at.strftime('%d/%m/%Y %H:%M') if ccnl.created_at else '-' }}</td>
                             {% if can_manage %}
                             <td>
-                                <a href="{{ url_for('ccnl.manage_qualifications', ccnl_id=ccnl.id) }}" class="btn btn-sm btn-info" title="Gestisci Qualifiche">
+                                <a href="{{ url_for('ccnl.qualifications', ccnl_id=ccnl.id) }}" class="btn btn-sm btn-info" title="Gestisci Qualifiche">
                                     <i class="fas fa-layer-group"></i>
                                 </a>
                                 <a href="{{ url_for('ccnl.edit', id=ccnl.id) }}" class="btn btn-sm btn-primary" title="Modifica">
