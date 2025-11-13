@@ -1118,14 +1118,21 @@ class UserHRData(db.Model):
     contract_start_date = db.Column(db.Date, nullable=True)  # Data inizio contratto
     contract_end_date = db.Column(db.Date, nullable=True)  # Data fine contratto (solo TD)
     probation_end_date = db.Column(db.Date, nullable=True)  # Fine periodo di prova
-    ccnl = db.Column(db.String(100), nullable=True)  # CCNL applicato
-    ccnl_level = db.Column(db.String(50), nullable=True)  # Livello contrattuale
+    # CCNL - Campi legacy string (DEPRECATED - usare ccnl_contract_id, ccnl_qualification_id, ccnl_level_id)
+    ccnl = db.Column(db.String(100), nullable=True)  # CCNL applicato (testo libero - DEPRECATED)
+    ccnl_level = db.Column(db.String(50), nullable=True)  # Livello contrattuale (testo libero - DEPRECATED)
+    qualifica = db.Column(db.String(100), nullable=True)  # Qualifica (testo libero - DEPRECATED)
+    
+    # CCNL - Nuovi campi FK strutturati (sostituiscono i campi string sopra)
+    ccnl_contract_id = db.Column(db.Integer, db.ForeignKey('ccnl_contract.id', ondelete='SET NULL'), nullable=True, index=True)
+    ccnl_qualification_id = db.Column(db.Integer, db.ForeignKey('ccnl_qualification.id', ondelete='SET NULL'), nullable=True, index=True)
+    ccnl_level_id = db.Column(db.Integer, db.ForeignKey('ccnl_level.id', ondelete='SET NULL'), nullable=True, index=True)
+    
     work_hours_week = db.Column(db.Float, nullable=True)  # Ore settimanali contratto
     working_time_type = db.Column(db.String(2), nullable=True)  # FT (Full Time) o PT (Part Time)
     part_time_percentage = db.Column(db.Float, nullable=True)  # Percentuale se PT (es. 50, 75)
     part_time_type = db.Column(db.String(20), nullable=True)  # 'Verticale' o 'Orizzontale' se PT
     mansione = db.Column(db.String(100), nullable=True)  # Mansione/ruolo
-    qualifica = db.Column(db.String(100), nullable=True)  # Qualifica
     superminimo = db.Column(db.Float, nullable=True)  # Superminimo/SM assorbibile (€)
     superminimo_type = db.Column(db.String(20), nullable=True)  # Tipologia superminimo: "Assorbibile" o "Non assorbibile"
     rimborsi_diarie = db.Column(db.Float, nullable=True)  # Rimborsi/Diarie (€)
@@ -1219,6 +1226,11 @@ class UserHRData(db.Model):
     sede = db.relationship('Sede', foreign_keys=[sede_id], backref='hr_employees')
     work_schedule = db.relationship('WorkSchedule', foreign_keys=[work_schedule_id], backref='hr_assigned_users')
     aci_vehicle = db.relationship('ACITable', foreign_keys=[aci_vehicle_id], backref='hr_assigned_users')
+    
+    # CCNL Relationships (nuovi campi strutturati)
+    ccnl_contract = db.relationship('CCNLContract', foreign_keys=[ccnl_contract_id], backref='hr_employees')
+    ccnl_qualification = db.relationship('CCNLQualification', foreign_keys=[ccnl_qualification_id], backref='hr_employees')
+    ccnl_level_obj = db.relationship('CCNLLevel', foreign_keys=[ccnl_level_id], backref='hr_employees')
     
     def __repr__(self):
         return f'<UserHRData {self.matricola} - {self.user.get_full_name() if self.user else "N/A"}>'
@@ -5062,3 +5074,98 @@ class SocialSafetyNetAssignment(db.Model):
     def cancel(self):
         """Annulla l'assegnazione"""
         self.status = 'cancelled'
+
+
+# =============================================================================
+# CCNL MANAGEMENT - CONTRATTI COLLETTIVI NAZIONALI DI LAVORO
+# =============================================================================
+
+class CCNLContract(db.Model):
+    """Modello per gestire i Contratti Collettivi Nazionali di Lavoro (CCNL)"""
+    __tablename__ = 'ccnl_contract'
+    __table_args__ = (
+        db.UniqueConstraint('nome', 'company_id', name='_ccnl_nome_company_uc'),
+        db.Index('idx_ccnl_company', 'company_id'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(200), nullable=False)  # es. "Commercio", "Metalmeccanici"
+    descrizione = db.Column(db.Text, nullable=True)
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    
+    # Multi-tenant
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    # Relationships
+    company = db.relationship('Company', backref='ccnl_contracts')
+    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='created_ccnl_contracts')
+    qualifications = db.relationship('CCNLQualification', back_populates='ccnl', cascade='all, delete-orphan', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<CCNLContract {self.nome}>'
+
+
+class CCNLQualification(db.Model):
+    """Modello per gestire le Qualifiche all'interno di un CCNL"""
+    __tablename__ = 'ccnl_qualification'
+    __table_args__ = (
+        db.UniqueConstraint('nome', 'ccnl_id', name='_qualification_nome_ccnl_uc'),
+        db.Index('idx_qualification_ccnl', 'ccnl_id'),
+        db.Index('idx_qualification_company', 'company_id'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ccnl_id = db.Column(db.Integer, db.ForeignKey('ccnl_contract.id', ondelete='CASCADE'), nullable=False)
+    nome = db.Column(db.String(200), nullable=False)  # es. "Quadro", "Impiegato", "Operaio"
+    descrizione = db.Column(db.Text, nullable=True)
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    
+    # Multi-tenant (denormalizzato per query più veloci)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    ccnl = db.relationship('CCNLContract', back_populates='qualifications')
+    company = db.relationship('Company', backref='ccnl_qualifications')
+    levels = db.relationship('CCNLLevel', back_populates='qualification', cascade='all, delete-orphan', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<CCNLQualification {self.nome} ({self.ccnl.nome})>'
+
+
+class CCNLLevel(db.Model):
+    """Modello per gestire i Livelli all'interno di una Qualifica CCNL"""
+    __tablename__ = 'ccnl_level'
+    __table_args__ = (
+        db.UniqueConstraint('codice', 'qualification_id', name='_level_codice_qualification_uc'),
+        db.Index('idx_level_qualification', 'qualification_id'),
+        db.Index('idx_level_company', 'company_id'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    qualification_id = db.Column(db.Integer, db.ForeignKey('ccnl_qualification.id', ondelete='CASCADE'), nullable=False)
+    codice = db.Column(db.String(50), nullable=False)  # es. "1°", "2°", "B2", "D1"
+    descrizione = db.Column(db.Text, nullable=True)
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    
+    # Multi-tenant (denormalizzato per query più veloci)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=italian_now)
+    updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
+    
+    # Relationships
+    qualification = db.relationship('CCNLQualification', back_populates='levels')
+    company = db.relationship('Company', backref='ccnl_levels')
+    
+    def __repr__(self):
+        return f'<CCNLLevel {self.codice} ({self.qualification.nome})>'
