@@ -1363,9 +1363,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <strong>Assegnazione Attiva:</strong> {{ active_safety_net_assignment.program.name }} 
             ({{ active_safety_net_assignment.program.program_type }}) 
             - Riduzione {{ active_safety_net_assignment.program.reduction_percentage }}%
-            dal {{ active_safety_net_assignment.effective_from.strftime('%d/%m/%Y') }}
-            {% if active_safety_net_assignment.effective_to %}
-            al {{ active_safety_net_assignment.effective_to.strftime('%d/%m/%Y') }}
+            dal {{ active_safety_net_assignment.start_date.strftime('%d/%m/%Y') }}
+            {% if active_safety_net_assignment.end_date %}
+            al {{ active_safety_net_assignment.end_date.strftime('%d/%m/%Y') }}
             {% endif %}
         </div>
         {% endif %}
@@ -1391,20 +1391,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 </thead>
                 <tbody>
                     {% for assignment in safety_net_assignments %}
-                    <tr {% if assignment == active_safety_net_assignment %}class="table-warning"{% endif %}>
+                    <tr {% if assignment == active_safety_net_assignment %}class="table-warning"{% elif assignment.status == 'pending' %}class="table-info"{% endif %}>
                         <td>
                             <strong>{{ assignment.program.name }}</strong>
                             {% if assignment.program.decree_number %}
                             <br><small class="text-muted">Decreto {{ assignment.program.decree_number }}</small>
                             {% endif %}
+                            {% if assignment.status == 'pending' %}
+                            <br><a href="{{ url_for('social_safety.manage_assignments') }}" class="badge bg-primary text-white text-decoration-none">
+                                <i class="fas fa-tasks me-1"></i>Approva qui
+                            </a>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="badge bg-secondary">{{ assignment.program.program_type }}</span>
                         </td>
-                        <td>{{ assignment.effective_from.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ assignment.start_date.strftime('%d/%m/%Y') }}</td>
                         <td>
-                            {% if assignment.effective_to %}
-                            {{ assignment.effective_to.strftime('%d/%m/%Y') }}
+                            {% if assignment.end_date %}
+                            {{ assignment.end_date.strftime('%d/%m/%Y') }}
                             {% else %}
                             <em class="text-muted">In corso</em>
                             {% endif %}
@@ -1415,14 +1420,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             </span>
                         </td>
                         <td>
-                            {% if assignment.is_approved %}
+                            {% if assignment.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-clock me-1"></i>In Attesa Approvazione
+                            </span>
+                            {% elif assignment.status in ['approved', 'active'] %}
                             <span class="badge bg-success">
                                 <i class="fas fa-check me-1"></i>Approvato
                             </span>
-                            {% else %}
-                            <span class="badge bg-warning text-dark">
-                                <i class="fas fa-clock me-1"></i>In Attesa
+                            {% elif assignment.status == 'completed' %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-check-circle me-1"></i>Completato
                             </span>
+                            {% elif assignment.status == 'cancelled' %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times me-1"></i>Annullato
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ assignment.status }}</span>
                             {% endif %}
                         </td>
                     </tr>
