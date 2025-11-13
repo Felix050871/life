@@ -1739,7 +1739,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 levels.forEach(l => {
                     const option = document.createElement('option');
                     option.value = l.id;
-                    option.textContent = `${l.codice} - ${l.nome}`;
+                    option.textContent = l.descrizione ? `${l.codice} (${l.descrizione})` : l.codice;
                     livelloSelect.appendChild(option);
                 });
                 
@@ -1792,7 +1792,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     levels.forEach(l => {
                         const option = document.createElement('option');
                         option.value = l.id;
-                        option.textContent = `${l.codice} - ${l.nome}`;
+                        option.textContent = l.descrizione ? `${l.codice} (${l.descrizione})` : l.codice;
                         if (l.id == currentLevelId) option.selected = true;
                         livelloSelect.appendChild(option);
                     });
