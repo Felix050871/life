@@ -66,6 +66,9 @@ def admin_login():
                 ip_address=request.remote_addr
             )
             
+            # Cleanup old sessions if user exceeds concurrent session limit
+            session_manager.cleanup_old_sessions(user_id=user.id)
+            
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
                 return redirect(next_page)
@@ -111,6 +114,9 @@ def tenant_login(slug):
                 user_agent=request.headers.get('User-Agent'),
                 ip_address=request.remote_addr
             )
+            
+            # Cleanup old sessions if user exceeds concurrent session limit
+            session_manager.cleanup_old_sessions(user_id=user.id)
             
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):

@@ -277,3 +277,48 @@ def get_session_warning_threshold() -> int:
     """
     config = get_config()
     return int(config.SESSION_WARNING_TIME.total_seconds())
+
+
+def cleanup_old_sessions(user_id: int, max_sessions: Optional[int] = None) -> int:
+    """
+    Cleanup old sessions when user exceeds max concurrent sessions limit.
+    Invalidates oldest sessions (FIFO) keeping only the most recent ones.
+    
+    Args:
+        user_id: User ID
+        max_sessions: Maximum concurrent sessions allowed (default from config)
+        
+    Returns:
+        int: Number of sessions invalidated
+    """
+    # Resolve max_sessions from config if not provided
+    session_limit = max_sessions
+    if session_limit is None:
+        config = get_config()
+        session_limit = config.MAX_CONCURRENT_SESSIONS
+    
+    # Get all active sessions for user, ordered by creation time (oldest first)
+    active_sessions = UserSession.query.filter_by(
+        user_id=user_id,
+        is_active=True
+    ).order_by(UserSession.created_at.asc()).all()
+    
+    # If within limit, no cleanup needed
+    if len(active_sessions) <= session_limit:
+        return 0
+    
+    # Calculate how many sessions to invalidate
+    excess_count = len(active_sessions) - session_limit
+    sessions_to_invalidate = active_sessions[:excess_count]
+    
+    # Invalidate oldest sessions
+    now = datetime.now(ZoneInfo('UTC'))
+    count = 0
+    for user_session in sessions_to_invalidate:
+        user_session.is_active = False
+        user_session.terminated_at = now
+        user_session.invalidation_reason = 'concurrent_limit'
+        count += 1
+    
+    db.session.commit()
+    return count
