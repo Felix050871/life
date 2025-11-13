@@ -253,10 +253,6 @@ def hr_list():
             user = data['user']
             hr_data = data['hr_data']
             
-            # Se ci sono filtri attivi ma l'utente non ha dati HR, escludilo
-            if not hr_data:
-                continue
-            
             matches = True
             
             # Filtro matricola
@@ -266,48 +262,54 @@ def hr_list():
             
             # Filtro data assunzione (filtra per anno)
             if 'hire_date' in active_filters:
-                filter_date_str = active_filters['hire_date']
-                try:
-                    from datetime import datetime
-                    filter_date = datetime.strptime(filter_date_str, '%Y-%m-%d').date()
-                    if not hr_data.hire_date or hr_data.hire_date.year != filter_date.year:
-                        matches = False
-                except:
-                    pass  # Se parsing fallisce, ignora il filtro
-            
-            # Filtro tipo contratto
-            if 'contract_type' in active_filters:
-                if not hr_data.contract_type or hr_data.contract_type != active_filters['contract_type']:
+                if not hr_data:
                     matches = False
+                else:
+                    filter_date_str = active_filters['hire_date']
+                    try:
+                        from datetime import datetime
+                        filter_date = datetime.strptime(filter_date_str, '%Y-%m-%d').date()
+                        if not hr_data.hire_date or hr_data.hire_date.year != filter_date.year:
+                            matches = False
+                    except:
+                        pass  # Se parsing fallisce, ignora il filtro
+            
+            # Filtro tipo contratto - INCLUDE anche utenti senza dati HR (da configurare)
+            if 'contract_type' in active_filters:
+                if hr_data and hr_data.contract_type:
+                    # Ha dati HR e contract_type: verifica corrispondenza
+                    if hr_data.contract_type != active_filters['contract_type']:
+                        matches = False
+                # Se non ha hr_data o non ha contract_type, lo include sempre (da configurare)
             
             # Filtro CCNL
             if 'ccnl' in active_filters:
-                if not hr_data.ccnl or active_filters['ccnl'].lower() not in hr_data.ccnl.lower():
+                if not hr_data or not hr_data.ccnl or active_filters['ccnl'].lower() not in hr_data.ccnl.lower():
                     matches = False
             
             # Filtro mansione
             if 'mansione' in active_filters:
-                if not hr_data.mansione or active_filters['mansione'].lower() not in hr_data.mansione.lower():
+                if not hr_data or not hr_data.mansione or active_filters['mansione'].lower() not in hr_data.mansione.lower():
                     matches = False
             
             # Filtro qualifica
             if 'qualifica' in active_filters:
-                if not hr_data.qualifica or active_filters['qualifica'].lower() not in hr_data.qualifica.lower():
+                if not hr_data or not hr_data.qualifica or active_filters['qualifica'].lower() not in hr_data.qualifica.lower():
                     matches = False
             
             # Filtro sede assunzione
             if 'sede_assunzione' in active_filters:
-                if not hr_data.sede_id or str(hr_data.sede_id) != str(active_filters['sede_assunzione']):
+                if not hr_data or not hr_data.sede_id or str(hr_data.sede_id) != str(active_filters['sede_assunzione']):
                     matches = False
             
             # Filtro genere
             if 'gender' in active_filters:
-                if not hr_data.gender or hr_data.gender != active_filters['gender']:
+                if not hr_data or not hr_data.gender or hr_data.gender != active_filters['gender']:
                     matches = False
             
             # Filtro città
             if 'city' in active_filters:
-                if not hr_data.city or active_filters['city'].lower() not in hr_data.city.lower():
+                if not hr_data or not hr_data.city or active_filters['city'].lower() not in hr_data.city.lower():
                     matches = False
             
             if matches:
