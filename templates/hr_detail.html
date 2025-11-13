@@ -865,14 +865,10 @@
                         </td>
                         {% if can_edit %}
                         <td>
-                            <form method="POST" action="{{ url_for('hr.delete_secondment', user_id=user.id, secondment_id=secondment.id) }}" 
-                                  style="display: inline;"
-                                  onsubmit="return confirm('Confermi l\'eliminazione del distacco presso {{ secondment.client_name }}?');">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Elimina"
+                                    onclick="deleteSecondment({{ secondment.id }}, '{{ secondment.client_name }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                         {% endif %}
                     </tr>
@@ -893,30 +889,29 @@
                 <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Aggiungi Nuovo Distacco</h6>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('hr.add_secondment', user_id=user.id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div id="secondment-form">
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Nome Cliente <span class="text-danger">*</span></label>
-                            <input type="text" name="client_name" class="form-control" required
+                            <input type="text" id="client_name" class="form-control" required
                                    placeholder="es. Acme Corporation">
                         </div>
                         <div class="col-md-2 mb-3">
                             <label class="form-label">Data Accordo</label>
-                            <input type="date" name="agreement_date" class="form-control">
+                            <input type="date" id="agreement_date" class="form-control">
                             <small class="text-muted">Opzionale</small>
                         </div>
                         <div class="col-md-2 mb-3">
                             <label class="form-label">Data Inizio <span class="text-danger">*</span></label>
-                            <input type="date" name="start_date" class="form-control" required>
+                            <input type="date" id="start_date" class="form-control" required>
                         </div>
                         <div class="col-md-2 mb-3">
                             <label class="form-label">Data Fine</label>
-                            <input type="date" name="end_date" class="form-control">
+                            <input type="date" id="end_date" class="form-control">
                             <small class="text-muted">Opzionale</small>
                         </div>
                         <div class="col-md-2 mb-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">
+                            <button type="button" class="btn btn-primary w-100" onclick="addSecondment()">
                                 <i class="fas fa-plus me-1"></i>Aggiungi
                             </button>
                         </div>
@@ -924,13 +919,67 @@
                     <div class="row">
                         <div class="col-12">
                             <label class="form-label">Note</label>
-                            <textarea name="notes" class="form-control" rows="2" 
+                            <textarea id="notes" class="form-control" rows="2" 
                                       placeholder="Note aggiuntive sul distacco (opzionale)"></textarea>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
+        
+        <script>
+        function addSecondment() {
+            const clientName = document.getElementById('client_name').value;
+            const agreementDate = document.getElementById('agreement_date').value;
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!clientName || !startDate) {
+                alert('Nome Cliente e Data Inizio sono obbligatori');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('csrf_token', '{{ csrf_token() }}');
+            formData.append('client_name', clientName);
+            if (agreementDate) formData.append('agreement_date', agreementDate);
+            formData.append('start_date', startDate);
+            if (endDate) formData.append('end_date', endDate);
+            if (notes) formData.append('notes', notes);
+            
+            fetch('{{ url_for("hr.add_secondment", user_id=user.id) }}', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Errore durante l\'aggiunta del distacco');
+                }
+            });
+        }
+        
+        function deleteSecondment(secondmentId, clientName) {
+            if (!confirm(`Confermi l'eliminazione del distacco presso ${clientName}?`)) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('csrf_token', '{{ csrf_token() }}');
+            
+            fetch(`{{ url_for("hr.delete_secondment", user_id=user.id, secondment_id=0) }}`.replace('/0', `/${secondmentId}`), {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Errore durante l\'eliminazione del distacco');
+                }
+            });
+        }
+        </script>
         {% endif %}
     </div>
 
