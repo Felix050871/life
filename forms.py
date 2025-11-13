@@ -1208,6 +1208,8 @@ class RoleForm(FlaskForm):
     can_view_my_hr_data = BooleanField('Visualizzare I Miei Dati HR')
     can_manage_mansioni = BooleanField('Gestire Mansionario')
     can_view_mansioni = BooleanField('Visualizzare Mansionario')
+    can_manage_ccnl = BooleanField('Gestire CCNL')
+    can_view_ccnl = BooleanField('Visualizzare CCNL')
     
     # Ammortizzatori Sociali - Social Safety Net
     can_manage_social_safety_programs = BooleanField('Gestire Programmi Ammortizzatori')
