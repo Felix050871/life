@@ -539,12 +539,12 @@
                 </small>
             </div>
             <div class="col-md-2 mb-3">
-                <label class="form-label fw-bold">Codice Zucchetti</label>
+                <label class="form-label fw-bold">Codice per Export</label>
                 <input type="text" name="cod_zucchetti" class="form-control" 
                        value="{{ hr_data.cod_zucchetti or '' }}"
-                       placeholder="Codice Zucchetti"
+                       placeholder="Codice esterno"
                        {% if not can_edit %}disabled{% endif %}>
-                <small class="text-muted">Codice per integrazione Zucchetti</small>
+                <small class="text-muted">Codice per sistemi di export/integrazione</small>
             </div>
             <div class="col-md-4 mb-3">
                 <label class="form-label">Tipologia Contratto <span class="text-danger">*</span></label>
