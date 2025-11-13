@@ -89,6 +89,10 @@ with app.app_context():
 from middleware_tenant import load_tenant_context
 app.before_request(load_tenant_context)
 
+# Register session validation hook (after tenant middleware)
+from services.session_hooks import check_session_validity
+app.before_request(check_session_validity)
+
 # Import routes after app context is set up (must be at module level for gunicorn)
 # Routes imported in main.py to avoid circular imports with Gunicorn
 

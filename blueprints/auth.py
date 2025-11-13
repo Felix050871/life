@@ -17,6 +17,7 @@ from app import db
 from models import User, PasswordResetToken, Company
 from forms import LoginForm, ForgotPasswordForm, ResetPasswordForm, ChangePasswordForm
 from middleware_tenant import get_tenant_company, get_tenant_slug
+from services import session_manager
 
 # Create blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -55,6 +56,16 @@ def admin_login():
         
         if user and user.active and user.password_hash and form.password.data and check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember_me.data)
+            
+            # Create session record for tracking and inactivity timeout
+            session_manager.create_session(
+                user=user,
+                company_id=None,  # Super-admin has no company
+                tenant_slug=None,
+                user_agent=request.headers.get('User-Agent'),
+                ip_address=request.remote_addr
+            )
+            
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
                 return redirect(next_page)
@@ -91,6 +102,16 @@ def tenant_login(slug):
         
         if user and user.active and user.password_hash and form.password.data and check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember_me.data)
+            
+            # Create session record for tracking and inactivity timeout
+            session_manager.create_session(
+                user=user,
+                company_id=company.id,
+                tenant_slug=slug,
+                user_agent=request.headers.get('User-Agent'),
+                ip_address=request.remote_addr
+            )
+            
             next_page = request.args.get('next')
             if next_page and is_safe_url(next_page):
                 return redirect(next_page)
@@ -111,6 +132,9 @@ def logout():
     
     if current_user.is_authenticated and not current_user.is_system_admin and current_user.company:
         company_slug = current_user.company.slug
+    
+    # Invalidate session in database before logging out
+    session_manager.invalidate_current_session()
     
     logout_user()
     flash('Logout effettuato con successo', 'info')
