@@ -1344,7 +1344,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- ========================================= -->
 <!-- SEZIONE AMMORTIZZATORI SOCIALI (READ-ONLY) -->
 <!-- ========================================= -->
-{% if current_user.can_view_social_safety_reports() %}
+{% if current_user.can_view_social_safety_reports() or current_user.can_manage_social_safety_programs() or current_user.can_assign_social_safety_programs() %}
 <div class="card mb-4">
     <div class="card-header bg-info text-white">
         <div class="d-flex justify-content-between align-items-center">

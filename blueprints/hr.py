@@ -1012,7 +1012,7 @@ def hr_detail(user_id):
     active_safety_net_assignment = None
     total_safety_net_assignments = 0
     
-    if current_user.can_view_social_safety_reports():
+    if current_user.can_view_social_safety_reports() or current_user.can_manage_social_safety_programs() or current_user.can_assign_social_safety_programs():
         from models import SocialSafetyNetAssignment
         from datetime import date
         
