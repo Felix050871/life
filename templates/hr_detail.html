@@ -1298,11 +1298,32 @@
     <a href="{{ url_for('hr.hr_list') }}" class="btn btn-outline-secondary">
         <i class="fas fa-times me-2"></i>Annulla
     </a>
-    <button type="submit" class="btn btn-primary">
+    <button type="submit" class="btn btn-primary" id="saveBtn">
         <i class="fas fa-save me-2"></i>Salva Modifiche
     </button>
 </div>
 {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const saveBtn = document.getElementById('saveBtn');
+    
+    if (saveBtn && form) {
+        saveBtn.addEventListener('click', function(e) {
+            console.log('Pulsante cliccato');
+            console.log('Form valido:', form.checkValidity());
+            if (!form.checkValidity()) {
+                form.reportValidity();
+            }
+        });
+        
+        form.addEventListener('submit', function(e) {
+            console.log('Form submit triggered');
+        });
+    }
+});
+</script>
 
 </form>
 
