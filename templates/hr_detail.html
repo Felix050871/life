@@ -547,8 +547,8 @@
                 <small class="text-muted">Codice per integrazione Zucchetti</small>
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label">Tipologia Contratto</label>
-                <select name="contract_type" id="contract_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                <label class="form-label">Tipologia Contratto <span class="text-danger">*</span></label>
+                <select name="contract_type" id="contract_type" class="form-select" required {% if not can_edit %}disabled{% endif %}>
                     <option value="">Seleziona...</option>
                     <option value="Tempo Indeterminato" {% if hr_data.contract_type == 'Tempo Indeterminato' %}selected{% endif %}>Tempo Indeterminato</option>
                     <option value="Tempo Determinato" {% if hr_data.contract_type == 'Tempo Determinato' %}selected{% endif %}>Tempo Determinato</option>
@@ -594,9 +594,10 @@
                 <small class="text-muted">P.IVA del fornitore</small>
             </div>
             <div class="col-md-2 mb-3">
-                <label class="form-label">Data Assunzione</label>
-                <input type="date" name="hire_date" class="form-control" 
+                <label class="form-label">Data Assunzione <span class="text-danger">*</span></label>
+                <input type="date" name="hire_date" id="hire_date" class="form-control" 
                        value="{{ hr_data.hire_date.strftime('%Y-%m-%d') if hr_data.hire_date else '' }}"
+                       required
                        {% if not can_edit %}disabled{% endif %}>
             </div>
             <div class="col-md-2 mb-3">
@@ -607,11 +608,11 @@
             </div>
         </div>
 
-        <!-- Riga 2: CCNL, Mansione, Qualifica, Livello -->
+        <!-- Riga 2: CCNL, Qualifica, Livello, Mansione -->
         <div class="row">
             <div class="col-md-3 mb-3">
-                <label class="form-label">CCNL</label>
-                <select id="ccnl_contract_id" name="ccnl_contract_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                <label class="form-label">CCNL <span class="text-danger ccnl-required-flag">*</span></label>
+                <select id="ccnl_contract_id" name="ccnl_contract_id" class="form-select ccnl-conditional-required" {% if not can_edit %}disabled{% endif %}>
                     <option value="">Seleziona CCNL...</option>
                     {% for ccnl in ccnl_list %}
                     <option value="{{ ccnl.id }}" {% if hr_data.ccnl_contract_id == ccnl.id %}selected{% endif %}>
@@ -623,8 +624,22 @@
                 <small class="text-muted">Gestisci i CCNL dal menu HR</small>
             </div>
             <div class="col-md-3 mb-3">
-                <label class="form-label">Mansione</label>
-                <select name="mansione" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                <label class="form-label">Qualifica <span class="text-danger ccnl-required-flag">*</span></label>
+                <select id="ccnl_qualification_id" name="ccnl_qualification_id" class="form-select ccnl-conditional-required" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Prima seleziona CCNL...</option>
+                </select>
+                <input type="hidden" name="qualifica" value="{{ hr_data.qualifica or '' }}">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Livello <span class="text-danger ccnl-required-flag">*</span></label>
+                <select id="ccnl_level_id" name="ccnl_level_id" class="form-select ccnl-conditional-required" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Prima seleziona Qualifica...</option>
+                </select>
+                <input type="hidden" name="ccnl_level" value="{{ hr_data.ccnl_level or '' }}">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Mansione <span class="text-danger ccnl-required-flag">*</span></label>
+                <select name="mansione" id="mansione" class="form-select ccnl-conditional-required" {% if not can_edit %}disabled{% endif %}>
                     <option value="">Seleziona...</option>
                     {% for mansione in mansioni %}
                     <option value="{{ mansione.nome }}" {% if hr_data.mansione == mansione.nome %}selected{% endif %}>
@@ -634,29 +649,17 @@
                 </select>
                 <small class="text-muted">Gestisci il mansionario dal menu HR</small>
             </div>
-            <div class="col-md-3 mb-3">
-                <label class="form-label">Qualifica</label>
-                <select id="ccnl_qualification_id" name="ccnl_qualification_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                    <option value="">Prima seleziona CCNL...</option>
-                </select>
-                <input type="hidden" name="qualifica" value="{{ hr_data.qualifica or '' }}">
-            </div>
-            <div class="col-md-3 mb-3">
-                <label class="form-label">Livello</label>
-                <select id="ccnl_level_id" name="ccnl_level_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                    <option value="">Prima seleziona Qualifica...</option>
-                </select>
-                <input type="hidden" name="ccnl_level" value="{{ hr_data.ccnl_level or '' }}">
-            </div>
         </div>
 
         <!-- Riga 3: Orario settimanale e Orario di Lavoro -->
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label class="form-label">Orario (h/sett.)</label>
-                <input type="number" step="0.1" name="work_hours_week" class="form-control" 
+                <label class="form-label">Orario (h/sett.) <span class="text-danger">*</span></label>
+                <input type="number" step="0.1" name="work_hours_week" id="work_hours_week" class="form-control" 
                        value="{{ hr_data.work_hours_week or '' }}"
                        placeholder="40"
+                       required
+                       min="0"
                        {% if not can_edit %}disabled{% endif %}>
             </div>
             <div class="col-md-6 mb-3">
@@ -1481,6 +1484,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const fornitorePivaField = document.getElementById('fornitore_piva_field');
     
     if (contractTypeSelect && distaccoSupplierField && consulenteVatField && fornitoreNomeField && fornitorePivaField) {
+        function updateCcnlFieldsRequirement() {
+            const contractType = contractTypeSelect.value;
+            const exemptTypes = ['In Distacco', 'Consulente/P.IVA', 'Fornitore'];
+            const isRequired = !exemptTypes.includes(contractType);
+            
+            // Gestisci tutti i campi CCNL condizionali
+            const ccnlFields = document.querySelectorAll('.ccnl-conditional-required');
+            const ccnlFlags = document.querySelectorAll('.ccnl-required-flag');
+            
+            ccnlFields.forEach(field => {
+                if (isRequired) {
+                    field.setAttribute('required', 'required');
+                } else {
+                    field.removeAttribute('required');
+                }
+            });
+            
+            ccnlFlags.forEach(flag => {
+                flag.style.display = isRequired ? 'inline' : 'none';
+            });
+        }
+        
         contractTypeSelect.addEventListener('change', function() {
             // Nascondi tutti i campi condizionali e azzera i loro valori
             const distaccoInput = distaccoSupplierField.querySelector('input');
@@ -1506,7 +1531,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 fornitoreNomeField.style.display = 'block';
                 fornitorePivaField.style.display = 'block';
             }
+            
+            // Aggiorna l'obbligatorietà dei campi CCNL
+            updateCcnlFieldsRequirement();
         });
+        
+        // Applica al caricamento iniziale
+        updateCcnlFieldsRequirement();
     }
     
     // Gestione cascading selection veicoli ACI
