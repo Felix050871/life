@@ -403,6 +403,48 @@
             </div>
         </div>
 
+        <!-- Documento Identità -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-id-card me-2"></i>Documento Identità</h6>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Tipo Documento</label>
+                <select name="id_card_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona...</option>
+                    <option value="Carta d'Identità" {% if hr_data.id_card_type == "Carta d'Identità" %}selected{% endif %}>Carta d'Identità</option>
+                    <option value="Passaporto" {% if hr_data.id_card_type == "Passaporto" %}selected{% endif %}>Passaporto</option>
+                    <option value="Patente" {% if hr_data.id_card_type == "Patente" %}selected{% endif %}>Patente</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Numero Documento</label>
+                <input type="text" name="id_card_number" class="form-control text-uppercase" 
+                       value="{{ hr_data.id_card_number or '' }}"
+                       placeholder="AX1234567"
+                       {% if not can_edit %}disabled{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Upload Documento</label>
+                {% if hr_data.id_card_file %}
+                <div class="mb-2">
+                    <a href="{{ url_for('static', filename=hr_data.id_card_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-file-pdf me-1"></i>Visualizza Documento
+                    </a>
+                    {% if can_edit %}
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            onclick="if(confirm('Confermi l\'eliminazione del documento?')) { document.getElementById('deleteIdCard').value='1'; this.form.submit(); }">
+                        <i class="fas fa-trash me-1"></i>Elimina
+                    </button>
+                    <input type="hidden" id="deleteIdCard" name="delete_id_card" value="0">
+                    {% endif %}
+                </div>
+                {% endif %}
+                <input type="file" name="id_card_file" class="form-control" 
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       {% if not can_edit %}disabled{% endif %}>
+                <small class="text-muted">Carica copia del documento (PDF, JPG, PNG - max 5MB)</small>
+            </div>
+        </div>
+
         <!-- Patente di Guida -->
         <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-id-card me-2"></i>Patente di Guida</h6>
         <div class="row">
@@ -735,48 +777,6 @@
                        placeholder="250.00"
                        {% if not can_edit %}disabled{% endif %}>
                 <small class="text-muted">Costo totale aziendale al giorno</small>
-            </div>
-        </div>
-
-        <!-- Documento Identità -->
-        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-id-card me-2"></i>Documento Identità</h6>
-        <div class="row">
-            <div class="col-md-3 mb-3">
-                <label class="form-label">Tipo Documento</label>
-                <select name="id_card_type" class="form-select" {% if not can_edit %}disabled{% endif %}>
-                    <option value="">Seleziona...</option>
-                    <option value="Carta d'Identità" {% if hr_data.id_card_type == "Carta d'Identità" %}selected{% endif %}>Carta d'Identità</option>
-                    <option value="Passaporto" {% if hr_data.id_card_type == "Passaporto" %}selected{% endif %}>Passaporto</option>
-                    <option value="Patente" {% if hr_data.id_card_type == "Patente" %}selected{% endif %}>Patente</option>
-                </select>
-            </div>
-            <div class="col-md-3 mb-3">
-                <label class="form-label">Numero Documento</label>
-                <input type="text" name="id_card_number" class="form-control text-uppercase" 
-                       value="{{ hr_data.id_card_number or '' }}"
-                       placeholder="AX1234567"
-                       {% if not can_edit %}disabled{% endif %}>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Upload Documento</label>
-                {% if hr_data.id_card_file %}
-                <div class="mb-2">
-                    <a href="{{ url_for('static', filename=hr_data.id_card_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-file-pdf me-1"></i>Visualizza Documento
-                    </a>
-                    {% if can_edit %}
-                    <button type="button" class="btn btn-sm btn-outline-danger"
-                            onclick="if(confirm('Confermi l\'eliminazione del documento?')) { document.getElementById('deleteIdCard').value='1'; this.form.submit(); }">
-                        <i class="fas fa-trash me-1"></i>Elimina
-                    </button>
-                    <input type="hidden" id="deleteIdCard" name="delete_id_card" value="0">
-                    {% endif %}
-                </div>
-                {% endif %}
-                <input type="file" name="id_card_file" class="form-control" 
-                       accept=".pdf,.jpg,.jpeg,.png"
-                       {% if not can_edit %}disabled{% endif %}>
-                <small class="text-muted">Carica copia del documento (PDF, JPG, PNG - max 5MB)</small>
             </div>
         </div>
 
