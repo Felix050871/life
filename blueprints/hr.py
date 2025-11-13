@@ -499,6 +499,51 @@ def hr_detail(user_id):
             hr_data.ccnl_level = request.form.get('ccnl_level', '').strip() or None
             hr_data.mansione = request.form.get('mansione', '').strip() or None
             hr_data.qualifica = request.form.get('qualifica', '').strip() or None
+            
+            # CCNL Structured Data - FK fields (dual-write migration)
+            # Parse FK values from form (DON'T assign to hr_data yet - validate first!)
+            ccnl_contract_id_str = request.form.get('ccnl_contract_id', '').strip()
+            ccnl_contract_id = int(ccnl_contract_id_str) if ccnl_contract_id_str else None
+            
+            ccnl_qualification_id_str = request.form.get('ccnl_qualification_id', '').strip()
+            ccnl_qualification_id = int(ccnl_qualification_id_str) if ccnl_qualification_id_str else None
+            
+            ccnl_level_id_str = request.form.get('ccnl_level_id', '').strip()
+            ccnl_level_id = int(ccnl_level_id_str) if ccnl_level_id_str else None
+            
+            # Validate tenant scoping and FK coherence BEFORE assigning (prevent IntegrityError)
+            if ccnl_contract_id is not None:
+                from models import CCNLContract
+                contract = filter_by_company(CCNLContract.query).filter_by(id=ccnl_contract_id).first()
+                if not contract:
+                    flash('Errore: CCNL non valido o non accessibile', 'error')
+                    return redirect(url_for('hr.hr_detail', user_id=user.id))
+            
+            if ccnl_qualification_id is not None and ccnl_contract_id is not None:
+                from models import CCNLQualification
+                qualification = filter_by_company(CCNLQualification.query).filter_by(id=ccnl_qualification_id).first()
+                if not qualification or qualification.ccnl_id != ccnl_contract_id:
+                    flash('Errore: la qualifica selezionata non appartiene al CCNL scelto', 'error')
+                    return redirect(url_for('hr.hr_detail', user_id=user.id))
+            elif ccnl_qualification_id is not None:
+                flash('Errore: selezionare un CCNL prima della qualifica', 'error')
+                return redirect(url_for('hr.hr_detail', user_id=user.id))
+            
+            if ccnl_level_id is not None and ccnl_qualification_id is not None:
+                from models import CCNLLevel
+                level = filter_by_company(CCNLLevel.query).filter_by(id=ccnl_level_id).first()
+                if not level or level.qualification_id != ccnl_qualification_id:
+                    flash('Errore: il livello selezionato non appartiene alla qualifica scelta', 'error')
+                    return redirect(url_for('hr.hr_detail', user_id=user.id))
+            elif ccnl_level_id is not None:
+                flash('Errore: selezionare una qualifica prima del livello', 'error')
+                return redirect(url_for('hr.hr_detail', user_id=user.id))
+            
+            # ONLY NOW assign to hr_data (after validation passed)
+            hr_data.ccnl_contract_id = ccnl_contract_id
+            hr_data.ccnl_qualification_id = ccnl_qualification_id
+            hr_data.ccnl_level_id = ccnl_level_id
+            
             hr_data.rischio_inail = request.form.get('rischio_inail', '').strip() or None
             hr_data.tipo_assunzione = request.form.get('tipo_assunzione', '').strip() or None
             hr_data.ticket_restaurant = request.form.get('ticket_restaurant') == 'on'
@@ -944,6 +989,10 @@ def hr_detail(user_id):
     from models import Mansione
     mansioni = filter_by_company(Mansione.query).filter_by(active=True).order_by(Mansione.nome).all()
     
+    # Carica lista CCNL per i dropdown a cascata
+    from models import CCNLContract
+    ccnl_list = filter_by_company(CCNLContract.query).order_by(CCNLContract.nome).all()
+    
     # Carica lista sedi per il dropdown
     sedi = filter_by_company(Sede.query).order_by(Sede.name).all()
     
@@ -988,6 +1037,7 @@ def hr_detail(user_id):
                          can_edit=can_edit,
                          aci_vehicles=aci_vehicles,
                          mansioni=mansioni,
+                         ccnl_list=ccnl_list,
                          sedi=sedi,
                          work_schedules=work_schedules,
                          secondment_periods=secondment_periods,

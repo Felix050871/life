@@ -611,10 +611,16 @@
         <div class="row">
             <div class="col-md-3 mb-3">
                 <label class="form-label">CCNL</label>
-                <input type="text" name="ccnl" class="form-control" 
-                       value="{{ hr_data.ccnl or '' }}"
-                       placeholder="es. Commercio, Metalmeccanico"
-                       {% if not can_edit %}disabled{% endif %}>
+                <select id="ccnl_contract_id" name="ccnl_contract_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Seleziona CCNL...</option>
+                    {% for ccnl in ccnl_list %}
+                    <option value="{{ ccnl.id }}" {% if hr_data.ccnl_contract_id == ccnl.id %}selected{% endif %}>
+                        {{ ccnl.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="ccnl" value="{{ hr_data.ccnl or '' }}">
+                <small class="text-muted">Gestisci i CCNL dal menu HR</small>
             </div>
             <div class="col-md-3 mb-3">
                 <label class="form-label">Mansione</label>
@@ -630,16 +636,17 @@
             </div>
             <div class="col-md-3 mb-3">
                 <label class="form-label">Qualifica</label>
-                <input type="text" name="qualifica" class="form-control" 
-                       value="{{ hr_data.qualifica or '' }}"
-                       {% if not can_edit %}disabled{% endif %}>
+                <select id="ccnl_qualification_id" name="ccnl_qualification_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Prima seleziona CCNL...</option>
+                </select>
+                <input type="hidden" name="qualifica" value="{{ hr_data.qualifica or '' }}">
             </div>
             <div class="col-md-3 mb-3">
                 <label class="form-label">Livello</label>
-                <input type="text" name="ccnl_level" class="form-control" 
-                       value="{{ hr_data.ccnl_level or '' }}"
-                       placeholder="es. D2, 3° livello"
-                       {% if not can_edit %}disabled{% endif %}>
+                <select id="ccnl_level_id" name="ccnl_level_id" class="form-select" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Prima seleziona Qualifica...</option>
+                </select>
+                <input type="hidden" name="ccnl_level" value="{{ hr_data.ccnl_level or '' }}">
             </div>
         </div>
 
@@ -1627,6 +1634,179 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (overtimeType) {
         overtimeType.addEventListener('change', toggleBancaOreFields);
+    }
+    
+    // === CCNL Cascading Dropdowns Management ===
+    const ccnlSelect = document.getElementById('ccnl_contract_id');
+    const qualificaSelect = document.getElementById('ccnl_qualification_id');
+    const livelloSelect = document.getElementById('ccnl_level_id');
+
+    // Hidden inputs per legacy fields (dual-write strategy)
+    const ccnlLegacy = document.querySelector('input[name="ccnl"]');
+    const qualificaLegacy = document.querySelector('input[name="qualifica"]');
+    const livelloLegacy = document.querySelector('input[name="ccnl_level"]');
+
+    if (ccnlSelect && qualificaSelect && livelloSelect) {
+        // Helper: mostra errori in Bootstrap alert
+        function showCcnlError(message) {
+            const flashContainer = document.querySelector('.flash-messages') || document.querySelector('.container-fluid');
+            if (flashContainer) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger alert-dismissible fade show';
+                alert.innerHTML = `
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <i class="fas fa-exclamation-triangle me-2"></i>${message}
+                `;
+                flashContainer.insertBefore(alert, flashContainer.firstChild);
+            }
+        }
+
+        // Event: CCNL cambiato -> carica qualifiche
+        ccnlSelect.addEventListener('change', async function() {
+            const ccnlId = this.value;
+            const selectedOption = this.options[this.selectedIndex];
+            
+            // Reset dependent dropdowns
+            qualificaSelect.innerHTML = '<option value="">Seleziona qualifica...</option>';
+            livelloSelect.innerHTML = '<option value="">Prima seleziona Qualifica...</option>';
+            qualificaSelect.disabled = true;
+            livelloSelect.disabled = true;
+            
+            // Clear legacy fields
+            if (qualificaLegacy) qualificaLegacy.value = '';
+            if (livelloLegacy) livelloLegacy.value = '';
+            
+            // Update CCNL legacy field con label selezionata
+            if (ccnlLegacy) ccnlLegacy.value = ccnlId ? selectedOption.textContent : '';
+            
+            if (!ccnlId) return;
+            
+            // Loading state
+            qualificaSelect.innerHTML = '<option value="">Caricamento...</option>';
+            
+            try {
+                const response = await fetch(`/api/ccnl/${ccnlId}/qualifications`);
+                if (!response.ok) throw new Error('API error');
+                
+                const qualifications = await response.json();
+                
+                // Populate
+                qualificaSelect.innerHTML = '<option value="">Seleziona qualifica...</option>';
+                qualifications.forEach(q => {
+                    const option = document.createElement('option');
+                    option.value = q.id;
+                    option.textContent = q.nome;
+                    qualificaSelect.appendChild(option);
+                });
+                
+                qualificaSelect.disabled = false;
+                
+            } catch (error) {
+                console.error('Error loading qualifications:', error);
+                showCcnlError('Errore nel caricamento delle qualifiche. Riprova.');
+                qualificaSelect.innerHTML = '<option value="">Errore nel caricamento</option>';
+            }
+        });
+
+        // Event: Qualifica cambiata -> carica livelli
+        qualificaSelect.addEventListener('change', async function() {
+            const qualificaId = this.value;
+            const selectedOption = this.options[this.selectedIndex];
+            
+            // Reset dependent
+            livelloSelect.innerHTML = '<option value="">Prima seleziona Qualifica...</option>';
+            livelloSelect.disabled = true;
+            
+            // Clear legacy
+            if (livelloLegacy) livelloLegacy.value = '';
+            
+            // Update Qualifica legacy field
+            if (qualificaLegacy) qualificaLegacy.value = qualificaId ? selectedOption.textContent : '';
+            
+            if (!qualificaId) return;
+            
+            // Loading state
+            livelloSelect.innerHTML = '<option value="">Caricamento...</option>';
+            
+            try {
+                const response = await fetch(`/api/qualifications/${qualificaId}/levels`);
+                if (!response.ok) throw new Error('API error');
+                
+                const levels = await response.json();
+                
+                // Populate
+                livelloSelect.innerHTML = '<option value="">Seleziona livello...</option>';
+                levels.forEach(l => {
+                    const option = document.createElement('option');
+                    option.value = l.id;
+                    option.textContent = `${l.codice} - ${l.nome}`;
+                    livelloSelect.appendChild(option);
+                });
+                
+                livelloSelect.disabled = false;
+                
+            } catch (error) {
+                console.error('Error loading levels:', error);
+                showCcnlError('Errore nel caricamento dei livelli. Riprova.');
+                livelloSelect.innerHTML = '<option value="">Errore nel caricamento</option>';
+            }
+        });
+
+        // Event: Livello cambiato -> aggiorna legacy field
+        livelloSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (livelloLegacy) livelloLegacy.value = this.value ? selectedOption.textContent : '';
+        });
+
+        // === Initial load: pre-populate se FK esistenti ===
+        const currentCcnlId = {{ hr_data.ccnl_contract_id | tojson }};
+        const currentQualificationId = {{ hr_data.ccnl_qualification_id | tojson }};
+        const currentLevelId = {{ hr_data.ccnl_level_id | tojson }};
+        
+        async function initializeCcnlDropdowns() {
+            if (!currentCcnlId) return;
+            
+            try {
+                // Carica qualifiche per CCNL corrente
+                const qualResponse = await fetch(`/api/ccnl/${currentCcnlId}/qualifications`);
+                if (!qualResponse.ok) throw new Error('API error');
+                const qualifications = await qualResponse.json();
+                
+                qualificaSelect.innerHTML = '<option value="">Seleziona qualifica...</option>';
+                qualifications.forEach(q => {
+                    const option = document.createElement('option');
+                    option.value = q.id;
+                    option.textContent = q.nome;
+                    if (q.id == currentQualificationId) option.selected = true;
+                    qualificaSelect.appendChild(option);
+                });
+                qualificaSelect.disabled = false;
+                
+                // Se qualifica selezionata, carica livelli
+                if (currentQualificationId) {
+                    const levelResponse = await fetch(`/api/qualifications/${currentQualificationId}/levels`);
+                    if (!levelResponse.ok) throw new Error('API error');
+                    const levels = await levelResponse.json();
+                    
+                    livelloSelect.innerHTML = '<option value="">Seleziona livello...</option>';
+                    levels.forEach(l => {
+                        const option = document.createElement('option');
+                        option.value = l.id;
+                        option.textContent = `${l.codice} - ${l.nome}`;
+                        if (l.id == currentLevelId) option.selected = true;
+                        livelloSelect.appendChild(option);
+                    });
+                    livelloSelect.disabled = false;
+                }
+                
+            } catch (error) {
+                console.error('Error initializing dropdowns:', error);
+                showCcnlError('Errore inizializzazione campi CCNL. Ricarica la pagina.');
+            }
+        }
+        
+        // Run initialization
+        initializeCcnlDropdowns();
     }
 });
 </script>
