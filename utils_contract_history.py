@@ -15,8 +15,8 @@ TRACKED_CONTRACT_FIELDS = [
     'rimborsi_diarie', 'rischio_inail', 'tipo_assunzione', 'ticket_restaurant',
     'other_notes', 'gross_salary', 'net_salary', 'iban', 'payment_method',
     'meal_vouchers_value', 'fuel_card', 'overtime_enabled', 'overtime_type',
-    'banca_ore_limite_max', 'banca_ore_periodo_mesi', 'gg_ferie_maturate_mese',
-    'hh_permesso_maturate_mese', 'sede_id', 'work_schedule_id'
+    'banca_ore_limite_max', 'banca_ore_periodo_mesi', 'ferie_unit', 'ferie_daily_hours',
+    'gg_ferie_maturate_mese', 'hh_permesso_maturate_mese', 'sede_id', 'work_schedule_id'
 ]
 
 
@@ -137,6 +137,8 @@ def create_contract_snapshot(hr_data: UserHRData, changed_by_user_id: int = None
         overtime_type=hr_data.overtime_type,
         banca_ore_limite_max=hr_data.banca_ore_limite_max,
         banca_ore_periodo_mesi=hr_data.banca_ore_periodo_mesi,
+        ferie_unit=hr_data.ferie_unit,
+        ferie_daily_hours=hr_data.ferie_daily_hours,
         gg_ferie_maturate_mese=hr_data.gg_ferie_maturate_mese,
         hh_permesso_maturate_mese=hr_data.hh_permesso_maturate_mese
     )

@@ -1207,7 +1207,9 @@ class UserHRData(db.Model):
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)  # Periodo mesi per usufruire ore (solo per Banca Ore)
     
     # Maturazione ferie e permessi
-    gg_ferie_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # ORE di ferie maturate al mese (es. 18.66 per 224h/anno) - gestito ad HH non GG
+    ferie_unit = db.Column(db.String(10), nullable=False, default='hours')  # Unità di misura ferie: 'hours' o 'days'
+    ferie_daily_hours = db.Column(db.Numeric(4, 2), nullable=False, default=8)  # Ore giornaliere per conversione giorni->ore (default 8h)
+    gg_ferie_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # Ferie maturate al mese (in ore o giorni, vedi ferie_unit)
     hh_permesso_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # Ore di permesso maturate al mese (es. 7 per ROL)
     
     # Sicurezza e requisiti
@@ -1390,6 +1392,8 @@ class ContractHistory(db.Model):
     overtime_type = db.Column(db.String(50), nullable=True)
     banca_ore_limite_max = db.Column(db.Float, default=40.0)
     banca_ore_periodo_mesi = db.Column(db.Integer, default=12)
+    ferie_unit = db.Column(db.String(10), nullable=False, default='hours')
+    ferie_daily_hours = db.Column(db.Numeric(4, 2), nullable=False, default=8)
     gg_ferie_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)
     hh_permesso_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)
     
