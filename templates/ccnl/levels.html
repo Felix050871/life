@@ -73,12 +73,12 @@
                             <td>{{ level.descrizione or '-' }}</td>
                             <td>{{ level.created_at.strftime('%d/%m/%Y %H:%M') if level.created_at else '-' }}</td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ level.id }}" title="Modifica">
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ level.id }}">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <form method="POST" action="{{ url_for('ccnl.delete_level', ccnl_id=qualification.ccnl_id, qual_id=qualification.id, id=level.id) }}" class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questo livello?');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Elimina">
+                                    <button type="submit" class="btn btn-sm btn-danger">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
