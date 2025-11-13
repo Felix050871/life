@@ -1012,20 +1012,26 @@ def hr_detail(user_id):
     active_safety_net_assignment = None
     total_safety_net_assignments = 0
     
+    # DEBUG: Check permissions
+    print(f"[DEBUG HR] Checking permissions for user {current_user.email}")
+    print(f"[DEBUG HR] can_view_social_safety_reports: {current_user.can_view_social_safety_reports()}")
+    print(f"[DEBUG HR] can_manage_social_safety_programs: {current_user.can_manage_social_safety_programs()}")
+    print(f"[DEBUG HR] can_assign_social_safety_programs: {current_user.can_assign_social_safety_programs()}")
+    
     if current_user.can_view_social_safety_reports() or current_user.can_manage_social_safety_programs() or current_user.can_assign_social_safety_programs():
         from models import SocialSafetyNetAssignment
         from datetime import date
-        import logging
+        
+        print(f"[DEBUG HR] INSIDE permission block - loading assignments for user_id={user.id}")
         
         # Carica le ultime 5 assegnazioni per questo utente
         all_assignments = filter_by_company(SocialSafetyNetAssignment.query).filter_by(
             user_id=user.id
         ).order_by(SocialSafetyNetAssignment.start_date.desc()).all()
         
-        logging.debug(f"[HR Detail] User {user.id} ({user.email}) - Found {len(all_assignments)} safety net assignments")
-        logging.debug(f"[HR Detail] Current user: {current_user.email}, Company: {current_user.company_id}")
+        print(f"[DEBUG HR] Found {len(all_assignments)} assignments for user {user.id}")
         for a in all_assignments:
-            logging.debug(f"  - Assignment ID {a.id}: Status={a.status}, Start={a.start_date}, Program={a.program.name if a.program else 'None'}")
+            print(f"[DEBUG HR]   - Assignment ID {a.id}: Status={a.status}, Start={a.start_date}, Program={a.program.name if a.program else 'None'}")
         
         total_safety_net_assignments = len(all_assignments)
         safety_net_assignments = all_assignments[:5]  # Prime 5
