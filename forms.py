@@ -1400,6 +1400,8 @@ class RoleForm(FlaskForm):
             'can_view_my_hr_data': self.can_view_my_hr_data.data,
             'can_manage_mansioni': self.can_manage_mansioni.data,
             'can_view_mansioni': self.can_view_mansioni.data,
+            'can_manage_ccnl': self.can_manage_ccnl.data,
+            'can_view_ccnl': self.can_view_ccnl.data,
             
             # Ammortizzatori Sociali - Social Safety Net
             'can_manage_social_safety_programs': self.can_manage_social_safety_programs.data,
