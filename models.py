@@ -3864,6 +3864,7 @@ class MileageRequest(db.Model):
     vehicle_description = db.Column(db.String(200))  # Descrizione del veicolo se non in ACI
     
     # Calcolo rimborso
+    reimbursement_type = db.Column(db.String(20), nullable=True)  # "fisso" o "libero" - tipologia utilizzata per questa richiesta
     cost_per_km = db.Column(db.Float, nullable=False)  # Costo per km al momento della richiesta
     total_amount = db.Column(db.Float, nullable=False)  # Importo totale calcolato
     
