@@ -1403,6 +1403,48 @@ class UserHRData(db.Model):
         if self.cod_si_number is None:
             return None
         return f'{self.cod_si_number:06d}'
+    
+    def get_mileage_fixed_balance(self, year=None):
+        """
+        Calcola il saldo disponibile per i rimborsi fissi annuali.
+        
+        Args:
+            year: Anno di riferimento (default: anno corrente)
+        
+        Returns:
+            dict con chiavi 'max_annual', 'used', 'available'
+        """
+        from datetime import date as dt_date
+        from sqlalchemy import extract, func
+        
+        if year is None:
+            year = dt_date.today().year
+        
+        # Se non ha configurato rimborso fisso, ritorna None
+        if not self.mileage_reimbursement_type or self.mileage_reimbursement_type not in ['fisso', 'entrambi']:
+            return None
+        
+        if not self.mileage_fixed_max_annual:
+            return None
+        
+        # Calcola totale rimborsi fissi approvati nell'anno
+        from models import MileageRequest
+        from constants import RequestStatus
+        total_used = db.session.query(func.sum(MileageRequest.total_amount)).filter(
+            MileageRequest.user_id == self.user_id,
+            MileageRequest.reimbursement_type == 'fisso',
+            MileageRequest.status == RequestStatus.APPROVED,
+            extract('year', MileageRequest.travel_date) == year
+        ).scalar() or 0.0
+        
+        available = self.mileage_fixed_max_annual - total_used
+        
+        return {
+            'max_annual': self.mileage_fixed_max_annual,
+            'used': round(total_used, 2),
+            'available': round(max(0, available), 2),
+            'year': year
+        }
 
 
 class ContractHistory(db.Model):

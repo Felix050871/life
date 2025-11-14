@@ -30,10 +30,10 @@ class RoleNames:
 # =============================================================================
 class RequestStatus:
     """Status constants for various request types"""
-    PENDING = 'pending'
-    APPROVED = 'approved'
-    REJECTED = 'rejected'
-    CANCELLED = 'cancelled'
+    PENDING = 'Pending'
+    APPROVED = 'Approved'
+    REJECTED = 'Rejected'
+    CANCELLED = 'Cancelled'
     
     @classmethod
     def all(cls):
