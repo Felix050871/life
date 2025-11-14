@@ -106,7 +106,7 @@ def get_calendar_events():
                     'user': user.get_full_name(),
                     'leave_type': leave.leave_type.name if leave.leave_type else '',
                     'reason': leave.reason or '',
-                    'duration_type': leave.duration_type or 'full_day',
+                    'duration_type': 'partial' if leave.is_time_based() else 'full_day',
                     'leave_id': leave.id
                 }
             })
