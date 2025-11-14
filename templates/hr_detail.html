@@ -1699,15 +1699,31 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Pre-carica il veicolo selezionato se esiste
-    {% if hr_data.aci_vehicle %}
-    tipoSelect.value = '{{ hr_data.aci_vehicle.tipologia }}';
-    tipoSelect.dispatchEvent(new Event('change'));
+    {% if current_vehicle %}
+    // Imposta tipologia e trigger caricamento marche
+    tipoSelect.value = '{{ current_vehicle.tipologia }}';
     
-    // Aspetta che le marche vengano caricate
-    setTimeout(() => {
-        marcaSelect.value = '{{ hr_data.aci_vehicle.marca }}';
-        marcaSelect.dispatchEvent(new Event('change'));
-    }, 500);
+    // Attendere il caricamento delle marche prima di impostare la marca
+    const waitForMarcas = setInterval(() => {
+        if (!marcaSelect.disabled && marcaSelect.options.length > 1) {
+            clearInterval(waitForMarcas);
+            marcaSelect.value = '{{ current_vehicle.marca }}';
+            
+            // Attendere il caricamento dei modelli prima di impostare il modello
+            const waitForModelos = setInterval(() => {
+                if (!modelloSelect.disabled && modelloSelect.options.length > 1) {
+                    clearInterval(waitForModelos);
+                    modelloSelect.value = currentVehicleId;
+                }
+            }, 100);
+            
+            // Trigger caricamento modelli
+            marcaSelect.dispatchEvent(new Event('change'));
+        }
+    }, 100);
+    
+    // Trigger caricamento marche
+    tipoSelect.dispatchEvent(new Event('change'));
     {% endif %}
     
     // Gestione visibilità campi straordinari/banca ore

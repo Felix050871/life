@@ -1023,6 +1023,11 @@ def hr_detail(user_id):
     # Carica lista veicoli ACI per il dropdown
     aci_vehicles = ACITable.query.order_by(ACITable.tipologia, ACITable.marca, ACITable.modello).all()
     
+    # Carica dati del veicolo corrente per pre-popolare i select
+    current_vehicle = None
+    if hr_data and hr_data.aci_vehicle_id:
+        current_vehicle = ACITable.query.get(hr_data.aci_vehicle_id)
+    
     # Carica lista mansioni attive per il dropdown
     from models import Mansione
     mansioni = filter_by_company(Mansione.query).filter_by(active=True).order_by(Mansione.nome).all()
@@ -1074,6 +1079,7 @@ def hr_detail(user_id):
                          hr_data=hr_data,
                          can_edit=can_edit,
                          aci_vehicles=aci_vehicles,
+                         current_vehicle=current_vehicle,
                          mansioni=mansioni,
                          ccnl_list=ccnl_list,
                          sedi=sedi,
