@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 totalCalculatedKm = data.km;
-                calculatedKm.textContent = totalCalculatedKm + ' km';
+                calculatedKm.innerHTML = `${totalCalculatedKm} km <small class="text-success"><i class="fas fa-check-circle"></i> Google Maps</small>`;
                 
                 // Auto-update total km if not manual
                 if (!isKmManual.checked) {
@@ -439,27 +439,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 updateReimbursementPreview();
             } else {
-                // Fallback in caso di errore
-                calculatedKm.innerHTML = '<small class="text-warning">Errore calcolo automatico</small>';
+                // Show error message from API
+                const errorMsg = data.error || 'Errore nel calcolo della distanza';
+                calculatedKm.innerHTML = `<small class="text-warning"><i class="fas fa-exclamation-triangle"></i> ${errorMsg}</small>`;
+                
+                // Enable manual input
                 if (!isKmManual.checked) {
+                    isKmManual.checked = true;
+                    totalKmInput.readOnly = false;
+                    totalKmInput.classList.remove('bg-light');
                     totalKmInput.value = '';
+                    totalKmInput.focus();
                 }
             }
         })
         .catch(error => {
             console.error('Errore calcolo distanza:', error);
-            // Fallback con calcolo approssimativo
-            const avgDistancePerSegment = 50;
-            const segments = addresses.length - 1;
-            totalCalculatedKm = Math.max(10, segments * avgDistancePerSegment);
             
-            calculatedKm.innerHTML = totalCalculatedKm + ' km <small class="text-muted">(stimato)</small>';
+            // Show error and require manual input
+            calculatedKm.innerHTML = '<small class="text-danger"><i class="fas fa-times-circle"></i> Errore di connessione. Inserisci manualmente i chilometri.</small>';
             
+            // Enable manual input
             if (!isKmManual.checked) {
-                totalKmInput.value = totalCalculatedKm;
+                isKmManual.checked = true;
+                totalKmInput.readOnly = false;
+                totalKmInput.classList.remove('bg-light');
+                totalKmInput.value = '';
+                totalKmInput.focus();
             }
-            
-            updateReimbursementPreview();
         });
     }
     

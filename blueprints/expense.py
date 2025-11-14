@@ -19,6 +19,7 @@ from app import db, app
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 from utils_tenant import filter_by_company, set_company_on_create, get_user_company_id
+from services.distance_service import get_distance_service
 import uuid
 
 # =============================================================================
@@ -1064,7 +1065,7 @@ def delete_mileage_request(request_id):
 @expense_bp.route('/api/calculate_distance', methods=['POST'])
 @login_required
 def calculate_distance():
-    """Calcola la distanza tra indirizzi usando API di geocoding"""
+    """Calcola la distanza tra indirizzi usando Google Maps Distance Matrix API"""
     try:
         data = request.get_json()
         addresses = data.get('addresses', [])
@@ -1072,26 +1073,34 @@ def calculate_distance():
         if len(addresses) < 2:
             return jsonify({'error': 'Servono almeno 2 indirizzi', 'km': 0})
         
-        # Per ora simuliamo il calcolo - in produzione usare Google Maps API o simile
-        # Calcolo basato su distanza approssimativa tra città italiane
-        total_km = 0
+        # Use Google Maps Distance Matrix API service
+        distance_service = get_distance_service()
         
-        for i in range(len(addresses) - 1):
-            start = addresses[i].lower()
-            end = addresses[i + 1].lower()
-            
-            # Calcolo approssimativo basato su città principali
-            segment_km = calculate_approximate_distance(start, end)
-            total_km += segment_km
+        if not distance_service.is_available():
+            return jsonify({
+                'error': 'Servizio di calcolo distanze non disponibile. Inserisci manualmente i chilometri.',
+                'km': 0
+            })
         
-        return jsonify({
-            'success': True,
-            'km': round(total_km, 1),
-            'segments': len(addresses) - 1
-        })
+        # Calculate distance using the service
+        result = distance_service.calculate_distance(addresses)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'km': result['total_km'],
+                'segments': result.get('segments', []),
+                'total_segments': len(result.get('segments', []))
+            })
+        else:
+            return jsonify({
+                'error': result.get('error', 'Errore nel calcolo della distanza'),
+                'km': 0
+            })
         
     except Exception as e:
-        return jsonify({'error': str(e), 'km': 0})
+        app.logger.error(f"Error in calculate_distance endpoint: {e}", exc_info=True)
+        return jsonify({'error': 'Errore imprevisto nel calcolo della distanza. Inserisci manualmente i chilometri.', 'km': 0})
 
 def calculate_approximate_distance(start_address, end_address):
     """Calcola distanza approssimativa tra due indirizzi italiani"""
