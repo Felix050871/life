@@ -1162,8 +1162,16 @@ def calculate_approximate_distance(start_address, end_address):
         lat2, lon2 = city_coords[end_city]
         return haversine_distance(lat1, lon1, lat2, lon2)
     
-    # Altrimenti, stima generica basata su lunghezza stringa (molto approssimativa)
-    return max(10, len(start_address + end_address) * 2)
+    # Se solo una città è nota, stima basata su distanza media
+    if start_city and start_city in city_coords:
+        # Distanza media tra città italiane: ~200 km
+        return 200
+    if end_city and end_city in city_coords:
+        return 200
+    
+    # Se nessuna città è riconosciuta, restituisce 0 e richiede inserimento manuale
+    # Questo evita stime casuali basate sulla lunghezza della stringa
+    return 0
 
 @expense_bp.route('/mileage/export')
 @login_required
