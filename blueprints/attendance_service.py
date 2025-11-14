@@ -41,6 +41,168 @@ def calculate_hours(start_time_str: Optional[str], end_time_str: Optional[str]) 
         return 0.0
 
 
+def calculate_expected_minutes(
+    user,
+    day_date: date,
+    is_weekend: bool,
+    is_holiday: bool,
+    leave_block: Optional[LeaveBlock]
+) -> int:
+    """
+    Calcola i minuti previsti per un giorno in base a:
+    1. Shift assegnato per quel giorno (priorità massima)
+    2. WorkSchedule dell'utente (fallback)
+    3. ContractHistory ore settimanali / 5 (ultimo fallback)
+    4. Leave approvato o weekend/festivo → 0 minuti
+    
+    Returns:
+        Minuti previsti (0 se assenza approvata/festivo/weekend)
+    """
+    from models import Shift, WorkSchedule, ContractHistory
+    
+    # Se c'è assenza approvata, ore previste = 0
+    if leave_block and leave_block.is_validated:
+        return 0
+    
+    # Se weekend o festivo senza shift, ore previste = 0
+    if is_weekend or is_holiday:
+        # Controlla se c'è un shift assegnato per questo giorno
+        shift = Shift.query.filter_by(
+            user_id=user.id,
+            date=day_date
+        ).first()
+        if not shift:
+            return 0
+        # Se c'è shift, usa le sue ore
+        if shift.start_time and shift.end_time:
+            start_mins = shift.start_time.hour * 60 + shift.start_time.minute
+            end_mins = shift.end_time.hour * 60 + shift.end_time.minute
+            return max(0, end_mins - start_mins)
+        return 0
+    
+    # Priorità 1: Shift specifico del giorno
+    shift = Shift.query.filter_by(
+        user_id=user.id,
+        date=day_date
+    ).first()
+    if shift and shift.start_time and shift.end_time:
+        start_mins = shift.start_time.hour * 60 + shift.start_time.minute
+        end_mins = shift.end_time.hour * 60 + shift.end_time.minute
+        return max(0, end_mins - start_mins)
+    
+    # Priorità 2: WorkSchedule dell'utente
+    if user.work_schedule_id:
+        work_schedule = WorkSchedule.query.get(user.work_schedule_id)
+        if work_schedule:
+            # WorkSchedule può avere daily_hours (minuti per ogni giorno della settimana)
+            weekday = day_date.weekday()  # 0=Monday, 6=Sunday
+            
+            # Se c'è daily_hours mapping, usa quello
+            if hasattr(work_schedule, 'daily_hours') and work_schedule.daily_hours:
+                daily_map = work_schedule.daily_hours
+                if isinstance(daily_map, dict) and str(weekday) in daily_map:
+                    return int(daily_map[str(weekday)] * 60)
+            
+            # Altrimenti usa orario standard
+            if work_schedule.start_time_min and work_schedule.end_time_max:
+                start_mins = work_schedule.start_time_min.hour * 60 + work_schedule.start_time_min.minute
+                end_mins = work_schedule.end_time_max.hour * 60 + work_schedule.end_time_max.minute
+                return max(0, end_mins - start_mins)
+    
+    # Priorità 3: ContractHistory (ore settimanali / 5)
+    contract = ContractHistory.query.filter(
+        ContractHistory.user_id == user.id,
+        ContractHistory.start_date <= day_date,
+        (ContractHistory.end_date >= day_date) | (ContractHistory.end_date.is_(None))
+    ).order_by(ContractHistory.start_date.desc()).first()
+    
+    if contract and contract.weekly_hours:
+        # Ore settimanali diviso 5 giorni lavorativi
+        daily_hours = contract.weekly_hours / 5.0
+        return int(daily_hours * 60)
+    
+    # Fallback: 8 ore standard
+    return 480  # 8 * 60
+
+
+def calculate_worked_minutes(sessions: List[SessionRow]) -> int:
+    """
+    Calcola i minuti effettivamente lavorati da tutte le sessioni del giorno.
+    Formula: (uscita - entrata) - pausa per ogni sessione, poi somma.
+    
+    Returns:
+        Minuti totali lavorati (0 se manca clock_out)
+    """
+    total_minutes = 0
+    
+    for session in sessions:
+        if not session.clock_in or not session.clock_out:
+            # Sessione incompleta → 0 minuti
+            continue
+        
+        try:
+            # Parse orari
+            in_parts = session.clock_in.split(':')
+            out_parts = session.clock_out.split(':')
+            in_mins = int(in_parts[0]) * 60 + int(in_parts[1])
+            out_mins = int(out_parts[0]) * 60 + int(out_parts[1])
+            
+            work_mins = out_mins - in_mins
+            if work_mins < 0:  # Attraversa mezzanotte
+                work_mins += 24 * 60
+            
+            # Sottrai pausa se presente
+            if session.break_start and session.break_end:
+                break_start_parts = session.break_start.split(':')
+                break_end_parts = session.break_end.split(':')
+                break_start_mins = int(break_start_parts[0]) * 60 + int(break_start_parts[1])
+                break_end_mins = int(break_end_parts[0]) * 60 + int(break_end_parts[1])
+                
+                break_mins = break_end_mins - break_start_mins
+                if break_mins < 0:
+                    break_mins += 24 * 60
+                
+                work_mins -= break_mins
+            
+            total_minutes += max(0, work_mins)
+        except (ValueError, IndexError):
+            continue
+    
+    return total_minutes
+
+
+def determine_anomaly_type(worked_minutes: int, expected_minutes: int) -> str:
+    """
+    Determina il tipo di anomalia rispetto all'orario previsto.
+    Tolleranza: ±15 minuti.
+    
+    Returns:
+        "MATCH", "UNDER", "OVER", "ABSENT", "ZERO_EXPECTED"
+    """
+    TOLERANCE = 15  # minuti
+    
+    # Caso 1: Nessun orario previsto
+    if expected_minutes == 0:
+        if worked_minutes > TOLERANCE:
+            return "OVER"  # Lavorato durante festivo/weekend
+        return "ZERO_EXPECTED"
+    
+    # Caso 2: Assenza (previsto > 0, lavorato = 0)
+    if worked_minutes == 0:
+        return "ABSENT"
+    
+    # Caso 3: Sotto-orario
+    if worked_minutes < expected_minutes - TOLERANCE:
+        return "UNDER"
+    
+    # Caso 4: Straordinario
+    if worked_minutes > expected_minutes + TOLERANCE:
+        return "OVER"
+    
+    # Caso 5: Normale (±15 min)
+    return "MATCH"
+
+
 @dataclass
 class LeaveBlock:
     """Rappresenta un'assenza (permesso/malattia/ferie) per un giorno"""
@@ -87,6 +249,9 @@ class DayRow:
     leave_block: Optional[LeaveBlock]
     sessions: List[SessionRow]
     day_total_hours: float
+    worked_minutes: int  # Minuti effettivamente lavorati
+    expected_minutes: int  # Minuti previsti (shift/work_schedule/contract)
+    anomaly_type: str  # "MATCH", "UNDER", "OVER", "ABSENT", "ZERO_EXPECTED"
 
 
 def build_timesheet_grid(
