@@ -1270,6 +1270,11 @@ class UserHRData(db.Model):
     work_schedule_id = db.Column(db.Integer, db.ForeignKey('work_schedule.id'), nullable=True)  # Orario di lavoro assegnato
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
     vehicle_registration_document = db.Column(db.String(255), nullable=True)  # Path del libretto di circolazione caricato
+    
+    # Configurazione rimborsi chilometrici
+    mileage_reimbursement_type = db.Column(db.String(20), nullable=True)  # "fisso", "libero", "entrambi"
+    mileage_fixed_max_annual = db.Column(db.Float, nullable=True)  # Importo massimo annuale per rimborso fisso (€)
+    
     overtime_enabled = db.Column(db.Boolean, default=False)  # Abilitazione straordinari
     overtime_type = db.Column(db.String(50), nullable=True)  # "Straordinario Pagato" o "Banca Ore"
     banca_ore_limite_max = db.Column(db.Float, default=40.0)  # Limite massimo ore accumulabili (solo per Banca Ore)
