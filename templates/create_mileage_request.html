@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         calculatedKm.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Calcolando...';
         
         // Chiama API per calcolo distanza reale
-        fetch('/api/calculate_distance', {
+        fetch('{{ url_for("expense.calculate_distance") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
