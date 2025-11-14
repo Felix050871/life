@@ -3625,12 +3625,36 @@ def bulk_fill_month():
         filled_count = 0
         skipped_count = 0
         
+        # Carica festività per questo mese
+        from sqlalchemy import or_
+        holidays_query = filter_by_company(Holiday.query).filter_by(
+            month=month,
+            active=True
+        )
+        if sede_id:
+            holidays_query = holidays_query.filter(
+                or_(
+                    Holiday.sede_id == sede_id,
+                    Holiday.sede_id.is_(None)  # Festività nazionali
+                )
+            )
+        else:
+            holidays_query = holidays_query.filter(Holiday.sede_id.is_(None))
+        
+        holidays = holidays_query.all()
+        holiday_days = {h.day for h in holidays}
+        
         # Itera su tutti i giorni del mese
         for day in range(1, days_in_month + 1):
             day_date = date(year, month, day)
             
             # Salta sabato (5) e domenica (6)
             if day_date.weekday() in [5, 6]:
+                continue
+            
+            # Salta festività
+            if day in holiday_days:
+                skipped_count += 1
                 continue
             
             # Controlla se ci sono eventi live per quel giorno
