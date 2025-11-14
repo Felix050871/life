@@ -1388,9 +1388,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('hrForm');
     const saveBtn = document.getElementById('saveBtn');
     
-    console.log('Form trovato:', form);
-    console.log('SaveBtn trovato:', saveBtn);
-    
     // Mappa tab panes ai loro ID e nav buttons
     const tabMap = {
         'anagrafica': {
@@ -1453,18 +1450,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Funzione per validare il form e mostrare errori
     function validateHrForm(e) {
-        console.log('validateHrForm CHIAMATO!');
-        console.log('Event:', e);
-        
         // Aggiorna lo stato required dei campi condizionali PRIMA di validare
         updateCcnlFieldsRequirement();
         
         // Valida con HTML5
-        const isValid = form.checkValidity();
-        console.log('form.checkValidity():', isValid);
-        
-        if (!isValid) {
-            console.log('Form NON valido - prevento submit');
+        if (!form.checkValidity()) {
             e.preventDefault();
             
             // Pulisci badge precedenti
@@ -1570,23 +1560,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (saveBtn && form) {
-        // SOLUZIONE: intercetta il CLICK del pulsante invece del submit del form
-        // Questo bypassa il problema del listener globale in main.js
+        // Intercetta il click del pulsante per eseguire la validazione
+        // prima del submit (bypassa il listener globale in main.js)
         saveBtn.addEventListener('click', function(e) {
             e.preventDefault(); // Previene il submit immediato
-            console.log('saveBtn clicked - eseguo validazione');
             
             // Esegui la validazione
             if (validateHrForm({ preventDefault: function() {} })) {
-                console.log('Validazione OK - invio il form');
                 // Se la validazione passa, invia il form manualmente
                 form.submit();
-            } else {
-                console.log('Validazione FALLITA - non invio il form');
             }
         });
-        
-        console.log('Listener click registrato su saveBtn');
         
         // Pulisci badge quando l'utente corregge i campi
         form.addEventListener('input', function(e) {
