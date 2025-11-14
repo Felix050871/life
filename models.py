@@ -1189,8 +1189,8 @@ class UserHRData(db.Model):
     province = db.Column(db.String(2), nullable=True)  # Provincia (sigla)
     postal_code = db.Column(db.String(10), nullable=True)  # CAP
     country = db.Column(db.String(100), nullable=True, default='Italia')  # Paese
-    alternative_domicile = db.Column(db.String(255), nullable=True)  # Domicilio se diverso dalla residenza
-    phone = db.Column(db.String(20), nullable=True)  # Recapito telefonico personale
+    alternative_domicile = db.Column(db.String(300), nullable=True)  # Domicilio se diverso dalla residenza
+    phone = db.Column(db.String(50), nullable=True)  # Recapito telefonico personale
     law_104_benefits = db.Column(db.Boolean, default=False)  # Fruizione permessi L. 104/92
     personal_email = db.Column(db.String(120), nullable=True)  # Email personale
     
@@ -1207,7 +1207,8 @@ class UserHRData(db.Model):
     # CCNL - Campi legacy string (DEPRECATED - usare ccnl_contract_id, ccnl_qualification_id, ccnl_level_id)
     ccnl = db.Column(db.String(100), nullable=True)  # CCNL applicato (testo libero - DEPRECATED)
     ccnl_level = db.Column(db.String(50), nullable=True)  # Livello contrattuale (testo libero - DEPRECATED)
-    qualifica = db.Column(db.String(100), nullable=True)  # Qualifica (testo libero - DEPRECATED)
+    qualifica = db.Column(db.String(200), nullable=True)  # Qualifica (testo libero - DEPRECATED)
+    cliente = db.Column(db.String(200), nullable=True)  # Cliente per cui lavora il dipendente (se applicabile)
     
     # CCNL - Nuovi campi FK strutturati (sostituiscono i campi string sopra)
     ccnl_contract_id = db.Column(db.Integer, db.ForeignKey('ccnl_contract.id', ondelete='SET NULL'), nullable=True, index=True)
@@ -1218,7 +1219,7 @@ class UserHRData(db.Model):
     working_time_type = db.Column(db.String(2), nullable=True)  # FT (Full Time) o PT (Part Time)
     part_time_percentage = db.Column(db.Float, nullable=True)  # Percentuale se PT (es. 50, 75)
     part_time_type = db.Column(db.String(20), nullable=True)  # 'Verticale' o 'Orizzontale' se PT
-    mansione = db.Column(db.String(100), nullable=True)  # Mansione/ruolo
+    mansione = db.Column(db.String(200), nullable=True)  # Mansione/ruolo
     superminimo = db.Column(db.Float, nullable=True)  # Superminimo/SM assorbibile (€)
     superminimo_type = db.Column(db.String(20), nullable=True)  # Tipologia superminimo: "Assorbibile" o "Non assorbibile"
     rimborsi_diarie = db.Column(db.Float, nullable=True)  # Rimborsi/Diarie (€)
@@ -1245,7 +1246,7 @@ class UserHRData(db.Model):
     id_card_issued_by = db.Column(db.String(100), nullable=True)  # Ente rilascio
     passport_number = db.Column(db.String(50), nullable=True)  # Numero passaporto
     passport_expiry = db.Column(db.Date, nullable=True)  # Scadenza passaporto
-    driver_license_number = db.Column(db.String(50), nullable=True)  # Numero patente
+    driver_license_number = db.Column(db.String(100), nullable=True)  # Numero patente
     driver_license_type = db.Column(db.String(20), nullable=True)  # Tipo patente (A, B, C, D, E, ecc.)
     driver_license_expiry = db.Column(db.Date, nullable=True)  # Scadenza patente
     
@@ -1266,7 +1267,7 @@ class UserHRData(db.Model):
     
     # Dati operativi
     sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede di assunzione (amministrativo/contrattuale)
-    all_sedi = db.Column(db.Boolean, default=False)  # Accesso a tutte le sedi dell'azienda
+    all_sedi = db.Column(db.Boolean, nullable=False, default=False)  # Accesso a tutte le sedi dell'azienda
     work_schedule_id = db.Column(db.Integer, db.ForeignKey('work_schedule.id'), nullable=True)  # Orario di lavoro assegnato
     aci_vehicle_id = db.Column(db.Integer, db.ForeignKey('aci_table.id'), nullable=True)  # Veicolo ACI per rimborsi km
     vehicle_registration_document = db.Column(db.String(255), nullable=True)  # Path del libretto di circolazione caricato
@@ -1287,7 +1288,7 @@ class UserHRData(db.Model):
     hh_permesso_maturate_mese = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # Ore di permesso maturate al mese (es. 7 per ROL)
     
     # Sicurezza e requisiti
-    minimum_requirements = db.Column(db.String(50), nullable=True)  # Possesso requisiti minimi (SI/NO/DA FORMARE)
+    minimum_requirements = db.Column(db.String(500), nullable=True)  # Possesso requisiti minimi (SI/NO/DA FORMARE)
     
     # Visite mediche e formazione obbligatoria
     medical_visit_date = db.Column(db.Date, nullable=True)  # Data ultima visita medica
@@ -4294,6 +4295,7 @@ class WorkSchedule(db.Model):
     active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
+    sede_id = db.Column(db.Integer, db.ForeignKey('sede.id'), nullable=True)  # Sede a cui è associato questo orario (opzionale)
     
     # Constraint per evitare duplicati nella stessa azienda
     __table_args__ = (
