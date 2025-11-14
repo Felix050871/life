@@ -1385,17 +1385,191 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     const saveBtn = document.getElementById('saveBtn');
     
-    if (saveBtn && form) {
-        saveBtn.addEventListener('click', function(e) {
-            console.log('Pulsante cliccato');
-            console.log('Form valido:', form.checkValidity());
-            if (!form.checkValidity()) {
-                form.reportValidity();
+    // Mappa tab panes ai loro ID e nav buttons
+    const tabMap = {
+        'anagrafica': {
+            pane: document.getElementById('anagrafica'),
+            navButton: document.getElementById('anagrafica-tab'),
+            name: 'Dati Anagrafici'
+        },
+        'contrattuali': {
+            pane: document.getElementById('contrattuali'),
+            navButton: document.getElementById('contrattuali-tab'),
+            name: 'Dati Contrattuali'
+        },
+        'visite': {
+            pane: document.getElementById('visite'),
+            navButton: document.getElementById('visite-tab'),
+            name: 'Visite Mediche e Formazione'
+        }
+    };
+    
+    // Funzione per aggiornare obbligatorietà campi CCNL (hoisted per essere accessibile)
+    function updateCcnlFieldsRequirement() {
+        const contractTypeSelect = document.getElementById('contract_type');
+        if (!contractTypeSelect) return;
+        
+        const contractType = contractTypeSelect.value;
+        const exemptTypes = ['In Distacco', 'Consulente/P.IVA', 'Fornitore'];
+        const isRequired = !exemptTypes.includes(contractType);
+        
+        // Gestisci tutti i campi CCNL condizionali
+        const ccnlFields = document.querySelectorAll('.ccnl-conditional-required');
+        const ccnlFlags = document.querySelectorAll('.ccnl-required-flag');
+        
+        ccnlFields.forEach(field => {
+            if (isRequired) {
+                field.setAttribute('required', 'required');
+            } else {
+                field.removeAttribute('required');
             }
         });
         
-        form.addEventListener('submit', function(e) {
-            console.log('Form submit triggered');
+        ccnlFlags.forEach(flag => {
+            flag.style.display = isRequired ? 'inline' : 'none';
+        });
+    }
+    
+    // Funzione per pulire badge errori
+    function clearErrorBadges() {
+        Object.values(tabMap).forEach(tab => {
+            const existingBadge = tab.navButton.querySelector('.error-badge');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+        });
+        // Rimuovi alert di riepilogo se esiste
+        const existingAlert = document.getElementById('validation-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+    }
+    
+    // Funzione per validare il form e mostrare errori
+    function validateHrForm(e) {
+        // Aggiorna lo stato required dei campi condizionali PRIMA di validare
+        updateCcnlFieldsRequirement();
+        
+        // Valida con HTML5
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            
+            // Pulisci badge precedenti
+            clearErrorBadges();
+            
+            // Raccogli tutti i campi invalidi
+            const invalidFields = Array.from(form.querySelectorAll(':invalid'));
+            
+            if (invalidFields.length === 0) {
+                return true; // Nessun errore
+            }
+            
+            // Raggruppa errori per tab
+            const errorsByTab = {};
+            
+            invalidFields.forEach(field => {
+                // Trova a quale tab pane appartiene il campo
+                let tabId = null;
+                for (const [id, tab] of Object.entries(tabMap)) {
+                    if (tab.pane && tab.pane.contains(field)) {
+                        tabId = id;
+                        break;
+                    }
+                }
+                
+                if (tabId) {
+                    if (!errorsByTab[tabId]) {
+                        errorsByTab[tabId] = [];
+                    }
+                    
+                    // Estrai label del campo
+                    const label = field.labels && field.labels[0] 
+                        ? field.labels[0].textContent.replace('*', '').trim() 
+                        : field.name || 'Campo sconosciuto';
+                    
+                    errorsByTab[tabId].push({
+                        field: field,
+                        label: label
+                    });
+                }
+            });
+            
+            // Aggiungi badge alle tab con errori
+            let firstTabWithError = null;
+            
+            Object.entries(errorsByTab).forEach(([tabId, errors]) => {
+                const tab = tabMap[tabId];
+                if (!tab) return;
+                
+                if (!firstTabWithError) {
+                    firstTabWithError = tab;
+                }
+                
+                // Aggiungi badge con numero errori
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-danger ms-2 error-badge';
+                badge.textContent = errors.length;
+                badge.title = `${errors.length} campo/i da compilare`;
+                tab.navButton.appendChild(badge);
+            });
+            
+            // Crea messaggio di riepilogo
+            const errorCount = invalidFields.length;
+            const tabsWithErrors = Object.keys(errorsByTab).length;
+            
+            let errorMessage = `<strong>Attenzione!</strong> Ci sono ${errorCount} campo/i obbligatori da compilare in ${tabsWithErrors} sezione/i:<ul class="mb-0 mt-2">`;
+            
+            Object.entries(errorsByTab).forEach(([tabId, errors]) => {
+                const tab = tabMap[tabId];
+                errorMessage += `<li><strong>${tab.name}</strong>: ${errors.length} campo/i</li>`;
+            });
+            
+            errorMessage += '</ul>';
+            
+            // Mostra alert sopra il form
+            const alertDiv = document.createElement('div');
+            alertDiv.id = 'validation-alert';
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                ${errorMessage}
+            `;
+            
+            form.insertBefore(alertDiv, form.firstChild);
+            
+            // Passa alla prima tab con errori
+            if (firstTabWithError) {
+                const bsTab = new bootstrap.Tab(firstTabWithError.navButton);
+                bsTab.show();
+                
+                // Scroll al primo campo invalido dopo un breve delay
+                setTimeout(() => {
+                    const firstError = errorsByTab[Object.keys(errorsByTab)[0]][0].field;
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
+                }, 300);
+            }
+            
+            return false;
+        }
+        
+        return true;
+    }
+    
+    if (saveBtn && form) {
+        form.addEventListener('submit', validateHrForm);
+        
+        // Pulisci badge quando l'utente corregge i campi
+        form.addEventListener('input', function(e) {
+            if (e.target.checkValidity()) {
+                // Se il campo ora è valido, ricalcola badge
+                setTimeout(() => {
+                    const invalidFields = Array.from(form.querySelectorAll(':invalid'));
+                    if (invalidFields.length === 0) {
+                        clearErrorBadges();
+                    }
+                }, 100);
+            }
         });
     }
 });
@@ -1565,28 +1739,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const fornitorePivaField = document.getElementById('fornitore_piva_field');
     
     if (contractTypeSelect && distaccoSupplierField && consulenteVatField && fornitoreNomeField && fornitorePivaField) {
-        function updateCcnlFieldsRequirement() {
-            const contractType = contractTypeSelect.value;
-            const exemptTypes = ['In Distacco', 'Consulente/P.IVA', 'Fornitore'];
-            const isRequired = !exemptTypes.includes(contractType);
-            
-            // Gestisci tutti i campi CCNL condizionali
-            const ccnlFields = document.querySelectorAll('.ccnl-conditional-required');
-            const ccnlFlags = document.querySelectorAll('.ccnl-required-flag');
-            
-            ccnlFields.forEach(field => {
-                if (isRequired) {
-                    field.setAttribute('required', 'required');
-                } else {
-                    field.removeAttribute('required');
-                }
-            });
-            
-            ccnlFlags.forEach(flag => {
-                flag.style.display = isRequired ? 'inline' : 'none';
-            });
-        }
-        
         contractTypeSelect.addEventListener('change', function() {
             // Nascondi tutti i campi condizionali e azzera i loro valori
             const distaccoInput = distaccoSupplierField.querySelector('input');
