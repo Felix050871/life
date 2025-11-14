@@ -355,6 +355,9 @@ document.addEventListener('DOMContentLoaded', function() {
         updateRoutePointIcons();
     });
     
+    // Debounce timer for API calls
+    let debounceTimer = null;
+    
     // Initialize existing route inputs
     document.querySelectorAll('.route-address').forEach(input => {
         input.addEventListener('input', updateRoute);
@@ -398,13 +401,25 @@ document.addEventListener('DOMContentLoaded', function() {
             routeText.textContent = addresses.join(' → ');
             routeSummary.style.display = 'block';
             
-            // Simulate distance calculation (in real implementation, use Maps API)
-            calculateDistance(addresses);
+            // Clear previous timer
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
+            }
+            
+            // Wait 800ms after user stops typing before calling API
+            debounceTimer = setTimeout(() => {
+                calculateDistance(addresses);
+            }, 800);
         } else {
             routeSummary.style.display = 'none';
             totalCalculatedKm = 0;
             if (!isKmManual.checked) {
                 totalKmInput.value = '';
+            }
+            
+            // Clear any pending API calls
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
             }
         }
         
@@ -449,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     totalKmInput.readOnly = false;
                     totalKmInput.classList.remove('bg-light');
                     totalKmInput.value = '';
-                    totalKmInput.focus();
                 }
             }
         })
@@ -465,7 +479,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 totalKmInput.readOnly = false;
                 totalKmInput.classList.remove('bg-light');
                 totalKmInput.value = '';
-                totalKmInput.focus();
             }
         });
     }
