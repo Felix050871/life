@@ -101,12 +101,12 @@ def get_month_reduction_factor(user_id: int, month_start: date, month_end: date,
     active_assignments = SocialSafetyNetAssignment.query.filter(
         and_(
             SocialSafetyNetAssignment.user_id == user_id,
-            SocialSafetyNetAssignment.effective_from <= month_end,
+            SocialSafetyNetAssignment.start_date <= month_end,
+            SocialSafetyNetAssignment.end_date >= month_start,
             or_(
-                SocialSafetyNetAssignment.effective_to.is_(None),
-                SocialSafetyNetAssignment.effective_to >= month_start
-            ),
-            SocialSafetyNetAssignment.is_approved == True
+                SocialSafetyNetAssignment.status == 'approved',
+                SocialSafetyNetAssignment.status == 'active'
+            )
         )
     ).all()
     
@@ -125,7 +125,7 @@ def get_month_reduction_factor(user_id: int, month_start: date, month_end: date,
         # Find assignments active on this day
         day_assignments = [
             a for a in active_assignments
-            if a.effective_from <= current_date and (a.effective_to is None or a.effective_to >= current_date)
+            if a.start_date <= current_date and a.end_date >= current_date
         ]
         
         if day_assignments:
