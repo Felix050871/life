@@ -37,7 +37,7 @@
     </li>
 </ul>
 
-<form method="POST" action="{{ url_for('hr.hr_detail', user_id=user.id) }}" enctype="multipart/form-data">
+<form method="POST" action="{{ url_for('hr.hr_detail', user_id=user.id) }}" enctype="multipart/form-data" id="hrForm">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
 <!-- TAB CONTENT -->
