@@ -856,6 +856,8 @@ def mileage_requests():
         
         return render_template('mileage_requests.html', requests=requests, filter_form=filter_form)
     except Exception as e:
+        import logging
+        logging.exception(f"Errore nel caricamento delle richieste di rimborso: {str(e)}")
         flash('Errore nel caricamento delle richieste di rimborso.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
 
@@ -947,6 +949,8 @@ def my_mileage_requests():
         
         return render_template('my_mileage_requests.html', requests=requests)
     except Exception as e:
+        import logging
+        logging.exception(f"Errore nel caricamento delle mie richieste di rimborso: {str(e)}")
         flash('Errore nel caricamento delle richieste di rimborso.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
 
