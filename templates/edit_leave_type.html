@@ -60,6 +60,19 @@
                     
                     <div class="mb-3">
                         <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="count_weekends_holidays" 
+                                   name="count_weekends_holidays" {% if leave_type.count_weekends_holidays %}checked{% endif %}>
+                            <label class="form-check-label" for="count_weekends_holidays">
+                                Conta Weekend e Festivi
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                Se deselezionato, il sistema conterà solo i giorni lavorativi (utile per malattia, che non include weekend/festivi)
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="active" 
                                    name="active" {% if leave_type.active %}checked{% endif %}>
                             <label class="form-check-label" for="active">

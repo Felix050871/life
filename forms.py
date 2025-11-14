@@ -381,6 +381,8 @@ class LeaveTypeForm(FlaskForm):
     active = BooleanField('Attiva', default=True)
     minimum_duration_hours = DecimalField('Durata Minima (ore)', validators=[Optional()], 
                                          render_kw={'placeholder': 'Es: 4, 8, 0.5', 'step': '0.5', 'min': '0'})
+    count_weekends_holidays = BooleanField('Conta Weekend e Festivi', default=True,
+                                          description='Se disattivato, conteggia solo i giorni lavorativi (es: malattia)')
     submit = SubmitField('Salva Tipologia')
     
     def __init__(self, original_code=None, *args, **kwargs):

@@ -2726,6 +2726,9 @@ class LeaveType(db.Model):
     minimum_duration_type = db.Column(db.String(20), default='none')  # 'none', 'half_day' (4h), 'full_day' (8h/1gg)
     minimum_duration_hours = db.Column(db.Float, nullable=True)  # Durata minima in ore (es: 4, 8, 0.5) - sovrascrive minimum_duration_type se impostato
     
+    # Gestione conteggio giorni: include o esclude weekend/festivi
+    count_weekends_holidays = db.Column(db.Boolean, default=True)  # Se True, conta anche weekend e festivi; se False, conta solo giorni lavorativi
+    
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)  # Multi-tenant
@@ -2823,8 +2826,15 @@ class LeaveRequest(db.Model):
             if self.start_date == self.end_date:
                 return "Giornata intera"
             else:
-                days = (self.end_date - self.start_date).days + 1
-                return f"{days} giorni"
+                # Calcola giorni calendario vs giorni lavorativi
+                calendar_days = (self.end_date - self.start_date).days + 1
+                working_days = self.get_working_days_count()
+                
+                # Se sono uguali o leave_type non esclude weekend/festivi, mostra solo calendar_days
+                if calendar_days == working_days or not self.leave_type_obj or self.leave_type_obj.count_weekends_holidays:
+                    return f"{calendar_days} giorn{'i' if calendar_days > 1 else 'o'}"
+                else:
+                    return f"{working_days} giorn{'i' if working_days > 1 else 'o'} lavorativ{'i' if working_days > 1 else 'o'} ({calendar_days} calendario)"
     
     def get_leave_type_name(self):
         """Restituisce il nome della tipologia di permesso"""
@@ -2875,6 +2885,51 @@ class LeaveRequest(db.Model):
             needed = self.calculate_banca_ore_hours_needed()
             return f"Banca Ore: {needed:.1f}h richieste"
         return None
+    
+    def get_working_days_count(self):
+        """
+        Calcola il numero di giorni lavorativi nel periodo della richiesta.
+        Esclude weekend e festivi se configurato nel leave_type.
+        """
+        # Se è un permesso orario, non ha senso calcolare giorni
+        if self.is_time_based():
+            return 0
+        
+        # Se il leave_type include weekend/festivi, restituisci tutti i giorni
+        if self.leave_type_obj and self.leave_type_obj.count_weekends_holidays:
+            return (self.end_date - self.start_date).days + 1
+        
+        # Altrimenti conta solo i giorni lavorativi
+        working_days = 0
+        current_date = self.start_date
+        
+        while current_date <= self.end_date:
+            # Controlla se è weekend (sabato=5, domenica=6)
+            is_weekend = current_date.weekday() in [5, 6]
+            
+            # Controlla se è festivo
+            is_holiday = False
+            if self.user and self.user.sede_id:
+                holidays = Holiday.get_holidays_for_date(current_date, self.user.sede_id)
+                is_holiday = len(holidays) > 0
+            else:
+                # Se non ha sede, controlla solo festività nazionali
+                holidays = Holiday.get_holidays_for_date(current_date, sede_id=None)
+                is_holiday = len(holidays) > 0
+            
+            # Conta solo se non è weekend e non è festivo
+            if not is_weekend and not is_holiday:
+                working_days += 1
+            
+            current_date += timedelta(days=1)
+        
+        return working_days
+    
+    def get_calendar_days_count(self):
+        """Restituisce il numero totale di giorni calendario del periodo"""
+        if self.is_time_based():
+            return 0
+        return (self.end_date - self.start_date).days + 1
 
 # =============================================================================
 # SHIFT MANAGEMENT MODELS  

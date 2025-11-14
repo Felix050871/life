@@ -532,13 +532,16 @@ def add_leave_type_page():
                 flash('Esiste già una tipologia con questo codice', 'warning')
                 return render_template('add_leave_type.html')
             
+            count_weekends_holidays = 'count_weekends_holidays' in request.form
+            
             leave_type = LeaveType(
                 code=code,
                 name=name,
                 description=description,
                 requires_approval=requires_approval,
                 active=active_status,
-                minimum_duration_hours=min_hours_value
+                minimum_duration_hours=min_hours_value,
+                count_weekends_holidays=count_weekends_holidays
             )
             
             set_company_on_create(leave_type)
@@ -590,6 +593,7 @@ def edit_leave_type_page(id):
             leave_type.requires_approval = 'requires_approval' in request.form
             leave_type.active = 'active' in request.form
             leave_type.minimum_duration_hours = min_hours_value
+            leave_type.count_weekends_holidays = 'count_weekends_holidays' in request.form
             leave_type.updated_at = italian_now()
             
             db.session.commit()
