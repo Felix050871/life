@@ -533,6 +533,17 @@ def build_timesheet_grid(
         # Calcola totale ore giornaliere
         day_total = sum(s.total_hours for s in sessions)
         
+        # Calcola ore lavorate e previste con anomalie
+        worked_mins = calculate_worked_minutes(sessions)
+        expected_mins = calculate_expected_minutes(
+            user=user,
+            day_date=day_date,
+            is_weekend=is_weekend,
+            is_holiday=is_holiday,
+            leave_block=leave_by_day.get(day_num)
+        )
+        anomaly = determine_anomaly_type(worked_mins, expected_mins)
+        
         grid.append(DayRow(
             day_num=day_num,
             date_obj=day_date,
@@ -545,7 +556,10 @@ def build_timesheet_grid(
             can_add_session=can_add,
             leave_block=leave_by_day.get(day_num),
             sessions=sessions if sessions else [],
-            day_total_hours=day_total
+            day_total_hours=day_total,
+            worked_minutes=worked_mins,
+            expected_minutes=expected_mins,
+            anomaly_type=anomaly
         ))
     
     return grid
