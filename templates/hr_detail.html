@@ -1572,131 +1572,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
-</script>
-
-</form>
-
-
-<!-- ========================================= -->
-<!-- SEZIONE AMMORTIZZATORI SOCIALI (READ-ONLY) -->
-<!-- ========================================= -->
-{% if current_user.can_view_social_safety_reports() or current_user.can_manage_social_safety_programs() or current_user.can_assign_social_safety_programs() %}
-<div class="card mb-4">
-    <div class="card-header bg-info text-white">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-shield-alt me-2"></i>AMMORTIZZATORI SOCIALI
-            </h5>
-            <a href="{{ url_for('social_safety.user_assignments', user_id=user.id) }}" class="btn btn-sm btn-light">
-                <i class="fas fa-external-link-alt me-2"></i>Vedi tutti
-            </a>
-        </div>
-    </div>
-    <div class="card-body">
-        {% if active_safety_net_assignment %}
-        <div class="alert alert-warning mb-3">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Assegnazione Attiva:</strong> {{ active_safety_net_assignment.program.name }} 
-            ({{ active_safety_net_assignment.program.program_type }}) 
-            - Riduzione {{ active_safety_net_assignment.program.reduction_percentage }}%
-            dal {{ active_safety_net_assignment.start_date.strftime('%d/%m/%Y') }}
-            {% if active_safety_net_assignment.end_date %}
-            al {{ active_safety_net_assignment.end_date.strftime('%d/%m/%Y') }}
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        {% if safety_net_assignments %}
-        <h6 class="border-bottom pb-2 mb-3">
-            <i class="fas fa-history me-2"></i>Ultime Assegnazioni 
-            {% if total_safety_net_assignments > 5 %}
-            (mostrando 5 di {{ total_safety_net_assignments }})
-            {% endif %}
-        </h6>
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead>
-                    <tr>
-                        <th>Programma</th>
-                        <th>Tipo</th>
-                        <th>Dal</th>
-                        <th>Al</th>
-                        <th>Riduzione Ore</th>
-                        <th>Stato</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for assignment in safety_net_assignments %}
-                    <tr {% if assignment == active_safety_net_assignment %}class="table-warning"{% elif assignment.status == 'pending' %}class="table-info"{% endif %}>
-                        <td>
-                            <strong>{{ assignment.program.name }}</strong>
-                            {% if assignment.program.decree_number %}
-                            <br><small class="text-muted">Decreto {{ assignment.program.decree_number }}</small>
-                            {% endif %}
-                            {% if assignment.status == 'pending' %}
-                            <br><a href="{{ url_for('social_safety.manage_assignments') }}" class="badge bg-primary text-white text-decoration-none">
-                                <i class="fas fa-tasks me-1"></i>Approva qui
-                            </a>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary">{{ assignment.program.program_type }}</span>
-                        </td>
-                        <td>{{ assignment.start_date.strftime('%d/%m/%Y') }}</td>
-                        <td>
-                            {% if assignment.end_date %}
-                            {{ assignment.end_date.strftime('%d/%m/%Y') }}
-                            {% else %}
-                            <em class="text-muted">In corso</em>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge bg-warning text-dark">
-                                -{{ assignment.program.reduction_percentage }}%
-                            </span>
-                        </td>
-                        <td>
-                            {% if assignment.status == 'pending' %}
-                            <span class="badge bg-warning text-dark">
-                                <i class="fas fa-clock me-1"></i>In Attesa Approvazione
-                            </span>
-                            {% elif assignment.status in ['approved', 'active'] %}
-                            <span class="badge bg-success">
-                                <i class="fas fa-check me-1"></i>Approvato
-                            </span>
-                            {% elif assignment.status == 'completed' %}
-                            <span class="badge bg-secondary">
-                                <i class="fas fa-check-circle me-1"></i>Completato
-                            </span>
-                            {% elif assignment.status == 'cancelled' %}
-                            <span class="badge bg-danger">
-                                <i class="fas fa-times me-1"></i>Annullato
-                            </span>
-                            {% else %}
-                            <span class="badge bg-secondary">{{ assignment.status }}</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="alert alert-secondary mb-0">
-            <i class="fas fa-info-circle me-2"></i>
-            Nessuna assegnazione di ammortizzatori sociali per questo dipendente.
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
+    
+    // ========================================
+    // ALTRI GESTORI (consolidati da secondo blocco DOMContentLoaded)
+    // ========================================
+    
     // Gestione abilitazione campo valore buoni pasto in base al toggle ticket restaurant
     const ticketRestaurantToggle = document.getElementById('ticket_restaurant');
     const mealVouchersValueInput = document.getElementById('meal_vouchers_value');
@@ -1778,105 +1658,105 @@ document.addEventListener('DOMContentLoaded', function() {
     const marcaSelect = document.getElementById('marcaVeicoloSelectHR');
     const modelloSelect = document.getElementById('modelloVeicoloSelectHR');
     
-    if (!tipoSelect || !marcaSelect || !modelloSelect) return;
-    
-    // Salva il veicolo corrente per pre-selezionarlo
-    const currentVehicleId = {% if hr_data.aci_vehicle_id %}{{ hr_data.aci_vehicle_id }}{% else %}null{% endif %};
-    
-    tipoSelect.addEventListener('change', function() {
-        const tipo = this.value;
-        marcaSelect.disabled = true;
-        modelloSelect.disabled = true;
-        marcaSelect.innerHTML = '<option value="">Caricamento...</option>';
-        modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+    if (tipoSelect && marcaSelect && modelloSelect) {
+        // Salva il veicolo corrente per pre-selezionarlo
+        const currentVehicleId = {% if hr_data.aci_vehicle_id %}{{ hr_data.aci_vehicle_id }}{% else %}null{% endif %};
         
-        if (tipo) {
-            fetch(`/aci/api/marcas?tipologia=${encodeURIComponent(tipo)}`)
-                .then(response => response.json())
-                .then(data => {
-                    marcaSelect.innerHTML = '<option value="">Seleziona marca</option>';
-                    if (data.success && data.marcas && data.marcas.length > 0) {
-                        data.marcas.forEach(marca => {
-                            const option = document.createElement('option');
-                            option.value = marca;
-                            option.textContent = marca;
-                            marcaSelect.appendChild(option);
-                        });
-                        marcaSelect.disabled = false;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading marche:', error);
-                    marcaSelect.innerHTML = '<option value="">Errore caricamento</option>';
-                });
-        } else {
-            marcaSelect.innerHTML = '<option value="">Seleziona prima il tipo</option>';
+        tipoSelect.addEventListener('change', function() {
+            const tipo = this.value;
+            marcaSelect.disabled = true;
+            modelloSelect.disabled = true;
+            marcaSelect.innerHTML = '<option value="">Caricamento...</option>';
             modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
-        }
-    });
-    
-    marcaSelect.addEventListener('change', function() {
-        const tipo = tipoSelect.value;
-        const marca = this.value;
-        modelloSelect.disabled = true;
-        modelloSelect.innerHTML = '<option value="">Caricamento...</option>';
-        
-        if (tipo && marca) {
-            fetch(`/aci/api/modelos?tipologia=${encodeURIComponent(tipo)}&marca=${encodeURIComponent(marca)}`)
-                .then(response => response.json())
-                .then(data => {
-                    modelloSelect.innerHTML = '<option value="">Seleziona modello</option>';
-                    if (data.success && data.modelos && data.modelos.length > 0) {
-                        data.modelos.forEach(item => {
-                            const option = document.createElement('option');
-                            option.value = item.id;
-                            option.textContent = `${item.modello} (€${item.costo_km}/km)`;
-                            modelloSelect.appendChild(option);
-                        });
-                        modelloSelect.disabled = false;
-                        
-                        // Se c'è un veicolo corrente, selezionalo
-                        if (currentVehicleId) {
-                            modelloSelect.value = currentVehicleId;
+            
+            if (tipo) {
+                fetch(`/aci/api/marcas?tipologia=${encodeURIComponent(tipo)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        marcaSelect.innerHTML = '<option value="">Seleziona marca</option>';
+                        if (data.success && data.marcas && data.marcas.length > 0) {
+                            data.marcas.forEach(marca => {
+                                const option = document.createElement('option');
+                                option.value = marca;
+                                option.textContent = marca;
+                                marcaSelect.appendChild(option);
+                            });
+                            marcaSelect.disabled = false;
                         }
+                    })
+                    .catch(error => {
+                        console.error('Error loading marche:', error);
+                        marcaSelect.innerHTML = '<option value="">Errore caricamento</option>';
+                    });
+            } else {
+                marcaSelect.innerHTML = '<option value="">Seleziona prima il tipo</option>';
+                modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+            }
+        });
+        
+        marcaSelect.addEventListener('change', function() {
+            const tipo = tipoSelect.value;
+            const marca = this.value;
+            modelloSelect.disabled = true;
+            modelloSelect.innerHTML = '<option value="">Caricamento...</option>';
+            
+            if (tipo && marca) {
+                fetch(`/aci/api/modelos?tipologia=${encodeURIComponent(tipo)}&marca=${encodeURIComponent(marca)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        modelloSelect.innerHTML = '<option value="">Seleziona modello</option>';
+                        if (data.success && data.modelos && data.modelos.length > 0) {
+                            data.modelos.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.id;
+                                option.textContent = `${item.modello} (€${item.costo_km}/km)`;
+                                modelloSelect.appendChild(option);
+                            });
+                            modelloSelect.disabled = false;
+                            
+                            // Se c'è un veicolo corrente, selezionalo
+                            if (currentVehicleId) {
+                                modelloSelect.value = currentVehicleId;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading modelli:', error);
+                        modelloSelect.innerHTML = '<option value="">Errore caricamento</option>';
+                    });
+            } else {
+                modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
+            }
+        });
+        
+        // Pre-carica il veicolo selezionato se esiste
+        {% if current_vehicle %}
+        // Imposta tipologia e trigger caricamento marche
+        tipoSelect.value = '{{ current_vehicle.tipologia }}';
+        
+        // Attendere il caricamento delle marche prima di impostare la marca
+        const waitForMarcas = setInterval(() => {
+            if (!marcaSelect.disabled && marcaSelect.options.length > 1) {
+                clearInterval(waitForMarcas);
+                marcaSelect.value = '{{ current_vehicle.marca }}';
+                
+                // Attendere il caricamento dei modelli prima di impostare il modello
+                const waitForModelos = setInterval(() => {
+                    if (!modelloSelect.disabled && modelloSelect.options.length > 1) {
+                        clearInterval(waitForModelos);
+                        modelloSelect.value = currentVehicleId;
                     }
-                })
-                .catch(error => {
-                    console.error('Error loading modelli:', error);
-                    modelloSelect.innerHTML = '<option value="">Errore caricamento</option>';
-                });
-        } else {
-            modelloSelect.innerHTML = '<option value="">Seleziona prima marca</option>';
-        }
-    });
-    
-    // Pre-carica il veicolo selezionato se esiste
-    {% if current_vehicle %}
-    // Imposta tipologia e trigger caricamento marche
-    tipoSelect.value = '{{ current_vehicle.tipologia }}';
-    
-    // Attendere il caricamento delle marche prima di impostare la marca
-    const waitForMarcas = setInterval(() => {
-        if (!marcaSelect.disabled && marcaSelect.options.length > 1) {
-            clearInterval(waitForMarcas);
-            marcaSelect.value = '{{ current_vehicle.marca }}';
-            
-            // Attendere il caricamento dei modelli prima di impostare il modello
-            const waitForModelos = setInterval(() => {
-                if (!modelloSelect.disabled && modelloSelect.options.length > 1) {
-                    clearInterval(waitForModelos);
-                    modelloSelect.value = currentVehicleId;
-                }
-            }, 100);
-            
-            // Trigger caricamento modelli
-            marcaSelect.dispatchEvent(new Event('change'));
-        }
-    }, 100);
-    
-    // Trigger caricamento marche
-    tipoSelect.dispatchEvent(new Event('change'));
-    {% endif %}
+                }, 100);
+                
+                // Trigger caricamento modelli
+                marcaSelect.dispatchEvent(new Event('change'));
+            }
+        }, 100);
+        
+        // Trigger caricamento marche
+        tipoSelect.dispatchEvent(new Event('change'));
+        {% endif %}
+    }
     
     // Gestione visibilità campi straordinari/banca ore
     const overtimeEnabled = document.getElementById('overtime_enabled');
@@ -2137,4 +2017,122 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+</form>
+
+
+<!-- ========================================= -->
+<!-- SEZIONE AMMORTIZZATORI SOCIALI (READ-ONLY) -->
+<!-- ========================================= -->
+{% if current_user.can_view_social_safety_reports() or current_user.can_manage_social_safety_programs() or current_user.can_assign_social_safety_programs() %}
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-shield-alt me-2"></i>AMMORTIZZATORI SOCIALI
+            </h5>
+            <a href="{{ url_for('social_safety.user_assignments', user_id=user.id) }}" class="btn btn-sm btn-light">
+                <i class="fas fa-external-link-alt me-2"></i>Vedi tutti
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if active_safety_net_assignment %}
+        <div class="alert alert-warning mb-3">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Assegnazione Attiva:</strong> {{ active_safety_net_assignment.program.name }} 
+            ({{ active_safety_net_assignment.program.program_type }}) 
+            - Riduzione {{ active_safety_net_assignment.program.reduction_percentage }}%
+            dal {{ active_safety_net_assignment.start_date.strftime('%d/%m/%Y') }}
+            {% if active_safety_net_assignment.end_date %}
+            al {{ active_safety_net_assignment.end_date.strftime('%d/%m/%Y') }}
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if safety_net_assignments %}
+        <h6 class="border-bottom pb-2 mb-3">
+            <i class="fas fa-history me-2"></i>Ultime Assegnazioni 
+            {% if total_safety_net_assignments > 5 %}
+            (mostrando 5 di {{ total_safety_net_assignments }})
+            {% endif %}
+        </h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Programma</th>
+                        <th>Tipo</th>
+                        <th>Dal</th>
+                        <th>Al</th>
+                        <th>Riduzione Ore</th>
+                        <th>Stato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assignment in safety_net_assignments %}
+                    <tr {% if assignment == active_safety_net_assignment %}class="table-warning"{% elif assignment.status == 'pending' %}class="table-info"{% endif %}>
+                        <td>
+                            <strong>{{ assignment.program.name }}</strong>
+                            {% if assignment.program.decree_number %}
+                            <br><small class="text-muted">Decreto {{ assignment.program.decree_number }}</small>
+                            {% endif %}
+                            {% if assignment.status == 'pending' %}
+                            <br><a href="{{ url_for('social_safety.manage_assignments') }}" class="badge bg-primary text-white text-decoration-none">
+                                <i class="fas fa-tasks me-1"></i>Approva qui
+                            </a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ assignment.program.program_type }}</span>
+                        </td>
+                        <td>{{ assignment.start_date.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if assignment.end_date %}
+                            {{ assignment.end_date.strftime('%d/%m/%Y') }}
+                            {% else %}
+                            <em class="text-muted">In corso</em>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-warning text-dark">
+                                -{{ assignment.program.reduction_percentage }}%
+                            </span>
+                        </td>
+                        <td>
+                            {% if assignment.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-clock me-1"></i>In Attesa Approvazione
+                            </span>
+                            {% elif assignment.status in ['approved', 'active'] %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>Approvato
+                            </span>
+                            {% elif assignment.status == 'completed' %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-check-circle me-1"></i>Completato
+                            </span>
+                            {% elif assignment.status == 'cancelled' %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times me-1"></i>Annullato
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ assignment.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            Nessuna assegnazione di ammortizzatori sociali per questo dipendente.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
