@@ -1662,7 +1662,7 @@ class AttendanceEvent(db.Model):
     
     # Social Safety Net (Ammortizzatori Sociali) - Cached fields for historical accuracy
     safety_net_assignment_id = db.Column(db.Integer, db.ForeignKey('social_safety_net_assignment.id'), nullable=True)  # Assegnazione ammortizzatore attiva
-    payroll_code = db.Column(db.String(20), nullable=True)  # Codice paghe cached dal programma (CIGS, SOL, FIS, etc.)
+    payroll_code = db.Column(db.String(50), nullable=True)  # Codice paghe cached dal programma (CIGS, SOL, FIS, etc.)
     
     user = db.relationship('User', backref='attendance_events')
     sede = db.relationship('Sede', backref='sede_attendance_events')
@@ -2727,7 +2727,7 @@ class LeaveType(db.Model):
     minimum_duration_hours = db.Column(db.Float, nullable=True)  # Durata minima in ore (es: 4, 8, 0.5) - sovrascrive minimum_duration_type se impostato
     
     # Gestione conteggio giorni: include o esclude weekend/festivi
-    count_weekends_holidays = db.Column(db.Boolean, default=True)  # Se True, conta anche weekend e festivi; se False, conta solo giorni lavorativi
+    count_weekends_holidays = db.Column(db.Boolean, nullable=False, default=True, server_default='true')  # Se True, conta anche weekend e festivi; se False, conta solo giorni lavorativi
     
     created_at = db.Column(db.DateTime, default=italian_now)
     updated_at = db.Column(db.DateTime, default=italian_now, onupdate=italian_now)
@@ -5127,7 +5127,7 @@ class SocialSafetyNetProgram(db.Model):
     target_weekly_hours = db.Column(db.Numeric(5, 2), nullable=True)  # Es. 32.00 per 32h/settimana
     
     # Configurazioni paghe
-    payroll_code = db.Column(db.String(20), nullable=True)  # Codice per export XML/Excel paghe
+    payroll_code = db.Column(db.String(50), nullable=True)  # Codice per export XML/Excel paghe
     inps_coverage = db.Column(db.Boolean, default=True)  # Se INPS copre parte della retribuzione
     overtime_forbidden = db.Column(db.Boolean, default=True)  # Se straordinari sono vietati
     
@@ -5215,7 +5215,7 @@ class SocialSafetyNetAssignment(db.Model):
     
     # Override specifici per questo dipendente (opzionali)
     custom_weekly_hours = db.Column(db.Numeric(5, 2), nullable=True)  # Override ore settimanali
-    custom_payroll_code = db.Column(db.String(20), nullable=True)  # Override codice paghe
+    custom_payroll_code = db.Column(db.String(50), nullable=True)  # Override codice paghe
     notes = db.Column(db.Text, nullable=True)  # Note specifiche per questa assegnazione
     
     # Workflow stati
