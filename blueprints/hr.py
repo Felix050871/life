@@ -765,6 +765,19 @@ def hr_detail(user_id):
             else:
                 hr_data.aci_vehicle_id = None
             
+            # Configurazione rimborso chilometrico
+            hr_data.mileage_reimbursement_type = request.form.get('mileage_reimbursement_type', '').strip() or None
+            
+            mileage_fixed_max_str = request.form.get('mileage_fixed_max_annual', '').strip()
+            if mileage_fixed_max_str:
+                try:
+                    hr_data.mileage_fixed_max_annual = float(mileage_fixed_max_str.replace(',', '.'))
+                except ValueError:
+                    flash('Importo massimo annuale rimborso fisso non valido. Inserire un numero (es. 3000.00)', 'danger')
+                    hr_data.mileage_fixed_max_annual = None
+            else:
+                hr_data.mileage_fixed_max_annual = None
+            
             # Gestione upload libretto di circolazione
             delete_vehicle_doc = request.form.get('delete_vehicle_doc') == '1'
             if delete_vehicle_doc and hr_data.vehicle_registration_document:

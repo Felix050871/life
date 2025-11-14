@@ -1967,6 +1967,16 @@ class MileageRequestForm(FlaskForm):
     vehicle_description = StringField('Descrizione Veicolo (se non in ACI)', 
                                     validators=[Optional(), Length(max=200)])
     
+    # Tipologia rimborso
+    reimbursement_type = SelectField('Tipologia Rimborso', 
+                                    choices=[],
+                                    validators=[DataRequired(message='Seleziona la tipologia di rimborso')])
+    
+    # Importo fisso (solo per rimborsi fissi)
+    fixed_amount = FloatField('Importo Fisso Richiesto (€)', 
+                             validators=[Optional(), NumberRange(min=0.01, max=99999.99)],
+                             render_kw={'step': '0.01', 'placeholder': 'Es: 150.00'})
+    
     # Motivazione
     purpose = TextAreaField('Scopo del Viaggio', 
                           validators=[DataRequired(), Length(max=500)],
@@ -2002,6 +2012,31 @@ class MileageRequestForm(FlaskForm):
                     self.vehicle_id.data = user_vehicle.id
         except Exception as e:
             self.vehicle_id.choices = [('', 'Errore nel caricamento veicoli')]
+        
+        # Popola le scelte per la tipologia di rimborso in base alla configurazione HR
+        if user and hasattr(user, 'hr_data') and user.hr_data:
+            hr_data = user.hr_data
+            reimbursement_config = hr_data.mileage_reimbursement_type
+            
+            if reimbursement_config == 'libero':
+                self.reimbursement_type.choices = [('libero', 'Rimborso da tabelle ACI (€/km)')]
+                self.reimbursement_type.data = 'libero'
+            elif reimbursement_config == 'fisso':
+                self.reimbursement_type.choices = [('fisso', 'Rimborso fisso (importo forfettario)')]
+                self.reimbursement_type.data = 'fisso'
+            elif reimbursement_config == 'entrambi':
+                self.reimbursement_type.choices = [
+                    ('libero', 'Rimborso da tabelle ACI (€/km)'),
+                    ('fisso', 'Rimborso fisso (importo forfettario)')
+                ]
+            else:
+                # Nessuna configurazione - default a libero
+                self.reimbursement_type.choices = [('libero', 'Rimborso da tabelle ACI (€/km)')]
+                self.reimbursement_type.data = 'libero'
+        else:
+            # Default se non c'è configurazione
+            self.reimbursement_type.choices = [('libero', 'Rimborso da tabelle ACI (€/km)')]
+            self.reimbursement_type.data = 'libero'
     
     def validate_travel_date(self, field):
         """Valida che la data del viaggio non sia troppo nel futuro"""
@@ -2034,6 +2069,11 @@ class MileageRequestForm(FlaskForm):
         # Se non è selezionato un veicolo ACI, la descrizione del veicolo è obbligatoria
         if not self.vehicle_id.data and not self.vehicle_description.data:
             self.vehicle_description.errors.append('Seleziona un veicolo ACI oppure inserisci una descrizione del veicolo.')
+            return False
+        
+        # Se rimborso fisso, l'importo fisso è obbligatorio
+        if self.reimbursement_type.data == 'fisso' and not self.fixed_amount.data:
+            self.fixed_amount.errors.append('Inserisci l\'importo fisso richiesto per rimborsi di tipo fisso.')
             return False
         
         return True

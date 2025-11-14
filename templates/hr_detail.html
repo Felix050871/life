@@ -517,6 +517,42 @@
                 {% endif %}
             </div>
         </div>
+        
+        <!-- Configurazione Rimborso Chilometrico -->
+        <h6 class="border-bottom pb-2 mb-3 mt-4"><i class="fas fa-cog me-2"></i>Configurazione Rimborso Chilometrico</h6>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Tipologia Rimborso</label>
+                <select name="mileage_reimbursement_type" class="form-select" id="mileageReimbursementType" {% if not can_edit %}disabled{% endif %}>
+                    <option value="">Nessuna configurazione</option>
+                    <option value="libero" {% if hr_data.mileage_reimbursement_type == 'libero' %}selected{% endif %}>Libero (Calcolo da tabelle ACI)</option>
+                    <option value="fisso" {% if hr_data.mileage_reimbursement_type == 'fisso' %}selected{% endif %}>Fisso (Importo massimo annuale)</option>
+                    <option value="entrambi" {% if hr_data.mileage_reimbursement_type == 'entrambi' %}selected{% endif %}>Entrambi (Dipendente può scegliere)</option>
+                </select>
+                <small class="text-muted">
+                    <strong>Libero:</strong> Rimborso calcolato da km × tariffa ACI<br>
+                    <strong>Fisso:</strong> Rimborso forfettario con limite annuale<br>
+                    <strong>Entrambi:</strong> Dipendente può usare entrambe le modalità
+                </small>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Importo Massimo Annuale (Fisso)</label>
+                <div class="input-group">
+                    <span class="input-group-text">€</span>
+                    <input type="text" name="mileage_fixed_max_annual" id="mileageFixedMaxAnnual" 
+                           class="form-control" 
+                           value="{{ '%.2f'|format(hr_data.mileage_fixed_max_annual or 0) if hr_data.mileage_fixed_max_annual else '' }}"
+                           placeholder="0.00"
+                           {% if not can_edit %}disabled{% endif %}>
+                </div>
+                <small class="text-muted">
+                    Importo massimo annuale per rimborsi fissi (es. 3000.00)<br>
+                    <span id="fixedBalanceInfo" class="text-info" style="display:none;">
+                        <i class="fas fa-info-circle me-1"></i>Disponibile anno corrente: <strong id="fixedBalance">€ 0.00</strong>
+                    </span>
+                </small>
+            </div>
+        </div>
     </div>
 
     <!-- ========================================= -->

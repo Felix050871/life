@@ -891,11 +891,30 @@ def create_mileage_request():
                 purpose=form.purpose.data,
                 notes=form.notes.data,
                 vehicle_id=form.vehicle_id.data if form.vehicle_id.data else None,
-                vehicle_description=form.vehicle_description.data if form.vehicle_description.data else None
+                vehicle_description=form.vehicle_description.data if form.vehicle_description.data else None,
+                reimbursement_type=form.reimbursement_type.data,
+                fixed_amount=form.fixed_amount.data if form.reimbursement_type.data == 'fisso' else None
             )
             
             # Calcola l'importo del rimborso
             mileage_request.calculate_reimbursement_amount()
+            
+            # Valida il saldo disponibile per rimborsi fissi
+            if form.reimbursement_type.data == 'fisso' and current_user.hr_data:
+                from datetime import date as dt_date
+                year = form.travel_date.data.year if form.travel_date.data else dt_date.today().year
+                balance_info = current_user.hr_data.get_mileage_fixed_balance(year)
+                
+                if balance_info:
+                    if mileage_request.total_amount > balance_info['available']:
+                        flash(
+                            f'Importo richiesto (€{mileage_request.total_amount:.2f}) supera il saldo disponibile '
+                            f'per rimborsi fissi (€{balance_info["available"]:.2f} su €{balance_info["max_annual"]:.2f} annuali). '
+                            f'Già utilizzati €{balance_info["used"]:.2f} nell\'anno {year}.',
+                            'danger'
+                        )
+                        return render_template('create_mileage_request.html', form=form)
+            
             set_company_on_create(mileage_request)
             
             db.session.add(mileage_request)
