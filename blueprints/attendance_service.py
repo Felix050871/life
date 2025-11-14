@@ -161,16 +161,24 @@ def calculate_expected_minutes(
                 return max(0, end_mins - start_mins)
     
     # Priorità 3: ContractHistory (ore settimanali / 5)
-    contract = ContractHistory.query.filter(
-        ContractHistory.user_id == user.id,
-        ContractHistory.start_date <= day_date,
-        (ContractHistory.end_date >= day_date) | (ContractHistory.end_date.is_(None))
-    ).order_by(ContractHistory.start_date.desc()).first()
+    # Prima trova UserHRData dell'utente, poi cerca ContractHistory
+    from models import UserHRData
     
-    if contract and contract.weekly_hours:
-        # Ore settimanali diviso 5 giorni lavorativi
-        daily_hours = contract.weekly_hours / 5.0
-        return int(daily_hours * 60)
+    hr_data = UserHRData.query.filter_by(user_id=user.id).first()
+    if hr_data:
+        # Converte date a datetime per confronto
+        day_datetime = datetime.combine(day_date, datetime.min.time())
+        
+        contract = ContractHistory.query.filter(
+            ContractHistory.user_hr_data_id == hr_data.id,
+            ContractHistory.effective_from_date <= day_datetime,
+            (ContractHistory.effective_to_date >= day_datetime) | (ContractHistory.effective_to_date.is_(None))
+        ).order_by(ContractHistory.effective_from_date.desc()).first()
+        
+        if contract and contract.weekly_hours:
+            # Ore settimanali diviso 5 giorni lavorativi
+            daily_hours = contract.weekly_hours / 5.0
+            return int(daily_hours * 60)
     
     # Fallback: 8 ore standard
     return 480  # 8 * 60
