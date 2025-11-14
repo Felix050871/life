@@ -1570,16 +1570,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (saveBtn && form) {
-        console.log('Registrando listener submit su form');
-        form.addEventListener('submit', validateHrForm);
+        console.log('Registrando listener submit su form CON CAPTURE');
+        // Usa capture:true per eseguire PRIMA del listener globale in main.js
+        form.addEventListener('submit', validateHrForm, { capture: true });
         console.log('Listener submit registrato!');
-        
-        // DEBUG: listener click sul saveBtn per capire cosa succede
-        saveBtn.addEventListener('click', function(e) {
-            console.log('saveBtn CLICKED!');
-            console.log('Button type:', saveBtn.type);
-            console.log('Form:', form);
-        });
         
         // Pulisci badge quando l'utente corregge i campi
         form.addEventListener('input', function(e) {
