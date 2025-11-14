@@ -1453,11 +1453,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Funzione per validare il form e mostrare errori
     function validateHrForm(e) {
+        console.log('validateHrForm CHIAMATO!');
+        console.log('Event:', e);
+        
         // Aggiorna lo stato required dei campi condizionali PRIMA di validare
         updateCcnlFieldsRequirement();
         
         // Valida con HTML5
-        if (!form.checkValidity()) {
+        const isValid = form.checkValidity();
+        console.log('form.checkValidity():', isValid);
+        
+        if (!isValid) {
+            console.log('Form NON valido - prevento submit');
             e.preventDefault();
             
             // Pulisci badge precedenti
