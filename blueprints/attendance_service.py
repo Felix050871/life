@@ -175,9 +175,9 @@ def calculate_expected_minutes(
             (ContractHistory.effective_to_date >= day_datetime) | (ContractHistory.effective_to_date.is_(None))
         ).order_by(ContractHistory.effective_from_date.desc()).first()
         
-        if contract and contract.weekly_hours:
+        if contract and contract.work_hours_week:
             # Ore settimanali diviso 5 giorni lavorativi
-            daily_hours = contract.weekly_hours / 5.0
+            daily_hours = contract.work_hours_week / 5.0
             return int(daily_hours * 60)
     
     # Fallback: 8 ore standard
