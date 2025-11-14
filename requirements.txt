@@ -37,3 +37,5 @@ Flask-Mail
 bleach
 bleach
 cryptography
+click
+googlemaps
