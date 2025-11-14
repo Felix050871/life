@@ -1380,10 +1380,16 @@
 </div>
 {% endif %}
 
+</form>
+
+{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
+    const form = document.getElementById('hrForm');
     const saveBtn = document.getElementById('saveBtn');
+    
+    console.log('Form trovato:', form);
+    console.log('SaveBtn trovato:', saveBtn);
     
     // Mappa tab panes ai loro ID e nav buttons
     const tabMap = {
@@ -2017,9 +2023,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-</form>
-
+{% endblock %}
 
 <!-- ========================================= -->
 <!-- SEZIONE AMMORTIZZATORI SOCIALI (READ-ONLY) -->
