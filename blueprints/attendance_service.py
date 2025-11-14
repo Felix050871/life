@@ -12,6 +12,57 @@ from models import (
 from utils import filter_by_company
 
 
+@dataclass
+class LeaveBlock:
+    """Rappresenta un'assenza (permesso/malattia/ferie) per un giorno"""
+    leave_type: str
+    start_time: Optional[str]  # "09:00" se permesso parziale
+    end_time: Optional[str]    # "13:00" se permesso parziale
+    is_validated: bool
+    highlight_class: str  # "warning" se non validato, "" altrimenti
+    total_hours: float  # Ore totali calcolate dagli orari
+
+
+@dataclass
+class SessionRow:
+    """Rappresenta una singola sessione di lavoro (o riga vuota per input)"""
+    session_id: Optional[int]  # None per righe nuove
+    sede_id: Optional[int]
+    sede_name: str
+    commessa_id: Optional[int]
+    commessa_display: str
+    attendance_type_id: Optional[int]
+    attendance_type_name: str
+    clock_in: str  # "08:00"
+    break_start: str
+    break_end: str
+    clock_out: str
+    total_hours: float
+    source: str  # "manual", "auto", "empty"
+    can_delete: bool  # True solo per righe nuove non salvate
+    is_editable: bool  # False se consolidato o futuro
+
+
+@dataclass
+class DayRow:
+    """Rappresenta un giorno completo con tutte le sue sessioni"""
+    day_num: int  # 1-31
+    date_obj: date
+    weekday_name: str  # "Lunedì"
+    date_display: str  # "28/10/2025"
+    is_weekend: bool
+    is_holiday: bool
+    is_future: bool
+    is_editable: bool
+    can_add_session: bool
+    leave_block: Optional[LeaveBlock]
+    sessions: List[SessionRow]
+    day_total_hours: float
+    worked_minutes: int  # Minuti effettivamente lavorati
+    expected_minutes: int  # Minuti previsti (shift/work_schedule/contract)
+    anomaly_type: str  # "MATCH", "UNDER", "OVER", "ABSENT", "ZERO_EXPECTED"
+
+
 def calculate_hours(start_time_str: Optional[str], end_time_str: Optional[str]) -> float:
     """
     Calcola le ore tra due orari in formato "HH:MM".
@@ -201,57 +252,6 @@ def determine_anomaly_type(worked_minutes: int, expected_minutes: int) -> str:
     
     # Caso 5: Normale (±15 min)
     return "MATCH"
-
-
-@dataclass
-class LeaveBlock:
-    """Rappresenta un'assenza (permesso/malattia/ferie) per un giorno"""
-    leave_type: str
-    start_time: Optional[str]  # "09:00" se permesso parziale
-    end_time: Optional[str]    # "13:00" se permesso parziale
-    is_validated: bool
-    highlight_class: str  # "warning" se non validato, "" altrimenti
-    total_hours: float  # Ore totali calcolate dagli orari
-
-
-@dataclass
-class SessionRow:
-    """Rappresenta una singola sessione di lavoro (o riga vuota per input)"""
-    session_id: Optional[int]  # None per righe nuove
-    sede_id: Optional[int]
-    sede_name: str
-    commessa_id: Optional[int]
-    commessa_display: str
-    attendance_type_id: Optional[int]
-    attendance_type_name: str
-    clock_in: str  # "08:00"
-    break_start: str
-    break_end: str
-    clock_out: str
-    total_hours: float
-    source: str  # "manual", "auto", "empty"
-    can_delete: bool  # True solo per righe nuove non salvate
-    is_editable: bool  # False se consolidato o futuro
-
-
-@dataclass
-class DayRow:
-    """Rappresenta un giorno completo con tutte le sue sessioni"""
-    day_num: int  # 1-31
-    date_obj: date
-    weekday_name: str  # "Lunedì"
-    date_display: str  # "28/10/2025"
-    is_weekend: bool
-    is_holiday: bool
-    is_future: bool
-    is_editable: bool
-    can_add_session: bool
-    leave_block: Optional[LeaveBlock]
-    sessions: List[SessionRow]
-    day_total_hours: float
-    worked_minutes: int  # Minuti effettivamente lavorati
-    expected_minutes: int  # Minuti previsti (shift/work_schedule/contract)
-    anomaly_type: str  # "MATCH", "UNDER", "OVER", "ABSENT", "ZERO_EXPECTED"
 
 
 def build_timesheet_grid(
