@@ -161,6 +161,40 @@
                             {% endfor %}
                         </div>
                         
+                        <!-- Tipologia Rimborso -->
+                        <hr>
+                        <h6><i class="fas fa-euro-sign me-2"></i>Tipologia Rimborso</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                {{ form.reimbursement_type.label(class="form-label") }}
+                                {{ form.reimbursement_type(class="form-select", id="reimbursementTypeSelect") }}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Seleziona il tipo di rimborso in base alla tua configurazione aziendale.
+                                </div>
+                                {% for error in form.reimbursement_type.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Importo Fisso (solo per rimborsi fissi) -->
+                        <div class="mb-3" id="fixedAmountDiv" style="display: none;">
+                            {{ form.fixed_amount.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.fixed_amount(class="form-control", id="fixedAmountInput") }}
+                                <span class="input-group-text">€</span>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Inserisci l'importo fisso richiesto. Il saldo disponibile verrà verificato.
+                            </div>
+                            {% for error in form.fixed_amount.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
                         <!-- Calcolo rimborso preview -->
                         <div class="alert alert-info" id="reimbursementPreview" style="display: none;">
                             <h6><i class="fas fa-calculator me-2"></i>Stima Rimborso</h6>
@@ -272,6 +306,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewAmount = document.getElementById('previewAmount');
     const isKmManual = document.getElementById('isKmManual');
     const routeAddressesField = document.querySelector('textarea[name="route_addresses"]');
+    const reimbursementTypeSelect = document.getElementById('reimbursementTypeSelect');
+    const fixedAmountDiv = document.getElementById('fixedAmountDiv');
+    const fixedAmountInput = document.getElementById('fixedAmountInput');
     
     // Route management
     const addRoutePointBtn = document.getElementById('addRoutePoint');
@@ -455,29 +492,61 @@ document.addEventListener('DOMContentLoaded', function() {
         updateReimbursementPreview();
     });
     
+    // Toggle fixed amount field based on reimbursement type
+    reimbursementTypeSelect.addEventListener('change', function() {
+        if (this.value === 'fisso') {
+            fixedAmountDiv.style.display = 'block';
+            fixedAmountInput.required = true;
+        } else {
+            fixedAmountDiv.style.display = 'none';
+            fixedAmountInput.required = false;
+            fixedAmountInput.value = '';
+        }
+        updateReimbursementPreview();
+    });
+    
     // Update reimbursement preview
     totalKmInput.addEventListener('input', updateReimbursementPreview);
+    fixedAmountInput.addEventListener('input', updateReimbursementPreview);
     
     function updateReimbursementPreview() {
-        const km = parseFloat(totalKmInput.value) || 0;
-        const selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
+        const reimbursementType = reimbursementTypeSelect.value;
         
-        if (km > 0 && selectedOption && selectedOption.value) {
-            // Extract rate from option text (format: "MARCA MODELLO (€0.xxxx/km)")
-            const rateMatch = selectedOption.text.match(/€([\d.]+)\/km/);
-            if (rateMatch) {
-                const rate = parseFloat(rateMatch[1]);
-                const amount = km * rate;
-                
-                previewKm.textContent = km.toFixed(1);
-                previewRate.textContent = rate.toFixed(4);
-                previewAmount.textContent = amount.toFixed(2);
+        if (reimbursementType === 'fisso') {
+            // Rimborso fisso: mostra solo l'importo richiesto
+            const fixedAmount = parseFloat(fixedAmountInput.value) || 0;
+            
+            if (fixedAmount > 0) {
+                previewKm.parentElement.innerHTML = '<strong>Importo Fisso Richiesto:</strong>';
+                reimbursementPreview.querySelector('p').innerHTML = '<strong>€' + fixedAmount.toFixed(2) + '</strong>';
                 reimbursementPreview.style.display = 'block';
             } else {
                 reimbursementPreview.style.display = 'none';
             }
         } else {
-            reimbursementPreview.style.display = 'none';
+            // Rimborso libero (da tabelle ACI): calcola km × tariffa
+            const km = parseFloat(totalKmInput.value) || 0;
+            const selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
+            
+            if (km > 0 && selectedOption && selectedOption.value) {
+                // Extract rate from option text (format: "MARCA MODELLO (€0.xxxx/km)")
+                const rateMatch = selectedOption.text.match(/€([\d.]+)\/km/);
+                if (rateMatch) {
+                    const rate = parseFloat(rateMatch[1]);
+                    const amount = km * rate;
+                    
+                    // Ripristina formato originale per rimborsi liberi
+                    reimbursementPreview.querySelector('p').innerHTML = 
+                        '<span id="previewKm">' + km.toFixed(1) + '</span> km × €<span id="previewRate">' + 
+                        rate.toFixed(4) + '</span>/km = <strong>€<span id="previewAmount">' + 
+                        amount.toFixed(2) + '</span></strong>';
+                    reimbursementPreview.style.display = 'block';
+                } else {
+                    reimbursementPreview.style.display = 'none';
+                }
+            } else {
+                reimbursementPreview.style.display = 'none';
+            }
         }
     }
     
@@ -485,6 +554,15 @@ document.addEventListener('DOMContentLoaded', function() {
     updateReimbursementPreview();
     if (vehicleSelect.value === '' || vehicleSelect.value === 'none') {
         vehicleDescriptionDiv.style.display = 'block';
+    }
+    
+    // Initialize reimbursement type field
+    if (reimbursementTypeSelect.value === 'fisso') {
+        fixedAmountDiv.style.display = 'block';
+        fixedAmountInput.required = true;
+    } else {
+        fixedAmountDiv.style.display = 'none';
+        fixedAmountInput.required = false;
     }
     
     // Initialize KM field state
